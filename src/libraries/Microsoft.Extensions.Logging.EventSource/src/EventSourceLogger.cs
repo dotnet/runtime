@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text;
@@ -18,8 +19,15 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// A logger that writes messages to EventSource instance.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// On Windows platforms EventSource will deliver messages using Event Tracing for Windows (ETW) events.
     /// On Linux EventSource will use LTTng (http://lttng.org) to deliver messages.
+    /// </para>
+    /// <para>
+    /// Logger instances are not cached by <see cref="EventSourceLoggerProvider"/>. A new instance is created
+    /// for each call to <see cref="EventSourceLoggerProvider.CreateLogger(string)"/>. All created loggers are
+    /// tracked in a linked list to support dynamic configuration changes through EventSource/ETW infrastructure.
+    /// </para>
     /// </remarks>
     internal sealed class EventSourceLogger : ILogger
     {
@@ -80,9 +88,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 activityTraceId = activity.TraceId.ToHexString();
                 activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None
-                    ? "0"
-                    : "1";
+                activityTraceFlags = ((int)activity.ActivityTraceFlags).ToString(CultureInfo.InvariantCulture);
             }
             else
             {

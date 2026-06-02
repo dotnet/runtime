@@ -50,8 +50,8 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
         {
             [Kept]
             public static IInterface CreateVisual(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type visualType)
             {
                 try

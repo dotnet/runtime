@@ -7,6 +7,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +17,8 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
-        private const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
+        internal const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
+        internal const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
 
         private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
@@ -438,11 +439,9 @@ namespace System.Formats.Tar
 
         private static MemoryStream GetLongMetadataStream(string text)
         {
-            MemoryStream data = new MemoryStream();
-            data.Write(Encoding.UTF8.GetBytes(text));
-            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
-            data.Position = 0;
-            return data;
+            byte[] arr = new byte[Encoding.UTF8.GetByteCount(text) + 1]; // +1 for null terminator
+            Encoding.UTF8.GetBytes(text, arr);
+            return new MemoryStream(arr);
         }
 
         private TarHeader GetGnuLongLinkMetadataHeader()
@@ -577,7 +576,7 @@ namespace System.Formats.Tar
         // 'https://www.freebsd.org/cgi/man.cgi?tar(5)'
         // If the path name is too long to fit in the 100 bytes provided by the standard format,
         // it can be split at any / character with the first portion going into the prefix field.
-        private int WriteUstarName(Span<byte> buffer)
+        private unsafe int WriteUstarName(Span<byte> buffer)
         {
             // We can have a path name as big as 256, prefix + '/' + name,
             // the separator in between can be neglected as the reader will append it when it joins both fields.
@@ -808,7 +807,7 @@ namespace System.Formats.Tar
         }
 
         // Calculates the padding for the current entry and writes it after the data.
-        private void WriteEmptyPadding(Stream archiveStream)
+        private unsafe void WriteEmptyPadding(Stream archiveStream)
         {
             int paddingAfterData = TarHelpers.CalculatePadding(_size);
             if (paddingAfterData != 0)
@@ -862,7 +861,7 @@ namespace System.Formats.Tar
 
         // Generates a data stream (seekable) containing the extended attribute metadata of the entry it precedes.
         // Returns a null stream if the extended attributes dictionary is empty.
-        private static MemoryStream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
+        private static unsafe MemoryStream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
             MemoryStream? dataStream = null;
 
@@ -943,81 +942,20 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            ExtendedAttributes[PaxEaName] = _name;
-            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
+            CollectExtendedAttributesFromStandardFieldsIfNeeded(_ea ??= new Dictionary<string, string>());
+        }
 
-            TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
-
-            if (!string.IsNullOrEmpty(_linkName))
-            {
-                Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
-                ExtendedAttributes[PaxEaLinkName] = _linkName;
-            }
-
-            if (_size > Octal12ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaSize] = _size.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaSize);
-            }
-
-            if (_uid > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaUid] = _uid.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaUid);
-            }
-
-            if (_gid > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaGid] = _gid.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaGid);
-            }
-
-            if (_devMajor > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaDevMajor] = _devMajor.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaDevMajor);
-            }
-
-            if (_devMinor > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaDevMinor] = _devMinor.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaDevMinor);
-            }
-
-            // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
-            static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string? value, int maxLength)
-            {
-                if (string.IsNullOrEmpty(value) || GetUtf8TextLength(value) <= maxLength)
-                {
-                    extendedAttributes.Remove(key);
-                }
-                else
-                {
-                    extendedAttributes[key] = value;
-                }
-            }
+        // At write time, we both add and remove entries to ensure the EA dictionary
+        // is fully normalized. Delegates to the shared helper with removeIfUnneeded: true.
+        private void CollectExtendedAttributesFromStandardFieldsIfNeeded(Dictionary<string, string> ea)
+        {
+            AddOrUpdateStandardFieldExtendedAttributes(ea, removeIfUnneeded: true);
         }
 
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
         // is written on top of those spaces on the specified span as ascii.
         // At the end, it's saved in the header field and the final value returned.
-        private static int WriteChecksum(int checksum, Span<byte> buffer)
+        private static unsafe int WriteChecksum(int checksum, Span<byte> buffer)
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
@@ -1090,11 +1028,43 @@ namespace System.Formats.Tar
         private static int Checksum(ReadOnlySpan<byte> bytes)
         {
             int checksum = 0;
-            foreach (byte b in bytes)
+            int vectorSize = Vector<byte>.Count;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && bytes.Length >= vectorSize)
             {
-                checksum += b;
+                // tar header is 512 bytes, which makes the maximum checksum
+                // 512 * 255 = 130560. That does not fit into ushort, but since
+                // the vector will contain multiple ushorts and we don't ever
+                // sum over the entirety of the data, we will (just barely) not
+                // overflow ushort accumulators even on repeated 0xFF data.
+                Debug.Assert(bytes.Length <= 512);
+                Vector<ushort> accumulator = Vector<ushort>.Zero;
+
+                // Process full vectors
+                for (; i <= bytes.Length - vectorSize; i += vectorSize)
+                {
+                    Vector<byte> vector = new Vector<byte>(bytes.Slice(i, vectorSize));
+
+                    // Widen and sum to avoid overflow
+                    Vector.Widen(vector, out Vector<ushort> lower, out Vector<ushort> upper);
+                    accumulator += lower + upper;
+                }
+
+                // Horizontal sum of accumulator, this one might overflow ushort
+                // so we widen again
+                Vector.Widen(accumulator, out Vector<uint> lower32, out Vector<uint> upper32);
+                checksum = (int)Vector.Sum(lower32) + (int)Vector.Sum(upper32);
             }
+
+            // Process remaining bytes (or entire range if no vectorization)
+            for (; i < bytes.Length; i++)
+            {
+                checksum += bytes[i];
+            }
+
             return checksum;
+
         }
         private int FormatNumeric(int value, Span<byte> destination)
         {
@@ -1147,7 +1117,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        private static int FormatOctal(long value, Span<byte> destination)
+        private static unsafe int FormatOctal(long value, Span<byte> destination)
         {
             ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong

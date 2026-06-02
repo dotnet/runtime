@@ -121,6 +121,7 @@ namespace System.IO
                 Interop.Errors.ERROR_BAD_PATHNAME or
                 Interop.Errors.ERROR_BAD_NETPATH or
                 Interop.Errors.ERROR_BAD_NET_NAME or
+                Interop.Errors.ERROR_NETNAME_DELETED or
                 Interop.Errors.ERROR_INVALID_PARAMETER or
                 Interop.Errors.ERROR_NETWORK_UNREACHABLE or
                 Interop.Errors.ERROR_NETWORK_ACCESS_DENIED or

@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                int blobHeaderSize = Marshal.SizeOf<BCRYPT_MLKEM_KEY_BLOB>();
+                int blobHeaderSize = sizeof(BCRYPT_MLKEM_KEY_BLOB);
                 int keySize = checked((int)blob->cbKey);
 
                 if (keySize != destination.Length)

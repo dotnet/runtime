@@ -76,6 +76,11 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_WASM)
+    #define INST(id, nm, info, fmt, opcode         ) INS_##id,
+    #define INST2(id, nm, info, fmt, prefix, opcode) INS_##id,
+    #include "instrs.h"
+
 #else
 #error Unsupported target architecture
 #endif
@@ -183,6 +188,10 @@ enum insFlags : uint64_t
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
     INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
+    // The instruction is commutative for op1/op2 and so can have
+    // these operands swapped if it will result in a smaller encoding.
+    INS_Flags_IsAvxCommutative = 1ULL << 28,
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
     INS_FLAGS_Has_Sbit = 1ULL << 30,
@@ -248,13 +257,17 @@ enum insOpts: unsigned
     INS_OPTS_NONE = 0,
 
     // Two-bits: 0b0000_0011
-    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
+    INS_OPTS_EVEX_b_MASK = 0x03,    // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
+    INS_OPTS_EVEX_eb = 1,           // Embedded broadcast
 
-    INS_OPTS_EVEX_er_ru = 2,        // Round up
+    INS_OPTS_EVEX_cd = 2,           // Compressed displacement
 
-    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+    INS_OPTS_EVEX_er_rd = 1,        // Embedded round down
+
+    INS_OPTS_EVEX_er_ru = 2,        // Embedded round up
+
+    INS_OPTS_EVEX_er_rz = 3,        // Embedded round towards zero
 
     // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
@@ -286,8 +299,8 @@ enum insOpts: unsigned
     // One-bit:  0b1000_0000
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
-    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
 
     INS_OPTS_EVEX_dfv_cf = 1 << 8,
     INS_OPTS_EVEX_dfv_zf = 1 << 9,
@@ -302,9 +315,13 @@ enum insOpts: unsigned
     // One-bit:  0b10_0000_0000_0000
     INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
 
+    INS_OPTS_EVEX_zu = 1 << 14,      // Zero Upper for APX-EVEX
+    // One-bit:  0b100_0000_0000_0000
+    INS_OPTS_EVEX_zu_MASK = 0x4000,   // mask for APX-EVEX.zu feature.
+
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -428,6 +445,15 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
+// Some SVE RMW instructions require a mov/movprfx instruction to setup the destination
+// register, using this option to specify which variant of mov/movprfx to use.
+enum insSveMovOpts : unsigned
+{
+    INS_SVE_MOV_OPTS_UNPRED,  // <Zd>, <Zn>
+    INS_SVE_MOV_OPTS_ZEROING, // <Zd>.<T>, <Pg>/Z, <Zn>.<T>
+    INS_SVE_MOV_OPTS_MERGING, // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+};
+
 // Maps directly to the pattern used in SVE instructions such as cntb.
 enum insSvePattern : unsigned
 {
@@ -545,9 +571,7 @@ enum insOpts : unsigned
 
     INS_OPTS_RC,     // see ::emitIns_R_C().
     INS_OPTS_RL,     // see ::emitIns_R_L().
-    INS_OPTS_JALR,   // see ::emitIns_J_R().
-    INS_OPTS_J,      // see ::emitIns_J().
-    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_JUMP,   // see ::emitIns_J and ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
@@ -555,9 +579,15 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0x33,
+    INS_BARRIER_FULL       = 0x33, // fence rw, rw
+    INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
+    INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
-
+#elif defined(TARGET_WASM)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+};
 #endif
 
 #if defined(TARGET_XARCH)

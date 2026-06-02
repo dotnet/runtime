@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -22,7 +22,7 @@ namespace System.IO
         /// <exception cref="PathTooLongException">Thrown if we have a string that is too large to fit into a UNICODE_STRING.</exception>
         /// <exception cref="IOException">Thrown if the path is empty.</exception>
         /// <returns>Normalized path</returns>
-        internal static string Normalize(string path)
+        internal static unsafe string Normalize(string path)
         {
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
@@ -46,12 +46,13 @@ namespace System.IO
         /// <remarks>
         /// Exceptions are the same as the string overload.
         /// </remarks>
-        internal static string Normalize(ref ValueStringBuilder path)
+        internal static unsafe string Normalize(ref ValueStringBuilder path)
         {
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             // Get the full path
-            GetFullPathName(path.AsSpan(terminate: true), ref builder);
+            path.NullTerminate();
+            GetFullPathName(path.AsSpan(), ref builder);
 
             string result = builder.AsSpan().IndexOf('~') >= 0
                 ? TryExpandShortFileName(ref builder, originalPath: null)
@@ -176,8 +177,9 @@ namespace System.IO
 
             while (!success)
             {
+                inputBuilder.NullTerminate();
                 uint result = Interop.Kernel32.GetLongPathNameW(
-                    ref inputBuilder.GetPinnableReference(terminate: true), ref outputBuilder.GetPinnableReference(), (uint)outputBuilder.Capacity);
+                    ref inputBuilder.GetPinnableReference(), ref outputBuilder.GetPinnableReference(), (uint)outputBuilder.Capacity);
 
                 // Replace any temporary null we added
                 if (inputBuilder[foundIndex] == '\0') inputBuilder[foundIndex] = '\\';

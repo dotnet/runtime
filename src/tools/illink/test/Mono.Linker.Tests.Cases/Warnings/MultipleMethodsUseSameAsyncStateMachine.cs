@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Warnings
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Dependencies.MultipleMethodsUseSameAsyncStateMachine.M();
+            Dependencies.MultipleMethodsUseSameAsyncStateMachine.M();
 #endif
         }
     }

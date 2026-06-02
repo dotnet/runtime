@@ -127,8 +127,10 @@ namespace Microsoft.Extensions.DependencyModel
     public partial class ResourceAssembly
     {
         public ResourceAssembly(string path, string locale) { }
+        public ResourceAssembly(string path, string locale, string? localPath) { }
         public string Locale { get { throw null; } set { } }
         public string Path { get { throw null; } set { } }
+        public string? LocalPath { get { throw null; } }
     }
     public partial class RuntimeAssembly
     {
@@ -156,9 +158,11 @@ namespace Microsoft.Extensions.DependencyModel
     public partial class RuntimeFile
     {
         public RuntimeFile(string path, string? assemblyVersion, string? fileVersion) { }
+        public RuntimeFile(string path, string? assemblyVersion, string? fileVersion, string? localPath) { }
         public string? AssemblyVersion { get { throw null; } }
         public string? FileVersion { get { throw null; } }
         public string Path { get { throw null; } }
+        public string? LocalPath { get { throw null; } }
     }
     public partial class RuntimeLibrary : Microsoft.Extensions.DependencyModel.Library
     {

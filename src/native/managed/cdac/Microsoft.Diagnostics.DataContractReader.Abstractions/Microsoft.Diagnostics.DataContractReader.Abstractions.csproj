@@ -6,7 +6,8 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Do not produce a public package. This ships as part of the runtime -->
-    <IsShippingPackage>false</IsShippingPackage>
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>

@@ -342,11 +342,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return vector ^ Vector128.Create(-0.0f).As<float, T>();
+                return vector ^ Vector128<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return vector ^ Vector128.Create(-0.0).As<double, T>();
+                return vector ^ Vector128<double>.NegativeZero.As<double, T>();
             }
             else
             {
@@ -443,7 +443,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+        private unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 

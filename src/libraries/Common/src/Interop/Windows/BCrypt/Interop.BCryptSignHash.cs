@@ -111,5 +111,44 @@ internal static partial class Interop
                 throw Interop.BCrypt.CreateCryptographicException(status);
             }
         }
+
+        internal static unsafe void BCryptSignHashPqcPreHash(
+            SafeBCryptKeyHandle key,
+            ReadOnlySpan<byte> hash,
+            string hashAlgorithmIdentifier,
+            ReadOnlySpan<byte> context,
+            Span<byte> destination)
+        {
+            NTSTATUS status;
+            int bytesWritten;
+
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
+            fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+            {
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
+                paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                status = BCryptSignHash(
+                    key,
+                    &paddingInfo,
+                    pHash,
+                    hash.Length,
+                    pDest,
+                    destination.Length,
+                    out bytesWritten,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
+            }
+
+            Debug.Assert(bytesWritten == destination.Length);
+
+            if (status != BCrypt.NTSTATUS.STATUS_SUCCESS)
+            {
+                throw BCrypt.CreateCryptographicException(status);
+            }
+        }
     }
 }

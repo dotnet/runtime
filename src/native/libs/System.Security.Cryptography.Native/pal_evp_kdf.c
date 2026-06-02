@@ -112,24 +112,26 @@ int32_t CryptoNative_KbkdfHmacOneShot(
             goto cleanup;
         }
 
-        size_t keyLengthT = Int32ToSizeT(keyLength);
-        size_t destinationLengthT = Int32ToSizeT(destinationLength);
-        size_t labelLengthT = Int32ToSizeT(labelLength);
-        size_t contextLengthT = Int32ToSizeT(contextLength);
-
-        OSSL_PARAM params[] =
         {
-            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0),
-            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MAC, "HMAC", 0),
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT),
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)label, labelLengthT),
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)context, contextLengthT),
-            OSSL_PARAM_construct_end(),
-        };
+            size_t keyLengthT = Int32ToSizeT(keyLength);
+            size_t destinationLengthT = Int32ToSizeT(destinationLength);
+            size_t labelLengthT = Int32ToSizeT(labelLength);
+            size_t contextLengthT = Int32ToSizeT(contextLength);
 
-        if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
-        {
-            goto cleanup;
+            OSSL_PARAM params[] =
+            {
+                OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0),
+                OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MAC, "HMAC", 0),
+                OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT),
+                OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)label, labelLengthT),
+                OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)context, contextLengthT),
+                OSSL_PARAM_construct_end(),
+            };
+
+            if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
+            {
+                goto cleanup;
+            }
         }
 
         ret = 1;
@@ -199,33 +201,35 @@ static int32_t HkdfCore(
             goto cleanup;
         }
 
-        size_t keyLengthT = Int32ToSizeT(keyLength);
-        size_t destinationLengthT = Int32ToSizeT(destinationLength);
-
-        OSSL_PARAM params[6] = {{0}};
-        int i = 0;
-        params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT);
-        params[i++] = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0);
-
-        if (salt != NULL && saltLength > 0)
         {
-            size_t saltLengthT = Int32ToSizeT(saltLength);
-            params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT);
-        }
+            size_t keyLengthT = Int32ToSizeT(keyLength);
+            size_t destinationLengthT = Int32ToSizeT(destinationLength);
 
-        if (info != NULL && infoLength > 0)
-        {
-            size_t infoLengthT = Int32ToSizeT(infoLength);
-            params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT);
-        }
+            OSSL_PARAM params[6] = {{0}};
+            int i = 0;
+            params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT);
+            params[i++] = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0);
 
-        params[i++] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation);
-        params[i] = OSSL_PARAM_construct_end();
-        assert(i < 6);
+            if (salt != NULL && saltLength > 0)
+            {
+                size_t saltLengthT = Int32ToSizeT(saltLength);
+                params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT);
+            }
 
-        if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
-        {
-            goto cleanup;
+            if (info != NULL && infoLength > 0)
+            {
+                size_t infoLengthT = Int32ToSizeT(infoLength);
+                params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT);
+            }
+
+            params[i++] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation);
+            params[i] = OSSL_PARAM_construct_end();
+            assert(i < 6);
+
+            if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
+            {
+                goto cleanup;
+            }
         }
 
         ret = 1;

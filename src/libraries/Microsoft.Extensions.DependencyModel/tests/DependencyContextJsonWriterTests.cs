@@ -278,95 +278,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void WritesRuntimeLibrariesToRuntimeTarget()
-        {
-            var group = new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll");
-            WritesRuntimeLibrariesToRuntimeTargetCore(group);
-        }
-
-        [Fact]
-        public void WritesRuntimeLibrariesToRuntimeTargetWithAssemblyVersions()
-        {
-            RuntimeFile[] runtimeFile = { new RuntimeFile("Banana.Win7-x64.dll", "1.2.3", "7.8.9") };
-            var group = new RuntimeAssetGroup("win7-x64", runtimeFile);
-
-            var runtimeAssembly = WritesRuntimeLibrariesToRuntimeTargetCore(group);
-            runtimeAssembly.Should().HavePropertyValue("assemblyVersion", "1.2.3");
-            runtimeAssembly.Should().HavePropertyValue("fileVersion", "7.8.9");
-        }
-
-        private JObject WritesRuntimeLibrariesToRuntimeTargetCore(RuntimeAssetGroup group)
-        {
-            var result = Save(Create(
-                            "Target",
-                            "runtime",
-                            true,
-                            runtimeLibraries: new[]
-                            {
-                                new RuntimeLibrary(
-                                        "package",
-                                        "PackageName",
-                                        "1.2.3",
-                                        "HASH",
-                                        new [] {
-                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
-                                            group
-                                        },
-                                        new [] {
-                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
-                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
-                                        },
-                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
-                                        new [] {
-                                            new Dependency("Fruits.Abstract.dll","2.0.0")
-                                        },
-                                        true,
-                                        "PackagePath",
-                                        "PackageHashPath",
-                                        "placeHolderManifest.xml"
-                                    ),
-                            }));
-
-            // targets
-            var targets = result.Should().HavePropertyAsObject("targets").Subject;
-            var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
-            dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
-
-            library.Should().HavePropertyAsObject("runtime")
-                .Subject.Should().HaveProperty("Banana.dll");
-            library.Should().HavePropertyAsObject("native")
-                .Subject.Should().HaveProperty("runtimes/linux/native/native.so");
-
-            var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
-
-            var runtimeAssembly = runtimeTargets.Should().HavePropertyAsObject("Banana.Win7-x64.dll").Subject;
-            runtimeAssembly.Should().HavePropertyValue("rid", "win7-x64");
-            runtimeAssembly.Should().HavePropertyValue("assetType", "runtime");
-
-            var nativeLibrary = runtimeTargets.Should().HavePropertyAsObject("native/Banana.Win7-x64.so").Subject;
-            nativeLibrary.Should().HavePropertyValue("rid", "win7-x64");
-            nativeLibrary.Should().HavePropertyValue("assetType", "native");
-
-            var resourceAssemblies = library.Should().HavePropertyAsObject("resources").Subject;
-            var resourceAssembly = resourceAssemblies.Should().HavePropertyAsObject("en-US/Banana.Resource.dll").Subject;
-            resourceAssembly.Should().HavePropertyValue("locale", "en-US");
-
-            //libraries
-            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            library.Should().HavePropertyValue("sha512", "HASH");
-            library.Should().HavePropertyValue("type", "package");
-            library.Should().HavePropertyValue("serviceable", true);
-            library.Should().HavePropertyValue("path", "PackagePath");
-            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
-            library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
-
-            return runtimeAssembly;
-        }
-
-        [Fact]
         public void WritesRuntimePackLibrariesWithFrameworkName()
         {
             var result = Save(Create(
@@ -513,35 +424,105 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
         }
 
-        [Fact]
-        public void WritesRuntimeTargetForNonPortableLegacy()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesRuntimeAssembly_PathOnly(bool isPortable)
         {
-            var group = new RuntimeAssetGroup(string.Empty, "Banana.dll");
-            var assetGroup = WritesRuntimeTarget(group);
+            List<RuntimeAssetGroup> groups = [ new RuntimeAssetGroup(string.Empty, "Banana.dll") ];
+            if (isPortable)
+                groups.Add(new RuntimeAssetGroup("win-x64", "Banana.win-x64.dll"));
 
-            var files = assetGroup.Should().HavePropertyAsObject("runtime").Subject;
-            files.Should().HaveProperty("Banana.dll");
+            WritesRuntimeAssembly(isPortable, groups);
         }
 
-        [Fact]
-        public void WritesRuntimeTargetForNonPortable()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesRuntimeAssembly_Versions(bool isPortable)
         {
-            RuntimeFile[] runtimeFiles = { new RuntimeFile("Banana.dll", "1.2.3", "7.8.9") };
-            var group = new RuntimeAssetGroup(string.Empty, runtimeFiles);
-            var assetGroup = WritesRuntimeTarget(group);
+            List<RuntimeAssetGroup> groups = [
+                new RuntimeAssetGroup(string.Empty, [new RuntimeFile("Banana.dll", "1.2.3", "7.8.9")])
+            ];
+            if (isPortable)
+                groups.Add(new RuntimeAssetGroup("win-x64", [ new RuntimeFile("Banana.win-x64.dll", "1.2.3", "7.8.9") ]));
 
-            var files = assetGroup.Should().HavePropertyAsObject("runtime").Subject;
-            var file = files.Should().HavePropertyAsObject("Banana.dll").Subject;
-            file.Should().HavePropertyValue("assemblyVersion", "1.2.3");
-            file.Should().HavePropertyValue("fileVersion", "7.8.9");
+            WritesRuntimeAssembly(isPortable, groups);
         }
 
-        private JObject WritesRuntimeTarget(RuntimeAssetGroup group)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesRuntimeAssembly_LocalPath(bool isPortable)
+        {
+            List<RuntimeAssetGroup> groups = [
+                new RuntimeAssetGroup(string.Empty, [ new RuntimeFile("Banana.dll", "1.2.3", "7.8.9", "local/path/Banana.dll")])
+            ];
+            if (isPortable)
+                groups.Add(new RuntimeAssetGroup("win-x64", [new RuntimeFile("Banana.win-x64.dll", "1.2.3", "7.8.9", "local/path/Banana.win-x64.dll")]));
+
+            WritesRuntimeAssembly(isPortable, groups);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesNativeLibrary_PathOnly(bool isPortable)
+        {
+            List<RuntimeAssetGroup> groups = [new RuntimeAssetGroup(string.Empty, "native.so")];
+            if (isPortable)
+                groups.Add(new RuntimeAssetGroup("linux-x64", "runtimes/linux-x64/native/native.linux-64.so"));
+
+            WritesNativeLibrary(isPortable, groups);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesNativeLibrary_LocalPath(bool isPortable)
+        {
+            List<RuntimeAssetGroup> groups = [
+                new RuntimeAssetGroup(string.Empty, [new RuntimeFile("native.so", null, null, "local/path/native.so")])
+            ];
+            if (isPortable)
+                groups.Add(new RuntimeAssetGroup("linux-x64", [new RuntimeFile("runtimes/linux-x64/native/native.linux-64.so", null, null, "local/path/native.so")]));
+
+            WritesNativeLibrary(isPortable, groups);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesResourceAssembly_PathOnly(bool isPortable)
+        {
+            ResourceAssembly resourceAssembly = new ResourceAssembly("fr/Fruits.resources.dll", "fr");
+            WritesResourceAssembly(isPortable, [resourceAssembly]);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WritesResourceAssembly_LocalPath(bool isPortable)
+        {
+            ResourceAssembly resourceAssembly = new ResourceAssembly("fr/Fruits.resources.dll", "fr", "local/path/fr/Fruits.resources.dll");
+            WritesResourceAssembly(isPortable, [resourceAssembly]);
+        }
+
+        private void WritesRuntimeAssembly(bool isPortable, IReadOnlyList<RuntimeAssetGroup> runtimeAssemblies)
+            => WritesRuntimeLibrary(isPortable, runtimeAssemblies, [], []);
+
+        private void WritesNativeLibrary(bool isPortable, IReadOnlyList<RuntimeAssetGroup> nativeLibraries)
+            => WritesRuntimeLibrary(isPortable, [], nativeLibraries, []);
+
+        private void WritesResourceAssembly(bool isPortable, ResourceAssembly[] resourceAssemblies)
+            => WritesRuntimeLibrary(isPortable, [], [], resourceAssemblies);
+
+        private void WritesRuntimeLibrary(bool isPortable, IReadOnlyList<RuntimeAssetGroup> runtimeAssemblies, IReadOnlyList<RuntimeAssetGroup> nativeLibraries, ResourceAssembly[] resourceAssemblies)
         {
             var result = Save(Create(
                             "Target",
                             "runtime",
-                            false,
+                            isPortable,
                             runtimeLibraries: new[]
                             {
                                 new RuntimeLibrary(
@@ -549,17 +530,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new [] {
-                                            group
-                                        },
-                                        new [] {
-                                            new RuntimeAssetGroup(string.Empty, "runtimes\\osx\\native\\native.dylib")
-                                        },
-                                        new ResourceAssembly[] {},
-                                        new [] {
-                                            new Dependency("Fruits.Abstract.dll","2.0.0")
-                                        },
-                                        true,
+                                        runtimeAssemblies,
+                                        nativeLibraries,
+                                        resourceAssemblies,
+                                        dependencies: [],
+                                        serviceable: true,
                                         "PackagePath",
                                         "PackageHashPath"
                                     ),
@@ -567,23 +542,90 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             // targets
             var targets = result.Should().HavePropertyAsObject("targets").Subject;
-            var target = targets.Should().HavePropertyAsObject("Target/runtime").Subject;
-            var assetGroup = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            var dependencies = assetGroup.Should().HavePropertyAsObject("dependencies").Subject;
-            dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
-            assetGroup.Should().HavePropertyAsObject("native")
-                .Subject.Should().HaveProperty("runtimes/osx/native/native.dylib");
+            var target = targets.Should().HavePropertyAsObject($"Target{(isPortable ? "" : "/runtime")}").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
 
-            //libraries
-            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
-            var library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            library.Should().HavePropertyValue("sha512", "HASH");
-            library.Should().HavePropertyValue("type", "package");
-            library.Should().HavePropertyValue("serviceable", true);
-            library.Should().HavePropertyValue("path", "PackagePath");
-            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+            ValidateRuntimeAssetGroups(library, runtimeAssemblies, DependencyContextStrings.RuntimeAssetType);
+            ValidateRuntimeAssetGroups(library, nativeLibraries, DependencyContextStrings.NativeAssetType);
 
-            return assetGroup;
+            if (resourceAssemblies.Length == 0)
+            {
+                library.Should().NotHaveProperty(DependencyContextStrings.ResourceAssembliesPropertyName);
+            }
+            else
+            {
+                var resources = library.Should().HavePropertyAsObject(DependencyContextStrings.ResourceAssembliesPropertyName).Subject;
+                foreach (var resource in resourceAssemblies)
+                {
+                    var resourceJson = resources.Should().HavePropertyAsObject(resource.Path).Subject;
+                    resourceJson.Should().HavePropertyValue(DependencyContextStrings.LocalePropertyName, resource.Locale);
+                    if (string.IsNullOrEmpty(resource.LocalPath))
+                    {
+                        resourceJson.Should().NotHaveProperty(DependencyContextStrings.LocalPathPropertyName);
+                    }
+                    else
+                    {
+                        resourceJson.Should().HavePropertyValue(DependencyContextStrings.LocalPathPropertyName, resource.LocalPath);
+                    }
+                }
+            }
+        }
+
+        private void ValidateRuntimeAssetGroups(JObject library, IReadOnlyList<RuntimeAssetGroup> groups, string assetType)
+        {
+            if (groups.Count == 0)
+                library.Should().NotHaveProperty(assetType);
+
+            foreach (var group in groups)
+            {
+                bool hasRuntimeId = !string.IsNullOrEmpty(group.Runtime);
+                var files = library.Should().HavePropertyAsObject(hasRuntimeId ? DependencyContextStrings.RuntimeTargetsPropertyName : assetType).Subject;
+                foreach (var file in group.RuntimeFiles)
+                {
+                    var fileJson = files.Should().HavePropertyAsObject(file.Path).Subject;
+                    ValidateRuntimeFile(file, fileJson);
+                    if (hasRuntimeId)
+                    {
+                        fileJson.Should().HavePropertyValue(DependencyContextStrings.RidPropertyName, group.Runtime);
+                        fileJson.Should().HavePropertyValue(DependencyContextStrings.AssetTypePropertyName, assetType);
+                    }
+                    else
+                    {
+                        fileJson.Should().NotHaveProperty(DependencyContextStrings.RidPropertyName);
+                        fileJson.Should().NotHaveProperty(DependencyContextStrings.AssetTypePropertyName);
+                    }
+                }
+            }
+        }
+
+        private void ValidateRuntimeFile(RuntimeFile file, JObject fileJson)
+        {
+            if (string.IsNullOrEmpty(file.AssemblyVersion))
+            {
+                fileJson.Should().NotHaveProperty(DependencyContextStrings.AssemblyVersionPropertyName);
+            }
+            else
+            {
+                fileJson.Should().HavePropertyValue(DependencyContextStrings.AssemblyVersionPropertyName, file.AssemblyVersion);
+            }
+
+            if (string.IsNullOrEmpty(file.FileVersion))
+            {
+                fileJson.Should().NotHaveProperty(DependencyContextStrings.FileVersionPropertyName);
+            }
+            else
+            {
+                fileJson.Should().HavePropertyValue(DependencyContextStrings.FileVersionPropertyName, file.FileVersion);
+            }
+
+            if (string.IsNullOrEmpty(file.LocalPath))
+            {
+                fileJson.Should().NotHaveProperty(DependencyContextStrings.LocalPathPropertyName);
+            }
+            else
+            {
+                fileJson.Should().HavePropertyValue(DependencyContextStrings.LocalPathPropertyName, file.LocalPath);
+            }
         }
 
         [Fact]
@@ -641,78 +683,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void WritesResourceAssembliesForNonPortable()
-        {
-            var result = Save(Create(
-                            "Target",
-                            "runtime",
-                            false,
-                            runtimeLibraries: new[]
-                            {
-                                new RuntimeLibrary(
-                                        "package",
-                                        "PackageName",
-                                        "1.2.3",
-                                        "HASH",
-                                        new RuntimeAssetGroup[] { },
-                                        new RuntimeAssetGroup[] { },
-                                        new []
-                                        {
-                                            new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
-                                        },
-                                        new Dependency[] { },
-                                        true,
-                                        "PackagePath",
-                                        "PackageHashPath"
-                                    ),
-                            }));
-
-            var targets = result.Should().HavePropertyAsObject("targets").Subject;
-            var target = targets.Should().HavePropertyAsObject("Target/runtime").Subject;
-            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            var resources = library.Should().HavePropertyAsObject("resources").Subject;
-            var resource = resources.Should().HavePropertyAsObject("en-US/Fruits.resources.dll").Subject;
-            resource.Should().HavePropertyValue("locale", "en-US");
-        }
-
-
-        [Fact]
-        public void WritesResourceAssembliesForPortable()
-        {
-            var result = Save(Create(
-                            "Target",
-                            "runtime",
-                            true,
-                            runtimeLibraries: new[]
-                            {
-                                new RuntimeLibrary(
-                                        "package",
-                                        "PackageName",
-                                        "1.2.3",
-                                        "HASH",
-                                        new RuntimeAssetGroup[] { },
-                                        new RuntimeAssetGroup[] { },
-                                        new []
-                                        {
-                                            new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
-                                        },
-                                        new Dependency[] { },
-                                        true,
-                                        "PackagePath",
-                                        "PackageHashPath"
-                                    ),
-                            }));
-
-            var targets = result.Should().HavePropertyAsObject("targets").Subject;
-            var target = targets.Should().HavePropertyAsObject("Target").Subject;
-            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
-            var resources = library.Should().HavePropertyAsObject("resources").Subject;
-            var resource = resources.Should().HavePropertyAsObject("en-US/Fruits.resources.dll").Subject;
-            resource.Should().HavePropertyValue("locale", "en-US");
-        }
-
-
-        [Fact]
         public void WriteCompilationOnlyAttributeIfOnlyCompilationLibraryProvided()
         {
             var result = Save(Create(
@@ -742,7 +712,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             library.Should().HavePropertyValue("compileOnly", true);
         }
-
 
         [Fact]
         public void WritesCompilationOptions()

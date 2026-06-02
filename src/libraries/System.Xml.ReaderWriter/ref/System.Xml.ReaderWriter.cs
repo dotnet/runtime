@@ -2942,6 +2942,7 @@ namespace System.Xml.Xsl
         public XsltSettings(bool enableDocumentFunction, bool enableScript) { }
         public static System.Xml.Xsl.XsltSettings Default { get { throw null; } }
         public bool EnableDocumentFunction { get { throw null; } set { } }
+        [System.ObsoleteAttribute("XSLT Script blocks are not supported.", DiagnosticId = "SYSLIB0062", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public bool EnableScript { get { throw null; } set { } }
         public static System.Xml.Xsl.XsltSettings TrustedXslt { get { throw null; } }
     }

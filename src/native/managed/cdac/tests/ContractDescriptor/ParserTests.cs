@@ -100,8 +100,8 @@ public class ParserTests
             "version": 0,
             "baseline": "empty",
             "contracts": {
-                "foo": 1,
-                "Foo": 2
+                "foo": "c1",
+                "Foo": "c2"
             },
             "types": {},
             "globals": {}
@@ -111,8 +111,29 @@ public class ParserTests
         Assert.Equal(0, descriptor.Version);
         Assert.Equal("empty", descriptor.Baseline);
         Assert.Equal(2, descriptor.Contracts.Count);
-        Assert.Equal(1, descriptor.Contracts["foo"]);
-        Assert.Equal(2, descriptor.Contracts["Foo"]);
+        Assert.Equal("c1", descriptor.Contracts["foo"]);
+        Assert.Equal("c2", descriptor.Contracts["Foo"]);
+    }
+
+    [Fact]
+    public void ParseContractsStringVersions()
+    {
+        ReadOnlySpan<byte> json = """
+        {
+            "version": 0,
+            "baseline": "empty",
+            "contracts": {
+                "Thread": "C1",
+                "GC": "N2"
+            },
+            "types": {},
+            "globals": {}
+        }
+        """u8;
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
+        Assert.Equal(2, descriptor.Contracts.Count);
+        Assert.Equal("C1", descriptor.Contracts["Thread"]);
+        Assert.Equal("N2", descriptor.Contracts["GC"]);
     }
 
     [Fact]

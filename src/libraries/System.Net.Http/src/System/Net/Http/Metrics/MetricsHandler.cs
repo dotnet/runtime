@@ -15,12 +15,14 @@ namespace System.Net.Http.Metrics
         private readonly HttpMessageHandler _innerHandler;
         private readonly UpDownCounter<long> _activeRequests;
         private readonly Histogram<double> _requestsDuration;
+        private readonly IWebProxy? _proxy;
 
-        public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, out Meter meter)
+        public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, IWebProxy? proxy, out Meter meter)
         {
             Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
 
             _innerHandler = innerHandler;
+            _proxy = proxy;
 
             meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
 
@@ -137,14 +139,14 @@ namespace System.Net.Http.Metrics
             }
         }
 
-        private static TagList InitializeCommonTags(HttpRequestMessage request)
+        private TagList InitializeCommonTags(HttpRequestMessage request)
         {
             TagList tags = default;
 
             if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
             {
                 tags.Add("url.scheme", requestUri.Scheme);
-                tags.Add("server.address", requestUri.Host);
+                tags.Add("server.address", DiagnosticsHelper.GetServerAddress(request, _proxy));
                 tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(requestUri.Port));
             }
             tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));

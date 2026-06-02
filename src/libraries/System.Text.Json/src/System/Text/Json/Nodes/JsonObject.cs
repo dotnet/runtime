@@ -172,7 +172,30 @@ namespace System.Text.Json.Nodes
             else
             {
                 writer.WriteStartObject();
+                WriteContentsTo(writer, options);
+                writer.WriteEndObject();
+            }
+        }
 
+        /// <summary>
+        /// Writes the properties of this JsonObject to the writer without the surrounding braces.
+        /// This is used for extension data serialization where the properties should be flattened
+        /// into the parent object.
+        /// </summary>
+        internal void WriteContentsTo(Utf8JsonWriter writer, JsonSerializerOptions? options)
+        {
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null && jsonElement.HasValue)
+            {
+                // Write properties from the underlying JsonElement without converting to nodes.
+                foreach (JsonProperty property in jsonElement.Value.EnumerateObject())
+                {
+                    property.WriteTo(writer);
+                }
+            }
+            else
+            {
                 foreach (KeyValuePair<string, JsonNode?> entry in Dictionary)
                 {
                     writer.WritePropertyName(entry.Key);
@@ -186,8 +209,6 @@ namespace System.Text.Json.Nodes
                         entry.Value.WriteTo(writer, options);
                     }
                 }
-
-                writer.WriteEndObject();
             }
         }
 
@@ -249,7 +270,7 @@ namespace System.Text.Json.Nodes
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(propertyName);
+                    path.AppendEscapedPropertyName(propertyName);
                     path.Append("']");
                 }
                 else
@@ -267,14 +288,14 @@ namespace System.Text.Json.Nodes
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (
-#if NET10_0_OR_GREATER
-                !dict.TryAdd(propertyName, value, out int index)
-#else
+#if NET9_0
                 !dict.TryAdd(propertyName, value)
+#else
+                !dict.TryAdd(propertyName, value, out int index)
 #endif
                 )
             {
-#if !NET10_0_OR_GREATER
+#if NET9_0
                 int index = dict.IndexOf(propertyName);
 #endif
                 Debug.Assert(index >= 0);
@@ -296,10 +317,7 @@ namespace System.Text.Json.Nodes
         {
             Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
 
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
         }
 
         private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)

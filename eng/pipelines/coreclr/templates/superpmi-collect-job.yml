@@ -11,6 +11,8 @@ parameters:
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-collect-job.yml'
   collectionType: ''
   collectionName: ''
+  targetOS: ''
+  targetArch: ''
 
 ### SuperPMI job
 ### Each collection job depends on a corresponding build job with the same buildConfig and archType.
@@ -31,11 +33,18 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     collectionType: ${{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
+    targetOS: ${{ parameters.targetOS }}
+    targetArch: ${{ parameters.targetArch }}
     # Test job depends on the corresponding build job
     dependsOn:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+     # For the corelib crossgen2 collection targeting browser/wasm we also need a
+     # browser/wasm-built System.Private.CoreLib.dll, produced by the browser_wasm_win
+     # Release build.
+     - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
+        - 'build_browser_wasm_windows_Release_'
 
     variables:
 
@@ -58,6 +67,29 @@ jobs:
         artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
         artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
         displayName: 'Runtime build artifacts'
+
+    # Download release runtime artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)'
+        artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+        displayName: 'Release runtime build artifacts'
+        cleanUnpackFolder: false
+        overwriteExistingFiles: true
+
+    # For the corelib crossgen2 collection targeting browser/wasm, also download the
+    # browser/wasm-built runtime artifacts. The wasm-built System.Private.CoreLib.dll
+    # under artifacts/bin/coreclr/browser.wasm.Release/ is what crossgen2 will compile.
+    - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: 'BuildArtifacts_browser_wasm_Release$(archiveExtension)'
+          artifactName: BuildArtifacts_browser_wasm_Release
+          displayName: 'browser/wasm Release runtime build artifacts'
+          cleanUnpackFolder: false
+          overwriteExistingFiles: true
 
     # Unzip individual test projects
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
@@ -88,3 +120,9 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
       condition: succeeded()
+
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Release Core_Root
+      condition: succeeded()
+

@@ -166,7 +166,6 @@ private:
         SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
         Module             *pInlineeModule,
         mdMethodDef         inlineeMethodDef,
-        BOOL                fIsRevert,
         COR_PRF_REJIT_FLAGS flags);
 
     static HRESULT UpdateJitInlinerActiveILVersions(

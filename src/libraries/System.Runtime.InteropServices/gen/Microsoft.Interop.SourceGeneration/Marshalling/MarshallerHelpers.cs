@@ -219,13 +219,13 @@ namespace Microsoft.Interop
                 set => _edgeMap[to * NodeCount + from] = value;
             }
 
-            public bool AnyEdges => Array.IndexOf(_edgeMap, true) != -1;
+            public bool AnyEdges => Array.IndexOf(_edgeMap, true) >= 0;
 
             public int NodeCount { get; }
 
             public bool AnyIncomingEdge(int to)
             {
-                return Array.IndexOf(_edgeMap, true, to * NodeCount, NodeCount) != -1;
+                return Array.IndexOf(_edgeMap, true, to * NodeCount, NodeCount) >= 0;
             }
         }
 

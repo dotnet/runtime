@@ -101,7 +101,7 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
     RemoteEventChannel *      pEventChannel = NULL;
     DebuggerIPCControlBlock * pDCBBuffer    = NULL;
 
-    DbgTransportTarget *   pProxy     = g_pDbgTransportTarget;
+    DbgTransportTarget *   pProxy     = &g_DbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
 
     hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &hDummy);

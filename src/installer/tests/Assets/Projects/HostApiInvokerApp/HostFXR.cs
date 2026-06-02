@@ -23,6 +23,7 @@ namespace HostApiInvokerApp
                 resolved_sdk_dir = 0,
                 global_json_path = 1,
                 requested_version = 2,
+                global_json_state = 3,
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -159,7 +160,7 @@ namespace HostApiInvokerApp
             var data = new List<(hostfxr.hostfxr_resolve_sdk2_result_key_t, string)>();
             int rc = hostfxr.hostfxr_resolve_sdk2(
                 exe_dir: args[0],
-                working_dir: args[1],
+                working_dir: args[1] == "<none>" ? string.Empty : args[1], // Empty string disables global.json look-up
                 flags: Enum.Parse<hostfxr.hostfxr_resolve_sdk2_flags_t>(args[2]),
                 result: (key, value) => data.Add((key, value)));
 

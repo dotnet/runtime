@@ -8,6 +8,9 @@
  * The test does not check for the above in the JIT tree but only functional correctness.
  */
 // csc /o- /debug+
+
+namespace seqpts;
+
 using System;
 using Xunit;
 
@@ -30,6 +33,7 @@ struct BigCopy
 
 public static class Repro
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

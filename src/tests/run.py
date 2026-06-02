@@ -101,11 +101,13 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
+parser.add_argument("--use_managed_ilasm", dest="use_managed_ilasm", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
+parser.add_argument("--node", dest="node", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -113,6 +115,7 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--tree", dest="tree", default=None, help="Only run tests under the specified subtree (e.g. JIT/Regression).")
 
 ################################################################################
 # Globals
@@ -200,7 +203,7 @@ class DebugEnv:
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
+        dbg_type = "cppvsdbg" if sys.platform == "win32" else ""
 
         env = {
             "DOTNET_AssertOnNYI": "1",
@@ -226,7 +229,7 @@ class DebugEnv:
             environment.append(env)
 
         unique_name = "%s_%s_%s_%s" % (self.test_path, self.args.host_os, self.args.arch, self.args.build_type)
-        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if self.args.host_os == "windows" else ""))
+        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if sys.platform == "win32" else ""))
         configuration = defaultdict(lambda: None, {
             "name": unique_name,
             "type": dbg_type,
@@ -263,7 +266,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "windows":
+        if sys.platform == "win32":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -399,12 +402,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "windows" else ""
+        tempfile_suffix = ".bat" if sys.platform == "win32" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_header = """\
 @REM Temporary test env for test run.
 @echo on
@@ -420,7 +423,7 @@ def create_and_use_test_env(_os, env, func):
             for key in dotnet_vars:
                 value = dotnet_vars[key]
                 command = None
-                if _os == "windows":
+                if sys.platform == "win32":
                     command = "set"
                 else:
                     command = "export"
@@ -438,7 +441,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_suffix = """\
 @echo off
 """
@@ -571,11 +574,11 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
-    if args.il_link:
-        command += ["/p:RunTestsViaIllink=true"]
-
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
+
+    if args.tree:
+        command += ["/p:TestSubtree=%s" % args.tree]
 
     print(" ".join(command))
 
@@ -827,6 +830,15 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
+    if args.use_managed_ilasm:
+        if not args.ilasmroundtrip:
+            print("--use_managed_ilasm implies --ilasmroundtrip; enabling ilasm round trip.")
+            print("Setting RunningIlasmRoundTrip=1")
+            os.environ["RunningIlasmRoundTrip"] = "1"
+        print("Using managed ILasm for round trip.")
+        print("Setting IlasmRoundTripUseManagedIlasm=1")
+        os.environ["IlasmRoundTripUseManagedIlasm"] = "1"
+
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=1")
@@ -861,6 +873,11 @@ def run_tests(args,
         print("Running tests with the interpreter")
         print("Setting RunInterpreter=1")
         os.environ["RunInterpreter"] = "1"
+
+    if args.node:
+        print("Running tests with the NodeJS")
+        print("Setting RunWithNodeJS=1")
+        os.environ["RunWithNodeJS"] = "1"
 
     if gc_stress:
         per_test_timeout *= 8
@@ -972,6 +989,11 @@ def setup_args(args):
                               "Error setting ilasmroundtrip")
 
     coreclr_setup_args.verify(args,
+                              "use_managed_ilasm",
+                              lambda arg: True,
+                              "Error setting use_managed_ilasm")
+
+    coreclr_setup_args.verify(args,
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
@@ -1017,9 +1039,19 @@ def setup_args(args):
                               "Error setting run_nativeaot_tests")
 
     coreclr_setup_args.verify(args,
+                              "tree",
+                              lambda arg: True,
+                              "Error setting tree")
+
+    coreclr_setup_args.verify(args,
                               "interpreter",
                               lambda arg: True,
                               "Error setting interpreter")
+
+    coreclr_setup_args.verify(args,
+                              "node",
+                              lambda arg: True,
+                              "Error setting node")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
@@ -1052,11 +1084,12 @@ def setup_args(args):
     print("logs_dir                 : %s" % coreclr_setup_args.logs_dir)
 
     coreclr_setup_args.repro_location = os.path.join(coreclr_setup_args.logs_dir, "repro")
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    script_ext = ".cmd" if sys.platform == "win32" else ".sh"
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % script_ext)
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % script_ext)
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % script_ext)
+    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % script_ext)
 
     return coreclr_setup_args
 
@@ -1100,7 +1133,7 @@ def find_test_from_name(host_os, test_location, test_name):
                 dir_contents[re.sub("[%s]" % string.punctuation, "_", item)] = item
 
             file_name_cache[test_path_dir] = dir_contents
-        
+
         return dir_contents
 
     def match_filename(test_path):
@@ -1213,10 +1246,76 @@ def parse_test_results(args, tests, assemblies):
             if item_lower.endswith(".testrun.xml"):
                 item_name = item[:-len(".testrun.xml")]
             parse_test_results_xml_file(args, item, item_name, tests, assemblies)
+        elif item_lower == "standalonerunnertestresults.testrun.log":
+            found = True
+            parse_standalone_runner_results_file(args, item, tests, assemblies)
 
     if not found:
-        print("Unable to find testRun.xml. This normally means the tests did not run.")
+        print("Unable to find testRun.xml or StandaloneRunnerTestResults.testrun.log. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
+
+def parse_standalone_runner_results_file(args, item, tests, assemblies):
+    """ Parse test results from a standalone runner results log file
+
+    Args:
+        args                 : arguments
+        item                 : log filename in the logs directory
+        tests                : list of individual test results (filled in by this function)
+        assemblies           : dictionary of per-assembly aggregations (filled in by this function)
+    """
+
+    log_result_file = os.path.join(args.logs_dir, item)
+    print("Analyzing {}".format(log_result_file))
+
+    assembly_name = "StandaloneRunnerTests"
+    assembly_info = assemblies[assembly_name]
+    if assembly_info is None:
+        assembly_info = defaultdict(lambda: None, {
+            "name": assembly_name,
+            "display_name": assembly_name,
+            "is_merged_tests_run": False,
+            "time": 0.0,
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+        })
+
+    with open(log_result_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Format is: "<script-path>: <Result>" where Result is "Pass" or "Fail"
+            last_colon_idx = line.rfind(': ')
+            if last_colon_idx == -1:
+                continue
+
+            script_path = line[:last_colon_idx]
+            result = line[last_colon_idx + 2:]
+
+            # Derive a test name from the script path
+            test_name = os.path.basename(script_path)
+            test_name_without_ext = os.path.splitext(test_name)[0]
+
+            tests.append(defaultdict(lambda: None, {
+                "name": test_name_without_ext,
+                "test_path": script_path,
+                "result": result,
+                "time": 0.0,
+                "test_output": None,
+                "assembly_display_name": assembly_name,
+                "is_merged": False
+            }))
+
+            if result == "Pass":
+                assembly_info["passed"] += 1
+            elif result == "Fail":
+                assembly_info["failed"] += 1
+            else:
+                assembly_info["skipped"] += 1
+
+    assemblies[assembly_name] = assembly_info
 
 def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     """ Parse test results from a single xml results file
@@ -1248,19 +1347,12 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
         if len(item_name) > 0:
             display_name = item_name
 
-        # Is the results XML from a merged tests model run?
-        assembly_is_merged_tests_run = False
-        assembly_test_framework = assembly.attrib["test-framework"]
-        # Non-merged tests give something like "xUnit.net 2.5.3.0"
-        if assembly_test_framework == "XUnitWrapperGenerator-generated-runner":
-            assembly_is_merged_tests_run = True
-
         assembly_info = assemblies[assembly_name]
         if assembly_info is None:
             assembly_info = defaultdict(lambda: None, {
                 "name": assembly_name,
                 "display_name": display_name,
-                "is_merged_tests_run" : assembly_is_merged_tests_run,
+                "is_merged_tests_run" : True,
                 "time": 0.0,
                 "passed": 0,
                 "failed": 0,
@@ -1286,7 +1378,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     # This doesn't do anything in the merged model.
                     type = type.split("._")[0]
                     test_name = type + "::" + method
-                    
+
                     # The "name" is something like:
                     # 1. Merged model: "JIT\Regression\CLR-x86-JIT\V1.2-M02\b00719\b00719\b00719.dll" or
                     # "_CompareVectorWithZero_r::CompareVectorWithZero.TestVector64Equality()"
@@ -1296,23 +1388,15 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         test_name += " (" + name + ")"
                     result = test.attrib["result"]
                     time = float(collection.attrib["time"])
-                    if assembly_is_merged_tests_run:
-                        # REVIEW: Even if the test is a .dll file or .CMD file and is found, we don't know how to
-                        # build a repro case with it.
-                        test_location_on_filesystem = None
-                    else:
-                        test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
-                    if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
-                        test_location_on_filesystem = None
                     test_output = test.findtext("output")
                     tests.append(defaultdict(lambda: None, {
                         "name": test_name,
-                        "test_path": test_location_on_filesystem,
+                        "test_path": None,
                         "result" : result,
                         "time": time,
                         "test_output": test_output,
                         "assembly_display_name": display_name,
-                        "is_merged": assembly_is_merged_tests_run
+                        "is_merged": True
                     }))
                     if result == "Pass":
                         assembly_info["passed"] += 1

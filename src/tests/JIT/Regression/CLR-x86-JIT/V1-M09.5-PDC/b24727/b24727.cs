@@ -9,6 +9,9 @@
 
 //<Expects Status=success> </Expects>
 
+
+namespace b24727;
+
 using System;
 using Xunit;
 
@@ -36,6 +39,7 @@ struct Struct1 : Inter1, Inter2, Inter3
 
 public class Test
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

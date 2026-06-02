@@ -75,20 +75,6 @@ public:
 
     virtual BOOL DebugSetProcessKillOnExit(bool fKillOnExit);
 
-    // Create
-    virtual HRESULT CreateProcessUnderDebugger(
-        MachineInfo machineInfo,
-        LPCWSTR lpApplicationName,
-        LPCWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation);
-
     // Attach
     virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor);
 
@@ -110,12 +96,12 @@ public:
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
 
-#ifdef TARGET_UNIX
+    // Used by debugger side (RS) to cleanup the target (LS) named pipes
+    // and semaphores when the debugger detects the debuggee process  exited.
     virtual void CleanupTargetProcess()
     {
         m_pTransport->CleanupTargetProcess();
     }
-#endif
 
 private:
     // Return TRUE if the transport is up and runnning
@@ -182,107 +168,6 @@ BOOL DbgTransportPipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
     return TRUE;
 }
 
-// Create an process under the debugger.
-HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
-    MachineInfo machineInfo,
-    LPCWSTR lpApplicationName,
-    LPCWSTR lpCommandLine,
-    LPSECURITY_ATTRIBUTES lpProcessAttributes,
-    LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    BOOL bInheritHandles,
-    DWORD dwCreationFlags,
-    LPVOID lpEnvironment,
-    LPCWSTR lpCurrentDirectory,
-    LPSTARTUPINFOW lpStartupInfo,
-    LPPROCESS_INFORMATION lpProcessInformation)
-{
-    // INativeEventPipeline has a 1:1 relationship with CordbProcess.
-    _ASSERTE(!IsTransportRunning());
-
-    // We don't support interop-debugging on the Mac.
-    _ASSERTE(!(dwCreationFlags & (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS)));
-
-    // When we're using a transport we can't deal with creating a suspended process (we need the process to
-    // startup in order that it can start up a transport thread and reply to our messages).
-    _ASSERTE(!(dwCreationFlags & CREATE_SUSPENDED));
-
-    // Connect to the debugger proxy on the remote machine and ask it to create a process for us.
-    HRESULT hr  = E_FAIL;
-
-    m_pProxy = g_pDbgTransportTarget;
-    hr = m_pProxy->CreateProcess(lpApplicationName,
-                                 lpCommandLine,
-                                 lpProcessAttributes,
-                                 lpThreadAttributes,
-                                 bInheritHandles,
-                                 dwCreationFlags,
-                                 lpEnvironment,
-                                 lpCurrentDirectory,
-                                 lpStartupInfo,
-                                 lpProcessInformation);
-
-    if (SUCCEEDED(hr))
-    {
-        ProcessDescriptor processDescriptor = ProcessDescriptor::Create(lpProcessInformation->dwProcessId, NULL);
-
-        // Establish a connection to the actual runtime to be debugged.
-        hr = m_pProxy->GetTransportForProcess(&processDescriptor,
-                                              &m_pTransport,
-                                              &m_hProcess);
-        if (SUCCEEDED(hr))
-        {
-            // Wait for the connection to become usable (or time out).
-            if (!m_pTransport->WaitForSessionToOpen(10000))
-            {
-                hr = CORDBG_E_TIMEOUT;
-            }
-            else
-            {
-                if (!m_pTransport->UseAsDebugger(&m_ticket))
-                {
-                    hr = CORDBG_E_DEBUGGER_ALREADY_ATTACHED;
-                }
-            }
-        }
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        _ASSERTE((m_hProcess != NULL) && (m_hProcess != INVALID_HANDLE_VALUE));
-
-        m_dwProcessId = lpProcessInformation->dwProcessId;
-
-        // For Mac remote debugging, we don't actually have a process handle to hand back to the debugger.
-        // Instead, we return a handle to an event as the "process handle".  The Win32 event thread also waits
-        // on this event handle, and the event will be signaled when the proxy notifies us that the process
-        // on the remote machine is terminated.  However, normally the debugger calls CloseHandle() immediately
-        // on the "process handle" after CreateProcess() returns.  Doing so causes the Win32 event thread to
-        // continue waiting on a closed event handle, and so it will never wake up.
-        // (In fact, in Whidbey, we also duplicate the process handle in code:CordbProcess::Init.)
-        if (!DuplicateHandle(GetCurrentProcess(),
-                             m_hProcess,
-                             GetCurrentProcess(),
-                             &(lpProcessInformation->hProcess),
-                             0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                             FALSE,
-                             DUPLICATE_SAME_ACCESS))
-        {
-            hr = HRESULT_FROM_GetLastError();
-        }
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        m_fRunning = TRUE;
-    }
-    else
-    {
-        Dispose();
-    }
-
-    return hr;
-}
-
 // Attach the debugger to this process.
 HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor)
 {
@@ -291,7 +176,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const 
 
     HRESULT hr = E_FAIL;
 
-    m_pProxy = g_pDbgTransportTarget;
+    m_pProxy = &g_DbgTransportTarget;
 
     // Establish a connection to the actual runtime to be debugged.
     hr = m_pProxy->GetTransportForProcess(&processDescriptor, &m_pTransport, &m_hProcess);

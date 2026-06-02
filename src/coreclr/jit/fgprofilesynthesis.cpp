@@ -20,7 +20,8 @@
 // Returns:
 //   Suitable phase status
 //
-/* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
+// static
+PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
 {
     const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
     assert(dfsTree != nullptr);
@@ -70,7 +71,7 @@
             bool anyPathThrows = false;
             bool allPathsThrow = true;
 
-            for (BasicBlock* const succBlock : block->Succs(compiler))
+            for (BasicBlock* const succBlock : block->Succs())
             {
                 if (BitVecOps::IsMember(&traits, willThrow, succBlock->bbPostorderNum))
                 {
@@ -249,14 +250,23 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
-    // A simple check whether the current method has more than one edge.
-    m_comp->fgPgoSingleEdge = true;
-    for (BasicBlock* const block : m_comp->Blocks())
+    // If a method has just one edge, we simulate having PGO data for it since we typically
+    // don't instrument such methods. To avoid giving excessive inlining boost to large and/or
+    // infrequently executed methods, we apply the following heuristics to exclude:
+    //
+    const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    const bool isCctor      = (m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR;
+    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && (m_comp->opts.callInstrCount < 10);
+
+    if (m_comp->fgPgoSingleEdge)
     {
-        if (block->NumSucc() > 1)
+        for (BasicBlock* const block : m_comp->Blocks())
         {
-            m_comp->fgPgoSingleEdge = false;
-            break;
+            if (block->NumSucc() > 1)
+            {
+                m_comp->fgPgoSingleEdge = false;
+                break;
+            }
         }
     }
 
@@ -373,7 +383,7 @@ void ProfileSynthesis::AssignLikelihoods()
 // AssignLikelihoodJump: update edge likelihood for a block that always
 //   transfers control to its target block
 //
-// Arguments;
+// Arguments:
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
@@ -386,7 +396,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 // AssignLikelihoodCond: update edge likelihood for a block that
 //   ends in a conditional branch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_COND)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
@@ -509,14 +519,14 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 // AssignLikelihoodSwitch: update edge likelihood for a block that
 //   ends in a switch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_SWITCH)
 //
 void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
     // Assume each switch case is equally probable
     //
-    const unsigned n = block->NumSucc();
+    const unsigned n = block->GetSwitchTargets()->GetCaseCount();
     assert(n != 0);
 
     // Check for divide by zero to avoid compiler warnings for Release builds (above assert is removed)
@@ -524,7 +534,7 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 
     // Each unique edge gets some multiple of that basic probability
     //
-    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         succEdge->setLikelihood(p * succEdge->getDupCount());
     }
@@ -549,7 +559,7 @@ weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVecto
         likelihoods->clear();
     }
 
-    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         weight_t likelihood = succEdge->getLikelihood();
         if (likelihoods != nullptr)
@@ -660,8 +670,6 @@ void ProfileSynthesis::BlendLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
-
         switch (block->GetKind())
         {
             case BBJ_THROW:
@@ -730,7 +738,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 JITDUMP("Blending likelihoods in " FMT_BB " with blend factor " FMT_WT " \n", block->bbNum,
                         m_blendFactor);
                 iter = likelihoods.begin();
-                for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+                for (FlowEdge* const succEdge : block->SuccEdges())
                 {
                     weight_t newLikelihood = succEdge->getLikelihood();
                     weight_t oldLikelihood = *iter;
@@ -758,7 +766,7 @@ void ProfileSynthesis::ClearLikelihoods()
 {
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             succEdge->clearLikelihood();
         }
@@ -776,22 +784,25 @@ void ProfileSynthesis::ReverseLikelihoods()
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        SumOutgoingLikelihoods(block, &likelihoods);
+
+        if (likelihoods.size() < 2)
         {
-            weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+            continue;
+        }
 
-            if (likelihoods.size() < 2)
-            {
-                continue;
-            }
+        for (size_t i = 0; i < likelihoods.size() / 2; i++)
+        {
+            size_t   j     = likelihoods.size() - i - 1;
+            weight_t t     = likelihoods[i];
+            likelihoods[i] = likelihoods[j];
+            likelihoods[j] = t;
+        }
 
-            for (size_t i = 0; i < likelihoods.size() / 2; i++)
-            {
-                size_t   j     = likelihoods.size() - i - 1;
-                weight_t t     = likelihoods[i];
-                likelihoods[i] = likelihoods[j];
-                likelihoods[j] = t;
-            }
+        size_t k = 0;
+        for (FlowEdge* const succEdge : block->SuccEdges())
+        {
+            succEdge->setLikelihood(likelihoods[k++]);
         }
     }
 #endif // DEBUG
@@ -816,9 +827,9 @@ void ProfileSynthesis::RandomizeLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        unsigned const N = block->NumSucc(m_comp);
+        unsigned const N = block->NumSucc();
         likelihoods.clear();
-        likelihoods.reserve(N);
+        likelihoods.resize(N, 0);
 
         weight_t sum = 0;
         unsigned i   = 0;
@@ -833,7 +844,7 @@ void ProfileSynthesis::RandomizeLikelihoods()
         }
 
         i = 0;
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             succEdge->setLikelihood(likelihoods[i++] / sum);
         }
@@ -855,8 +866,11 @@ void ProfileSynthesis::ComputeCyclicProbabilities()
 }
 
 //------------------------------------------------------------------------
-// FindCyclicProbabilities: for a given loop, compute how much flow returns
+// ComputeCyclicProbabilities: for a given loop, compute how much flow returns
 //   to the loop head given one external count.
+//
+// Arguments:
+//   loop -- loop to compute cyclic probabilities for
 //
 void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {
@@ -917,7 +931,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 //
                 assert(m_cyclicProbabilities[nestedLoop->GetIndex()] != 0);
 
-                // Sum entry edges, multply by Cp
+                // Sum entry edges, multiply by Cp
                 //
                 weight_t newWeight = 0.0;
 
@@ -1348,7 +1362,7 @@ void ProfileSynthesis::GaussSeidelSolver()
         //
         // Likewise we can stop at the postorder num of the last block that is
         // part of any improper SCC, if we knew what that was,
-        // and ony run through the tail blocks on the last iteration.
+        // and only run through the tail blocks on the last iteration.
         //
         // (or more generally we can go SCC by SCC...)
         //

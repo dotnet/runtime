@@ -1,9 +1,10 @@
 # Build the native assets for the tests in the src/tests
 parameters:
   compiler: ''
+  extraBuildArgs: ''
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(nativeTestArtifactConfig) $(archType) $(crossArg) $(priorityArg) ${{ parameters.compiler }}
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(nativeTestArtifactConfig) $(archType) $(crossArg) $(priorityArg) ${{ parameters.extraBuildArgs }} ${{ parameters.compiler }}
     displayName: Build native test components
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

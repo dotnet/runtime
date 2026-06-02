@@ -10,25 +10,12 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public sealed class StressLogFactory : IContractFactory<IStressLog>
-{
-    public IStressLog CreateContract(Target target, int version)
-    {
-        return version switch
-        {
-            1 => new StressLog_1(target),
-            2 => new StressLog_2(target),
-            _ => default(StressLog),
-        };
-    }
-}
-
-file interface IStressMessageReader
+internal interface IStressMessageReader
 {
     StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset);
 }
 
-file sealed class StressLogTraversal(Target target, IStressMessageReader messageReader)
+internal sealed class StressLogTraversal(Target target, IStressMessageReader messageReader)
 {
     private bool StressLogChunkValid(Data.StressLogChunk chunk)
     {
@@ -112,13 +99,22 @@ file sealed class StressLogTraversal(Target target, IStressMessageReader message
             return new TargetPointer(stressLog.ModuleOffset.Value + formatOffset);
         }
 
-        TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+        TargetPointer? moduleTable;
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
+        {
+            if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+            {
+                throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+            }
+            Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+            moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+        }
         uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
         uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
         ulong cumulativeOffset = 0;
         for (uint i = 0; i < maxModules; ++i)
         {
-            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable + i * moduleEntrySize);
+            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable.Value + i * moduleEntrySize);
             ulong relativeOffset = formatOffset - cumulativeOffset;
             if (relativeOffset < module.Size.Value)
             {
@@ -268,7 +264,7 @@ file sealed class StressLogTraversal(Target target, IStressMessageReader message
     }
 }
 
-file sealed class SmallStressMessageReader(Target target) : IStressMessageReader
+internal sealed class SmallStressMessageReader(Target target) : IStressMessageReader
 {
     public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
     {
@@ -298,7 +294,7 @@ file sealed class SmallStressMessageReader(Target target) : IStressMessageReader
     }
 }
 
-file sealed class LargeStressMessageReader(Target target) : IStressMessageReader
+internal sealed class LargeStressMessageReader(Target target) : IStressMessageReader
 {
     public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
     {
@@ -335,7 +331,7 @@ file sealed class LargeStressMessageReader(Target target) : IStressMessageReader
     }
 }
 
-file sealed class StressLog_1(Target target) : IStressLog
+internal sealed class StressLog_1(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new SmallStressMessageReader(target));
 
@@ -348,7 +344,7 @@ file sealed class StressLog_1(Target target) : IStressLog
 }
 
 
-file sealed class StressLog_2(Target target) : IStressLog
+internal sealed class StressLog_2(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new LargeStressMessageReader(target));
 

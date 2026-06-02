@@ -16,10 +16,8 @@ namespace System.Runtime.Serialization
     internal class CodeObject
 #endif
     {
-        private IDictionary? _userData;
-
         public CodeObject() { }
 
-        public IDictionary UserData => _userData ??= new ListDictionary();
+        public IDictionary UserData => field ??= new ListDictionary();
     }
 }

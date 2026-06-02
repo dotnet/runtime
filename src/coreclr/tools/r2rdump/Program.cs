@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
@@ -211,6 +212,7 @@ namespace R2RDump
                     Machine.Arm64 => TargetArchitecture.ARM64,
                     Machine.LoongArch64 => TargetArchitecture.LoongArch64,
                     Machine.RiscV64 => TargetArchitecture.RiscV64,
+                    WasmMachine.Wasm32 => TargetArchitecture.Wasm32,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch
@@ -220,6 +222,7 @@ namespace R2RDump
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
@@ -395,6 +398,22 @@ namespace R2RDump
 
         public int Run()
         {
+            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly,
+                (string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) =>
+                {
+                    IntPtr libraryHandle = IntPtr.Zero;
+                    if (libraryName == "Microsoft.DiaSymReader.Native")
+                    {
+                        string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                        if (archSuffix == "x64")
+                        {
+                            archSuffix = "amd64";
+                        }
+                        libraryHandle = NativeLibrary.Load(libraryName + "." + archSuffix + ".dll", assembly, searchPath);
+                    }
+                    return libraryHandle;
+                });
+
             Disassembler disassembler = null;
             List<string> inputs = Get(_command.In);
             bool inlineSignatureBinary = Get(_command.InlineSignatureBinary);
@@ -499,9 +518,12 @@ namespace R2RDump
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RDumpRootCommand().UseVersion())
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+            new R2RDumpRootCommand().UseVersion()
+            .Parse(args,
+                new ParserConfiguration()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                })
+            .Invoke();
     }
 }

@@ -971,7 +971,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
             private readonly DiagnosticSourceEventSource _eventSource;
             private readonly string _propertyName;
-            private volatile PropertyFetch? _fetchForExpectedType;
+            private PropertyFetch? _fetchForExpectedType;
             #endregion
         }
 

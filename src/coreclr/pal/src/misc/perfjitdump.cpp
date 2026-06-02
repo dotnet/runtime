@@ -14,6 +14,7 @@
 #ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -246,7 +247,7 @@ exit:
         return 0;
     }
 
-    int LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+    int LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
     {
         int result = 0;
 
@@ -256,7 +257,9 @@ exit:
 
             JitCodeLoadRecord record;
 
-            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+            size_t reportedCodeSize = reportCodeBlock ? codeSize : 0;
+
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + reportedCodeSize;
 
             record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
@@ -268,14 +271,11 @@ exit:
                 // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
                 { &record, sizeof(JitCodeLoadRecord) },
                 { (void *)symbol, symbolLen + 1 },
-                { pCode, codeSize },
+                { pCode, reportedCodeSize },
             };
             size_t itemsCount = sizeof(items) / sizeof(items[0]);
 
             size_t itemsWritten = 0;
-
-            if (result != 0)
-                return FatalError();
 
             if (!enabled)
                 goto exit;
@@ -355,7 +355,7 @@ exit:
 
             result = close(fd);
 
-            if (result == -1)
+            if (result == -1 && errno != EINTR)
                 return FatalError();
 
             fd = -1;
@@ -389,9 +389,9 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
-    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo);
+    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo, reportCodeBlock);
 }
 
 int
@@ -419,7 +419,7 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
     return 0;
 }

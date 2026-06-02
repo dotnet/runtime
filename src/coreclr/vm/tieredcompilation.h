@@ -37,6 +37,8 @@ public:
 public:
     static NativeCodeVersion::OptimizationTier GetInitialOptimizationTier(PTR_MethodDesc pMethodDesc);
 
+    bool IsTieringDelayActive();
+
 #ifdef FEATURE_TIERED_COMPILATION
 
 public:
@@ -66,7 +68,6 @@ private:
     bool TryDeactivateTieringDelay();
 
 public:
-    bool IsTieringDelayActive();
     void AsyncCompleteCallCounting();
 
 private:
@@ -76,7 +77,7 @@ private:
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
     HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
-    
+
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
@@ -127,7 +128,9 @@ private:
 #endif // !DACCESS_COMPILE
 
 private:
-    SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
+    typedef SListTail<SListElem<NativeCodeVersion>> OptimizationQueue;
+
+    OptimizationQueue m_methodsToOptimize;
     UINT32 m_countOfMethodsToOptimize;
     UINT32 m_countOfNewMethodsCalledDuringDelay;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;

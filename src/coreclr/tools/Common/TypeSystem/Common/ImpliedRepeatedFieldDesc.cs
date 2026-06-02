@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Internal.TypeSystem
 {
     public sealed partial class ImpliedRepeatedFieldDesc : FieldDesc
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
-        public ImpliedRepeatedFieldDesc(DefType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
+        public ImpliedRepeatedFieldDesc(MetadataType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
         {
             OwningType = owningType;
             _underlyingFieldDesc = underlyingFieldDesc;
             FieldIndex = fieldIndex;
         }
 
-        public override DefType OwningType { get; }
+        public override MetadataType OwningType { get; }
 
         public override TypeDesc FieldType => _underlyingFieldDesc.FieldType;
 
@@ -40,6 +42,6 @@ namespace Internal.TypeSystem
 
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
 
-        public override string Name => $"{_underlyingFieldDesc.Name}[{FieldIndex}]";
+        public override ReadOnlySpan<byte> Name => System.Text.Encoding.UTF8.GetBytes($"{_underlyingFieldDesc.GetName()}[{FieldIndex}]");
     }
 }

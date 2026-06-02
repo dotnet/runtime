@@ -3,9 +3,12 @@
     <TargetFramework>netX.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+<!--#if (!UseMonoRuntime) -->
+    <UseMonoRuntime>false</UseMonoRuntime>
+<!--#endif -->
   </PropertyGroup>
 
   <ItemGroup>
-    <StaticWebAssetFingerprintPattern Include="JS" Pattern="*.js" />
+    <StaticWebAssetFingerprintPattern Include="JS" Pattern="*.js" Expression="#[.{fingerprint}]!" />
   </ItemGroup>
 </Project>

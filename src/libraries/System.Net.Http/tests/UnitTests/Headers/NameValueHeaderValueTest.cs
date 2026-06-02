@@ -44,7 +44,7 @@ namespace System.Net.Http.Tests
         [InlineData("host", "server.example.com:80")]
         [InlineData("quoted", "\"value\"")]
         [InlineData("empty", "")]
-        public void Ctor_NameValidFormat_SuccessfullyCreated(string name, string value)
+        public void Ctor_NameValidFormat_SuccessfullyCreated(string name, string? value)
         {
             NameValueHeaderValue nameValue = new NameValueHeaderValue(name, value);
             Assert.Equal(name, nameValue.Name);

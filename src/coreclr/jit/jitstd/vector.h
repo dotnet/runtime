@@ -218,6 +218,8 @@ public:
 
     T* data() { return m_pArray; }
 
+    const T* data() const { return m_pArray; }
+
     void swap(vector<T, Allocator>& vec);
 
 private:

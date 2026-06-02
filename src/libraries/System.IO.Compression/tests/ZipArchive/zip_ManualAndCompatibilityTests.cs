@@ -10,8 +10,6 @@ namespace System.IO.Compression.Tests
 {
     public class zip_ManualAndCompatibilityTests : ZipFileTestBase
     {
-        public static bool IsUsingNewPathNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
-
         public static IEnumerable<object[]> Get_CompatibilityTests_Data()
         {
             foreach (bool async in _bools)
@@ -67,7 +65,7 @@ namespace System.IO.Compression.Tests
         /// For example, the file "aa\bb\cc\dd" in a zip created on Unix should be one file "aa\bb\cc\dd" whereas the same file
         /// in a zip created on Windows should be interpreted as the file "dd" underneath three subdirectories.
         /// </summary>
-        [ConditionalTheory(nameof(IsUsingNewPathNormalization))]
+        [Theory]
         [InlineData("backslashes_FromUnix.zip", "aa\\bb\\cc\\dd")]
         [InlineData("backslashes_FromWindows.zip", "dd")]
         [InlineData("WindowsInvalid_FromUnix.zip", "aa<b>d")]

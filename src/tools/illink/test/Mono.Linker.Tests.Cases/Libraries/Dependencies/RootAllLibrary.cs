@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 #if RootAllLibrary
-[assembly: TypeForwardedTo (typeof (RootAllLibrary_ExportedType))]
+[assembly: TypeForwardedTo(typeof(RootAllLibrary_ExportedType))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Libraries.Dependencies

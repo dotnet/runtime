@@ -32,10 +32,16 @@ internal sealed class DacStreams_1 : IDacStreams
     public string? StringFromEEAddress(TargetPointer address)
     {
         // We use the data subsystem to handle caching results from processing this data
-        var dictionary = _target.ProcessedData.GetOrAdd<DacStreams_1_Data>(0).EEObjectToString;
-
-        dictionary.TryGetValue(address, out string? result);
-        return result;
+        try
+        {
+            var dictionary = _target.ProcessedData.GetOrAdd<DacStreams_1_Data>(0).EEObjectToString;
+            dictionary.TryGetValue(address, out string? result);
+            return result;
+        }
+        catch (VirtualReadException)
+        {
+            return null;
+        }
     }
 
     internal sealed class DacStreams_1_Data : IData<DacStreams_1_Data>

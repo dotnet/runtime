@@ -726,6 +726,16 @@ namespace System
             return BitOperations.LeadingZeroCount(value._upper);
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static Int128 Log10(Int128 value)
+        {
+            if (IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (Int128)UInt128.Log10((UInt128)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static Int128 PopCount(Int128 value)
             => ulong.PopCount(value._lower) + ulong.PopCount(value._upper);
@@ -793,19 +803,10 @@ namespace System
                     }
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= Size)
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - Size);
-
                     // We have at least 16 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadInt128BigEndian(source.Slice(source.Length - Size));
                 }
                 else
                 {
@@ -816,7 +817,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
 
                     if (!isUnsigned)
@@ -875,17 +876,10 @@ namespace System
                     }
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= Size)
                 {
                     // We have at least 16 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadInt128LittleEndian(source);
                 }
                 else
                 {
@@ -898,7 +892,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
 
                     result <<= ((Size - source.Length) * 8);
@@ -1180,7 +1174,12 @@ namespace System
             return lower;
         }
 
-        internal static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
         {
             // This follows the same logic as is used in `long Math.BigMul(long, long, out long)`
 

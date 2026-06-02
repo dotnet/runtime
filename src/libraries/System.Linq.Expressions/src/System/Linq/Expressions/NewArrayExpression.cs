@@ -165,10 +165,7 @@ namespace System.Linq.Expressions
                         }
                     }
                 }
-                if (newList != null)
-                {
-                    newList[i] = expr;
-                }
+                newList?[i] = expr;
             }
             if (newList != null)
             {

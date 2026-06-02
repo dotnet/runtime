@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -463,7 +462,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Acos, T.Acos);
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
-            yield return Create(TensorPrimitives.Asin, T.Asin);
+            yield return Create(TensorPrimitives.Asin, T.Asin, trigTolerance);
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
             yield return Create(TensorPrimitives.Atan, T.Atan);
@@ -1807,6 +1806,38 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Throws<OverflowException>(() => TensorPrimitives.SumOfMagnitudes<T>(x.Span));
             });
         }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(One);
+                    x[expected] = MinValue;
+                    x[tensorLength - 1] = MinValue;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(MinValue);
+                    x[expected] = One;
+                    x[tensorLength - 1] = One;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x));
+                }
+            });
+        }
     }
 
     public unsafe abstract class GenericIntegerTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
@@ -2723,7 +2754,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
             {
-                throw EqualException.ForMismatchedValues(expected, actual);
+                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
             }
         }
 

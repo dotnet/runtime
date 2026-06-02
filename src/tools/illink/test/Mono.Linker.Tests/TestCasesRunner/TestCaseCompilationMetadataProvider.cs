@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -127,7 +128,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             string runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
             string ncaVersion = Path.GetFileName(runtimeDir);
             var dotnetDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(runtimeDir)));
-            string candidatePath = Path.Combine(dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+            string candidatePath = Path.Combine(dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TargetFramework);
             if (Directory.Exists(candidatePath))
                 return candidatePath;
 
@@ -144,11 +145,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (candidatePath == null)
                 throw new InvalidOperationException($"Could not determine ref pack path. Based on runtime directory {runtimeDir}.");
 
-            candidatePath = Path.Combine(candidatePath, "ref", PathUtilities.TFMDirectoryName);
+            candidatePath = Path.Combine(candidatePath, "ref", PathUtilities.TargetFramework);
             if (Directory.Exists(candidatePath))
                 return candidatePath;
 
             throw new InvalidOperationException($"Could not determine ref pack path. Computed path {candidatePath} doesn't exist.");
+        }
+
+        public virtual IEnumerable<NPath> GetCommonSourceFiles()
+        {
+            yield return PathUtilities.GetMonoLinkerTestsExpectationsDirectory().ToNPath()
+                .Combine("Support")
+                .Combine("DynamicallyAccessedMembersAttribute.cs");
+
+            var sharedDir = PathUtilities.GetILLinkSharedDirectory().ToNPath();
+            yield return sharedDir.Combine("RequiresDynamicCodeAttribute.cs");
+            yield return sharedDir.Combine("RequiresUnreferencedCodeAttribute.cs");
         }
 
         public virtual IEnumerable<string> GetCommonReferencedAssemblies(NPath workingDirectory)
@@ -243,6 +255,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return _testCaseTypeDefinition.CustomAttributes
                 .Where(attr => attr.AttributeType.Name == nameof(SetupCompileAfterAttribute))
                 .Select(CreateSetupCompileAssemblyInfo);
+        }
+
+        public bool GetGenerateTargetFrameworkAttribute()
+        {
+            return GetOptionAttributeValue(nameof(GenerateTargetFrameworkAttribute), true);
         }
 
         private SetupCompileInfo CreateSetupCompileAssemblyInfo(CustomAttribute attribute)

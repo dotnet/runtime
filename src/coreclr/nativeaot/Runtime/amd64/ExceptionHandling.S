@@ -80,6 +80,24 @@ NESTED_END RhpThrowHwEx, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  RDI:  exception object
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LEAF_ENTRY RhpThrowExact, _TEXT
+
+        mov     r8d, 4                  // r8d = ExKind.RethrowFlag
+        jmp     C_FUNC(RhpThrowImpl)
+
+LEAF_END RhpThrowExact, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // RhpThrowEx
 //
 // INPUT:  RDI:  exception object
@@ -87,7 +105,14 @@ NESTED_END RhpThrowHwEx, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowEx, _TEXT
+
+        mov     r8d, 1                  // r8d = ExKind.Throw
+        jmp     C_FUNC(RhpThrowImpl)
+
+LEAF_END RhpThrowEx, _TEXT
+
+NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -136,7 +161,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
         mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
         mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], 1        // ExKind.Throw
+        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r8b      // ExKind (from r8b)
 
         // link the ExInfo into the thread's ExInfo chain
         mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
@@ -151,12 +176,12 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY RhpThrowImpl2
 
         // no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

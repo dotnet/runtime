@@ -98,4 +98,3 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
 }
 
 #pragma warning restore SYSLIB0050 // Type or member is obsolete
-

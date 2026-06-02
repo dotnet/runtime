@@ -95,6 +95,24 @@ static IEnumerable<int> TestLocalVariable ()
 }
 ```
 
+## Attribute propagation via CompilerLoweringPreserveAttribute
+
+To address the challenges of propagating user-authored attributes to compiler-generated code, .NET 10 introduced a general mechanism: `[CompilerLoweringPreserveAttribute]`. This attribute can be applied to other attribute types to instruct compilers to propagate those attributes to compiler-generated code.
+
+`DynamicallyAccessedMembersAttribute` is now marked with `[CompilerLoweringPreserve]`, so when the compiler generates new fields or type parameters (such as for local functions, iterator/async state machines, or primary constructor parameters), the relevant `DynamicallyAccessedMembers` annotations are automatically applied to the generated members. This allows trimming tools to directly use the annotations present in the generated code, without needing to reverse-engineer the mapping to user code.
+
+### .NET 10 and later
+
+For .NET 10 and later, trimming tools should rely on the compiler to propagate attributes such as `DynamicallyAccessedMembersAttribute` to all relevant compiler-generated code, as indicated by `[CompilerLoweringPreserve]`. No heuristics are needed for these assemblies. This isn't perfect because it's possible for such assemblies to be compiled with new Roslyn versions that could use different lowering strategies, so it's possible that the existing heuristics will break for new releases of a pre-`net10.0` assembly.
+
+To mitigate this there are a few options:
+
+1. Multitarget the library to `net10.0` (so that it is built with the new `CompilerLoweringPreserve` behavior and will avoid the heuristics)
+2. Fix the heuristics to work for code produced by new Roslyn versions
+3. The trimming tools could detect the presence of a polyfilled `DynamicallyAccessedMembersAttribute` type with `CompilerLoweringPreserve`. When present this would turn off the heuristics for the containing assembly.
+
+Another issue is that .NET 10 libraries might be built with `<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>`, and the tooling would not be able to detect the TargetFramework. Aside from setting `<GenerateTargetFrameworkAttribute>true</GenerateTargetFrameworkAttribute>`, mitigations 1. and 2. above would also apply to this scenario.
+
 ### Compiler dependent behavior
 
 Since the problems are all caused by compiler generated code, the behaviors depend on the specific compiler in use. The main focus of this document is the Roslyn C# compiler right now. Mainly since it's by far the most used compiler for .NET code. That said, we would like to design the solution in such a way that other compilers using similar patterns could also benefit from it.
@@ -560,9 +578,9 @@ and fields on the closure types.
 ### Long term solution
 
 Detecting which compiler generated items are used by any given user method is currently relatively tricky.
-There's no definitive marker in the IL which would let the trimmer confidently determine this information.
-Good long term solution will need the compilers to produce some kind of marker in the IL so that
-static analysis tools can reliably detect all of the compiler generated items.
+There's no definitive marker in the IL which would let the trimmer confidently determine this information
+for all of the above cases. Good long term solution will need the compilers to produce some kind of marker
+in the IL so that static analysis tools can reliably detect all of the compiler generated items.
 
 This ask can be described as:
 For a given user method, ability to determine all of the items (methods, fields, types, IL code) which were
@@ -572,6 +590,10 @@ This should be things which are directly generated from the user's code. It shou
 helpers and other infrastructure which may be needed but is not directly attributable to a user code.
 
 This should be enough to implement solutions for both suppression propagation and data flow analysis.
+
+For `DynamicallyAccessedMembersAttribute`, we have a long-term solution that relies on the
+`[CompilerLoweringPreserve]` attribute, which tells Roslyn to propagate `DynamicallyAccessedMembers`
+annotations to compiler-generated code.
 
 ### Possible short term solution
 

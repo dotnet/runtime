@@ -17,6 +17,11 @@ namespace ForegroundGC
         static int size = 30;
         static int Main(string[] args)
         {
+            if (TestLibrary.Utilities.IsX86)
+            {
+                return 100;
+            }
+
             if (args.Length > 0)
             {
                 if ((args[0].CompareTo("-?") == 0) || (args[0].CompareTo("/?") == 0))
@@ -38,18 +43,18 @@ namespace ForegroundGC
             List<byte[]> List1 = new List<byte[]>();
             List<byte[]> List2 = new List<byte[]>();
             long AllocCount = 0;  //bytes allocated
-            
+
             while (AllocCount < maxAlloc)
             {
                 byte[] b = new byte[size];
                 AllocCount += size;
                 List1.Add(b);
-               
+
 
                 byte[] b2 = new byte[size];
                 AllocCount += size;
                 List2.Add(b2);
-               
+
             }
             Thread t = new Thread(AllocateTemp);
             t.Start();
@@ -70,12 +75,12 @@ namespace ForegroundGC
                     List2.RemoveAt(i);
                 }
             }
-          
-            lock(_lock) 
+
+            lock(_lock)
             {
                 done = true;
             }
-            
+
             t.Join();
             Console.WriteLine("List count=" + List1.Count);
 

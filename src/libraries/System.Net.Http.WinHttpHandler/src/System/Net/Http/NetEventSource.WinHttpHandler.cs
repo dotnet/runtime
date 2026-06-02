@@ -6,5 +6,7 @@ using System.Diagnostics.Tracing;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http.WinHttpHandler")]
-    internal sealed partial class NetEventSource { }
+    internal sealed partial class NetEventSource
+    {
+    }
 }

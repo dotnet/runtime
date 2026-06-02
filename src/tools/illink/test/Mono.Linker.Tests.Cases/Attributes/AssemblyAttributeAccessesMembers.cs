@@ -57,8 +57,8 @@ namespace Mono.Linker.Tests.Cases.Attributes
     {
         [Kept]
         public AccessesMembersAttribute(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type)
         {
         }

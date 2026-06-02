@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -1374,11 +1374,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
             static AnnotatedBase GetInstance() => new Derived();
 
             [Kept]
+            static AnnotatedBase GetDerivedWithInterfaceInstance() => new DerivedWithInterface();
+
+            [Kept]
             public static void Test()
             {
                 Type t = GetInstance().GetType();
                 t.RequiresAll();
-                var t2 = typeof(DerivedWithInterface);
+                var t2 = GetDerivedWithInterfaceInstance().GetType();
             }
         }
 
@@ -1530,7 +1533,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             }
 
             [Kept]
-            [UnexpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+            [UnexpectedWarning("IL2072", Tool.All, "https://github.com/dotnet/runtime/issues/93720")]
             static void TestIsInstOf(object o)
             {
                 if (o is Target t)
@@ -1540,7 +1543,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             }
 
             [Kept]
-            [ExpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+            [ExpectedWarning("IL2072", Tool.All, "https://github.com/dotnet/runtime/issues/93720")]
             static void TestIsInstOfMismatch(object o)
             {
                 if (o is Target t)

@@ -13,9 +13,6 @@ internal sealed class NoSyncCallsStream : Stream
 
     public NoSyncCallsStream(Stream stream) => _s = stream;
 
-    // Allows temporarily disabling the current stream's sync API usage restriction.
-    public bool IsRestrictionEnabled { get; set; }
-
     public override bool CanRead => _s.CanRead;
     public override bool CanSeek => _s.CanSeek;
     public override bool CanTimeout => _s.CanTimeout;
@@ -33,105 +30,18 @@ internal sealed class NoSyncCallsStream : Stream
     public override string? ToString() => _s.ToString();
 
     // Sync
-    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.BeginRead(buffer, offset, count, callback, state);
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.BeginRead(buffer, offset, count, callback, state);
-    public override void CopyTo(Stream destination, int bufferSize)
-    {
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.CopyTo(destination, bufferSize);
-        }
-    }
-    protected override void Dispose(bool disposing)
-    {
-        // _disposing = true;
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.Dispose();
-        }
-    }
-    public override int EndRead(IAsyncResult asyncResult) => IsRestrictionEnabled ? throw new InvalidOperationException() : _s.EndRead(asyncResult);
-    public override void EndWrite(IAsyncResult asyncResult)
-    {
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.EndWrite(asyncResult);
-        }
-    }
-    public override void Flush()
-    {
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.Flush();
-        }
-    }
-    public override int Read(byte[] buffer, int offset, int count) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.Read(buffer, offset, count);
-    public override int Read(Span<byte> buffer) =>
-        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.Read(buffer);
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        bool isDeflateStream = false;
-
-        // Get the stack trace to determine the calling method
-        var stackTrace = new System.Diagnostics.StackTrace();
-        var callingMethod = stackTrace.GetFrame(1)?.GetMethod();
-
-        // Check if the calling method belongs to the DeflateStream class
-        if (callingMethod?.DeclaringType == typeof(System.IO.Compression.DeflateStream))
-        {
-            isDeflateStream = true;
-        }
-
-        if (!isDeflateStream && IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException($"Parent class is {callingMethod.DeclaringType}");
-        }
-        else
-        {
-            _s.Write(buffer, offset, count);
-        }
-    }
-    public override void Write(ReadOnlySpan<byte> buffer)
-    {
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.Write(buffer);
-        }
-    }
-    public override void WriteByte(byte value)
-    {
-        if (IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException();
-        }
-        else
-        {
-            _s.WriteByte(value);
-        }
-    }
+    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => throw new InvalidOperationException();
+    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => throw new InvalidOperationException();
+    public override void CopyTo(Stream destination, int bufferSize) => throw new InvalidOperationException();
+    protected override void Dispose(bool disposing) => throw new InvalidOperationException();
+    public override int EndRead(IAsyncResult asyncResult) => throw new InvalidOperationException();
+    public override void EndWrite(IAsyncResult asyncResult) => throw new InvalidOperationException();
+    public override void Flush() => throw new InvalidOperationException();
+    public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
+    public override int Read(Span<byte> buffer) => throw new InvalidOperationException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
+    public override void Write(ReadOnlySpan<byte> buffer) => throw new InvalidOperationException();
+    public override void WriteByte(byte value) => throw new InvalidOperationException();
 
     // Async
     public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _s.CopyToAsync(destination, bufferSize, cancellationToken);

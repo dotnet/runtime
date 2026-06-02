@@ -73,9 +73,9 @@ namespace ILCompiler
                 if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
                     continue;
 
-                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis")
+                if (featureType.Namespace.SequenceEqual("System.Diagnostics.CodeAnalysis"u8))
                 {
-                    switch (featureType.Name)
+                    switch (featureType.GetName())
                     {
                         case "RequiresAssemblyFilesAttribute":
                         case "RequiresUnreferencedCodeAttribute":
@@ -134,8 +134,8 @@ namespace ILCompiler
 
         internal string GetResourceStringForAccessor(EcmaMethod method)
         {
-            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
-            string resourceStringName = method.Name.Substring(4);
+            Debug.Assert(method.Name.StartsWith("get_"u8));
+            string resourceStringName = System.Text.Encoding.UTF8.GetString(method.Name.Slice(4));
 
             Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
             if (dict != null

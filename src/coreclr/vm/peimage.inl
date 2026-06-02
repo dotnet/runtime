@@ -165,11 +165,18 @@ inline BOOL PEImage::HasLoadedLayout()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+    return m_pLayouts[IMAGE_FLAT]!=NULL;
+#else
     return m_pLayouts[IMAGE_LOADED]!=NULL;
+#endif
 }
 
 inline PTR_PEImageLayout PEImage::GetLoadedLayout()
 {
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+    return GetFlatLayout();
+#endif
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
@@ -214,6 +221,12 @@ inline BOOL PEImage::IsReferenceAssembly()
     return FALSE;
 }
 
+
+inline BOOL PEImage::HasHeaders()
+{
+    WRAPPER_NO_CONTRACT;
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasHeaders();
+}
 
 inline BOOL PEImage::HasNTHeaders()
 {
@@ -343,7 +356,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     {
         PEImageHolder pImage(new PEImage{pPath});
         pImage->Init(probeExtensionResult);
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     CrstHolder holder(&s_hashLock);
@@ -361,7 +374,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         pImage->Init(probeExtensionResult);
 
         pImage->AddToHashMap();
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     found->AddRef();

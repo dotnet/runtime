@@ -3,24 +3,25 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RangeSectionFragment : IData<RangeSectionFragment>
+[CdacType(nameof(DataType.RangeSectionFragment))]
+internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
 {
-    static RangeSectionFragment IData<RangeSectionFragment>.Create(Target target, TargetPointer address)
-        => new RangeSectionFragment(target, address);
+    [Field] public TargetPointer RangeBegin { get; }
+    [Field] public TargetPointer RangeEndOpen { get; }
+    [Field] public TargetPointer RangeSection { get; }
 
-    public RangeSectionFragment(Target target, TargetPointer address)
+    /// <summary>
+    /// The Next pointer uses the low bit as a collectible flag
+    /// (see <c>RangeSectionFragmentPointer</c> in codeman.h).
+    /// The OnInit handler strips it to get the actual address.
+    /// </summary>
+    public TargetPointer Next { get; private set; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
-        RangeBegin = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeBegin)].Offset);
-        RangeEndOpen = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeEndOpen)].Offset);
-        RangeSection = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeSection)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
     }
-
-    public TargetPointer RangeBegin { get; init; }
-    public TargetPointer RangeEndOpen { get; init; }
-    public TargetPointer RangeSection { get; init; }
-    public TargetPointer Next { get; init; }
 
     public bool Contains(TargetCodePointer address)
         => RangeBegin <= address && address < RangeEndOpen;

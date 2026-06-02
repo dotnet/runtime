@@ -21,24 +21,24 @@ namespace ILCompiler
         private PropertyDefinition Definition => _type.MetadataReader.GetPropertyDefinition(_handle);
 
         public PropertySignature Signature =>
-            new EcmaSignatureParser(_type.EcmaModule, _type.MetadataReader.GetBlobReader(Definition.Signature), NotFoundBehavior.Throw)
+            new EcmaSignatureParser(_type.Module, _type.MetadataReader.GetBlobReader(Definition.Signature), NotFoundBehavior.Throw)
             .ParsePropertySignature();
 
-        public MethodDesc GetMethod
+        public EcmaMethod GetMethod
         {
             get
             {
                 MethodDefinitionHandle getter = Definition.GetAccessors().Getter;
-                return getter.IsNil ? null : _type.EcmaModule.GetMethod(getter);
+                return getter.IsNil ? null : _type.Module.GetMethod(getter);
             }
         }
 
-        public MethodDesc SetMethod
+        public EcmaMethod SetMethod
         {
             get
             {
                 MethodDefinitionHandle setter = Definition.GetAccessors().Setter;
-                return setter.IsNil ? null : _type.EcmaModule.GetMethod(setter);
+                return setter.IsNil ? null : _type.Module.GetMethod(setter);
             }
         }
 
@@ -50,7 +50,7 @@ namespace ILCompiler
             }
         }
 
-        public MetadataType OwningType
+        public EcmaType OwningType
         {
             get
             {
@@ -85,6 +85,8 @@ namespace ILCompiler
         public override bool Equals(object obj) => obj is not PropertyPseudoDesc property ? false : this == property;
 
         public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
+
+        public override string ToString() => $"{_type}.{Name}";
 
         public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b) => a._type == b._type && a._handle == b._handle;
 

@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// <code>^(?&lt;proto&gt;\w+)://[^/]+?(?&lt;port&gt;:\d+)?/</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
@@ -367,25 +367,8 @@ namespace System.Text.RegularExpressions.Tests
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static bool IsWordChar(char ch)
                         {
-                            // Mask of Unicode categories that combine to form [\w]
-                            const int WordCategoriesMask =
-                                1 << (int)UnicodeCategory.UppercaseLetter |
-                                1 << (int)UnicodeCategory.LowercaseLetter |
-                                1 << (int)UnicodeCategory.TitlecaseLetter |
-                                1 << (int)UnicodeCategory.ModifierLetter |
-                                1 << (int)UnicodeCategory.OtherLetter |
-                                1 << (int)UnicodeCategory.NonSpacingMark |
-                                1 << (int)UnicodeCategory.DecimalDigitNumber |
-                                1 << (int)UnicodeCategory.ConnectorPunctuation;
-
-                            // Bitmap for whether each character 0 through 127 is in [\w]
-                            ReadOnlySpan<byte> ascii = new byte[]
-                            {
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-                            };
-
                             // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
+                            ReadOnlySpan<byte> ascii = WordCharBitmap;
                             int chDiv8 = ch >> 3;
                             return (uint)chDiv8 < (uint)ascii.Length ?
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
@@ -454,6 +437,24 @@ namespace System.Text.RegularExpressions.Tests
                             }
                             return actual;
                         }
+
+                        /// <summary>Provides a mask of Unicode categories that combine to form [\w].</summary>
+                        private const int WordCategoriesMask =
+                            1 << (int)UnicodeCategory.UppercaseLetter |
+                            1 << (int)UnicodeCategory.LowercaseLetter |
+                            1 << (int)UnicodeCategory.TitlecaseLetter |
+                            1 << (int)UnicodeCategory.ModifierLetter |
+                            1 << (int)UnicodeCategory.OtherLetter |
+                            1 << (int)UnicodeCategory.NonSpacingMark |
+                            1 << (int)UnicodeCategory.DecimalDigitNumber |
+                            1 << (int)UnicodeCategory.ConnectorPunctuation;
+
+                        /// <summary>Gets a bitmap for whether each character 0 through 127 is in [\w]</summary>
+                        private static ReadOnlySpan<byte> WordCharBitmap => new byte[]
+                        {
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+                            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+                        };
                     }
                 }
                 """
@@ -481,7 +482,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// <code>href\s*=\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\s]+))</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
@@ -789,7 +790,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// <code>[A-Za-z]+</code><br/>
                     /// Explanation:<br/>
                     /// <code>
-                    /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
+                    /// ○ Match an ASCII letter atomically at least once.<br/>
                     /// </code>
                     /// </remarks>
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
@@ -863,7 +864,7 @@ namespace System.Text.RegularExpressions.Tests
                                     // Empty matches aren't possible.
                                     if ((uint)pos < (uint)inputSpan.Length)
                                     {
-                                        // The pattern begins with a character in the set [A-Za-z].
+                                        // The pattern begins with an ASCII letter.
                                         // Find the next occurrence. If it can't be found, there's no match.
                                         int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_asciiLetters);
                                         if (i >= 0)
@@ -887,7 +888,7 @@ namespace System.Text.RegularExpressions.Tests
                                     int matchStart = pos;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
 
-                                    // Match a character in the set [A-Za-z] atomically at least once.
+                                    // Match an ASCII letter atomically at least once.
                                     {
                                         int iteration = slice.IndexOfAnyExcept(Utilities.s_asciiLetters);
                                         if (iteration < 0)
@@ -1130,6 +1131,67 @@ namespace System.Text.RegularExpressions.Tests
                 }
                 """
             };
+        }
+
+        [Fact]
+        public async Task Pattern_Should_Not_Be_Double_Escaped_In_Documentation()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"\.")]
+                    public static partial Regex DotPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should show \. (single backslash) not \\. (double backslash) in the documentation
+            Assert.Contains("/// <code>\\.</code><br/>", actual);
+            Assert.DoesNotContain("/// <code>\\\\.</code><br/>", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Control_Characters_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("a\0b")]
+                    public static partial Regex NullCharPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape null characters as Unicode escape sequences for XML safety in the documentation
+            Assert.Contains("/// <code>a\\u0000b</code><br/>", actual);
+            
+            // The actual pattern string (base.pattern assignment) should properly escape the null character for C#
+            Assert.Contains("base.pattern = \"a\\0b\";", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Newline_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("\n")]
+                    public static partial Regex NewlinePattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape newline as Unicode escape sequence to avoid breaking XML comments
+            Assert.Contains("/// <code>\\u000A</code><br/>", actual);
+            
+            // The actual pattern string should properly escape the newline for C#
+            Assert.Contains("base.pattern = \"\\n\";", actual);
         }
     }
 }

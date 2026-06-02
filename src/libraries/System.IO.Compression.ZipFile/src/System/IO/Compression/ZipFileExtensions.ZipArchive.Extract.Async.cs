@@ -36,6 +36,7 @@ public static partial class ZipFileExtensions
     /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, overwriteFiles: false, cancellationToken);
 
@@ -68,6 +69,7 @@ public static partial class ZipFileExtensions
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="overwriteFiles">True to indicate overwrite.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

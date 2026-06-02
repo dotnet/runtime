@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.Unicode;
 using static System.Buffers.StringSearchValuesHelper;
 
 namespace System.Buffers
@@ -143,9 +144,9 @@ namespace System.Buffers
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                if (ContainsIncompleteSurrogatePairs(values))
+                if (ContainsInvalidValues(values))
                 {
-                    // Aho-Corasick can't deal with the matching semantics of standalone surrogate code units.
+                    // Aho-Corasick can't deal with the matching semantics of invalid values.
                     // We will use a slow but correct O(n * m) fallback implementation.
                     return new MultiStringIgnoreCaseSearchValuesFallback(uniqueValues);
                 }
@@ -417,27 +418,49 @@ namespace System.Buffers
         {
             if (!ignoreCase)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseSensitive>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseSensitive>(value, uniqueValues);
             }
 
             if (asciiLettersOnly)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(value, uniqueValues);
             }
 
             if (allAscii)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAscii>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveAscii>(value, uniqueValues);
             }
 
             // SingleStringSearchValuesThreeChars doesn't have logic to handle non-ASCII case conversion, so we require that anchor characters are ASCII.
             // Right now we're always selecting the first character as one of the anchors, and we need at least two.
             if (char.IsAscii(value[0]) && value.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(uniqueValues, value);
+                return CreateSingleValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(value, uniqueValues);
             }
 
             return null;
+        }
+
+        private static SearchValues<string> CreateSingleValuesThreeChars<TValueLength, TCaseSensitivity>(
+            string value,
+            HashSet<string>? uniqueValues)
+            where TValueLength : struct, IValueLength
+            where TCaseSensitivity : struct, ICaseSensitivity
+        {
+            CharacterFrequencyHelper.GetSingleStringMultiCharacterOffsets(value, ignoreCase: typeof(TCaseSensitivity) != typeof(CaseSensitive), out int ch2Offset, out int ch3Offset);
+
+            if (CanUsePackedImpl(value[0]) && CanUsePackedImpl(value[ch2Offset]) && CanUsePackedImpl(value[ch3Offset]))
+            {
+                return new SingleStringSearchValuesPackedThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
+            }
+
+            return new SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
+
+            // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
+            // We use PackUnsignedSaturate on X86 and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86).
+            static bool CanUsePackedImpl(char c) =>
+                PackedSpanHelpers.PackedIndexOfIsSupported ? PackedSpanHelpers.CanUsePackedIndexOf(c) :
+                (AdvSimd.Arm64.IsSupported && c <= byte.MaxValue);
         }
 
         private static void AnalyzeValues(
@@ -480,33 +503,13 @@ namespace System.Buffers
             }
         }
 
-        private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
+        private static bool ContainsInvalidValues(ReadOnlySpan<string> values)
         {
             foreach (string value in values)
             {
-                int i = value.AsSpan().IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
-                if (i < 0)
+                if (!Utf16.IsValid(value))
                 {
-                    continue;
-                }
-
-                for (; (uint)i < (uint)value.Length; i++)
-                {
-                    if (char.IsHighSurrogate(value[i]))
-                    {
-                        if ((uint)(i + 1) >= (uint)value.Length || !char.IsLowSurrogate(value[i + 1]))
-                        {
-                            // High surrogate not followed by a low surrogate.
-                            return true;
-                        }
-
-                        i++;
-                    }
-                    else if (char.IsLowSurrogate(value[i]))
-                    {
-                        // Low surrogate not preceded by a high surrogate.
-                        return true;
-                    }
+                    return true;
                 }
             }
 

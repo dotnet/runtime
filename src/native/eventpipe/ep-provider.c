@@ -35,12 +35,16 @@ provider_prepare_callback_data (
 // _Requires_lock_held (ep)
 static
 void
-provider_refresh_all_events (EventPipeProvider *provider);
+provider_refresh_all_events (
+	EventPipeProvider *provider,
+	uint64_t session_mask);
 
 // _Requires_lock_held (ep)
 static
 void
-provider_refresh_event_state (EventPipeEvent *ep_event);
+provider_refresh_event_state (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask);
 
 // Compute the enabled bit mask, the ith bit is 1 iff an event with the
 // given (provider, keywords, eventLevel) is enabled for the ith session.
@@ -96,7 +100,9 @@ provider_prepare_callback_data (
 
 static
 void
-provider_refresh_all_events (EventPipeProvider *provider)
+provider_refresh_all_events (
+	EventPipeProvider *provider,
+	uint64_t session_mask)
 {
 	EP_ASSERT (provider != NULL);
 
@@ -105,7 +111,7 @@ provider_refresh_all_events (EventPipeProvider *provider)
 	EP_ASSERT (provider->event_list != NULL);
 
 	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
-		provider_refresh_event_state (current_event);
+		provider_refresh_event_state (current_event, session_mask);
 	} DN_LIST_FOREACH_END;
 
 	ep_requires_lock_held ();
@@ -114,7 +120,9 @@ provider_refresh_all_events (EventPipeProvider *provider)
 
 static
 void
-provider_refresh_event_state (EventPipeEvent *ep_event)
+provider_refresh_event_state (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask)
 {
 	EP_ASSERT (ep_event != NULL);
 
@@ -128,6 +136,11 @@ provider_refresh_event_state (EventPipeEvent *ep_event)
 
 	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event);
 	ep_event_set_enabled_mask (ep_event, enable_mask);
+
+	// If session_mask is not zero, that session is being enabled/disabled.
+	// We need to unset the metadata_written_mask for this session.
+	if (session_mask != 0)
+		ep_event_update_metadata_written_mask (ep_event, session_mask, false);
 
 	ep_requires_lock_held ();
 	return;
@@ -277,7 +290,7 @@ ep_provider_add_event (
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (dn_list_push_back (provider->event_list, instance), section1);
-		provider_refresh_event_state (instance);
+		provider_refresh_event_state (instance, 0);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -323,7 +336,7 @@ provider_set_config (
 	provider->keywords = keywords_for_all_sessions;
 	provider->provider_level = level_for_all_sessions;
 
-	provider_refresh_all_events (provider);
+	provider_refresh_all_events (provider, session_mask);
 	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, session_id);
 
 	ep_requires_lock_held ();
@@ -352,7 +365,7 @@ provider_unset_config (
 	provider->keywords = keywords_for_all_sessions;
 	provider->provider_level = level_for_all_sessions;
 
-	provider_refresh_all_events (provider);
+	provider_refresh_all_events (provider, session_mask);
 	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, (EventPipeSessionID)0);
 
 	ep_requires_lock_held ();
@@ -517,7 +530,7 @@ provider_add_event (
 	ep_raise_error_if_nok (instance != NULL);
 
 	ep_raise_error_if_nok (dn_list_push_back (provider->event_list, instance));
-	provider_refresh_event_state (instance);
+	provider_refresh_event_state (instance, 0);
 
 ep_on_exit:
 	ep_requires_lock_held ();

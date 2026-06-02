@@ -42,6 +42,8 @@ namespace System.Net.Security
                         count++;
                     }
 
+                    DisposeChainElements(chain);
+
                     // OS failed to build the chain but we have at least some intermediates.
                     // We will try to add them to "Intermediate Certification Authorities" store.
                     if (!osCanBuildChain)
@@ -92,6 +94,8 @@ namespace System.Net.Security
                                     }
                                 }
 
+                                DisposeChainElements(chain);
+
                                 if (!osCanBuildChain)
                                 {
                                     // Add also root to Intermediate CA store so OS can complete building chain.
@@ -121,6 +125,15 @@ namespace System.Net.Security
                     {
                         NetEventSource.Error(null, $"Failed to add certificate to store: {ex.Message}, certificate: {certificate}");
                     }
+                }
+            }
+
+            static void DisposeChainElements(X509Chain chain)
+            {
+                int elementsCount = chain.ChainElements.Count;
+                for (int i = 0; i < elementsCount; i++)
+                {
+                    chain.ChainElements[i].Certificate.Dispose();
                 }
             }
         }

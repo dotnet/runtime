@@ -6,6 +6,7 @@
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
 #include "gchandleutilities.h"
+#include "interoplibinterface.h"
 
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
@@ -35,14 +36,14 @@ FCIMPLEND
 FCIMPL2(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
 {
     Object *pPrimary = ObjectFromHandle(handle);
-    *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
+    *ppSecondary = (pPrimary != NULL) ? GCHandleUtilities::GetGCHandleManager()->GetDependentHandleSecondary(handle) : NULL;
     return pPrimary;
 }
 FCIMPLEND
 
 FCIMPL2(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
 {
-    SetDependentHandleSecondary(handle, pSecondary);
+    GCHandleUtilities::GetGCHandleManager()->SetDependentHandleSecondary(handle, pSecondary);
 }
 FCIMPLEND
 
@@ -61,6 +62,27 @@ FCIMPLEND
 FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
+}
+FCIMPLEND
+
+FCIMPL2(OBJECTHANDLE, RhpHandleAllocCrossReference, Object *pPrimary, void *pContext)
+{
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleWithExtraInfo(pPrimary, HNDTYPE_CROSSREFERENCE, pContext);
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, RhHandleTryGetCrossReferenceContext, OBJECTHANDLE handle, void **pContext)
+{
+    *pContext = nullptr;
+
+    IGCHandleManager* gcHandleManager = GCHandleUtilities::GetGCHandleManager();
+    if (gcHandleManager->HandleFetchType(handle) != HNDTYPE_CROSSREFERENCE)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pContext = gcHandleManager->GetExtraInfoFromHandle(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -34,10 +34,14 @@ namespace System
         "FREEBSD"
 #elif TARGET_NETBSD
         "NETBSD"
+#elif TARGET_OPENBSD
+        "OPENBSD"
 #elif TARGET_ILLUMOS
         "ILLUMOS"
 #elif TARGET_SOLARIS
         "SOLARIS"
+#elif TARGET_HAIKU
+        "HAIKU"
 #else
 #error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif
@@ -83,7 +87,7 @@ namespace System
 
         public override string ToString() => VersionString;
 
-        public string VersionString
+        public unsafe string VersionString
         {
             get
             {
@@ -193,6 +197,28 @@ namespace System
         /// </summary>
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on FreeBSD.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenBSD() =>
+#if TARGET_OPENBSD
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on Haiku.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsHaiku() =>
+#if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// Indicates whether the current application is running on Android.

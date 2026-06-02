@@ -14,7 +14,8 @@ using namespace BINDER_SPACE;
 // CustomAssemblyBinder implementation
 // ============================================================================
 HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
+                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
+                                                       SString *pDiagnosticInfo)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -28,7 +29,9 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             false, //excludeAppPaths,
-                                            ppCoreCLRFoundAssembly);
+                                            ppCoreCLRFoundAssembly,
+                                            nullptr /* ppExistingAssemblyOnFailure */,
+                                            pDiagnosticInfo);
     if (!FAILED(hr))
     {
         _ASSERTE(*ppCoreCLRFoundAssembly != NULL);
@@ -39,7 +42,8 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 }
 
 HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-    BINDER_SPACE::Assembly** ppAssembly)
+    BINDER_SPACE::Assembly** ppAssembly,
+    SString* pDiagnosticInfo)
 {
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //
@@ -58,7 +62,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
 
     {
         // Step 1 - Try to find the assembly within the LoadContext.
-        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
+        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, pDiagnosticInfo);
         if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
             (hr == FUSION_E_APP_DOMAIN_LOCKED) || (hr == FUSION_E_REF_DEF_MISMATCH))
         {
@@ -72,7 +76,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName,
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetAssemblyLoadContext(), pAssemblyName,
                                                                      m_pDefaultBinder, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
@@ -103,7 +107,8 @@ Exit:;
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ bool excludeAppPaths,
-                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -129,7 +134,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -178,7 +183,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
 
                 // Save the reference to the IntPtr for GCHandle for the managed
                 // AssemblyLoadContext instance
-                pBinder->SetManagedAssemblyLoadContext(ptrAssemblyLoadContext);
+                pBinder->SetAssemblyLoadContext(ptrAssemblyLoadContext);
 
                 if (pLoaderAllocator != NULL)
                 {
@@ -247,16 +252,16 @@ CustomAssemblyBinder::CustomAssemblyBinder()
 
 void CustomAssemblyBinder::ReleaseLoadContext()
 {
-    VERIFY(GetManagedAssemblyLoadContext() != (INT_PTR)NULL);
+    VERIFY(GetAssemblyLoadContext() != (INT_PTR)NULL);
     VERIFY(m_ptrManagedStrongAssemblyLoadContext != (INT_PTR)NULL);
 
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
-    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetManagedAssemblyLoadContext());
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetAssemblyLoadContext());
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
-    SetManagedAssemblyLoadContext((INT_PTR)NULL);
+    SetAssemblyLoadContext((INT_PTR)NULL);
 
     // The AssemblyLoaderAllocator is in a process of shutdown and should not be used 
     // after this point.

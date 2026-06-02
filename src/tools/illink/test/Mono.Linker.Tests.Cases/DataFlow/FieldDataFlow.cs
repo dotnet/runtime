@@ -4,8 +4,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -232,21 +232,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static AccessReturnedInstanceField GetInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2077", nameof(field), nameof(DataFlowTypeExtensions.RequiresAll))]
             static void TestRead()
             {
                 GetInstance(GetUnknownType()).field.RequiresAll();
             }
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2074", nameof(GetUnknownType), nameof(field))]
             static void TestWrite()
             {
                 GetInstance(GetUnknownType()).field = GetUnknownType();
             }
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2074", nameof(GetUnknownType), nameof(field))]
             static void TestNullCoalescingAssignment()
             {
@@ -262,7 +262,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         private static void RequirePublicMethods(
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             string s)
         {
         }
@@ -335,7 +335,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 UnsupportedType unsupportedTypeInstance)
             {
             }
@@ -367,7 +367,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 [ExpectedWarning("IL2098")]
                 static void RequirePublicFields(
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                     ref string s)
                 {
                 }

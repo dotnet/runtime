@@ -70,7 +70,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedLoaderHeap::~UnlockedLoaderHeap()
 {
     CONTRACTL
@@ -173,7 +172,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     size_t dwSizeToReserve;
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
     ReservedMemoryHolder pData = NULL;
     BOOL fReleaseMemory = TRUE;
@@ -308,7 +307,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
 
         // Round to page size
-        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
         size_t dwSizeToCommitPart = dwSizeToCommit;
 
@@ -1053,7 +1052,6 @@ size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 
     size_t dwSize = dwRequestedSize;
 
-    // Interleaved heap cannot ad any extra to the requested size
 #ifdef _DEBUG
     dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));

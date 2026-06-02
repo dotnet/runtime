@@ -378,7 +378,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNetCoreAndNotElevatedAndSupportsEventLogs => PlatformDetection.IsNetCore && Helpers.NotElevatedAndSupportsEventLogs;
 
-        [ConditionalFact(nameof(IsNetCoreAndNotElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(EventLogTests), nameof(IsNetCoreAndNotElevatedAndSupportsEventLogs))]
         public void CheckTheExceptionMessageContent()
         {
             using (EventLog myLog = new EventLog("Application", ".", "InvalidNotExistingSource"))

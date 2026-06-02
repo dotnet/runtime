@@ -490,7 +490,7 @@ namespace System.Data.SqlTypes
             // m_data1 = *pInt++; // lo part
             // m_data2 = *pInt++; // mid part
 
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
             uint sgnscl;
 
@@ -920,7 +920,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public override string ToString()
+        public override unsafe string ToString()
         {
             if (IsNull)
                 return SQLResource.NullString;
@@ -1154,6 +1154,13 @@ namespace System.Data.SqlTypes
             }
         }
 
+        /// <summary>
+        /// Writes the TDS (Tabular Data Stream) representation of this <see cref="SqlDecimal" /> to the specified destination.
+        /// </summary>
+        /// <param name="destination">The destination span to write the TDS (Tabular Data Stream) value to. Must be at least 4 elements long.</param>
+        /// <returns>The number of <see langword="uint" /> values written to the destination.</returns>
+        /// <exception cref="SqlNullValueException">Thrown when the <see cref="SqlDecimal" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the destination span is too small.</exception>
         [CLSCompliant(false)]
         public int WriteTdsValue(Span<uint> destination)
         {
@@ -1411,7 +1418,7 @@ namespace System.Data.SqlTypes
         //    add to the next multiplicand UI4.  Until the end of the multiplier data
         //    array is reached.
         //
-        public static SqlDecimal operator *(SqlDecimal x, SqlDecimal y)
+        public static unsafe SqlDecimal operator *(SqlDecimal x, SqlDecimal y)
         {
             x.AssertValid();
             y.AssertValid();
@@ -1650,7 +1657,7 @@ namespace System.Data.SqlTypes
         //  Call general purpose arbitrary precision division routine with scale = 0.
         //    Scale,prec adjusted later.
         //
-        public static SqlDecimal operator /(SqlDecimal x, SqlDecimal y)
+        public static unsafe SqlDecimal operator /(SqlDecimal x, SqlDecimal y)
         {
             if (x.IsNull || y.IsNull)
                 return Null;

@@ -124,6 +124,33 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
+        public static void Reset_PreservesMultipleRootLevels()
+        {
+            var writer = new CborWriter(allowMultipleRootLevelValues: false);
+            writer.WriteBoolean(true);
+            writer.Reset();
+            writer.WriteInt32(6);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteInt32(7));
+        }
+
+        [Fact]
+        public static void Reset_ClearsIndefiniteLengthRanges()
+        {
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
+
+            writer.WriteStartIndefiniteLengthByteString();
+            writer.WriteByteString([1, 2, 3]);
+            writer.Reset();
+
+            writer.WriteStartIndefiniteLengthByteString();
+            writer.WriteByteString([1, 2, 3]);
+            writer.WriteEndIndefiniteLengthByteString();
+            ReadOnlySpan<byte> encoded = writer.Encode();
+            ReadOnlySpan<byte> expected = [0x43, 0x01, 0x02, 0x03];
+            AssertExtensions.SequenceEqual(expected, encoded);
+        }
+
+        [Fact]
         public static void ConformanceMode_DefaultValue_ShouldEqualStrict()
         {
             var writer = new CborWriter();

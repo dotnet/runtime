@@ -333,8 +333,7 @@ namespace System.Net.Mail.Tests
             public string Cc => GetHeader("Cc");
             public string Subject => GetHeader("Subject");
 
-            private ContentType _contentType;
-            public ContentType ContentType => _contentType ??= new ContentType(GetHeader("Content-Type"));
+            public ContentType ContentType => field ??= new ContentType(GetHeader("Content-Type"));
 
             private ParsedMailMessage(Dictionary<string, string> headers, string body, string rawBody, List<ParsedAttachment> attachments)
             {

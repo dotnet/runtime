@@ -472,3 +472,171 @@ s390_cij: len:24
 s390_cij_un: src1:i len:24
 s390_cgij: len:24
 s390_cgij_un: len:24
+
+insert_i1: dest:x src1:x src2:i len:12
+insert_i2: dest:x src1:x src2:i len:12
+insert_i4: dest:x src1:x src2:i len:12
+insert_i8: dest:x src1:x src2:i len:12
+insert_r4: dest:x src1:x src2:f clob:1 len:12
+insert_r8: dest:x src1:x src2:f clob:1 len:12
+
+extract_i1: dest:i src1:x len:6
+extract_i2: dest:i src1:x len:6
+extract_i4: dest:i src1:x len:6
+extract_i8: dest:i src1:x len:6
+extract_r4: dest:f src1:x len:12
+extract_r8: dest:f src1:x len:12
+
+xextract_i1: dest:i src1:x src2:i len:6
+xextract_i2: dest:i src1:x src2:i len:6
+xextract_i4: dest:i src1:x src2:i len:6
+xextract_i8: dest:i src1:x src2:i len:6
+xextract_r4: dest:f src1:x src2:i len:10
+xextract_r8: dest:f src1:x src2:i len:10
+
+expand_i1: dest:x src1:i len:12
+expand_i2: dest:x src1:i len:12
+expand_i4: dest:x src1:i len:12
+expand_i8: dest:x src1:i len:12
+expand_r4: dest:x src1:f len:18
+expand_r8: dest:x src1:f len:16
+
+xones: dest:x len:6
+xmove: dest:x src1:x len:6
+xzero: dest:x len:6
+loadx_membase: dest:x src1:b len:26
+storex_membase: dest:b src1:x len:26
+s390_vab: dest:x src1:x src2:x len:6
+s390_vah: dest:x src1:x src2:x len:6
+s390_vaf: dest:x src1:x src2:x len:6
+s390_vag: dest:x src1:x src2:x len:6
+s390_vfasb: dest:x src1:x src2:x len:6
+s390_vfadb: dest:x src1:x src2:x len:6
+s390_vsb: dest:x src1:x src2:x len:6
+s390_vsh: dest:x src1:x src2:x len:6
+s390_vsf: dest:x src1:x src2:x len:6
+s390_vsg: dest:x src1:x src2:x len:6
+s390_vfssb: dest:x src1:x src2:x len:6
+s390_vfsdb: dest:x src1:x src2:x len:6
+s390_vx: dest:x src1:x src2:x len:6
+s390_vo: dest:x src1:x src2:x len:6
+s390_vno: dest:x src1:x src2:x len:6
+s390_vn: dest:x src1:x src2:x len:6
+vector_andnot: dest:x src1:x src2:x len:6
+s390_vnn: dest:x src1:x src2:x len:6
+s390_vmlb: dest:x src1:x src2:x len:6
+s390_vmlhw: dest:x src1:x src2:x len:6
+s390_vmlf: dest:x src1:x src2:x len:6
+s390_vfmsb: dest:x src1:x src2:x len:6
+s390_vfmdb: dest:x src1:x src2:x len:6
+s390_vfdsb: dest:x src1:x src2:x len:6
+s390_vfddb: dest:x src1:x src2:x len:6
+s390_vmxb: dest:x src1:x src2:x len:6
+s390_vmxh: dest:x src1:x src2:x len:6
+s390_vmxf: dest:x src1:x src2:x len:6
+s390_vmxg: dest:x src1:x src2:x len:6
+s390_vmnb: dest:x src1:x src2:x len:6
+s390_vmnh: dest:x src1:x src2:x len:6
+s390_vmnf: dest:x src1:x src2:x len:6
+s390_vmng: dest:x src1:x src2:x len:6
+s390_vmxlb: dest:x src1:x src2:x len:6
+s390_vmxlh: dest:x src1:x src2:x len:6
+s390_vmxlf: dest:x src1:x src2:x len:6
+s390_vmxlg: dest:x src1:x src2:x len:6
+s390_vfmaxsb: dest:x src1:x src2:x len:6
+s390_vfmaxdb: dest:x src1:x src2:x len:6
+s390_vmnlb: dest:x src1:x src2:x len:6
+s390_vmnlh: dest:x src1:x src2:x len:6
+s390_vmnlf: dest:x src1:x src2:x len:6
+s390_vmnlg: dest:x src1:x src2:x len:6
+s390_vfminsb: dest:x src1:x src2:x len:6
+s390_vfmindb: dest:x src1:x src2:x len:6
+s390_vsumb: dest:x src1:x src2:x len:6
+s390_vsumh: dest:x src1:x src2:x len:6
+s390_vsumqf: dest:x src1:x src2:x len:6
+s390_vsumqg: dest:x src1:x src2:x len:6
+s390_vperm: dest:x src1:x src2:x len:6
+s390_vrepib: dest:x len:6
+s390_vrepih: dest:x len:6
+s390_vrepif: dest:x len:6
+s390_vrepig: dest:x len:6
+s390_vceqbs: dest:x src1:x src2:x len:6
+s390_vceqhs: dest:x src1:x src2:x len:6
+s390_vceqfs: dest:x src1:x src2:x len:6
+s390_vceqgs: dest:x src1:x src2:x len:6
+s390_vceqb: dest:x src1:x src2:x len:6
+s390_vceqh: dest:x src1:x src2:x len:6
+s390_vceqf: dest:x src1:x src2:x len:6
+s390_vceqg: dest:x src1:x src2:x len:6
+s390_vfcesbs: dest:x src1:x src2:x len:6
+s390_vfcedbs: dest:x src1:x src2:x len:6
+s390_vfchsbs: dest:x src1:x src2:x len:6
+s390_vfchdbs: dest:x src1:x src2:x len:6
+s390_vfcesb: dest:x src1:x src2:x len:6
+s390_vfcedb: dest:x src1:x src2:x len:6
+s390_vfchsb: dest:x src1:x src2:x len:6
+s390_vfchdb: dest:x src1:x src2:x len:6
+s390_vgmb: dest:x src1:i src2:i len:6
+s390_vgmh: dest:x src1:i src2:i len:6
+s390_vgmf: dest:x src1:i src2:i len:6
+s390_vgmg: dest:x src1:i src2:i len:6
+s390_vecb: dest:x src1:x len:6
+s390_vech: dest:x src1:x len:6
+s390_vecf: dest:x src1:x len:6
+s390_vecg: dest:x src1:x len:6
+s390_veclb: dest:x src1:x len:6
+s390_veclh: dest:x src1:x len:6
+s390_veclf: dest:x src1:x len:6
+s390_veclg: dest:x src1:x len:6
+s390_vchbs: dest:x src1:x src2:x len:6
+s390_vchhs: dest:x src1:x src2:x len:6
+s390_vchfs: dest:x src1:x src2:x len:6
+s390_vchgs: dest:x src1:x src2:x len:6
+s390_vchb: dest:x src1:x src2:x len:6
+s390_vchh: dest:x src1:x src2:x len:6
+s390_vchf: dest:x src1:x src2:x len:6
+s390_vchg: dest:x src1:x src2:x len:6
+s390_vfsqsb: dest:x src1:x len:6
+s390_vfsqdb: dest:x src1:x len:6
+s390_vchlbs: dest:x src1:x src2:x len:6
+s390_vchlhs: dest:x src1:x src2:x len:6
+s390_vchlfs: dest:x src1:x src2:x len:6
+s390_vchlgs: dest:x src1:x src2:x len:6
+s390_vchlb: dest:x src1:x src2:x len:6
+s390_vchlh: dest:x src1:x src2:x len:6
+s390_vchlf: dest:x src1:x src2:x len:6
+s390_vchlg: dest:x src1:x src2:x len:6
+s390_vfchesbs: dest:x src1:x src2:x len:6
+s390_vfchedbs: dest:x src1:x src2:x len:6
+s390_vfchesb: dest:x src1:x src2:x len:6
+s390_vfchedb: dest:x src1:x src2:x len:6
+s390_vlpb: dest:x src1:x len:6
+s390_vlph: dest:x src1:x len:6
+s390_vlpf: dest:x src1:x len:6
+s390_vlpg: dest:x src1:x len:6
+s390_vflpdb: dest:x src1:x len:6
+s390_vflpsb: dest:x src1:x len:6
+s390_vflcdb: dest:x src1:x len:6
+s390_vflcsb: dest:x src1:x len:6
+s390_vpkh: dest:x src1:x src2:x len:6
+s390_vpkf: dest:x src1:x src2:x len:6
+s390_vpkg: dest:x src1:x src2:x len:6
+s390_vlcb: dest:x src1:x len:6
+s390_vlch: dest:x src1:x len:6
+s390_vlcf: dest:x src1:x len:6
+s390_vlcg: dest:x src1:x len:6
+s390_vuplb: dest:x src1:x len:6
+s390_vuplhw: dest:x src1:x len:6
+s390_vuplf: dest:x src1:x len:6
+s390_vupllb: dest:x src1:x len:6
+s390_vupllh: dest:x src1:x len:6
+s390_vupllf: dest:x src1:x len:6
+s390_vuphb: dest:x src1:x len:6
+s390_vuphh: dest:x src1:x len:6
+s390_vuphf: dest:x src1:x len:6
+s390_vuplhb: dest:x src1:x len:6
+s390_vuplhh: dest:x src1:x len:6
+s390_vuplhf: dest:x src1:x len:6
+s390_vfisb: dest:x src1:x len:6
+s390_vfidb: dest:x src1:x len:6
+xconst: dest:x len:18

@@ -100,11 +100,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly List<IPattern>? _excludePatterns;
         private readonly List<IncludeOrExcludeValue<IPattern>>? _includeOrExcludePatterns;
         private readonly PatternBuilder _builder;
-        private readonly StringComparison _comparison;
         private readonly bool _preserveFilterOrder;
 
+        internal StringComparison ComparisonType { get; }
+
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using case-insensitive matching
+        /// Initializes a new instance of the <see cref="Matcher" /> class using case-insensitive matching.
         /// </summary>
         public Matcher()
             : this(StringComparison.OrdinalIgnoreCase, false)
@@ -112,7 +113,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method specified
+        /// Initializes a new instance of the <see cref="Matcher" /> class using the string comparison method specified.
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
         public Matcher(StringComparison comparisonType)
@@ -121,7 +122,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method and filter ordering specified
+        /// Initializes a new instance of the <see cref="Matcher" /> class using the string comparison method and filter ordering specified.
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
         /// <param name="preserveFilterOrder">
@@ -130,7 +131,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </param>
         public Matcher(StringComparison comparisonType = StringComparison.OrdinalIgnoreCase, bool preserveFilterOrder = false)
         {
-            _comparison = comparisonType;
+            ComparisonType = comparisonType;
             _builder = new PatternBuilder(comparisonType);
             _preserveFilterOrder = preserveFilterOrder;
 
@@ -199,8 +200,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             ArgumentNullException.ThrowIfNull(directoryInfo);
 
             return _preserveFilterOrder ?
-                new MatcherContext(_includeOrExcludePatterns!, directoryInfo, _comparison).Execute() :
-                new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, _comparison).Execute();
+                new MatcherContext(_includeOrExcludePatterns!, directoryInfo, ComparisonType).Execute() :
+                new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, ComparisonType).Execute();
         }
     }
 }

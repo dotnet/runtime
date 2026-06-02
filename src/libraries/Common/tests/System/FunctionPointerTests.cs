@@ -189,6 +189,32 @@ namespace System.Tests.Types
             Assert.True(fcnPtr2.ContainsGenericParameters);
         }
 
+        [Fact]
+        public static unsafe void FunctionPointerVisibility()
+        {
+            Type t = typeof(FunctionPointerHolder).Project();
+
+            // A function pointer with public return type should be visible
+            Type fnPtrPublicReturn = t.GetField(nameof(FunctionPointerHolder.Field_Int), Bindings)!.FieldType;
+            Assert.True(fnPtrPublicReturn.IsFunctionPointer);
+            Assert.True(fnPtrPublicReturn.IsVisible);
+
+            // A function pointer with public parameter types should be visible
+            Type fnPtrPublicParams = t.GetField(nameof(FunctionPointerHolder.Field_PublicParam), Bindings)!.FieldType;
+            Assert.True(fnPtrPublicParams.IsFunctionPointer);
+            Assert.True(fnPtrPublicParams.IsVisible);
+
+            // A function pointer with private return type should not be visible
+            Type fnPtrPrivateReturn = t.GetField("Field_PrivateReturn", Bindings)!.FieldType;
+            Assert.True(fnPtrPrivateReturn.IsFunctionPointer);
+            Assert.False(fnPtrPrivateReturn.IsVisible);
+
+            // A function pointer with private parameter type should not be visible
+            Type fnPtrPrivateParam = t.GetField("Field_PrivateParam", Bindings)!.FieldType;
+            Assert.True(fnPtrPrivateParam.IsFunctionPointer);
+            Assert.False(fnPtrPrivateParam.IsVisible);
+        }
+
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue1),
             "MethodReturnValue1()",
@@ -270,7 +296,9 @@ namespace System.Tests.Types
 
         private unsafe class FunctionPointerHolder
         {
-#pragma warning disable 0649
+            // CS0649: Field is never assigned to (fields are used via reflection)
+            // CS0169: Field is never used (private fields are accessed via reflection)
+#pragma warning disable 0649, 0169
             public delegate*<void> ToString_1;
             public delegate*unmanaged<void> ToString_2;
             public delegate*<int> ToString_3;
@@ -283,7 +311,12 @@ namespace System.Tests.Types
 
             public delegate* managed<int> Field_Int;
             public delegate* managed<MyClass> Field_MyClass;
-#pragma warning restore 0649
+
+            // Fields for visibility tests
+            public delegate* managed<int, void> Field_PublicParam;
+            private delegate* managed<PrivateClass> Field_PrivateReturn;
+            private delegate* managed<PrivateClass, void> Field_PrivateParam;
+#pragma warning restore 0649, 0169
 
             public delegate* managed<int> Prop_Int { get; }
             public delegate* managed<MyClass> Prop_MyClass { get; }
@@ -299,6 +332,7 @@ namespace System.Tests.Types
 
             public class MyClass { }
             public struct MyStruct { }
+            private class PrivateClass { }
         }
     }
 }

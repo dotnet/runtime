@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Options
     /// Configures an option instance by using <see cref="ConfigurationBinder.Bind(IConfiguration, object)"/> against an <see cref="IConfiguration"/>.
     /// </summary>
     /// <typeparam name="TOptions">The type of options to bind.</typeparam>
-    public class ConfigureFromConfigurationOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions> : ConfigureOptions<TOptions>
+    public class ConfigureFromConfigurationOptions<TOptions> : ConfigureOptions<TOptions>
         where TOptions : class
     {
         /// <summary>

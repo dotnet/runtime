@@ -178,7 +178,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.NestedFamORAssem, null)]
         [InlineData(TypeAttributes.NestedPrivate, null)]
         [InlineData(TypeAttributes.NestedPublic, null)]
-        public void DefineEnum_IncorrectVisibilityAttributes_ThrowsArgumentException(TypeAttributes visibility, string paramName)
+        public void DefineEnum_IncorrectVisibilityAttributes_ThrowsArgumentException(TypeAttributes visibility, string? paramName)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             AssertExtensions.Throws<ArgumentException>(paramName, () => module.DefineEnum("Enum", visibility, typeof(int)));

@@ -614,20 +614,22 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DynamicObject_LINQ_Convert()
         {
-            string json = @"
-            [
-              {
-                ""Title"": ""TITLE."",
-                ""Author"":
-                {
-                  ""Name"": ""NAME."",
-                  ""Mail"": ""MAIL."",
-                  ""Picture"": ""/PICTURE.png""
-                },
-                ""Date"": ""2021-01-20T19:30:00"",
-                ""BodyHtml"": ""Content.""
-              }
-            ]";
+            string json = """
+
+                    [
+                      {
+                        "Title": "TITLE.",
+                        "Author":
+                        {
+                          "Name": "NAME.",
+                          "Mail": "MAIL.",
+                          "Picture": "/PICTURE.png"
+                        },
+                        "Date": "2021-01-20T19:30:00",
+                        "BodyHtml": "Content."
+                      }
+                    ]
+                """;
 
             JsonArray arr = JsonSerializer.Deserialize<JsonArray>(json);
 
@@ -943,7 +945,7 @@ namespace System.Text.Json.Nodes.Tests
             var obj2 = new JsonObject(props, options);
 
             // Create method
-            using JsonDocument doc = JsonDocument.Parse(@"{""Hello"":""World""}");
+            using JsonDocument doc = JsonDocument.Parse("""{"Hello":"World"}""");
             var obj3 = JsonObject.Create(doc.RootElement, options);
 
             Test(obj1);
@@ -1788,6 +1790,68 @@ namespace System.Text.Json.Nodes.Tests
         public static void Deserialize_WrongType(string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonObject>(json));
+        }
+
+        [Fact]
+        public static void GetPath_IsThreadSafe()
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                var tree = (JsonNode.Parse(
+                    """
+                    {
+                      "oh": "noes"
+                    }
+                    """
+                ) as JsonObject)!;
+
+                Parallel.ForEach(Enumerable.Range(0, 100), new ParallelOptions { MaxDegreeOfParallelism = 16 }, _ =>
+                {
+                    string path = tree.First().Value!.GetPath();
+                    Assert.Equal("$.oh", path);
+                });
+            }
+        }
+
+        [Fact]
+        public static void DeepEquals_WithNestedObjects()
+        {
+            JsonObject obj1 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 2 } };
+            JsonObject obj2 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 2 } };
+            JsonObject obj3 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 3 } };
+            
+            Assert.True(JsonNode.DeepEquals(obj1, obj2));
+            Assert.False(JsonNode.DeepEquals(obj1, obj3));
+            Assert.False(JsonNode.DeepEquals(obj1, null));
+        }
+
+        [Fact]
+        public static void DeepEquals_DifferentKeys()
+        {
+            JsonObject obj1 = new JsonObject { ["a"] = 1, ["b"] = 2 };
+            JsonObject obj2 = new JsonObject { ["a"] = 1, ["c"] = 2 };
+            
+            Assert.False(JsonNode.DeepEquals(obj1, obj2));
+        }
+
+        [Fact]
+        public static void TryGetPropertyValue_NonExistentProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1 };
+            
+            bool result = obj.TryGetPropertyValue("b", out JsonNode value);
+            
+            Assert.False(result);
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public static void ContainsKey_ChecksForProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1, ["b"] = 2 };
+            
+            Assert.True(obj.ContainsKey("a"));
+            Assert.False(obj.ContainsKey("c"));
         }
     }
 }

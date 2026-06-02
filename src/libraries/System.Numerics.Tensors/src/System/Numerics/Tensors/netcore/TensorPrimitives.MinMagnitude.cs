@@ -106,67 +106,19 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector128.MinMagnitude(x, y);
-#else
-
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    Vector128<T> xMag = Vector128.Abs(x);
-                    Vector128<T> yMag = Vector128.Abs(y);
-
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(xMag, yMag) | IsNaN(xMag) | (Vector128.Equals(xMag, yMag) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector256.MinMagnitude(x, y);
-#else
-
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    Vector256<T> xMag = Vector256.Abs(x);
-                    Vector256<T> yMag = Vector256.Abs(y);
-
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(xMag, yMag) | IsNaN(xMag) | (Vector256.Equals(xMag, yMag) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector512.MinMagnitude(x, y);
-#else
-
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    Vector512<T> xMag = Vector512.Abs(x);
-                    Vector512<T> yMag = Vector512.Abs(y);
-
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(xMag, yMag) | IsNaN(xMag) | (Vector512.Equals(xMag, yMag) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
-#endif
             }
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MinMagnitudeOperator<T>>(x);

@@ -88,11 +88,8 @@ namespace System.Runtime.Serialization.DataContracts
             set => _helper.ConflictingMember = value;
         }
 
-        private FastInvokerBuilder.Getter? _getter;
-        internal FastInvokerBuilder.Getter Getter => _getter ??= FastInvokerBuilder.CreateGetter(MemberInfo);
-
-        private FastInvokerBuilder.Setter? _setter;
-        internal FastInvokerBuilder.Setter Setter => _setter ??= FastInvokerBuilder.CreateSetter(MemberInfo);
+        internal FastInvokerBuilder.Getter Getter => field ??= FastInvokerBuilder.CreateGetter(MemberInfo);
+        internal FastInvokerBuilder.Setter Setter => field ??= FastInvokerBuilder.CreateSetter(MemberInfo);
 
         private sealed class CriticalHelper
         {

@@ -42,7 +42,7 @@ namespace InteropLib
         {
             // Matches the managed definition of System.Runtime.InteropServices.CreateComInterfaceFlags
             None = 0,
-            CallerDefinedIUnknown = 1,
+            CallerDefinedIUnknown = 1, // [cDAC] [ComWrappers] : Contract depends on this value.
             TrackerSupport = 2,
 
             // Highest bits are reserved for internal usage

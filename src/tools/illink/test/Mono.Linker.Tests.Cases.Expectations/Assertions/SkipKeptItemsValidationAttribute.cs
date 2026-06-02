@@ -10,6 +10,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
     {
         public SkipKeptItemsValidationAttribute() { }
 
-        public Tool By { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
+        public Tool By { get; set; } = Tool.All;
     }
 }

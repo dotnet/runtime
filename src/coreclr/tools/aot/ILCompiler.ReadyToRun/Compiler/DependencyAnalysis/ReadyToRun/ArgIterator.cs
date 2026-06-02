@@ -12,6 +12,8 @@ using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using Internal;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -391,7 +393,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return 37 + (_parameterTypes == null ?
                 _returnType.GetHashCode() :
-                TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
+                VersionResilientHashCode.GenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
         }
 
         public bool HasThis() { return _hasThis; }
@@ -441,6 +443,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private bool _hasThis;
         private bool _hasParamType;
+        private bool _hasAsyncContinuation;
         private bool _extraFunctionPointerArg;
         private ArgIteratorData _argData;
         private bool[] _forcedByRefParams;
@@ -453,6 +456,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool HasThis => _hasThis;
         public bool IsVarArg => _argData.IsVarArg();
         public bool HasParamType => _hasParamType;
+        public bool HasAsyncContinuation => _hasAsyncContinuation;
         public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
@@ -509,7 +513,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             TypeSystemContext context,
             ArgIteratorData argData, 
             CallingConventions callConv, 
-            bool hasParamType, 
+            bool hasParamType,
+            bool hasAsyncContinuation,
             bool extraFunctionPointerArg, 
             bool[] forcedByRefParams, 
             bool skipFirstArg, 
@@ -520,6 +525,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
             _hasParamType = hasParamType;
+            _hasAsyncContinuation = hasAsyncContinuation;
             _extraFunctionPointerArg = extraFunctionPointerArg;
             _forcedByRefParams = forcedByRefParams;
             _skipFirstArg = skipFirstArg;
@@ -640,6 +646,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
+                if (_transitionBlock.IsWasm32)
+                {
+                    if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                    {
+                        return _transitionBlock.IsArgPassedByRef(_argTypeHandle);
+                    }
+                }
                 return false;
             }
         }
@@ -674,15 +687,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // VaSig cookie is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -716,15 +730,71 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
+                }
+
+                return ret;
+            }
+        }
+
+        public int GetAsyncContinuationArgOffset()
+        {
+            Debug.Assert(HasAsyncContinuation);
+
+            if (_transitionBlock.IsX86)
+            {
+                // x86 is special as always
+                if (!_SIZE_OF_ARG_STACK_COMPUTED)
+                    ForceSigWalk();
+
+                switch (_asyncContinuationLoc)
+                {
+                    case AsyncContinuationLocation.Ecx:
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEcx;
+                    case AsyncContinuationLocation.Edx:
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEdx;
+                    default:
+                        break;
+                }
+
+                // If the async continuation is a stack arg, then it comes last unless
+                // there also is a param type arg on the stack, in which case it comes
+                // before it.
+                if (HasParamType && _paramTypeLoc == ParamTypeLocation.Stack)
+                {
+                    return _transitionBlock.SizeOfTransitionBlock + _transitionBlock.PointerSize;
+                }
+
+                return _transitionBlock.SizeOfTransitionBlock;
+            }
+            else
+            {
+                // The hidden arg is after this, retbuf and param type arguments by default.
+                int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
+
+                if (HasThis)
+                {
+                    ret += slotSize;
+                }
+
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
+                {
+                    ret += slotSize;
+                }
+
+                if (HasParamType)
+                {
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -764,6 +834,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         numRegistersUsed++;
                     }
+
+                    if (HasAsyncContinuation)
+                    {
+                        numRegistersUsed++;
+                    }
                 }
 
                 if (!_transitionBlock.IsX86 && IsVarArg)
@@ -793,6 +868,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             _x64WindowsCurOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * _transitionBlock.PointerSize;
                         }
+                        break;
+
+                    case TargetArchitecture.Wasm32:
+                        _wasmOfsStack = numRegistersUsed * _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                         break;
 
                     case TargetArchitecture.ARM:
@@ -992,6 +1071,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             int idxFpReg = argOfs / _transitionBlock.PointerSize;
                             return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
                         }
+                    }
+
+                case TargetArchitecture.Wasm32:
+                    {
+                        bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        int cbArg = ALIGN_UP(argSize, 8);
+                        int align;
+                        if (isValueType)
+                        {
+                            align = Math.Clamp(((DefType)_argTypeHandle.GetRuntimeTypeHandle()).InstanceFieldAlignment.AsInt, 8, 16);
+                        }
+                        else
+                        {
+                            align = 8;
+                        }
+
+                        _wasmOfsStack = ALIGN_UP(_wasmOfsStack, align);
+                        argOfs = _transitionBlock.OffsetOfArgs + _wasmOfsStack;
+
+                        // Advance the stack pointer over the argument just placed.
+                        _wasmOfsStack += cbArg;
+
+                        return argOfs;
                     }
 
                 case TargetArchitecture.ARM:
@@ -1508,6 +1610,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
+                // On x86, async continuation comes before param type in allocation order
+                if (HasAsyncContinuation)
+                {
+                    if (numRegistersUsed < _transitionBlock.NumArgumentRegisters)
+                    {
+                        numRegistersUsed++;
+                        _asyncContinuationLoc = (numRegistersUsed == 1) ?
+                            AsyncContinuationLocation.Ecx : AsyncContinuationLocation.Edx;
+                    }
+                    else
+                    {
+                        nSizeOfArgStack += _transitionBlock.PointerSize;
+                        _asyncContinuationLoc = AsyncContinuationLocation.Stack;
+                    }
+                }
+
                 if (HasParamType)
                 {
                     if (numRegistersUsed < _transitionBlock.NumArgumentRegisters)
@@ -1555,7 +1673,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         stackElemSize = _transitionBlock.StackElemSize(GetArgSize(), IsValueType(), IsFloatHfa());
 
                         if (IsArgPassedByRef())
-                            stackElemSize = _transitionBlock.PointerSize;
+                            stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                     }
 
                     int endOfs = ofs + stackElemSize;
@@ -1568,6 +1686,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         maxOffset = endOfs;
                     }
                 }
+
+                if (maxOffset == _transitionBlock.OffsetOfArgs && _transitionBlock.IsWasm32)
+                {
+                    // Wasm puts all arguments on the stack, even the unnamed ones like the param registers, this pointer and async continuation. If we didn't see any named arguments, then we need to account for the unnamed ones here.
+                    maxOffset = _transitionBlock.OffsetOfArgs + _wasmOfsStack;
+                }
+
                 // Clear the iterator started flag
                 _ITERATION_STARTED = false;
 
@@ -1580,8 +1705,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // arg stack size is rounded to the pointer size on all platforms.
-            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.PointerSize);
+            // arg stack size is rounded to the stack slot size on all platforms.
+            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.StackElemSize(_transitionBlock.PointerSize));
 
             // Cache the result
             _nSizeOfArgStack = nSizeOfArgStack;
@@ -1595,6 +1720,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             switch (_transitionBlock.Architecture)
             {
+                case TargetArchitecture.Wasm32:
+                    {
+                        ArgLocDesc pLoc = new ArgLocDesc();
+                        int byteArgSize = GetArgSize();
+
+                        if (IsArgPassedByRef())
+                            byteArgSize = _transitionBlock.PointerSize;
+                        pLoc.m_byteStackIndex = _transitionBlock.GetStackArgumentByteIndexFromOffset(argOffset);
+                        pLoc.m_byteStackSize = _transitionBlock.StackElemSize(byteArgSize);
+                        return pLoc;
+                    }
                 case TargetArchitecture.ARM:
                     {
                         //        LIMITED_METHOD_CONTRACT;
@@ -1815,6 +1951,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private ushort _armWFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
         private bool _armRequires64BitAlignment; // Cached info about the current arg
 
+        private int _wasmOfsStack;          // Cached info about the current arg for Wasm32
+
         private int _arm64IdxGenReg;        // Next general register to be assigned a value
         private int _arm64OfsStack;         // Offset of next stack location to be assigned a value
         private int _arm64IdxFPReg;         // Next FP register to be assigned a value
@@ -1853,6 +1991,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 PARAM_TYPE_REGISTER_STACK       = 0x0010,
                 PARAM_TYPE_REGISTER_ECX         = 0x0020,
                 PARAM_TYPE_REGISTER_EDX         = 0x0030,*/
+
+        private enum AsyncContinuationLocation
+        {
+            Stack,
+            Ecx,
+            Edx
+        }
+
+        private AsyncContinuationLocation _asyncContinuationLoc;
+        /* X86: ASYNC_CONTINUATION_REGISTER_MASK   = 0x00C0,
+                ASYNC_CONTINUATION_REGISTER_STACK  = 0x0040,
+                ASYNC_CONTINUATION_REGISTER_ECX    = 0x0080,
+                ASYNC_CONTINUATION_REGISTER_EDX    = 0x00C0,*/
 
         //        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
 

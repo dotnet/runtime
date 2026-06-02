@@ -24,7 +24,7 @@
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#elif defined(__sun)
+#elif defined(__sun) || defined(TARGET_OPENBSD)
 #include <sys/utsname.h>
 #elif defined(TARGET_FREEBSD)
 #include <sys/types.h>
@@ -706,6 +706,31 @@ pal::string_t pal::get_current_os_rid_platform()
 
     return ridOS;
 }
+#elif defined(TARGET_OPENBSD)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n",
+    //              u.sysname, u.release, u.version, u.machine);
+    //
+    // Example output on OpenBSD:
+    //       sysname: OpenBSD, release: 7.4, version: GENERIC#123, machine: amd64
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    ridOS.append(_X("openbsd."))
+        .append(utsname_obj.release); // e.g. openbsd.7.4
+
+    return ridOS;
+}
 #elif defined(TARGET_ILLUMOS)
 pal::string_t pal::get_current_os_rid_platform()
 {
@@ -955,6 +980,24 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
     }
 
     return (recv->length() > 0);
+}
+
+extern char **environ;
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    if (environ == nullptr)
+        return;
+
+    for (char **env = environ; *env != nullptr; ++env)
+    {
+        const char* current = *env;
+        const char* separator = ::strchr(current, '=');
+        if (separator != nullptr && separator != current)
+        {
+            pal::string_t name(current, separator - current);
+            callback(name.c_str(), separator + 1);
+        }
+    }
 }
 
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)

@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\fgehopt.cpp Line: 624
 // 
+
+namespace Runtime_111617;
+
 using System;
 using Xunit;
 

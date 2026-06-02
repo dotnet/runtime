@@ -113,6 +113,8 @@ namespace System.Reflection.Emit
 
         public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers ?? Type.EmptyTypes;
 
+        public override Type GetModifiedFieldType() => FieldType;
+
         #endregion
 
         #region ICustomAttributeProvider Implementation

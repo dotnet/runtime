@@ -982,7 +982,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    // SequenceEquals on IEnumerable is painfully slow and allocates memory.
+    // SequenceEqual on IEnumerable is painfully slow and allocates memory.
     public static class SequenceExtensions
     {
         public static bool SequenceEqual<T>(this List<T> first, List<T> second)

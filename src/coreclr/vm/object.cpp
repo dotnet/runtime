@@ -658,47 +658,6 @@ STRINGREF StringObject::NewString(INT32 length) {
     }
 }
 
-
-/*==================================NewString===================================
-**Action: Many years ago, VB didn't have the concept of a byte array, so enterprising
-**        users created one by allocating a BSTR with an odd length and using it to
-**        store bytes.  A generation later, we're still stuck supporting this behavior.
-**        The way that we do this is to take advantage of the difference between the
-**        array length and the string length.  The string length will always be the
-**        number of characters between the start of the string and the terminating 0.
-**        If we need an odd number of bytes, we'll take one wchar after the terminating 0.
-**        (e.g. at position StringLength+1).  The high-order byte of this wchar is
-**        reserved for flags and the low-order byte is our odd byte. This function is
-**        used to allocate a string of that shape, but we don't actually mark the
-**        trailing byte as being in use yet.
-**Returns: A newly allocated string.  Null if length is less than 0.
-**Arguments: length -- the length of the string to allocate
-**           bHasTrailByte -- whether the string also has a trailing byte.
-**Exceptions: OutOfMemoryException if AllocateString fails.
-==============================================================================*/
-STRINGREF StringObject::NewString(INT32 length, BOOL bHasTrailByte) {
-    CONTRACTL {
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(length>=0 && length != INT32_MAX);
-    } CONTRACTL_END;
-
-    STRINGREF pString;
-    if (length<0 || length == INT32_MAX) {
-        return NULL;
-    } else if (length == 0) {
-        return GetEmptyString();
-    } else {
-        pString = AllocateString(length);
-        _ASSERTE(pString->GetBuffer()[length]==0);
-        if (bHasTrailByte) {
-            _ASSERTE(pString->GetBuffer()[length+1]==0);
-        }
-    }
-
-    return pString;
-}
-
 //========================================================================
 // Creates a System.String object and initializes from
 // the supplied null-terminated C string.
@@ -846,26 +805,6 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
 STRINGREF* StringObject::EmptyStringRefPtr = NULL;
 bool StringObject::EmptyStringIsFrozen = false;
 
-//The special string helpers are used as flag bits for weird strings that have bytes
-//after the terminating 0.  The only case where we use this right now is the VB BSTR as
-//byte array which is described in MakeStringAsByteArrayFromBytes.
-#define SPECIAL_STRING_VB_BYTE_ARRAY 0x100
-
-FORCEINLINE BOOL MARKS_VB_BYTE_ARRAY(WCHAR x)
-{
-    return static_cast<BOOL>(x & SPECIAL_STRING_VB_BYTE_ARRAY);
-}
-
-FORCEINLINE WCHAR MAKE_VB_TRAIL_BYTE(BYTE x)
-{
-    return static_cast<WCHAR>(x) | SPECIAL_STRING_VB_BYTE_ARRAY;
-}
-
-FORCEINLINE BYTE GET_VB_TRAIL_BYTE(WCHAR x)
-{
-    return static_cast<BYTE>(x & 0xFF);
-}
-
 
 /*==============================InitEmptyStringRefPtr============================
 **Action:  Gets an empty string refptr, cache the result.
@@ -885,74 +824,6 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
     EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
     EmptyStringIsFrozen = pinnedStr != nullptr;
     return EmptyStringRefPtr;
-}
-
-/*============================InternalTrailByteCheck============================
-**Action: Many years ago, VB didn't have the concept of a byte array, so enterprising
-**        users created one by allocating a BSTR with an odd length and using it to
-**        store bytes.  A generation later, we're still stuck supporting this behavior.
-**        The way that we do this is stick the trail byte in the sync block
-**        whenever we encounter such a situation. Since we expect this to be a very corner case
-**        accessing the sync block seems like a good enough solution
-**
-**Returns: True if <CODE>str</CODE> contains a VB trail byte, false otherwise.
-**Arguments: str -- The string to be examined.
-**Exceptions: None
-==============================================================================*/
-BOOL StringObject::HasTrailByte() {
-    WRAPPER_NO_CONTRACT;
-
-    SyncBlock * pSyncBlock = PassiveGetSyncBlock();
-    if(pSyncBlock != NULL)
-    {
-        return pSyncBlock->HasCOMBstrTrailByte();
-    }
-
-    return FALSE;
-}
-
-/*=================================GetTrailByte=================================
-**Action:  If <CODE>str</CODE> contains a vb trail byte, returns a copy of it.
-**Returns: True if <CODE>str</CODE> contains a trail byte.  *bTrailByte is set to
-**         the byte in question if <CODE>str</CODE> does have a trail byte, otherwise
-**         it's set to 0.
-**Arguments: str -- The string being examined.
-**           bTrailByte -- An out param to hold the value of the trail byte.
-**Exceptions: None.
-==============================================================================*/
-BOOL StringObject::GetTrailByte(BYTE *bTrailByte) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    _ASSERTE(bTrailByte);
-    *bTrailByte=0;
-
-    BOOL retValue = HasTrailByte();
-
-    if(retValue)
-    {
-        *bTrailByte = GET_VB_TRAIL_BYTE(GetHeader()->PassiveGetSyncBlock()->GetCOMBstrTrailByte());
-    }
-
-    return retValue;
-}
-
-/*=================================SetTrailByte=================================
-**Action: Sets the trail byte in the sync block
-**Returns: True.
-**Arguments: str -- The string into which to set the trail byte.
-**           bTrailByte -- The trail byte to be added to the string.
-**Exceptions: None.
-==============================================================================*/
-BOOL StringObject::SetTrailByte(BYTE bTrailByte) {
-    WRAPPER_NO_CONTRACT;
-
-    GetHeader()->GetSyncBlock()->SetCOMBstrTrailByte(MAKE_VB_TRAIL_BYTE(bTrailByte));
-    return TRUE;
 }
 
 #ifdef USE_CHECKED_OBJECTREFS

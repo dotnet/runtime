@@ -894,7 +894,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    // First try to read it as a PE file, otherwise try it as a WebCIL file
+                    // First try to read it as a PE file, otherwise try it as a Webcil file
                     var peReader = new PEReader(asmStream);
                     if (!peReader.HasMetadata)
                         throw new BadImageFormatException();
@@ -970,6 +970,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             LoadAssemblyInfo(peReader, name, asmMetadataReader, summary, logger);
         }
+
         private void FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new WebcilDebugMetadataProvider(wcReader);
@@ -1374,7 +1375,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed partial class SourceFile
     {
         [GeneratedRegex(@"([:/])")]
-        private static partial Regex RegexForEscapeFileName();
+        private static partial Regex RegexForEscapeFileName { get; }
 
         private readonly Dictionary<int, MethodInfo> methods;
         private readonly AssemblyInfo assembly;
@@ -1476,7 +1477,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in RegexForEscapeFileName().Split(path))
+            foreach (var part in RegexForEscapeFileName.Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);

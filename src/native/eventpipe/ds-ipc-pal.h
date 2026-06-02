@@ -140,5 +140,10 @@ ds_ipc_stream_to_string (
 	ep_char8_t *buffer,
 	uint32_t buffer_len);
 
+IpcPollEvents
+ds_ipc_stream_poll (
+	DiagnosticsIpcStream *ipc_stream,
+	uint32_t timeout_ms);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_IPC_PAL_H__ */

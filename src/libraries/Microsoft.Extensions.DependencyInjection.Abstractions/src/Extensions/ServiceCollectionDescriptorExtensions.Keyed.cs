@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient(IServiceCollection, Type, object)"/>
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
@@ -37,6 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient(IServiceCollection, Type, object, Type)"/>
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             Type service,
@@ -60,6 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient(IServiceCollection, Type, object, Func{IServiceProvider, object, object})"/>
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             Type service,
@@ -81,6 +84,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient{TService}(IServiceCollection, object)"/>
         public static void TryAddKeyedTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
@@ -98,6 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient{TService, TImplementation}(IServiceCollection, object)"/>
         public static void TryAddKeyedTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
@@ -116,6 +121,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedTransient{TService}(IServiceCollection, object, Func{IServiceProvider, object, TService})"/>
         public static void TryAddKeyedTransient<TService>(
             this IServiceCollection services,
             object? serviceKey,
@@ -132,6 +138,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped(IServiceCollection, Type, object)"/>
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
@@ -153,6 +160,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped(IServiceCollection, Type, object, Type)"/>
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             Type service,
@@ -176,6 +184,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped(IServiceCollection, Type, object, Func{IServiceProvider, object, object})"/>
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             Type service,
@@ -197,6 +206,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped{TService}(IServiceCollection, object)"/>
         public static void TryAddKeyedScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
@@ -214,6 +224,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped{TService, TImplementation}(IServiceCollection, object)"/>
         public static void TryAddKeyedScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
@@ -232,6 +243,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedScoped{TService}(IServiceCollection, object, Func{IServiceProvider, object, TService})"/>
         public static void TryAddKeyedScoped<TService>(
             this IServiceCollection services,
             object? serviceKey,
@@ -248,6 +260,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton(IServiceCollection, Type, object)"/>
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
@@ -269,6 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton(IServiceCollection, Type, object, Type)"/>
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             Type service,
@@ -292,6 +306,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="service">The type of the service to register.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton(IServiceCollection, Type, object, Func{IServiceProvider, object, object})"/>
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             Type service,
@@ -313,6 +328,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton{TService}(IServiceCollection, object)"/>
         public static void TryAddKeyedSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
@@ -330,6 +346,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton{TService, TImplementation}(IServiceCollection, object)"/>
         public static void TryAddKeyedSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
@@ -348,6 +365,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="instance">The instance of the service to add.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton{TService}(IServiceCollection, object, TService)"/>
         public static void TryAddKeyedSingleton<TService>(this IServiceCollection collection, object? serviceKey, TService instance)
             where TService : class
         {
@@ -367,6 +385,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
+        /// <seealso cref="ServiceCollectionServiceExtensions.AddKeyedSingleton{TService}(IServiceCollection, object, Func{IServiceProvider, object, TService})"/>
         public static void TryAddKeyedSingleton<TService>(
             this IServiceCollection services,
             object? serviceKey,

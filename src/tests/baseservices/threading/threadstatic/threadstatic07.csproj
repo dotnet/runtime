@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="threadstatic07.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

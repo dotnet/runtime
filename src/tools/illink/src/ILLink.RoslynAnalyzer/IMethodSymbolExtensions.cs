@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer
         /// </summary>
         public static int GetMetadataParametersCount(this IMethodSymbol method)
         {
-            return method.Parameters.Length;
+            return method.Parameters.Length + (method.HasExtensionParameterOnType() ? 1 : 0);
         }
 
         /// <summary>
@@ -66,7 +66,15 @@ namespace ILLink.RoslynAnalyzer
         /// </summary>
         public static int GetParametersCount(this IMethodSymbol method)
         {
-            return method.Parameters.Length + (method.HasImplicitThis() ? 1 : 0);
+            return method.Parameters.Length + (method.HasImplicitThis() ? 1 : 0) + (method.HasExtensionParameterOnType() ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Returns true if the method's containing type has an extension parameter
+        /// </summary>
+        public static bool HasExtensionParameterOnType(this IMethodSymbol method)
+        {
+            return method.ContainingType.ExtensionParameter != null;
         }
     }
 }

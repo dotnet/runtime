@@ -32,7 +32,7 @@
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
           DependsOnTargets="$(AndroidBuildDependsOn)" >
-    <Exec Command="$(DotNetTool) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
+    <Exec Command="&quot;$(DotNetTool)&quot; xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=&quot;$(AndroidBundleDir)/bin/HelloAndroid.apk&quot; --expected-exit-code=42 --output-directory=&quot;$(AndroidBundleDir)/log&quot;" />
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"

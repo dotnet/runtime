@@ -19,7 +19,7 @@ namespace System.Net
         public static void Accepted(Socket socket, object? remoteEp, object? localEp) =>
             Log.Accepted(IdOf(remoteEp), IdOf(localEp), GetHashCode(socket));
 
-        [Event(AcceptedId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(AcceptedId, Level = EventLevel.Informational)]
         private void Accepted(string remoteEp, string localEp, int socketHash) =>
             WriteEvent(AcceptedId, remoteEp, localEp, socketHash);
 
@@ -27,7 +27,7 @@ namespace System.Net
         public static void Connected(Socket socket, object? localEp, object? remoteEp) =>
             Log.Connected(IdOf(localEp), IdOf(remoteEp), GetHashCode(socket));
 
-        [Event(ConnectedId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(ConnectedId, Level = EventLevel.Informational)]
         private void Connected(string localEp, string remoteEp, int socketHash) =>
             WriteEvent(ConnectedId, localEp, remoteEp, socketHash);
 
@@ -35,7 +35,7 @@ namespace System.Net
         public static void ConnectedAsyncDns(Socket socket) =>
             Log.ConnectedAsyncDns(GetHashCode(socket));
 
-        [Event(ConnectedAsyncDnsId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(ConnectedAsyncDnsId, Level = EventLevel.Informational)]
         private void ConnectedAsyncDns(int socketHash) =>
             WriteEvent(ConnectedAsyncDnsId, socketHash);
 
@@ -43,7 +43,7 @@ namespace System.Net
         public static void NotLoggedFile(string filePath, Socket socket, SocketAsyncOperation completedOperation) =>
             Log.NotLoggedFile(filePath, GetHashCode(socket), completedOperation);
 
-        [Event(NotLoggedFileId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(NotLoggedFileId, Level = EventLevel.Informational)]
         private void NotLoggedFile(string filePath, int socketHash, SocketAsyncOperation completedOperation) =>
             WriteEvent(NotLoggedFileId, filePath, socketHash, (int)completedOperation);
 

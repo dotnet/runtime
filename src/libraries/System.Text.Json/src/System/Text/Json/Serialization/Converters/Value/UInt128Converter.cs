@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override UInt128 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             if (reader.TokenType != JsonTokenType.Number)
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
@@ -30,10 +35,16 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, UInt128 value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             WriteCore(writer, value);
         }
 
-        private static UInt128 ReadCore(ref Utf8JsonReader reader)
+        private static unsafe UInt128 ReadCore(ref Utf8JsonReader reader)
         {
             int bufferLength = reader.ValueLength;
 
@@ -56,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
             return result;
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, UInt128 value)
+        private static unsafe void WriteCore(Utf8JsonWriter writer, UInt128 value)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
             Format(buffer, value, out int written);
@@ -69,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, UInt128 value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, UInt128 value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
             Format(buffer, value, out int written);
@@ -84,10 +95,15 @@ namespace System.Text.Json.Serialization.Converters
                 return ReadCore(ref reader);
             }
 
-            return Read(ref reader, Type, options);
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
+            }
+
+            return ReadCore(ref reader);
         }
 
-        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, UInt128 value, JsonNumberHandling handling)
+        internal override unsafe void WriteNumberWithCustomHandling(Utf8JsonWriter writer, UInt128 value, JsonNumberHandling handling)
         {
             if ((JsonNumberHandling.WriteAsString & handling) != 0)
             {
@@ -108,6 +124,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Integer, numberHandling);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
 
         private static void Format(
             Span<byte> destination,

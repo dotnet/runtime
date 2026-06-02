@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices
 
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
@@ -183,7 +183,7 @@ namespace System.Runtime.InteropServices
         {
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
                     !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))
@@ -196,6 +196,7 @@ namespace System.Runtime.InteropServices
     }
 
     // Callback implementation of IFindReferenceTargetsCallback
+    [EagerStaticClassConstruction]
     internal static unsafe class FindReferenceTargetsCallback
     {
         // Define an on-stack compatible COM instance to avoid allocating

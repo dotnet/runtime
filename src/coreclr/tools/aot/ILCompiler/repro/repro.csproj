@@ -32,7 +32,7 @@
       <ReproResponseLines Include="--directpinvokelist:$(RuntimeBinDir)build\WindowsAPIs.txt" />
       <ReproResponseLines Include="--directpinvoke:System.Globalization.Native" />
       <ReproResponseLines Include="--directpinvoke:System.IO.Compression.Native" />
-      <ReproResponseLines Include="--stacktracedata" />
+      <ReproResponseLines Include="--stacktracedata:lines" />
       <ReproResponseLines Include="--scanreflection" />
       <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />
       <ReproResponseLines Include="--feature:System.Diagnostics.Tracing.EventSource.IsSupported=false" />

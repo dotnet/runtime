@@ -83,7 +83,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData('1', true)]
         [InlineData("&O123", true)]
         [InlineData("&H123", true)]
-        public void IsNumeric(object value, bool expected)
+        public void IsNumeric(object? value, bool expected)
         {
             Assert.Equal(expected, Versioned.IsNumeric(value));
         }
@@ -94,14 +94,14 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(" OBJECT ", "System.Object")]
         [InlineData("object", "System.Object")]
         [InlineData("custom", null)]
-        public void SystemTypeName(string value, string expected)
+        public void SystemTypeName(string? value, string? expected)
         {
             Assert.Equal(expected, Versioned.SystemTypeName(value));
         }
 
         [Theory]
         [MemberData(nameof(TypeName_TestData))]
-        public void TypeName(object expression, string expected)
+        public void TypeName(object? expression, string expected)
         {
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
@@ -155,7 +155,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("Object", "Object")]
         [InlineData(" object ", "Object")]
         [InlineData("custom", null)]
-        public void VbTypeName(string value, string expected)
+        public void VbTypeName(string? value, string? expected)
         {
             Assert.Equal(expected, Versioned.VbTypeName(value));
         }

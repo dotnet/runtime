@@ -71,7 +71,7 @@ namespace istypeequivalent
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TestTypesWhichShouldMatch()
         {
             foreach (var typePair in GetTypesWhichClaimMatchingTypeIdentifiersInNamespace("TypesWhichMatch"))
@@ -82,7 +82,7 @@ namespace istypeequivalent
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TestTypesWhichShouldNotMatch()
         {
             foreach (var typePair in GetTypesWhichClaimMatchingTypeIdentifiersInNamespace("TypesWhichDoNotMatch"))

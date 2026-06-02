@@ -47,46 +47,50 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
 
     } CONTRACTL_END;
 
-    EEJitManager::CodeHeapIterator heapIterator;
-    while(heapIterator.Next())
+    BOOL result = TRUE;
+    EX_TRY
     {
-        MethodDesc *pMD = heapIterator.GetMethod();
-
-        // On AMD64 JumpStub is used to call functions that is 2GB away.  JumpStubs have a CodeHeader
-        // with NULL MethodDesc, are stored in code heap and are reported by EEJitManager::EnumCode.
-        if (pMD == NULL)
-            continue;
-
-        // There are two possible reasons to skip this MD.
-        //
-        // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
-        //
-        // 2) If it has no code compiled yet for it, then skip it.
-        //
-        if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+        CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
+        while (heapIterator.Next())
         {
-            continue;
-        }
+            MethodDesc *pMD = heapIterator.GetMethod();
 
-        COR_PRF_FUNCTION * element = m_elements.Append();
-        if (element == NULL)
-        {
-            return FALSE;
-        }
-        element->functionId = (FunctionID) pMD;
+            // Stubs (see StubCodeBlockKind) have no MethodDesc. Skip them.
+            if (pMD == NULL)
+                continue;
 
-        if (fWithReJITIDs)
-        {
-            // This causes triggering and locking, while the non-rejitid case does not.
-            element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
-        }
-        else
-        {
-            element->reJitId = 0;
+            // There are two possible reasons to skip this MD.
+            //
+            // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
+            //
+            // 2) If it has no code compiled yet for it, then skip it.
+            //
+            if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+            {
+                continue;
+            }
+
+            COR_PRF_FUNCTION * element = m_elements.AppendThrowing();
+            element->functionId = (FunctionID) pMD;
+
+            if (fWithReJITIDs)
+            {
+                // This causes triggering and locking, while the non-rejitid case does not.
+                element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
+            }
+            else
+            {
+                element->reJitId = 0;
+            }
         }
     }
+    EX_CATCH
+    {
+        result = FALSE;
+    }
+    EX_END_CATCH
 
-    return TRUE;
+    return result;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -210,15 +214,8 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
 
     // #ProfilerEnumAppDomains (See also code:#ProfilerEnumGeneral)
     //
-    // When enumerating AppDomains, ensure this timeline:
-    // AD available in catch-up enumeration
-    //     < AppDomainCreationFinished issued
-    //     < AD NOT available from catch-up enumeration
-    //
-    //     * AppDomainCreationFinished (with S_OK hrStatus) is issued once the AppDomain
-    //         reaches STAGE_ACTIVE.
     AppDomain * pAppDomain = ::GetAppDomain();
-    if (pAppDomain->IsActive())
+    if (pAppDomain)
     {
 
         // Of course, the AD could start unloading here, but if it does we're guaranteed
@@ -241,8 +238,7 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
 //---------------------------------------------------------------------------------------
 //
 // Iterates through exactly those Modules that should be visible to the profiler, and
-// calls a caller-supplied function to operate on each iterated Module.  Any module that
-// is loaded domain-neutral is skipped.
+// calls a caller-supplied function to operate on each iterated Module.
 //
 // Arguments:
 //    * pAppDomain - Only unshared modules loaded into this AppDomain will be iterated
@@ -261,7 +257,7 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
 //
 
 template<typename CallbackObject>
-HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
+HRESULT IterateModules(AppDomain * pAppDomain,
                                CallbackObject * callbackObj,
                                HRESULT (CallbackObject:: * callbackMethod)(Module *))
 {
@@ -291,7 +287,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     //             enumerable.
     //
     // Note: To determine what happens in a given load stage of a module or assembly,
-    // look at the switch statement in code:DomainAssembly::DoIncrementalLoad, and keep in
+    // look at the switch statement in code:Assembly::DoIncrementalLoad, and keep in
     // mind that it takes cases on the *next* load stage; in other words, the actions
     // that appear in a case for a given load stage are actually executed as we attempt
     // to transition TO that load stage, and thus they actually execute while the module
@@ -365,7 +361,7 @@ HRESULT ProfilerModuleEnum::AddUnsharedModulesFromAppDomain(AppDomain * pAppDoma
     }
     CONTRACTL_END;
 
-    return IterateUnsharedModules<ProfilerModuleEnum>(
+    return IterateModules<ProfilerModuleEnum>(
         pAppDomain,
         this,
         &ProfilerModuleEnum::AddUnsharedModule);
@@ -374,7 +370,7 @@ HRESULT ProfilerModuleEnum::AddUnsharedModulesFromAppDomain(AppDomain * pAppDoma
 
 //---------------------------------------------------------------------------------------
 //
-// Callback passed to IterateUnsharedModules, that takes the currently iterated unshared
+// Callback passed to IterateModules, that takes the currently iterated unshared
 // Module, and adds it to the enumerator. See code:ProfilerModuleEnum::Init for how this
 // gets used.
 //
@@ -431,18 +427,6 @@ HRESULT ProfilerModuleEnum::Init()
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-
-    // When an assembly is loaded into an AppDomain, a DomainAssembly is
-    // created (one per pairing of the AppDomain with the assembly). This means
-    // that we'll create multiple DomainAssemblys for the same module if it is loaded
-    // domain-neutral (i.e., "shared"). The profiling API callbacks shield the profiler
-    // from this, and only report a given module the first time it's loaded. So a
-    // profiler sees only one ModuleLoadFinished for a module loaded domain-neutral, even
-    // though the module may be used by multiple AppDomains. The module enumerator must
-    // mirror the behavior of the profiling API callbacks, by avoiding duplicate Modules
-    // in the module list we return to the profiler. So first add unshared modules (non
-    // domain-neutral) to the enumerator, and then separately add any shared modules that
-    // were loaded into at least one AD.
 
     // First, iterate through all ADs. For each one, call
     // AddUnsharedModulesFromAppDomain, which iterates through all UNSHARED modules and
@@ -565,11 +549,11 @@ HRESULT ProfilerThreadEnum::Init()
     // Because the thread enumeration status need to change before the ThreadCreated/ThreadDestroyed
     // callback, we need to:
     // 1. Include Thread::TS_FullyInitialized threads for ThreadCreated
-    // 2. Exclude Thread::TS_Dead | Thread::TS_ReportDead for ThreadDestroyed
+    // 2. Exclude Thread::TS_Dead | Thread::TS_Stopped for ThreadDestroyed
     //
-    while((pThread = ThreadStore::GetAllThreadList(
+    while ((pThread = ThreadStore::GetAllThreadList(
         pThread,
-        Thread::TS_Dead | Thread::TS_ReportDead | Thread::TS_FullyInitialized,
+        Thread::TS_Dead | Thread::TS_Stopped | Thread::TS_FullyInitialized,
         Thread::TS_FullyInitialized
         )))
     {

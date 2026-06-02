@@ -1176,7 +1176,7 @@ namespace System.Security.AccessControl
             {
                 GenericAce ace = _acl[i];
 
-                if (false == InspectAce(ref ace, isDacl))
+                if (!InspectAce(ref ace, isDacl))
                 {
                     _acl.RemoveAce(i);
                 }
@@ -1977,7 +1977,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (!InspectAce(ref newAce, this is DiscretionaryAcl))
             {
                 return;
             }
@@ -2055,7 +2055,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (!InspectAce(ref newAce, this is DiscretionaryAcl))
             {
                 return;
             }
@@ -2430,7 +2430,7 @@ namespace System.Security.AccessControl
                     if (!saclSemantics ||
                         ((ms_AceFlags & AceFlags.AuditFlags) != 0))
                     {
-                        if (false == RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal))
+                        if (!RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal))
                         {
                             removePossible = false;
                             break;

@@ -135,7 +135,7 @@ namespace System.Text.Json.Nodes
         ///   Gets the JSON path.
         /// </summary>
         /// <returns>The JSON Path value.</returns>
-        public string GetPath()
+        public unsafe string GetPath()
         {
             if (Parent == null)
             {
@@ -388,7 +388,7 @@ namespace System.Text.Json.Nodes
                 return JsonNodeConverter.Create(element, options);
             }
 
-            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            var jsonTypeInfo = JsonSerializerOptions.Default.GetTypeInfo<T>();
             return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }

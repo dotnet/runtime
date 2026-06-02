@@ -3,6 +3,9 @@
 
 // Adaptated from bug:
 // Found by Antigen
+
+namespace Runtime_64764;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

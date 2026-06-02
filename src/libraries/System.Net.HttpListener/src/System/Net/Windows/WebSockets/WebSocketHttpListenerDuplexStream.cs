@@ -200,7 +200,7 @@ namespace System.Net.WebSockets
                 Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
                 if (eventArgs.Count == 0 || _inputStream.Closed)
                 {
-                    eventArgs.FinishOperationSuccess(0, true);
+                    eventArgs.FinishOperationSuccess(0);
                     return false;
                 }
 
@@ -213,7 +213,7 @@ namespace System.Net.WebSockets
                     dataRead = _inputStream.GetChunks(eventArgs.Buffer, eventArgs.Offset, eventArgs.Count);
                     if (_inputStream.BufferedDataChunksAvailable && dataRead == eventArgs.Count)
                     {
-                        eventArgs.FinishOperationSuccess(eventArgs.Count, true);
+                        eventArgs.FinishOperationSuccess(eventArgs.Count);
                         return false;
                     }
                 }
@@ -262,12 +262,12 @@ namespace System.Net.WebSockets
                 {
                     // IO operation completed synchronously. No IO completion port callback is used because
                     // it was disabled in SwitchToOpaqueMode()
-                    eventArgs.FinishOperationSuccess((int)bytesReturned, true);
+                    eventArgs.FinishOperationSuccess((int)bytesReturned);
                     completedAsynchronouslyOrWithError = false;
                 }
                 else if (statusCode == Interop.HttpApi.ERROR_HANDLE_EOF)
                 {
-                    eventArgs.FinishOperationSuccess(0, true);
+                    eventArgs.FinishOperationSuccess(0);
                     completedAsynchronouslyOrWithError = false;
                 }
                 else
@@ -277,7 +277,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                _readEventArgs!.FinishOperationFailure(e, true);
+                _readEventArgs!.FinishOperationFailure(e);
                 _outputStream.SetClosedFlag();
                 _outputStream.InternalHttpContext.Abort();
 
@@ -450,7 +450,7 @@ namespace System.Net.WebSockets
                 if (_outputStream.Closed ||
                     (eventArgs.Buffer != null && eventArgs.Count == 0))
                 {
-                    eventArgs.FinishOperationSuccess(eventArgs.Count, true);
+                    eventArgs.FinishOperationSuccess(eventArgs.Count);
                     return false;
                 }
 
@@ -490,7 +490,7 @@ namespace System.Net.WebSockets
                     HttpListener.SkipIOCPCallbackOnSuccess)
                 {
                     // IO operation completed synchronously - callback won't be called to signal completion.
-                    eventArgs.FinishOperationSuccess((int)bytesSent, true);
+                    eventArgs.FinishOperationSuccess((int)bytesSent);
                     completedAsynchronouslyOrWithError = false;
                 }
                 else
@@ -500,7 +500,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                _writeEventArgs!.FinishOperationFailure(e, true);
+                _writeEventArgs!.FinishOperationFailure(e);
                 _outputStream.SetClosedFlag();
                 _outputStream.InternalHttpContext.Abort();
 
@@ -1061,7 +1061,7 @@ namespace System.Net.WebSockets
                 _bytesTransferred = bytesTransferred;
             }
 
-            internal void FinishOperationFailure(Exception exception, bool syncCompletion)
+            internal void FinishOperationFailure(Exception exception)
             {
                 SetResults(exception, 0);
 
@@ -1075,7 +1075,7 @@ namespace System.Net.WebSockets
                 OnCompleted(this);
             }
 
-            internal void FinishOperationSuccess(int bytesTransferred, bool syncCompletion)
+            internal void FinishOperationSuccess(int bytesTransferred)
             {
                 SetResults(null, bytesTransferred);
 
@@ -1113,11 +1113,11 @@ namespace System.Net.WebSockets
                 if (errorCode == Interop.HttpApi.ERROR_SUCCESS ||
                     errorCode == Interop.HttpApi.ERROR_HANDLE_EOF)
                 {
-                    FinishOperationSuccess((int)numBytes, false);
+                    FinishOperationSuccess((int)numBytes);
                 }
                 else
                 {
-                    FinishOperationFailure(new HttpListenerException((int)errorCode), false);
+                    FinishOperationFailure(new HttpListenerException((int)errorCode));
                 }
             }
 

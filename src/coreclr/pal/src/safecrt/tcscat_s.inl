@@ -4,14 +4,10 @@
 /***
 *tcscat_s.inl - general implementation of _tcscpy_s
 *
-
-*
 *Purpose:
 *       This file contains the general algorithm for strcat_s and its variants.
-*
 ****/
 
-_FUNC_PROLOGUE
 errno_t __cdecl _FUNC_NAME(_CHAR *_DEST, size_t _SIZE, const _CHAR *_SRC)
 {
     _CHAR *p;
@@ -47,4 +43,3 @@ errno_t __cdecl _FUNC_NAME(_CHAR *_DEST, size_t _SIZE, const _CHAR *_SRC)
     _FILL_STRING(_DEST, _SIZE, _SIZE - available + 1);
     _RETURN_NO_ERROR;
 }
-

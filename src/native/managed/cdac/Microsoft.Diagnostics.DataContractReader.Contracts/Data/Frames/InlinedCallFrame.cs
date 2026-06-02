@@ -3,25 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class InlinedCallFrame : IData<InlinedCallFrame>
+[CdacType(nameof(DataType.InlinedCallFrame))]
+internal partial class InlinedCallFrame : IData<InlinedCallFrame>
 {
-    static InlinedCallFrame IData<InlinedCallFrame>.Create(Target target, TargetPointer address)
-        => new InlinedCallFrame(target, address);
-
-    public InlinedCallFrame(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.InlinedCallFrame);
-        CallSiteSP = target.ReadPointer(address + (ulong)type.Fields[nameof(CallSiteSP)].Offset);
-        CallerReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerReturnAddress)].Offset);
-        CalleeSavedFP = target.ReadPointer(address + (ulong)type.Fields[nameof(CalleeSavedFP)].Offset);
-        if (type.Fields.ContainsKey(nameof(SPAfterProlog)))
-            SPAfterProlog = target.ReadPointer(address + (ulong)type.Fields[nameof(SPAfterProlog)].Offset);
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-    public TargetPointer CallSiteSP { get; }
-    public TargetPointer CallerReturnAddress { get; }
-    public TargetPointer CalleeSavedFP { get; }
-    public TargetPointer? SPAfterProlog { get; }
+    [Field] public TargetPointer CallSiteSP { get; }
+    [Field] public TargetPointer CallerReturnAddress { get; }
+    [Field] public TargetPointer CalleeSavedFP { get; }
+    [Field] public TargetPointer? SPAfterProlog { get; }
+    [Field] public TargetPointer Datum { get; }
 }

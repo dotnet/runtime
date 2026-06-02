@@ -674,7 +674,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // We don't have the userAccountControl property, this must be a persisted principal.  Perhaps we don't have access
                 // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.
-                Debug.Assert(p.unpersisted == false);
+                Debug.Assert(!p.unpersisted);
                 throw new PrincipalOperationException(
                                 SR.ADStoreCtxUnableToReadExistingAccountControlFlagsForUpdate);
             }

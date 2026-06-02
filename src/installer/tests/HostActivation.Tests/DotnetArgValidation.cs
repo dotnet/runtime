@@ -22,7 +22,7 @@ namespace HostActivation.Tests
         public void MuxerExec_MissingAppAssembly_Fails()
         {
             string assemblyName = Path.Combine(GetNonexistentAndUnnormalizedPath(), "foo.dll");
-            TestContext.BuiltDotNet.Exec("exec", assemblyName)
+            HostTestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -34,7 +34,7 @@ namespace HostActivation.Tests
         public void MuxerExec_MissingAppAssembly_BadExtension_Fails()
         {
             string assemblyName = Path.Combine(GetNonexistentAndUnnormalizedPath(), "foo.xzy");
-            TestContext.BuiltDotNet.Exec("exec", assemblyName)
+            HostTestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -46,10 +46,10 @@ namespace HostActivation.Tests
         public void MuxerExec_BadExtension_Fails()
         {
             // Get a valid file name, but not exe or dll
-            string fxDir = TestContext.BuiltDotNet.GreatestVersionSharedFxPath;
+            string fxDir = HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath;
             string assemblyName = Path.Combine(fxDir, "Microsoft.NETCore.App.deps.json");
 
-            TestContext.BuiltDotNet.Exec("exec", assemblyName)
+            HostTestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -60,7 +60,7 @@ namespace HostActivation.Tests
         [Fact]
         public void MissingArgumentValue_Fails()
         {
-            TestContext.BuiltDotNet.Exec("--fx-version")
+            HostTestContext.BuiltDotNet.Exec("--fx-version")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -72,7 +72,7 @@ namespace HostActivation.Tests
         public void InvalidFileOrCommand_NoSDK_ListsPossibleIssues()
         {
             string fileName = "NonExistent";
-            TestContext.BuiltDotNet.Exec(fileName)
+            HostTestContext.BuiltDotNet.Exec(fileName)
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -85,7 +85,7 @@ namespace HostActivation.Tests
         // Return a non-existent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {
-            return Path.Combine(TestContext.BuiltDotNet.BinPath, @"x\y/");
+            return Path.Combine(HostTestContext.BuiltDotNet.BinPath, @"x\y/");
         }
 
         public class SharedTestState : IDisposable

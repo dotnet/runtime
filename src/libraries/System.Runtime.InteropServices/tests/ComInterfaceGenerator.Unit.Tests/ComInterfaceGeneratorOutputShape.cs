@@ -18,7 +18,7 @@ using Microsoft.Interop.UnitTests;
 using SourceGenerators.Tests;
 using Xunit;
 
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -149,7 +149,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
@@ -198,7 +198,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
@@ -256,7 +256,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
             """;
 
-            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,

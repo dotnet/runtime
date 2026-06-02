@@ -91,7 +91,7 @@ int64_t SystemNative_GetLowResolutionTimestamp(void)
 
 int64_t SystemNative_GetBootTimeTicks(void)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     struct timespec ts;
 
     int result = clock_gettime(CLOCK_BOOTTIME, &ts);
@@ -114,7 +114,7 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
 double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-#if defined(HAVE_GETRUSAGE)
+#ifndef HOST_WASI
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 

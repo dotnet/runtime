@@ -43,7 +43,7 @@ public: // Identification
 public: // Exceptions
     static void* GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
 public: // GC interaction
@@ -97,7 +97,7 @@ class Interop
 {
 public:
     // Check if pending exceptions are possible for the following native export.
-    static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
+    static bool ShouldCheckForPendingException(_In_ PInvokeMethodDesc* md);
 
     // A no return callback that is designed to help propagate a managed
     // exception going from Managed to Native.
@@ -105,7 +105,7 @@ public:
 
     static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
     // Notify started/finished when GC is running.

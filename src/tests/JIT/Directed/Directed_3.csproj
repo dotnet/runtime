@@ -5,6 +5,7 @@
     <!-- Directed_1 -->
     <MergedWrapperProjectReference Remove="coverage/**/*.??proj" />
     <MergedWrapperProjectReference Remove="nullabletypes/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="jmp/**/*.??proj" />
 
     <!-- Directed_2 -->
     <MergedWrapperProjectReference Remove="cmov/**/*.??proj" />

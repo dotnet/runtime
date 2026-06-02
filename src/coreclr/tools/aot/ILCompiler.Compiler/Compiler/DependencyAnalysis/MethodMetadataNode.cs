@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Metadata;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
@@ -11,6 +13,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using EcmaMethod = Internal.TypeSystem.Ecma.EcmaMethod;
+using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -40,12 +43,12 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.TypeMetadata((MetadataType)_method.OwningType), "Owning type metadata");
+
+            var owningType = (MetadataType)_method.OwningType;
+            dependencies.Add(factory.TypeMetadata(owningType), "Owning type metadata");
 
             if (!_isMinimal)
             {
-                CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _method);
-
                 foreach (var parameterHandle in _method.MetadataReader.GetMethodDefinition(_method.Handle).GetParameters())
                 {
                     dependencies.Add(factory.MethodParameterMetadata(new ReflectableParameter(_method.Module, parameterHandle)), "Parameter is visible");
@@ -79,10 +82,56 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), parameterType, _method);
                 }
+
+                if (_method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
+                    || owningType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
+                {
+                    dependencies.Add(factory.AnalysisCharacteristic("StackTraceHiddenMetadataPresent"), "Method is StackTraceHidden");
+                }
+
+                // If this method is a property or event accessor, ensure metadata for the associated
+                // property or event is generated as well. Properties/events are not modeled as first-class
+                // entities in the type system, so we discover them here from their accessors.
+                // As a performance optimization, only SpecialName methods can be accessors.
+                if ((_method.Attributes & MethodAttributes.SpecialName) != 0)
+                {
+                    MetadataReader reader = _method.MetadataReader;
+                    MethodDefinitionHandle methodHandle = _method.Handle;
+                    TypeDefinition declaringType = reader.GetTypeDefinition(reader.GetMethodDefinition(methodHandle).GetDeclaringType());
+                    foreach (PropertyDefinitionHandle propertyHandle in declaringType.GetProperties())
+                    {
+                        PropertyAccessors accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                        if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
+                        {
+                            dependencies.Add(
+                                factory.PropertyMetadata(new PropertyPseudoDesc((EcmaType)owningType, propertyHandle)),
+                                "Property associated with reflectable accessor");
+                        }
+                    }
+
+                    foreach (EventDefinitionHandle eventHandle in declaringType.GetEvents())
+                    {
+                        EventAccessors accessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                        if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
+                        {
+                            dependencies.Add(
+                                factory.EventMetadata(new EventPseudoDesc((EcmaType)owningType, eventHandle)),
+                                "Event associated with reflectable accessor");
+                        }
+                    }
+                }
             }
 
             return dependencies;
         }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _method);
+            return dependencies;
+        }
+
         protected override string GetName(NodeFactory factory)
         {
             return "Method metadata: " + _method.ToString();
@@ -96,9 +145,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => !_isMinimal;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

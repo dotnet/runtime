@@ -9,6 +9,9 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="InjectedCode\InjectedCode.csproj">
       <Project>{FD322A4C-EBCD-4322-90B7-35333EF2FE92}</Project>
       <Name>InjectedCode</Name>

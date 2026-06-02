@@ -4,7 +4,7 @@
 namespace Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies
 {
 #if METHOD
-	public class DynamicDependencyFromAttributeXmlOnNonReferencedAssemblyLibrary_Method
+    public class DynamicDependencyFromAttributeXmlOnNonReferencedAssemblyLibrary_Method
 #else
     public class DynamicDependencyFromAttributeXmlOnNonReferencedAssemblyLibrary_Field
 #endif

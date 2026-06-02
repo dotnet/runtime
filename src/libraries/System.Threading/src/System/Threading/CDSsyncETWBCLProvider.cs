@@ -25,15 +25,12 @@ namespace System.Threading
         Name = "System.Threading.SynchronizationEventSource",
         Guid = "EC631D38-466B-4290-9306-834971BA0217"
         )]
-    internal sealed class CdsSyncEtwBCLProvider : EventSource
+    internal sealed partial class CdsSyncEtwBCLProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the CDS Sync ETW provider.
-        /// The CDS Sync Event provider GUID is {EC631D38-466B-4290-9306-834971BA0217}.
         /// </summary>
         public static readonly CdsSyncEtwBCLProvider Log = new CdsSyncEtwBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private CdsSyncEtwBCLProvider() { }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);

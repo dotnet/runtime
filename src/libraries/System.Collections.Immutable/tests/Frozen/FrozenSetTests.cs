@@ -376,6 +376,17 @@ namespace System.Collections.Frozen.Tests
 
             Assert.All(expected, s => actual.Contains(s));
         }
+
+        [Fact]
+        [OuterLoop]
+        public void ToFrozenSet_WithExtremelyLargeStrings()
+        {
+            // Test case with extremely large strings that exceed length bucket boundaries.
+            var keys = new[] { "", new string('a', 0X7FFFFFC7 / 4) };
+            var frozen = keys.ToFrozenSet(GetIEqualityComparer());
+            Assert.Equal(keys.Length, frozen.Count);
+            Assert.All(keys, key => frozen.Contains(key));
+        }
     }
 
     public class FrozenSet_Generic_Tests_string_Default : FrozenSet_Generic_Tests_string
@@ -422,6 +433,14 @@ namespace System.Collections.Frozen.Tests
             ulong hi = unchecked((ulong)rand.Next());
             ulong lo = unchecked((ulong)rand.Next());
             return (hi << 32) | lo;
+        }
+
+        [OuterLoop("Takes several seconds")]
+        [Theory]
+        [InlineData(8_000_000)]
+        public void CreateHugeSet_Success(int largeCount)
+        {
+            GenericISetFactory(largeCount);
         }
     }
 

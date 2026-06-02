@@ -247,22 +247,9 @@ bool ObjCMarshalNative::IsRuntimeMessageSendFunction(
 
 namespace
 {
-    bool CallAvailableUnhandledExceptionPropagation()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        MethodDescCallSite dispatch(METHOD__OBJCMARSHAL__AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION);
-        return dispatch.Call_RetBool(NULL);
-    }
-
     void* CallInvokeUnhandledExceptionPropagation(
         _In_ OBJECTREF* exceptionPROTECTED,
-        _In_ REFLECTMETHODREF* methodRefPROTECTED,
+        _In_ MethodDesc* method,
         _Outptr_ void** callbackContext)
     {
         CONTRACTL
@@ -270,36 +257,29 @@ namespace
             THROWS;
             MODE_COOPERATIVE;
             PRECONDITION(exceptionPROTECTED != NULL);
-            PRECONDITION(methodRefPROTECTED != NULL);
+            PRECONDITION(method != NULL);
             PRECONDITION(callbackContext != NULL);
         }
         CONTRACTL_END;
 
-        void* callback = NULL;
         *callbackContext = NULL;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__OBJCMARSHAL__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*exceptionPROTECTED);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*methodRefPROTECTED);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(callbackContext);
-        CALL_MANAGED_METHOD(callback, void*, args);
-
-        return callback;
+        UnmanagedCallersOnlyCaller dispatch(METHOD__OBJCMARSHAL__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
+        return dispatch.InvokeThrowing_Ret<void*>(exceptionPROTECTED, method, callbackContext);
     }
 }
 
 void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
-    _In_ OBJECTHANDLE throwable,
+    _In_ OBJECTREF throwableRef,
     _Outptr_ void** context)
 {
     CONTRACT(void*)
     {
         THROWS;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
         PRECONDITION(codeInfo != NULL);
-        PRECONDITION(throwable != NULL);
+        PRECONDITION(throwableRef != NULL);
         PRECONDITION(context != NULL);
     }
     CONTRACT_END;
@@ -321,28 +301,12 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     }
 
     {
-        GCX_COOP();
-        struct
-        {
-            OBJECTREF throwableRef;
-            REFLECTMETHODREF methodRef;
-        } gc;
-        gc.throwableRef = NULL;
-        gc.methodRef = NULL;
-        GCPROTECT_BEGIN(gc);
+        GCPROTECT_BEGIN(throwableRef);
 
-        // Creating the StubMethodInfo isn't cheap, so check
-        // if there are any handlers prior to dispatching.
-        if (CallAvailableUnhandledExceptionPropagation())
-        {
-            gc.throwableRef = ObjectFromHandle(throwable);
-            gc.methodRef = method->AllocateStubMethodInfo();
-
-            callback = CallInvokeUnhandledExceptionPropagation(
-                &gc.throwableRef,
-                &gc.methodRef,
-                &callbackContext);
-        }
+        callback = CallInvokeUnhandledExceptionPropagation(
+            &throwableRef,
+            method,
+            &callbackContext);
 
         GCPROTECT_END();
     }

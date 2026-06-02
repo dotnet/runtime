@@ -18,10 +18,12 @@
 }
 .assembly Test_HndIndex_10_Reordered
 {
-  .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 )
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+
 // MVID: {68AEE7ED-2AC8-4330-9EC7-4EBFD6BD74E0}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -36,12 +38,20 @@
 .class public abstract auto ansi sealed beforefieldinit Test_Test_HndIndex_10_Reordered.App
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32 
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+        string('Test checks for an issue that cannot occur with the interpreter')
+        int32(0x400) // InterpreterActive
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('needs triage')
+        int32(2) // Mono
+    }
     .entrypoint
     // Code size       106 (0x6a)
     .maxstack  8
@@ -75,7 +85,7 @@
 
     IL_0065:  ldloc      V_1
     IL_0069:  ret
-    IL_006a:  
+    IL_006a:
     // Exception count 1
     .try IL_0000 to IL_0043 catch [mscorlib]System.Exception handler IL_0043 to IL_0065
   } // end of method App::Main
@@ -94,7 +104,7 @@
 .class private auto ansi beforefieldinit Test_Test_HndIndex_10_Reordered.DerivedClass
        extends Test_Test_HndIndex_10_Reordered.BaseClass
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string input,
                                string input2) cil managed noinlining
   {
@@ -123,7 +133,7 @@
     IL_001e:  leave      IL_0023
 
     IL_0023:  ret
-    IL_0024:  
+    IL_0024:
     // Exception count 1
     .try IL_0000 to IL_0014 catch [mscorlib]System.InvalidOperationException handler IL_0014 to IL_0023
   } // end of method DerivedClass::SetExceptionSP
@@ -173,7 +183,7 @@
     IL_0051:  ldstr      "In the real return block."
     IL_0056:  call       void Test_Test_HndIndex_10_Reordered.App::WriteLine(string)
     IL_005b:  ret
-    IL_005c:  
+    IL_005c:
     // Exception count 2
     .try IL_0000 to IL_000f finally handler IL_000f to IL_0042
     .try IL_0022 to IL_0031 catch [mscorlib]System.InvalidOperationException handler IL_0031 to IL_0041
@@ -193,7 +203,7 @@
        extends [mscorlib]System.Object
 {
   .field private string test
-  .method public hidebysig specialname instance string 
+  .method public hidebysig specialname instance string
           get_Test() cil managed
   {
     // Code size       7 (0x7)
@@ -203,7 +213,7 @@
     IL_0006:  ret
   } // end of method BaseClass::get_Test
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string input) cil managed noinlining
   {
     // Code size       31 (0x1f)

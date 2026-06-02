@@ -1,7 +1,16 @@
 trigger: none
 
+schedules:
+- cron: "0 13 * * 1,3,5"
+  displayName: Every Monday, Wednesday and Friday at 5:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -69,6 +78,11 @@ extends:
           - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 20
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: outerloop
             runInterpreter: true

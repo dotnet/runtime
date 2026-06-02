@@ -24,6 +24,7 @@ public class NintIndexOutOfRangeTest
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     public static unsafe int TestEntryPoint()
     {
         long longIndex = ((long)1) << 32;

@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("label")]
         [InlineData("  ")]
         [InlineData(null)]
-        public void Equals_ObjectNotLabel_ReturnsFalse(object obj)
+        public void Equals_ObjectNotLabel_ReturnsFalse(object? obj)
         {
             Label label = new Label();
             Assert.False(label.Equals(obj));

@@ -7,22 +7,16 @@ namespace System.CodeDom
 {
     public class CodeCompileUnit : CodeObject
     {
-        private StringCollection _assemblies;
-        private CodeAttributeDeclarationCollection _attributes;
-
-        private CodeDirectiveCollection _startDirectives;
-        private CodeDirectiveCollection _endDirectives;
-
         public CodeCompileUnit() { }
 
         public CodeNamespaceCollection Namespaces { get; } = new CodeNamespaceCollection();
 
-        public StringCollection ReferencedAssemblies => _assemblies ??= new StringCollection();
+        public StringCollection ReferencedAssemblies => field ??= new StringCollection();
 
-        public CodeAttributeDeclarationCollection AssemblyCustomAttributes => _attributes ??= new CodeAttributeDeclarationCollection();
+        public CodeAttributeDeclarationCollection AssemblyCustomAttributes => field ??= new CodeAttributeDeclarationCollection();
 
-        public CodeDirectiveCollection StartDirectives => _startDirectives ??= new CodeDirectiveCollection();
+        public CodeDirectiveCollection StartDirectives => field ??= new CodeDirectiveCollection();
 
-        public CodeDirectiveCollection EndDirectives => _endDirectives ??= new CodeDirectiveCollection();
+        public CodeDirectiveCollection EndDirectives => field ??= new CodeDirectiveCollection();
     }
 }

@@ -9,10 +9,12 @@ namespace ILLink.Shared.TypeSystemProxy
 {
     internal partial struct ParameterProxy
     {
-        public ParameterProxy(IParameterSymbol parameter)
+        public ParameterProxy(IParameterSymbol parameter, IMethodSymbol method)
         {
-            Method = new((IMethodSymbol)parameter.ContainingSymbol);
-            Index = (ParameterIndex)parameter.Ordinal + (Method.HasImplicitThis() ? 1 : 0);
+            Method = new(method);
+            Index = (ParameterIndex)parameter.Ordinal +
+                (Method.HasImplicitThis() ? 1 : 0) +
+                (method.HasExtensionParameterOnType() && parameter.ContainingSymbol is IMethodSymbol ? 1 : 0);
         }
 
         public partial ReferenceKind GetReferenceKind()
@@ -22,14 +24,14 @@ namespace ILLink.Shared.TypeSystemProxy
                     ? ReferenceKind.Ref
                     : ReferenceKind.None;
 
-            switch (Method.Method.Parameters[MetadataIndex].RefKind)
+            switch (ParameterSymbol!.RefKind)
             {
                 case RefKind.Ref: return ReferenceKind.Ref;
                 case RefKind.In: return ReferenceKind.In;
                 case RefKind.Out: return ReferenceKind.Out;
                 case RefKind.None: return ReferenceKind.None;
                 default:
-                    Debug.Fail($"Unexpected RefKind {Method.Method.Parameters[MetadataIndex].RefKind} found on parameter {GetDisplayName()}");
+                    Debug.Fail($"Unexpected RefKind {ParameterSymbol!.RefKind} found on parameter {GetDisplayName()}");
                     return ReferenceKind.None;
             }
         }
@@ -37,17 +39,36 @@ namespace ILLink.Shared.TypeSystemProxy
         /// <summary>
         /// Returns the IParameterSymbol representing the parameter. Returns null for the implicit this paramter.
         /// </summary>
-        public IParameterSymbol? ParameterSymbol => IsImplicitThis ? null : Method.Method.Parameters[MetadataIndex];
+        public IParameterSymbol? ParameterSymbol
+        {
+            get
+            {
+                if (IsImplicitThis)
+                {
+                    return null;
+                }
+
+                var method = Method.Method;
+                int hasExtensionParameter = 0;
+                if (method.HasExtensionParameterOnType())
+                {
+                    if (MetadataIndex == 0)
+                    {
+                        return method.ContainingType.ExtensionParameter;
+                    }
+                    hasExtensionParameter = 1;
+                }
+
+                return method.Parameters[MetadataIndex - hasExtensionParameter];
+            }
+        }
 
         /// <summary>
         /// Returns the IParameterSymbol.Location[0] for the parameter. Returns null for the implicit this paramter.
         /// </summary>
         public Location? Location => ParameterSymbol?.Locations[0];
 
-        public TypeProxy ParameterType
-            => IsImplicitThis
-                ? new TypeProxy(Method.Method.ContainingType)
-                : new TypeProxy(Method.Method.Parameters[MetadataIndex].Type);
+        public TypeProxy ParameterType => new TypeProxy(ParameterSymbol?.Type ?? Method.Method.ContainingType);
 
         public partial string GetDisplayName()
         {

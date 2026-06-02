@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace DevDiv_794115_ro;
+
 using System;
 using Xunit;
 
 public class Repro
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

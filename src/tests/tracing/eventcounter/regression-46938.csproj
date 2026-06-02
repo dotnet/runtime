@@ -13,4 +13,7 @@
     <Compile Include="regression-46938.cs" />
     <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

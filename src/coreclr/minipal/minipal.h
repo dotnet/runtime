@@ -97,11 +97,12 @@ public:
     //  pTemplate    - Value returned from CreateTemplate
     //  templateSize - Size of the templates block in the image
     //  pStart       - Where to allocate (Specify NULL if no particular address is required). If non-null, this must be an address returned by ReserveDoubleMappedMemory
+    //  dataPageGenerator - If non-null fill the data page of the template using this function. This function is called BEFORE the code page is mapped into memory.
     //
     // Return:
     //  NULL if the allocation fails
     //  Non-NULL, a pointer to the allocated region.
-    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart);
+    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
     // Free thunks allocated from template
     // Parameters:
@@ -110,6 +111,20 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
+
+    // Allocate aligned memory block
+    // Parameters:
+    //  alignment - The desired alignment for the memory block.
+    //  size      - The total number of bytes to allocate
+    // Return:
+    //  NULL if allocation fails
+    //  Non-Null, a pointer to the allocated region
+    static void* AlignedAllocate(size_t alignment, size_t size);
+
+    // Free aligned memory block
+    // Parameters:
+    //  memblock - Memory block previously returned by AlignedAllocate
+    static void AlignedFree(void* memblock);
 };
 
 #if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)

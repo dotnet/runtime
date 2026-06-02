@@ -16,9 +16,9 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "Unsafe");
+            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Unsafe"u8));
 
-            switch (method.Name)
+            switch (method.GetName())
             {
                 case "AsPointer":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.conv_u, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);

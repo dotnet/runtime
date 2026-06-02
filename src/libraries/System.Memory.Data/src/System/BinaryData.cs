@@ -416,20 +416,7 @@ namespace System
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
         /// <seealso cref="ToObjectFromJson{String}(JsonSerializerOptions)" />
-        public override unsafe string ToString()
-        {
-            ReadOnlySpan<byte> span = _bytes.Span;
-
-            if (span.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            fixed (byte* ptr = span)
-            {
-                return Encoding.UTF8.GetString(ptr, span.Length);
-            }
-        }
+        public override string ToString() => Encoding.UTF8.GetString(_bytes.Span);
 
         /// <summary>
         /// Converts the <see cref="BinaryData"/> to a read-only stream.

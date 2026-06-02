@@ -66,15 +66,16 @@ bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t
 
         get_line_column_from_offset(data, size, offset, &line, &column);
 
-        trace::error(_X("A JSON parsing exception occurred in [%s], offset %zu (line %d, column %d): %s"),
-            context.c_str(), offset, line, column,
-            rapidjson::GetParseError_En(m_document.GetParseError()));
+        m_parse_error = utils::format_string(_X("JSON parsing exception: %s [offset %zu: line %d, column %d]"),
+            rapidjson::GetParseError_En(m_document.GetParseError()),
+            offset, line, column
+        );
         return false;
     }
 
     if (!m_document.IsObject())
     {
-        trace::error(_X("Expected a JSON object in [%s]"), context.c_str());
+        m_parse_error = _X("Expected a JSON object");
         return false;
     }
 

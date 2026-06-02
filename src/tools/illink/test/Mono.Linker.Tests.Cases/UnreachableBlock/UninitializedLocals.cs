@@ -5,7 +5,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
     [SetupCSharpCompilerToUse("csc")]
     [SetupCompileArgument("/optimize+")]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupCompileBefore("library.dll", new[] { "Dependencies/LocalsWithoutStore.il" })]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
@@ -22,8 +22,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_1 ();
-			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2 ();
+            Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_1();
+            Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2();
 #endif
         }
     }

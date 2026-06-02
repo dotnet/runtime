@@ -15,9 +15,18 @@
     <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template-$(TargetArchitecture).xml</MacOSBundleTemplate>
     <MacOSBundleIdentifierName>com.microsoft.dotnet.Microsoft.NETCore.App.$(ProductVersion).osx.$(TargetArchitecture)</MacOSBundleIdentifierName>
     <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
+    <UseWix5>true</UseWix5>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
+    <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Dependency.wixext" Version="$(MicrosoftWixToolsetDependencyWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Util.wixext" Version="$(MicrosoftWixToolsetUtilWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Bal.wixext" Version="$(MicrosoftWixToolsetBalWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>

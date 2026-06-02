@@ -269,6 +269,23 @@
     NESTED_END RhpThrowHwEx, _TEXT
 
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  a0:  exception object
+//
+// OUTPUT:
+//
+
+    LEAF_ENTRY RhpThrowExact, _TEXT
+
+        ori  $a4, $zero, 4                               // a4 = ExKind.RethrowFlag
+        b  C_FUNC(RhpThrowImpl)
+
+    LEAF_END RhpThrowExact, _TEXT
+
+//
 // RhpThrowEx
 //
 // INPUT:  a0:  exception object
@@ -276,7 +293,14 @@
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowEx, _TEXT
+
+        ori  $a4, $zero, 1                               // a4 = ExKind.Throw
+        b  C_FUNC(RhpThrowImpl)
+
+    LEAF_END RhpThrowEx, _TEXT
+
+    NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -331,8 +355,7 @@ LOCAL_LABEL(NotHijacked):
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
         addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        ori  $a3, $zero, 1
-        st.b  $a3, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind.Throw
+        st.b  $a4, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind (from a4)
 
         // link the ExInfo into the thread's ExInfo chain
         ld.d  $a3, $a2, OFFSETOF__Thread__m_pExInfoStackHead
@@ -347,12 +370,11 @@ LOCAL_LABEL(NotHijacked):
         // a1: ExInfo*
         bl  C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY RhpThrowImpl2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx, _TEXT
-
+    NESTED_END RhpThrowImpl, _TEXT
 
 //
 // void FASTCALL RhpRethrow()
@@ -425,14 +447,12 @@ LOCAL_LABEL(NotHijacked):
         st.d  $a1, $sp, 0x48
         st.d  $a2, $sp, 0x50
         st.d  $a3, $sp, 0x58
-        st.d  $zero, $sp, 0x60  // $zero makes space for the local "is_not_handling_thread_abort"; last qword will store the thread obj
 
-#define rsp_offset_is_not_handling_thread_abort 0x60
 #define rsp_offset_a0 0x40
 #define rsp_offset_a1 0x48
 #define rsp_offset_a2 0x50
 #define rsp_offset_a3 0x58
-#define rsp_CatchFunclet_offset_thread 0x68
+#define rsp_CatchFunclet_offset_thread 0x60
 
         //
         // clear the DoNotTriggerGc flag, trashes a4-a6
@@ -445,10 +465,6 @@ LOCAL_LABEL(NotHijacked):
         ld.d  $a1, $sp, 0x48
         ld.d  $a2, $sp, 0x50
         ld.d  $a3, $sp, 0x58
-
-        ld.d  $a4, $a5, OFFSETOF__Thread__m_threadAbortException
-        sub.d  $a4, $a4, $a0
-        st.d  $a4, $sp, rsp_offset_is_not_handling_thread_abort // Non-zero if the exception is not ThreadAbortException
 
         addi.d  $t3, $a5, OFFSETOF__Thread__m_ThreadStateFlags
 
@@ -513,27 +529,10 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         st.d  $a3, $a1, OFFSETOF__Thread__m_pExInfoStackHead    // store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
-
-        bstrpick.d  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit, TrapThreadsFlags_AbortInProgress_Bit
-        beqz  $t7, LOCAL_LABEL(NoAbort)
-
-        ld.d  $a3, $sp, rsp_offset_is_not_handling_thread_abort
-        bnez  $a3, LOCAL_LABEL(NoAbort)
-
-        // It was the ThreadAbortException, so rethrow it
-        // reset SP
-        ori  $a1, $a0, 0                                        // a1 <- continuation address as exception PC
-        addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
-        ori  $sp, $a2, 0
-        b  C_FUNC(RhpThrowHwEx)
-
-LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
         ori  $sp, $a2, 0
         jirl  $r0, $a0, 0
 
-#undef rsp_offset_is_not_handling_thread_abort
 #undef rsp_offset_a0
 #undef rsp_offset_a1
 #undef rsp_offset_a2

@@ -13,5 +13,18 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         {
             new ExcludeFromCodeCoverageAttribute();
         }
+
+        [Fact]
+        public void ExcludeFromCodeCoverageAttribute_CanApplyToInterface()
+        {
+            var attr = typeof(IExcludedInterface).GetCustomAttributes(typeof(ExcludeFromCodeCoverageAttribute), false);
+            Assert.Single(attr);
+        }
+
+        [ExcludeFromCodeCoverage]
+        private interface IExcludedInterface
+        {
+            void DoSomething();
+        }
     }
 }

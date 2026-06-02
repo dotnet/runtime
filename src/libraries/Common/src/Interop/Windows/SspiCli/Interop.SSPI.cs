@@ -334,11 +334,17 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SecPkgContext_SessionInfo
+        internal struct SecPkgContext_SessionInfo
         {
             public uint dwFlags;
             public uint cbSessionId;
-            public fixed byte rgbSessionId[32];
+            public SessionIdBuffer rgbSessionId;
+
+            [InlineArray(32)]
+            internal struct SessionIdBuffer
+            {
+                private byte _element0;
+            }
 
             [Flags]
             public enum Flags

@@ -160,7 +160,7 @@ struct DispatchHolder
         LIMITED_METHOD_CONTRACT;
 
         // Check that _implTarget is aligned in the DispatchHolder for backpatching
-        static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
+        static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
     }
 
     void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT);
@@ -365,8 +365,6 @@ extern size_t g_mono_miss_counter;
 extern size_t g_poly_call_counter;
 extern size_t g_poly_miss_counter;
 #endif
-
-TADDR StubDispatchFrame_MethodFrameVPtr;
 
 LookupHolder* LookupHolder::FromLookupEntry(PCODE lookupEntry)
 {

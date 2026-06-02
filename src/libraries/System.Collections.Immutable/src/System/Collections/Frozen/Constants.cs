@@ -53,7 +53,6 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(uint) ||
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(decimal) ||
             typeof(T) == typeof(float) ||
             typeof(T) == typeof(double) ||
             typeof(T) == typeof(decimal) ||

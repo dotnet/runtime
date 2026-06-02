@@ -15,12 +15,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     /// <remarks>
     /// <para>Polling occurs every 4 seconds.</para>
-    /// <para>This change token does not raise any change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
-    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.</para>
+    /// <para>By default, this change token does not raise change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
+    /// from <see langword="false"/> to <see langword="true"/>.
+    /// When <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>, callbacks registered via
+    /// <see cref="RegisterChangeCallback"/> will be invoked when the file or directory changes.</para>
     /// </remarks>
     public class PollingFileChangeToken : IPollingChangeToken
     {
         private readonly FileInfo _fileInfo;
+        private DirectoryInfo? _directoryInfo;
         private DateTime _previousWriteTimeUtc;
         private DateTime _lastCheckedTimeUtc;
         private bool _hasChanged;
@@ -28,10 +31,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private CancellationChangeToken? _changeToken;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="PollingFileChangeToken" /> that polls the specified file for changes as
-        /// determined by <see cref="System.IO.FileSystemInfo.LastWriteTimeUtc" />.
+        /// Initializes a new instance of the <see cref="PollingFileChangeToken"/> class that polls the specified file or directory
+        /// for changes as determined by <see cref="FileSystemInfo.LastWriteTimeUtc"/>.
         /// </summary>
-        /// <param name="fileInfo">The <see cref="System.IO.FileInfo"/> to poll.</param>
+        /// <param name="fileInfo">The <see cref="FileInfo"/> containing the path to poll.</param>
         public PollingFileChangeToken(FileInfo fileInfo)
         {
             _fileInfo = fileInfo;
@@ -45,16 +48,26 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             _fileInfo.Refresh();
 
-            if (!_fileInfo.Exists)
+            if (_fileInfo.Exists)
             {
-                return DateTime.MinValue;
+                return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
             }
 
-            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
+            // This is not thread-safe, but that's not an issue since DirectoryInfos are cheap and interchangeable.
+            _directoryInfo ??= new DirectoryInfo(_fileInfo.FullName);
+            _directoryInfo.Refresh();
+
+            if (_directoryInfo.Exists)
+            {
+                return _directoryInfo.LastWriteTimeUtc;
+            }
+
+            return DateTime.MinValue;
         }
 
         /// <summary>
-        /// Gets a value that's always <see langword="false"/>.
+        /// Gets a value that indicates whether this token will proactively raise callbacks. If <see langword="false"/>, the token
+        /// consumer must poll <see cref="HasChanged"/> to detect changes.
         /// </summary>
         public bool ActiveChangeCallbacks { get; internal set; }
 
@@ -74,10 +87,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
         CancellationTokenSource? IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
 
         /// <summary>
-        /// Gets a value that indicates whether the file has changed since the change token was created.
+        /// Gets a value that indicates whether the file or directory has changed since the change token was created.
         /// </summary>
         /// <remarks>
-        /// Once the file changes, this value is always <see langword="true"/>. Change tokens should not reused once expired. The caller should discard this
+        /// Once the file or directory changes, this value is always <see langword="true"/>. Change tokens should not be reused once expired. The caller should discard this
         /// instance once it sees <see cref="HasChanged" /> is true.
         /// </remarks>
         public bool HasChanged
@@ -108,10 +121,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Does not actually register callbacks.
+        /// Registers a callback that will be invoked when the token changes, if <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>.
+        /// If <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>, no callback is registered and an empty disposable is returned.
         /// </summary>
-        /// <param name="callback">This parameter is ignored.</param>
-        /// <param name="state">This parameter is ignored.</param>
+        /// <param name="callback">The callback to invoke. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
+        /// <param name="state">The state to pass to <paramref name="callback"/>. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
         /// <returns>A disposable object that no-ops when disposed.</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {

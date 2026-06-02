@@ -9,7 +9,31 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-struct Struct { }
+struct Struct
+{
+    public Type Value;
+    private void SetType(Type type)
+    {
+        Value = type;
+    }
+    private void SetType<T>()
+    {
+        Value = typeof(T);
+    }
+}
+
+struct GenericStruct<T>
+{
+    public Type Value;
+    private void SetType(Type type)
+    {
+        Value = type;
+    }
+    private void SetType<U>()
+    {
+        Value = typeof(U);
+    }
+}
 
 interface I1 { }
 
@@ -112,6 +136,12 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
         public extern static string CreateMessage(GenericBase<V> b, V v);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType(ref GenericStruct<V> s, Type type);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType<U>(ref GenericStruct<V> s);
+
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
         public extern static Type ElementType(MyList<V> l);
 
@@ -126,6 +156,15 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
         public extern static ref V GetPrivateStaticField(MyList<V> d);
+    }
+
+    static class Accessors
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType<U>(ref Struct s);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType(ref Struct s, Type type);
     }
 
     [Fact]
@@ -181,21 +220,76 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class Base
+    class AmbiguousMethodName
     {
-        protected virtual string CreateMessageGeneric<T>(T t) => $"{nameof(Base)}:{t}";
+        private void M() { }
+        private void M<T>() { }
+        private void N() { }
+
+        private static void SM() { }
+        private static void SM<U>() { }
+        private static void SN() { }
     }
 
-    class GenericBase<T> : Base
+    static class AccessorsAmbiguousMethodName
     {
-        protected virtual string CreateMessage(T t) => $"{nameof(GenericBase<T>)}:{t}";
-        protected override string CreateMessageGeneric<U>(U u) => $"{nameof(GenericBase<T>)}:{u}";
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM<T>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "N")]
+        public extern static void CallN_MissingMethod<T>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM<U>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SN")]
+        public extern static void CallSN_MissingMethod<T>(AmbiguousMethodName a);
+    }
+
+    [Fact]
+    public static void Verify_Generic_AmbiguousMethodName()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AmbiguousMethodName)}");
+
+        {
+            AmbiguousMethodName a = new();
+            AccessorsAmbiguousMethodName.CallM(a);
+            AccessorsAmbiguousMethodName.CallM<int>(a);
+            AccessorsAmbiguousMethodName.CallM<string>(a);
+            AccessorsAmbiguousMethodName.CallM<Guid>(a);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallN_MissingMethod<int>(a));
+        }
+
+        {
+            AccessorsAmbiguousMethodName.CallSM(null);
+            AccessorsAmbiguousMethodName.CallSM<int>(null);
+            AccessorsAmbiguousMethodName.CallSM<string>(null);
+            AccessorsAmbiguousMethodName.CallSM<Guid>(null);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallSN_MissingMethod<int>(null));
+        }
+    }
+
+    class Base
+    {
+        protected virtual string CreateMessage<T>(T t) => $"{nameof(Base)}<>:{t}";
+    }
+
+    class GenericBase<U> : Base
+    {
+        protected virtual string CreateMessage(U u) => $"{nameof(GenericBase<U>)}:{u}";
+        protected override string CreateMessage<V>(V v) => $"{nameof(GenericBase<U>)}<>:{v}";
     }
 
     sealed class Derived1 : GenericBase<string>
     {
         protected override string CreateMessage(string u) => $"{nameof(Derived1)}:{u}";
-        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(Derived1)}:{t}";
+        protected override string CreateMessage<W>(W w) => $"{nameof(Derived1)}<>:{w}";
     }
 
     sealed class Derived2 : GenericBase<string>
@@ -209,33 +303,33 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Console.WriteLine($"Running {nameof(Verify_Generic_InheritanceMethodResolution)}");
         {
             Base a = new();
-            Assert.Equal($"{nameof(Base)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Base)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Base)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Base)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Base)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Base)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<int> a = new();
-            Assert.Equal($"{nameof(GenericBase<int>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<string> a = new();
-            Assert.Equal($"{nameof(GenericBase<string>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<Struct> a = new();
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             Derived1 a = new();
-            Assert.Equal($"{nameof(Derived1)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Derived1)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Derived1)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Derived1)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Derived1)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Derived1)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             // Verify resolution of generic override logic.
@@ -245,7 +339,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", Accessors<string>.CreateMessage(a2, expect));
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
         extern static string CreateMessage<W>(Base b, W w);
     }
 
@@ -401,6 +495,68 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<Struct>.CanUseElementType<int>(null, 1));
             Assert.False(Accessors<Struct>.CanUseElementType<string>(null, string.Empty));
             Assert.True(Accessors<Struct>.CanUseElementType<Struct>(null, new Struct()));
+        }
+    }
+
+    [Fact]
+    public static void Verify_Generic_Structs()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_Structs)}");
+
+        {
+            Struct s = new();
+            Accessors.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors.SetType(ref s, typeof(string));
+            Assert.Equal(typeof(string), s.Value);
+            Accessors.SetType(ref s, typeof(Struct));
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors.SetType(ref s, typeof(GenericStruct<int>));
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors.SetType(ref s, typeof(GenericStruct<string>));
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            Struct s = new();
+            Accessors.SetType<int>(ref s);
+            Assert.Equal(typeof(int), s.Value);
+            Accessors.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            GenericStruct<int> s = new();
+            Accessors<int>.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors<int>.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors<int>.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors<int>.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors<int>.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            GenericStruct<string> s = new();
+            Accessors<string>.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors<string>.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors<string>.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors<string>.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors<string>.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
         }
     }
 

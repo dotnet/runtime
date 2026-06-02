@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="Collect1.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

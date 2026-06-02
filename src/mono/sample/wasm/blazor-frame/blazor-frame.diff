@@ -41,10 +41,10 @@ diff -urw blazor/Program.cs blazor/Program.cs
 diff -urw blazor/blazor.csproj blazor/blazor.csproj
 --- a/blazor/blazor.csproj	2024-01-22 16:01:30
 +++ b/blazor/blazor.csproj	2024-01-23 12:04:59
-@@ -4,6 +4,8 @@
-     <TargetFramework>net10.0</TargetFramework>
+@@ -8,6 +8,8 @@
      <Nullable>enable</Nullable>
      <ImplicitUsings>enable</ImplicitUsings>
+     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
 +    <StaticWebAssetBasePath>blazor-template/</StaticWebAssetBasePath>
 +    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
    </PropertyGroup>
@@ -59,9 +59,9 @@ diff -urw blazor/wwwroot/index.html blazor/wwwroot/index.html
      <title>blazor</title>
 -    <base href="/" />
 +    <base href="./" />
+     <link rel="preload" id="webassembly" />
      <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
      <link rel="stylesheet" href="css/app.css" />
-     <link rel="icon" type="image/png" href="favicon.png" />
 @@ -23,10 +23,11 @@
  
      <div id="blazor-error-ui">
@@ -70,8 +70,8 @@ diff -urw blazor/wwwroot/index.html blazor/wwwroot/index.html
 +        <a href="" class="reload">Reload</a>
          <span class="dismiss">🗙</span>
      </div>
--    <script src="_framework/blazor.webassembly.js"></script>
-+    <script src="./_framework/blazor.webassembly.js"></script>
+-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
++    <script src="./_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 +    <script type="module" src="./frame.js"></script>
  </body>
  

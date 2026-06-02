@@ -43,10 +43,7 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
-        internal static bool DefaultCertificateRevocationCheck { get; } =
-            AppContextSwitchHelper.GetBooleanConfig(
-                "System.Net.Security.NoRevocationCheckByDefault",
-                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT") ? false : true;
+        internal static bool DefaultCertificateRevocationCheck { get; }
 
         internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
@@ -94,7 +91,6 @@ namespace System.Net.Http
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
-        private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
         private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
@@ -575,7 +571,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties => _properties ??= new Dictionary<string, object>();
+        public IDictionary<string, object> Properties => field ??= new Dictionary<string, object>();
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -769,15 +765,7 @@ namespace System.Net.Http
                 (uint)requestHeadersBuffer.Length,
                 Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
             {
-                int lastError = Marshal.GetLastWin32Error();
-                if (lastError == Interop.WinHttp.ERROR_INVALID_PARAMETER)
-                {
-                    throw new FormatException(SR.net_http_invalid_header_value);
-                }
-                else
-                {
-                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
-                }
+                throw WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
             }
         }
 
@@ -1698,7 +1686,7 @@ namespace System.Net.Http
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
                 await state.RequestMessage.Content.CopyToAsync(requestStream, state.TransportContext).ConfigureAwait(false);
-                await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
+                await requestStream.EndUploadAsync().ConfigureAwait(false);
             }
         }
 

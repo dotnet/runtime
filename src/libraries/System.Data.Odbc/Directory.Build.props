@@ -3,5 +3,6 @@
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;wasi</UnsupportedOSPlatforms>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

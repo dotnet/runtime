@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                             // Send Connection: close so the client will close connection after request is sent,
                             // meaning we can just read to the end to get the content
                             await connection.ReadRequestHeaderAndSendResponseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\nConnection: close\r\n");
-                            connection.Socket.Shutdown(SocketShutdown.Send);
+                            await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                             await connection.ReadToEndAsync();
                         });
 
@@ -124,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
                             // Send Connection: close so the client will close connection after request is sent,
                             // meaning we can just read to the end to get the content
                             receivedRequest = await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
-                            connection.Socket.Shutdown(SocketShutdown.Send);
+                            await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                             receivedContent = await connection.ReadToEndAsync();
                         });
 
@@ -265,6 +265,43 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(200, (int)response.StatusCode);
                         Assert.Equal(expectedUrl.ToString(), response.RequestMessage.RequestUri.ToString());
+                    }
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData("ftp://ftp.example.com/file.txt")]
+        [InlineData("file:///etc/passwd")]
+        [InlineData("gopher://gopher.example.com")]
+        [InlineData("telnet://telnet.example.com")]
+        public async Task GetAsync_AllowAutoRedirectTrue_UnsupportedRedirectScheme_ReturnsOriginalResponse(string redirectLocation)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    Task<HttpResponseMessage> getTask = client.GetAsync(url);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectLocation}\r\n");
+
+                    if (IsWinHttpHandler)
+                    {
+                        // WinHttpHandler throws HttpRequestException for unsupported redirect schemes
+                        await Assert.ThrowsAsync<HttpRequestException>(async () => await getTask);
+                        await serverTask;
+                    }
+                    else
+                    {
+                        // SocketsHttpHandler refuses to follow the redirect and returns the original response
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
+
+                        using (HttpResponseMessage response = await getTask)
+                        {
+                            Assert.Equal(302, (int)response.StatusCode);
+                            Assert.Equal(url, response.RequestMessage.RequestUri);
+                        }
                     }
                 });
             }

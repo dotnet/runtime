@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef NO_CONFIG_H
 #include <dn-config.h>
-#endif
 #include "dn-simdhash.h"
 
 #include "dn-simdhash-utils.h"
@@ -69,9 +67,9 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 static unsigned int
 dn_simdhash_ght_default_hash (const void * key)
 {
-    // You might think we should avalanche the key bits but in my testing, it doesn't help.
-    // Right now the default hash function is rarely used anyway
-    return (unsigned int)(size_t)key;
+	// You might think we should avalanche the key bits but in my testing, it doesn't help.
+	// Right now the default hash function is rarely used anyway
+	return (unsigned int)(size_t)key;
 }
 
 static int32_t
@@ -87,6 +85,8 @@ dn_simdhash_ght_new (
 )
 {
 	dn_simdhash_ght_t *hash = dn_simdhash_new_internal(&DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
+	if (!hash)
+		return NULL;
 	// Most users of dn_simdhash_ght are passing a custom comparer, and always doing an indirect call ends up being faster
 	//  than conditionally doing a fast inline check when there's no comparer set. Somewhat counter-intuitive, but true
 	//  on both x64 and arm64. Probably due to the smaller code size and reduced branch predictor pressure.
@@ -107,6 +107,8 @@ dn_simdhash_ght_new_full (
 )
 {
 	dn_simdhash_ght_t *hash = dn_simdhash_new_internal(&DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
+	if (!hash)
+		return NULL;
 	if (!hash_func)
 		hash_func = dn_simdhash_ght_default_hash;
 	if (!key_equal_func)
@@ -133,7 +135,14 @@ dn_simdhash_ght_insert_replace (
 
 	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, imode);
 	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
-		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+		uint8_t grow_ok;
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1, &grow_ok);
+		// The ghashtable API doesn't have a way to signal failure, so just assert that we didn't fail to grow
+		dn_simdhash_assert(grow_ok);
+		// Don't attempt to insert after a failed grow (it's possible to get here because dn_simdhash_assert is configurable)
+		if (!grow_ok)
+			return;
+
 		if (old_buffers.buckets) {
 			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
 			dn_simdhash_free_buffers(old_buffers);
@@ -151,8 +160,48 @@ dn_simdhash_ght_insert_replace (
 		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
 		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
 		default:
-			assert(0);
+			dn_simdhash_assert(!"Internal error in dn_simdhash_ght_insert_replace");
 			return;
+	}
+}
+
+dn_simdhash_add_result
+dn_simdhash_ght_try_insert (
+	dn_simdhash_ght_t *hash,
+	void *key, void *value,
+	dn_simdhash_insert_mode mode
+)
+{
+	check_self(hash);
+	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(DN_SIMDHASH_GET_DATA(hash), key);
+
+	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, mode);
+	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
+		uint8_t grow_ok;
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1, &grow_ok);
+		if (!grow_ok)
+			return DN_SIMDHASH_OUT_OF_MEMORY;
+
+		if (old_buffers.buckets) {
+			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
+			dn_simdhash_free_buffers(old_buffers);
+		}
+		ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, mode);
+	}
+
+	switch (ok) {
+		case DN_SIMDHASH_INSERT_OK_ADDED_NEW:
+			hash->count++;
+			return DN_SIMDHASH_ADD_INSERTED;
+		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
+			return DN_SIMDHASH_ADD_OVERWROTE;
+		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
+			return DN_SIMDHASH_ADD_FAILED;
+
+		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+		default:
+			dn_simdhash_assert(!"Internal error in dn_simdhash_ght_insert_replace");
+			return DN_SIMDHASH_INTERNAL_ERROR;
 	}
 }
 

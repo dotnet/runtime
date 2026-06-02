@@ -15,4 +15,7 @@
     <Compile Include="llthread.cs" />
     <Compile Include="linkedlist.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

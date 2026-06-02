@@ -23,7 +23,6 @@
 #include "eventtracebase.h"
 
 #ifdef TARGET_X86
-#define FEATURE_EH_FUNCLETS
 
 // Disable contracts
 #define LIMITED_METHOD_CONTRACT
@@ -379,7 +378,16 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
-    _ASSERTE(FindMethodInfo(address, pMethodInfo) && (MethodInfo*)pNativeMethodInfo == pMethodInfo);
+#ifdef _DEBUG
+    MethodInfo methodInfo;
+    bool foundMethodInfo = FindMethodInfo(address, &methodInfo);
+    _ASSERTE(foundMethodInfo);
+    if (foundMethodInfo)
+    {
+        CoffNativeMethodInfo * pDebugNativeMethodInfo = (CoffNativeMethodInfo *)&methodInfo;
+        _ASSERTE(pDebugNativeMethodInfo->mainRuntimeFunction == pNativeMethodInfo->mainRuntimeFunction);
+    }
+#endif
 
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);

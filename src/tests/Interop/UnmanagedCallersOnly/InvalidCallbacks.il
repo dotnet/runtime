@@ -101,47 +101,6 @@
         ret
     }
 
-    .method public hidebysig static
-    int32 ManagedDoubleCallback (
-        int32 n
-    ) cil managed
-    {
-        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
-            01 00 00 00
-        )
-        .maxstack 1
-
-        nop
-        ldarg.0
-        call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::DoubleImpl(int32)
-        ret
-    }
-
-    .method private hidebysig static
-        int32 DoubleImpl (
-            int32 n
-        ) cil managed
-    {
-        .maxstack 2
-
-        nop
-        ldc.i4.2
-        ldarg.0
-        mul
-        ret
-    }
-
-    .method public hidebysig static
-    class [System.Runtime]System.Func`2<int32, int32> GetDoubleDelegate () cil managed
-    {
-        .maxstack 8
-
-        ldnull
-        ldftn int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::ManagedDoubleCallback(int32)
-        newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
-        ret
-    }
-
     .method public hidebysig static pinvokeimpl("UnmanagedCallersOnlyDll" as "DoesntExist" winapi)
     int32 PInvokeMarkedWithUnmanagedCallersOnly (
         int32 n
@@ -295,6 +254,44 @@
         int32 GenericStructWithObjectField (
             valuetype InvalidCSharp.MaybeBlittable`1<object> param
         ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+
+        IL_0000: ldc.i4.0
+        IL_0001: ret
+    }
+}
+
+.class public auto ansi beforefieldinit InvalidCSharp.RuntimeAsyncUnmanagedCallersOnly
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        .maxstack 8
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public hidebysig static
+        class [System.Runtime]System.Threading.Tasks.Task AsyncMethodReturningTask (
+        ) cil managed async
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+
+        IL_0001: ret
+    }
+
+    .method public hidebysig static
+        int32 AsyncMethodWithBlittableReturnType (
+        ) cil managed async
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00

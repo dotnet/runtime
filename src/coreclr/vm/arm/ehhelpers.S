@@ -105,12 +105,13 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         //
         // R0 = throwable
         // R1 = PC to invoke
-        // R2 = address of R4 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+        // R2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         //
         // Save the SP of this function
         str sp, [r3]
         // apply the non-volatiles corresponding to the CrawlFrame
+        add r2, r2, OFFSETOF__CONTEXT__R4
         ldm r2!, {r4-r6}
         add r2, r2, #4
         ldm r2!, {r8-r11}

@@ -29,8 +29,8 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
         [return: KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private string methodWithCustomAttribute(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             string parameterWithCustomAttribute)
         {
             return "this is a return value";

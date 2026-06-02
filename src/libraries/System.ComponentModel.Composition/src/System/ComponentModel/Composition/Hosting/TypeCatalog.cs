@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly object _thisLock = new object();
         private Type[]? _types;
-        private volatile List<ComposablePartDefinition>? _parts;
+        private List<ComposablePartDefinition>? _parts;
         private volatile bool _isDisposed;
         private readonly ICompositionElement _definitionOrigin;
         private readonly Lazy<Dictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;

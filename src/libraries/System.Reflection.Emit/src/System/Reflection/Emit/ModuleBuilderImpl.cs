@@ -184,7 +184,8 @@ namespace System.Reflection.Emit
             }
 
             // Now write all generic parameters in order
-            genericParams.Sort((x, y) => {
+            genericParams.Sort((x, y) =>
+            {
                 int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
                 if (primary != 0)
                     return primary;
@@ -690,10 +691,13 @@ namespace System.Reflection.Emit
 
         private EntityHandle GetTypeReferenceOrSpecificationHandle(Type type)
         {
+            type = type.UnderlyingSystemType;
+
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
                 if (type.HasElementType || type.IsGenericParameter ||
-                    (type.IsGenericType && !type.IsGenericTypeDefinition))
+                    (type.IsGenericType && !type.IsGenericTypeDefinition)
+                    || type.IsFunctionPointer)
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
@@ -740,7 +744,7 @@ namespace System.Reflection.Emit
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
 
-                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).FieldType;
+                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).GetModifiedFieldType();
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
                             MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
 
@@ -791,7 +795,7 @@ namespace System.Reflection.Emit
         }
 
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
-            MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
+            MetadataSignatureHelper.GetMethodSignature(this, MetadataSignatureHelper.GetParameterTypes(method.GetParameters()), method.ReturnParameter.GetModifiedParameterType(),
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
         private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
@@ -829,23 +833,6 @@ namespace System.Reflection.Emit
             return memberInfo;
         }
 
-        private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
-        {
-            if (parameterInfos.Length == 0)
-            {
-                return Type.EmptyTypes;
-            }
-
-            Type[] parameterTypes = new Type[parameterInfos.Length];
-
-            for (int i = 0; i < parameterInfos.Length; i++)
-            {
-                parameterTypes[i] = parameterInfos[i].ParameterType;
-            }
-
-            return parameterTypes;
-        }
-
         private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly)
         {
             if (!_assemblyReferences.TryGetValue(assembly, out var handle))
@@ -861,7 +848,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    publicKeyOrToken  = aName.GetPublicKeyToken();
+                    publicKeyOrToken = aName.GetPublicKeyToken();
                 }
                 handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, publicKeyOrToken, assemblyFlags);
                 _assemblyReferences.Add(assembly, handle);
@@ -1115,6 +1102,19 @@ namespace System.Reflection.Emit
             {
                 Type elementType = type.GetElementType()!;
                 return (elementType is TypeBuilderImpl tbi && Equals(tbi.Module)) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            if (type.IsFunctionPointer)
+            {
+                Type ret = type.GetFunctionPointerReturnType();
+                if ((ret is TypeBuilderImpl retTb && Equals(retTb.Module)) || IsConstructedFromTypeBuilder(ret))
+                    return true;
+
+                foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+                {
+                    if ((paramType is TypeBuilderImpl paramTb && Equals(paramTb.Module)) || IsConstructedFromTypeBuilder(paramType))
+                        return true;
+                }
             }
 
             return false;
@@ -1372,6 +1372,17 @@ namespace System.Reflection.Emit
         internal int GetSignatureToken(CallingConvention callingConvention, Type? returnType, Type[]? parameterTypes) =>
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(
                 MetadataSignatureHelper.GetMethodSignature(this, parameterTypes, returnType, GetSignatureConvention(callingConvention)))));
+
+        internal int GetFunctionPointerSignatureToken(Type functionPointerType)
+        {
+            BlobBuilder blobBuilder = new();
+            SignatureTypeEncoder encoder = new(blobBuilder);
+            MetadataSignatureHelper.WriteSignatureForFunctionPointerType(encoder, functionPointerType, this);
+
+            Debug.Assert(blobBuilder.ToArray()[0] == (byte)SignatureTypeCode.FunctionPointer);
+            byte[] blob = blobBuilder.ToArray(1, blobBuilder.Count - 1); // Strip away ELEMENT_TYPE_FNPTR
+            return MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(blob)));
+        }
 
         private static SignatureCallingConvention GetSignatureConvention(CallingConvention callingConvention) =>
             callingConvention switch

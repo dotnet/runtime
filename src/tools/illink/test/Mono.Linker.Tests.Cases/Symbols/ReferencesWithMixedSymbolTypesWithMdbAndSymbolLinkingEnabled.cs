@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 {
     [IgnoreTestCase("Test relies on checked-in binaries: https://github.com/dotnet/runtime/issues/78344")]
     [TestCaseRequirements(TestRunCharacteristics.TargetingNetFramework, "mdb files are not supported with .NET Core")]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Reference("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
     [ReferenceDependency("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
     [KeptSymbols("test.exe")]
     [KeptSymbols("LibraryWithMdb.dll")]
 #if WIN32
-	[KeptSymbols ("LibraryWithPdb.dll")]
+    [KeptSymbols("LibraryWithPdb.dll")]
 #else
     [RemovedSymbols("LibraryWithPdb.dll")]
 #endif

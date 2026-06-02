@@ -11,7 +11,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
         TargetingNetFramework = 1,
         TargetingNetCore = 2,
         SupportsDefaultInterfaceMethods = 8,
-        SupportsStaticInterfaceMethods = 16,
-        TestFrameworkSupportsMcs = 32
+        SupportsStaticInterfaceMethods = 16
     }
 }

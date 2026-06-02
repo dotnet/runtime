@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.OpenSsl.Tests
         {
             using (RSA rsa = new RSAOpenSsl(TestData.RSA1032Parameters))
             {
-                ImportExport.AssertKeyEquals(TestData.RSA1032Parameters, rsa.ExportParameters(true));
+                RSATestHelpers.AssertKeyEquals(TestData.RSA1032Parameters, rsa.ExportParameters(true));
             }
         }
     }

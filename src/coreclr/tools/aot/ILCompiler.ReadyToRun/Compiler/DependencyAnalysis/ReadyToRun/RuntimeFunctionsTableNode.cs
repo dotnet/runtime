@@ -23,6 +23,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nodeFactory = nodeFactory;
         }
 
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.ReadOnlyDataSection;
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
@@ -119,12 +124,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + _nodeFactory.Target.CodeDelta);
-                        if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
+                        if (_nodeFactory.Target.Architecture == TargetArchitecture.Wasm32)
                         {
-                            // On Amd64, the 2nd word contains the EndOffset of the runtime function
-                            Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
-                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.WASM_TABLE_INDEX_I32, frameIndex);
+                        }
+                        else
+                        {
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, frameInfo.StartOffset);
+                            if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
+                            {
+                                // On Amd64, the 2nd word contains the EndOffset of the runtime function
+                                Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
+                                runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                            }
                         }
                         runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                         runtimeFunctionIndex++;
@@ -163,7 +175,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override int ClassCode => -855231428;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.RuntimeFunctionsTableNode;
 
         internal const int SentinelSizeAdjustment = -4;
     }

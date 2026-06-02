@@ -92,11 +92,10 @@ void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoTyp
 {
     static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
                                                                 // inc/corinfo.h
-                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
-                                                                "byte",    "short",      "ushort", "int",   "uint",
-                                                                "long",    "ulong",      "nint",   "nuint", "float",
-                                                                "double",  "string",     "ptr",    "byref", "struct",
-                                                                "class",   "typedbyref", "var"};
+                                                                "<UNDEF>", "void",  "bool",   "char",   "sbyte",
+                                                                "byte",    "short", "ushort", "int",    "uint",
+                                                                "long",    "ulong", "nint",   "nuint",  "float",
+                                                                "double",  "ptr",   "byref",  "struct", "class"};
 
     const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
     if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
@@ -692,3 +691,37 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
 
     printf("%s '%s'", prefix, str);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// eePrintStringLiteral:
+//   Print a string literal. If missing information (in SPMI),
+//   then print a placeholder string.
+//
+// Arguments:
+//    module - The literal's scope handle
+//    token  - The literal's token
+//
+void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token)
+{
+    const int MAX_LITERAL_LENGTH      = 50;
+    char16_t  str[MAX_LITERAL_LENGTH] = {};
+    int       length                  = -1;
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        length = info.compCompHnd->getStringLiteral(module, token, str, MAX_LITERAL_LENGTH);
+    });
+
+    if (length < 0)
+    {
+        printf("<unknown string literal>");
+    }
+    else
+    {
+        char dst[MAX_LITERAL_LENGTH * 3 + 1];
+        // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
+        int truncatedLength = min(length, MAX_LITERAL_LENGTH);
+        convertUtf16ToUtf8ForPrinting(str, truncatedLength, dst, sizeof(dst));
+        printf("\"%s%s\"", dst, length > MAX_LITERAL_LENGTH ? "..." : "");
+    }
+}
+#endif // DEBUG

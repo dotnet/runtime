@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace Repro
 {
@@ -12,24 +13,24 @@ namespace Repro
         static int Test(
                         int a00, int a01, int a02, int a03, int a04, int a05, int a06, int a07, int a08, int a09,
                         int a10, int a11, int a12, int a13, int a14, int a15, int a16, int a17, int a18, int a19,
-                        int a20, int a21, int a22, int a23, int a24, int a25, int a26, int a27, int a28, int a29,        
+                        int a20, int a21, int a22, int a23, int a24, int a25, int a26, int a27, int a28, int a29,
                         int a30, int a31, int a32, int a33, int a34, int a35, int a36, int a37, int a38, int a39,
-                        int a40, int a41, int a42, int a43, int a44, int a45, int a46, int a47, int a48, int a49,        
+                        int a40, int a41, int a42, int a43, int a44, int a45, int a46, int a47, int a48, int a49,
                         int a50, int a51, int a52, int a53, int a54, int a55, int a56, int a57, int a58, int a59,
-                        int a60, int a61, int a62, int a63, int a64, int a65, int a66, int a67, int a68, int a69,        
+                        int a60, int a61, int a62, int a63, int a64, int a65, int a66, int a67, int a68, int a69,
                         int a70, int a71, int a72, int a73, int a74, int a75, int a76, int a77, int a78, int a79,
-                        int a80, int a81, int a82, int a83, int a84, int a85, int a86, int a87, int a88, int a89,        
+                        int a80, int a81, int a82, int a83, int a84, int a85, int a86, int a87, int a88, int a89,
                         int a90, int a91, int a92, int a93, int a94, int a95, int a96, int a97, int a98, int a99,
 
                         int b00, int b01, int b02, int b03, int b04, int b05, int b06, int b07, int b08, int b09,
                         int b10, int b11, int b12, int b13, int b14, int b15, int b16, int b17, int b18, int b19,
-                        int b20, int b21, int b22, int b23, int b24, int b25, int b26, int b27, int b28, int b29,        
+                        int b20, int b21, int b22, int b23, int b24, int b25, int b26, int b27, int b28, int b29,
                         int b30, int b31, int b32, int b33, int b34, int b35, int b36, int b37, int b38, int b39,
-                        int b40, int b41, int b42, int b43, int b44, int b45, int b46, int b47, int b48, int b49,        
+                        int b40, int b41, int b42, int b43, int b44, int b45, int b46, int b47, int b48, int b49,
                         int b50, int b51, int b52, int b53, int b54, int b55, int b56, int b57, int b58, int b59,
-                        int b60, int b61, int b62, int b63, int b64, int b65, int b66, int b67, int b68, int b69,        
+                        int b60, int b61, int b62, int b63, int b64, int b65, int b66, int b67, int b68, int b69,
                         int b70, int b71, int b72, int b73, int b74, int b75, int b76, int b77, int b78, int b79,
-                        int b80, int b81, int b82, int b83, int b84, int b85, int b86, int b87, int b88, int b89,        
+                        int b80, int b81, int b82, int b83, int b84, int b85, int b86, int b87, int b88, int b89,
                         int b90, int b91, int b92, int b93, int b94, int b95, int b96, int b97, int b98, int b99)
         {
             int result = a00 + a30 + a60 + a90 + b20 + b50 + b80;
@@ -44,9 +45,9 @@ namespace Repro
                 // This creates N^2 LclVar temps  200 * 200 = 40000
                 // If the OutgoingArg variable number is setup after these 40,000 LclVars it will
                 // cause the emitter to hit an IMPL_LIMITATION when storing into the OutGoingArg area:
-                // This shows up as 
+                // This shows up as
                 //
-                //     Unhandled Exception: System.InvalidProgramException: 
+                //     Unhandled Exception: System.InvalidProgramException:
                 //     at Repro.Program.Test(...
                 //
                 // Since our arguments are sorted this code simply shuffles the arguments downward
@@ -260,41 +261,42 @@ namespace Repro
         }
 
         [Fact]
+        [SkipOnCoreClr("this test simply takes too long to complete under GC stress; it is not fundamentally incompatible", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int result = Test(   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
-                                10,  11,  12,  13,  14,  15,  16,  17,  18,  19,    
-                                20,  21,  22,  23,  24,  25,  26,  27,  28,  29,            
-                                30,  31,  32,  33,  34,  35,  36,  37,  38,  39,            
-                                40,  41,  42,  43,  44,  45,  46,  47,  48,  49,            
-                                50,  51,  52,  53,  54,  55,  56,  57,  58,  59,            
-                                60,  61,  62,  63,  64,  65,  66,  67,  68,  69,            
-                                70,  71,  72,  73,  74,  75,  76,  77,  78,  79,            
-                                80,  81,  82,  83,  84,  85,  86,  87,  88,  89,            
+                                10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
+                                20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
+                                30,  31,  32,  33,  34,  35,  36,  37,  38,  39,
+                                40,  41,  42,  43,  44,  45,  46,  47,  48,  49,
+                                50,  51,  52,  53,  54,  55,  56,  57,  58,  59,
+                                60,  61,  62,  63,  64,  65,  66,  67,  68,  69,
+                                70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
+                                80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
                                 90,  91,  92,  93,  94,  95,  96,  97,  98,  99,
 
                                100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                               110, 111, 112, 113, 114, 115, 116, 117, 118, 119,    
-                               120, 121, 122, 123, 124, 125, 126, 127, 128, 129,            
-                               130, 131, 132, 133, 134, 135, 136, 137, 138, 139,            
-                               140, 141, 142, 143, 144, 145, 146, 147, 148, 149,            
-                               150, 151, 152, 153, 154, 155, 156, 157, 158, 159,            
-                               160, 161, 162, 163, 164, 165, 166, 167, 168, 169,            
-                               170, 171, 172, 173, 174, 175, 176, 177, 178, 179,            
-                               180, 181, 182, 183, 184, 185, 186, 187, 188, 189,            
+                               110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                               120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+                               130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
+                               140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+                               150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+                               160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
+                               170, 171, 172, 173, 174, 175, 176, 177, 178, 179,
+                               180, 181, 182, 183, 184, 185, 186, 187, 188, 189,
                                190, 191, 192, 193, 194, 195, 196, 197, 198, 199);
 
 
             if (result == 1267)
             {
                 Console.WriteLine("Test Passed");
-                // Correct result                
+                // Correct result
                 return 100;
             }
             else
             {
                 Console.WriteLine("*** FAILED ***, result was " + result);
-                // Incorrect result            
+                // Incorrect result
                 return -1;
             }
         }

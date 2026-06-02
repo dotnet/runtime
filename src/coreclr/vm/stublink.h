@@ -300,7 +300,7 @@ class Stub
         CODEBYTES_MASK          = SHUFFLE_THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-    static_assert_no_msg(CODEBYTES_MASK < SHUFFLE_THUNK_BIT);
+    static_assert(CODEBYTES_MASK < SHUFFLE_THUNK_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -821,7 +821,7 @@ class InstructionFormat
 
 #define CPUSTUBLINKER StubLinkerCPU
 
-class NDirectStubLinker;
+class PInvokeStubLinker;
 class CPUSTUBLINKER;
 
 #endif // __stublink_h__

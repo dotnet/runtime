@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generators
@@ -40,6 +42,62 @@ namespace Generators
                     continue;
                 }
 
+                bool isPartial = false;
+                foreach (var modifier in classDef.Modifiers)
+                {
+                    if (modifier.IsKind(SyntaxKind.PartialKeyword))
+                    {
+                        isPartial = true;
+                        break;
+                    }
+                }
+
+                if (!isPartial)
+                {
+                    var diagnostic = Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "ESGEN001",
+                            "EventSource class is not partial",
+                            "EventSource class '{0}' is not partial. EventSource classes must be declared as partial to take advantage of EventSourceGenerator.",
+                            nameof(EventSourceGenerator),
+                            DiagnosticSeverity.Warning,
+                            isEnabledByDefault: true),
+                        classDef.GetLocation(),
+                        classDef.Identifier.ValueText);
+                    return new EventSourceClass(diagnostic, null, null, null, default, false);
+                }
+
+                foreach (MemberDeclarationSyntax member in classDef.Members)
+                {
+                    if (member is ConstructorDeclarationSyntax ctor)
+                    {
+                        bool isStatic = false;
+                        foreach (SyntaxToken ctorModifier in ctor.Modifiers)
+                        {
+                            if (ctorModifier.IsKind(SyntaxKind.StaticKeyword))
+                            {
+                                isStatic = true;
+                                break;
+                            }
+                        }
+
+                        if (!isStatic)
+                        {
+                            var diagnostic = Diagnostic.Create(
+                                new DiagnosticDescriptor(
+                                    "ESGEN002",
+                                    "EventSource class contains explicit constructor",
+                                    "EventSource class '{0}' contains an explicit constructor. EventSource classes must not declare constructors to take advantage of EventSourceGenerator.",
+                                    nameof(EventSourceGenerator),
+                                    DiagnosticSeverity.Warning,
+                                    isEnabledByDefault: true),
+                                classDef.GetLocation(),
+                                classDef.Identifier.ValueText);
+                            return new EventSourceClass(diagnostic, null, null, null, default, false);
+                        }
+                    }
+                }
+
                 nspace ??= ConstructNamespace(ns);
 
                 string className = classDef.Identifier.ValueText;
@@ -68,14 +126,24 @@ namespace Generators
                     result = GenerateGuidFromName(name.ToUpperInvariant());
                 }
 
-                eventSourceClass = new EventSourceClass(nspace, className, name, result);
+                bool hasProviderMetadataProperty = false;
+                foreach (MemberDeclarationSyntax member in classDef.Members)
+                {
+                    if (member is PropertyDeclarationSyntax prop && prop.Identifier.Text == "ProviderMetadata")
+                    {
+                        hasProviderMetadataProperty = true;
+                        break;
+                    }
+                }
+
+                eventSourceClass = new EventSourceClass(null, nspace, className, name, result, hasProviderMetadataProperty);
                 continue;
             }
 
             return eventSourceClass;
         }
 
-        private static string? ConstructNamespace(NamespaceDeclarationSyntax? ns)
+        private static string ConstructNamespace(NamespaceDeclarationSyntax? ns)
         {
             if (ns is null)
                 return string.Empty;

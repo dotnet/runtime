@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 if (useRegisteredLocation)
                 {
-                    registeredInstallLocationOverride.SetInstallLocation((TestContext.BuildArchitecture, installLocation));
+                    registeredInstallLocationOverride.SetInstallLocation((HostTestContext.BuildArchitecture, installLocation));
                 }
 
                 result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
@@ -206,7 +206,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
             {
                 if (shouldUseArchSpecificInstallLocation)
-                    registeredInstallLocationOverride.SetInstallLocation((TestContext.BuildArchitecture, string.Format(value, installLocation)));
+                    registeredInstallLocationOverride.SetInstallLocation((HostTestContext.BuildArchitecture, string.Format(value, installLocation)));
                 else
                     registeredInstallLocationOverride.SetInstallLocation((string.Empty, string.Format(value, installLocation)));
 
@@ -223,7 +223,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 {
                     result.Should().HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
-                        TestContext.BuildArchitecture);
+                        HostTestContext.BuildArchitecture);
                 }
                 else
                 {
@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
             {
                 registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
-                    (TestContext.BuildArchitecture, installLocation),
+                    (HostTestContext.BuildArchitecture, installLocation),
                     ("someOtherArch", $"{installLocation}/invalid")
                 });
 
@@ -270,7 +270,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Pass()
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
-                        TestContext.BuildArchitecture)
+                        HostTestContext.BuildArchitecture)
                     .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
@@ -285,7 +285,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
                     (string.Empty, $"{installLocation}/a/b/c"),
-                    (TestContext.BuildArchitecture, installLocation)
+                    (HostTestContext.BuildArchitecture, installLocation)
                 });
 
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
@@ -300,7 +300,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Pass()
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
-                        TestContext.BuildArchitecture)
+                        HostTestContext.BuildArchitecture)
                     .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
@@ -357,6 +357,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void GetHostFxrPath_StaticNativeHost()
+        {
+            string dotNetRoot = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
+            CommandResult result = Command.Create(sharedState.NativeHostStaticPath, $"{GetHostFxrPath} false nullptr {dotNetRoot}")
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdErrContaining("Using dotnet root parameter")
+                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
@@ -366,6 +380,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string TestAssemblyPath { get; }
 
             public string ProductHostFxrPath { get; }
+
+            public string NativeHostStaticPath { get; }
 
             public SharedTestState()
             {
@@ -385,6 +401,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
                 File.Copy(Binaries.HostFxr.FilePath, ProductHostFxrPath);
+
+                // Copy over the static native host - this executable has nethost statically linked,
+                // so it does not require the nethost shared library at runtime.
+                NativeHostStaticPath = Path.Combine(BaseDirectory, Binaries.NativeHostStatic.FileName);
+                File.Copy(Binaries.NativeHostStatic.FilePath, NativeHostStaticPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

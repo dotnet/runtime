@@ -168,5 +168,20 @@ namespace System.IO.Hashing.Tests
 
             AssertEqualHashNumber(testCase.OutputHex, Crc32.HashToUInt32(testCase.Input), littleEndian: true);
         }
+
+        [Fact]
+        public void ParameterSetIsRequired()
+        {
+            byte[] array = new byte[4];
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => new Crc32((Crc32ParameterSet)null!));
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => Crc32.Hash((Crc32ParameterSet)null!, array));
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => Crc32.Hash((Crc32ParameterSet)null!, array.AsSpan()));
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => Crc32.Hash((Crc32ParameterSet)null!, array, array));
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => Crc32.HashToUInt32((Crc32ParameterSet)null!, array));
+
+            int integer = 823;
+            AssertExtensions.Throws<ArgumentNullException>("parameterSet", () => Crc32.TryHash((Crc32ParameterSet)null!, array, array, out integer));
+            Assert.Equal(823, integer);
+        }
     }
 }

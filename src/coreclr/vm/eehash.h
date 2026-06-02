@@ -13,9 +13,7 @@
 //
 // 1. Any number of threads can be reading the hash table while another thread is writing, without error.
 // 2. Only one thread can write at a time.
-// 3. When calling ReplaceValue(), a reader will get the old value, or the new value, but not something
-//    in between.
-// 4. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
+// 3. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
 //
 
 #ifndef _EE_HASH_H
@@ -65,6 +63,10 @@ struct EEHashTableIteration;
 
 class GCHeap;
 
+// Bucket array allocation helpers for EEHashTable.
+EEHashEntry_t** AllocateEEHashBuckets(DWORD dwNumBuckets);
+void FreeEEHashBuckets(EEHashEntry_t** pBuckets);
+
 // Generic hash table.
 
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
@@ -78,8 +80,6 @@ public:
     void            InsertValue(KeyType pKey, HashDatum Data, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     void            InsertKeyAsValue(KeyType pKey, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     BOOL            DeleteValue(KeyType pKey);
-    BOOL            ReplaceValue(KeyType pKey, HashDatum Data);
-    BOOL            ReplaceKey(KeyType pOldKey, KeyType pNewKey);
     void            ClearHashTable();
     void            EmptyHashTable();
     BOOL            IsEmpty();
@@ -94,7 +94,7 @@ public:
     // A fast inlinable flavor of GetValue that can return false instead of the actual item
     // if there is race with updating of the hashtable. Callers of GetValueSpeculative
     // should fall back to the slow GetValue if GetValueSpeculative returns false.
-    // Assumes that we are in cooperative mode already. For performance-sensitive codepaths.
+    // Uses EBR internally for safe concurrent access. For performance-sensitive codepaths.
     BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData);
     BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData, DWORD hashValue);
 
@@ -140,7 +140,7 @@ protected:
     // A fast inlinable flavor of FindItem that can return null instead of the actual item
     // if there is race with updating of the hashtable. Callers of FindItemSpeculative
     // should fall back to the slow FindItem if FindItemSpeculative returns null.
-    // Assumes that we are in cooperative mode already. For performance-sensitive codepaths.
+    // Uses EBR internally for safe concurrent access. For performance-sensitive codepaths.
     EEHashEntry_t * FindItemSpeculative(KeyType pKey, DWORD hashValue);
 
     // Double buffer to fix the race condition of growhashtable (the update
@@ -446,7 +446,6 @@ public:
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
     static DWORD           Hash(EEStringData *pKey);
     static EEStringData *  GetKey(EEHashEntry_t *pEntry);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeHashTableHelper, TRUE> EEUnicodeStringHashTable;
@@ -459,7 +458,6 @@ public:
     static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
     static DWORD           Hash(EEStringData *pKey);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeStringLiteralHashTableHelper, TRUE> EEUnicodeStringLiteralHashTable;

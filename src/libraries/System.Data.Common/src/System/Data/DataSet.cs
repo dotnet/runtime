@@ -1373,10 +1373,7 @@ namespace System.Data
                     }
                 }
 
-                if (null != dsNew)
-                {
-                    dsNew.EnforceConstraints = fEnforceConstraints;
-                }
+                dsNew?.EnforceConstraints = fEnforceConstraints;
                 return dsNew;
             }
             finally
@@ -3575,9 +3572,9 @@ namespace System.Data
             {
                 xmlTextParser.Normalized = fNormalization;
             }
-            else if (xmlTextReader != null)
+            else
             {
-                xmlTextReader.Normalization = fNormalization;
+                xmlTextReader?.Normalization = fNormalization;
             }
         }
 

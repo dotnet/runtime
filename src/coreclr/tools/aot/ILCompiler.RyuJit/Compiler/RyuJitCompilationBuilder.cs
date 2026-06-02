@@ -21,6 +21,7 @@ namespace ILCompiler
         private FileLayoutAlgorithm _fileLayoutAlgorithm;
         private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
+        private string _orderFile;
         private string _jitPath;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
@@ -32,6 +33,12 @@ namespace ILCompiler
         public RyuJitCompilationBuilder UseProfileData(IEnumerable<string> mibcFiles)
         {
             _profileDataManager = new ProfileDataManager(mibcFiles, _context);
+            return this;
+        }
+
+        public RyuJitCompilationBuilder UseSymbolOrder(string filePath)
+        {
+            _orderFile = filePath;
             return this;
         }
 
@@ -129,9 +136,18 @@ namespace ILCompiler
             if (_resilient)
                 options |= RyuJitCompilationOptions.UseResilience;
 
-            ObjectDataInterner interner = _methodBodyFolding ? new ObjectDataInterner() : ObjectDataInterner.Null;
+            MethodBodyDeduplicator methodBodyDeduplicator = _methodBodyFolding switch
+            {
+                MethodBodyFoldingMode.Generic => new MethodBodyDeduplicator(genericsOnly: true),
+                MethodBodyFoldingMode.All => new MethodBodyDeduplicator(genericsOnly: false),
+                _ => null,
+            };
 
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, _inlinedThreadStatics, GetPreinitializationManager(), _devirtualizationManager, interner, _typeMapManager);
+            ObjectDataInterner interner = methodBodyDeduplicator is not null
+                ? new ObjectDataInterner(methodBodyDeduplicator)
+                : ObjectDataInterner.Null;
+
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, _inlinedThreadStatics, GetPreinitializationManager(), _devirtualizationManager, interner, methodBodyDeduplicator, _typeMapManager);
 
             JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions, _jitPath);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(CompilerComparer.Instance));
@@ -149,7 +165,8 @@ namespace ILCompiler
                 options,
                 _methodLayoutAlgorithm,
                 _fileLayoutAlgorithm,
-                _parallelism);
+                _parallelism,
+                _orderFile);
         }
     }
 }

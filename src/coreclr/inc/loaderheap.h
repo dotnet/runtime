@@ -17,6 +17,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
+#include "cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -158,8 +159,8 @@ struct LoaderHeapEvent;
 // When an interleaved LoaderHeap is constructed, this is the interleaving size
 inline UINT32 GetStubCodePageSize()
 {
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    return max(16*1024u, GetOsPageSize());
+#if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASM)
+    return max(16*1024u, minipal_getpagesize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
 #else
@@ -174,8 +175,13 @@ enum class LoaderHeapImplementationKind
     Interleaved
 };
 
+typedef DPTR(class UnlockedLoaderHeapBaseTraversable) PTR_UnlockedLoaderHeapBaseTraversable;
 class UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -188,6 +194,8 @@ protected:
 #endif
 
 public:
+    // DO NOT REMOVE : This is needed for layout stability.
+    virtual ~UnlockedLoaderHeapBaseTraversable() {}
 #ifdef DACCESS_COMPILE
 public:
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -201,12 +209,17 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
+};
+
 //===============================================================================
 // This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
 // common handling for LoaderHeap events, and the data structures used for bump
 // pointer allocation (although not the actual allocation routines).
 //===============================================================================
-typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
@@ -460,12 +473,13 @@ struct InterleavedLoaderHeapConfig
     uint32_t StubSize;
     void* Template;
     void (*CodePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+    void (*DataPageGenerator)(uint8_t* pageBase, size_t size);
 };
 
-void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
 //===============================================================================
-// This is the base class for InterleavedLoaderHeap It's used as a simple
+// This is the base class for InterleavedLoaderHeap. It's used as a simple
 // allocator for stubs in a scheme where each stub is a small fixed size, and is paired
 // with memory which is GetStubCodePageSize() bytes away. In addition there is an
 // ability to free is via a "backout" mechanism that is not considered to have good performance.
@@ -573,7 +587,7 @@ protected:
                                  );
 
 protected:
-    // This frees memory allocated by UnlockAllocMem. It's given this horrible name to emphasize
+    // This frees memory allocated by UnlockedAllocStub. It's given this horrible name to emphasize
     // that it's purpose is for error path leak prevention purposes. You shouldn't
     // use LoaderHeap's as general-purpose alloc-free heaps.
     void UnlockedBackoutStub(void *pMem
@@ -598,9 +612,6 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
 
 private:
     // Allocation pointer in current block
@@ -701,8 +712,7 @@ inline CRITSEC_COOKIE CreateLoaderHeapLock()
 }
 
 //===============================================================================
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
+// Thread-safe variant of UnlockedLoaderHeap.
 //===============================================================================
 typedef DPTR(class LoaderHeap) PTR_LoaderHeap;
 class LoaderHeap : public UnlockedLoaderHeap
@@ -971,7 +981,7 @@ public:
 
 
 public:
-    // This frees memory allocated by AllocMem. It's given this horrible name to emphasize
+    // This frees memory allocated by RealAllocMem. It's given this horrible name to emphasize
     // that it's purpose is for error path leak prevention purposes. You shouldn't
     // use LoaderHeap's as general-purpose alloc-free heaps.
     void RealBackoutMem(void *pMem
@@ -1032,8 +1042,7 @@ public:
 #endif
 
 //===============================================================================
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
+// Thread-safe variant of UnlockedInterleavedLoaderHeap.
 //===============================================================================
 typedef DPTR(class InterleavedLoaderHeap) PTR_InterleavedLoaderHeap;
 class InterleavedLoaderHeap : public UnlockedInterleavedLoaderHeap
@@ -1106,7 +1115,7 @@ public:
 
 
 public:
-    // This frees memory allocated by AllocMem. It's given this horrible name to emphasize
+    // This frees memory allocated by RealAllocStub. It's given this horrible name to emphasize
     // that it's purpose is for error path leak prevention purposes. You shouldn't
     // use LoaderHeap's as general-purpose alloc-free heaps.
     void RealBackoutMem(void *pMem

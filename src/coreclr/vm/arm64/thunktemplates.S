@@ -52,7 +52,7 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
 // FixupPrecode
 // ----------
 
-#define FIXUP_PRECODE_CODESIZE 0x18 // 5 instructions, 4 bytes each (and we also have 4 bytes of padding)
+#define FIXUP_PRECODE_CODESIZE 0x18 // 6 instructions, 4 bytes each
 #define FIXUP_PRECODE_DATASIZE 0x18 // 3 qwords
 .set FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING,(THUNKS_MAP_SIZE / FIXUP_PRECODE_CODESIZE)
 
@@ -62,10 +62,10 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
 
     ldr x11, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     br  x11
+    dmb ishld
     ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
-    br  x11        
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
+    br  x11
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -77,11 +77,12 @@ LEAF_ENTRY FixupPrecodeCodeTemplate
     THUNKS_BLOCK_FIXUP_PRECODE
 LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 
+#ifdef FEATURE_TIERED_COMPILATION
 // ----------
 // CallCountingStub
 // ----------
 
-#define CALLCOUNTING_CODESIZE 0x28 // 5 instructions, 4 bytes each (and we also have 4 bytes of padding)
+#define CALLCOUNTING_CODESIZE 0x28 // 10 instructions, 4 bytes each
 #define CALLCOUNTING_DATASIZE 0x18 // 3 qwords
 .set CALLCOUNTING_NUM_THUNKS_PER_MAPPING, (THUNKS_MAP_SIZE / CALLCOUNTING_CODESIZE)
 
@@ -99,7 +100,7 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 0:
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         br   x10
-        brk     0xf000      // Stubs need to be 40-byte in size to allow for the data to be pointer aligned
+        brk     0xf000      // Stubs need to be aligned
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -110,6 +111,7 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 LEAF_ENTRY CallCountingStubCodeTemplate
     THUNKS_BLOCK_CALLCOUNTING
 LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
+#endif // FEATURE_TIERED_COMPILATION
 #endif
 
 #ifdef DATA_SLOT
@@ -123,16 +125,21 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
+        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
+        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
+        brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
     LEAF_END_MARKED StubPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY FixupPrecodeCode\STUB_PAGE_SIZE
         ldr x11, DATA_SLOT(FixupPrecode, Target)
         br  x11
+        dmb ishld
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
-        br  x11        
+        br  x11
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
+#ifdef FEATURE_TIERED_COMPILATION
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
 LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
@@ -145,6 +152,8 @@ LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
 LOCAL_LABEL(CountReachedZero\STUB_PAGE_SIZE):
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
         br   x10
+        brk     0xf000      // Stubs need to be aligned in total size
     LEAF_END_MARKED CallCountingStubCode\STUB_PAGE_SIZE
+#endif // FEATURE_TIERED_COMPILATION
 
     .endr

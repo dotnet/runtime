@@ -14,42 +14,7 @@
 #include "utilcode.h"
 #include "ex.h"
 
-#ifdef HOST_WINDOWS
-#include <versionhelpers.h>
-#endif
-
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
-
-RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
-
-#define NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE     0xBAD1BAD1
-
-//*****************************************************************************
-// One time initialization of the OS version
-//*****************************************************************************
-void InitRunningOnVersionStatus ()
-{
-#ifdef HOST_WINDOWS
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    if(IsWindows8OrGreater())
-    {
-        gRunningOnStatus = RUNNING_ON_WIN8;
-    }
-    else if(IsWindows7OrGreater())
-    {
-        gRunningOnStatus = RUNNING_ON_WIN7;
-    }
-    else
-    {
-        // The current platform isn't supported. Display a message to this effect and exit.
-        minipal_log_print_error("Platform not supported: Windows 7 is the minimum supported version\n");
-        TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
-    }
-#endif // HOST_WINDOWS
-} // InitRunningOnVersionStatus
 
 #ifndef HOST_64BIT
 //------------------------------------------------------------------------------

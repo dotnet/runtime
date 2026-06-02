@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1636
 // 
+
+namespace Runtime_116814;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

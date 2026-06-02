@@ -70,8 +70,9 @@ public class AppSettingsTests : WasmTemplateTestsBase
             ? await RunForPublishWithWebServer(runOptions)
             : await RunForBuildWithDotnetRun(runOptions);
 
-        Assert.Contains(result.TestOutput, m => m.Contains("'/appsettings.json' exists 'True'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
+        const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.json' exists 'True'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
     }
 }

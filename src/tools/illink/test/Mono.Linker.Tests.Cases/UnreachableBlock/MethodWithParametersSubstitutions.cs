@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
             TestMethodWithComplexParams_4();
             TestMethodWithComplexParams_5();
             instance.TestMethodWithMultipleInParamsInstance();
-            // TestMethodWithOutParam ();
+            // TestMethodWithOutParam();
             TestMethodWithRefParam();
             TestMethodWithMultipleRefParams();
             TestMethodWithValueParamAndConstReturn_NoSubstitutions();
@@ -195,27 +195,27 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
         // CodeRewriterStep actually fails when asked to rewrite method body with an out parameter.
         // So no point in testing that the substitution works or not.
-        //[Kept] static bool _isEnabledWithOutParamField;
+        // [Kept] static bool _isEnabledWithOutParamField;
 
-        //[Kept]
-        //static bool IsEnabledWithOutParam (out int param)
-        //{
-        //	param = 0;
-        //	return _isEnabledWithOutParamField;
-        //}
+        // [Kept]
+        // static bool IsEnabledWithOutParam(out int param)
+        // {
+        //     param = 0;
+        //     return _isEnabledWithOutParamField;
+        // }
 
-        //[Kept]
-        //[LogDoesNotContain("IsEnabledWithOutParam")]
-        //static void TestMethodWithOutParam ()
-        //{
-        //	if (IsEnabledWithOutParam (out var _))
-        //		MethodWithOutParam_Reached1 ();
-        //	else
-        //		MethodWithOutParam_Reached2 ();
-        //}
+        // [Kept]
+        // [LogDoesNotContain("IsEnabledWithOutParam")]
+        // static void TestMethodWithOutParam()
+        // {
+        //     if (IsEnabledWithOutParam(out var _))
+        //         MethodWithOutParam_Reached1();
+        //     else
+        //         MethodWithOutParam_Reached2();
+        // }
 
-        //[Kept] static void MethodWithOutParam_Reached1 () { }
-        //[Kept] static void MethodWithOutParam_Reached2 () { }
+        // [Kept] static void MethodWithOutParam_Reached1() { }
+        // [Kept] static void MethodWithOutParam_Reached2() { }
 
         static bool _isEnabledWithRefParamField;
 

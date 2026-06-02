@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
@@ -18,7 +19,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer
 {
-    public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer
+    public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer, IGenericInstantiationAnalysis
     {
         private protected abstract string RequiresAttributeName { get; }
 
@@ -34,8 +35,37 @@ namespace ILLink.RoslynAnalyzer
         private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
         private protected abstract DiagnosticDescriptor RequiresOnEntryPoint { get; }
 
+        public virtual void ProcessGenericInstantiation(
+            ITypeSymbol typeArgument,
+            ITypeParameterSymbol typeParameter,
+            FeatureContext featureContext,
+            TypeNameResolver typeNameResolver,
+            ISymbol owningSymbol,
+            Location location,
+            Action<Diagnostic>? reportDiagnostic)
+        {
+            // Check constructor constraint (new())
+            if (typeParameter.HasConstructorConstraint)
+            {
+                // Check if this type has a public parameterless constructor
+                var namedTypeSymbol = typeArgument as INamedTypeSymbol;
+                var publicParameterlessConstructor = namedTypeSymbol?.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public);
+
+                if (publicParameterlessConstructor != null)
+                {
+                    var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+                    CheckAndCreateRequiresDiagnostic(
+                        publicParameterlessConstructor,
+                        owningSymbol,
+                        ImmutableArray<ISymbol>.Empty,
+                        diagnosticContext);
+                }
+            }
+        }
+
         private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
         private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
+        private protected virtual ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions { get; } = ImmutableArray<Action<CompilationAnalysisContext>>.Empty;
 
         public override void Initialize(AnalysisContext context)
         {
@@ -73,59 +103,11 @@ namespace ILLink.RoslynAnalyzer
                     CheckMatchingAttributesInInterfaces(symbolAnalysisContext, typeSymbol);
                 }, SymbolKind.NamedType);
 
-                context.RegisterSyntaxNodeAction(syntaxNodeAnalysisContext =>
-                {
-                    var model = syntaxNodeAnalysisContext.SemanticModel;
-                    if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
-                        return;
-
-                    GenericNameSyntax genericNameSyntaxNode = (GenericNameSyntax)syntaxNodeAnalysisContext.Node;
-                    var typeParams = ImmutableArray<ITypeParameterSymbol>.Empty;
-                    var typeArgs = ImmutableArray<ITypeSymbol>.Empty;
-                    switch (model.GetSymbolInfo(genericNameSyntaxNode).Symbol)
-                    {
-                        case INamedTypeSymbol typeSymbol:
-                            typeParams = typeSymbol.TypeParameters;
-                            typeArgs = typeSymbol.TypeArguments;
-                            break;
-
-                        case IMethodSymbol methodSymbol:
-                            typeParams = methodSymbol.TypeParameters;
-                            typeArgs = methodSymbol.TypeArguments;
-                            break;
-
-                        default:
-                            return;
-                    }
-
-                    for (int i = 0; i < typeParams.Length; i++)
-                    {
-                        var typeParam = typeParams[i];
-                        var typeArg = typeArgs[i];
-                        if (!typeParam.HasConstructorConstraint ||
-                            typeArg is not INamedTypeSymbol { InstanceConstructors: { } typeArgCtors })
-                            continue;
-
-                        foreach (var instanceCtor in typeArgCtors)
-                        {
-                            if (instanceCtor.Arity > 0)
-                                continue;
-
-                            if (instanceCtor.DoesMemberRequire(RequiresAttributeName, out var requiresAttribute) &&
-                                VerifyAttributeArguments(requiresAttribute))
-                            {
-                                syntaxNodeAnalysisContext.ReportDiagnostic(Diagnostic.Create(RequiresDiagnosticRule,
-                                    syntaxNodeAnalysisContext.Node.GetLocation(),
-                                    instanceCtor.GetDisplayName(),
-                                    (string)requiresAttribute.ConstructorArguments[0].Value!,
-                                    GetUrlFromAttribute(requiresAttribute)));
-                            }
-                        }
-                    }
-                }, SyntaxKind.GenericName);
-
                 foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
                     context.RegisterSyntaxNodeAction(extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
+
+                // Register the implicit base constructor analysis for all analyzers
+                context.RegisterSymbolAction(AnalyzeImplicitBaseCtor, SymbolKind.NamedType);
 
                 foreach (var extraSymbolAction in ExtraSymbolActions)
                     context.RegisterSymbolAction(extraSymbolAction.Action, extraSymbolAction.SymbolKind);
@@ -165,6 +147,9 @@ namespace ILLink.RoslynAnalyzer
                     }
                 }
             });
+
+            foreach (var extraCompilationAction in ExtraCompilationActions)
+                context.RegisterCompilationAction(extraCompilationAction);
         }
 
         internal void CheckAndCreateRequiresDiagnostic(
@@ -174,7 +159,7 @@ namespace ILLink.RoslynAnalyzer
             in DiagnosticContext diagnosticContext)
         {
             // Do not emit any diagnostic if caller is annotated with the attribute too.
-            if (containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
+            if (IsInRequiresScope(containingSymbol, in diagnosticContext))
                 return;
 
             if (CreateSpecialIncompatibleMembersDiagnostic(incompatibleMembers, member, diagnosticContext))
@@ -191,6 +176,44 @@ namespace ILLink.RoslynAnalyzer
                 return;
 
             CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
+        }
+
+        protected virtual bool IsInRequiresScope(ISymbol containingSymbol, in DiagnosticContext context)
+        {
+            return containingSymbol.IsInRequiresScope(RequiresAttributeName, out _);
+        }
+
+        private void AnalyzeImplicitBaseCtor(SymbolAnalysisContext context)
+        {
+            var typeSymbol = (INamedTypeSymbol)context.Symbol;
+
+            if (typeSymbol.TypeKind != TypeKind.Class || typeSymbol.BaseType == null)
+                return;
+
+            if (typeSymbol.InstanceConstructors.Length != 1 || !typeSymbol.InstanceConstructors[0].IsImplicitlyDeclared)
+                return;
+
+            var implicitCtor = typeSymbol.InstanceConstructors[0];
+
+            var baseCtor = typeSymbol.BaseType.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+            if (baseCtor == null)
+                return;
+
+            var diagnosticContext = new DiagnosticContext(
+                typeSymbol.Locations[0],
+                context.ReportDiagnostic);
+
+            CheckAndCreateRequiresDiagnostic(
+                baseCtor,
+                implicitCtor,
+                ImmutableArray<ISymbol>.Empty,
+                diagnosticContext);
+
+            var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create(context.Options, context.Compilation, ImmutableArray.Create(this));
+            var typeNameResolver = new TypeNameResolver(context.Compilation);
+            var genericArgumentDataFlow = new GenericArgumentDataFlow(this, FeatureContext.None, typeNameResolver, implicitCtor, typeSymbol.Locations[0], context.ReportDiagnostic);
+            if (typeSymbol.BaseType is INamedTypeSymbol baseType)
+                genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
         }
 
         [Flags]
@@ -385,6 +408,39 @@ namespace ILLink.RoslynAnalyzer
             )
         {
             return false;
+        }
+
+        protected void CheckReferencedAssemblies(
+            CompilationAnalysisContext context,
+            string msbuildPropertyName,
+            string assemblyMetadataName,
+            DiagnosticDescriptor diagnosticDescriptor)
+        {
+            var options = context.Options;
+            if (!IsAnalyzerEnabled(options))
+                return;
+
+            if (!options.IsMSBuildPropertyValueTrue(msbuildPropertyName))
+                return;
+
+            foreach (var reference in context.Compilation.References)
+            {
+                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (refAssembly is null)
+                    continue;
+
+                var assemblyMetadata = refAssembly.GetAttributes().FirstOrDefault(attr =>
+                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
+                    attr.ConstructorArguments.Length == 2 &&
+                    attr.ConstructorArguments[0].Value?.ToString() == assemblyMetadataName &&
+                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
+
+                if (assemblyMetadata is null)
+                {
+                    var diag = Diagnostic.Create(diagnosticDescriptor, Location.None, refAssembly.Name);
+                    context.ReportDiagnostic(diag);
+                }
+            }
         }
     }
 }

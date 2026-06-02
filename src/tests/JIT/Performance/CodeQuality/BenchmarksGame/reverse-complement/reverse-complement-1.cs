@@ -7,6 +7,7 @@
 // Best-scoring single-threaded C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
+using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Robert F. Tobler to process large blocks of byte arrays
@@ -45,6 +46,7 @@ namespace BenchmarksGame
         const byte Gt = (byte)'>';
         const byte Lf = (byte)'\n';
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

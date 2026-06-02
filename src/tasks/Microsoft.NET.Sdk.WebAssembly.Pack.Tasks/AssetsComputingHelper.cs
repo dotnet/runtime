@@ -18,6 +18,12 @@ public class AssetsComputingHelper
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
     };
 
+    private static readonly string[] coreclrPackageIds = new[]
+    {
+        "Microsoft.NETCore.App.Runtime.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.multithread.browser-wasm",
+    };
+
     private static readonly string[] dotnetJsSingleThreadNames = new[]
     {
         "dotnet",
@@ -47,13 +53,15 @@ public class AssetsComputingHelper
         bool enableThreads,
         bool enableDiagnostics,
         bool emitSourceMap,
+        bool emitSymbolMap,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
         var fileName = candidate.GetMetadata("FileName");
         var assetType = candidate.GetMetadata("AssetType");
-        bool fromMonoPackage = IsFromMonoPackage(candidate);
+        bool fromMonoPackage = IsFromRuntimePack(candidate);
 
+        // A similar logic is in ReadWasmNativeAssetsFromFileSystem target for RuntimeTests
         reason = extension switch
         {
             ".a" when fromMonoPackage => "extension is .a is not supported.",
@@ -83,7 +91,7 @@ public class AssetsComputingHelper
             ".js" when assetType == "native" => $"{fileName}{extension} is not used by Blazor",
             ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
-            ".symbols" when fromMonoPackage => "extension .symbols is not required.",
+            ".symbols" when !emitSymbolMap => "emitting wasm symbol map is not enabled",
             _ => null
         };
 
@@ -95,10 +103,10 @@ public class AssetsComputingHelper
             string.IsNullOrEmpty(customIcuCandidateFilename);
     }
 
-    private static bool IsFromMonoPackage(ITaskItem candidate)
+    private static bool IsFromRuntimePack(ITaskItem candidate)
     {
         string packageId = candidate.GetMetadata("NuGetPackageId");
-        return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
+        return monoPackageIds.Contains(packageId, StringComparer.Ordinal) || coreclrPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
     public static string GetCandidateRelativePath(ITaskItem candidate, bool fingerprintAssets, bool fingerprintDotNetJs)

@@ -65,7 +65,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("text/html")]
-        public void Ctor_Type_SyndicationElementExtension(string type)
+        public void Ctor_Type_SyndicationElementExtension(string? type)
         {
             var extension = new SyndicationElementExtension(new ExtensionObject { Value = 10 });
             var content = new XmlSyndicationContent(type, extension);

@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
+    [DebuggerDisplay("Name = {Name}")]
     public sealed class ActivitySource : IDisposable
     {
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();

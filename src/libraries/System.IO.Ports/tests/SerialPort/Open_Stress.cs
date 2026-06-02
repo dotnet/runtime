@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
 {
     public class Open_stress : PortsTest
     {
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Open_stress), nameof(HasNullModem))]
         public void OpenReceiveData()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -63,7 +63,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Open_stress), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void OpenReceiveDataAndRTS()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())

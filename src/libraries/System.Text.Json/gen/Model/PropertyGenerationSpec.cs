@@ -133,6 +133,40 @@ namespace System.Text.Json.SourceGeneration
         public required bool HasJsonInclude { get; init; }
 
         /// <summary>
+        /// Whether the property can use UnsafeAccessor for its getter/setter.
+        /// This is true for non-generic types on .NET 8+ and for generic types on .NET 9+
+        /// (using a generic wrapper class). False when UnsafeAccessorAttribute is not available.
+        /// </summary>
+        public required bool CanUseUnsafeAccessors { get; init; }
+
+        /// <summary>
+        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
+        /// contains the FQN of the declaring type using open type parameters
+        /// (e.g., "global::TestApp.MyGenericType&lt;T&gt;").
+        /// </summary>
+        public string? OpenDeclaringTypeFQN { get; init; }
+
+        /// <summary>
+        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
+        /// contains the FQN of the property type using open type parameters
+        /// (e.g., "T" for a generic property, "string" for a concrete one).
+        /// </summary>
+        public string? OpenPropertyTypeFQN { get; init; }
+
+        /// <summary>
+        /// The type parameter names of the generic declaring type (e.g., ["T"]).
+        /// Null when the declaring type is not generic.
+        /// </summary>
+        public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
+
+        /// <summary>
+        /// The combined type parameter constraint clauses of the generic declaring type
+        /// (e.g., "where T : notnull, global::MyNamespace.MyBase where U : struct").
+        /// Null when the declaring type is not generic or has no constraints.
+        /// </summary>
+        public string? DeclaringTypeParameterConstraintClauses { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonExtensionDataAttribute.
         /// </summary>
         public required bool IsExtensionData { get; init; }
@@ -163,8 +197,9 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            // Discard properties without getters
-            if (!CanUseGetter)
+            // Discard properties without getters, unless they have [JsonInclude]
+            // in which case we use UnsafeAccessor or reflection to read the value.
+            if (!CanUseGetter && !HasJsonInclude)
             {
                 return false;
             }

@@ -46,25 +46,9 @@
     #define _CrtGetCheckCount()                 ((int)0)
 #endif
 
-/* Assert message and Invalid parameter */
-#ifdef _DEBUG
-    #define _ASSERT_EXPR( val, exp )                                            \
-        {                                                                       \
-            if ( ( val ) == 0 )                                                 \
-            {                                                                   \
-                if ( sMBUSafeCRTAssertFunc != NULL )                            \
-                {                                                               \
-                    ( *sMBUSafeCRTAssertFunc )( #exp, "SafeCRT assert failed", __FILE__, __LINE__ );    \
-                }                                                               \
-            }                                                                   \
-        }
-    #define _INVALID_PARAMETER( exp )   _ASSERT_EXPR( 0, exp )
-    #define _ASSERTE( exp ) _ASSERT_EXPR( exp, exp )
-#else
-    #define _ASSERT_EXPR( val, expr )
-    #define _INVALID_PARAMETER( exp )
-    #define _ASSERTE( exp )
-#endif
+#define _ASSERT_EXPR( val, expr )
+#define _INVALID_PARAMETER( exp )
+#define _ASSERTE( exp )
 
 /* _TRUNCATE */
 #if !defined (_TRUNCATE)

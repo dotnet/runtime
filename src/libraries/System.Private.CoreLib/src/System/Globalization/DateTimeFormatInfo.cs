@@ -57,14 +57,8 @@ namespace System.Globalization
         // The culture name used to create this DTFI.
         private string? _name;
 
-        // The language name of the culture used to create this DTFI.
-        private string? _langName;
-
         // CompareInfo usually used by the parser.
         private CompareInfo? _compareInfo;
-
-        // Culture matches current DTFI. mainly used for string comparisons during parsing.
-        private CultureInfo? _cultureInfo;
 
         private string? amDesignator;
         private string? pmDesignator;
@@ -141,8 +135,6 @@ namespace System.Globalization
         private string[]? m_abbrevEraNames;
         private string[]? m_abbrevEnglishEraNames;
 
-        private CalendarId[]? optionalCalendars;
-
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
         // CultureInfo updates this
@@ -155,9 +147,11 @@ namespace System.Globalization
 
         private string CultureName => _name ??= _cultureData.CultureName;
 
-        private CultureInfo Culture => _cultureInfo ??= CultureInfo.GetCultureInfo(CultureName);
+        // Culture matches current DTFI. mainly used for string comparisons during parsing.
+        private CultureInfo Culture => field ??= CultureInfo.GetCultureInfo(CultureName);
 
-        private string LanguageName => _langName ??= _cultureData.TwoLetterISOLanguageName;
+        // The language name of the culture used to create this DTFI.
+        private string LanguageName => field ??= _cultureData.TwoLetterISOLanguageName;
 
         /// <summary>
         /// Create an array of string which contains the abbreviated day names.
@@ -465,7 +459,7 @@ namespace System.Globalization
             }
         }
 
-        private CalendarId[] OptionalCalendars => optionalCalendars ??= _cultureData.CalendarIds;
+        private CalendarId[] OptionalCalendars => field ??= _cultureData.CalendarIds;
 
         /// <summary>
         /// Get the era value by parsing the name of the era.

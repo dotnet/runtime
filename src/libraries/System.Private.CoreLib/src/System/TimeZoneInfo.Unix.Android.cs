@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -227,10 +227,10 @@ namespace System
                 // On Android, time zone data is found in tzdata
                 // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
                 // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
-                string[] tzFileDirList = new string[] {GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
+                ReadOnlySpan<string> tzFileDirList = [ GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
-                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory};
+                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
                 foreach (var tzFileDir in tzFileDirList)
                 {
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
@@ -335,7 +335,7 @@ namespace System
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
             [MemberNotNull(nameof(_isBackwards))]
-            private void LoadTzFile(string tzFileDir, Stream fs)
+            private unsafe void LoadTzFile(string tzFileDir, Stream fs)
             {
                 const int HeaderSize = 24;
                 Span<byte> buffer = stackalloc byte[HeaderSize];
@@ -425,7 +425,7 @@ namespace System
                 }
             }
 
-            private void LoadEntryAt(Stream fs, long position, out string id, out int byteOffset, out int length)
+            private unsafe void LoadEntryAt(Stream fs, long position, out string id, out int byteOffset, out int length)
             {
                 const int size = 52; // data entry size
                 Span<byte> entryBuffer = stackalloc byte[size];

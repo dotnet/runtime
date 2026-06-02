@@ -11,7 +11,6 @@ namespace System.Net.WebSockets
 {
     public sealed partial class ClientWebSocket : WebSocket
     {
-        /// <summary>This is really an InternalState value, but Interlocked doesn't support operations on values of enum types.</summary>
         private InternalState _state;
         private WebSocketHandle? _innerWebSocket;
 
@@ -66,10 +65,7 @@ namespace System.Net.WebSockets
             get => _innerWebSocket?.HttpResponseHeaders;
             set
             {
-                if (_innerWebSocket != null)
-                {
-                    _innerWebSocket.HttpResponseHeaders = value;
-                }
+                _innerWebSocket?.HttpResponseHeaders = value;
             }
         }
 

@@ -333,7 +333,7 @@ namespace System.Xml
         private sealed class NodeData : IComparable
         {
             // static instance with no data - is used when XmlTextReader is closed
-            private static volatile NodeData? s_None;
+            private static NodeData? s_None;
 
             // NOTE: Do not use this property for reference comparison. It may not be unique.
             internal static NodeData None =>

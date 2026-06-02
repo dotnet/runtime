@@ -10,21 +10,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class TripleDESContractTests
     {
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
-        public static void Windows7DoesNotSupportCFB64()
-        {
-            using (TripleDES tdes = TripleDESFactory.Create())
-            {
-                tdes.GenerateKey();
-                tdes.Mode = CipherMode.CFB;
-                tdes.FeedbackSize = 64;
-
-                Assert.ThrowsAny<CryptographicException>(() => tdes.CreateDecryptor());
-                Assert.ThrowsAny<CryptographicException>(() => tdes.CreateEncryptor());
-            }
-        }
-
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -65,17 +50,11 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(8)]
         [InlineData(64)]
         public static void ValidCFBFeedbackSizes(int feedbackSize)
         {
-            // Windows 7 only supports CFB8.
-            if (feedbackSize != 8 && PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             using (TripleDES tdes = TripleDESFactory.Create())
             {
                 tdes.GenerateKey();

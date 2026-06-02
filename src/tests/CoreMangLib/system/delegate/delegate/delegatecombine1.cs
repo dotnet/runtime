@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Collections;
 using Xunit;
 //create for delegate combine(delegate a,delegate b) testing
-namespace DelegateTest
+namespace DelegateCombine1Test
 {
     delegate bool booldelegate();
     delegate void voiddelegate();
@@ -27,6 +27,7 @@ namespace DelegateTest
         booldelegate starkWork;
         booldelegate working;
         voiddelegate completeWork;
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -181,7 +182,7 @@ namespace DelegateTest
             try
             {
                 DelegateCombine1 delctor = new DelegateCombine1();
-                TestClass testinstance = new TestClass();
+                DelegateCombine1TestClass testinstance = new DelegateCombine1TestClass();
                 delctor.starkWork = new booldelegate(testinstance.StartWork_Bool);
                 delctor.completeWork = new voiddelegate(testinstance.CompleteWork_Void);
 
@@ -207,7 +208,7 @@ namespace DelegateTest
         private string GetInvocationListFlag(identify_null start,identify_null working)
         {
             DelegateCombine1 delctor = new DelegateCombine1();
-            TestClass testinstance = new TestClass();
+            DelegateCombine1TestClass testinstance = new DelegateCombine1TestClass();
 
             string sFlag = string.Empty;
             if (start == identify_null.c_Start_null_false)
@@ -250,7 +251,7 @@ namespace DelegateTest
 
     }
     //create testclass for providing test method and test target.
-    class TestClass
+    class DelegateCombine1TestClass
     {
         public bool StartWork_Bool()
         {

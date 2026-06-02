@@ -1,12 +1,6 @@
 if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Debug>>:/Od>)
-    if (CLR_CMAKE_HOST_ARCH_I386)
-        # The Windows x86 Checked CLR has some kind of problem with exception handling
-        # when compiled with /O2. Issue: https://github.com/dotnet/runtime/issues/59845.
-        add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O1>)
-    else()
-        add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O2>)
-    endif()
+    add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O2>)
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Release>>:/Ox>)
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:RelWithDebInfo>>:/O2>)
 elseif(CLR_CMAKE_HOST_UNIX)
@@ -15,6 +9,9 @@ elseif(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_ANDROID)
         # -O2 optimization generates faster/smaller code on Android
         add_compile_options($<$<CONFIG:Release>:-O2>)
+    elseif (CLR_CMAKE_TARGET_BROWSER)
+        # -O2 prevents emscripten metadce from stripping user-requested global exports
+        add_link_options($<$<CONFIG:Release>:-O2>)
     else()
         add_compile_options($<$<CONFIG:Release>:-O3>)
     endif()

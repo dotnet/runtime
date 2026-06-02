@@ -33,10 +33,6 @@
 #define STATUS_LONGJUMP        ((NTSTATUS)0x80000026L)
 #endif
 
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH 85
-#endif // !LOCALE_NAME_MAX_LENGTH
-
 #ifndef IMAGE_FILE_MACHINE_RISCV64
 #define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
 #endif // !IMAGE_FILE_MACHINE_RISCV64
@@ -369,6 +365,21 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
+EXTERN_C
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
+    IN OUT PT_CONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
+    );
+
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 
 #ifndef XSTATE_ARM64_SVE
@@ -470,7 +481,7 @@ RtlpGetFunctionEndAddress (
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
@@ -510,7 +521,7 @@ RtlVirtualUnwind(
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
 #define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
 
-PEXCEPTION_ROUTINE
+inline PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,
@@ -520,7 +531,11 @@ RtlVirtualUnwind (
     _Out_ PVOID *HandlerData,
     _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
-    );
+    )
+{
+    PORTABILITY_ASSERT("The function RtlVirtualUnwind is not implemented on wasm");
+    return nullptr;
+}
 
 FORCEINLINE
 ULONG
@@ -529,7 +544,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    _ASSERTE("The function RtlpGetFunctionEndAddress is not implemented on wasm");
+    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
     return 0;
 }
 

@@ -2,14 +2,15 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="Rc2CbcParameters"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc3370#section-5.2 (CMS Algorithms, RC2-CBC) says
-    
+
     The AlgorithmIdentifier parameters field MUST be present, and the
     parameters field MUST contain a RC2CBCParameter:
-    
+
     RC2CBCParameter::= SEQUENCE {
        rc2ParameterVersion INTEGER,
        iv OCTET STRING  }  - exactly 8 octets

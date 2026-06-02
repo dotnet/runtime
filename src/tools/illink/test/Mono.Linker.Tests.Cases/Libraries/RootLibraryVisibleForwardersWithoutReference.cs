@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 #if RootLibraryVisibleForwarders
-[assembly: TypeForwardedTo (typeof (ExternalPublic))]
+[assembly: TypeForwardedTo(typeof(ExternalPublic))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Libraries
@@ -13,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Libraries
 
     [SetupCompileBefore("library.dll", new[] { "Dependencies/RootLibraryVisibleForwarders_Lib.cs" }, outputSubFolder: "isolated")]
     [SetupLinkerLinkPublicAndFamily]
-    [SetupLinkerArgument("-a", "isolated/library.dll", "visible")] // Checks for no-eager exported type resolving
+    [SetupLinkerArgument("-reference", "isolated/library.dll")]
+    [SetupLinkerArgument("-a", "library", "visible")] // Checks for no-eager exported type resolving
     [Define("RootLibraryVisibleForwarders")]
 
     [Kept]

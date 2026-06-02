@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_2580;
+
 using Xunit;
 // Issue https://github.com/dotnet/coreclr/issues/2580 fix description
 //
@@ -46,6 +49,7 @@ public static class MicrsoftNETBug
 
 
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

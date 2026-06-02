@@ -534,7 +534,7 @@ namespace System
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -550,7 +550,7 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
 
             if (s == null)
             {
@@ -562,7 +562,7 @@ namespace System
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
@@ -627,7 +627,7 @@ namespace System
 
         internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer.Length >= 16);
+            buffer = buffer.Slice(0, 16);
 
             BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)d.Low);
             BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), (int)d.Mid);
@@ -637,7 +637,8 @@ namespace System
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
         {
-            Debug.Assert(span.Length >= 16);
+            span = span.Slice(0, 16);
+
             int lo = BinaryPrimitives.ReadInt32LittleEndian(span);
             int mid = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(4));
             int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));
@@ -1174,19 +1175,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
             {
-                uint hi32 = _hi32;
-                ulong lo64 = _lo64;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, hi32);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
+                BinaryPrimitives.WriteUInt32BigEndian(destination, _hi32);
+                BinaryPrimitives.WriteUInt64BigEndian(destination.Slice(sizeof(uint)), _lo64);
 
                 bytesWritten = sizeof(uint) + sizeof(ulong);
                 return true;
@@ -1203,19 +1193,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                ulong lo64 = _lo64;
-                uint hi32 = _hi32;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lo64);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), hi32);
+                BinaryPrimitives.WriteUInt64LittleEndian(destination, _lo64);
+                BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(sizeof(ulong)), _hi32);
 
                 bytesWritten = sizeof(ulong) + sizeof(uint);
                 return true;
@@ -1833,14 +1812,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.ParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
             return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 

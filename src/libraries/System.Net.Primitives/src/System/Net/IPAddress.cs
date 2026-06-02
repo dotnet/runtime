@@ -183,7 +183,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = MemoryMarshal.Read<uint>(address);
+                PrivateAddress = BitConverter.ToUInt32(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
@@ -230,6 +230,7 @@ namespace System.Net
 
         /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
         /// <param name="utf8Text">The text to parse.</param>
+        /// <returns><see langword="true"/> if <paramref name="utf8Text"/> contains a valid IP address; otherwise, <see langword="false"/>.</returns>
         public static bool IsValidUtf8(ReadOnlySpan<byte> utf8Text) => IPAddressParser.IsValid(utf8Text);
 
         /// <devdoc>
@@ -438,7 +439,7 @@ namespace System.Net
 
                 if (this is ReadOnlyIPAddress)
                 {
-                    ThrowSocketOperationNotSupported();
+                    ThrowSocketOperationNotSupportedReadOnly();
                 }
 
                 // Consider: Since scope is only valid for link-local and site-local
@@ -456,7 +457,7 @@ namespace System.Net
         ///     or standard IPv6 representation.
         ///   </para>
         /// </devdoc>
-        public override string ToString()
+        public override unsafe string ToString()
         {
             string? toString = _toString;
             if (toString is null)
@@ -496,7 +497,7 @@ namespace System.Net
             // format and provider are explicitly ignored
             TryFormatCore(utf8Destination, out bytesWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (IsIPv4)
             {
@@ -668,7 +669,7 @@ namespace System.Net
                 {
                     if (this is ReadOnlyIPAddress)
                     {
-                        ThrowSocketOperationNotSupported();
+                        ThrowSocketOperationNotSupportedReadOnly();
                     }
 
                     PrivateAddress = unchecked((uint)value);
@@ -718,12 +719,12 @@ namespace System.Net
                 // For IPv6 addresses, we also factor in scope ID.
                 if (IsIPv6)
                 {
-                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
-                        MemoryMarshal.Read<uint>(numbers),
-                        MemoryMarshal.Read<uint>(numbers.Slice(4)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(8)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(12)),
+                        BitConverter.ToUInt32(numbers),
+                        BitConverter.ToUInt32(numbers.Slice(4)),
+                        BitConverter.ToUInt32(numbers.Slice(8)),
+                        BitConverter.ToUInt32(numbers.Slice(12)),
                         _addressOrScopeId);
                 }
                 else
@@ -769,7 +770,10 @@ namespace System.Net
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
 
         [DoesNotReturn]
-        private static void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported);
+        private void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported, SR.Format(SR.net_SocketException_OperationNotSupported, AddressFamily));
+
+        [DoesNotReturn]
+        private static void ThrowSocketOperationNotSupportedReadOnly() => throw new SocketException(SocketError.OperationNotSupported, SR.net_SocketException_OperationNotSupported_ReadOnlyIPAddress);
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {

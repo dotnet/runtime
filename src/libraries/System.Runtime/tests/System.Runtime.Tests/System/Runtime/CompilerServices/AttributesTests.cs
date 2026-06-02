@@ -235,6 +235,26 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(version, attr.Version);
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(2)]
+        [InlineData(42)]
+        public static void MemorySafetyRulesAttributeTests(int version)
+        {
+            var attr = new MemorySafetyRulesAttribute(version);
+            Assert.Equal(version, attr.Version);
+        }
+
+        [Theory]
+        [InlineData("1")]
+        [InlineData("2")]
+        public static void ExtensionMarkerAttributeTests(string name)
+        {
+            var attr = new ExtensionMarkerAttribute(name);
+            Assert.Equal(name, attr.Name);
+        }
+
         [Fact]
         public static void ReferenceAssemblyAttributeTests()
         {
@@ -401,10 +421,29 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void IsClosedTypeAttributeTests()
+        {
+            new IsClosedTypeAttribute();
+        }
+
+        [Fact]
         public static void OverloadResolutionPriorityAttributeTests()
         {
             var attr = new OverloadResolutionPriorityAttribute(42);
             Assert.Equal(42, attr.Priority);
         }
+
+        [Fact]
+        public static void UnionAttributeTests()
+        {
+            var attr = new UnionAttribute();
+            Assert.NotNull(attr);
+
+            var usage = (AttributeUsageAttribute)Attribute.GetCustomAttribute(typeof(UnionAttribute), typeof(AttributeUsageAttribute))!;
+            Assert.Equal(AttributeTargets.Class | AttributeTargets.Struct, usage.ValidOn);
+            Assert.False(usage.AllowMultiple);
+            Assert.False(usage.Inherited);
+        }
+
     }
 }

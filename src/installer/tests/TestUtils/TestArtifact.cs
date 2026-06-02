@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Exception? lastException = null;
             for (int i = 0; i < 10; i++)
             {
-                var parentPath = Path.Combine(TestContext.TestArtifactsPath, Path.GetRandomFileName());
+                var parentPath = Path.Combine(HostTestContext.TestArtifactsPath, Path.GetRandomFileName());
                 // Create a lock file next to the target folder
                 var lockPath = parentPath + ".lock";
                 var artifactPath = Path.Combine(parentPath, artifactName);

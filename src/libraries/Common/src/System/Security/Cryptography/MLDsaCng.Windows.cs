@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -95,15 +94,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        public partial CngKey Key
+        public partial CngKey GetKey()
         {
-            get
-            {
-                ThrowIfDisposed();
+            ThrowIfDisposed();
 
-                return _key;
-            }
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            return _key.Duplicate();
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
         }
+
+        internal CngKey KeyNoDuplicate => _key;
 
         /// <inheritdoc/>
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
@@ -119,16 +123,28 @@ namespace System.Security.Cryptography
                 ExportKeyWithEncryptedOnlyExport(
                     static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                     {
-                        ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed ?? mldsaPrivateKeyAsn.Both?.Seed;
+                        ReadOnlySpan<byte> seedValue = default;
+                        bool hasSeed = false;
 
-                        if (seed is ReadOnlyMemory<byte> seedValue)
+                        if (mldsaPrivateKeyAsn.HasSeed)
+                        {
+                            hasSeed = true;
+                            seedValue = mldsaPrivateKeyAsn.Seed;
+                        }
+                        else if (mldsaPrivateKeyAsn.HasBoth)
+                        {
+                            hasSeed = true;
+                            seedValue = mldsaPrivateKeyAsn.Both.Seed;
+                        }
+
+                        if (hasSeed)
                         {
                             if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
                             {
                                 throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
                             }
 
-                            seedValue.Span.CopyTo(destination);
+                            seedValue.CopyTo(destination);
                             return;
                         }
 
@@ -144,7 +160,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
 
@@ -152,32 +168,43 @@ namespace System.Security.Cryptography
             {
                 ExportKeyWithEncryptedOnlyExport(static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                 {
-                    ReadOnlyMemory<byte>? expandedKey = mldsaPrivateKeyAsn.ExpandedKey ?? mldsaPrivateKeyAsn.Both?.ExpandedKey;
+                    ReadOnlySpan<byte> expandedKeyValue = default;
+                    bool hasExpandedKey = false;
 
-                    if (expandedKey is ReadOnlyMemory<byte> expandedKeyValue)
+                    if (mldsaPrivateKeyAsn.HasExpandedKey)
                     {
-                        if (expandedKeyValue.Length != algorithm.SecretKeySizeInBytes)
+                        hasExpandedKey = true;
+                        expandedKeyValue = mldsaPrivateKeyAsn.ExpandedKey;
+                    }
+                    else if (mldsaPrivateKeyAsn.HasBoth)
+                    {
+                        hasExpandedKey = true;
+                        expandedKeyValue = mldsaPrivateKeyAsn.Both.ExpandedKey;
+                    }
+
+                    if (hasExpandedKey)
+                    {
+                        if (expandedKeyValue.Length != algorithm.PrivateKeySizeInBytes)
                         {
-                            throw new CryptographicException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
+                            throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                         }
 
-                        expandedKeyValue.Span.CopyTo(destination);
+                        expandedKeyValue.CopyTo(destination);
                         return;
                     }
 
-                    // If PKCS#8 only has seed, then we can calculate the secret key
-                    ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed;
-
-                    if (seed is ReadOnlyMemory<byte> seedValue)
+                    if (mldsaPrivateKeyAsn.HasSeed)
                     {
+                        ReadOnlySpan<byte> seedValue = mldsaPrivateKeyAsn.Seed;
+
                         if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
                         {
                             throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
                         }
 
-                        using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue.Span))
+                        using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue))
                         {
-                            cloned.ExportMLDsaSecretKey(destination);
+                            cloned.ExportMLDsaPrivateKey(destination);
                             return;
                         }
                     }
@@ -189,7 +216,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.SecretKeySizeInBytes, destination);
+                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.PrivateKeySizeInBytes, destination);
             }
         }
 
@@ -211,7 +238,7 @@ namespace System.Security.Cryptography
                     }
 
                     bytesWritten = pkcs8.Count;
-                    pkcs8.Array.CopyTo(destination);
+                    pkcs8.AsSpan().CopyTo(destination);
                     return true;
                 }
                 finally
@@ -266,6 +293,76 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
+        protected override unsafe void SignPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            Span<byte> destination)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    duplicatedHandle.SignHash(
+                        hash,
+                        destination,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override unsafe bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            ReadOnlySpan<byte> signature)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    return duplicatedHandle.VerifyHash(
+                        hash,
+                        signature,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
+
         [SupportedOSPlatform("windows")]
         internal static MLDsaCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)
         {
@@ -297,16 +394,6 @@ namespace System.Security.Cryptography
                 try
                 {
                     key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
-                }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
-
-                    using (PinAndClear.Track(newPkcs8Source))
-                    {
-                        key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
-                    }
                 }
                 catch (AsnContentException e)
                 {
@@ -368,10 +455,7 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
-        private void ExportKey(
-            CngKeyBlobFormat blobFormat,
-            int expectedKeySize,
-            Span<byte> destination)
+        private void ExportKey(CngKeyBlobFormat blobFormat, int expectedKeySize, Span<byte> destination)
         {
             byte[] blob = _key.Export(blobFormat);
 
@@ -398,7 +482,7 @@ namespace System.Security.Cryptography
         }
 
         private delegate void KeySelectorFunc(
-            ref readonly MLDsaPrivateKeyAsn mldsaPrivateKeyAsn,
+            ref readonly ValueMLDsaPrivateKeyAsn mldsaPrivateKeyAsn,
             MLDsaAlgorithm algorithm,
             Span<byte> destination);
 
@@ -409,19 +493,12 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsMemory(), out _);
-                MLDsaPrivateKeyAsn mldsaPrivateKeyAsn;
+                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsSpan(), out _);
+                scoped ValueMLDsaPrivateKeyAsn mldsaPrivateKeyAsn;
 
                 try
                 {
-                    mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER);
-                }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    newPkcs8 = MLDsaPkcs8.ConvertFromOldChoicelessFormat(pkcs8);
-                    ReadOnlyMemory<byte> newPrivateKey = KeyFormatHelper.ReadPkcs8(KnownOids, newPkcs8, out _);
-                    mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(newPrivateKey, AsnEncodingRules.BER);
+                    ValueMLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER, out mldsaPrivateKeyAsn);
                 }
                 catch (AsnContentException e)
                 {

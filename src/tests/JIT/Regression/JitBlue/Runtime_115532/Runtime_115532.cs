@@ -3,6 +3,9 @@
 
 // set DOTNET_TieredCompilation=0
 
+
+namespace Runtime_115532;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

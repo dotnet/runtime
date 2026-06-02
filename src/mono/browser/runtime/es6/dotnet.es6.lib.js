@@ -28,7 +28,6 @@ function setup(emscriptenBuildOptions) {
     const dotnet_replacements = {
         fetch: globalThis.fetch,
         ENVIRONMENT_IS_WORKER,
-        require,
         modulePThread,
         scriptDirectory,
     };
@@ -37,8 +36,7 @@ function setup(emscriptenBuildOptions) {
     Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
     noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
-    require = dotnet_replacements.require;
-    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    scriptDirectory = dotnet_replacements.scriptDirectory;
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
@@ -61,7 +59,6 @@ function setup(emscriptenBuildOptions) {
 
 const DotnetSupportLib = {
     $DOTNET: { setup },
-    icudt68_dat: function () { throw new Error('dummy link symbol') },
 };
 
 function createWasmImportStubsFrom(collection) {

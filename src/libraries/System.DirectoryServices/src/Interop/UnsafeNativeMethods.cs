@@ -3,29 +3,11 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 namespace System.DirectoryServices
 {
-
-    [StructLayout(LayoutKind.Explicit)]
-    internal struct Variant
-    {
-        [FieldOffset(0)]
-        public ushort varType;
-        [FieldOffset(2)]
-        public ushort reserved1;
-        [FieldOffset(4)]
-        public ushort reserved2;
-        [FieldOffset(6)]
-        public ushort reserved3;
-        [FieldOffset(8)]
-        public short boolvalue;
-        [FieldOffset(8)]
-        public IntPtr ptr1;
-        [FieldOffset(12)]
-        public IntPtr ptr2;
-    }
 
     internal static class UnsafeNativeMethods
     {
@@ -385,7 +367,7 @@ namespace System.DirectoryServices
             [PreserveSig]
             int GetOption(int flag, [Out] out object value);
 
-            void SetOption(int option, Variant value);
+            void SetOption(int option, ComVariant value);
         }
 
         // IDirectorySearch return codes

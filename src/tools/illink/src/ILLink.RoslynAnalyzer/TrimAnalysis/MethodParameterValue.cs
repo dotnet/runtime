@@ -9,11 +9,6 @@ namespace ILLink.Shared.TrimAnalysis
 {
     internal partial record MethodParameterValue
     {
-        public MethodParameterValue(IParameterSymbol parameterSymbol)
-            : this(new ParameterProxy(parameterSymbol)) { }
-        public MethodParameterValue(IMethodSymbol methodSymbol, ParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-            : this(new(new(methodSymbol), parameterIndex), dynamicallyAccessedMemberTypes) { }
-
         public MethodParameterValue(ParameterProxy parameter)
             : this(parameter, FlowAnnotations.GetMethodParameterAnnotation(parameter)) { }
 

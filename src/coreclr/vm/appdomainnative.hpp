@@ -16,11 +16,11 @@
 
 #include "qcall.h"
 
-extern "C" STRINGREF* QCALLTYPE String_StrCns(UINT32 rid, Module* pModule);
 extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str);
 extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str);
 
 extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyName, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly);
+extern "C" void QCALLTYPE AppContext_SetFirstChanceExceptionHandler();
 
 extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies);
 

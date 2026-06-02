@@ -133,15 +133,18 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> NativeDigitTestData()
         {
-            yield return new object[] { "ccp-Cakm-BD", new string[] { "\U0001E950", "\U0001E951", "\U0001E952", "\U0001E953", "\U0001E954", "\U0001E955", "\U0001E956", "\U0001E957", "\U0001E958", "\U0001E959" }};
+            yield return new object[] { "ccp-Cakm-BD", new string[] { "\U00011136", "\U00011137", "\U00011138", "\U00011139", "\U0001113A", "\U0001113B", "\U0001113C", "\U0001113D", "\U0001113E", "\U0001113F" }};
             yield return new object[] { "ar-SA",  new string[] {"\u0660", "\u0661", "\u0662", "\u0663", "\u0664", "\u0665", "\u0666", "\u0667", "\u0668", "\u0669" }};
             yield return new object[] { "en-US",  new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }};
-            yield return new object[] { "ur-IN",  new string[] { "\u06F0", "\u06F1", "\u06F2", "\u06F3", "\u06F4", "\u06F5", "\u06F6", "\u06F7", "\u06F8", "\u06F9" }};
+            // Apple ICU on Apple platforms 26+ returns Latin digits for ur-IN, diverging from upstream CLDR which specifies arabext
+            yield return new object[] { "ur-IN",  PlatformDetection.IsApplePlatform26OrLater
+                ? new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }
+                : new string[] { "\u06F0", "\u06F1", "\u06F2", "\u06F3", "\u06F4", "\u06F5", "\u06F6", "\u06F7", "\u06F8", "\u06F9" }};
         }
 
         public static bool FullICUPlatform => PlatformDetection.ICUVersion.Major >= 66 && PlatformDetection.IsNotBrowser;
 
-        [ConditionalTheory(nameof(FullICUPlatform))]
+        [ConditionalTheory(typeof(NumberFormatInfoMiscTests), nameof(FullICUPlatform))]
         [MemberData(nameof(NativeDigitTestData))]
         public void TestNativeDigits(string cultureName, string[] nativeDigits)
         {

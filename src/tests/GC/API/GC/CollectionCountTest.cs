@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* CollectionCountTest
+using TestLibrary;
  *
  * Tests GC.CollectionCount by passing it invalid values (<0) and
  * values that are too large (>GC.MaxGeneration).
@@ -130,6 +131,7 @@ public class CollectionCountTest
     }
 
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

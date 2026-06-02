@@ -15,23 +15,8 @@ namespace System.Net
         private const int ForceAsyncCount = 50;
 
         // This is to avoid user mistakes when they queue another async op from a callback the completes sync.
-        [ThreadStatic]
-        private static ThreadContext? t_threadContext;
-
-        private static ThreadContext CurrentThreadContext
-        {
-            get
-            {
-                ThreadContext? threadContext = t_threadContext;
-                if (threadContext == null)
-                {
-                    threadContext = new ThreadContext();
-                    t_threadContext = threadContext;
-                }
-
-                return threadContext;
-            }
-        }
+        [field: ThreadStatic]
+        private static ThreadContext CurrentThreadContext => field ??= new();
 
         private sealed class ThreadContext
         {

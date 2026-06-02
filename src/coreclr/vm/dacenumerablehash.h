@@ -55,7 +55,7 @@
 //
 // Synchronization: It is permissable to read data from the hash without taking a lock as long as:
 //  1) Any hash modifications are performed under a lock or otherwise serialized.
-//  2) Any miss on a lookup is handled by taking a lock are retry-ing the lookup.
+//  2) Any miss on a lookup is handled by taking a lock and retry-ing the lookup.
 //
 // OVERALL DESIGN
 //
@@ -314,7 +314,7 @@ private:
     static const int SLOT_ENDSENTINEL = 2;
     // normal slots start at slot #3
     static const int SKIP_SPECIAL_SLOTS = 3;
-    
+
     static DWORD GetLength(DPTR(PTR_VolatileEntry) buckets)
     {
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
@@ -335,6 +335,8 @@ private:
 
     DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
     DWORD                                    m_cEntries;  // Count of elements
+
+    friend struct ::cdac_data<FINAL_CLASS>;
 };
 
 #endif // __DAC_ENUMERABLE_HASH_INCLUDED

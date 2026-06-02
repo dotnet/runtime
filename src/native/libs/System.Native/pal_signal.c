@@ -83,7 +83,7 @@ static bool IsSigIgn(struct sigaction* action)
             action->sa_handler == SIG_IGN;
 }
 
-static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
 
@@ -129,8 +129,12 @@ static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posix
             *posixSignal = PosixSignalSIGTSTP;
             return true;
 
+        case SIGKILL:
+            *posixSignal = PosixSignalSIGKILL;
+            return true;
+
         default:
-            *posixSignal = signalCode;
+            *posixSignal = (PosixSignal)signalCode;
             return false;
     }
 }
@@ -169,6 +173,9 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
         case PosixSignalSIGTSTP:
             return SIGTSTP;
 
+        case PosixSignalSIGKILL:
+            return SIGKILL;
+
         case PosixSignalInvalid:
             break;
     }
@@ -179,6 +186,11 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
     }
 
     return 0;
+}
+
+int32_t SystemNative_GetPlatformSIGSTOP(void)
+{
+    return SIGSTOP;
 }
 
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)

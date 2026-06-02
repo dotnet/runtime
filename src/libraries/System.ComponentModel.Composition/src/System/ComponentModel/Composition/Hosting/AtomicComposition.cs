@@ -137,10 +137,7 @@ namespace System.ComponentModel.Composition.Hosting
             ThrowIfDisposed();
             _isDisposed = true;
 
-            if (_outerAtomicComposition != null)
-            {
-                _outerAtomicComposition.ContainsInnerAtomicComposition = false;
-            }
+            _outerAtomicComposition?.ContainsInnerAtomicComposition = false;
 
             // Revert is always immediate and involves forgetting information and
             // exceuting any appropriate revert actions

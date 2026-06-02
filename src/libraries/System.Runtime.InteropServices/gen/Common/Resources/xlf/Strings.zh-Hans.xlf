@@ -394,7 +394,7 @@
       </trans-unit>
       <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">生成的代码无法访问指定为 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' 的类型“{0}”。该类型必须至少具有 "internal" 可访问性。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
@@ -439,7 +439,7 @@
       </trans-unit>
       <trans-unit id="GenericDelegatesNotSupported">
         <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
-        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <target state="translated">不支持封送泛型委托。请考虑改用函数指针。</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -477,6 +477,11 @@
         <target state="translated">此类型将被视为本机签名中的结构，而不是本机 HRESULT</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="translated">{0} (仅支持 [MarshalAs (UnmanagedType.Interface)] out object 参数)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">“[In]”特性仅在数组参数上受支持。默认情况下，按值参数视为只读。</target>
@@ -505,11 +510,6 @@
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
         <target state="translated">“[In]”和“[Out]”属性仅在数组参数上受支持。请考虑使用“ref”关键字使参数可变。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] 和 [Out] 属性</target>
         <note />
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
@@ -624,7 +624,7 @@
       </trans-unit>
       <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
         <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
-        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <target state="translated">指定为 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' 的类型不是有效的封送程序类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

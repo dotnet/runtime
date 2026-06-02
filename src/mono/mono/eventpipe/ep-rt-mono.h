@@ -357,6 +357,14 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+	return (int64_t)(mono_atomic_cas_i64 ((volatile gint64 *)(target), (gint64)(value), (gint64)(expected)));
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -627,6 +635,25 @@ ep_rt_config_value_get_enable_stackwalk (void)
 		value_uint32_t = (uint32_t)atoi (value);
 	g_free (value);
 	return value_uint32_t != 0;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	uint32_t value_uint32_t = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");
+	if (value) {
+		gchar *endptr = NULL;
+		guint64 parsed = strtoull (value, &endptr, 10);
+		if (endptr != value && *endptr == '\0' && value [0] != '-' && parsed <= G_MAXUINT32)
+			value_uint32_t = (uint32_t)parsed;
+	}
+	g_free (value);
+	return value_uint32_t;
 }
 
 /*
@@ -997,13 +1024,13 @@ ep_rt_queue_job (
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
 
-	// invoke the callback inline for the fist time
+	// invoke the callback inline for the first time
 	gsize done = cb (params);
 
 	// see if it's done or needs to be scheduled again
 	if (!done) {
 		// self schedule again
-		mono_schedule_ds_job (cb, params);
+		SystemJS_DiagnosticServerQueueJob (cb, params);
 	}
 
 	return true;
@@ -1037,7 +1064,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
-#endif
+#endif // PERFTRACING_DISABLE_THREADS
 }
 
 static

@@ -140,7 +140,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             if ((t1.IsArray && t2.IsArray) || (t1.IsByRef && t2.IsByRef) || (t1.IsPointer && t2.IsPointer))
             {
-                if (t1.IsSZArray() != t2.IsSZArray())
+                if (t1.IsSZArray != t2.IsSZArray)
                     return false;
 
                 if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
@@ -169,7 +169,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return true;
             }
 
-            if (t1.IsGenericMethodParameter() && t2.IsGenericMethodParameter())
+            if (t1.IsGenericMethodParameter && t2.IsGenericMethodParameter)
             {
                 // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
                 // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to

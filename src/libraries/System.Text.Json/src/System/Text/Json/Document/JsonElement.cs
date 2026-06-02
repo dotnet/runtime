@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Text.Json
 {
@@ -139,7 +140,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName));
         }
 
         /// <summary>
@@ -177,7 +178,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName.ToString()));
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         /// <summary>
@@ -472,12 +473,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public sbyte GetSByte()
         {
-            if (TryGetSByte(out sbyte value))
+            if (!TryGetSByte(out sbyte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -522,12 +523,12 @@ namespace System.Text.Json
         /// </exception>
         public byte GetByte()
         {
-            if (TryGetByte(out byte value))
+            if (!TryGetByte(out byte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -569,12 +570,12 @@ namespace System.Text.Json
         /// </exception>
         public short GetInt16()
         {
-            if (TryGetInt16(out short value))
+            if (!TryGetInt16(out short value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -621,12 +622,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public ushort GetUInt16()
         {
-            if (TryGetUInt16(out ushort value))
+            if (!TryGetUInt16(out ushort value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -1256,7 +1257,7 @@ namespace System.Text.Json
         /// </remarks>
         public static bool DeepEquals(JsonElement element1, JsonElement element2)
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 ThrowHelper.ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack();
             }

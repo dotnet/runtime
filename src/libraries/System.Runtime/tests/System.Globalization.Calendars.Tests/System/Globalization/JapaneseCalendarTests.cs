@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     {
         public override Calendar Calendar => new JapaneseCalendar();
 
-        public override DateTime MinSupportedDateTime => new DateTime(1868, 09, 08);
+        public override DateTime MinSupportedDateTime => new DateTime(1868, 10, 23);
 
         public override bool SkipErasTest => true;
 

@@ -106,6 +106,11 @@ namespace System
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
         }
 
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, true);
+        }
+
         private static void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);

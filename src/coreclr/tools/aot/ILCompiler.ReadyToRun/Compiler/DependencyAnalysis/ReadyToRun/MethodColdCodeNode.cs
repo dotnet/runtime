@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode
+    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode, IPCodeSymbolNode
     {
         private ObjectData _methodColdCode;
         private MethodDesc _owningMethod;
@@ -18,11 +18,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _owningMethod = owningMethod;
         }
 
+        protected internal override int Phase => (int)ObjectNodePhase.Late;
+
         public int Offset => 0;
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;            
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };
         }
 
         public override bool IsShareable => false;

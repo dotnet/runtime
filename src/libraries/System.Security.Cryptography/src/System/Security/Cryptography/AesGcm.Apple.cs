@@ -14,12 +14,8 @@ namespace System.Security.Cryptography
         // CryptoKit only supports 16 byte tags.
         private static readonly KeySizes s_tagByteSizes = new KeySizes(16, 16, 1);
 
-        // CryptoKit added AES.GCM in macOS 10.15, which is lower than our minimum target for macOS/MacCatalyst. On iOS/tvOS, it was added in 13.0.
-        public static partial bool IsSupported =>
-            OperatingSystem.IsMacOS() ||
-            OperatingSystem.IsMacCatalyst() ||
-            OperatingSystem.IsIOSVersionAtLeast(13) ||
-            OperatingSystem.IsTvOSVersionAtLeast(13);
+        // CryptoKit added AES.GCM in macOS 10.15, and iOS/tvOS in 13.0.
+        public static partial bool IsSupported => true;
 
         public static partial KeySizes TagByteSizes => s_tagByteSizes;
 

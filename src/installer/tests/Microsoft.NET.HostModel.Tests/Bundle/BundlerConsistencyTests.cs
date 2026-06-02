@@ -30,7 +30,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
         private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true, OSPlatform? targetOS = null)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign, targetOS: targetOS);
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetOS ?? Binaries.CurrentOSPlatform, RuntimeInformation.OSArchitecture, version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -99,6 +99,24 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
+        public void ResolveLinkTargets()
+        {
+            string appPath = Path.Combine(
+                Path.GetDirectoryName(sharedTestState.App.AppDll),
+                Path.GetFileNameWithoutExtension(sharedTestState.App.AppDll)
+                    + ".link" + Path.GetExtension(sharedTestState.App.AppDll));
+            File.CreateSymbolicLink(appPath, sharedTestState.App.AppDll);
+            // File specification with duplicate entries with matching source paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "rel/app.repeat.dll")
+            };
+            Bundler bundler = CreateBundlerInstance();
+            bundler.GenerateBundle(fileSpecs);
+        }
+
+        [Fact]
         public void DuplicateBundleRelativePath_Fails()
         {
             // File specification with duplicate entries with different source paths
@@ -114,6 +132,29 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 .Message
                     .Should().Contain("rel/app.repeat")
                     .And.Contain(sharedTestState.App.AppDll);
+        }
+
+        [Fact]
+        public void FilesWithNonAsciiCharsCanBundle()
+        {
+            string appPath = sharedTestState.NonAsciiApp.AppDll;
+            string systemLibPath = sharedTestState.SystemDll;
+
+            // File specification with non-ASCII characters in the relative paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "中文/app.dll"),
+                new FileSpec(appPath, "rel/中文.dll"),
+                new FileSpec(systemLibPath, "中文")
+            };
+
+            Bundler bundler = CreateBundlerInstance();
+            var bundlePath = bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
         }
 
         [Fact]
@@ -204,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             // work correctly in the presence of "."s in the hostName.
             using (var app = TestApp.CreateEmpty("App.With.Periods"))
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion);
 
                 string hostName = Path.GetFileName(app.AppExe);
                 string depsJsonName = Path.GetFileName(app.DepsJson);
@@ -218,7 +259,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 };
 
                 var bundleDir = new DirectoryInfo(app.GetUniqueSubdirectory("bundle"));
-                var bundler = new Bundler(hostName, bundleDir.FullName);
+                var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.None, Binaries.CurrentOSPlatform, RuntimeInformation.OSArchitecture);
                 bundler.GenerateBundle(fileSpecs);
 
 
@@ -272,6 +313,113 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
             // Other files should only be bundled if option is explicitly set
             bundler.BundleManifest.Contains(otherContentName).Should().Be(options.HasFlag(BundleOptions.BundleOtherFiles));
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void ComputeBundleContents(BundleOptions options)
+        {
+            TestApp app = sharedTestState.App;
+            string devJsonName = Path.GetFileName(app.RuntimeDevConfigJson);
+            string appSymbolName = $"{app.Name}.pdb";
+            string otherContentName = "other.txt";
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+                new FileSpec(app.RuntimeConfigJson, devJsonName),
+                new FileSpec(Path.Combine(app.Location, appSymbolName), appSymbolName),
+                new FileSpec(Binaries.CoreClr.FilePath, Binaries.CoreClr.FileName),
+                new FileSpec(app.RuntimeConfigJson, otherContentName),
+            };
+
+            Bundler bundler = CreateBundlerInstance(options);
+            BundleContents contents = bundler.ComputeBundleContents(fileSpecs);
+
+            // App's dll, .deps.json, and .runtimeconfig.json should always be included
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.AppDll));
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.DepsJson));
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.RuntimeConfigJson));
+
+            // Host should be identified separately
+            Assert.Equal(BundlerHostName, contents.Host.BundleRelativePath);
+            Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == BundlerHostName);
+            Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == BundlerHostName);
+
+            // App's .runtimeconfig.dev.json is ignored (not in either list)
+            Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == devJsonName);
+            Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == devJsonName);
+
+            // Symbols
+            if (options.HasFlag(BundleOptions.BundleSymbolFiles))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == appSymbolName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == appSymbolName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == appSymbolName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == appSymbolName);
+            }
+
+            // Native libraries
+            if (options.HasFlag(BundleOptions.BundleNativeBinaries))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+            }
+
+            // Other files
+            if (options.HasFlag(BundleOptions.BundleOtherFiles))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == otherContentName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == otherContentName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == otherContentName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == otherContentName);
+            }
+
+        }
+
+        [Fact]
+        public void ComputeBundleContents_GenerateBundle()
+        {
+            TestApp app = sharedTestState.App;
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+                new FileSpec(Binaries.CoreClr.FilePath, Binaries.CoreClr.FileName),
+            };
+
+            // Generate bundle directly from file specs
+            Bundler directBundler = CreateBundlerInstance();
+            directBundler.GenerateBundle(fileSpecs);
+
+            // Generate bundle via ComputeBundleContents + GenerateBundle(BundleContents)
+            Bundler computedBundler = CreateBundlerInstance();
+            BundleContents contents = computedBundler.ComputeBundleContents(fileSpecs);
+            computedBundler.GenerateBundle(contents);
+
+            // Both paths should produce bundles with the same manifest entries
+            var directEntries = directBundler.BundleManifest.Files.Select(f => (f.RelativePath, f.Size, f.CompressedSize, f.Type)).OrderBy(e => e.RelativePath);
+            var computedEntries = computedBundler.BundleManifest.Files.Select(f => (f.RelativePath, f.Size, f.CompressedSize, f.Type)).OrderBy(e => e.RelativePath);
+            Assert.Equal(directEntries, computedEntries);
         }
 
         [Fact]
@@ -366,18 +514,21 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         {
             public const string AppName = "HelloWorld";
             public TestApp App { get; }
+            public TestApp NonAsciiApp { get; }
             public string SystemDll { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
+                NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
-                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()
             {
                 App.Dispose();
+                NonAsciiApp.Dispose();
             }
         }
     }

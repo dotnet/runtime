@@ -57,10 +57,5 @@ namespace Internal.Runtime.CompilerHelpers
             // exception doesn't exist in MRT: throw PlatformNotSupportedException() instead
             throw new PlatformNotSupportedException();
         }
-
-        private static void ThrowFeatureBodyRemoved()
-        {
-            throw new NotSupportedException();
-        }
     }
 }

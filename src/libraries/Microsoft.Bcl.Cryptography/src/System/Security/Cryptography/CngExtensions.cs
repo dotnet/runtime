@@ -49,6 +49,17 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static void ExportKeyBlob(
+            this CngKey key,
+            string blobType,
+            CngHelpers.ExportKeyBlobCallback callback)
+        {
+            using (SafeNCryptKeyHandle keyHandle = key.Handle)
+            {
+                keyHandle.ExportKeyBlob(blobType, callback);
+            }
+        }
+
         internal static byte[] ExportPkcs8KeyBlob(
             this CngKey key,
             ReadOnlySpan<char> password,

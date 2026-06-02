@@ -5,14 +5,14 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 namespace Mono.Linker.Tests.Cases.Symbols
 {
     [IgnoreTestCase("Test relies on checked-in binaries: https://github.com/dotnet/runtime/issues/78344")]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Reference("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
     [ReferenceDependency("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
     [SetupLinkerLinkSymbols("true")]
     [SetupLinkerArgument("--new-mvid", "true")]
 
 #if WIN32
-	[KeptSymbols ("LibraryWithPdb.dll")]
+    [KeptSymbols("LibraryWithPdb.dll")]
 #else
     [RemovedSymbols("LibraryWithPdb.dll")]
 #endif

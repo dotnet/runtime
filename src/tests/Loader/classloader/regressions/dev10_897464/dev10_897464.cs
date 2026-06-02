@@ -4,12 +4,14 @@
 using System;
 
 using Xunit;
+using TestLibrary;
 
 /// <summary>
 /// Regression test case for Dev10 897464 bug: Assemblies that contain global values will work with .NET 2.0  but fail with a BadImageFormat exception on .NET 4.0
 /// </summary>
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

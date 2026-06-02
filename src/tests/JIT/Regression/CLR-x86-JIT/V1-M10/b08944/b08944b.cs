@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace X
+namespace b08944b
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames
@@ -21,7 +21,7 @@ namespace X
             Console.WriteLine("Exception code = " + a);
             return  1;
         }
-		
+
         public static int     filt0(UInt32 a)
         {
             Console.WriteLine("Exception code = " + a);

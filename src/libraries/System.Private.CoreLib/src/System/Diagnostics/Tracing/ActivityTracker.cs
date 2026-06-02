@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,7 +69,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStartEnter", fullActivityName);
-                log!.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
+                log.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
             }
 
             if (currentActivity != null)
@@ -114,7 +115,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
-                log!.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
+                log.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
             }
         }
 
@@ -136,7 +137,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStopEnter", fullActivityName);
-                log!.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
+                log.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
             }
 
             while (true) // This is a retry loop.
@@ -195,7 +196,7 @@ namespace System.Diagnostics.Tracing
                     if (tplDebug)
                     {
                         log!.DebugFacilityMessage("OnStopRetActivityState", ActivityInfo.LiveActivities(newCurrentActivity));
-                        log!.DebugFacilityMessage("OnStopRet", activityId.ToString());
+                        log.DebugFacilityMessage("OnStopRet", activityId.ToString());
                     }
                     return;
                 }

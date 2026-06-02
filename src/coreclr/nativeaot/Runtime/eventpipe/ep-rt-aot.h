@@ -226,6 +226,16 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern int64_t ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value);
+    return ep_rt_aot_atomic_compare_exchange_int64_t (target, expected, value);
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -495,6 +505,23 @@ ep_rt_config_value_get_enable_stackwalk (void)
         return value;
 
     return false;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeThreadSamplingRate", &value, true))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
+    return 0;
 }
 
 /*

@@ -26,8 +26,6 @@ internal static class BlobParser
             BlobMagic.Requirements => new RequirementsBlob(SuperBlob.Read(reader, offset)),
             BlobMagic.CmsWrapper => new CmsWrapperBlob(SimpleBlob.Read(reader, offset)),
             BlobMagic.EmbeddedSignature => new EmbeddedSignatureBlob(SuperBlob.Read(reader, offset)),
-            BlobMagic.Entitlements => new EntitlementsBlob(SimpleBlob.Read(reader, offset)),
-            BlobMagic.DerEntitlements => new DerEntitlementsBlob(SimpleBlob.Read(reader, offset)),
             _ => CreateUnknownBlob(magic, reader, offset),
         };
 

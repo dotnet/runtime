@@ -12,7 +12,7 @@ namespace System.Speech.Internal.ObjectTokens
     {
         #region internal Methods
 
-        internal static ObjectToken DefaultToken(string category)
+        internal static ObjectToken? DefaultToken(string category)
         {
             Helpers.ThrowIfEmptyOrNull(category, nameof(category));
 
@@ -31,7 +31,7 @@ namespace System.Speech.Internal.ObjectTokens
         internal static int DefaultDeviceOut()
         {
             int device = -1;
-            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput"))
+            using (ObjectTokenCategory? tokenCategory = ObjectTokenCategory.Create(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput"))
             {
                 if (tokenCategory != null)
                 {
@@ -75,9 +75,9 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Private Methods
 
-        private static ObjectToken DefaultToken(string category, string defaultTokenIdValueName)
+        private static ObjectToken? DefaultToken(string category, string defaultTokenIdValueName)
         {
-            ObjectToken token = GetPreference(category, defaultTokenIdValueName);
+            ObjectToken? token = GetPreference(category, defaultTokenIdValueName);
 
             if (token != null)
             {
@@ -85,7 +85,7 @@ namespace System.Speech.Internal.ObjectTokens
                 // more recent version - if so use that.
 
                 // First lets change the category to LOCAL_MACHINE
-                using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(category))
+                using (ObjectTokenCategory? tokenCategory = ObjectTokenCategory.Create(category))
                 {
                     if (tokenCategory != null)
                     {
@@ -130,11 +130,11 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Try to get the preferred token for a category
         /// </summary>
-        private static ObjectToken GetPreference(string category, string defaultLocation)
+        private static ObjectToken? GetPreference(string category, string defaultLocation)
         {
-            ObjectToken token = null;
+            ObjectToken? token = null;
 
-            using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(category))
+            using (ObjectTokenCategory? tokenCategory = ObjectTokenCategory.Create(category))
             {
                 if (tokenCategory != null)
                 {
@@ -156,8 +156,8 @@ namespace System.Speech.Internal.ObjectTokens
         {
             pfDidCompare = false;
 
-            RegistryDataKey attributes1 = null;
-            RegistryDataKey attributes2 = null;
+            RegistryDataKey? attributes1 = null;
+            RegistryDataKey? attributes2 = null;
             attributes1 = token1.Attributes;
             attributes2 = token2.Attributes;
 

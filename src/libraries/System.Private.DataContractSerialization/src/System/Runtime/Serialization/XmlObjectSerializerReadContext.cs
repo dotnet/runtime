@@ -19,17 +19,15 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
     {
         internal Attributes? attributes;
-        private HybridObjectCache? _deserializedObjects;
         private XmlSerializableReader? _xmlSerializableReader;
-        private XmlDocument? _xmlDocument;
         private Attributes? _attributesInXmlData;
         private XmlReaderDelegator? _extensionDataReader;
         private object? _getOnlyCollectionValue;
         private bool _isGetOnlyCollection;
 
-        private HybridObjectCache DeserializedObjects => _deserializedObjects ??= new HybridObjectCache();
+        private HybridObjectCache DeserializedObjects => field ??= new HybridObjectCache();
 
-        private XmlDocument Document => _xmlDocument ??= new XmlDocument();
+        private XmlDocument Document => field ??= new XmlDocument();
 
         internal override bool IsGetOnlyCollection
         {

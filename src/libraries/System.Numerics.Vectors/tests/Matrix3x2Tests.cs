@@ -1089,9 +1089,9 @@ namespace System.Numerics.Tests
         {
             Matrix3x2 a = Matrix3x2.Create(float.Pi);
 
-            Assert.Equal(Vector2.Create(float.Pi), a.X);
-            Assert.Equal(Vector2.Create(float.Pi), a.Y);
-            Assert.Equal(Vector2.Create(float.Pi), a.Z);
+            Assert.Equal(Vector2.Pi, a.X);
+            Assert.Equal(Vector2.Pi, a.Y);
+            Assert.Equal(Vector2.Pi, a.Z);
         }
 
         [Fact]

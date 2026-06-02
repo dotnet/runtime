@@ -22,7 +22,7 @@ namespace System.Collections.Tests
         [InlineData(1, null, 1)]
         [InlineData(null, null, 0)]
         [InlineData(null, 1, -1)]
-        public void Ctor_CultureInfo(object a, object b, int expected)
+        public void Ctor_CultureInfo(object? a, object? b, int expected)
         {
             var culture = new CultureInfo("en-US");
             var comparer = new Comparer(culture);

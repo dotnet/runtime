@@ -8,9 +8,6 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/analyzer/">
-    <Project Path="src/analyzer/analyzer.csproj">
-      <BuildType Solution="Checked|*" Project="Release" />
-    </Project>
     <Project Path="src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
       <BuildType Solution="Checked|*" Project="Release" />
     </Project>

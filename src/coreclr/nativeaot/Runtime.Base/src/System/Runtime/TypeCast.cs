@@ -803,7 +803,7 @@ namespace System.Runtime
                 goto notExactMatch;
 
         doWrite:
-            InternalCalls.RhpAssignRef(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, obj);
             return;
 
         assigningNull:
@@ -826,7 +826,7 @@ namespace System.Runtime
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -843,7 +843,7 @@ namespace System.Runtime
                 throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            InternalCalls.RhpAssignRef(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, castedObj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
@@ -923,20 +923,23 @@ namespace System.Runtime
             return obj;
         }
 
-        private static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
+        internal static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
         {
-            EETypeElementType elementType = type->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.Byte:
-                case EETypeElementType.UInt16:
-                case EETypeElementType.UInt32:
-                case EETypeElementType.UInt64:
-                case EETypeElementType.UIntPtr:
-                    return elementType - 1;
-            }
+            return GetNormalizedIntegralArrayElementType(type->ElementType);
+        }
 
-            return elementType;
+        internal static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
+        {
+            // The shift operator respects the low-order five bits of the right-hand operand only.
+            Debug.Assert((int)elementType < 32);
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
+            return (EETypeElementType)((int)elementType - shift);
         }
 
         // Would not be inlined, but still need to mark NoInlining so that it doesn't throw off tail calls
@@ -1228,10 +1231,9 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache. We only consider type-based conversion rules here.
-            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
+            // Update the cache
             //
-            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
             {
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
@@ -1270,8 +1272,11 @@ namespace System.Runtime
             //
             // Update the cache
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            }
 
             return obj;
         }

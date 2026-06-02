@@ -15,14 +15,14 @@
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
-.subsystem 0x0003       
-.corflags 0x00000001    
+.subsystem 0x0003
+.corflags 0x00000001
 
 
 
 .class
     public abstract auto ansi sealed beforefieldinit
-    Test.ILJmpWrappers
+    dev11_132534.ILJmpWrappers
         extends [mscorlib]System.Object
 {
     .method public static void Pass6Args_Maxstack_2
@@ -31,7 +31,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -44,12 +44,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_2(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_2(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -61,7 +61,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -74,12 +74,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_3(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_3(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -91,7 +91,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -104,12 +104,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_4(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_4(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -121,7 +121,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -134,12 +134,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_5(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_5(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -151,7 +151,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -164,12 +164,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_6(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_6(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -181,7 +181,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -194,12 +194,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_7(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_7(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -211,7 +211,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -224,12 +224,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_8(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_8(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -241,7 +241,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -254,12 +254,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_9(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_9(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 
@@ -271,7 +271,7 @@
             int64 A_1,
             float32 A_2,
             float64 A_3,
-            valuetype [CSharpPart_132534]Test.BasicStruct A_4,
+            valuetype [CSharpPart_132534]dev11_132534.BasicStruct A_4,
             string A_5
         )
         cil managed noinlining
@@ -284,12 +284,12 @@
 
         jmp
             void
-            [CSharpPart_132534]Test.CalleeSide::Pass6Args_Maxstack_10(
+            [CSharpPart_132534]dev11_132534.CalleeSide::Pass6Args_Maxstack_10(
                 int32,
                 int64,
                 float32,
                 float64,
-                valuetype [CSharpPart_132534]Test.BasicStruct,
+                valuetype [CSharpPart_132534]dev11_132534.BasicStruct,
                 string
             )
 

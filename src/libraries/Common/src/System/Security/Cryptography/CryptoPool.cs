@@ -45,6 +45,8 @@ namespace System.Security.Cryptography
 
         internal Span<byte> Span { get; private set; }
 
+        internal readonly bool IsRented => _rented is not null;
+
         public void Dispose()
         {
             Return();
