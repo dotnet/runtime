@@ -236,18 +236,28 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        case GT_CNS_LNG:
         {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
 
-            int64_t constValue = node->AsIntCon()->IntegralValue();
+            int64_t constValue = node->AsIntConCommon()->IntegralValue();
+
+            if (FitsIn<int32_t>(constValue))
+            {
+                rangeType = TYP_INT;
+            }
+            else if (FitsIn<uint32_t>(constValue))
+            {
+                rangeType = TYP_UINT;
+            }
+
             if (constValue >= 0)
             {
                 return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
             }
-
             break;
         }
 
@@ -260,93 +270,148 @@ bool IntegralRange::Contains(int64_t value) const
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+
+            switch (hwintrinsic->GetHWIntrinsicId())
             {
 #if defined(TARGET_XARCH)
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
+                case NI_Vector256_ExtractMostSignificantBits:
+                case NI_Vector512_ExtractMostSignificantBits:
+                case NI_X86Base_MoveMask:
+                case NI_AVX_MoveMask:
+                case NI_AVX2_MoveMask:
+                case NI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+                case NI_Vector64_ExtractMostSignificantBits:
+#endif
+                case NI_Vector128_ExtractMostSignificantBits:
+                {
+                    // We have 1 bit per element, remaining upper bits are 0
+
+                    size_t elementSize  = genTypeSize(hwintrinsic->GetSimdBaseType());
+                    size_t elementCount = hwintrinsic->GetSimdSize() / elementSize;
+
+                    if (elementCount <= 8)
+                    {
+                        rangeType = TYP_UBYTE;
+                    }
+                    else if (elementCount <= 16)
+                    {
+                        rangeType = TYP_USHORT;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
                 case NI_Vector256_op_Equality:
                 case NI_Vector256_op_Inequality:
                 case NI_Vector512_op_Equality:
                 case NI_Vector512_op_Inequality:
                 case NI_X86Base_CompareScalarOrderedEqual:
-                case NI_X86Base_CompareScalarOrderedNotEqual:
-                case NI_X86Base_CompareScalarOrderedLessThan:
-                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
                 case NI_X86Base_CompareScalarOrderedGreaterThan:
                 case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarOrderedLessThan:
+                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarOrderedNotEqual:
                 case NI_X86Base_CompareScalarUnorderedEqual:
-                case NI_X86Base_CompareScalarUnorderedNotEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThan:
-                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
+                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThan:
+                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedNotEqual:
                 case NI_X86Base_TestC:
-                case NI_X86Base_TestZ:
                 case NI_X86Base_TestNotZAndNotC:
+                case NI_X86Base_TestZ:
                 case NI_AVX_TestC:
-                case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
+                case NI_AVX_TestZ:
+#elif defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+                case NI_Vector64_op_Inequality:
+#endif
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+                {
+                    // A boolean [0, 1]
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                }
 
+#if defined(TARGET_XARCH)
+                case NI_Vector256_GetElement:
+                case NI_Vector256_ToScalar:
+                case NI_Vector512_GetElement:
+                case NI_Vector512_ToScalar:
                 case NI_X86Base_Extract:
                 case NI_X86Base_X64_Extract:
-                case NI_Vector128_ToScalar:
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_ToScalar:
+#elif defined(TARGET_ARM64)
+                case NI_Vector64_GetElement:
+                case NI_Vector64_ToScalar:
+                case NI_AdvSimd_Extract:
+#endif
                 case NI_Vector128_GetElement:
-                case NI_Vector256_GetElement:
-                case NI_Vector512_GetElement:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                case NI_Vector128_ToScalar:
+                {
+                    // We are extracting a value of the base types width and sign
+                    var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+
+                    if (varTypeIsSmall(simdBaseType))
                     {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                        rangeType = simdBaseType;
                     }
                     break;
+                }
 
+#if defined(TARGET_XARCH)
                 case NI_AVX2_LeadingZeroCount:
                 case NI_AVX2_TrailingZeroCount:
                 case NI_AVX2_X64_LeadingZeroCount:
                 case NI_AVX2_X64_TrailingZeroCount:
                 case NI_X86Base_PopCount:
                 case NI_X86Base_X64_PopCount:
-                    // Note: No advantage in using a precise range for IntegralRange.
-                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-
-                case NI_AdvSimd_Extract:
-                case NI_Vector64_ToScalar:
-                case NI_Vector128_ToScalar:
-                case NI_Vector64_GetElement:
-                case NI_Vector128_GetElement:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
-                    {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
-                    }
-                    break;
-
-                case NI_AdvSimd_PopCount:
-                case NI_AdvSimd_LeadingZeroCount:
-                case NI_AdvSimd_LeadingSignCount:
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-                    // Note: No advantage in using a precise range for IntegralRange.
-                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
 #endif
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                }
+
+                    // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
                 default:
                     break;
             }
             break;
+        }
 #endif // defined(FEATURE_HW_INTRINSICS)
+
+        case GT_INTRINSIC:
+        {
+            switch (node->AsIntrinsic()->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                }
+
+                default:
+                    break;
+            }
+            break;
+        }
 
         default:
             break;
@@ -1734,9 +1799,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    VNFunc   relopFunc = relopFuncApp.m_func;
-    ValueNum op1VN     = relopFuncApp.m_args[0];
-    ValueNum op2VN     = relopFuncApp.m_args[1];
+    VNFunc   relopFunc = relopFuncApp.GetFunc();
+    ValueNum op1VN     = relopFuncApp.GetArg(0);
+    ValueNum op2VN     = relopFuncApp.GetArg(1);
 
     if ((genActualType(vnStore->TypeOfVN(op1VN)) != TYP_INT) || (genActualType(vnStore->TypeOfVN(op2VN)) != TYP_INT))
     {
@@ -2897,10 +2962,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
         VNFuncApp funcApp;
         if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
-            (funcApp.m_func == VNF_PtrToLoc))
+            (funcApp.FuncIs(VNF_PtrToLoc)))
         {
-            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
-            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(0));
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1));
             return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
         }
 
@@ -4279,7 +4344,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion.GetOp1().GetVN() == funcApp.m_args[0]))
+                (funcApp.FuncIs(VNF_InvariantNonNullLoad)) && (curAssertion.GetOp1().GetVN() == funcApp.GetArg(0)))
             {
                 return assertionIndex;
             }
@@ -4449,8 +4514,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
             VNFuncApp relopFuncApp;
             if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
-                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
-                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+                (((relopFuncApp.GetArg(0) == op1VN) && (relopFuncApp.GetArg(1) == op2VN)) ||
+                 ((relopFuncApp.GetArg(0) == op2VN) && (relopFuncApp.GetArg(1) == op1VN))))
             {
                 // VNs match - we'll find nothing new by looking at individual operand ranges.
             }
@@ -5232,23 +5297,23 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        if (funcApp.m_func == VNF_PtrToArrElem)
+        if (funcApp.FuncIs(VNF_PtrToArrElem))
         {
             // Check whether the array is on the heap
-            ValueNum arrayVN = funcApp.m_args[1];
+            ValueNum arrayVN = funcApp.GetArg(1);
             return GetWriteBarrierForm(comp, arrayVN);
         }
-        if (funcApp.m_func == VNF_PtrToLoc)
+        if (funcApp.FuncIs(VNF_PtrToLoc))
         {
             // Pointer to a local
             return GCInfo::WriteBarrierForm::WBF_NoBarrier;
         }
-        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        if ((funcApp.FuncIs(VNF_PtrToStatic)) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_STATIC_BOX_PTR))
         {
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNF_ADD)
+        if (funcApp.FuncIs(VNF_ADD))
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5259,13 +5324,13 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
             // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
             //
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(0)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(1));
             }
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(1)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(0));
             }
         }
     }
@@ -5488,23 +5553,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     };
 
     // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) && (funcApp.m_func == VNF_ADD))
+    ValueNum add0, add1;
+    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &add0, &add1))
     {
-        if (!vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if (!vnStore->IsVNInt32Constant(add1))
         {
             // Normalize constants to be on the right side
-            std::swap(funcApp.m_args[0], funcApp.m_args[1]);
+            std::swap(add0, add1);
         }
 
-        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
         {
             Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
             // Negative delta in the array access (ArrLen + -CNS)
-            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            const int delta = vnStore->GetConstantInt32(add1);
             if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
             {
                 return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));

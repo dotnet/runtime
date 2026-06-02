@@ -302,6 +302,7 @@ internal partial class MockDescriptors
         internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
         internal const ulong TestContinuationSingletonEEClassGlobalAddress = 0x00000000_7a0000b8;
         internal const ulong TestObjectMethodTableGlobalAddress = 0x00000000_7a0000c0;
+        internal const ulong TestMulticastDelegateMethodTableGlobalAddress = 0x00000000_7a0000c8;
 
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
@@ -330,6 +331,7 @@ internal partial class MockDescriptors
         internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
         internal ulong ContinuationSingletonEEClassGlobalAddress => TestContinuationSingletonEEClassGlobalAddress;
         internal ulong ObjectMethodTableGlobalAddress => TestObjectMethodTableGlobalAddress;
+        internal ulong MulticastDelegateMethodTableGlobalAddress => TestMulticastDelegateMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
         // sizeof(ContinuationObject) = sizeof(MT*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags) + sizeof(State)
@@ -363,6 +365,7 @@ internal partial class MockDescriptors
             AddFreeObjectMethodTable();
             AddContinuationMethodTableGlobal();
             AddObjectMethodTableGlobal();
+            AddMulticastDelegateMethodTableGlobal();
         }
 
         private void AddDefaultTypes()
@@ -388,6 +391,11 @@ internal partial class MockDescriptors
         {
             // Initialized to 0; patched to point to SystemObjectMethodTable in AddSystemObjectType.
             AddPointerGlobal("Address of Object Method Table", TestObjectMethodTableGlobalAddress, 0);
+        }
+
+        private void AddMulticastDelegateMethodTableGlobal()
+        {
+            AddPointerGlobal("Address of MulticastDelegate Method Table", TestMulticastDelegateMethodTableGlobalAddress, 0);
         }
 
         private void AddSystemObjectType()
@@ -447,6 +455,12 @@ internal partial class MockDescriptors
         {
             Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationSingletonEEClassGlobalAddress, Builder.TargetTestHelpers.PointerSize);
             Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationSingletonEEClass);
+        }
+
+        internal void SetMulticastDelegateMethodTable(ulong multicastDelegateMethodTable)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestMulticastDelegateMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, multicastDelegateMethodTable);
         }
 
         internal MockEEClass AddEEClass(string name)

@@ -41,7 +41,7 @@ internal static class DebugInfoHelpers
     private const uint SOURCE_TYPE_BITS_V2 = 3;
 
     // ICorDebugInfo::MAX_ILNUM sentinel value used for adjusted encoding of var numbers.
-    private const uint MAX_ILNUM = unchecked((uint)-4);
+    private const uint MAX_ILNUM = unchecked((uint)-5);
 
     internal static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader, uint version)
     {
