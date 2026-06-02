@@ -182,6 +182,14 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
+            // If the deconstructor reports a value-type case holding null, 
+            // write JSON null directly rather than dispatching to the value-type's converter
+            // (which cannot unbox null).
+            if (caseValue is null && caseType.IsValueType) {
+                writer.WriteNullValue();
+                return true;
+            }
+
             JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
             state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
             return caseTypeInfo.Converter.TryWriteAsObject(writer, caseValue, options, ref state);
