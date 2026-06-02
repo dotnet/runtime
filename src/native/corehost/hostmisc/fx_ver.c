@@ -39,6 +39,7 @@ void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
 
 bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
 {
+    assert(ver->major != -1 || (ver->minor == -1 && ver->patch == -1));
     return ver->major == -1;
 }
 

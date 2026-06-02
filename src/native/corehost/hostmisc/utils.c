@@ -7,13 +7,14 @@
 
 #include <string.h>
 
-void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len)
+bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len)
 {
-    if (path == NULL || path[0] == _X('\0'))
+    if (path == NULL)
     {
         if (out_name_len > 0)
             out_name[0] = _X('\0');
-        return;
+
+        return true;
     }
 
     const pal_char_t* last_sep = pal_strrchr(path, DIR_SEPARATOR);
@@ -23,8 +24,10 @@ void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out
     {
         if (out_name_len > 0)
             out_name[0] = _X('\0');
-        return;
+
+        return false;
     }
 
     memcpy(out_name, name, (len + 1) * sizeof(pal_char_t));
+    return true;
 }

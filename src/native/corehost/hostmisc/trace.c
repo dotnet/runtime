@@ -76,7 +76,9 @@ static void trace_lock_release(void)
 // is set. Caller must free() the returned pointer.
 static pal_char_t* get_host_env_var(const pal_char_t* name)
 {
-    pal_char_t full_name[256];
+    // Buffer for "DOTNET_HOST_<name>" / "COREHOST_<name>".
+    pal_char_t full_name[64];
+    assert(STRING_LENGTH("DOTNET_HOST_") + pal_strlen(name) < ARRAY_SIZE(full_name));
 
     pal_str_printf(full_name, ARRAY_SIZE(full_name), _X("DOTNET_HOST_%s"), name);
     pal_char_t* value = pal_getenv(full_name);
@@ -100,6 +102,8 @@ static void trace_format_timestamp(pal_char_t* buffer, size_t buffer_len)
         buffer[0] = L'\0';
         return;
     }
+    // Note that we cannot use %Z for gmtime on Windows. Just hardcode "GMT".
+    // See https://learn.microsoft.com/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l
     if (wcsftime(buffer, buffer_len, L"%c GMT", &tm_l) == 0)
         buffer[0] = L'\0';
 #else
@@ -109,7 +113,7 @@ static void trace_format_timestamp(pal_char_t* buffer, size_t buffer_len)
         buffer[0] = '\0';
         return;
     }
-    if (strftime(buffer, buffer_len, "%c %Z", &tm_l) == 0)
+    if (strftime(buffer, buffer_len, "%c GMT", &tm_l) == 0)
         buffer[0] = '\0';
 #endif
 }
@@ -251,9 +255,8 @@ bool trace_enable(void)
                 pal_str_printf(exe_name, ARRAY_SIZE(exe_name), _X("host"));
 
             // Allocate a buffer sized to fit "<dir>/<exe_name>.<pid>.log".
-            // 16 chars is plenty for the decimal pid; 6 covers the separator,
-            // the '.' before pid, ".log", and the null terminator.
-            size_t trace_path_len = pal_strlen(tracefile_str) + pal_strlen(exe_name) + 16 + 6;
+            const size_t max_pid_str_len = STRING_LENGTH("4294967295");
+            size_t trace_path_len = pal_strlen(tracefile_str) + pal_strlen(exe_name) + max_pid_str_len + STRING_LENGTH(DIR_SEPARATOR_STR "..log") + 1;
             trace_path = (pal_char_t*)malloc(trace_path_len * sizeof(pal_char_t));
             if (trace_path == NULL)
             {
