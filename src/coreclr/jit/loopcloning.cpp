@@ -3098,10 +3098,11 @@ bool Compiler::optLoopCloningEnabled()
 //       (cycles saved per method call) / (duplicated body nodes)
 //
 //   and the loop is cloned only if that ratio is at least the configured
-//   threshold JitCloneLoopsMinPerCallRatio. Higher threshold values are
-//   stricter and reject more candidates (fewer clones); setting the
-//   threshold to 0 disables the gate and the helper returns true without
-//   doing any analysis.
+//   threshold JitCloneLoopsMinPerCallRatio (interpreted in hundredths,
+//   so the default value 4 means a threshold of 0.04). Higher threshold
+//   values are stricter and reject more candidates (fewer clones);
+//   setting the threshold to 0 disables the gate and the helper returns
+//   true without doing any analysis.
 //
 // Arguments:
 //   loop     - the loop under consideration
@@ -3114,9 +3115,11 @@ bool Compiler::optLoopCloningEnabled()
 bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
     // When the gate is disabled, accept the candidate without any further
-    // work.
+    // work. The config value is interpreted in hundredths, so divide by
+    // 100 to obtain the actual per-call-ratio threshold (e.g. config 4
+    // means a threshold of 0.04).
     //
-    const weight_t minPerCallRatio = (weight_t)JitConfig.JitCloneLoopsMinPerCallRatio();
+    const weight_t minPerCallRatio = (weight_t)JitConfig.JitCloneLoopsMinPerCallRatio() / 100.0;
     if (minPerCallRatio <= 0.0)
     {
         return true;
@@ -3133,12 +3136,16 @@ bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext*
     // Part 1: benefit estimate.
     //
     // Sum cycles saved per call across all opt-infos, weighted by the
-    // bbWeight of the check block so PGO hot blocks are valued higher.
-    // Per-block cycle figures are 2.0 for array/span bounds checks and
-    // 3.0 for the GDV-style tests.
+    // per-call execution count of the check block so PGO hot blocks are
+    // valued higher. Per-block cycle figures are 2.0 for array/span
+    // bounds checks and 3.0 for the GDV-style tests.
+    //
+    // getBBWeight returns the block weight scaled by BB_UNITY_WEIGHT
+    // (= 100), so divide by BB_UNITY_WEIGHT to convert to a true
+    // per-call execution count.
     //
     BasicBlock* const header         = loop->GetHeader();
-    const weight_t    headerWeight   = header->getBBWeight(this);
+    const weight_t    headerWeight   = header->getBBWeight(this) / BB_UNITY_WEIGHT;
     weight_t          benefitPerCall = 0.0;
 
     for (unsigned i = 0; i < optInfos->Size(); i++)
@@ -3171,40 +3178,33 @@ bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext*
                 cyclesSaved = 0.0;
                 break;
         }
-        weight_t absWeight = (checkBlock != nullptr) ? checkBlock->getBBWeight(this) : headerWeight;
-        if (absWeight < 0.0)
-        {
-            absWeight = 0.0;
-        }
-        benefitPerCall += cyclesSaved * absWeight;
+        const weight_t perCallWeight =
+            (checkBlock != nullptr) ? (checkBlock->getBBWeight(this) / BB_UNITY_WEIGHT) : headerWeight;
+        benefitPerCall += cyclesSaved * perCallWeight;
     }
 
     //
     // Part 2: cost estimate.
     //
     // Cost is the number of tree nodes that would be duplicated by cloning.
-    // Bound the walker by min(sizeLimit, ceil(benefit / minPerCallRatio) + 1):
+    // Bound the walker by min(sizeLimit, floor(benefit / minPerCallRatio)):
     //   - sizeLimit (matches the earlier JitCloneLoopsSizeLimit check) is
     //     defensive; by construction the body is already <= sizeLimit here.
-    //   - The PerCallRatio-derived cap lets the walker short-circuit as
-    //     soon as the body grows large enough that the gate must fail.
+    //   - floor(benefit / minPerCallRatio) is the largest body size for
+    //     which the per-call ratio gate could pass, so the walker can
+    //     short-circuit as soon as the body grows past it.
     //
     const int      sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
     unsigned       bodyCap   = (sizeLimit >= 0) ? (unsigned)sizeLimit : UINT_MAX;
     const weight_t bodyMaxW  = benefitPerCall / minPerCallRatio;
-    // +1 so the walker counts up to bodyMax (passes) and stops at bodyMax+1 (fails).
-    unsigned bodyMax = (bodyMaxW >= (weight_t)UINT_MAX) ? UINT_MAX : (unsigned)bodyMaxW;
-    if (bodyMax < UINT_MAX)
-    {
-        bodyMax++;
-    }
+    const unsigned bodyMax   = (bodyMaxW >= (weight_t)UINT_MAX) ? UINT_MAX : (unsigned)bodyMaxW;
     if (bodyMax < bodyCap)
     {
         bodyCap = bodyMax;
     }
 
-    int  bodyNodes  = 0;
-    auto countNodes = [&bodyNodes](GenTree* tree) -> unsigned {
+    unsigned bodyNodes  = 0;
+    auto     countNodes = [&bodyNodes](GenTree* tree) -> unsigned {
         bodyNodes++;
         return 1;
     };
@@ -3214,7 +3214,7 @@ bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext*
         JITDUMP(FMT_LP " rejected by cloning heuristic: body exceeds cap %u\n", loop->GetIndex(), bodyCap);
         return false;
     }
-    if (bodyNodes <= 0)
+    if (bodyNodes == 0)
     {
         return false;
     }

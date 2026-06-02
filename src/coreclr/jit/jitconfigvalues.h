@@ -68,10 +68,12 @@ RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRat
                                                                                         // benefit ratio: (cycles saved
                                                                                         // per method call) /
                                                                                         // (duplicated body nodes).
-                                                                                        // Reject clones with PCR less
-                                                                                        // than this integer threshold.
-                                                                                        // Higher values are stricter
-                                                                                        // and produce fewer clones; 0
+                                                                                        // Value is interpreted in
+                                                                                        // hundredths (config / 100), so
+                                                                                        // the default 4 means a
+                                                                                        // threshold of 0.04. Higher
+                                                                                        // values are stricter and
+                                                                                        // produce fewer clones; 0
                                                                                         // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
