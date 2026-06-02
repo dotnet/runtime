@@ -89,7 +89,7 @@ public:
 };
 
 #ifndef HOST_WASM
-VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext);
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp);
 #endif // HOST_WASM
 
 #endif // FEATURE_INTERPRETER

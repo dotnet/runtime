@@ -2109,11 +2109,13 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     GCPROTECT_END();
 }
 
+#ifdef TARGET_WASM
 EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
 {
     ex.TargetFrameSp = targetSP;
     return EXCEPTION_CONTINUE_SEARCH;
 }
+#endif // TARGET_WASM
 
 VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
@@ -2125,6 +2127,7 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WASM
     // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
     // this is ensured by unwinding stack up to the target frame before propagating the exception. This
     // difference is due to the fact that on WASM we don't have native stack unwinding support.
@@ -2137,12 +2140,17 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     PAL_TRY(Param *, pParam, &param)
     {
         OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
+#else
+        OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+#endif // TARGET_WASM
         RealCOMPlusThrowWorker(throwable);
+#ifdef TARGET_WASM
     }
     PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
     {
     }
     PAL_ENDTRY
+#endif // TARGET_WASM
     UNREACHABLE();
 }
 
@@ -5613,6 +5621,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), GetSSP(pContext));
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
     // Do NOT also GCPROTECT it - reporting the same location twice corrupts
     // the GC's relocation logic (see clr-code-guide.md §2.1.5).
@@ -5624,6 +5633,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     UNREACHABLE();
 }
@@ -6689,10 +6699,6 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-size_t GetSSPForFrameOnCurrentStack(TADDR ip);
-#endif // HOST_AMD64 && HOST_WINDOWS
 
 #ifdef FEATURE_INTERPRETER
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)

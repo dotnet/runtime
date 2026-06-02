@@ -1325,6 +1325,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
+    TADDR resumeSP;
+    TADDR resumeIP;
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -4625,8 +4628,6 @@ do                                                                      \
     catch (const ResumeAfterCatchException& ex)
     {
         GCX_COOP_NO_DTOR();
-        TADDR resumeSP;
-        TADDR resumeIP;
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
@@ -4640,7 +4641,12 @@ do                                                                      \
                 // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
                 // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
                 // Thus, we need to rethrow it to let it propagate further.
+#ifdef HOST_WINDOWS
+                // On Windows, rethrow the exception out of the catch block to work around a Windows bug in shadow stack unwinding
+                goto RETHROW_RESUME_AFTER_CATCH;
+#else // HOST_WINDOWS
                 throw;
+#endif // HOST_WINDOWS
             }
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
@@ -4692,6 +4698,13 @@ EXIT_FRAME:
     }
 
     pThreadContext->pStackPointer = pFrame->pStack;
+    return;
+
+#ifdef HOST_WINDOWS
+RETHROW_RESUME_AFTER_CATCH:
+    // Rethrow the exception to let it propagate to the correct resume frame
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
+#endif // HOST_WINDOWS
 }
 
 #endif // FEATURE_INTERPRETER
