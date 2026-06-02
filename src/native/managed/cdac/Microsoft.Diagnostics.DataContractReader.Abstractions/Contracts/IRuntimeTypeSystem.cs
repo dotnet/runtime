@@ -92,7 +92,8 @@ public enum OptimizationTier : uint
 public enum GenericContextLoc
 {
     None,
-    InstArg,
+    InstArgMethodDesc,
+    InstArgMethodTable,
     ThisPtr,
 }
 
@@ -187,14 +188,16 @@ public interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
 
+    // return true if the TypeHandle represents a delegate type (i.e., its parent is System.MulticastDelegate)
+    bool IsDelegate(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
     TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
-    TypeHandle GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
-    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
+    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
@@ -277,9 +280,6 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
-    #region Other APIs
-    void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();
-    #endregion Other APIs
 }
 
 public struct RuntimeTypeSystem : IRuntimeTypeSystem

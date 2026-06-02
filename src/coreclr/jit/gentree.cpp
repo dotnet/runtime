@@ -2531,6 +2531,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         {
             return false;
         }
+
+        // For virtual stub calls the stub addresses must agree.
+        if (c1->IsVirtualStub() && (c1->gtStubCallStubAddr != c2->gtStubCallStubAddr))
+        {
+            return false;
+        }
     }
     else
     {
@@ -6803,8 +6809,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Tanh:
                         case NI_System_Math_Truncate:
                         case NI_PRIMITIVE_LeadingZeroCount:
-                        case NI_PRIMITIVE_TrailingZeroCount:
+                        case NI_PRIMITIVE_Log2:
                         case NI_PRIMITIVE_PopCount:
+                        case NI_PRIMITIVE_TrailingZeroCount:
                         {
                             // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling
@@ -14015,18 +14022,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
             {
                 switch (tree->AsBlk()->gtBlkOpKind)
                 {
-                    case GenTreeBlk::BlkOpKindCpObjUnroll:
-                        printf(" (CpObjUnroll)");
-                        break;
-#ifdef TARGET_XARCH
-                    case GenTreeBlk::BlkOpKindCpObjRepInstr:
-                        printf(" (CpObjRepInstr)");
-                        break;
-
-                    case GenTreeBlk::BlkOpKindRepInstr:
-                        printf(" (RepInstr)");
-                        break;
-#endif
                     case GenTreeBlk::BlkOpKindUnroll:
                         printf(" (Unroll)");
                         break;
@@ -21440,21 +21435,21 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
 
             // If the index VN is a MUL by elemSize, see if we can eliminate it instead of adding
             // the division by elemSize.
-            VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(inxVN, &funcApp) && funcApp.m_func == (VNFunc)GT_MUL)
+            ValueNum mulOp0, mulOp1;
+            if (vnStore->IsVNBinFunc(inxVN, VNF_MUL, &mulOp0, &mulOp1))
             {
                 ValueNum vnForElemSize = vnStore->VNForLongCon(elemSize);
 
                 // One of the multiply operand is elemSize, so the resulting
                 // index VN should simply be the other operand.
-                if (funcApp.m_args[1] == vnForElemSize)
+                if (mulOp1 == vnForElemSize)
                 {
-                    *pInxVN    = funcApp.m_args[0];
+                    *pInxVN    = mulOp0;
                     canFoldDiv = true;
                 }
-                else if (funcApp.m_args[0] == vnForElemSize)
+                else if (mulOp0 == vnForElemSize)
                 {
-                    *pInxVN    = funcApp.m_args[1];
+                    *pInxVN    = mulOp1;
                     canFoldDiv = true;
                 }
             }
@@ -21463,7 +21458,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
             if (!canFoldDiv)
             {
                 ValueNum vnForElemSize  = vnStore->VNForPtrSizeIntCon(elemSize);
-                ValueNum vnForScaledInx = vnStore->VNForFunc(TYP_I_IMPL, VNFunc(GT_DIV), inxVN, vnForElemSize);
+                ValueNum vnForScaledInx = vnStore->VNForFunc(TYP_I_IMPL, VNF_DIV, inxVN, vnForElemSize);
                 *pInxVN                 = vnForScaledInx;
             }
 
@@ -21471,7 +21466,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
             {
                 ValueNum vnForConstIndex = vnStore->VNForPtrSizeIntCon(constIndex);
 
-                *pInxVN = comp->GetValueNumStore()->VNForFunc(TYP_I_IMPL, VNFunc(GT_ADD), *pInxVN, vnForConstIndex);
+                *pInxVN = comp->GetValueNumStore()->VNForFunc(TYP_I_IMPL, VNF_ADD, *pInxVN, vnForConstIndex);
             }
         }
     }
@@ -21614,7 +21609,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
         if (inputMul != 1)
         {
             ValueNum mulVN = comp->GetValueNumStore()->VNForLongCon(inputMul);
-            vn             = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNFunc(GT_MUL), mulVN, vn);
+            vn             = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNF_MUL, mulVN, vn);
         }
         if (*pInxVN == ValueNumStore::NoVN)
         {
@@ -21622,7 +21617,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
         }
         else
         {
-            *pInxVN = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNFunc(GT_ADD), *pInxVN, vn);
+            *pInxVN = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNF_ADD, *pInxVN, vn);
         }
     }
 }

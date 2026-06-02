@@ -3,19 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class String : IData<String>
+[CdacType(nameof(DataType.String))]
+internal sealed partial class String : IData<String>
 {
-    static String IData<String>.Create(Target target, TargetPointer address)
-        => new String(target, address);
+    [FieldAddress("m_FirstChar")]
+    public TargetPointer FirstChar { get; }
 
-    public String(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.String);
-
-        FirstChar = address + (ulong)type.Fields["m_FirstChar"].Offset;
-        StringLength = target.ReadField<uint>(address, type, "m_StringLength");
-    }
-
-    public TargetPointer FirstChar { get; init; }
-    public uint StringLength { get; init; }
+    [Field("m_StringLength")]
+    public uint StringLength { get; }
 }

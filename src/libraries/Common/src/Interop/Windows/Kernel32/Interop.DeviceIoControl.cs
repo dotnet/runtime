@@ -12,6 +12,9 @@ internal static partial class Interop
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_get_reparse_point
         internal const int FSCTL_GET_REPARSE_POINT = 0x000900a8;
 
+        // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_set_sparse
+        internal const int FSCTL_SET_SPARSE = 0x000900C4;
+
         // https://learn.microsoft.com/windows-hardware/drivers/ddi/ntddstor/ni-ntddstor-ioctl_storage_read_capacity
         internal const int IOCTL_STORAGE_READ_CAPACITY = 0x002D5140;
 

@@ -59,6 +59,16 @@ internal readonly partial struct ReJIT_1 : IReJIT
         };
     }
 
+    bool IReJIT.IsDeoptimized(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            return false;
+        }
+        ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
+        return ilCodeVersionNode.Deoptimized != 0;
+    }
+
     TargetNUInt IReJIT.GetRejitId(ILCodeVersionHandle ilCodeVersionHandle)
     {
         if (ilCodeVersionHandle.ILCodeVersionNode == TargetPointer.Null)
