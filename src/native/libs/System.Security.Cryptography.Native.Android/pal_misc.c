@@ -28,7 +28,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     {
         // Use Android's non-blocking cryptographic OS RNG source.
         fd = open("/dev/urandom", flags);
-        error = errno;
+        error = fd == -1 ? errno : 0;
     }
     while ((fd == -1) && (error == EINTR));
 
@@ -45,10 +45,11 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     }
 #endif
 
-    int32_t offset = 0;
-    while (offset != len)
+    size_t length = (size_t)len;
+    size_t offset = 0;
+    while (offset != length)
     {
-        size_t remaining = (size_t)len - (size_t)offset;
+        size_t remaining = length - offset;
         ssize_t n = read(fd, buff + offset, remaining);
         if (n == -1)
         {
@@ -69,7 +70,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
             return FAIL;
         }
 
-        offset += (int32_t)n;
+        offset += (size_t)n;
     }
 
     close(fd);
