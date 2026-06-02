@@ -34,12 +34,14 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 
     if (fd == -1)
     {
+        LOG_ERROR("Unable to open /dev/urandom: %d", error);
         return FAIL;
     }
 
 #ifndef O_CLOEXEC
     if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
     {
+        LOG_ERROR("Unable to set close-on-exec on /dev/urandom: %d", errno);
         close(fd);
         return FAIL;
     }
@@ -60,12 +62,14 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
             }
 
             close(fd);
+            LOG_ERROR("Unable to read from /dev/urandom: %d", error);
             return FAIL;
         }
 
         // Avoid spinning if /dev/urandom unexpectedly returns no data.
         if (n == 0)
         {
+            LOG_ERROR("No data read from /dev/urandom");
             close(fd);
             return FAIL;
         }
