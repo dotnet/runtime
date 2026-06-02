@@ -76,8 +76,8 @@ class OutOfMemoryExceptionTest
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
-        // 32 MB GC heap limit: small enough to exhaust quickly but large enough for startup.
-        psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
+        // 32 MB GC heap limit (0x2000000): small enough to exhaust quickly but large enough for startup.
+        psi.Environment["DOTNET_GCHeapHardLimit"] = "0x2000000";
         psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
         ProcessTextOutput output;
