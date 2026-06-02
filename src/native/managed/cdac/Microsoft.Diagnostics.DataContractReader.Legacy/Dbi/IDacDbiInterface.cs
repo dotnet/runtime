@@ -619,9 +619,6 @@ public unsafe partial interface IDacDbiInterface
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal);
-
-    [PreserveSig]
     int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal);
 
     [PreserveSig]
