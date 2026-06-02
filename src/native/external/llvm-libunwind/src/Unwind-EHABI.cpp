@@ -443,12 +443,6 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
   return _URC_CONTINUE_UNWIND;
 }
 
-// The C++ exception dispatch functions below depend on __unw_step and other
-// public API functions from libunwind.cpp which are guarded out when
-// _LIBUNWIND_NATIVEAOT is defined. NativeAOT does not use these - it only
-// uses _Unwind_VRS_Interpret above.
-#if !defined(_LIBUNWIND_NATIVEAOT)
-
 extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code
 __aeabi_unwind_cpp_pr0(_Unwind_State state, _Unwind_Control_Block *ucbp,
                        _Unwind_Context *context) {
@@ -1215,7 +1209,5 @@ __gnu_unwind_frame(_Unwind_Exception *exception_object,
     return _URC_FAILURE;
   }
 }
-
-#endif // !defined(_LIBUNWIND_NATIVEAOT)
 
 #endif  // defined(_LIBUNWIND_ARM_EHABI)
