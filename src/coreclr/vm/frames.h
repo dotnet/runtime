@@ -1397,11 +1397,7 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args
-#if defined(TARGET_ARM64)
-        , LPVOID spForPacSign
-#endif
-        );
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
