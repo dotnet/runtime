@@ -20,9 +20,6 @@
   <Project Path="../../../tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj">
     <BuildType Solution="Checked|*" Project="Debug" />
   </Project>
-  <Project Path="../../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj">
-    <BuildType Solution="Checked|*" Project="Debug" />
-  </Project>
   <Project Path="ILCompiler.Compiler.Tests/ILCompiler.Compiler.Tests.csproj">
     <Platform Solution="*|Any CPU" Project="x64" />
     <Platform Solution="*|x64" Project="x64" />
