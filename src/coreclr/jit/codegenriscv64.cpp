@@ -3996,7 +3996,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_SELECT:
-            genCodeForSelect(treeNode->AsOp());
+            genCodeForSelect(treeNode->AsConditional());
             break;
 
         case GT_JCMP:
