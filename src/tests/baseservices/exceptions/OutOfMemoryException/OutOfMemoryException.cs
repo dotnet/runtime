@@ -102,14 +102,9 @@ class OutOfMemoryExceptionTest
 
         string stderr = output.StandardError;
 
-        if (allocateArg == AllocateSmallArg && !stderr.Contains(ExpectedMinimalOomToken))
-        {
-            // This test should exercise the minimal OOM fail-fast path.
-            Console.WriteLine($"Expected minimal OOM diagnostic token not found in subprocess stderr.");
-            return Fail;
-        }
-
-        // In the general case, we expect either a message containing "OutOfMemoryException" or the minimal OOM message.
+        // Even in the small allocations case, the runtime might still have enough memory to construct
+        // an OutOfMemoryException and print the full diagnostic.
+        // Either token is acceptable, but at least one should be present to confirm that OOM was the reason for termination.
         if (!(stderr.Contains(ExpectedOomToken) || stderr.Contains(ExpectedMinimalOomToken)))
         {
             Console.WriteLine($"Expected OOM diagnostic token not found in subprocess stderr.");
