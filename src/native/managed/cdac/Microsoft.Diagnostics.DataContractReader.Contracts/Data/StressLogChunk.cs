@@ -3,27 +3,15 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class StressLogChunk : IData<StressLogChunk>
+[CdacType(nameof(DataType.StressLogChunk))]
+internal sealed partial class StressLogChunk : IData<StressLogChunk>
 {
-    static StressLogChunk IData<StressLogChunk>.Create(Target target, TargetPointer address)
-        => new StressLogChunk(target, address);
+    [Field] public TargetPointer Next { get; }
+    [Field] public TargetPointer Prev { get; }
 
-    public StressLogChunk(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.StressLogChunk);
+    [FieldAddress]
+    public TargetPointer Buf { get; }
 
-        Next = target.ReadPointerField(address, type, nameof(Next));
-        Prev = target.ReadPointerField(address, type, nameof(Prev));
-        Buf = new TargetPointer(address + (ulong)type.Fields[nameof(Buf)].Offset);
-        BufSize = target.ReadGlobal<uint>(Constants.Globals.StressLogChunkSize);
-        Sig1 = target.ReadField<uint>(address, type, nameof(Sig1));
-        Sig2 = target.ReadField<uint>(address, type, nameof(Sig2));
-    }
-
-    public TargetPointer Next { get; init; }
-    public TargetPointer Prev { get; init; }
-    public TargetPointer Buf { get; init; }
-    public uint BufSize { get; init; }
-    public uint Sig1 { get; init; }
-    public uint Sig2 { get; init; }
+    [Field] public uint Sig1 { get; }
+    [Field] public uint Sig2 { get; }
 }

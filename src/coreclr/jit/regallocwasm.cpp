@@ -935,7 +935,7 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (data->m_spReg == argReg))
+                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;

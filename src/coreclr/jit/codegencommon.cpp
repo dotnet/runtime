@@ -38,7 +38,9 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
 
-#ifndef JIT32_GCENCODER
+#if defined(JIT32_GCENCODER) || defined(TARGET_WASM)
+    // No impact on GC reporting for x86 or Wasm
+#else
     if (value)
     {
         // EnumGcRefs will only enumerate slots in aborted frames
@@ -55,7 +57,7 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 
         m_cgInterruptible = true;
     }
-#endif // JIT32_GCENCODER
+#endif // defined(JIT32_GCENCODER) || defined(TARGET_WASM)
 }
 
 #if HAS_FIXED_REGISTER_SET
@@ -913,9 +915,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
-
-        case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;

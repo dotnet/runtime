@@ -1356,6 +1356,20 @@ public:
                                      m_ReturnAddress);
     }
 
+    PCODE GetReturnAddress_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+        if (m_SpForPacSign != 0)
+        {
+            return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+        }
+#endif
+
+        return (PCODE)m_ReturnAddress;
+    }
+
     BOOL NeedsUpdateRegDisplay_Impl()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1383,11 +1397,14 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
     TADDR               m_ReturnAddress;
+#if defined(TARGET_ARM64)
+    TADDR               m_SpForPacSign;
+#endif
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
 

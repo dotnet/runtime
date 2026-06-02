@@ -149,6 +149,34 @@ namespace ILCompiler.Reflection.ReadyToRun
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
                     break;
+                case WasmMachine.Wasm32:
+                    PSP_SYM_STACK_SLOT_ENCBASE = 6;
+                    GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+                    SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+                    GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+                    CODE_LENGTH_ENCBASE = 6;
+                    STACK_BASE_REGISTER_ENCBASE = 3;
+                    SIZE_OF_STACK_AREA_ENCBASE = 6;
+                    SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
+                    REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+                    NUM_REGISTERS_ENCBASE = 3;
+                    NUM_STACK_SLOTS_ENCBASE = 5;
+                    NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+                    NORM_PROLOG_SIZE_ENCBASE = 4;
+                    NORM_EPILOG_SIZE_ENCBASE = 3;
+                    INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
+                    INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
+                    REGISTER_ENCBASE = 3;
+                    REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
+                    STACK_SLOT_ENCBASE = 6;
+                    STACK_SLOT_DELTA_ENCBASE = 4;
+                    NUM_SAFE_POINTS_ENCBASE = 4;
+                    NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+                    POINTER_SIZE_ENCBASE = 3;
+                    LIVESTATE_RLE_RUN_ENCBASE = 2;
+                    LIVESTATE_RLE_SKIP_ENCBASE = 4;
+                    break;
+
                 case Machine.I386:
                     CODE_LENGTH_ENCBASE = 6;
                     NORM_PROLOG_SIZE_ENCBASE = 4;

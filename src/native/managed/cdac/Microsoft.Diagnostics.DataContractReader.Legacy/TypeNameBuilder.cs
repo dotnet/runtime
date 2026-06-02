@@ -245,7 +245,7 @@ public struct TypeNameBuilder
                 tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
-            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv))
+            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv))
             {
                 if (format.HasFlag(TypeNameFormat.FormatNamespace))
                 {
@@ -261,7 +261,7 @@ public struct TypeNameBuilder
                         AppendType(tnb.Target, stringBuilder, retAndArgTypes[i], format);
                     }
 
-                    if ((callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
+                    if (((byte)callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
                     {
                         if (retAndArgTypes.Length > 2)
                         {

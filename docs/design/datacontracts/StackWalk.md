@@ -5,7 +5,31 @@ This contract encapsulates support for walking the stack of managed threads.
 ## APIs of contract
 
 ```csharp
-public interface IStackDataFrameHandle { };
+public interface IStackDataFrameHandle
+{
+    // Describes what the current Context/FrameIter of this handle represents.
+    StackWalkState State { get; }
+}
+
+public enum StackWalkState
+{
+    Complete,
+    Error,
+    // Current Context represents a managed method.
+    Frameless,
+    // Current Context is the seed native context from init (the thread's saved
+    // CONTEXT). FrameIter may or may not be on a Frame.
+    InitialNativeContext,
+    // Current Context is native, produced by unwinding a managed frame down to
+    // an M2U boundary. FrameIter is on the explicit Frame at the transition.
+    NativeMarker,
+    // FrameIter is on an explicit Frame (FrameAddress is valid), but the
+    // current Context has not yet been bridged through that Frame. Bridging
+    // occurs via UpdateContextFromCurrentFrame; the next step advances past
+    // this Frame.
+    Frame,
+    SkippedFrame,
+}
 ```
 
 ```csharp
@@ -457,7 +481,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 * This API can either be at a capital 'F' frame or a managed frame unlike the TargetPointer overload which only works at capital 'F' frames.
 * This API handles the special ReportInteropMD case which happens under the following conditions
     1. The dataFrame is at an `InlinedCallFrame`
-    2. The dataFrame is in a `SW_SKIPPED_FRAME` state
+    2. The dataFrame is in a `SkippedFrame` state
     3. The InlinedCallFrame's return address is managed code
     4. The InlinedCallFrame's return address method has a MDContext arg
 
@@ -564,9 +588,9 @@ The GC reference walk uses the `Filter` function to drive the stack walk. `Filte
 Key state tracked during the walk:
 
 - **IsInterrupted**: Set when transitioning to a managed frame from a `FaultingExceptionFrame` or `SoftwareExceptionFrame` (frames with `FRAME_ATTR_EXCEPTION`). When true, the managed frame's GC enumeration uses `ExecutionAborted` mode, which causes the GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
-- **LastProcessedFrameType**: Records the frame type when processing `SW_FRAME` state, so `UpdateState` can detect exception frames during the transition to `SW_FRAMELESS`.
+- **LastProcessedFrameType**: Records the frame type when processing `Frame` state, so `UpdateState` can detect exception frames during the transition to `Frameless`.
 - **IsFirst**: Preserved during skipped frame processing (native `SFITER_SKIPPED_FRAME_FUNCTION` does not modify `IsFirst`), ensuring the subsequent managed frame is still treated as the leaf/active frame.
-- **GetReturnAddress gating**: In `SW_FRAME` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
+- **GetReturnAddress gating**: In `Frame` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
 
 #### Per-Frame GC Enumeration
 
