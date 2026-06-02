@@ -1059,7 +1059,7 @@ namespace System.Tests
 
             // We assert these to ensure intrinsification preserves the information.
             Assert.Equal("value", exception.ParamName);
-            Assert.Equal("Non-negative number required.", exception.Message);
+            Assert.Equal("Non-negative number required. (Parameter 'value')", exception.Message);
         }
 
         //
