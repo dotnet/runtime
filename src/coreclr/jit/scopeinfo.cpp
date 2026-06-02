@@ -1815,12 +1815,8 @@ void CodeGen::genSetScopeInfo()
     {
         UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
 
-        m_compiler->eeSetLVinfo(
-            m_compiler->eeVarsCount++,
-            retOffset, retOffset + 1,
-            callReturnInfo.callILOffset,
-            ICorDebugInfo::CALL_RETURN_ILNUM,
-            callReturnInfo.returnValueLoc);
+        m_compiler->eeSetLVinfo(m_compiler->eeVarsCount++, retOffset, retOffset + 1, callReturnInfo.callILOffset,
+                                ICorDebugInfo::CALL_RETURN_ILNUM, callReturnInfo.returnValueLoc);
     }
 
     m_compiler->eeSetLVdone();

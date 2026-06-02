@@ -696,11 +696,11 @@ void Compiler::eeSetLVinfo(unsigned                          which,
 
     if (eeVars != nullptr)
     {
-        eeVars[which].startOffset = startOffs;
-        eeVars[which].endOffset   = endOffs;
-        eeVars[which].callReturnValueILOffset   = callReturnValueILOffset;
-        eeVars[which].varNumber   = varNum;
-        eeVars[which].loc         = varLoc;
+        eeVars[which].startOffset             = startOffs;
+        eeVars[which].endOffset               = endOffs;
+        eeVars[which].callReturnValueILOffset = callReturnValueILOffset;
+        eeVars[which].varNumber               = varNum;
+        eeVars[which].loc                     = varLoc;
     }
 }
 

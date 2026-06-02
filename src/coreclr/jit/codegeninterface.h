@@ -654,9 +654,9 @@ public:
 
     struct EmittedCallReturnInfo
     {
-        IL_OFFSET callILOffset;
+        IL_OFFSET    callILOffset;
         emitLocation returnLocation;
-        siVarLoc returnValueLoc;
+        siVarLoc     returnValueLoc;
     };
 
 public:

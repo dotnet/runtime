@@ -3293,8 +3293,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
     params.returnValueCall = call;
 
 #ifdef DEBUG

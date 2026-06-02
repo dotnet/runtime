@@ -6016,8 +6016,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
     params.returnValueCall = call;
 
 #ifdef DEBUG

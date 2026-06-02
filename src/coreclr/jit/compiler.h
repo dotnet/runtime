@@ -9563,7 +9563,7 @@ public:
 
     void eeGetVars();
 
-    unsigned eeVarsCount = 0;
+    unsigned eeVarsCount    = 0;
     unsigned eeVarsCapacity = 0;
 
     struct VarResultInfo

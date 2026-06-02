@@ -2475,8 +2475,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     ensureCurrentFuncIsUnwindable();
 
     EmitCallParams params;
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
     params.returnValueCall = call;
 
 #ifdef DEBUG

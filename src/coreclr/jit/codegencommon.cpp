@@ -1762,7 +1762,8 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
     JITDUMP("Emit ret val for [%06u]\n", call == nullptr ? 0 : Compiler::dspTreeID(call));
-    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) ||
+        params.isJump)
     {
         return;
     }
@@ -1782,7 +1783,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     retLoc.CaptureLocation(GetEmitter());
 
     CodeGenInterface::EmittedCallReturnInfo info;
-    info.callILOffset = di.GetRoot().GetLocation().GetOffset();
+    info.callILOffset   = di.GetRoot().GetLocation().GetOffset();
     info.returnLocation = retLoc;
 
     CallArg* retBuf = call->gtArgs.GetRetBufferArg();
@@ -1797,9 +1798,9 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
             return;
         }
 
-        unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-        int lclOffs = node->AsLclVarCommon()->GetLclOffs();
-        int stackLevelBias = 0;
+        unsigned lclNum         = node->AsLclVarCommon()->GetLclNum();
+        int      lclOffs        = node->AsLclVarCommon()->GetLclOffs();
+        int      stackLevelBias = 0;
 #ifdef TARGET_X86
         stackLevelBias = getCurrentStackLevel();
         if (params.argSize > 0)
@@ -1814,7 +1815,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     else if (call->HasMultiRegRetVal())
     {
         const ReturnTypeDesc* retDesc = call->GetReturnTypeDesc();
-        unsigned numRegs = retDesc->GetReturnRegCount();
+        unsigned              numRegs = retDesc->GetReturnRegCount();
         if (numRegs > 2)
         {
             // Cannot encode more than 2 registers.
@@ -1822,14 +1823,13 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 
         assert(numRegs == 2);
-        info.returnValueLoc.storeVariableInRegisters(
-            retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv()),
-            retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()));
+        info.returnValueLoc.storeVariableInRegisters(retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv()),
+                                                     retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()));
     }
     else if (varTypeIsFloating(call))
     {
 #ifdef TARGET_X86
-        info.returnValueLoc.vlType = VLT_FPSTK;
+        info.returnValueLoc.vlType         = VLT_FPSTK;
         info.returnValueLoc.vlFPstk.vlfReg = 0;
 #else
         info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
@@ -1846,7 +1846,8 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
     if (emittedCallReturnInfo == nullptr)
     {
-        emittedCallReturnInfo = new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
+        emittedCallReturnInfo = new (m_compiler, CMK_DebugInfo)
+            jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
     }
 
     emittedCallReturnInfo->push_back(info);
