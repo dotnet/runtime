@@ -23,8 +23,15 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         _target = target;
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
+        // They are safe to retain across FlushScope.ForwardExecution because
+        // ManagedTypeSource_1 only resolves names in System.Private.CoreLib, which
+        // is loaded into the non-collectible default AssemblyLoadContext at runtime
+        // startup and whose ECMA metadata never changes for the process lifetime.
+        if (scope != FlushScope.All)
+            return;
+
         _typeInfoCache.Clear();
         _typeHandleCache.Clear();
         _fieldDescCache.Clear();

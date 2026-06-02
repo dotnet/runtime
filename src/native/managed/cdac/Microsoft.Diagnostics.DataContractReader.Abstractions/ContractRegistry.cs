@@ -166,8 +166,9 @@ public abstract class ContractRegistry
         where TContract : IContract;
 
     /// <summary>
-    /// Flush all cached data held by contracts in this registry.
-    /// Called when the target process state may have changed (e.g. on resume).
+    /// Flush all cached data held by contracts in this registry for the given
+    /// <paramref name="scope"/>. Called when the target process state may have changed
+    /// (e.g. on resume) or as part of a stress-harness re-read of live target state.
     /// </summary>
-    public abstract void Flush();
+    public abstract void Flush(FlushScope scope);
 }

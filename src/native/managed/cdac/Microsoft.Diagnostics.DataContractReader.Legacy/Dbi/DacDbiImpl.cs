@@ -67,7 +67,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int FlushCache()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
         return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
     }
 
