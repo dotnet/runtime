@@ -138,6 +138,14 @@ public abstract class Target
     public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
+    /// Read a native signed integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
+    public abstract TargetNInt ReadNInt(ulong address);
+
+    /// <summary>
     /// Read a well known global from the target process as a string
     /// </summary>
     /// <param name="name">The name of the global</param>
