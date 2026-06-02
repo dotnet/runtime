@@ -59,7 +59,8 @@ public record struct ThreadData(
     TargetPointer CurrentCustomDebuggerNotificationHandle,
     bool LastThrownObjectIsUnhandled,
     bool HasUnhandledException,
-    TargetPointer NextThread);
+    TargetPointer NextThread,
+    TargetPointer ThreadHandle);
 
 public interface IThread : IContract
 {

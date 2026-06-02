@@ -351,6 +351,26 @@ public unsafe class ThreadTests
         Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_ThreadHandle(MockTarget.Architecture arch)
+    {
+        const ulong threadHandle = 0xABCD_1234;
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.ThreadHandle = threadHandle;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(new TargetPointer(threadHandle), data.ThreadHandle);
+    }
+
     public static IEnumerable<object[]> SetDebuggerControlledThreadStateData()
     {
         foreach (var arch in new MockTarget.StdArch())

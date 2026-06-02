@@ -185,7 +185,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -221,7 +221,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -260,7 +260,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -292,7 +292,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -327,7 +327,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -365,7 +365,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -401,7 +401,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -436,7 +436,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -474,7 +474,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -509,7 +509,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md != TargetPointer.Null)
