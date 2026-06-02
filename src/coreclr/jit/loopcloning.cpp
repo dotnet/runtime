@@ -171,7 +171,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case SpanAccess:
             return spanAccess.ToGenTree(comp);
         case Null:
-            return comp->gtNewIconNode(0, TYP_REF);
+            return comp->gtNewIconNode(0, lclType);
         case ClassHandle:
             return comp->gtNewIconHandleNode((size_t)clsHnd, GTF_ICON_CLASS_HDL);
         case IndirOfLocal:
@@ -247,16 +247,6 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 {
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
-
-    // Null guards use a TYP_REF null constant, but the local's type may have been
-    // changed from TYP_REF to a non-GC type (e.g. TYP_LONG) by earlier phases.
-    // Recast the zero constant to match the other operand's type so the comparison
-    // is well-typed; null (0) is valid for any pointer-sized type.
-    if (op2Tree->IsIntegralConst(0) && varTypeIsGC(op2Tree->TypeGet()) && !varTypeIsGC(op1Tree->TypeGet()) &&
-        varTypeIsI(op1Tree->TypeGet()))
-    {
-        op2Tree->gtType = op1Tree->TypeGet();
-    }
 
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
 
@@ -1003,7 +993,7 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
     {
         // For level 0, just push (a != null).
         (*conds)[level]->Push(LC_Condition(GT_NE, LC_Expr(LC_Ident::CreateVar(Lcl(), array.arrIndex->arrType)),
-                                           LC_Expr(LC_Ident::CreateNull())));
+                                           LC_Expr(LC_Ident::CreateNull(array.arrIndex->arrType))));
     }
     else
     {
@@ -1718,7 +1708,8 @@ bool Compiler::optComputeDerefConditions(FlowGraphNaturalLoop* loop, LoopCloneCo
             //
             LC_Ident& mtIndirIdent = (*objDeref)[i];
             LC_Ident  ident        = LC_Ident::CreateVar(mtIndirIdent.LclNum(), mtIndirIdent.lclType);
-            (*levelCond)[0]->Push(LC_Condition(GT_NE, LC_Expr(ident), LC_Expr(LC_Ident::CreateNull())));
+            (*levelCond)[0]->Push(
+                LC_Condition(GT_NE, LC_Expr(ident), LC_Expr(LC_Ident::CreateNull(mtIndirIdent.lclType))));
         }
     }
 

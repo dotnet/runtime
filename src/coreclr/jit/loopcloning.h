@@ -738,9 +738,11 @@ public:
         return id;
     }
 
-    static LC_Ident CreateNull()
+    static LC_Ident CreateNull(var_types nullType = TYP_REF)
     {
-        return LC_Ident(Null);
+        LC_Ident ident(Null);
+        ident.lclType = nullType;
+        return ident;
     }
 
     static LC_Ident CreateClassHandle(CORINFO_CLASS_HANDLE clsHnd)
