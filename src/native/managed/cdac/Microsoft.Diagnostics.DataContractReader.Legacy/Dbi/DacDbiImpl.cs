@@ -1404,11 +1404,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
     {
-        *pTargetBuffer = default;
-        *pLocalSigToken = (uint)EcmaMetadataUtils.TokenType.mdtSignature;
         int hr = HResults.S_OK;
         try
         {
+            *pTargetBuffer = default;
+            *pLocalSigToken = (uint)EcmaMetadataUtils.TokenType.mdtSignature;
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
 
@@ -1430,7 +1430,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (!rts.IsIL(mdHandle))
                     throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
             }
-
             else if (methodDef.RelativeVirtualAddress == 0)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
 
