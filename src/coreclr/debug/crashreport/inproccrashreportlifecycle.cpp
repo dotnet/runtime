@@ -172,7 +172,13 @@ InProcCrashReportLifecycle::PruneExistingReports(int32_t maxFileCount)
         }
 
         // The kept set is full, so this entry competes with the current oldest
-        // kept report: unlink the older of the two and keep the newer.
+        // kept report: unlink the older of the two and keep the newer. A linear
+        // FindOldestReportIndex scan is used rather than a timestamp-ordered heap:
+        // the array holds at most maxFileCount entries (a small bound), this runs
+        // once at init, and the directory is pruned to the bound on every init so
+        // the scanned count stays near the bound in steady state. A min-heap would
+        // perform better but adds an <algorithm> dependency and heap bookkeeping
+        // for no measurable gain here.
         size_t oldestIndex = FindOldestReportIndex(kept, keptCount);
         if (CompareFileInfo(&kept[oldestIndex], &info) < 0)
         {
@@ -231,7 +237,10 @@ InProcCrashReportLifecycle::PrepareReportFile(
     // Delete the cached over-retention report (if any) before opening the temp
     // file, freeing a slot so the completed set stays at the bound. A later write
     // failure intentionally does not restore it.
-    DeleteCachedReport();
+    if (m_cachedOldestReport.value[0] != '\0')
+    {
+        unlink(m_cachedOldestReport.value);
+    }
 
     if (!BuildReportPaths(formatter, reportFilePath, reportFilePathSize, m_tempReportFilePath, sizeof(m_tempReportFilePath), timestampNs, pid))
     {
@@ -312,15 +321,6 @@ InProcCrashReportLifecycle::BuildReportPaths(
     size_t tempPos = 0;
     return CrashReportStringUtils::AppendString(tempReportFilePath, tempReportFilePathSize, &tempPos, reportFilePath) &&
         CrashReportStringUtils::AppendString(tempReportFilePath, tempReportFilePathSize, &tempPos, CrashReportTempExtension);
-}
-
-void
-InProcCrashReportLifecycle::DeleteCachedReport()
-{
-    if (m_cachedOldestReport.value[0] != '\0')
-    {
-        unlink(m_cachedOldestReport.value);
-    }
 }
 
 bool
@@ -471,6 +471,10 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
     return writable;
 }
 
+// Parses a single unsigned filename component, advancing *value past the digits
+// consumed. strtoull skips leading whitespace and accepts a leading '+'/'-' sign,
+// so a leading-digit guard is kept up front to stop malformed names from matching
+// the report-<timestamp>-<pid> pattern.
 static bool TryParseUnsigned(
     const char** value,
     uint64_t* result)
@@ -481,21 +485,16 @@ static bool TryParseUnsigned(
         return false;
     }
 
-    uint64_t parsed = 0;
-    do
+    errno = 0;
+    char* end = nullptr;
+    unsigned long long parsed = strtoull(current, &end, 10);
+    if (errno == ERANGE)
     {
-        uint64_t digit = static_cast<uint64_t>(*current - '0');
-        if (parsed > (UINT64_MAX - digit) / 10)
-        {
-            return false;
-        }
+        return false;
+    }
 
-        parsed = parsed * 10 + digit;
-        current++;
-    } while (*current >= '0' && *current <= '9');
-
-    *value = current;
-    *result = parsed;
+    *value = end;
+    *result = static_cast<uint64_t>(parsed);
     return true;
 }
 

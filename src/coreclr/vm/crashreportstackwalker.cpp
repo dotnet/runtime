@@ -711,12 +711,12 @@ CrashReportConfigure()
 
     CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
     const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
-    bool lifecycleRootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
+    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
 
     InProcCrashReporterSettings settings = {};
-    if (lifecycleRootConfigured)
+    if (rootConfigured)
     {
-        settings.lifecycleRootPath = crashReportRootPath;
+        settings.reportRootPath = crashReportRootPath;
         settings.maxFileCount = GetCrashReportMaxFileCount();
     }
 

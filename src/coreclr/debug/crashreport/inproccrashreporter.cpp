@@ -745,9 +745,9 @@ InProcCrashReporter::Initialize(
     // File output is produced only through the lifecycle-managed report
     // directory. When no root is configured the reporter still runs, emitting
     // compact console logs without writing a JSON report file.
-    if (settings.lifecycleRootPath != nullptr && settings.lifecycleRootPath[0] != '\0')
+    if (settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
     {
-        m_lifecycle.Initialize(settings.lifecycleRootPath, settings.maxFileCount);
+        m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
     }
 
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)

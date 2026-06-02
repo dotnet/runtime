@@ -22,7 +22,7 @@
 //   * Crash/signal path -- invoked from the crash signal handler. Must be
 //     async-signal-safe and allocation-free. Only these members run there:
 //     IsReportFileOutputEnabled, PrepareReportFile, FinishReportFile,
-//     BuildReportPaths, DeleteCachedReport, and the shared AppendPathComponent.
+//     BuildReportPaths, and the shared AppendPathComponent.
 //     Each is marked accordingly below.
 class InProcCrashReportLifecycle
 {
@@ -101,10 +101,6 @@ private:
         size_t tempReportFilePathSize,
         uint64_t timestamp,
         uint32_t pid);
-
-    // Unlinks the cached over-retention report selected during Initialize, if any.
-    // Crash-path.
-    void DeleteCachedReport();
 
     // Appends component as a new path segment (inserting a single '/' separator as
     // needed). Allocation-free; used by both the init and crash paths.
