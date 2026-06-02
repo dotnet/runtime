@@ -381,8 +381,10 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>
         ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object instance's type.  It also
-        ///     checks to ensure all properties marked with <see cref="RequiredAttribute" /> are set.  It does not validate the
-        ///     property values of the object.
+        ///     checks to ensure all properties marked with <see cref="RequiredAttribute" /> are set.  It does not validate
+        ///     the <see cref="ValidationAttribute" />s on individual properties of the object unless
+        ///     <see cref="TryValidateObjectAsync(object, ValidationContext, ICollection{ValidationResult}?, bool, CancellationToken)" />
+        ///     is called with <c>validateAllProperties</c> set to <see langword="true" />.
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
         /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
@@ -667,11 +669,16 @@ namespace System.ComponentModel.DataAnnotations
             // Step 3: Test for IAsyncValidatableObject implementation (preferred), fall back to IValidatableObject
             if (instance is IAsyncValidatableObject asyncValidatable)
             {
-                await foreach (ValidationResult result in asyncValidatable.ValidateAsync(validationContext, cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerable<ValidationResult>? results = asyncValidatable.ValidateAsync(validationContext, cancellationToken);
+
+                if (results is not null)
                 {
-                    if (result != ValidationResult.Success)
+                    await foreach (ValidationResult result in results.ConfigureAwait(false))
                     {
-                        errors.Add(new ValidationError(null, instance, result));
+                        if (result != ValidationResult.Success)
+                        {
+                            errors.Add(new ValidationError(null, instance, result));
+                        }
                     }
                 }
             }

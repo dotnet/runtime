@@ -16,7 +16,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private readonly Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = [];
     private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _metadata.Clear();
         _readOnlyMetadataAddress.Clear();

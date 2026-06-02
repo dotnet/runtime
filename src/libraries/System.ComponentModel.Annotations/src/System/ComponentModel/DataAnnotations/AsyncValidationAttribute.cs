@@ -45,7 +45,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to validate.</param>
         /// <param name="validationContext">
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
-        ///     such as the object and member being validated.
+        ///     such as the object and member being validated. Provides access to services required to perform
+        ///     validation using <see cref="IServiceProvider" />.
         /// </param>
         /// <returns>
         ///     <see cref="ValidationResult.Success" /> when validation is valid.
@@ -59,12 +60,13 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to validate.</param>
         /// <param name="validationContext">
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
-        ///     such as the object and member being validated.
+        ///     such as the object and member being validated. Provides access to services required to perform
+        ///     validation using <see cref="IServiceProvider" />.
         /// </param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>
         ///     A <see cref="Task{ValidationResult}" /> representing the asynchronous validation operation.
-        ///     When validation is valid, the result is <see langword="null" /> (i.e. <see cref="ValidationResult.Success" />).
+        ///     When validation is valid, the result is <see cref="ValidationResult.Success" />.
         ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
         protected abstract Task<ValidationResult?> IsValidAsync(
@@ -92,12 +94,13 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to validate.</param>
         /// <param name="validationContext">
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
-        ///     such as the object and member being validated.
+        ///     such as the object and member being validated. Provides access to services required to perform
+        ///     validation using <see cref="IServiceProvider" />.
         /// </param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>
         ///     A <see cref="Task{ValidationResult}" /> representing the asynchronous validation operation.
-        ///     When validation is valid, the result is <see langword="null" /> (i.e. <see cref="ValidationResult.Success" />).
+        ///     When validation is valid, the result is <see cref="ValidationResult.Success" />.
         ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
