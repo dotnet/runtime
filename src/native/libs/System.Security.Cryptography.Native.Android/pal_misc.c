@@ -5,6 +5,7 @@
 #include "pal_jni.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <unistd.h>
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void)
@@ -15,7 +16,11 @@ int32_t CryptoNative_EnsureOpenSslInitialized(void)
 int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 {
     abort_unless(buff != NULL, "The 'buff' parameter must be a valid pointer");
-    abort_unless(len >= 0, "The 'len' parameter must not be negative");
+    if (len < 0)
+    {
+        LOG_ERROR("Invalid random byte count: %d", len);
+        return FAIL;
+    }
 
     int flags = O_RDONLY;
 #ifdef O_CLOEXEC
@@ -52,6 +57,11 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     while (offset != length)
     {
         size_t remaining = length - offset;
+        if (remaining > SSIZE_MAX)
+        {
+            remaining = SSIZE_MAX;
+        }
+
         ssize_t n = read(fd, buff + offset, remaining);
         if (n == -1)
         {
@@ -77,7 +87,12 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
         offset += (size_t)n;
     }
 
-    close(fd);
+    if (close(fd) == -1)
+    {
+        LOG_ERROR("Unable to close /dev/urandom: %d", errno);
+        return FAIL;
+    }
+
     return SUCCESS;
 }
 
