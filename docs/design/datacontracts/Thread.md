@@ -77,7 +77,6 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
 bool IsInteropDebuggingHijacked(TargetPointer threadPointer);
 TargetPointer GetDebuggerFilterContext(TargetPointer threadPointer);
-TargetPointer GetRedirectedContext(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -413,16 +412,10 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
     if (target.TryGetThreadContext(osId, contextFlags, bytes))
         return bytes;
 
-    // Derive a context from the explicit Frame chain stored in the Thread (sufficient for managed
-    // debugging stack walks). Walk the Frame chain and pick the first
-    // frame that yields a usable context:
-    //   * If it is an InterpreterFrame, fill the context from the top
-    //     InterpMethodContextFrame.
-    //   * Otherwise, update the context from the frame and accept it when both
-    //     StackPointer and InstructionPointer are non-zero. Mark the resulting
-    //     context flags as full so callers know SP/PC/FP are valid.
-    // If no frame supplies a usable context (thread is not running managed code),
-    // return a zeroed context.
+    // Fall back to deriving a context from the explicit Frame chain stored in the Thread
+    // object (sufficient for managed debugging stack walks).
+    ThreadData threadData = GetThreadData(threadPointer);
+    return target.Contracts.StackWalk.GetContextFromFrames(threadData);
 }
 
 bool IsInteropDebuggingHijacked(TargetPointer threadPointer)
@@ -434,19 +427,4 @@ TargetPointer GetDebuggerFilterContext(TargetPointer threadPointer)
 {
     return target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
 }
-
-TargetPointer GetRedirectedContext(TargetPointer threadPointer)
-{
-    // Frame handling and ResumableFrame descriptors are defined in the StackWalk contract.
-    TargetPointer framePointer = target.ReadPointer(threadPointer + /* Thread::Frame offset */);
-    // If the frame is valid and its type is RedirectedThreadFrame, read the ResumableFrame and return the context pointer.
-    if (IsFrameValid(framePointer) && GetFrameType(framePointer) == FrameType.RedirectedThreadFrame)
-    {
-        TargetPointer contextPtr = target.ReadPointer(framePointer + /* ResumableFrame::TargetContextPtr offset */);
-        return contextPtr;
-    }
-    return TargetPointer.Null;
-}
-
 ```
-

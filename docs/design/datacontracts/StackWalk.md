@@ -67,6 +67,12 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 // Walks the stack and returns all GC references found on each frame.
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
+
+// Walks the thread's explicit (capital-F) Frame chain and looks for a thread context.
+byte[] GetContextFromFrames(ThreadData threadData);
+
+// Returns the saved TargetContext pointer carried by the head Frame, if applicable.
+TargetPointer GetRedirectedContextPointer(ThreadData threadData);
 ```
 
 ## Version 1
@@ -576,6 +582,14 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 ```
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
+
+The `GetContextFromFrames`implementation walks the Frame chain (`Thread::Frame` linked list) and returns the first frame that yields a usable context:
+* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
+* Otherwise, clear the context and update it from the current Frame; accept the context when both the stack pointer and instruction pointer are non-zero (e.g. `RedirectedThreadFrame`, `InlinedCallFrame`, `DynamicHelperFrame`). Mark `RawContextFlags = FullContextFlags` so callers know SP/PC/FP are valid.
+
+If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
+
+`GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
 ### GC Stack Reference Scanning
 

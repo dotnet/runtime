@@ -918,6 +918,53 @@ internal partial class StackWalk_1 : IStackWalk
         return new DebuggerEvalData(debuggerEval.MethodToken, debuggerEval.AssemblyPtr);
     }
 
+    byte[] IStackWalk.GetContextFromFrames(ThreadData threadData)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+
+        FrameIterator iterator = new FrameIterator(_target, threadData);
+        while (iterator.IsValid())
+        {
+            // For InterpreterFrame, fill the context from the top InterpMethodContextFrame
+            // (matches native InterpreterFrame::SetContextToInterpMethodContextFrame).
+            if (iterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
+            {
+                context.Clear();
+                _frameHelpers.UpdateContextFromFrame(iterator.CurrentFrame, context);
+                return context.GetBytes();
+            }
+
+            // For other frames, look for the first (deepest) frame that yields a context
+            // with both SP and PC set (e.g. RedirectedThreadFrame, InlinedCallFrame,
+            // DynamicHelperFrame).
+            context.Clear();
+            _frameHelpers.UpdateContextFromFrame(iterator.CurrentFrame, context);
+            if (context.StackPointer.Value != 0 && context.InstructionPointer.Value != 0)
+            {
+                context.RawContextFlags = context.FullContextFlags;
+                return context.GetBytes();
+            }
+
+            iterator.Next();
+        }
+
+        // The thread is not running managed code: return a zeroed context.
+        context.Clear();
+        return context.GetBytes();
+    }
+
+    TargetPointer IStackWalk.GetRedirectedContextPointer(ThreadData threadData)
+    {
+        FrameIterator iterator = new FrameIterator(_target, threadData);
+        if (iterator.IsValid() && iterator.GetCurrentFrameType() == FrameType.RedirectedThreadFrame)
+        {
+            Data.ResumableFrame rf = _target.ProcessedData.GetOrAdd<Data.ResumableFrame>(iterator.CurrentFrameAddress);
+            return rf.TargetContextPtr;
+        }
+
+        return TargetPointer.Null;
+    }
+
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
         TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);

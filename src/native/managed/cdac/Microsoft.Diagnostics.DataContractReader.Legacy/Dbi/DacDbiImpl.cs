@@ -1212,7 +1212,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 }
                 else
                 {
-                    TargetPointer redirectedContext = threadContract.GetRedirectedContext(vmThread);
+                    IStackWalk sw = _target.Contracts.StackWalk;
+                    Contracts.ThreadData threadData = threadContract.GetThreadData(vmThread);
+                    TargetPointer redirectedContext = sw.GetRedirectedContextPointer(threadData);
                     if (redirectedContext != TargetPointer.Null)
                     {
                         *pRetVal = redirectedContext.Value;

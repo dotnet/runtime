@@ -81,7 +81,6 @@ public interface IThread : IContract
     byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
     bool IsInteropDebuggingHijacked(TargetPointer threadPointer) => throw new NotImplementedException();
     TargetPointer GetDebuggerFilterContext(TargetPointer threadPointer) => throw new NotImplementedException();
-    TargetPointer GetRedirectedContext(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread
