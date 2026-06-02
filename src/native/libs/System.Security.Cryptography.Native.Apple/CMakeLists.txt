@@ -113,7 +113,6 @@ endfunction()
 # Swift classes are registered with process-global ObjC runtime names. Build the
 # shared library and static archive with different module names so both can load
 # into the same process without duplicate Swift class registrations.
-compile_swiftbindings_object(pal_swiftbindings_shared.o pal_swiftbindings shared)
 compile_swiftbindings_object(pal_swiftbindings_static.o pal_swiftbindings_static static)
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
@@ -129,6 +128,8 @@ if (CLR_CMAKE_TARGET_TVOS)
 endif()
 
 if (GEN_SHARED_LIB)
+    compile_swiftbindings_object(pal_swiftbindings_shared.o pal_swiftbindings shared)
+
     add_library(System.Security.Cryptography.Native.Apple
         SHARED
         ${NATIVECRYPTO_SOURCES}
