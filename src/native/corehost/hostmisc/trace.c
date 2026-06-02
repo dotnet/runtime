@@ -297,7 +297,7 @@ bool trace_enable(void)
     trace_lock_release();
 
     if (file_open_error)
-        trace_error(_X("Unable to open specified trace file for writing: %s"), tracefile_str);
+        trace_error(_X("Unable to open specified trace file for writing: %s"), tracefile_path_to_open != NULL ? tracefile_path_to_open : tracefile_str);
 
     free(tracefile_str);
     return true;
