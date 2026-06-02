@@ -209,7 +209,8 @@ namespace ILCompiler.ObjectWriter
             {
                 fixed (byte* pData = data)
                 {
-                    Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size);
+                    long adjustedAddend = addend + Relocation.ReadValue(relocType, (void*)pData);
+                    Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size + adjustedAddend);
                 }
             }
             else

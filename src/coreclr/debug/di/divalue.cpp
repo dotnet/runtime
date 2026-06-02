@@ -2440,6 +2440,46 @@ HRESULT CordbObjectValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThread
                                                         ppThreadEnum);
 }
 
+namespace
+{
+    struct ExceptionStackFrameAccumulator
+    {
+        CQuickArrayList<DacExceptionCallStackData> frames;
+        HRESULT                                    hrError;
+    };
+
+    void ExceptionStackFrameCallback(
+        VMPTR_AppDomain vmAppDomain,
+        VMPTR_Assembly vmAssembly,
+        CORDB_ADDRESS ip,
+        mdMethodDef methodDef,
+        BOOL isLastForeignExceptionFrame,
+        CALLBACK_DATA pUserData)
+    {
+        ExceptionStackFrameAccumulator *acc =
+            reinterpret_cast<ExceptionStackFrameAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        DacExceptionCallStackData frame;
+        frame.vmAppDomain = vmAppDomain;
+        frame.vmAssembly = vmAssembly;
+        frame.ip = ip;
+        frame.methodDef = methodDef;
+        frame.isLastForeignExceptionFrame = isLastForeignExceptionFrame;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->frames.Push(frame);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum)
 {
     if (!ppCallStackEnum)
@@ -2458,17 +2498,22 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
     VMPTR_Object vmObj;
     IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
 
-    DacDbiArrayList<DacExceptionCallStackData> dacStackFrames;
+    ExceptionStackFrameAccumulator acc;
+    acc.hrError = S_OK;
 
-    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, &dacStackFrames));
-    int stackFramesLength = dacStackFrames.Count();
+    HRESULT hrEnum = pDAC->EnumerateStackFramesFromException(vmObj, &ExceptionStackFrameCallback, &acc);
+    if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+        hrEnum = acc.hrError;
+    IfFailThrow(hrEnum);
+
+    int stackFramesLength = (int)acc.frames.Size();
 
     if (stackFramesLength > 0)
     {
         pStackFrames = new CorDebugExceptionObjectStackFrame[stackFramesLength];
         for (int index = 0; index < stackFramesLength; ++index)
         {
-            DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
+            DacExceptionCallStackData& currentDacFrame = acc.frames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();
@@ -2635,39 +2680,17 @@ HRESULT CordbObjectValue::IsDelegate()
     return hr;
 }
 
-HRESULT IsSupportedDelegateHelper(IDacDbiInterface::DelegateType delType)
-{
-    switch (delType)
-    {
-    case IDacDbiInterface::DelegateType::kClosedDelegate:
-    case IDacDbiInterface::DelegateType::kOpenDelegate:
-        return S_OK;
-    default:
-        return CORDBG_E_UNSUPPORTED_DELEGATE;
-    }
-}
-
 HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
 {
-    IDacDbiInterface::DelegateType delType;
     VMPTR_Object pDelegateObj;
     VMPTR_Object pDelegateTargetObj;
-    VMPTR_AppDomain pAppDomainOfTarget;
 
     CORDB_ADDRESS delegateAddr = m_valueHome.GetAddress();
 
     IDacDbiInterface *pDAC = GetProcess()->GetDAC();
     IfFailThrow(pDAC->GetObject(delegateAddr, &pDelegateObj));
 
-    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
-    if (hr != S_OK)
-        return hr;
-
-    hr = IsSupportedDelegateHelper(delType);
-    if (hr != S_OK)
-        return hr;
-
-    hr = pDAC->GetDelegateTargetObject(delType, pDelegateObj, &pDelegateTargetObj, &pAppDomainOfTarget);
+    HRESULT hr = pDAC->GetDelegateTargetObject(pDelegateObj, &pDelegateTargetObj);
     if (hr != S_OK || pDelegateTargetObj.IsNull())
     {
         *ppTarget = NULL;
@@ -2685,7 +2708,6 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
 
 HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
 {
-    IDacDbiInterface::DelegateType delType;
     VMPTR_Object pDelegateObj;
 
     *ppFunction = NULL;
@@ -2694,21 +2716,13 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
     IDacDbiInterface *pDAC = GetProcess()->GetDAC();
     IfFailThrow(pDAC->GetObject(delegateAddr, &pDelegateObj));
 
-    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
-    if (hr != S_OK)
-        return hr;
-
-    hr = IsSupportedDelegateHelper(delType);
-    if (hr != S_OK)
-        return hr;
-
     RSSmartPtr<CordbFunction> func;
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
         VMPTR_Assembly functionAssembly;
         mdMethodDef functionMethodDef = 0;
-        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionAssembly, &functionMethodDef);
+        HRESULT hr = pDAC->GetDelegateFunctionData(pDelegateObj, &functionAssembly, &functionMethodDef);
         if (hr != S_OK)
             return hr;
 

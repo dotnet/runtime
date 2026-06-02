@@ -3,17 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderHeap : IData<LoaderHeap>
+[CdacType(nameof(DataType.LoaderHeap))]
+internal sealed partial class LoaderHeap : IData<LoaderHeap>
 {
-    static LoaderHeap IData<LoaderHeap>.Create(Target target, TargetPointer address)
-        => new LoaderHeap(target, address);
-
-    public LoaderHeap(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderHeap);
-
-        FirstBlock = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstBlock)].Offset);
-    }
-
-    public TargetPointer FirstBlock { get; init; }
+    [Field] public TargetPointer FirstBlock { get; }
 }
