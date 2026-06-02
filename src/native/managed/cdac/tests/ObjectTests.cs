@@ -59,6 +59,7 @@ public unsafe class ObjectTests
             [DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout),
             [DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout),
             [DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout),
+            [DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout),
             [DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout),
             [DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout),
             [DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout),
@@ -299,5 +300,89 @@ public unsafe class ObjectTests
         int hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), 0, null, &needed);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal((uint)"<Unloaded Type>".Length + 1, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Closed(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestTarget = 0x00000000_10000400;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: TestTarget,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: 0,
+                    invocationCount: 0);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Closed, info.DelegateType);
+        Assert.Equal(TestTarget, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtr, info.TargetMethodPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Open(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        const ulong TestMethodPtrAux = 0x00000000_bbbb0000;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: 0,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: TestMethodPtrAux,
+                    invocationCount: 0);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Open, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtrAux, info.TargetMethodPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Multicast(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        const long TestInvocationCount = 3;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: 0,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: 0,
+                    invocationCount: TestInvocationCount);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Unknown, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(0ul, info.TargetMethodPtr.Value);
     }
 }

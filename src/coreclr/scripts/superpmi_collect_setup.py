@@ -656,7 +656,7 @@ def main(main_args):
         if coreclr_args.collection_name == "corelib":
             # corelib is a single-assembly crossgen2 collection over a pre-built
             # System.Private.CoreLib.dll. The YAML routes InputDirectory to:
-            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release)
+            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release/IL)
             #     for wasm cross-target collections, or
             #   - the host release Core_Root for non-cross-target collections.
             # Build a custom one-file input directory so the partitioning logic produces
