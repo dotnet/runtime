@@ -9,16 +9,21 @@ fi
 library=$1
 nmCommand=$2
 
+if ! nmOutput=$("$nmCommand" -m "$library"); then
+  echo "ERROR: failed to inspect $library for Swift ObjC class definitions." >&2
+  exit 2
+fi
+
 IFS=$'\n'
 swiftObjCClasses=()
-for line in $($nmCommand -m "$library"); do
+while IFS= read -r line; do
   # Swift classes are registered as ObjC classes with process-global names. Local
   # definitions in this library can collide if another copy is loaded into the
   # same process, so keep Swift bindings limited to value types and functions.
   if [[ $line != *"(undefined)"* && $line =~ (__DATA__TtC|__METACLASS_DATA__TtC|__IVARS__TtC|_OBJC_CLASS_\$__TtC) ]]; then
     swiftObjCClasses+=("$line")
   fi
-done
+done <<< "$nmOutput"
 
 if (( ${#swiftObjCClasses[@]} != 0 )); then
   echo "ERROR: $library contains Swift ObjC class definitions." >&2
