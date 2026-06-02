@@ -105,9 +105,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EvpAeadCipherUpdate(
             SafeEvpCipherCtxHandle ctx,
-            ref byte @out,
+            Span<byte> output,
             out int outl,
-            ref byte @in,
+            ReadOnlySpan<byte> input,
             int inl,
             [MarshalAs(UnmanagedType.Bool)] out bool authTagMismatch);
 
@@ -120,9 +120,9 @@ internal static partial class Interop
         {
             return EvpAeadCipherUpdate(
                 ctx,
-                ref MemoryMarshal.GetReference(output),
+                output,
                 out bytesWritten,
-                ref MemoryMarshal.GetReference(input),
+                input,
                 input.Length,
                 out authTagMismatch);
         }
