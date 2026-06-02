@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     /// <summary>
     /// Provides the prepared arguments for starting a process via a user-supplied callback.
     /// This class is populated by the <see cref="Process.Start(ProcessStartInfo, Func{ProcessStartArguments, SafeProcessHandle})"/> method
-    /// with the resolved file name, command-line arguments, environment variables, and standard I/O handles.
+    /// with the resolved executable path, command-line arguments, environment variables, and standard I/O handles.
     /// The user's callback receives this instance and is responsible for invoking the appropriate system call to create the process.
     /// </summary>
     public sealed class ProcessStartArguments
@@ -16,11 +17,19 @@ namespace System.Diagnostics
         public ProcessStartArguments() { }
 
         /// <summary>
-        /// Gets or sets the resolved file name of the process to start.
-        /// On Windows, this is <see langword="null"/> (the file name is embedded in <see cref="Arguments"/>).
-        /// On Unix, this is the resolved absolute path to the executable.
+        /// Gets or sets a pointer to the resolved absolute executable path encoded as null-terminated UTF-8.
         /// </summary>
-        public string? FileName { get; set; }
+        /// <value>
+        /// A pointer to a null-terminated UTF-8 encoded string representing the resolved absolute executable path.
+        /// </value>
+        /// <remarks>
+        /// The memory pointed to by this property is only valid for the duration of the callback invocation.
+        /// This property is writable to allow callback implementations to override the resolved path when needed.
+        /// Do not cache or use this pointer after the callback returns.
+        /// </remarks>
+        [CLSCompliant(false)]
+        [UnsupportedOSPlatform("windows")]
+        public unsafe byte* ResolvedPath { get; set; }
 
         /// <summary>
         /// Gets or sets a pointer to the command-line arguments for the process.

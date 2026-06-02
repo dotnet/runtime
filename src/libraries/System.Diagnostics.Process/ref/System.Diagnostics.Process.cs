@@ -299,7 +299,9 @@ namespace System.Diagnostics
         public unsafe void* Arguments { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         public unsafe void* EnvironmentVariables { get { throw null; } set { } }
-        public string? FileName { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public unsafe byte* ResolvedPath { get { throw null; } set { } }
         public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } set { } }
         public System.IntPtr StandardError { get { throw null; } set { } }
         public System.IntPtr StandardInput { get { throw null; } set { } }

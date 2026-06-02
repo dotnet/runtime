@@ -234,12 +234,24 @@ namespace Microsoft.Win32.SafeHandles
             string[] argv = ProcessUtils.ParseArgv(startInfo);
             bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
             byte** argvPtr = null, envpPtr = null;
+            byte* resolvedPathBufferPtr = null;
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
 
             try
             {
                 Interop.Sys.AllocArgvArray(argv, ref argvPtr);
                 Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
+
+                int resolvedPathByteCount = Encoding.UTF8.GetByteCount(resolvedFileName);
+                // Keep small paths on the stack, while avoiding excessive stack usage for long executable paths.
+                const int ResolvedPathStackBufferSize = 256;
+                Span<byte> resolvedPathBuffer = resolvedPathByteCount + 1 <= ResolvedPathStackBufferSize
+                    ? stackalloc byte[resolvedPathByteCount + 1]
+                    : new Span<byte>(resolvedPathBufferPtr = (byte*)NativeMemory.Alloc((nuint)(resolvedPathByteCount + 1)), resolvedPathByteCount + 1);
+
+                int resolvedPathBytesWritten = Encoding.UTF8.GetBytes(resolvedFileName, resolvedPathBuffer);
+                Debug.Assert(resolvedPathBytesWritten == resolvedPathByteCount);
+                resolvedPathBuffer[resolvedPathBytesWritten] = (byte)0;
 
                 int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
 
@@ -261,41 +273,44 @@ namespace Microsoft.Win32.SafeHandles
                     stderrRawFd = stderrHandle.DangerousGetHandle().ToInt32();
                 }
 
-                ProcessStartArguments args = new()
+                fixed (byte* resolvedPathPtr = resolvedPathBuffer)
                 {
-                    FileName = resolvedFileName,
-                    Arguments = argvPtr,
-                    EnvironmentVariables = envpPtr,
-                    StandardInput = stdinRawFd,
-                    StandardOutput = stdoutRawFd,
-                    StandardError = stderrRawFd,
-                    ProcessStartInfo = startInfo,
-                };
-
-                // Lock to avoid races with OnSigChild
-                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-                ProcessUtils.s_processStartLock.EnterReadLock();
-
-                try
-                {
-                    if (usesTerminal)
+                    ProcessStartArguments args = new()
                     {
-                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
-                        configuredTerminal = true;
-                    }
+                        ResolvedPath = resolvedPathPtr,
+                        Arguments = argvPtr,
+                        EnvironmentVariables = envpPtr,
+                        StandardInput = stdinRawFd,
+                        StandardOutput = stdoutRawFd,
+                        StandardError = stderrRawFd,
+                        ProcessStartInfo = startInfo,
+                    };
 
-                    SafeProcessHandle processHandle = callback(args);
-                    if (processHandle is null || processHandle.IsInvalid)
+                    // Lock to avoid races with OnSigChild
+                    // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                    ProcessUtils.s_processStartLock.EnterReadLock();
+
+                    try
                     {
-                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
-                    }
+                        if (usesTerminal)
+                        {
+                            ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                            configuredTerminal = true;
+                        }
 
-                    waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
-                    return processHandle;
-                }
-                finally
-                {
-                    ProcessUtils.s_processStartLock.ExitReadLock();
+                        SafeProcessHandle processHandle = callback(args);
+                        if (processHandle is null || processHandle.IsInvalid)
+                        {
+                            throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                        }
+
+                        waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
+                        return processHandle;
+                    }
+                    finally
+                    {
+                        ProcessUtils.s_processStartLock.ExitReadLock();
+                    }
                 }
             }
             catch
@@ -327,6 +342,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 NativeMemory.Free(envpPtr);
                 NativeMemory.Free(argvPtr);
+                NativeMemory.Free(resolvedPathBufferPtr);
             }
         }
 

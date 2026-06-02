@@ -383,7 +383,6 @@ namespace Microsoft.Win32.SafeHandles
 
                 ProcessStartArguments args = new()
                 {
-                    FileName = null, // On Windows, the file name is embedded in the command line
                     StandardInput = stdin,
                     StandardOutput = stdout,
                     StandardError = stderr,

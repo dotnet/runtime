@@ -50,11 +50,7 @@ namespace System.Diagnostics.Tests
                         Redirect(fileActionsBuffer, args.StandardError, 2);
 
                         int pid;
-                        byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(args.FileName! + '\0');
-                        fixed (byte* pathPtr = pathBytes)
-                        {
-                            result = posix_spawn(&pid, pathPtr, fileActionsBuffer, null, (byte**)args.Arguments, (byte**)args.EnvironmentVariables);
-                        }
+                        result = posix_spawn(&pid, args.ResolvedPath, fileActionsBuffer, null, (byte**)args.Arguments, (byte**)args.EnvironmentVariables);
 
                         if (result != 0)
                         {
