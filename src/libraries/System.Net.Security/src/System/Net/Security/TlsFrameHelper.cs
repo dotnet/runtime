@@ -211,7 +211,9 @@ namespace System.Net.Security
             }
             else
             {
+                // unknown format
                 header.Length = -1;
+                return false;
             }
 
             return true;

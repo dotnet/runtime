@@ -758,5 +758,29 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
+
+        [Fact]
+        public async Task MalformedPacketsDuringHandshake_ThrowsIOException()
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedStreams();
+
+            using (client)
+            using (server)
+            using (var clientSslStream = new SslStream(client, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(server))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false) }, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate }, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                // Write malformed data to the server stream to cause the handshake to fail.
+                byte[] payload = [21, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+                await client.WriteAsync(payload);
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverSslStream.NegotiateClientCertificateAsync());
+            }
+        }
     }
 }
