@@ -5,9 +5,6 @@
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
-    
-    <!-- Enable the PlatformDocAnalyzer by default for src projects. -->
-    <EnablePlatformDocAnalyzer Condition="'$(EnablePlatformDocAnalyzer)' == '' and '$(IsSourceProject)' == 'true' and '$(RunAnalyzers)' != 'false'">true</EnablePlatformDocAnalyzer>
   </PropertyGroup>
 
   <!-- Enable native ARM64 execution for .NET Framework test projects on ARM64 devices -->

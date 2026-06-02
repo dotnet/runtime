@@ -32,7 +32,7 @@
 
   <!-- PlatformDocAnalyzer: Enforce documentation conventions for platform-specific libraries.
        Opt-in via EnablePlatformDocAnalyzer; src/libraries enables this by default for src projects. -->
-  <ItemGroup Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj'">
+  <ItemGroup Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(RunAnalyzers)' != 'false'">
     <ProjectReference Include="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
@@ -40,5 +40,5 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.props"
-          Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj'" />
+          Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(RunAnalyzers)' != 'false'" />
 </Project>
