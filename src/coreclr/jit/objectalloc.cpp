@@ -3517,7 +3517,7 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
             RecordAppearance(lclNum, block, stmt, use);
         }
     }
-    /*else if (!data->IsIntegralConst(0))
+    else if (!data->IsIntegralConst(0))
     {
         // Store into a tracked enumerator local from an unrecognized source
         // (e.g. a virtual GetEnumerator call that did not devirtualize, into
@@ -3531,7 +3531,7 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
         {
             RecordAppearance(lclNum, block, stmt, use);
         }
-    }*/
+    }
 }
 
 //------------------------------------------------------------------------------
