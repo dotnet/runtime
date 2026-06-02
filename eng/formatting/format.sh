@@ -18,7 +18,7 @@ fi
 
 if [ -n "$MANAGED_FILES" ]; then
     # Format all selected files
-    echo "$MANAGED_FILES" | ".dotnet/dotnet" format whitespace --include - --folder
+    echo "$MANAGED_FILES" | dotnet format whitespace --include - --folder
 
     # Add back the modified files to staging
     echo "$MANAGED_FILES" | xargs git add
