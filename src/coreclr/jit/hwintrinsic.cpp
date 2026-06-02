@@ -1031,6 +1031,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
+    // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
 #endif
