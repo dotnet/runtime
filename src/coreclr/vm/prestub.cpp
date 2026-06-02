@@ -2084,6 +2084,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
+    block.m_StackPointer = 0;
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
