@@ -22,9 +22,9 @@ internal static partial class Interop
         {
             SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length);
 
-            if (chainContext is null || chainContext.IsInvalid)
+            if (chainContext.IsInvalid)
             {
-                chainContext?.Dispose();
+                chainContext.Dispose();
                 throw new CryptographicException(SR.Cryptography_AndroidX509ChainContextInitializationFailed);
             }
 
