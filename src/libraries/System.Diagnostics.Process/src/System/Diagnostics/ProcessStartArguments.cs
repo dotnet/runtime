@@ -13,14 +13,14 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class ProcessStartArguments
     {
-        internal ProcessStartArguments() { }
+        public ProcessStartArguments() { }
 
         /// <summary>
         /// Gets the resolved file name of the process to start.
         /// On Windows, this is <see langword="null"/> (the file name is embedded in <see cref="Arguments"/>).
         /// On Unix, this is the resolved absolute path to the executable.
         /// </summary>
-        public string? FileName { get; internal set; }
+        public string? FileName { get; set; }
 
         /// <summary>
         /// Gets a pointer to the command-line arguments for the process.
@@ -31,7 +31,7 @@ namespace System.Diagnostics
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
         /// </remarks>
         [CLSCompliant(false)]
-        public unsafe void* Arguments { get; internal set; }
+        public unsafe void* Arguments { get; set; }
 
         /// <summary>
         /// Gets a pointer to the environment variables block for the new process.
@@ -44,27 +44,27 @@ namespace System.Diagnostics
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
         /// </remarks>
         [CLSCompliant(false)]
-        public unsafe void* EnvironmentVariables { get; internal set; }
+        public unsafe void* EnvironmentVariables { get; set; }
 
         /// <summary>
-        /// Gets the <see cref="SafeFileHandle"/> to use as the standard input for the new process.
+        /// Gets the raw handle to use as the standard input for the new process.
         /// </summary>
-        public SafeFileHandle StandardInput { get; internal set; } = null!;
+        public nint StandardInput { get; set; }
 
         /// <summary>
-        /// Gets the <see cref="SafeFileHandle"/> to use as the standard output for the new process.
+        /// Gets the raw handle to use as the standard output for the new process.
         /// </summary>
-        public SafeFileHandle StandardOutput { get; internal set; } = null!;
+        public nint StandardOutput { get; set; }
 
         /// <summary>
-        /// Gets the <see cref="SafeFileHandle"/> to use as the standard error for the new process.
+        /// Gets the raw handle to use as the standard error for the new process.
         /// </summary>
-        public SafeFileHandle StandardError { get; internal set; } = null!;
+        public nint StandardError { get; set; }
 
         /// <summary>
         /// Gets the original <see cref="ProcessStartInfo"/> provided by the user,
         /// allowing the callback to inspect any additional configuration.
         /// </summary>
-        public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
+        public ProcessStartInfo ProcessStartInfo { get; set; } = null!;
     }
 }

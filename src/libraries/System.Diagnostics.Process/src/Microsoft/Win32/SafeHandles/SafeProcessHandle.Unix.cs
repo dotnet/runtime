@@ -218,38 +218,57 @@ namespace Microsoft.Win32.SafeHandles
                 out waitStateHolder);
         }
 
-        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError,
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             Func<ProcessStartArguments, SafeProcessHandle> callback, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
             ProcessUtils.EnsureInitialized();
 
-            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
             string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
             if (string.IsNullOrEmpty(resolvedFileName))
             {
                 Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
-                throw ProcessUtils.CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, startInfo.FileName, cwd);
+                throw ProcessUtils.CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, startInfo.FileName, startInfo.WorkingDirectory);
             }
 
             string[] argv = ProcessUtils.ParseArgv(startInfo);
-            bool usesTerminal = UsesTerminal(childInput, childOutput, childError);
-            byte** argvPtr = null;
-            byte** envpPtr = null;
+            bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
+            byte** argvPtr = null, envpPtr = null;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
 
             try
             {
                 Interop.Sys.AllocArgvArray(argv, ref argvPtr);
                 Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
 
+                int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+
+                if (stdinFd is not null)
+                {
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
+                    stdinRawFd = stdinFd.DangerousGetHandle().ToInt32();
+                }
+
+                if (stdoutHandle is not null)
+                {
+                    stdoutHandle.DangerousAddRef(ref stdoutRefAdded);
+                    stdoutRawFd = stdoutHandle.DangerousGetHandle().ToInt32();
+                }
+
+                if (stderrHandle is not null)
+                {
+                    stderrHandle.DangerousAddRef(ref stderrRefAdded);
+                    stderrRawFd = stderrHandle.DangerousGetHandle().ToInt32();
+                }
+
                 ProcessStartArguments args = new()
                 {
                     FileName = resolvedFileName,
                     Arguments = argvPtr,
                     EnvironmentVariables = envpPtr,
-                    StandardInput = childInput,
-                    StandardOutput = childOutput,
-                    StandardError = childError,
+                    StandardInput = stdinRawFd,
+                    StandardOutput = stdoutRawFd,
+                    StandardError = stderrRawFd,
                     ProcessStartInfo = startInfo,
                 };
 
@@ -262,6 +281,7 @@ namespace Microsoft.Win32.SafeHandles
                     if (usesTerminal)
                     {
                         ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                        configuredTerminal = true;
                     }
 
                     SafeProcessHandle processHandle = callback(args);
@@ -273,22 +293,22 @@ namespace Microsoft.Win32.SafeHandles
                     waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
                     return processHandle;
                 }
-                catch
-                {
-                    if (usesTerminal)
-                    {
-                        // We failed to launch a child that could use the terminal.
-                        ProcessUtils.s_processStartLock.EnterWriteLock();
-                        ProcessUtils.ConfigureTerminalForChildProcesses(-1);
-                        ProcessUtils.s_processStartLock.ExitWriteLock();
-                    }
-
-                    throw;
-                }
                 finally
                 {
                     ProcessUtils.s_processStartLock.ExitReadLock();
                 }
+            }
+            catch
+            {
+                if (configuredTerminal)
+                {
+                    // We failed to launch a child that could use the terminal.
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
+                    ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
+                }
+
+                throw;
             }
             finally
             {

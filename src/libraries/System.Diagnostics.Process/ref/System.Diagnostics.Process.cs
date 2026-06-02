@@ -294,16 +294,16 @@ namespace System.Diagnostics
     }
     public sealed partial class ProcessStartArguments
     {
-        internal ProcessStartArguments() { }
+        public ProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe void* Arguments { get { throw null; } }
+        public unsafe void* Arguments { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public unsafe void* EnvironmentVariables { get { throw null; } }
-        public string? FileName { get { throw null; } }
-        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardError { get { throw null; } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardInput { get { throw null; } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardOutput { get { throw null; } }
+        public unsafe void* EnvironmentVariables { get { throw null; } set { } }
+        public string? FileName { get { throw null; } set { } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } set { } }
+        public System.IntPtr StandardError { get { throw null; } set { } }
+        public System.IntPtr StandardInput { get { throw null; } set { } }
+        public System.IntPtr StandardOutput { get { throw null; } set { } }
     }
     public enum ProcessPriorityClass
     {

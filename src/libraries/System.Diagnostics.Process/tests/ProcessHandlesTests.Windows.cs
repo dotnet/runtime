@@ -123,9 +123,9 @@ namespace System.Diagnostics.Tests
                 Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
 
                 startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
-                startupInfoEx.StartupInfo.hStdInput = args.StandardInput.DangerousGetHandle();
-                startupInfoEx.StartupInfo.hStdOutput = args.StandardOutput.DangerousGetHandle();
-                startupInfoEx.StartupInfo.hStdError = args.StandardError.DangerousGetHandle();
+                startupInfoEx.StartupInfo.hStdInput = args.StandardInput;
+                startupInfoEx.StartupInfo.hStdOutput = args.StandardOutput;
+                startupInfoEx.StartupInfo.hStdError = args.StandardError;
                 startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
 
                 bool retVal = Interop.Kernel32.CreateProcess(

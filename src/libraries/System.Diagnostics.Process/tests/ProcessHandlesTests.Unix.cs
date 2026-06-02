@@ -74,9 +74,9 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, process.ExitCode);
         }
 
-        private static unsafe void Redirect(void* fileActionsBuffer, SafeFileHandle handle, int fd)
+        private static unsafe void Redirect(void* fileActionsBuffer, nint handle, int fd)
         {
-            int result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)handle.DangerousGetHandle(), fd);
+            int result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)handle, fd);
             if (result != 0)
             {
                 throw new Win32Exception(result);
