@@ -119,12 +119,6 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
-        private Process(SafeProcessHandle processHandle) : this(".", false, processHandle.ProcessId, null)
-        {
-            _processHandle = processHandle;
-            _haveProcessHandle = true;
-        }
-
         public SafeProcessHandle SafeHandle
         {
             get
@@ -957,14 +951,14 @@ namespace System.Diagnostics
         {
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
 
-            if (!TryOpen(processId, out SafeProcessHandle? processHandle))
+            if (ProcessManager.IsProcessRunning(processId))
             {
-                process = null;
-                return false;
+                process = new Process(".", false, processId, null);
+                return true;
             }
 
-            process = processHandle != null ? new Process(processHandle) : new Process(".", false, processId, null);
-            return true;
+            process = null;
+            return false;
         }
 
 
