@@ -12,7 +12,6 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
     {
         const uint byref_OFFSET_FLAG = 0x1;
 
-        private int _version;
         public InfoHdrSmall Header { get; set; }
         public NoGcRegionTable NoGCRegions { get; set; }
         public GcSlotTable SlotTable { get; set; }
@@ -25,7 +24,6 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         public GcInfo(NativeReader imageReader, int offset, int version)
         {
             Offset = offset;
-            _version = version;
 
             CodeLength = (int)imageReader.DecodeUnsignedGc(ref offset);
 
