@@ -4611,7 +4611,7 @@ static OpcodePeepElement peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L[] =
 };
 
 static OpcodePeepElement peepRuntimeAsyncCallRetInAsyncVersion[] = {
-    // call or callvirt at the sart
+    // call or callvirt at the start
     { 5, CEE_RET },
 };
 
@@ -7529,7 +7529,7 @@ bool InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, Opco
     }
 
     INTERP_DUMP("Matched tailcall in async version\n");
-    m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+    m_currentContinuationContextHandling = ContinuationContextHandling::None;
     m_matchedAsyncCallRetInAsyncVersion = true;
     return true;
 }
