@@ -13,7 +13,6 @@
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
     <EnableDiagnostics>true</EnableDiagnostics>
-    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetPlatformIdentifier)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />
@@ -32,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\ActivityTracking.cs" />
+    <Compile Include="BasicEventSourceTest\Harness\EventPipeListener.cs" />
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
@@ -57,8 +57,7 @@
     <Compile Include="CustomEventSources\UseAbstractEventSource.cs" />
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
-    <Compile Include="BasicEventSourceTest\Harness\EventPipeListener.cs" />
+  <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.NetCore.Client" Version="$(MicrosoftDiagnosticsNetCoreClientVersion)" />
   </ItemGroup>
