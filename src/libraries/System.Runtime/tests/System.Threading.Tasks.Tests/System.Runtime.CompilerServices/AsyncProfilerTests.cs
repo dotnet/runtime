@@ -615,6 +615,80 @@ namespace System.Threading.Tasks.Tests
                 _events.Where(e => e.EventId == callstackEventId && e.HasMarkerFrame(markerMethodName)).ToList();
 
             /// <summary>
+            /// Reconstructs full resume callstacks by merging each ResumeAsyncCallstack with any subsequent
+            /// AppendAsyncCallstack events for the same context, up until the next Suspend/Complete on that
+            /// context.
+            ///
+            /// V1 dispatchers may emit a partial Resume callstack when the parent continuation hasn't yet
+            /// registered (race between dispatcher pickup and parent's AwaitUnsafeOnCompleted). Frames that
+            /// register later are emitted as AppendAsyncCallstack at the next hook point. Merging produces
+            /// the complete chain that was observable during the dispatcher's lifetime.
+            ///
+            /// Returns one ParsedEvent per Resume, with Frames and FrameCount reflecting the merged total.
+            /// </summary>
+            public List<ParsedEvent> MergedResumeCallstacks()
+            {
+                var result = new List<ParsedEvent>();
+                var openByTaskId = new Dictionary<ulong, int>(); // taskId → index into result
+
+                foreach (var evt in _events)
+                {
+                    switch (evt.EventId)
+                    {
+                        case AsyncEventID.ResumeAsyncCallstack:
+                            {
+                                var merged = new ParsedEvent
+                                {
+                                    EventId = evt.EventId,
+                                    Timestamp = evt.Timestamp,
+                                    OsThreadId = evt.OsThreadId,
+                                    TaskId = evt.TaskId,
+                                    CallstackType = evt.CallstackType,
+                                    FrameCount = evt.FrameCount,
+                                    Frames = new List<(ulong MethodId, int State)>(evt.Frames),
+                                };
+                                openByTaskId[evt.TaskId] = result.Count;
+                                result.Add(merged);
+                                break;
+                            }
+                        case AsyncEventID.AppendAsyncCallstack:
+                            {
+                                if (openByTaskId.TryGetValue(evt.TaskId, out int idx))
+                                {
+                                    var existing = result[idx];
+                                    var combinedFrames = new List<(ulong MethodId, int State)>(existing.Frames);
+                                    combinedFrames.AddRange(evt.Frames);
+                                    result[idx] = new ParsedEvent
+                                    {
+                                        EventId = existing.EventId,
+                                        Timestamp = existing.Timestamp,
+                                        OsThreadId = existing.OsThreadId,
+                                        TaskId = existing.TaskId,
+                                        CallstackType = existing.CallstackType,
+                                        FrameCount = (byte)Math.Min(combinedFrames.Count, byte.MaxValue),
+                                        Frames = combinedFrames,
+                                    };
+                                }
+                                break;
+                            }
+                        case AsyncEventID.SuspendAsyncContext:
+                        case AsyncEventID.CompleteAsyncContext:
+                            openByTaskId.Remove(evt.TaskId);
+                            break;
+                    }
+                }
+
+                return result;
+            }
+
+            /// <summary>
+            /// Get merged resume callstacks (Resume + subsequent Appends) that contain the marker method
+            /// in any of their merged frames.
+            /// </summary>
+            public List<ParsedEvent> MergedResumeCallstacksWithMarker(string markerMethodName) =>
+                MergedResumeCallstacks().Where(e => e.HasMarkerFrame(markerMethodName)).ToList();
+
+            /// <summary>
             /// Get callstack events (of specified type) that contain the marker method,
             /// taking only the first match per Task.Id (deepest chain by timestamp).
             /// </summary>
