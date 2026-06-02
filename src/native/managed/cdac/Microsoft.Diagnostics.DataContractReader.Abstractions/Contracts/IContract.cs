@@ -16,8 +16,7 @@ public interface IContract
     /// <para>
     /// Default implementation is a no-op. Contracts that maintain caches or capture
     /// target-memory snapshots at construction must override this method and handle
-    /// each <see cref="FlushScope"/> value appropriately. See the remarks on
-    /// <see cref="FlushScope.TargetState"/>.
+    /// each <see cref="FlushScope"/> value appropriately.
     /// </para>
     /// </summary>
     void Flush(FlushScope scope) { }
