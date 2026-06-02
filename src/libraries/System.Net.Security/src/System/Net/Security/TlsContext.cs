@@ -16,17 +16,18 @@ namespace System.Net.Security
     /// cache reuse is not yet wired through; each <see cref="TlsSession"/>
     /// gets its own native context allocated lazily on the first handshake call.
     /// </remarks>
-    public sealed class TlsContext : IDisposable
+    public sealed partial class TlsContext : IDisposable
     {
         private readonly SslAuthenticationOptions _options;
         private readonly bool _ownsOptions;
         private readonly bool _shareOptions;
         private readonly bool _templateHasServerOptions;
 
-        // Credential handle is owned by TlsContext so it can be shared across multiple
-        // TlsSession instances. In wedge mode (WrapShared) SslStream owns the lifetime
-        // and we skip disposing here to avoid double-free; the field acts as shared
-        // storage that SslStream and TlsSession both read/write via ref.
+        // SChannel credentials handle (an SSPI CredHandle from AcquireCredentialsHandle).
+        // Owned by TlsContext so it can be shared across multiple TlsSession instances.
+        // In wedge mode (WrapShared) SslStream owns the lifetime and we skip disposing
+        // here to avoid double-free. Stays null on Unix — the OpenSSL SSL_CTX equivalent
+        // lives in TlsContext.OpenSsl.cs.
         internal SafeFreeCredentials? CredentialsHandle;
 
         private TlsContext(SslAuthenticationOptions options, bool ownsOptions, bool shareOptions, bool templateHasServerOptions)
@@ -56,9 +57,23 @@ namespace System.Net.Security
         // Returns a per-session options bag. For normal contexts each call returns a fresh
         // clone of the template so session-scoped mutations (TargetHost, SafeSslHandle,
         // resolved server cert, ...) don't leak between sessions. In wedge mode the bag is
-        // owned by SslStream and we hand it out by reference.
+        // owned by SslStream and we hand it out by reference. On platforms that own a
+        // long-lived native context (e.g. OpenSSL SSL_CTX), the platform partial stamps it
+        // onto the returned bag so the PAL can reuse it across sessions.
         internal SslAuthenticationOptions CreateSessionOptions()
-            => _shareOptions ? _options : _options.Clone();
+        {
+            SslAuthenticationOptions sessionOptions = _shareOptions ? _options : _options.Clone();
+            AttachSharedNativeContext(sessionOptions);
+            return sessionOptions;
+        }
+
+        // Platform hook: lets the OpenSSL partial attach the TlsContext-owned SSL_CTX to
+        // the per-session options bag. No-op on Windows (which uses CredentialsHandle) and
+        // on macOS/iOS/Android (no reusable native context to share).
+        partial void AttachSharedNativeContext(SslAuthenticationOptions sessionOptions);
+
+        // Platform hook: lets the OpenSSL partial dispose the owned SSL_CTX. No-op elsewhere.
+        partial void DisposeNativeContext();
 
         public bool IsServer => _options.IsServer;
 
@@ -122,6 +137,7 @@ namespace System.Net.Security
             {
                 CredentialsHandle?.Dispose();
                 CredentialsHandle = null;
+                DisposeNativeContext();
                 _options.Dispose();
             }
         }

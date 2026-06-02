@@ -361,7 +361,16 @@ internal static partial class Interop
         internal static unsafe SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle? sslHandle = null;
-            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+            // When a TlsContext owns a long-lived SSL_CTX (set via PreallocatedSslContext)
+            // we bypass the global SslContextCacheKey lookup and the TLS-resume cache hung
+            // off it: the TlsContext is the resume scope. The handle is borrowed here, not
+            // owned, so the conditional Dispose() in the finally below skips it.
+            SafeSslContextHandle? preallocatedSslCtx = sslAuthenticationOptions.PreallocatedSslContext;
+            bool cacheSslContext = preallocatedSslCtx is null
+                && sslAuthenticationOptions.AllowTlsResume
+                && !LocalAppContextSwitches.DisableTlsResume
+                && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption
+                && sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
             {
@@ -398,9 +407,13 @@ internal static partial class Interop
             // For uncached SafeSslContextHandles, the handle will be disposed and closed.
             // Cached SafeSslContextHandles are returned with increaset rent count so that
             // Dispose() here will not close the handle.
-            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
-
-            sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions);
+            // When a preallocated SSL_CTX is provided (TlsContext-owned), we borrow it
+            // for the duration of this method without disposing — the TlsContext keeps
+            // it alive across every TlsSession it produces.
+            SafeSslContextHandle sslCtxHandle = preallocatedSslCtx ?? GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
+            try
+            {
+                sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions);
             Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
             if (sslHandle.IsInvalid)
             {
@@ -522,6 +535,14 @@ internal static partial class Interop
                     {
                         Ssl.SslStapleOcsp(sslHandle, ocspResponse);
                     }
+                }
+            }
+            }
+            finally
+            {
+                if (preallocatedSslCtx is null)
+                {
+                    sslCtxHandle.Dispose();
                 }
             }
 

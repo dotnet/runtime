@@ -9,7 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal sealed class SslAuthenticationOptions : IDisposable
+    internal sealed partial class SslAuthenticationOptions : IDisposable
     {
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
