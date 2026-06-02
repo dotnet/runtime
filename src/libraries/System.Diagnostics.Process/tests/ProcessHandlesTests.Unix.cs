@@ -25,7 +25,7 @@ namespace System.Diagnostics.Tests
             {
                 int result;
 
-                // posix_spawn_file_actions_t is a platform-specific struct (80 bytes on glibc x64, different on macOS).
+                // posix_spawn_file_actions_t is a platform-specific struct (80 bytes on glibc x64, 104 bytes on macOS arm64).
                 // We allocate enough space on the stack and pass a pointer.
                 // Use 128 bytes to be safe across platforms.
                 const int PosixSpawnFileActionsSize = 128;
@@ -83,7 +83,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        // posix_spawn_file_actions_t is 80 bytes on glibc x64, 104 bytes on macOS arm64.
         [DllImport("libc", SetLastError = false)]
         private static extern unsafe int posix_spawn(int* pid, byte* path, void* file_actions, void* attrp, byte** argv, byte** envp);
 
