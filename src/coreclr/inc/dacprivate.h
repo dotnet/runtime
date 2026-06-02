@@ -65,6 +65,12 @@ enum
     DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000
 };
 
+// Private requests for the cDAC stress harness.
+enum
+{
+    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE = 0xf2000000
+};
+
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };
 struct MSLAYOUT DacpObjectData
 {

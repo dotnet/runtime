@@ -29,6 +29,22 @@ internal class GcScanContext
         Frame = frame;
     }
 
+    public void RecordDeferredFrame(TargetPointer frameAddress)
+    {
+        StackRefs.Add(new StackRefData
+        {
+            HasRegisterInformation = false,
+            Register = 0,
+            Offset = 0,
+            Address = 0,
+            Object = 0,
+            Flags = GcScanFlags.CDAC_DEFERRED_FRAME,
+            SourceType = StackRefData.SourceTypes.StackSourceFrame,
+            Source = frameAddress,
+            StackPointer = StackPointer,
+        });
+    }
+
     public void GCEnumCallback(TargetPointer pObject, GcScanFlags flags, GcScanSlotLocation loc)
     {
         TargetPointer addr;

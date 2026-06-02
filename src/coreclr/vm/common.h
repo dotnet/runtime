@@ -315,6 +315,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
