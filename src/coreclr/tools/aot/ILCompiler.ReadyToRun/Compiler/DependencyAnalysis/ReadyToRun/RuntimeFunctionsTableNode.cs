@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private List<MethodWithGCInfo> _methodNodes;
         private Dictionary<MethodWithGCInfo, int> _insertedMethodNodes;
-        private Dictionary<ValueTuple<MethodWithGCInfo, int>, uint> _methodToVirtualIP;
+        private Dictionary<(MethodWithGCInfo method, int funcletIdx), uint> _methodToVirtualIP;
         private readonly NodeFactory _nodeFactory;
         private int _tableSize = -1;
 
@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 LayoutRuntimeFunctions();
             }
 
-            Dictionary<ValueTuple<MethodWithGCInfo, int>, uint> methodToVirtualIP = new ();
+            Dictionary<(MethodWithGCInfo method, int funcletIdx), uint> methodToVirtualIP = new ();
 
             // For WASM, track virtual IP index for each RUNTIME_FUNCTION entry
             uint currentVirtualIP = 0;
@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     methodToVirtualIP.Add((method, frameIndex), currentVirtualIP);
 
                     // Advance the virtual IP by the number of virtual IPs for this frame
-                    uint virtualIPCount = GetVirtualIPCountFromUnwindBlob(frameInfo.BlobData);
+                    uint virtualIPCount = GetFunctionLocalVirtualIPCountFromUnwindBlob(frameInfo.BlobData);
                     currentVirtualIP += virtualIPCount;
                 }
             }
@@ -109,11 +109,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Read the virtual IP count from a WASM unwind blob.
         /// The blob format is: ULEB128(frameSize) followed by ULEB128(virtualIPCount).
         /// </summary>
-        private static uint GetVirtualIPCountFromUnwindBlob(byte[] blobData)
+        private static uint GetFunctionLocalVirtualIPCountFromUnwindBlob(byte[] blobData)
         {
-            int offset = 0;
-            DwarfHelper.ReadULEB128(blobData.AsSpan(offset), out int bytesRead); // skip frame size
-            offset += bytesRead;
+            DwarfHelper.ReadULEB128(blobData.AsSpan(), out int offset); // skip frame size
             return (uint)DwarfHelper.ReadULEB128(blobData.AsSpan(offset), out _) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
         }
 
@@ -226,6 +224,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
+                    // If there are no compiled methods, emit a 0 for the min table index.
                     runtimeFunctionsBuilder.EmitUInt(0);
                 }
             }

@@ -5859,8 +5859,14 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
         if (RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
         {
+            // Funclets are handled specially. Their RUNTIME_FUNCTION BeginAddress field describes the virtual IP of the funclet, but
+            // function local virtual ips are relative to the virtual IP of the controlling function, and so the logical VirtualIPFromFunctionTableIndex
+            // for a funclet is actually the virtual IP of the controlling function. Thus, if we encounter a funclet, we index backwards to find the controlling
+            // function.
             if (localIndex == 0)
             {
+                // This should never happen, since the first RUNTIME_FUNCTION in a function table index range should always be a non-funclet entry for the main
+                // function, but if it does, we by returning 0.
                 return 0;
             }
             localIndex--;

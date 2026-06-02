@@ -390,14 +390,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public uint ReadULEB128(ref int start)
         {
-            int bytesToRead = Math.Min(5, (int)_backingStream.Length - start);
+            // 24 bytes is longer than the longest valid LEB128.
+            int bytesToRead = Math.Min(24, (int)_backingStream.Length - start);
             if (bytesToRead <= 0)
                 throw new BadImageFormatException("Unexpected end of image while reading ULEB128");
 
-            Span<byte> buffer = stackalloc byte[5];
+            Span<byte> buffer = stackalloc byte[24];
             int readStart = start;
             ReadSpanAt(ref readStart, buffer.Slice(0, bytesToRead));
-            uint result = (uint)DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead);
+            uint result = checked((uint)DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead));
             start += bytesRead;
             return result;
         }

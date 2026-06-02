@@ -193,7 +193,7 @@ namespace R2RDump
                 if (isWasm)
                 {
                     writer.WriteLine($"VirtualIP: {theThis.StartAddress}");
-                    writer.WriteLine($"IsFunclet: {theThis.IsFunclet}");
+                    writer.WriteLine($"IsFunclet: {theThis.WasmIsFunclet}");
                 }
                 else
                 {

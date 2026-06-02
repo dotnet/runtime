@@ -13,6 +13,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Wasm32
     {
         public uint BytesUnwind { get; set; }
         public uint VirtualIPCount { get; set; }
+        public uint FunctionLength => VirtualIPCount; // The length is VirtualIP is considered the FunctionLength. (Duplicate the property so that other common code in R2RDump makes more sense)
 
         public UnwindInfo() { }
 
@@ -20,7 +21,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Wasm32
         {
             uint startOffset = (uint)offset;
             BytesUnwind = imageReader.ReadULEB128(ref offset);
-            VirtualIPCount = imageReader.ReadULEB128(ref offset);
+            VirtualIPCount = imageReader.ReadULEB128(ref offset) * 2;
             Size = offset - (int)startOffset;
         }
 

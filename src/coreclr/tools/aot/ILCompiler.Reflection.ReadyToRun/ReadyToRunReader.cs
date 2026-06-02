@@ -826,13 +826,13 @@ namespace ILCompiler.Reflection.ReadyToRun
             return 2 * sizeof(int);
         }
 
-        private int? _wasmMinFunctionTableIndex;
+        private uint? _wasmMinFunctionTableIndex;
 
         /// <summary>
         /// For WASM images, returns the minimum function table index stored after the
-        /// RuntimeFunctions sentinel. Returns -1 for non-WASM images or if not available.
+        /// RuntimeFunctions sentinel. Returns 0 for non-WASM images or if not available.
         /// </summary>
-        public int WasmMinFunctionTableIndex
+        public uint WasmMinFunctionTableIndex
         {
             get
             {
@@ -842,8 +842,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (Machine != WasmMachine.Wasm32 ||
                     !ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection rtfSection))
                 {
-                    _wasmMinFunctionTableIndex = -1;
-                    return -1;
+                    _wasmMinFunctionTableIndex = 0;
+                    return 0;
                 }
 
                 // The sentinel (0xFFFFFFFF) and min table index are located immediately
@@ -852,7 +852,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 int afterSection = sectionOffset + rtfSection.Size;
                 // Skip the sentinel (4 bytes), then read the min function table index (4 bytes)
                 int minTableOffset = afterSection + 4;
-                _wasmMinFunctionTableIndex = ImageReader.ReadInt32(ref minTableOffset);
+                _wasmMinFunctionTableIndex = ImageReader.ReadUInt32(ref minTableOffset);
                 return _wasmMinFunctionTableIndex.Value;
             }
         }

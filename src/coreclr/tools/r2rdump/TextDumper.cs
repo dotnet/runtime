@@ -274,13 +274,13 @@ namespace R2RDump
 
             // The function table index for this runtime function is minFunctionTableIndex + rtf.Id.
             // The elem section maps table indices to global function indices.
-            int minTableIndex = _r2r.WasmMinFunctionTableIndex;
+            uint minTableIndex = _r2r.WasmMinFunctionTableIndex;
             if (minTableIndex < 0)
             {
                 _writer.WriteLine($"    ; WASM min function table index not available");
                 return;
             }
-            int tableIndex = minTableIndex + rtf.Id;
+            uint tableIndex = minTableIndex + (uint)rtf.Id;
             int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
 
             if (functionIndex < 0)

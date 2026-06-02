@@ -1324,7 +1324,12 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
 {
     if (sp <= 0x1000)
-    return 0;
+    {
+        // Sp has become set to the lowest page on the system. Or we're unwinding a TransitionBlock
+        // which is encoded without a StackPointer. In either case, just return 0 to indicate that nothing
+        // meaningful is here.
+        return 0;
+    }
     else
     {
         if (*(int*)sp == 0)
@@ -1353,11 +1358,11 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     else
     {
         uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
-        uint32_t logicalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        uint32_t functionLocalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
         TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
         if (baseVirtualIP == 0)
             return 0;
-        return baseVirtualIP + logicalVirtualIP;
+        return baseVirtualIP + functionLocalVirtualIP;
     }
 }
 

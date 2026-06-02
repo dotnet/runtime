@@ -439,8 +439,9 @@ two consecutive ULEB128 values:
 |     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
 
 The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
-function or funclet. All virtual IPs are forced to even numbers to allow the odd values to be
-reserved for future use.
+function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
+ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
+IPs or PortableEntryPoint structures.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 

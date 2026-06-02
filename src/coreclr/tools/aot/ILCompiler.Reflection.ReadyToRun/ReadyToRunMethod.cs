@@ -111,7 +111,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Whether this runtime function represents a funclet (WASM only).
         /// </summary>
-        public bool IsFunclet { get; }
+        public bool WasmIsFunclet { get; }
 
         /// <summary>
         /// The size of the code block in bytes
@@ -193,7 +193,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             int codeOffset,
             ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
-            bool isFunclet = false)
+            bool wasmIsFunclet = false)
         {
             _readyToRunReader = readyToRunReader;
 
@@ -204,7 +204,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             Method = method;
             UnwindInfo = unwindInfo;
             CodeOffset = codeOffset;
-            IsFunclet = isFunclet;
+            WasmIsFunclet = wasmIsFunclet;
         }
 
         private void EnsureInitialized()
@@ -243,7 +243,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else if (UnwindInfo is Wasm32.UnwindInfo wasmInfo)
             {
-                return (int)wasmInfo.VirtualIPCount * 2;
+                return (int)wasmInfo.FunctionLength;
             }
             else if (Method.GcInfo != null)
             {
