@@ -1047,22 +1047,12 @@ ep_rt_queue_job (
 	void *params)
 {
 #ifdef HOST_BROWSER
-	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
-	// it's called from browser event loop
-	ep_rt_job_cb_t cb = (ep_rt_job_cb_t)job_func;
-
-	// invoke the callback inline for the first time
-	size_t done = cb (params);
-
-	// see if it's done or needs to be scheduled again
-	if (!done) {
-		// self schedule again
-		SystemJS_DiagnosticServerQueueJob (cb, params);
-	}
-
+	// In single-threaded mode the job runs on the browser event loop
+	SystemJS_DiagnosticServerQueueJob ((ep_rt_job_cb_t)job_func, params);
 	return true;
 #else
-    EP_UNREACHABLE ("Not implemented on this platform");
+	EP_UNREACHABLE ("Not implemented on this platform");
+	return false;
 #endif
 }
 
