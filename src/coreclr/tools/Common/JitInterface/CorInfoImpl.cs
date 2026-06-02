@@ -3503,11 +3503,13 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
         {
+            instArg.lookupKind.needsRuntimeLookup = false;
+            instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            instArg.constLookup.addr = null;
+
 #if READYTORUN
-            instArg = default;
             return null;
 #else
-            instArg = default;
             MethodDesc caller = HandleToObject(callerHandle);
             Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
 

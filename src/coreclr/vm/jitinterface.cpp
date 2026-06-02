@@ -10408,7 +10408,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
 
     JIT_TO_EE_TRANSITION();
 
-    INDEBUG(memset(instArg, 0xCC, sizeof(*instArg)));
+    instArg->lookupKind.needsRuntimeLookup = false;
+    instArg->constLookup.accessType = IAT_VALUE;
+    instArg->constLookup.addr = NULL;
 
     MethodDesc* pCallerMD = GetMethod(callerHandle);
 
