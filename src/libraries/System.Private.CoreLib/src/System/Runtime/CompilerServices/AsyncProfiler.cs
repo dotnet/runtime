@@ -777,6 +777,14 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            public static void Append(AsyncTaskDispatcher dispatcher, IAsyncStateMachineBox enteringBox, AsyncThreadContext context, long currentTimestamp)
+            {
+                if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ReachedLastContinuation)
+                {
+                    AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
+                }
+            }
+
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id)
             {
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
@@ -926,7 +934,7 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ResumeAsyncMethod
         {
-            public static void Resume(AsyncTaskDispatcher dispatcher, ref Info info)
+            public static void Resume(AsyncTaskDispatcher dispatcher, IAsyncStateMachineBox box, ref Info info)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
 
@@ -938,7 +946,7 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
                     {
-                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
+                        ResumeAsyncContext.Append(dispatcher, box, context, currentTimestamp);
                     }
 
                     if (IsEnabled.ResumeAsyncMethodEvent(activeEventKeywords))
@@ -1340,6 +1348,8 @@ namespace System.Runtime.CompilerServices
                     {
                         dispatcher.LastContinuation = null;
                     }
+
+                    dispatcher.ReachedLastContinuation = false;
                 }
             }
 
