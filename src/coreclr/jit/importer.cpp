@@ -9040,8 +9040,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             isAwait     = true;
                             prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
 
-                            // Consume the ret, but leave sz that will be consumed when we loop around.
-                            codeAddrAfterMatch = codeAddr + sz + 1 - sz;
+                            // Consume the ret opcode. Note `codeAddr` points at the unconsumed token;
+                            // the main loop will still do `codeAddr += sz` (token size) after this case.
+                            codeAddrAfterMatch = codeAddr + 1;
                         }
                     }
                     else
