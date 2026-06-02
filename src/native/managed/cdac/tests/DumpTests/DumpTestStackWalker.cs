@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -99,7 +100,7 @@ internal sealed class DumpTestStackWalker
         IStackWalk stackWalk = target.Contracts.StackWalk;
         List<ResolvedFrame> frames = [];
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
+        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(target, methodDescPtr);

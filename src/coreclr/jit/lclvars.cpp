@@ -1181,6 +1181,11 @@ unsigned Compiler::compMapILvarNum(unsigned ILvarNum)
         noway_assert(info.compTypeCtxtArg >= 0);
         varNum = info.compTypeCtxtArg;
     }
+    else if (ILvarNum == (unsigned)ICorDebugInfo::ASYNC_CONTINUATION_ILNUM)
+    {
+        noway_assert(lvaAsyncContinuationArg != BAD_VAR_NUM);
+        varNum = lvaAsyncContinuationArg;
+    }
     else if (ILvarNum < info.compILargsCount)
     {
         // Parameter
@@ -1205,7 +1210,7 @@ unsigned Compiler::compMapILvarNum(unsigned ILvarNum)
 
 /*****************************************************************************
  * Returns the IL variable number given our internal varNum.
- * Special return values are VARG_ILNUM, RETBUF_ILNUM, TYPECTXT_ILNUM.
+ * Special return values are VARG_ILNUM, RETBUF_ILNUM, TYPECTXT_ILNUM, ASYNC_CONTINUATION_ILNUM.
  *
  * Returns UNKNOWN_ILNUM if it can't be mapped.
  */
@@ -1246,7 +1251,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
     if (varNum == lvaAsyncContinuationArg)
     {
-        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+        return (unsigned)ICorDebugInfo::ASYNC_CONTINUATION_ILNUM;
     }
 
 #if defined(TARGET_WASM)
@@ -5320,8 +5325,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncExecutionContextVar) ||
-                (lclNum == lvaAsyncSynchronizationContextVar))
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+                (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
             }
@@ -5837,7 +5842,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
 //------------------------------------------------------------------------
 // lvaAllocAsyncContexts:
-//   Allocate stack space for the two async context locals, if present.
+//   Allocate stack space for the thread object and two async context locals, if present.
 //
 // Arguments:
 //   stkOffs - Current stack offset
@@ -5847,6 +5852,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
+                                                   lvaLclStackHomeSize(lvaAsyncThreadObjectVar), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for this local when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
