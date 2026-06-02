@@ -728,21 +728,44 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 bool      srcIsUnsigned;
                 comp->vnStore->GetCastOperFromVN(funcApp.GetArg(1), &castToType, &srcIsUnsigned);
 
-                // GetRangeFromType returns a non-constant range if it can't be represented with Range
-                Range castToTypeRange = GetRangeFromType(castToType);
-                if (castToTypeRange.IsConstantRange())
-                {
-                    result = castToTypeRange;
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
 
-                    // Now see if we can do better by looking at the cast source.
-                    // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
-                    if (genActualType(comp->vnStore->TypeOfVN(funcApp.GetArg(0))) == TYP_INT)
+                var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
+
+                if (genTypeSize(castFromType) < genTypeSize(castToType))
+                {
+                    // We're going from a small type to a large type
+                    // and so regardless of whether we zero or sign-extend
+                    // the value is preserved within the confines of its
+                    // original input for the destination, i.e. it always
+                    // passes the FitsIn<fromType> check.
+
+                    result = GetRangeFromType(castFromType);
+                }
+                else
+                {
+                    // We're either going from a big type to a small type
+                    // or between signed and unsigned types of the same size
+                    // so we want to use toType as the range.
+
+                    result = GetRangeFromType((castToType == TYP_UINT) ? TYP_INT : castToType);
+                }
+
+                // Now see if we can do better by looking at the cast source.
+                // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
+                if (genActualType(arg0Typ) == TYP_INT)
+                {
+                    Range castOpRange = GetRangeFromAssertionsWorker(comp, arg0VN, assertions, --budget, visited);
+
+                    if (castOpRange.IsConstantRange())
                     {
-                        Range castOpRange =
-                            GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
-                        if (castOpRange.IsConstantRange() &&
-                            (castOpRange.LowerLimit().GetConstant() >= castToTypeRange.LowerLimit().GetConstant()) &&
-                            (castOpRange.UpperLimit().GetConstant() <= castToTypeRange.UpperLimit().GetConstant()))
+                        if (!result.IsConstantRange())
+                        {
+                            result = castOpRange;
+                        }
+                        else if ((castOpRange.LowerLimit().GetConstant() >= result.LowerLimit().GetConstant()) &&
+                                 (castOpRange.UpperLimit().GetConstant() <= result.UpperLimit().GetConstant()))
                         {
                             result = castOpRange;
                         }
