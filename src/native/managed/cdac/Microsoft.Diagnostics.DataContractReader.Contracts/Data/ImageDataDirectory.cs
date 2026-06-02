@@ -3,19 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ImageDataDirectory : IData<ImageDataDirectory>
+[CdacType(nameof(DataType.ImageDataDirectory))]
+internal sealed partial class ImageDataDirectory : IData<ImageDataDirectory>
 {
-    static ImageDataDirectory IData<ImageDataDirectory>.Create(Target target, TargetPointer address)
-        => new ImageDataDirectory(target, address);
-
-    public ImageDataDirectory(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ImageDataDirectory);
-
-        VirtualAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualAddress)].Offset);
-        Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
-    }
-
-    public uint VirtualAddress { get; }
-    public uint Size { get; }
+    [Field] public uint VirtualAddress { get; }
+    [Field] public uint Size { get; }
 }

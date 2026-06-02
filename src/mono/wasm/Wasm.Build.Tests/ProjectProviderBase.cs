@@ -338,7 +338,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged)
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null)
     {
         List<string> files = new()
         {
@@ -379,7 +379,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
+            string bootJsonPath = GetBootConfigPath(bootConfigDir ?? paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();
@@ -429,6 +429,18 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+    }
+
+    // Extract the runtime pack root that the build actually resolved (printed by
+    // BrowserWasmApp.targets / BrowserWasmApp.CoreCLR.targets as
+    // "** MicrosoftNetCoreAppRuntimePackDir : '<path>'"). Returns null when the line is
+    // not present (e.g. assertions running off a cached output that didn't capture it).
+    public static string? TryGetRuntimePackDirFromBuildOutput(string? buildOutput)
+    {
+        if (string.IsNullOrEmpty(buildOutput))
+            return null;
+        var match = s_runtimePackPathRegex.Match(buildOutput);
+        return match.Success && match.Groups.Count == 2 ? match.Groups[1].Value : null;
     }
 
     public static void AssertDotNetJsSymbols(AssertBundleOptions assertOptions)
@@ -494,7 +506,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
+            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
+            // since that is the same pack the publish output was produced from. The SDK's
+            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
+            // runs where the publish-time pack comes from a per-test NuGet cache.
+            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
+                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
+                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
             if (!Path.IsPathRooted(srcPath))
                 srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
             TestUtils.AssertSameFile(srcPath, actual.Single());

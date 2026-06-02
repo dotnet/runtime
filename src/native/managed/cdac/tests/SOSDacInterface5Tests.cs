@@ -104,15 +104,25 @@ public unsafe class SOSDacInterface5Tests
             .Setup(c => c.GetNativeCodeVersions(s_methodDescAddr, It.IsAny<ILCodeVersionHandle>()))
             .Returns(nativeVersionHandles);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            (_, _) => -1,
-            types: []);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == mockCodeVersions.Object
-                && c.RuntimeTypeSystem == mockRts.Object
-                && c.Loader == mockLoader.Object
-                && c.ReJIT == mockReJIT.Object));
+        var mockPrecodeStubs = new Mock<IPrecodeStubs>();
+        mockPrecodeStubs
+            .Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ep) => ep);
+
+        var mockPlatformMetadata = new Mock<IPlatformMetadata>();
+        mockPlatformMetadata
+            .Setup(p => p.GetCodePointerFlags())
+            .Returns(default(CodePointerFlags));
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockCodeVersions)
+            .AddMockContract(mockRts)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockReJIT)
+            .AddMockContract(mockPrecodeStubs)
+            .AddMockContract(mockPlatformMetadata)
+            .Build();
 
         return new SOSDacImpl(target, legacyObj: null);
     }

@@ -8,7 +8,7 @@
     <ItemGroup>
       <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
       <IlcReference Include="@(_IlcManagedInputAssemblies)" />
-      <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.AssetType)' == 'resources'" />
       <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
@@ -29,16 +29,34 @@
     ============================================================
   -->
   <Target Name="NativeCompile"
-          DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
+          DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative;CreateShimExes">
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
       <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
       <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
-      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
+      <ResolvedFileToPublish Remove="@(IlcSatelliteAssembly)" />
       <!-- replace apphost with binary we generated during native compilation -->
       <ResolvedFileToPublish Include="$(NativeBinary)">
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="@(_AggregateExecutableShim)" Condition="'$(_AggregateExecutable)' == 'true'">
+        <RelativePath>%(_AggregateExecutableShim.RelativePath)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="@(_AggregateExecutableShimSymbol)"
+                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' != '.dSYM' and Exists('%(_AggregateExecutableShimSymbol.Identity)')">
+        <RelativePath>%(_AggregateExecutableShimSymbol.RelativePath)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <_AggregateExecutableShimSymbolRecursivePath Include="%(_AggregateExecutableReferencePath.ShimSymbol)/**/*"
+                                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' == '.dSYM' and Exists('%(_AggregateExecutableReferencePath.ShimSymbol)')">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+      </_AggregateExecutableShimSymbolRecursivePath>
+      <ResolvedFileToPublish Include="@(_AggregateExecutableShimSymbolRecursivePath)"
+                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+        <RelativePath>%(_AggregateExecutableShimSymbolRecursivePath.RelativePath)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>
@@ -122,7 +140,6 @@
       SdkAssemblies="@(PrivateSdkAssemblies)"
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
-      <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="RuntimePackFilesToSkipPublish" ItemName="_RuntimePackFilesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 

@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotAzureLinux3VM))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -787,6 +787,33 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task WritesCompleted_WritesAsync_Throws()
+        {
+            SemaphoreSlim sem = new SemaphoreSlim(0);
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    // Close and wait for write completion.
+                    clientStream.CompleteWrites();
+                    await clientStream.WritesClosed;
+
+                    // These both should throw the same exception.
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientStream.WriteAsync(new byte[0], false));
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientStream.WriteAsync(new byte[0], false));
+
+                    await sem.WaitAsync();
+                },
+                async serverStream =>
+                {
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+                    await serverStream.ReadsClosed;
+
+                    sem.Release();
+                });
+        }
+
+        [Fact]
         public async Task WaitForWritesClosedAsync_ServerWriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
@@ -1552,6 +1579,97 @@ namespace System.Net.Quic.Tests
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
                 }
             }
+        }
+
+        [Fact]
+        public async Task Priority_DefaultValue()
+        {
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    Assert.Equal(QuicStream.DefaultPriority, stream.Priority);
+                },
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    Assert.Equal(QuicStream.DefaultPriority, stream.Priority);
+                    stream.CompleteWrites();
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(byte.MinValue)]
+        [InlineData(1)]
+        [InlineData(QuicStream.DefaultPriority)]
+        [InlineData(byte.MaxValue)]
+        public async Task Priority_SetGet(byte priority)
+        {
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    byte[] buffer = new byte[1];
+                    await ReadAll(stream, buffer);
+                },
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    stream.Priority = priority;
+                    Assert.Equal(priority, stream.Priority);
+                    await stream.WriteAsync(new byte[] { 42 }, completeWrites: true);
+                }
+            );
+        }
+
+        [Fact]
+        public async Task Priority_SetMultipleTimes()
+        {
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    byte[] buffer = new byte[1];
+                    await ReadAll(stream, buffer);
+                },
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+
+                    stream.Priority = byte.MaxValue;
+                    Assert.Equal(byte.MaxValue, stream.Priority);
+
+                    stream.Priority = byte.MinValue;
+                    Assert.Equal(byte.MinValue, stream.Priority);
+
+                    stream.Priority = QuicStream.DefaultPriority;
+                    Assert.Equal(QuicStream.DefaultPriority, stream.Priority);
+
+                    await stream.WriteAsync(new byte[] { 42 }, completeWrites: true);
+                }
+            );
+        }
+
+        [Fact]
+        public async Task Priority_ThrowsAfterDispose()
+        {
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    byte[] buffer = new byte[1];
+                    await ReadAll(stream, buffer);
+                },
+                clientFunction: async connection =>
+                {
+                    QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await stream.WriteAsync(new byte[] { 42 }, completeWrites: true);
+                    await stream.DisposeAsync();
+
+                    Assert.Throws<ObjectDisposedException>(() => stream.Priority = byte.MaxValue);
+                }
+            );
         }
     }
 }

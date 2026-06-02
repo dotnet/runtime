@@ -19,29 +19,37 @@ public unsafe class ObjectTests
     private static ISOSDacInterface CreateSOSDacInterface(
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockObjectBuilder> configure,
-        Func<TestPlaceholderTarget, ContractRegistry>? createContracts = null)
-        => new SOSDacImpl(CreateObjectTarget(arch, configure, createContracts), legacyObj: null);
+        Action<TestPlaceholderTarget.Builder>? configureMocks = null)
+        => new SOSDacImpl(CreateObjectTarget(arch, configure, configureMocks), legacyObj: null);
 
     private static TestPlaceholderTarget CreateObjectTarget(
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockObjectBuilder> configure,
-        Func<TestPlaceholderTarget, ContractRegistry>? createContracts = null)
+        Action<TestPlaceholderTarget.Builder>? configureMocks = null)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
         MockDescriptors.MockObjectBuilder objectBuilder = new(rtsBuilder);
 
         configure?.Invoke(objectBuilder);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(objectBuilder),
-            CreateContractGlobals(objectBuilder));
-        target.SetContracts(createContracts?.Invoke(target) ?? CreateDefaultContracts(target));
-        return target;
+        targetBuilder
+            .AddTypes(CreateContractTypes(objectBuilder))
+            .AddGlobals(CreateContractGlobals(objectBuilder));
+
+        if (configureMocks is not null)
+        {
+            configureMocks(targetBuilder);
+        }
+        else
+        {
+            targetBuilder
+                .AddContract<IObject>(version: "c1")
+                .AddContract<IRuntimeTypeSystem>(version: "c1")
+                .AddContract<ISyncBlock>(version: "c1");
+        }
+
+        return targetBuilder.Build();
     }
 
     private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockDescriptors.MockObjectBuilder objectBuilder)
@@ -51,6 +59,7 @@ public unsafe class ObjectTests
             [DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout),
             [DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout),
             [DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout),
+            [DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout),
             [DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout),
             [DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout),
             [DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout),
@@ -69,12 +78,6 @@ public unsafe class ObjectTests
             (nameof(Constants.Globals.SyncBlockIndexMask), (1u << 26) - 1),
             (nameof(Constants.Globals.SyncBlockHashCodeMask), (1u << 26) - 1),
         ]).ToArray();
-
-    private static ContractRegistry CreateDefaultContracts(TestPlaceholderTarget target)
-        => Mock.Of<ContractRegistry>(
-            c => c.Object == ((IContractFactory<IObject>)new ObjectFactory()).CreateContract(target, 1)
-                && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
-                && c.SyncBlock == ((IContractFactory<ISyncBlock>)new SyncBlockFactory()).CreateContract(target, 1));
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
@@ -227,7 +230,7 @@ public unsafe class ObjectTests
                 methodTable.EEClassOrCanonMT = eeClass.Address;
                 TestObjectAddress = objectBuilder.AddObject(TestMethodTableAddress);
             },
-            target => {
+            builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
                 TypeHandle handle = new TypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
@@ -240,10 +243,10 @@ public unsafe class ObjectTests
                 var mockObject = new Mock<IObject>();
                 mockObject.Setup(o => o.GetMethodTableAddress(It.IsAny<TargetPointer>())).Returns(TestMethodTableAddress);
 
-                return Mock.Of<ContractRegistry>(
-                    c => c.Object == mockObject.Object
-                        && c.RuntimeTypeSystem == mockRts.Object
-                        && c.Loader == mockLoader.Object);
+                builder
+                    .AddMockContract(mockObject)
+                    .AddMockContract(mockRts)
+                    .AddMockContract(mockLoader);
             });
         char[] buffer = new char[256];
         uint needed;
@@ -275,7 +278,7 @@ public unsafe class ObjectTests
                 methodTable.EEClassOrCanonMT = eeClass.Address;
                 TestObjectAddress = objectBuilder.AddObject(TestMethodTableAddress);
             },
-            target => {
+            builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
                 TypeHandle handle = new TypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
@@ -288,14 +291,98 @@ public unsafe class ObjectTests
                 var mockObject = new Mock<IObject>();
                 mockObject.Setup(o => o.GetMethodTableAddress(It.IsAny<TargetPointer>())).Returns(TestMethodTableAddress);
 
-                return Mock.Of<ContractRegistry>(
-                    c => c.Object == mockObject.Object
-                        && c.RuntimeTypeSystem == mockRts.Object
-                        && c.Loader == mockLoader.Object);
+                builder
+                    .AddMockContract(mockObject)
+                    .AddMockContract(mockRts)
+                    .AddMockContract(mockLoader);
             });
         uint needed;
         int hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), 0, null, &needed);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal((uint)"<Unloaded Type>".Length + 1, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Closed(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestTarget = 0x00000000_10000400;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: TestTarget,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: 0,
+                    invocationCount: 0);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Closed, info.DelegateType);
+        Assert.Equal(TestTarget, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtr, info.TargetMethodPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Open(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        const ulong TestMethodPtrAux = 0x00000000_bbbb0000;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: 0,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: TestMethodPtrAux,
+                    invocationCount: 0);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Open, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtrAux, info.TargetMethodPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDelegateInfo_Multicast(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestMethodPtr = 0x00000000_aaaa0000;
+        const long TestInvocationCount = 3;
+        TargetPointer delegateAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                delegateAddress = objectBuilder.AddDelegateObject(
+                    methodTable: TestMethodTable,
+                    target: 0,
+                    methodPtr: TestMethodPtr,
+                    methodPtrAux: 0,
+                    invocationCount: TestInvocationCount);
+            });
+
+        DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
+
+        Assert.Equal(DelegateType.Unknown, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(0ul, info.TargetMethodPtr.Value);
     }
 }

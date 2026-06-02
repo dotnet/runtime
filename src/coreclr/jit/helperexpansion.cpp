@@ -2853,7 +2853,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
+    const CorInfoHelpFunc helper         = call->GetHelperNum();
     int                   lengthArgIndex = -1;
     int                   typeArgIndex   = -1;
 

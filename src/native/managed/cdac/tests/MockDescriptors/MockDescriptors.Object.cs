@@ -140,6 +140,59 @@ internal sealed class MockSyncTableEntry : TypedView
     }
 }
 
+internal sealed class MockDelegateObjectData : TypedView
+{
+    public const string MethodTableFieldName = "m_pMethTab";
+    public const string TargetFieldName = "Target";
+    public const string MethodPtrFieldName = "MethodPtr";
+    public const string MethodPtrAuxFieldName = "MethodPtrAux";
+    public const string InvocationCountFieldName = "InvocationCount";
+
+    public static Layout<MockDelegateObjectData> CreateLayout(MockTarget.Architecture architecture)
+    {
+        SequentialLayoutBuilder builder = new("Delegate", architecture);
+        return builder
+            .AddPointerField(MethodTableFieldName)
+            .AddPointerField(TargetFieldName)
+            .AddPointerField(MethodPtrFieldName)
+            .AddPointerField(MethodPtrAuxFieldName)
+            .AddNIntField(InvocationCountFieldName)
+            .Build<MockDelegateObjectData>();
+    }
+
+    public ulong MethodTable
+    {
+        get => ReadPointerField(MethodTableFieldName);
+        set => WritePointerField(MethodTableFieldName, value);
+    }
+
+    public ulong Target
+    {
+        get => ReadPointerField(TargetFieldName);
+        set => WritePointerField(TargetFieldName, value);
+    }
+
+    public ulong MethodPtr
+    {
+        get => ReadPointerField(MethodPtrFieldName);
+        set => WritePointerField(MethodPtrFieldName, value);
+    }
+
+    public ulong MethodPtrAux
+    {
+        get => ReadPointerField(MethodPtrAuxFieldName);
+        set => WritePointerField(MethodPtrAuxFieldName, value);
+    }
+
+    public long InvocationCount
+    {
+        // Stored at pointer width; on 32-bit, WritePointer truncates the upper bits
+        // so the signed bit pattern of `value` is preserved (e.g. -1 → 0xFFFFFFFF).
+        get => unchecked((long)ReadPointerField(InvocationCountFieldName));
+        set => WritePointerField(InvocationCountFieldName, unchecked((ulong)value));
+    }
+}
+
 internal partial class MockDescriptors
 {
     internal sealed class MockObjectBuilder
@@ -164,6 +217,7 @@ internal partial class MockDescriptors
         internal Layout<MockObjectData> ObjectLayout { get; }
         internal Layout<MockStringObjectData> StringLayout { get; }
         internal Layout<MockArrayObjectData> ArrayLayout { get; }
+        internal Layout<MockDelegateObjectData> DelegateLayout { get; }
         internal Layout<MockSyncTableEntry> SyncTableEntryLayout { get; }
         internal ulong TestStringMethodTableAddress { get; private set; }
         internal Layout<MockSyncBlock> SyncBlockLayout => SyncBlockBuilder.SyncBlockLayout;
@@ -187,6 +241,7 @@ internal partial class MockDescriptors
             ObjectLayout = MockObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             StringLayout = MockStringObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             ArrayLayout = MockArrayObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
+            DelegateLayout = MockDelegateObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             SyncTableEntryLayout = MockSyncTableEntry.CreateLayout(Builder.TargetTestHelpers.Arch);
 
             Debug.Assert(ArrayLayout.Size == Builder.TargetTestHelpers.ArrayBaseSize);
@@ -200,11 +255,10 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)(ObjectLayout.Size + prefixSize), $"Object : MT = '{methodTable}'");
             MockObjectData mockObject = ObjectLayout.Create(fragment.Data.AsMemory((int)prefixSize, ObjectLayout.Size), fragment.Address + prefixSize);
             mockObject.MethodTable = methodTable;
-            Builder.AddHeapFragment(fragment);
             return mockObject.Address;
         }
 
-        internal ulong AddObjectWithSyncBlock(ulong methodTable, uint syncBlockIndex, ulong rcw, ulong ccw, ulong ccf)
+        internal ulong AddObjectWithSyncBlock(ulong methodTable, uint syncBlockIndex, ulong rcw, ulong ccw, ulong ccf, ulong taggedMemory = 0)
         {
             const uint IsSyncBlockIndexBits = 0x08000000;
             const uint SyncBlockIndexMask = (1 << 26) - 1;
@@ -219,7 +273,7 @@ internal partial class MockDescriptors
             ulong syncTableValueAddress = address - TestSyncBlockValueToObjectOffset;
             Builder.TargetTestHelpers.Write(Builder.BorrowAddressRange(syncTableValueAddress, sizeof(uint)), syncTableValue);
 
-            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf);
+            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf, taggedMemory);
             return address;
         }
 
@@ -233,7 +287,6 @@ internal partial class MockDescriptors
             mockString.MethodTable = TestStringMethodTableAddress;
             mockString.StringLength = (uint)value.Length;
             MemoryMarshal.Cast<char, byte>(value).CopyTo(fragment.Data.AsSpan((int)(mockString.FirstCharAddress - fragment.Address)));
-            Builder.AddHeapFragment(fragment);
             return fragment.Address;
         }
 
@@ -273,7 +326,18 @@ internal partial class MockDescriptors
             MockArrayObjectData arrayObject = ArrayLayout.Create(fragment);
             arrayObject.MethodTable = methodTable.Address;
             arrayObject.NumComponents = (uint)array.Length;
-            Builder.AddHeapFragment(fragment);
+            return fragment.Address;
+        }
+
+        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, long invocationCount)
+        {
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)DelegateLayout.Size, $"Delegate : MT = '{methodTable}'");
+            MockDelegateObjectData mockDelegate = DelegateLayout.Create(fragment);
+            mockDelegate.MethodTable = methodTable;
+            mockDelegate.Target = target;
+            mockDelegate.MethodPtr = methodPtr;
+            mockDelegate.MethodPtrAux = methodPtrAux;
+            mockDelegate.InvocationCount = invocationCount;
             return fragment.Address;
         }
 
@@ -306,9 +370,9 @@ internal partial class MockDescriptors
             Builder.AddHeapFragment(fragment);
         }
 
-        private void AddSyncBlock(uint index, ulong rcw, ulong ccw, ulong ccf)
+        private void AddSyncBlock(uint index, ulong rcw, ulong ccw, ulong ccf, ulong taggedMemory = 0)
         {
-            MockSyncBlock syncBlock = SyncBlockBuilder.AddSyncBlock(rcw, ccw, ccf, name: $"Sync Block {index}");
+            MockSyncBlock syncBlock = SyncBlockBuilder.AddSyncBlock(rcw, ccw, ccf, taggedMemory: taggedMemory, name: $"Sync Block {index}");
 
             ulong syncTableEntryAddress = TestSyncTableEntriesAddress + ((ulong)index * (ulong)SyncTableEntryLayout.Size);
             MockMemorySpace.HeapFragment syncTableEntryFragment = new()

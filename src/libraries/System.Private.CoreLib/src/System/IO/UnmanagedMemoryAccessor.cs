@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -456,11 +456,11 @@ namespace System.IO
             }
         }
 
-        public void Write(long position, decimal value)
+        public unsafe void Write(long position, decimal value)
         {
             EnsureSafeToWrite(position, sizeof(decimal));
 
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.TryGetBits(value, bits, out int intsWritten);
             Debug.Assert(intsWritten == 4);
 

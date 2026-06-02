@@ -10,6 +10,7 @@
 #include "pal_dynamicload.h"
 #include "pal_environment.h"
 #include "pal_errno.h"
+#include "pal_getosinfo.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
 #include "pal_iossupportversion.h"
@@ -250,6 +251,11 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
     DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
+#if !defined(TARGET_WASI)
+    DllImportEntry(SystemNative_LowLevelFutex_WaitOnAddress)
+    DllImportEntry(SystemNative_LowLevelFutex_WaitOnAddressTimeout)
+    DllImportEntry(SystemNative_LowLevelFutex_WakeByAddressSingle)
+#endif
     DllImportEntry(SystemNative_LoadLibrary)
     DllImportEntry(SystemNative_GetLoadLibraryError)
     DllImportEntry(SystemNative_GetProcAddress)
@@ -305,6 +311,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
+    DllImportEntry(SystemNative_GetNextAreaInfo)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

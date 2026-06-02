@@ -20,7 +20,9 @@ using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 public static partial class DataContractSerializerTests
 {
@@ -1199,11 +1201,9 @@ public static partial class DataContractSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-#if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
-    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
-#endif
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "AssemblyDependencyResolver not supported on Browser/iOS/tvOS/MacCatalyst")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void DCS_TypeInCollectibleALC()
     {
@@ -1218,11 +1218,9 @@ public static partial class DataContractSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-#if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
-    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
-#endif
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "AssemblyDependencyResolver not supported on Browser/iOS/tvOS/MacCatalyst")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void DCS_CollectionTypeInCollectibleALC()
     {
@@ -4571,20 +4569,48 @@ public static partial class DataContractSerializerTests
     // Random OSR might cause a stack overflow on Windows x64
     private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
 
+    // DCS_DeeplyLinkedData runs the test body on a worker thread for stack-size control,
+    // so it requires multithreading support in addition to the OSR guard.
+    private static bool IsDeeplyLinkedDataSupported => IsNotWindowsRandomOSR && PlatformDetection.IsMultithreadingSupported;
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsNotWindowsRandomOSR))]
+    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsDeeplyLinkedDataSupported))]
     public static void DCS_DeeplyLinkedData()
     {
-        TypeWithLinkedProperty head = new TypeWithLinkedProperty();
-        TypeWithLinkedProperty cur = head;
-        for (int i = 0; i < 513; i++)
+        // The serializer recurses through dynamic-code paths roughly once per linked node.
+        // Default thread stacks on some platforms (notably Apple mobile) are not large enough
+        // for ~513 frames of dynamic-method-driven recursion, so run the body on a worker
+        // thread with an explicit 16 MB stack to keep the test platform-portable. 16 MB
+        // matches the maxStackSize used elsewhere in System.Threading.Thread tests.
+        const int StackSize = 16 * 1024 * 1024;
+        ExceptionDispatchInfo edi = null;
+        Thread t = new Thread(() =>
         {
-            cur.Child = new TypeWithLinkedProperty();
-            cur = cur.Child;
-        }
-        cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
-        TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
-        Assert.NotNull(actual);
+            try
+            {
+                TypeWithLinkedProperty head = new TypeWithLinkedProperty();
+                TypeWithLinkedProperty cur = head;
+                for (int i = 0; i < 513; i++)
+                {
+                    cur.Child = new TypeWithLinkedProperty();
+                    cur = cur.Child;
+                }
+                cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
+                TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
+                Assert.NotNull(actual);
+            }
+            catch (Exception ex)
+            {
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+        }, StackSize)
+        {
+            IsBackground = true,
+        };
+        t.Start();
+        // Bounded join so a runtime-side deadlock can't hang the entire Helix work item.
+        Assert.True(t.Join(TimeSpan.FromMinutes(2)), "DCS_DeeplyLinkedData worker thread did not complete within timeout.");
+        edi?.Throw();
     }
 
     [Fact]

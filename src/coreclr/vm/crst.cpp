@@ -775,21 +775,3 @@ CrstBase::CrstAndForbidSuspendForDebuggerHolder::~CrstAndForbidSuspendForDebugge
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held.
-// Arguments:
-//     input: pLock - the lock to test
-// Note: Throws if the lock is held
-
-void DebugTryCrst(CrstBase * pLock)
-{
-    SUPPORTS_DAC;
-
-    if (g_pConfig && g_pConfig->TestDataConsistency())
-    {
-        CrstHolder crstHolder (pLock);
-    }
-}
-#endif
-

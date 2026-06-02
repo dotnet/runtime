@@ -417,6 +417,10 @@ void VirtualCallStubManager::ResetCache()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {
@@ -495,12 +499,12 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     //
     // Align up all of the commit and reserve sizes
     //
-    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     GetOsPageSize());
-    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      GetOsPageSize());
+    indcell_heap_reserve_size        = (DWORD) ALIGN_UP(indcell_heap_reserve_size,     minipal_getpagesize());
+    indcell_heap_commit_size         = (DWORD) ALIGN_UP(indcell_heap_commit_size,      minipal_getpagesize());
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, GetOsPageSize());
-    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  GetOsPageSize());
+    cache_entry_heap_reserve_size    = (DWORD) ALIGN_UP(cache_entry_heap_reserve_size, minipal_getpagesize());
+    cache_entry_heap_commit_size     = (DWORD) ALIGN_UP(cache_entry_heap_commit_size,  minipal_getpagesize());
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     BYTE * initReservedMem = NULL;
@@ -520,17 +524,17 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
             DWORD dwWastedReserveMemSize = dwTotalReserveMemSize - dwTotalReserveMemSizeCalc;
             if (dwWastedReserveMemSize != 0)
             {
-                DWORD cWastedPages = dwWastedReserveMemSize / GetOsPageSize();
+                DWORD cWastedPages = dwWastedReserveMemSize / minipal_getpagesize();
 
                 // Split the wasted pages over the 2 LoaderHeaps that we allocate as part of a VirtualCallStubManager
                 DWORD cPagesPerHeap = cWastedPages / 2;
                 DWORD cPagesRemainder = cWastedPages % 2; // We'll throw this at the cache entry heap
 
-                indcell_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                indcell_heap_reserve_size += cPagesPerHeap * minipal_getpagesize();
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-                cache_entry_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
+                cache_entry_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * minipal_getpagesize();
 #else
-                indcell_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
+                indcell_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * minipal_getpagesize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
             }
 
@@ -552,15 +556,15 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     }
     else
     {
-        indcell_heap_reserve_size        = GetOsPageSize();
-        indcell_heap_commit_size         = GetOsPageSize();
+        indcell_heap_reserve_size        = minipal_getpagesize();
+        indcell_heap_commit_size         = minipal_getpagesize();
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-        cache_entry_heap_reserve_size    = GetOsPageSize();
-        cache_entry_heap_commit_size     = GetOsPageSize();
+        cache_entry_heap_reserve_size    = minipal_getpagesize();
+        cache_entry_heap_commit_size     = minipal_getpagesize();
 #else
         // If we don't support VSD, use a slightly bigger heap size to avoid wasting memory
-        indcell_heap_reserve_size        = 2 * GetOsPageSize();
+        indcell_heap_reserve_size        = 2 * minipal_getpagesize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef _DEBUG
@@ -681,6 +685,10 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {
@@ -2135,8 +2143,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             // that missed, since we want to keep the resolve cache empty of unused entries.
             // If later the dispatch stub fails (because of another type at the call site),
             // we'll insert the new value into the cache for the next time.
-            // Note that if we decide to skip creating a DispatchStub beacuise we are calling
-            // from a shared to unshared domain the we also will insert into the cache.
 
             if (insertKind == DispatchCache::IK_NONE)
             {

@@ -41,10 +41,10 @@ public class RuntimeFunctionTests
         uint[] entries = [0x100, 0x1f0, 0x1000, 0x2000, 0xa000];
         TargetPointer addr = runtimeFunctions.AddRuntimeFunctions(entries);
 
-        Target target = new TestPlaceholderTarget(
-            builder.TargetTestHelpers.Arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(runtimeFunctions));
+        Target target = new TestPlaceholderTarget.Builder(builder.TargetTestHelpers.Arch)
+            .UseReader(builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(runtimeFunctions))
+            .Build();
         RuntimeFunctionLookup lookup = RuntimeFunctionLookup.Create(target);
 
         for (uint i = 0; i < entries.Length; i++)
@@ -69,13 +69,11 @@ public class RuntimeFunctionTests
         uint[] entries = [0x100, 0x1f0, 0x1000, 0x2000, 0xa000];
         TargetPointer addr = runtimeFunctions.AddRuntimeFunctions(entries);
 
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            builder.TargetTestHelpers.Arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(runtimeFunctions));
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.PlatformMetadata == new Mock<Contracts.IPlatformMetadata>().Object);
-        target.SetContracts(reg);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(builder.TargetTestHelpers.Arch)
+            .UseReader(builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(runtimeFunctions))
+            .AddMockContract(new Mock<Contracts.IPlatformMetadata>())
+            .Build();
         RuntimeFunctionLookup lookup = RuntimeFunctionLookup.Create(target);
 
         for (uint i = 0; i < entries.Length; i++)
@@ -97,13 +95,11 @@ public class RuntimeFunctionTests
         uint[] entries = [0x100, 0x1f0];
         TargetPointer addr = runtimeFunctions.AddRuntimeFunctions(entries);
 
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            builder.TargetTestHelpers.Arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(runtimeFunctions));
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.PlatformMetadata == new Mock<Contracts.IPlatformMetadata>().Object);
-        target.SetContracts(reg);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(builder.TargetTestHelpers.Arch)
+            .UseReader(builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(runtimeFunctions))
+            .AddMockContract(new Mock<Contracts.IPlatformMetadata>())
+            .Build();
         RuntimeFunctionLookup lookup = RuntimeFunctionLookup.Create(target);
 
         TargetPointer relativeAddress = 0x0ff;

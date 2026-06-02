@@ -9,11 +9,15 @@ internal sealed class MockProfControlBlock : TypedView
 {
     private const string GlobalEventMaskFieldName = "GlobalEventMask";
     private const string RejitOnAttachEnabledFieldName = "RejitOnAttachEnabled";
+    private const string MainProfilerProfInterfaceFieldName = "MainProfilerProfInterface";
+    private const string NotificationProfilerCountFieldName = "NotificationProfilerCount";
 
     public static Layout<MockProfControlBlock> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ProfControlBlock", architecture)
             .AddUInt64Field(GlobalEventMaskFieldName)
             .AddField(RejitOnAttachEnabledFieldName, sizeof(byte))
+            .AddPointerField(MainProfilerProfInterfaceFieldName)
+            .AddUInt32Field(NotificationProfilerCountFieldName)
             .Build<MockProfControlBlock>();
 
     public ulong GlobalEventMask
@@ -26,6 +30,18 @@ internal sealed class MockProfControlBlock : TypedView
     {
         get => ReadByteField(RejitOnAttachEnabledFieldName);
         set => WriteByteField(RejitOnAttachEnabledFieldName, value);
+    }
+
+    public ulong MainProfilerProfInterface
+    {
+        get => ReadPointerField(MainProfilerProfInterfaceFieldName);
+        set => WritePointerField(MainProfilerProfInterfaceFieldName, value);
+    }
+
+    public int NotificationProfilerCount
+    {
+        get => (int)ReadUInt32Field(NotificationProfilerCountFieldName);
+        set => WriteUInt32Field(NotificationProfilerCountFieldName, (uint)value);
     }
 }
 
@@ -77,16 +93,17 @@ internal sealed class MockReJITBuilder
     internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout => _codeVersions.ILCodeVersionNodeLayout;
     internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout => _codeVersions.GCCoverageInfoLayout;
 
-    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags)
-        => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags);
+    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags, bool deoptimized = false)
+        => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags, deoptimized);
 
     private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
     {
         MockMemorySpace.HeapFragment fragment = _rejitAllocator.Allocate((ulong)ProfControlBlockLayout.Size, "ProfControlBlock");
-        Builder.AddHeapFragment(fragment);
         MockProfControlBlock profControlBlock = ProfControlBlockLayout.Create(fragment);
         profControlBlock.GlobalEventMask = 0;
         profControlBlock.RejitOnAttachEnabled = rejitOnAttachEnabled ? (byte)1 : (byte)0;
+        profControlBlock.MainProfilerProfInterface = 0;
+        profControlBlock.NotificationProfilerCount = 0;
         return fragment.Address;
     }
 }

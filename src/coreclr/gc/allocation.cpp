@@ -4118,8 +4118,8 @@ void gc_heap::balance_heaps (alloc_context* acontext)
         if (set_home_heap)
         {
             /*
-                        // Since we are balancing up to MAX_SUPPORTED_CPUS, no need for this.
-                        if (n_heaps > MAX_SUPPORTED_CPUS)
+                        // Since we are balancing up to MAX_SUPPORTED_HEAPS, no need for this.
+                        if (n_heaps > MAX_SUPPORTED_HEAPS)
                         {
                             // on machines with many processors cache affinity is really king, so don't even try
                             // to balance on these.

@@ -131,6 +131,10 @@ typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 // the function pointer for keylog
 typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 
+// the function pointer for remote certificate validation, matches the
+// signature expected by SSL_CTX_set_cert_verify_callback directly.
+typedef int (*SslCtxCertVerifyCallback)(X509_STORE_CTX* store, void* arg);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -311,15 +315,85 @@ Shims the SSL_set_bio method.
 PALEXPORT void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
 
 /*
-Shims the SSL_do_handshake method.
+Performs SSL_do_handshake with the input/output BIO windows set up
+and torn down in a single P/Invoke. The input BIO window points at inputPtr
+(ciphertext from peer, may be NULL/0). The output BIO window receives outgoing
+handshake bytes into outputPtr/outputCap; outputWritten reports the count
+placed there. If the handshake emitted more bytes than outputCap, those
+overflow into the BIO spill and outputPending reports their size (caller drains
+via CryptoNative_BioDrainSpill).
 
-Returns:
-1 if the handshake was successful;
-0 if the handshake was not successful but was shut down controlled
-and by the specifications of the TLS/SSL protocol;
-<0 if the handshake was not successful because of a fatal error.
+Returns the SSL_do_handshake return value; errorCode receives SSL_get_error.
 */
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
+PALEXPORT int32_t CryptoNative_SslHandshake(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode);
+
+/*
+Performs SSL_write with the output BIO window set up and torn down
+in a single P/Invoke. plaintextPtr/plaintextLen is the plaintext. outputPtr/
+outputCap is the ciphertext destination window; outputWritten reports bytes
+written, outputPending reports any overflow now in the BIO spill (drain via
+CryptoNative_BioDrainSpill).
+
+Returns the SSL_write return value; errorCode receives SSL_get_error.
+*/
+PALEXPORT int32_t CryptoNative_SslEncrypt(
+    SSL* ssl,
+    const uint8_t* plaintextPtr,
+    int32_t plaintextLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode);
+
+/*
+Performs SSL_read with the input BIO window set up and torn down
+in a single P/Invoke.
+
+inputPtr/inputLen describes the incoming ciphertext window. The buffer is
+also reused as in-place scratch space for plaintext that does not fit into
+the caller-supplied destination (see leftoverOffset/leftoverLength below), so
+inputPtr must point at writable memory.
+
+outputPtr/outputCap is the primary plaintext destination. The function reads
+up to outputCap bytes of plaintext directly into outputPtr and returns that
+count via the function return value.
+
+If outputCap is 0, or if OpenSSL has more plaintext available for the current
+record after the first SSL_read (SSL_pending > 0, e.g. the destination was
+smaller than the record), a second SSL_read drains the remaining plaintext
+back into the input buffer in place starting at inputPtr. The leftover region
+is reported through leftoverOffset / leftoverLength (offset is always 0 on
+Unix; the Windows PAL uses non-zero offsets and the managed contract is
+shared across PALs). The caller is expected to forward those bytes to its
+internal decrypted-data buffer.
+
+consumed receives the number of ciphertext bytes the BIO consumed from the
+input window (inputLen minus any unread tail). errorCode receives SSL_get_error
+mapped on the SSL_read result (or on the second SSL_read if the first did
+not produce data).
+
+Returns the first SSL_read return value (>0 = bytes written to outputPtr).
+*/
+PALEXPORT int32_t CryptoNative_SslDecrypt(
+    SSL* ssl,
+    uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* leftoverOffset,
+    int32_t* leftoverLength,
+    int32_t* errorCode);
 
 /*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.
@@ -334,6 +408,12 @@ Shims the SSL_get_peer_certificate method.
 Returns the certificate presented by the peer.
 */
 PALEXPORT X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
+
+/*
+Attaches the OCSP staple response from the SSL session to the given X509
+certificate via ex_data, if one is available and not already set.
+*/
+PALEXPORT void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert);
 
 /*
 Shims the SSL_get_certificate method.
@@ -362,8 +442,6 @@ Shims the SSL_use_PrivateKey method.
 Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey);
-
-
 
 /*
 Shims the SSL_CTX_use_certificate method.
@@ -406,7 +484,7 @@ PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 /*
 Shims the SSL_set_verify method.
 */
-PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
+PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
 
 /*
 Shims SSL_set_ex_data to attach application context.
@@ -427,6 +505,11 @@ PALEXPORT int32_t  CryptoNative_SslCtxSetData(SSL_CTX* ctx, void* ptr);
 Shims SSL_CTX_get_ex_data to retrieve application context.
 */
 PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl);
 
 /*
 
@@ -557,3 +640,18 @@ PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
 Staples an encoded OCSP response onto the TLS session
 */
 PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
+
+/*
+Sets the certificate verification callback for the SSL_CTX.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback);
+
+/*
+Retrieves the SSL object associated with an X509_STORE_CTX during verification.
+*/
+PALEXPORT SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx);
+
+/*
+Sets the error code on an X509_STORE_CTX.
+*/
+PALEXPORT void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error);
