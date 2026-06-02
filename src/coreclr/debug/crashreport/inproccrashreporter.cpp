@@ -8,6 +8,7 @@
 #include "inproccrashreporter.h"
 #include "inproccrashreportlifecycle.h"
 #include "crashreportstringutils.h"
+#include "inproccrashreportwatchdog.h"
 #include "signalsafeconsolewriter.h"
 #include "signalsafejsonwriter.h"
 #include "signalsafeformatter.h"
@@ -17,6 +18,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <new>
 #include <stdlib.h>
 #include <unistd.h>
@@ -576,6 +578,8 @@ InProcCrashReporter::CreateReport(
     {
         return;
     }
+    CrashReportWatchdogScope watchdogScope;
+
     m_reportFilePath[0] = '\0';
     // The JSON file sink is enabled only by lifecycle-managed output. Otherwise
     // the crash report runs in compact-log-only mode: the JSON emitter still
@@ -708,6 +712,8 @@ InProcCrashReporter::Initialize(
     m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     m_stackOverflowTrace.available = 0;
     m_reportFilePath[0] = '\0';
+
+    (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
 
     m_processName[0] = '\0';
 #if defined(__ANDROID__)

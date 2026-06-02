@@ -130,6 +130,17 @@ public readonly struct GCOomData
     // describes a single segment with the inclusive start and exclusive end of its memory range
     // and its generation tag (or Ephemeral).
     IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData);
+
+    // Given the current probe address within a heap segment and the (aligned) size of the
+    // object that lives at that address, returns the next candidate object address.
+    // Implementations may consult cached per-target allocation-context state.
+    TargetPointer GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment);
+
+    // Aligns an object's raw size (base size + component bytes) to the alignment required by its containing segment
+    ulong AlignObjectSize(ulong size, GCSegmentClassification generation);
 ```
 
 ```csharp
@@ -306,12 +317,15 @@ Contracts used:
 | --- |
 | BuiltInCOM |
 | Object |
+| Thread |
 
 Constants used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
 | `HEAP_SEGMENT_FLAGS_READONLY` | ulong | `HeapSegment.Flags` bit identifying a readonly (e.g. frozen, non-GC) segment. | `1` |
+| `ALIGNCONST` | uint | Alignment mask for small object heaps | Target pointer size - 1 |
+| `ALIGNCONST_LARGE` | uint | Alignment mask for large/pinned object heaps | `7` |
 
 ```csharp
 GCHeapType IGC.GetGCIdentifiers()
@@ -1127,5 +1141,51 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
         current = seg.Next;
         if (iterationMax-- <= 0) throw /* cycle detected */;
     }
+}
+```
+
+GetPotentialNextObjectAddress
+
+Computes the next candidate object address when walking a Gen0/Ephemeral segment.
+Active allocation contexts (per-thread, the global non-thread-local context, and
+the per-heap Gen0 context) carve out reserved-but-not-yet-allocated ranges inside
+such segments; when the naive `current + size` lands on one of those ranges the
+walk must skip past it. The contexts are collected via `IThread.GetThreadStoreData`
+and `IThread.GetThreadData` (per-thread contexts), `IGC.GetGlobalAllocationContext`
+(global context), and `IGC.GetGCIdentifiers` + `IGC.GetGCHeaps` + `IGC.GetHeapData`
+(per-heap Gen0 contexts).
+
+```csharp
+TargetPointer IGC.GetPotentialNextObjectAddress(
+    TargetPointer currentAddress,
+    ulong currentObjectSize,
+    GCHeapSegmentInfo segment)
+{
+    TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
+
+    if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+        return next;
+
+    ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+    foreach (/* context in allocation contexts */ )
+    {
+        if (next == /* context pointer */)
+            return new TargetPointer(/* context limit */ + minObjSize);
+    }
+    return next;
+}
+```
+
+AlignObjectSize
+
+Aligns a raw object size to the alignment required by its containing segment. SOH segments
+use pointer-sized alignment; LOH/POH use 8-byte alignment.
+
+```csharp
+ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+{
+    return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+        ? AlignForLargeObject(size)     // (size + ALIGNCONST_LARGE) & ~ALIGNCONST_LARGE
+        : AlignForSmallObject(size);    // (size + ALIGNCONST) & ~ALIGNCONST
 }
 ```

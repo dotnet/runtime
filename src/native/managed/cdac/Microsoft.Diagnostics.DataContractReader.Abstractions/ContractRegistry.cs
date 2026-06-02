@@ -117,6 +117,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
     /// <summary>
+    /// Gets an instance of the ManagedTypeSource contract for the target.
+    /// </summary>
+    public virtual IManagedTypeSource ManagedTypeSource => GetContract<IManagedTypeSource>();
+    /// <summary>
     /// Gets an instance of the AuxiliarySymbols contract for the target.
     /// </summary>
     public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
@@ -162,8 +166,9 @@ public abstract class ContractRegistry
         where TContract : IContract;
 
     /// <summary>
-    /// Flush all cached data held by contracts in this registry.
-    /// Called when the target process state may have changed (e.g. on resume).
+    /// Flush all cached data held by contracts in this registry for the given
+    /// <paramref name="scope"/>. Called when the target process state may have changed
+    /// (e.g. on resume) or as part of a stress-harness re-read of live target state.
     /// </summary>
-    public abstract void Flush();
+    public abstract void Flush(FlushScope scope);
 }
