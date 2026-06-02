@@ -192,6 +192,14 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
+CDAC_TYPE_BEGIN(Delegate)
+CDAC_TYPE_SIZE(sizeof(DelegateObject))
+CDAC_TYPE_FIELD(Delegate, T_POINTER, Target, cdac_data<DelegateObject>::Target)
+CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtr, cdac_data<DelegateObject>::MethodPtr)
+CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::MethodPtrAux)
+CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
+CDAC_TYPE_END(Delegate)
+
 CDAC_TYPE_BEGIN(StackTraceArrayHeader)
 CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
 CDAC_TYPE_FIELD(StackTraceArrayHeader, T_UINT32, Size, cdac_data<StackTraceArray>::Size)
@@ -332,6 +340,8 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<Lo
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, T_BOOL, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
+CDAC_TYPE_FIELD(LoaderAllocator, T_UINT64, CreationNumber, cdac_data<LoaderAllocator>::CreationNumber)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(LoaderHeap)
@@ -998,6 +1008,7 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, VersionId, cdac_data<ILCodeVersionNo
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
@@ -1557,6 +1568,7 @@ CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCre
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
@@ -1580,7 +1592,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
-CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 1)
 CDAC_GLOBAL(StressLogMaxModules, T_UINT64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)

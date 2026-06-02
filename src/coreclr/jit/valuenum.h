@@ -1384,6 +1384,10 @@ public:
     bool IsVNHWIntrinsicFunc(
         ValueNum vn, VNFuncApp* funcApp, NamedIntrinsic* intrinsicId, unsigned* simdSize, var_types* simdBaseType);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    uint32_t GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType);
+#endif // FEATURE_HW_INTRINSICS
+
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.
     template <typename T>

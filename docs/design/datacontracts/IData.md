@@ -125,6 +125,7 @@ type:
 | `bool` | `target.ReadField<byte>(address, type, "name") != 0` |
 | `TargetPointer` | `target.ReadPointerField(address, type, "name")` |
 | `TargetNUInt` | `target.ReadNUIntField(address, type, "name")` |
+| `TargetNInt` | `target.ReadNIntField(address, type, "name")` |
 | `TargetCodePointer` | `target.ReadCodePointerField(address, type, "name")` |
 | `T` where `T : IData<T>` (in-place struct) | `target.ReadDataField<T>(address, type, "name")` (i.e. `ProcessedData.GetOrAdd<T>(address + offset)`) |
 | `T?` (Nullable<T> on a value type) | wrapped in a `type.Fields.ContainsKey(...)` guard; missing descriptor field yields `default(T?)` (i.e. `null`) |
@@ -320,7 +321,7 @@ public void WriteFlags(uint value)
 
 Rules:
 
-* Property type must be a primitive integer, `bool`, or `TargetNUInt`.
+* Property type must be a primitive integer, `bool`, `TargetNUInt`, or `TargetNInt`.
 * Property must have an explicit setter (`set` or `private set`, not
   `init`).
 * Class must use a descriptor source (`[CdacType("Name")]` or
@@ -697,7 +698,8 @@ declared type without widening, narrowing, or sign-flipping:
 | `T_INT32`           | `int`               |
 | `T_UINT64`          | `ulong`             |
 | `T_INT64`           | `long`              |
-| `T_NUINT` / `T_NINT`| `TargetNUInt`       |
+| `T_NUINT`           | `TargetNUInt`       |
+| `T_NINT`            | `TargetNInt`        |
 | `T_PTR`             | `TargetPointer`     |
 
 Sign-flipping silently corrupts write-back: declaring a `T_INT32`

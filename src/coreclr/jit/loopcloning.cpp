@@ -1906,10 +1906,6 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 //      Returns true if the loop can be cloned. If it returns false,
 //      it prints a message to the JIT dump describing why the loop can't be cloned.
 //
-// Notes: if `true` is returned, then `fgReturnCount` is increased by the number of
-// return blocks in the loop that will be cloned. (REVIEW: this 'predicate' function
-// doesn't seem like the right place to do this change.)
-//
 bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
     if (loop->GetHeader()->isRunRarely())
@@ -1944,20 +1940,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
     }
-
-#ifdef DEBUG
-    // Today we will never see any BBJ_RETURN blocks because we cannot
-    // duplicate loops with EH in them. When we have no try-regions that start
-    // in the loop it is not possible for BBJ_RETURN blocks to be part of the
-    // loop; a BBJ_RETURN block can only be part of the loop if its exceptional
-    // flow can reach the header, but that would require the handler to also be
-    // part of the loop, which guarantees that the loop contains two distinct
-    // EH regions.
-    loop->VisitLoopBlocks([](BasicBlock* block) {
-        assert(!block->KindIs(BBJ_RETURN));
-        return BasicBlockVisit::Continue;
-    });
-#endif
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.

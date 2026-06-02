@@ -291,19 +291,14 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType);
-
     HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain);
+        OUT VMPTR_Object *ppTargetObj);
 
     HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
@@ -408,6 +403,15 @@ private:
                                               DWORD        nTypeArgs,
                                               TypeHandle * pInst);
 
+
+    typedef enum
+    {
+        kUnknownDelegateType,
+        kClosedDelegate,
+        kOpenDelegate,
+    } DelegateType;
+
+    static DelegateType GetDelegateType(VMPTR_Object delegateObject);
 
     // TypeDataWalk
     // This class provides functionality to allow us to read type handles for generic type parameters or the
@@ -598,7 +602,7 @@ public:
     // Gets properties for a module
     HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData);
 
-    HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
+    HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded);
 
     // Get the "type" of address.
     HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
@@ -606,9 +610,6 @@ public:
 
     // Enumerate the assemblies in the appdomain.
     HRESULT STDMETHODCALLTYPE EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
-
-    // Enumerate the moduels in the given assembly.
-    HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
     // When stopped at an event, request a synchronization.
     HRESULT STDMETHODCALLTYPE RequestSyncAtEvent();

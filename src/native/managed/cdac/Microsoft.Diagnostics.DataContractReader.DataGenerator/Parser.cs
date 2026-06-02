@@ -368,6 +368,8 @@ internal static class Parser
                 => (FieldReadKind.Pointer, null, isNullable),
             "global::Microsoft.Diagnostics.DataContractReader.TargetNUInt"
                 => (FieldReadKind.NUInt, null, isNullable),
+            "global::Microsoft.Diagnostics.DataContractReader.TargetNInt"
+                => (FieldReadKind.NInt, null, isNullable),
             "global::Microsoft.Diagnostics.DataContractReader.TargetCodePointer"
                 => (FieldReadKind.CodePointer, null, isNullable),
             _ => (FieldReadKind.Primitive, fqn, isNullable),
