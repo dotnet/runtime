@@ -35,7 +35,11 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     }
 
 #ifndef O_CLOEXEC
-    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+    {
+        close(fd);
+        return FAIL;
+    }
 #endif
 
     int32_t offset = 0;
@@ -54,6 +58,12 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
         }
 
         if (n == 0)
+        {
+            close(fd);
+            return FAIL;
+        }
+
+        if (n > len - offset)
         {
             close(fd);
             return FAIL;
