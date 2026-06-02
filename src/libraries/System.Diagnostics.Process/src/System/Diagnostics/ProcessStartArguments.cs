@@ -48,22 +48,16 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Gets or sets the raw handle to use as the standard input for the new process.
-        /// On Unix, this is a file descriptor value.
-        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardInput { get; set; }
 
         /// <summary>
         /// Gets or sets the raw handle to use as the standard output for the new process.
-        /// On Unix, this is a file descriptor value.
-        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardOutput { get; set; }
 
         /// <summary>
         /// Gets or sets the raw handle to use as the standard error for the new process.
-        /// On Unix, this is a file descriptor value.
-        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardError { get; set; }
 
