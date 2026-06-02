@@ -69,15 +69,37 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal static unsafe void ResumeAsyncMethod(AsyncInstrumentation.Flags flags)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void TryFireResumeAsyncMethod(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
             AsyncTaskDispatcherInfo* current = t_current;
-            if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
+            if (current == null || current->Dispatcher is not AsyncTaskDispatcher activeDispatcher)
             {
-                if ((AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) && activeDispatcher.ContinuationChainChanged) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
-                {
-                    AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, ref current->AsyncProfilerInfo);
-                }
+                return;
+            }
+
+            bool methodEventEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags);
+            bool callstackEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags);
+            if (!methodEventEnabled && !(callstackEnabled && activeDispatcher.LastContinuation != null))
+            {
+                return;
+            }
+
+            ResumeAsyncMethod(activeDispatcher, current, box, methodEventEnabled, callstackEnabled);
+        }
+
+        private static unsafe void ResumeAsyncMethod(AsyncTaskDispatcher activeDispatcher, AsyncTaskDispatcherInfo* info, IAsyncStateMachineBox box, bool methodEventEnabled, bool callstackEnabled)
+        {
+            bool callstackEventEnabled = callstackEnabled && activeDispatcher.ReachedLastContinuation;
+
+            if (!activeDispatcher.ReachedLastContinuation && ReferenceEquals(activeDispatcher.LastContinuation, box))
+            {
+                activeDispatcher.ReachedLastContinuation = true;
+            }
+
+            if (methodEventEnabled || callstackEventEnabled)
+            {
+                AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, box, ref info->AsyncProfilerInfo);
             }
         }
 
@@ -99,11 +121,11 @@ namespace System.Runtime.CompilerServices
 
         internal IAsyncStateMachineBox? InnerBox => _inner;
 
-        // Set by SuspendAsyncContext when this dispatcher's box yields during its single MoveNext.
-        // Dispatcher instances are one-shot (one MoveNext call per dispatcher), so default-false is sufficient.
         internal bool Suspended;
 
         internal Task? LastContinuation;
+
+        internal bool ReachedLastContinuation;
 
         internal AsyncTaskDispatcher(IAsyncStateMachineBox inner) : base()
         {
@@ -142,12 +164,10 @@ namespace System.Runtime.CompilerServices
             AsyncTaskDispatcher? activeDispatcher = AsyncTaskDispatcherInfo.SuspendAsyncContext(flags);
             if (activeDispatcher != null)
             {
-                Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Suspended Id={activeDispatcher.ContextId}, tid={Environment.CurrentManagedThreadId}");
                 return new AsyncTaskDispatcher(box, activeDispatcher);
             }
 
             AsyncTaskDispatcher newDispatcher = new AsyncTaskDispatcher(box);
-            Debug.WriteLine($"[AsyncTaskDispatcher.Create] New dispatcher Id={newDispatcher.ContextId}, tid={Environment.CurrentManagedThreadId}");
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(AsyncInstrumentation.SyncActiveFlags()))
             {
                 AsyncProfiler.CreateAsyncContext.Create((ulong)newDispatcher.ContextId);
@@ -166,8 +186,6 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Thread={Environment.CurrentManagedThreadId}, Id={ContextId}, inner={inner.GetType().Name}, tid={Environment.CurrentManagedThreadId}");
-
             AsyncTaskDispatcherInfo dispatcherInfo;
             ref AsyncTaskDispatcherInfo* refCurrent = ref AsyncTaskDispatcherInfo.t_current;
             AsyncTaskDispatcherInfo* previous = refCurrent;
@@ -181,7 +199,6 @@ namespace System.Runtime.CompilerServices
 
             if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Resuming Id={ContextId}, tid={Environment.CurrentManagedThreadId}");
                 AsyncProfiler.ResumeAsyncContext.Resume(ref dispatcherInfo);
             }
 
@@ -193,7 +210,6 @@ namespace System.Runtime.CompilerServices
             {
                 if (!Suspended && AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
-                    Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Completed Id={ContextId}, tid={Environment.CurrentManagedThreadId}");
                     AsyncProfiler.CompleteAsyncContext.Complete(this, ref dispatcherInfo.AsyncProfilerInfo);
                 }
 

@@ -359,11 +359,7 @@ namespace System.Runtime.CompilerServices
                     AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
-                        {
-                            Debug.WriteLine($"[AsyncTaskMethodBuilder.MoveNext] method={GetType().Name}, tid={Environment.CurrentManagedThreadId}");
-                            AsyncTaskDispatcherInfo.ResumeAsyncMethod(flags);
-                        }
+                        AsyncTaskDispatcherInfo.TryFireResumeAsyncMethod(this, flags);
                     }
 
                     Debug.Assert(!AsyncTaskDispatcherInfo.IsSuspended);
@@ -605,7 +601,6 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(flags))
                 {
-                    Debug.WriteLine($"[AsyncTaskMethodBuilder.SetExistingTaskResult] method={task.GetType().Name}, tid={Environment.CurrentManagedThreadId}");
                     AsyncTaskDispatcherInfo.CompleteAsyncMethod();
                 }
             }
@@ -643,7 +638,6 @@ namespace System.Runtime.CompilerServices
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
             if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags) && AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
             {
-                Debug.WriteLine($"[AsyncTaskMethodBuilder.SetException] method={taskField.GetType().Name}, tid={Environment.CurrentManagedThreadId}");
                 AsyncTaskDispatcherInfo.UnwindAsyncFrame();
             }
 
