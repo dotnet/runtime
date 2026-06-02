@@ -27,25 +27,25 @@ public sealed class CdacGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Emit the LayoutPair and TypeNameResolver helpers as internal source ONLY
+        // Emit the LayoutSet and TypeNameResolver helpers as internal source ONLY
         // when the consuming assembly doesn't already see them (via project reference
         // + InternalsVisibleTo). This avoids CS0436 type-conflict errors in assemblies
         // that inherit the helpers from a referenced assembly (e.g. the Tests project
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
         // Each helper is gated independently to handle version-skew scenarios where
         // one helper is present but the other is not.
-        IncrementalValueProvider<(bool EmitLayoutPair, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
+        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
-                EmitLayoutPair: compilation.GetTypeByMetadataName(LayoutPairSource.FullyQualifiedName) is null,
+                EmitLayoutSet: compilation.GetTypeByMetadataName(LayoutSetSource.FullyQualifiedName) is null,
                 EmitTypeNameResolver: compilation.GetTypeByMetadataName(TypeNameResolverSource.FullyQualifiedName) is null));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
-            if (flags.EmitLayoutPair)
+            if (flags.EmitLayoutSet)
             {
                 ctx.AddSource(
-                    LayoutPairSource.HintName,
-                    SourceText.From(LayoutPairSource.Source, Encoding.UTF8));
+                    LayoutSetSource.HintName,
+                    SourceText.From(LayoutSetSource.Source, Encoding.UTF8));
             }
 
             if (flags.EmitTypeNameResolver)

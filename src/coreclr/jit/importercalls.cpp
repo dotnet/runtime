@@ -3268,7 +3268,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         else
         {
             assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
         }
     }
 
@@ -5830,11 +5830,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 // impPrimitiveNamedIntrinsic: import a NamedIntrinsic representing a primitive operation
 //
 // Arguments:
-//    intrinsic - the intrinsic being imported
-//    clsHnd    - handle for the intrinsic method's class
-//    method    - handle for the intrinsic method
-//    sig       - signature of the intrinsic method
-//   mustExpand    - true if the intrinsic must return a GenTree*; otherwise, false
+//    intrinsic  - the intrinsic being imported
+//    clsHnd     - handle for the intrinsic method's class
+//    method     - handle for the intrinsic method
+//    sig        - signature of the intrinsic method
+//    entryPoint - The entry point information required for R2R scenarios
+//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Returns:
 //    IR tree to use in place of the call, or nullptr if the jit should treat
@@ -5843,7 +5844,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                               CORINFO_CLASS_HANDLE  clsHnd,
                                               CORINFO_METHOD_HANDLE method,
-                                              CORINFO_SIG_INFO*     sig,
+                                              CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                               bool                  mustExpand)
 {
     assert(sig->sigInst.classInstCount == 0);
@@ -6201,31 +6202,101 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
+#if defined(FEATURE_HW_INTRINSICS)
+            impPopStack();
 
-            if (varTypeIsSigned(baseType))
+            GenTree* op1Dup = nullptr;
+
+            if (!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)))
             {
-                // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
-                break;
+                op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for signed Log2"));
+                assert(op1Dup != nullptr);
+
+                // We will insert a qmark below that is the first use
+                std::swap(op1, op1Dup);
             }
 
-#if defined(FEATURE_HW_INTRINSICS)
-            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig, mustExpand);
+            // The 0->0 contract is fulfilled by setting the LSB to 1.
+            // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+            op1 = gtNewOperNode(GT_OR, baseType, op1, gtNewIconNode(1, baseType));
 
-            if (lzcnt != nullptr)
+            bool isLzcnt = true;
+            bool isLong  = varTypeIsLong(baseType);
+
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else
+            {
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+                isLzcnt     = false;
+            }
+#elif defined(TARGET_ARM64)
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
+#else
+#error Unsupported platform
+#endif
+
+            if (isLzcnt)
             {
                 GenTree* icon;
 
-                if (varTypeIsLong(retType))
+                if (isLong)
                 {
-                    icon = gtNewLconNode(63);
+                    if (varTypeIsLong(baseType))
+                    {
+                        icon = gtNewLconNode(63);
+                    }
+                    else
+                    {
+                        icon = gtNewIconNode(63);
+                    }
                 }
                 else
                 {
-                    icon = gtNewIconNode(31, retType);
+                    icon = gtNewIconNode(31);
                 }
 
-                result   = gtNewOperNode(GT_XOR, retType, lzcnt, icon);
+                result = gtNewOperNode(GT_XOR, baseType, result, icon);
+            }
+
+            if (retType != baseType)
+            {
+                result   = gtFoldExpr(gtNewCastNode(retType, result, /* unsigned */ true, retType));
                 baseType = retType;
+            }
+
+            if (op1Dup != nullptr)
+            {
+                // The logical operation is:
+                //   result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                //
+                // However, we don't want the exception message to deviate in the case `(value < 0)`
+                // and so we track it as a rewritable intrinsic node instead. This allows rationalization
+                // to ensure we actually get the CALL, but still allows DCE and other opts the rest of
+                // the JIT.
+
+                assert(!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)));
+                op1 = impCloneExpr(op1Dup, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for signed Log2"));
+
+                GenTree* fallback =
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
+                GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
+                GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
+
+                // Ensure the fallback will end up set to run rarely
+                qmark->SetThenNodeLikelihood(0);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
+                impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, retType);
             }
 #endif // FEATURE_HW_INTRINSICS
 
