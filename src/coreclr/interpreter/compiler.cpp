@@ -5907,7 +5907,7 @@ void InterpCompiler::WrapTopOfStackInAwait()
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
-    EmitSuspend(awaitSig.retType, ContinuationContextHandling::ContinueOnCapturedContext);
+    EmitSuspend(awaitSig.retType, ContinuationContextHandling::None);
 }
 
 static void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
