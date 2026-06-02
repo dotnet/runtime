@@ -107,17 +107,11 @@ namespace ILCompiler
 
             if (hash is not null || !mangledName.AsSpan().SequenceEqual(literal.AsSpan()))
             {
-                if (hash is null)
-                {
-                    lock (this)
-                    {
-                        // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                        // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                        // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                        // failure.
-                        hash = SHA256.HashData(literal.AsSpan());
-                    }
-                }
+                // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                // failure.
+                hash ??= SHA256.HashData(literal.AsSpan());
 
                 mangledName = new Utf8StringBuilder()
                     .Append(mangledName)
