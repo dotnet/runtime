@@ -155,7 +155,6 @@ The contract depends on the following other contracts
 | Contract |
 | --- |
 | Object |
-| StackWalk |
 
 ``` csharp
 enum TLSIndexType
