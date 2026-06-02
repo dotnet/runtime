@@ -125,17 +125,14 @@ namespace System.Net.Security
 
             TlsSession session = new TlsSession(context);
             session._socketHandle = socket;
-            session._socket = new Socket(socket);
 #if !TARGET_WINDOWS
-            // Bind the socket fd directly to the SSL object so OpenSSL drives
-            // ciphertext I/O itself. AllocateSslHandle inspects SocketFd and
-            // skips ManagedSpanBio installation when set (>= 0).
-            IntPtr raw = socket.DangerousGetHandle();
-            if (raw != IntPtr.Zero && raw.ToInt64() >= 0)
-            {
-                session._options.SocketFd = checked((int)raw.ToInt64());
-                session._useFdMode = true;
-            }
+            // Bind the socket directly to the SSL object so OpenSSL drives
+            // ciphertext I/O itself. AllocateSslHandle inspects SocketHandle and
+            // skips the ManagedSpanBio installation when set.
+            session._options.SocketHandle = socket;
+            session._useFdMode = true;
+#else
+            session._socket = new Socket(socket);
 #endif
             return session;
         }
@@ -1504,7 +1501,7 @@ namespace System.Net.Security
 
         private void ThrowIfNotSocketBound()
         {
-            if (_socket is null)
+            if (_socketHandle is null)
             {
                 throw new InvalidOperationException("Session is not socket-bound.");
             }

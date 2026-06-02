@@ -320,7 +320,7 @@ Shims the SSL_set_fd method. Binds an existing socket file descriptor to the
 SSL object; OpenSSL allocates a socket BIO internally for both read and write.
 Returns 1 on success, 0 on failure.
 */
-PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, int32_t fd);
+PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd);
 
 /*
 Raw SSL_do_handshake wrapper for fd-bound SSL objects (SSL_set_fd path).

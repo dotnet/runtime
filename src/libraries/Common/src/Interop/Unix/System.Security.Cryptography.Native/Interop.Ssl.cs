@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -118,7 +119,7 @@ internal static partial class Interop
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd", SetLastError = true)]
-        internal static partial int SslSetFd(SafeSslHandle ssl, int fd);
+        internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
@@ -485,8 +486,8 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            int fd = options.SocketFd;
-            bool useFd = fd >= 0;
+            SafeSocketHandle? socket = options.SocketHandle;
+            bool useFd = socket is not null && !socket.IsInvalid;
 
             SafeBioHandle? readBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
             SafeBioHandle? writeBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
@@ -508,7 +509,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (useFd)
             {
-                if (Interop.Ssl.SslSetFd(handle, fd) != 1)
+                if (Interop.Ssl.SslSetFd(handle, socket!) != 1)
                 {
                     handle.Dispose();
                     throw Interop.OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);

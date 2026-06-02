@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Net.Sockets;
 
 namespace System.Net.Security
 {
@@ -17,10 +18,10 @@ namespace System.Net.Security
         // \u2014 each per-session clone gets the field re-stamped by CreateSessionOptions.
         internal SafeSslContextHandle? PreallocatedSslContext { get; set; }
 
-        // Socket file descriptor to bind to the SSL object via SSL_set_fd. When set
-        // (>= 0), SafeSslHandle.Create skips the ManagedSpanBio installation and the
-        // SSL object reads/writes the socket directly. Used by TlsSession's
-        // socket-bound mode (Create(TlsContext, SafeSocketHandle)).
-        internal int SocketFd { get; set; } = -1;
+        // Socket handle to bind to the SSL object via SSL_set_fd. When set,
+        // SafeSslHandle.Create skips the ManagedSpanBio installation and OpenSSL
+        // reads/writes the socket directly. Used by TlsSession's socket-bound mode
+        // (Create(TlsContext, SafeSocketHandle)).
+        internal SafeSocketHandle? SocketHandle { get; set; }
     }
 }
