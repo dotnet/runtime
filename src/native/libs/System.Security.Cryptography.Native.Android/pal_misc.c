@@ -57,13 +57,8 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
             return FAIL;
         }
 
+        // Avoid spinning if /dev/urandom unexpectedly returns no data.
         if (n == 0)
-        {
-            close(fd);
-            return FAIL;
-        }
-
-        if (n > len - offset)
         {
             close(fd);
             return FAIL;
