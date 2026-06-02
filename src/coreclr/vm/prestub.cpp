@@ -2138,6 +2138,10 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            // WASM-TODO, other implementation of calling InvokeManagedMethod in a try/catch
+            // have _ASSERTE(ohThrowable) here, but I found this to cause a problem
+            // when using C++ eh to unwind across a block of R2R Wasm code from one
+            // interpreter block to another.
             if (ohThrowable != NULL && finishedPrestubPortion)
             {
                 StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)block, pMethod, NULL);

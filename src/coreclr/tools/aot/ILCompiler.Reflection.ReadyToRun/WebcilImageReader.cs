@@ -296,6 +296,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     throw new BadImageFormatException("Invalid WASM reftype with negative heaptype index");
                 }
+                // The heaptype index was positive, and therefore parseable
+                return;
             }
             throw new BadImageFormatException("Invalid WASM reftype");
         }

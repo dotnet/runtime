@@ -5866,7 +5866,7 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
             if (localIndex == 0)
             {
                 // This should never happen, since the first RUNTIME_FUNCTION in a function table index range should always be a non-funclet entry for the main
-                // function, but if it does, we by returning 0.
+                // function, but if it does, we report failure by returning 0.
                 return 0;
             }
             localIndex--;
