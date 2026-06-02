@@ -7076,6 +7076,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         if (GetVNFunc(vn, &funcApp))
         {
             // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+#if defined(FEATURE_HW_INTRINSICS)
             NamedIntrinsic id;
             unsigned       simdSize;
             var_types      simdBaseType;
@@ -7096,6 +7097,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     }
                 }
             }
+#endif // FEATURE_HW_INTRINSICS
 
             switch (funcApp.GetFunc())
             {

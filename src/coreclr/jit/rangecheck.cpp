@@ -720,6 +720,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     VNFuncApp funcApp;
     if (comp->vnStore->GetVNFunc(num, &funcApp))
     {
+#if defined(FEATURE_HW_INTRINSICS)
         // Some HWIntrinsic functions have known result ranges that can be queried via flags.
         NamedIntrinsic id;
         unsigned       simdSize;
@@ -738,6 +739,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 result = GetRangeFromType(simdBaseType);
             }
         }
+#endif // FEATURE_HW_INTRINSICS
 
         switch (funcApp.GetFunc())
         {
