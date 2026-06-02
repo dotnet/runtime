@@ -36,6 +36,9 @@ bool PerfMap::s_IndividualAllocationStubReporting = false;
 
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
+CrstStatic PerfMap::s_csPerfMapDeferred;
+PerfMapDeferredEntry * PerfMap::s_pDeferredHead = nullptr;
+PerfMapDeferredEntry * PerfMap::s_pDeferredTail = nullptr;
 
 bool PerfMapLowGranularityStubs()
 {
@@ -48,6 +51,7 @@ void PerfMap::Initialize()
     LIMITED_METHOD_CONTRACT;
 
     s_csPerfMap.Init(CrstPerfMap);
+    s_csPerfMapDeferred.Init(CrstPerfMapDeferredActions, CRST_UNSAFE_ANYMODE);
 
     PerfMapType perfMapType = (PerfMapType)CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled);
     PerfMap::Enable(perfMapType, false);
@@ -79,9 +83,49 @@ void PerfMap::InitializeConfiguration()
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
 }
 
+// Replay all deferred entries under s_csPerfMap. Caller must already hold s_csPerfMap.
+void PerfMap::ReplayDeferredEntries()
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(s_csPerfMap.OwnedByCurrentThread());
+
+    CrstHolder chDeferred(&s_csPerfMapDeferred);
+
+    PerfMapDeferredEntry * pEntry = s_pDeferredHead;
+    s_pDeferredHead = nullptr;
+    s_pDeferredTail = nullptr;
+
+    while (pEntry != nullptr)
+    {
+        PerfMapDeferredEntry * pNext = pEntry->next;
+
+        if (s_Current != nullptr)
+        {
+            s_Current->WriteLine(pEntry->line);
+        }
+
+        if (pEntry->timestamp != 0)
+        {
+            PAL_PerfJitDump_LogMethodWithTimestamp(
+                (void*)pEntry->pCode,
+                pEntry->codeSize,
+                pEntry->name.GetUTF8(),
+                nullptr,
+                nullptr,
+                pEntry->timestamp,
+                pEntry->codeBuffer,
+                pEntry->codeBufferSize);
+        }
+
+        delete pEntry;
+        pEntry = pNext;
+    }
+}
+
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     if (type == PerfMapType::DISABLED)
     {
@@ -90,6 +134,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     {
         CrstHolder ch(&(s_csPerfMap));
+        ReplayDeferredEntries();
 
         const char* basePath = InternalConstructPath();
 
@@ -207,6 +252,7 @@ void PerfMap::Disable()
     if (s_enabled)
     {
         CrstHolder ch(&(s_csPerfMap));
+        ReplayDeferredEntries();
 
         s_enabled = false;
         if (s_Current != nullptr)
@@ -218,6 +264,21 @@ void PerfMap::Disable()
         // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
         PAL_PerfJitDump_Finish();
     }
+}
+
+bool PerfMap::HasDeferredEntries()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return s_pDeferredHead != nullptr;
+}
+
+void PerfMap::DrainDeferredEntries()
+{
+    STANDARD_VM_CONTRACT;
+
+    CrstHolder ch(&s_csPerfMap);
+    ReplayDeferredEntries();
 }
 
 // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
@@ -294,16 +355,7 @@ void PerfMap::WriteLine(SString& line)
 
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
-    LIMITED_METHOD_CONTRACT;
-
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pMethod != nullptr);
-        PRECONDITION(pCode != nullptr);
-        PRECONDITION(codeSize > 0);
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!s_enabled)
     {
@@ -333,6 +385,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 
         {
             CrstHolder ch(&(s_csPerfMap));
+            ReplayDeferredEntries();
 
             if(s_Current != nullptr)
             {
@@ -349,7 +402,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 // Log a pre-compiled method to the perfmap.
 void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     if (!s_enabled)
     {
@@ -380,12 +433,14 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
+            ReplayDeferredEntries();
             PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
+            ReplayDeferredEntries();
 
             if (s_ShowOptimizationTiers)
             {
@@ -442,13 +497,20 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         SString line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
-        {
-            CrstHolder ch(&(s_csPerfMap));
+        // Queue the operation under s_csPerfMapDeferred instead of taking s_csPerfMap
+        // directly. LogStubs may be called while an ANYMODE lock is held, and s_csPerfMap
+        // is a DEFAULT lock that may trigger a GC mode transition.
+        PerfMapDeferredEntry * pEntry = new PerfMapDeferredEntry();
+        pEntry->name.Set(name);
+        pEntry->line.Set(line);
+        pEntry->pCode = pCode;
+        pEntry->codeSize = codeSize;
 
-            if(s_Current != nullptr)
-            {
-                s_Current->WriteLine(line);
-            }
+        // Only capture timestamp and code buffer when JitDump is active.
+        // These are expensive operations that are unnecessary for perfmap-only mode.
+        if (PAL_PerfJitDump_IsStarted())
+        {
+            pEntry->timestamp = PAL_PerfJitDump_GetTimeStamp();
 
             // For block-level stub allocations, the memory may be reserved but not yet committed.
             // Emitting code bytes in that case can cause jitdump logging to fail, and the bytes
@@ -457,7 +519,36 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             // Even when the memory is committed, block-level stubs are reported at commit time
             // before the actual stub code has been written, so the code bytes would be zeros or
             // uninitialized. We therefore skip code bytes for block allocations entirely.
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
+            if (stubAllocationType != PerfMapStubType::Block)
+            {
+                pEntry->codeBufferSize = codeSize;
+                pEntry->codeBuffer = new BYTE[codeSize];
+                memcpy(pEntry->codeBuffer, (void*)pCode, codeSize);
+            }
+            else
+            {
+                pEntry->codeBufferSize = 0;
+            }
+        }
+        else
+        {
+            pEntry->timestamp = 0;
+            pEntry->codeBufferSize = 0;
+        }
+        pEntry->next = nullptr;
+
+        {
+            CrstHolder chDeferred(&s_csPerfMapDeferred);
+
+            if (s_pDeferredTail != nullptr)
+            {
+                s_pDeferredTail->next = pEntry;
+            }
+            else
+            {
+                s_pDeferredHead = pEntry;
+            }
+            s_pDeferredTail = pEntry;
         }
     }
     EX_CATCH{} EX_END_CATCH

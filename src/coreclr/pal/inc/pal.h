@@ -374,6 +374,18 @@ PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void
 PALIMPORT
 int
 PALAPI
+// Log a method to the jitdump file with a pre-captured timestamp and code buffer.
+PAL_PerfJitDump_LogMethodWithTimestamp(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, uint64_t timestamp, void* codeBuffer, size_t codeBufferSize);
+
+PALIMPORT
+uint64_t
+PALAPI
+// Get the current timestamp in the same format used by jitdump records.
+PAL_PerfJitDump_GetTimeStamp();
+
+PALIMPORT
+int
+PALAPI
 // Finish the jitdump file
 PAL_PerfJitDump_Finish();
 

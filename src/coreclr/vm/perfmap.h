@@ -19,6 +19,19 @@ enum class PerfMapStubType
     Individual
 };
 
+struct PerfMapDeferredEntry
+{
+    SString name;
+    SString line;
+    PCODE pCode;
+    size_t codeSize;
+    uint64_t timestamp;
+    NewArrayHolder<BYTE> codeBuffer;
+    size_t codeBufferSize;
+
+    PerfMapDeferredEntry * next;
+};
+
 class PerfMap
 {
 private:
@@ -41,6 +54,11 @@ private:
     static unsigned s_StubsMapped;
 
     static CrstStatic s_csPerfMap;
+    static CrstStatic s_csPerfMapDeferred;
+
+    // Queue of deferred operations to replay under s_csPerfMap.
+    static PerfMapDeferredEntry * s_pDeferredHead;
+    static PerfMapDeferredEntry * s_pDeferredTail;
 
     // The file stream to write the map to.
     FILE * m_fp;
@@ -61,6 +79,9 @@ private:
     static const char* InternalConstructPath();
 
     static void InitializeConfiguration();
+
+    // Replay all deferred entries. Must be called while holding s_csPerfMap.
+    static void ReplayDeferredEntries();
 
 protected:
     // Open the perf map file for write.
@@ -106,6 +127,12 @@ public:
 
     // Close the map and flush any remaining data.
     static void Disable();
+
+    // Drain any deferred entries. Called from the finalizer thread's extra work path.
+    static void DrainDeferredEntries();
+
+    // Returns true if there are deferred entries waiting to be drained.
+    static bool HasDeferredEntries();
 
     // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
     static void SignalDependenciesReady();

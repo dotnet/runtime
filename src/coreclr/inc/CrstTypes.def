@@ -517,6 +517,10 @@ End
 
 Crst PerfMap
     AcquiredAfter CodeVersioning AssemblyList
+    AcquiredBefore PerfMapDeferredActions
+End
+
+Crst PerfMapDeferredActions
 End
 
 Crst InterfaceDispatchGlobalLists

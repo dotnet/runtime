@@ -11,6 +11,9 @@
 #include "eventpipeadapter.h"
 #include "ebr.h"
 #include "dn-stdio.h"
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -154,7 +157,11 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
-        || g_EbrCollector.CleanUpRequested();
+        || g_EbrCollector.CleanUpRequested()
+#ifdef FEATURE_PERFMAP
+        || PerfMap::HasDeferredEntries()
+#endif
+        ;
 
 #endif // TARGET_WASM
 }
@@ -210,6 +217,14 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         GCX_PREEMP();
         g_EbrCollector.CleanUpPending();
     }
+
+#ifdef FEATURE_PERFMAP
+    if (PerfMap::HasDeferredEntries())
+    {
+        GCX_PREEMP();
+        PerfMap::DrainDeferredEntries();
+    }
+#endif
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()

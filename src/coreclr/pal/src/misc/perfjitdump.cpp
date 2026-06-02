@@ -330,6 +330,86 @@ exit:
         return 0;
     }
 
+    int LogMethodWithTimestamp(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, uint64_t timestamp, void* codeBuffer, size_t codeBufferSize)
+    {
+        int result = 0;
+
+        if (enabled)
+        {
+            size_t symbolLen = strlen(symbol);
+
+            JitCodeLoadRecord record;
+
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeBufferSize;
+
+            record.header.timestamp = timestamp;
+            record.vma = (uint64_t) pCode;
+            record.code_addr = (uint64_t) pCode;
+            record.code_size = codeSize;
+            record.header.total_size = bytesRemaining;
+
+            iovec items[] = {
+                { &record, sizeof(JitCodeLoadRecord) },
+                { (void *)symbol, symbolLen + 1 },
+                { codeBuffer, codeBufferSize },
+            };
+            size_t itemsCount = sizeof(items) / sizeof(items[0]);
+
+            size_t itemsWritten = 0;
+
+            if (!enabled)
+                goto exit2;
+
+            // Increment codeIndex while locked
+            record.code_index = ++codeIndex;
+
+            do
+            {
+                result = writev(fd, items + itemsWritten, itemsCount - itemsWritten);
+
+                if ((size_t)result == bytesRemaining)
+                    break;
+
+                if (result == -1)
+                {
+                    if (errno == EINTR)
+                        continue;
+
+                    return FatalError();
+                }
+
+                // Detect unexpected failure cases.
+                _ASSERTE(bytesRemaining > (size_t)result);
+                _ASSERTE(result > 0);
+
+                // Handle partial write case
+
+                bytesRemaining -= result;
+
+                do
+                {
+                    if ((size_t)result < items[itemsWritten].iov_len)
+                    {
+                        items[itemsWritten].iov_len -= result;
+                        items[itemsWritten].iov_base = (void*)((size_t) items[itemsWritten].iov_base + result);
+                        break;
+                    }
+                    else
+                    {
+                        result -= items[itemsWritten].iov_len;
+                        itemsWritten++;
+
+                        // Detect unexpected failure case.
+                        _ASSERTE(itemsWritten < itemsCount);
+                    }
+                } while (result > 0);
+            } while (true);
+
+        }
+exit2:
+        return 0;
+    }
+
     int Finish()
     {
         int result = 0;
@@ -396,6 +476,20 @@ PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void
 
 int
 PALAPI
+PAL_PerfJitDump_LogMethodWithTimestamp(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, uint64_t timestamp, void* codeBuffer, size_t codeBufferSize)
+{
+    return GetState().LogMethodWithTimestamp(pCode, codeSize, symbol, debugInfo, unwindInfo, timestamp, codeBuffer, codeBufferSize);
+}
+
+uint64_t
+PALAPI
+PAL_PerfJitDump_GetTimeStamp()
+{
+    return GetTimeStampNS();
+}
+
+int
+PALAPI
 PAL_PerfJitDump_Finish()
 {
     return GetState().Finish();
@@ -420,6 +514,20 @@ PAL_PerfJitDump_IsStarted()
 int
 PALAPI
 PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+{
+    return 0;
+}
+
+int
+PALAPI
+PAL_PerfJitDump_LogMethodWithTimestamp(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, uint64_t timestamp, void* codeBuffer, size_t codeBufferSize)
+{
+    return 0;
+}
+
+uint64_t
+PALAPI
+PAL_PerfJitDump_GetTimeStamp()
 {
     return 0;
 }

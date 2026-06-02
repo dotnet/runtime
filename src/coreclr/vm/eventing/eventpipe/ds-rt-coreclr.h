@@ -233,7 +233,7 @@ static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-	LIMITED_METHOD_CONTRACT;
+	STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
