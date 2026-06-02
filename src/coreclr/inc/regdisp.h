@@ -44,6 +44,11 @@ struct REGDISPLAY_BASE {
     TADDR SP;
     TADDR ControlPC; // LOONGARCH: use RA for PC
 
+#if defined(TARGET_ARM64)
+    TADDR CurrentContextSpForPacSign;
+    TADDR CallerContextSpForPacSign;
+#endif // TARGET_ARM64
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     TADDR SSP;
 #endif
@@ -452,6 +457,11 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
         pRD->IsCallerContextValid = TRUE;
         pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
     }
+
+#if defined(TARGET_ARM64)
+    pRD->CurrentContextSpForPacSign = 0;
+    pRD->CallerContextSpForPacSign  = 0;
+#endif // TARGET_ARM64
 
 #ifdef DEBUG_REGDISPLAY
     pRD->_pThread = NULL;

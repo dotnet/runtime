@@ -1396,11 +1396,6 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     return true;
 }
 
-bool UnwindHelpers::FindUnwindSections(uintptr_t pc, UnwindInfoSections &sections)
-{
-    return _addressSpace.findUnwindSections(pc, sections);
-}
-
 #if defined(TARGET_APPLE)
 // Apple considers _dyld_find_unwind_sections to be private API that cannot be used
 // by apps submitted to App Store and TestFlight, both for iOS-like and macOS platforms.

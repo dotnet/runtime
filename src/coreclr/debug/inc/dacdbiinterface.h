@@ -1779,7 +1779,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This function will return a failure HRESULT if given a NULL or otherwise invalid pointer,
     //    but if given a valid address to an invalid pointer, it will produce
     //    a VMPTR_Object which points to invalid memory.
@@ -1796,7 +1795,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This will produce a VMPTR_Object regardless of whether the pointer is
     //    valid or not.
     virtual HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal) = 0;
@@ -1877,22 +1875,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     virtual HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal) = 0;
-
-    // Given a VMPTR to an Object, get the target address.
-    //
-    // Arguments:
-    //    obj      - the Object VMPTR to get the address from
-    //    pRetVal - [out] The target address which obj is using.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The VMPTR this consumes can be reconstructed using GetObject and
-    //    providing the address stored in the returned TargetBuffer. This has
-    //    undefined behavior for invalid VMPTR_Objects.
-
-    virtual HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal) = 0;
 
     //
     // Get the thread which owns the monitor lock on an object and the acquisition
@@ -2231,19 +2213,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable) = 0;
 
-
-    typedef enum
-    {
-        kClosedDelegate,
-        kOpenDelegate,
-        kOpenInstanceVSD,
-        kClosedStaticWithScpecialSig,
-        kTrueMulticastDelegate,
-        kWrapperDelegate,
-        kUnmanagedFunctionDelegate,
-        kUnknownDelegateType
-    } DelegateType;
-
     // Returns true if the object is a type deriving from System.MulticastDelegate
     //
     // Arguments:
@@ -2252,20 +2221,14 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // Get the delegate type
-    virtual HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType) = 0;
-
     virtual HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain) = 0;
+        OUT VMPTR_Object *ppTargetObj) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 

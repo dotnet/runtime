@@ -64,6 +64,17 @@ CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     //
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more
                                                                               // than this many tree nodes
+RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRatio", 4) // Gate cloning on per-call
+                                                                                        // benefit ratio: (cycles saved
+                                                                                        // per method call) /
+                                                                                        // (duplicated body nodes).
+                                                                                        // Value is interpreted in
+                                                                                        // hundredths (config / 100), so
+                                                                                        // the default 4 means a
+                                                                                        // threshold of 0.04. Higher
+                                                                                        // values are stricter and
+                                                                                        // produce fewer clones; 0
+                                                                                        // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
