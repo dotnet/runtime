@@ -4635,6 +4635,28 @@ public static partial class DataContractSerializerTests
         Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
     }
 
+    [Theory]
+    [InlineData("<s:")]
+    [InlineData("<s:1")]
+    public static void DCS_ReadObject_MalformedPrefix_InvalidLocalName_ThrowsSerializationException(string malformedElement)
+    {
+        var serializer = new DataContractSerializer(typeof(MalformedPrefixObject));
+
+        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(CreateMalformedPrefixStream(malformedElement)));
+        Assert.IsType<XmlException>(ex.InnerException);
+    }
+
+    private static MemoryStream CreateMalformedPrefixStream(string malformedElement)
+    {
+        string xml = $@"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz"">{malformedElement}";
+        return new MemoryStream(Encoding.UTF8.GetBytes(xml));
+    }
+
+    [DataContract(Name = "Program.Obj", Namespace = "http://schemas.datacontract.org/2004/07/CoreFX.Fuzz")]
+    private sealed class MalformedPrefixObject
+    {
+    }
+
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
     {
         DataContractSerializer dcs;
