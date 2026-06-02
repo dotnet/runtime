@@ -200,6 +200,26 @@ pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 }
 #endif
 
+#if defined(TARGET_WINDOWS)
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
+#elif defined(TARGET_OSX)
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
+#else
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
+#endif
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
+
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
+
 // ============================================================================
 // C++ section (the original pal:: namespace surface)
 // ============================================================================
@@ -246,26 +266,6 @@ pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 // degree of compat across their respective releases is usually high.
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
-#if defined(TARGET_WINDOWS)
-#define LIB_PREFIX ""
-#define LIB_FILE_EXT ".dll"
-#elif defined(TARGET_OSX)
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".dylib"
-#else
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".so"
-#endif
-
-#define LIB_NAME(NAME) LIB_PREFIX NAME
-#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
-#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
-
-#define CORELIB_NAME _X("System.Private.CoreLib.dll")
-#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
-#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
-#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
-
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
 #endif

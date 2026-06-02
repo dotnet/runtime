@@ -29,6 +29,7 @@ set(SOURCES
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
     ../../fxr_resolver.cpp
+    ../../fxr_resolver.c
     ../../corehost.cpp
 )
 
