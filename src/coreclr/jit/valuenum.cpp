@@ -2178,6 +2178,11 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         {
             return VNForSimd64Con(simd64_t::Zero());
         }
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
+        {
+            return VNForSimdScalableCon(simdscalable_t::Zero());
+        }
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)

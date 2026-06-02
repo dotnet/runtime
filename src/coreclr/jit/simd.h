@@ -2200,6 +2200,13 @@ struct simdscalable_t
     }
 
     bool IsAllBitsSet() const;
+
+    static simdscalable_t Zero()
+    {
+        return {.gtSimdScalableBaseType = TYP_BYTE,
+                .gtSimdScalableKind     = SimdScalableRepeated,
+                .gtSimdScalableIndex    = 0};
+    }
 };
 
 static_assert(sizeof(simd_t) >= sizeof(simdscalable_t));
