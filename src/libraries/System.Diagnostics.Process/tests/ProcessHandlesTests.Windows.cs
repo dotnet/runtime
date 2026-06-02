@@ -112,6 +112,7 @@ namespace System.Diagnostics.Tests
             {
                 ArgumentList = { "/c", "echo hello" },
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
@@ -150,10 +151,10 @@ namespace System.Diagnostics.Tests
                 return new SafeProcessHandle(processInfo.hProcess, ownsHandle: true);
             });
 
-            string output = process.StandardOutput.ReadToEnd();
+            (string output, string error) = process.ReadAllText();
             process.WaitForExit(WaitInMS);
 
-            Assert.Contains("hello", output);
+            Assert.Equal("hello\r\n", output);
             Assert.Equal(0, process.ExitCode);
         }
 

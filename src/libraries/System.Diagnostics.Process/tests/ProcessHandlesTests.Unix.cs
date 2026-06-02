@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tests
             {
                 ArgumentList = { "-c", "echo hello" },
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
@@ -26,8 +27,9 @@ namespace System.Diagnostics.Tests
 
                 // posix_spawn_file_actions_t is a platform-specific struct (80 bytes on glibc x64, different on macOS).
                 // We allocate enough space on the stack and pass a pointer.
+                // Use 128 bytes to be safe across platforms.
+                const int PosixSpawnFileActionsSize = 128;
                 byte* fileActionsBuffer = stackalloc byte[PosixSpawnFileActionsSize];
-                NativeMemory.Clear(fileActionsBuffer, (nuint)PosixSpawnFileActionsSize);
 
                 result = posix_spawn_file_actions_init(fileActionsBuffer);
                 if (result != 0)
@@ -37,26 +39,9 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    // Redirect stdin
-                    result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)args.StandardInput.DangerousGetHandle(), 0);
-                    if (result != 0)
-                    {
-                        throw new Win32Exception(result);
-                    }
-
-                    // Redirect stdout to the pipe provided by Process
-                    result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)args.StandardOutput.DangerousGetHandle(), 1);
-                    if (result != 0)
-                    {
-                        throw new Win32Exception(result);
-                    }
-
-                    // Redirect stderr
-                    result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)args.StandardError.DangerousGetHandle(), 2);
-                    if (result != 0)
-                    {
-                        throw new Win32Exception(result);
-                    }
+                    Redirect(fileActionsBuffer, args.StandardInput, 0);
+                    Redirect(fileActionsBuffer, args.StandardOutput, 1);
+                    Redirect(fileActionsBuffer, args.StandardError, 2);
 
                     int pid;
                     byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(args.FileName! + '\0');
@@ -81,7 +66,7 @@ namespace System.Diagnostics.Tests
                 }
             });
 
-            string output = process.StandardOutput.ReadToEnd();
+            (string output, string error) = process.ReadAllText();
             process.WaitForExit(WaitInMS);
 
             Assert.Equal("hello\n", output);
@@ -89,10 +74,16 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, process.ExitCode);
         }
 
-        // posix_spawn_file_actions_t is 80 bytes on glibc x64, 104 bytes on macOS arm64.
-        // Use 128 bytes to be safe across platforms.
-        private const int PosixSpawnFileActionsSize = 128;
+        private static unsafe void Redirect(void* fileActionsBuffer, SafeFileHandle handle, int fd)
+        {
+            int result = posix_spawn_file_actions_adddup2(fileActionsBuffer, (int)handle.DangerousGetHandle(), fd);
+            if (result != 0)
+            {
+                throw new Win32Exception(result);
+            }
+        }
 
+        // posix_spawn_file_actions_t is 80 bytes on glibc x64, 104 bytes on macOS arm64.
         [DllImport("libc", SetLastError = false)]
         private static extern unsafe int posix_spawn(int* pid, byte* path, void* file_actions, void* attrp, byte** argv, byte** envp);
 
