@@ -3199,7 +3199,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         regNumber tmpReg = internalRegisters.GetSingle(tree);
         emit->emitIns_R_R_R(INS_czero_nez, attr, tmpReg, falseReg, condReg);
         emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
-        emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, targetReg, tmpReg);
+        emit->emitIns_R_R_R(INS_add, attr, targetReg, targetReg, tmpReg);
     }
 
     genProduceReg(tree);
