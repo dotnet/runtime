@@ -649,6 +649,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 //
 // Arguments:
 //    comp             - the compiler instance
+//    type             - the type for which we are getting the range
 //    num              - the value number to analyze range for
 //    assertions       - the assertions to use
 //    budget           - the remaining budget for recursive analysis
@@ -656,10 +657,11 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 // Return Value:
 //    The computed range
 //
-Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget)
+Range RangeCheck::GetRangeFromAssertions(
+    Compiler* comp, var_types type, ValueNum num, ASSERT_VALARG_TP assertions, int budget)
 {
     ValueNumStore::SmallValueNumSet set;
-    return GetRangeFromAssertionsWorker(comp, num, assertions, budget, &set);
+    return GetRangeFromAssertionsWorker(comp, type, num, assertions, budget, &set);
 }
 
 //------------------------------------------------------------------------
@@ -668,6 +670,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 //
 // Arguments:
 //    comp             - the compiler instance
+//    type             - the type for which we are getting the range
 //    num              - the value number to analyze range for
 //    assertions       - the assertions to use
 //    budget           - the remaining budget for recursive analysis
@@ -677,44 +680,59 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 // Return Value:
 //    The computed range
 //
-Range RangeCheck::GetRangeFromAssertionsWorker(
-    Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget, ValueNumStore::SmallValueNumSet* visited)
+Range RangeCheck::GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                               var_types                        type,
+                                               ValueNum                         num,
+                                               ASSERT_VALARG_TP                 assertions,
+                                               int                              budget,
+                                               ValueNumStore::SmallValueNumSet* visited)
 {
-    // Start with the widest possible constant range.
-    Range result = Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
-
     if ((num == ValueNumStore::NoVN) || (budget <= 0))
     {
-        return result;
+        // Start with the widest supported constant range for type
+        return GetRangeFromType(type);
     }
 
-    // Currently, we only handle int32 and smaller integer types.
+    // Currently, we only handle int32 or smaller integer types
+    // and a small subset of int64 values that are known to fit in int32
     var_types vnType = comp->vnStore->TypeOfVN(num);
 
     if (varTypeIsGC(vnType))
     {
+#if TARGET_64BIT
+        return Limit(Limit::keUnknown);
+#else
         // On 32-bit targets TYP_BYREF/TYP_REF and TYP_INT are all 4 bytes, so the JIT can
         // legally store a byref-valued expression (e.g. LCL_ADDR) into an int-typed local.
         // The local itself is TYP_INT, but its VN is a TYP_BYREF function like PtrToLoc.
         // The PhiDef visitor below recurses into reaching VNs, so a BYREF VN can show up
         // here even though our public callers only pass us int-typed trees.
         // We have no useful integer range to derive from a pointer, so just give up.
-        assert(TARGET_POINTER_SIZE == 4);
-        return result;
+
+        return GetRangeFromType(TYP_INT);
+#endif
     }
 
-    assert(genActualType(vnType) == TYP_INT);
-    result = GetRangeFromType(vnType);
+    Range result = GetRangeFromType(vnType);
 
     //
     // First, let's see if we can tighten the range based on VN information.
     //
 
     // If it's a constant, it's already as tight as it can get.
-    int cns;
-    if (comp->vnStore->IsVNIntegralConstant(num, &cns))
+    if (comp->vnStore->IsVNConstant(num))
     {
-        return Range(Limit(Limit::keConstant, cns));
+        int cns;
+        if (comp->vnStore->IsVNIntegralConstant(num, &cns))
+        {
+            return Range(Limit(Limit::keConstant, cns));
+        }
+        else
+        {
+            // TODO: We could return `0, keUnknown` if the constant is known positive
+            // but this would require more handling in other places to take advantage of.
+            return Limit(Limit::keUnknown);
+        }
     }
 
     VNFuncApp funcApp;
@@ -728,21 +746,48 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 bool      srcIsUnsigned;
                 comp->vnStore->GetCastOperFromVN(funcApp.GetArg(1), &castToType, &srcIsUnsigned);
 
-                // GetRangeFromType returns a non-constant range if it can't be represented with Range
-                Range castToTypeRange = GetRangeFromType(castToType);
-                if (castToTypeRange.IsConstantRange())
-                {
-                    result = castToTypeRange;
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
 
-                    // Now see if we can do better by looking at the cast source.
-                    // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
-                    if (genActualType(comp->vnStore->TypeOfVN(funcApp.GetArg(0))) == TYP_INT)
+                var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
+
+                if (genTypeSize(castFromType) < genTypeSize(castToType))
+                {
+                    // We're going from a small type to a large type
+                    // and so regardless of whether we zero or sign-extend
+                    // the value is preserved within the confines of its
+                    // original input for the destination, i.e. it always
+                    // passes the FitsIn<fromType> check.
+
+                    result = GetRangeFromType(castFromType);
+                }
+                else
+                {
+                    // We're either going from a big type to a small type
+                    // or between signed and unsigned types of the same size
+                    // so we want to use toType as the range.
+
+                    result = GetRangeFromType((castToType == TYP_UINT) ? TYP_INT : castToType);
+                }
+
+                // Now see if we can do better by looking at the cast source.
+                // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
+                if (varTypeIsIntegral(arg0Typ))
+                {
+                    Range castOpRange =
+                        GetRangeFromAssertionsWorker(comp, arg0Typ, arg0VN, assertions, --budget, visited);
+
+                    if (castOpRange.IsConstantRange())
                     {
-                        Range castOpRange =
-                            GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
-                        if (castOpRange.IsConstantRange() &&
-                            (castOpRange.LowerLimit().GetConstant() >= castToTypeRange.LowerLimit().GetConstant()) &&
-                            (castOpRange.UpperLimit().GetConstant() <= castToTypeRange.UpperLimit().GetConstant()))
+                        if (!result.IsConstantRange())
+                        {
+                            if (!srcIsUnsigned || (castOpRange.LowerLimit().GetConstant() >= 0))
+                            {
+                                result = castOpRange;
+                            }
+                        }
+                        else if ((castOpRange.LowerLimit().GetConstant() >= result.LowerLimit().GetConstant()) &&
+                                 (castOpRange.UpperLimit().GetConstant() <= result.UpperLimit().GetConstant()))
                         {
                             result = castOpRange;
                         }
@@ -753,7 +798,10 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
             case VNF_NEG:
             {
-                Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
+
+                Range r1 = GetRangeFromAssertionsWorker(comp, arg0Typ, arg0VN, assertions, --budget, visited);
                 Range unaryOpResult = RangeOps::Negate(r1);
 
                 // We can use the result only if it never overflows.
@@ -772,8 +820,14 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_UMOD:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
-                Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
-                Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
+
+                ValueNum  arg1VN  = funcApp.GetArg(1);
+                var_types arg1Typ = comp->vnStore->TypeOfVN(arg1VN);
+
+                Range r1          = GetRangeFromAssertionsWorker(comp, arg0Typ, arg0VN, assertions, --budget, visited);
+                Range r2          = GetRangeFromAssertionsWorker(comp, arg1Typ, arg1VN, assertions, --budget, visited);
                 Range binOpResult = Range(Limit(Limit::keUnknown));
                 switch (funcApp.GetFunc())
                 {
@@ -793,14 +847,61 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         binOpResult = RangeOps::Or(r1, r2);
                         break;
                     case VNF_LSH:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            // We can't handle LSH for long since we don't know the state of the upper 32-bits
+                            return Limit(Limit::keUnknown);
+                        }
+
                         binOpResult = RangeOps::ShiftLeft(r1, r2);
                         break;
+                    }
                     case VNF_RSH:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            int shiftAmount;
+
+                            if (r2.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
+                            {
+                                // The upper 33-bits will all match post shift, so we are within [INT32_MIN, INT32_MAX]
+                                result = GetRangeFromType(TYP_INT);
+                                break;
+                            }
+                            else
+                            {
+                                return Range(Limit::keUnknown);
+                            }
+                        }
+
                         binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
                         break;
+                    }
                     case VNF_RSZ:
+                    {
+                        if (varTypeIsLong(vnType))
+                        {
+                            int shiftAmount;
+
+                            if (r2.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
+                            {
+                                // The upper 33-bits must all be zero post shift, so we are within [0, INT32_MAX]
+                                // and can further reduce based on the remaining shift amount. This is notably one
+                                // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
+
+                                r1 = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, INT32_MAX));
+                                r2 = Range(Limit(Limit::keConstant, shiftAmount - 33));
+                            }
+                            else
+                            {
+                                return Range(Limit::keUnknown);
+                            }
+                        }
+
                         binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
                         break;
+                    }
                     case VNF_UMOD:
                         binOpResult = RangeOps::UnsignedMod(r1, r2);
                         break;
@@ -834,13 +935,18 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 result.lLimit = Limit(Limit::keConstant, 0);
                 result.uLimit = Limit(Limit::keConstant, 1);
 
+                ValueNum  arg0VN  = funcApp.GetArg(0);
+                var_types arg0Typ = comp->vnStore->TypeOfVN(arg0VN);
+
+                ValueNum  arg1VN  = funcApp.GetArg(1);
+                var_types arg1Typ = comp->vnStore->TypeOfVN(arg1VN);
+
                 // But maybe we can do better and determine if they are always true or always false,
                 // hence, return [1..1] or [0..0]
-                if ((genActualType(comp->vnStore->TypeOfVN(funcApp.GetArg(0))) == TYP_INT) &&
-                    (genActualType(comp->vnStore->TypeOfVN(funcApp.GetArg(1))) == TYP_INT))
+                if (varTypeIsIntegral(arg0Typ) && varTypeIsIntegral(arg1Typ))
                 {
-                    Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
-                    Range r2 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(1), assertions, --budget, visited);
+                    Range r1 = GetRangeFromAssertionsWorker(comp, arg0Typ, arg0VN, assertions, --budget, visited);
+                    Range r2 = GetRangeFromAssertionsWorker(comp, arg1Typ, arg1VN, assertions, --budget, visited);
 
                     bool       isUnsigned = true;
                     genTreeOps cmpOper;
@@ -864,7 +970,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                     // Example: "(uint)(length - 4) > (uint)length" folds to false when
                     // length >= 4 (the typical Slice(length - cns) bounds check).
-                    if (!result.IsSingleValueConstant())
+                    if (!result.IsSingleValueConstant() && (genActualType(vnType) == TYP_INT))
                     {
                         ValueNum op1VN = funcApp.GetArg(0);
                         ValueNum op2VN = funcApp.GetArg(1);
@@ -926,6 +1032,11 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 {
                     result.lLimit = Limit(Limit::keConstant, 0);
                     result.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
+                }
+                else
+                {
+                    // TODO: We could return `0, keUnknown` for `elementCount == 32` if the result is TYP_LONG
+                    // but this would require more handling in other places to take advantage of.
                 }
                 break;
             }
@@ -1023,17 +1134,18 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
         }
     }
 
-    // If it was evaluated to a single constant value by now, return it.
-    // We can't do better anyway.
     if (result.IsSingleValueConstant())
     {
+        // If it was evaluated to a single constant value by now, return it, we can't do better anyway.
         return result;
     }
 
     Range phiRange = Range(Limit(Limit::keUndef));
     auto  visitor  = [comp, &phiRange, &budget, visited](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         // call GetRangeFromAssertionsWorker for each reaching VN using reachingAssertions
-        Range edgeRange = GetRangeFromAssertionsWorker(comp, reachingVN, reachingAssertions, --budget, visited);
+        var_types reachingTyp = comp->vnStore->TypeOfVN(reachingVN);
+        Range     edgeRange =
+            GetRangeFromAssertionsWorker(comp, reachingTyp, reachingVN, reachingAssertions, --budget, visited);
 
         // If phiRange is not yet set, set it to the first edgeRange
         // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
@@ -1063,8 +1175,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     MergeEdgeAssertionsWorker(comp, num, ValueNumStore::NoVN, assertions, &result, /* canUseCheckedBounds */ false,
                               edgeAssertionsBudget, visited);
 
-    assert(result.IsConstantRange());
-    return result;
+    return result.IsConstantRange() ? result : Limit(Limit::keUnknown);
 }
 
 //------------------------------------------------------------------------
@@ -1545,8 +1656,10 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 continue;
             }
 
+            var_types otherTyp = comp->vnStore->TypeOfVN(otherVN);
+
             budget--;
-            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
+            Range otherRange = GetRangeFromAssertionsWorker(comp, otherTyp, otherVN, assertions, budget, visited);
             if (!otherRange.IsConstantRange())
             {
                 continue;
@@ -1854,14 +1967,60 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             r = RangeOps::Multiply(op1Range, op2Range);
             break;
         case GT_RSH:
+        {
+            if (varTypeIsLong(binop))
+            {
+                int shiftAmount;
+
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
+                {
+                    // The upper 33-bits will all match post shift, so we are within [INT32_MIN, INT32_MAX]
+                    return GetRangeFromType(TYP_INT);
+                }
+                else
+                {
+                    return Range(Limit::keUnknown);
+                }
+            }
+
             r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ false);
             break;
+        }
         case GT_RSZ:
+        {
+            if (varTypeIsLong(binop))
+            {
+                int shiftAmount;
+
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
+                {
+                    // The upper 33-bits must all be zero post shift, so we are within [0, INT32_MAX]
+                    // and can further reduce based on the remaining shift amount. This is notably one
+                    // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
+
+                    op1Range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, INT32_MAX));
+                    op2Range = Range(Limit(Limit::keConstant, shiftAmount - 33));
+                }
+                else
+                {
+                    return Range(Limit::keUnknown);
+                }
+            }
+
             r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ true);
             break;
+        }
         case GT_LSH:
+        {
+            if (varTypeIsLong(binop))
+            {
+                // We can't handle LSH for long since we don't know the state of the upper 32-bits
+                return Range(Limit::keUnknown);
+            }
+
             r = RangeOps::ShiftLeft(op1Range, op2Range);
             break;
+        }
         case GT_AND:
             r = RangeOps::And(op1Range, op2Range);
             break;
@@ -2278,12 +2437,6 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = Range(Limit(Limit::keUnknown));
         JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
-    // TYP_LONG is not supported anyway.
-    else if (expr->TypeIs(TYP_LONG))
-    {
-        range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRangeWorker long, setting to unknown value.\n");
-    }
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
@@ -2360,15 +2513,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
         }
     }
-    else if (genActualType(expr) == TYP_INT)
-    {
-        // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
-        range = GetRangeFromAssertions(m_compiler, vn, block->bbAssertionIn);
-    }
     else
     {
-        // The expression is not recognized, so the result is unknown.
-        range = Range(Limit(Limit::keUnknown));
+        // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
+        range = GetRangeFromAssertions(m_compiler, expr->TypeGet(), vn, block->bbAssertionIn, m_nVisitBudget);
     }
 
     GetRangeMap()->Set(expr, new (m_alloc) Range(range), RangeMap::Overwrite);
