@@ -9124,30 +9124,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isAwait)
                     {
-                        // Only at this point can we actually know if this was valid in tail position.
-                        if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
-                            (stackState.esStackDepth > callInfo.sig.totalILArgs()))
-                        {
-                            // Switch back; there will be a task above the call on the stack that we will await as part
-                            // of returning.
-                            JITDUMP("Switching back from async variant; not an actual tail await\n");
-                            _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
-                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
-                            isAwait = false;
-
-                            eeGetCallInfo(&resolvedToken,
-                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                          flags, &callInfo);
-                        }
-
-                        if (isAwait)
-                        {
-                            // If the synchronous call is a thunk then it means the async variant is not a thunk and we
-                            // prefer to directly call it. Skip the await pattern to the last token.
-                            codeAddr   = codeAddrAfterMatch;
-                            opcodeOffs = awaitOffset;
-                        }
+                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we
+                        // prefer to directly call it. Skip the await pattern to the last token.
+                        codeAddr   = codeAddrAfterMatch;
+                        opcodeOffs = awaitOffset;
                     }
                 }
                 else
