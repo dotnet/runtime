@@ -53,6 +53,8 @@ record struct ThreadData (
     bool HasUnhandledException;
     TargetPointer NextThread;
     TargetPointer ThreadHandle;
+    bool IsInteropDebuggingHijacked;
+    TargetPointer DebuggerFilterContext;
 );
 ```
 
@@ -74,9 +76,6 @@ void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlled
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
-byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
-bool IsInteropDebuggingHijacked(TargetPointer threadPointer);
-TargetPointer GetDebuggerFilterContext(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -388,42 +387,4 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     return span.ToArray();
 }
 
-byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-{
-    // Allocate a context buffer for the target platform
-    IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-    byte[] bytes = new byte[context.Size];
-
-    TargetPointer filterContext = TargetPointer.Null;
-
-    if (contextSource.HasFlag(ThreadContextSource.Debugger))
-        filterContext = target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
-
-    if (filterContext != TargetPointer.Null)
-    {
-        // Use the filter context directly
-        target.ReadBuffer(filterContext, bytes);
-        return bytes;
-    }
-
-    // Try to read the OS thread context from the data target
-    ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
-    if (target.TryGetThreadContext(osId, contextFlags, bytes))
-        return bytes;
-
-    // Fall back to deriving a context from the explicit Frame chain stored in the Thread
-    // object (sufficient for managed debugging stack walks).
-    ThreadData threadData = GetThreadData(threadPointer);
-    return target.Contracts.StackWalk.GetContextFromFrames(threadData);
-}
-
-bool IsInteropDebuggingHijacked(TargetPointer threadPointer)
-{
-    return target.Read<uint>(threadPointer + /* Thread::InteropDebuggingHijacked offset */) != 0;
-}
-
-TargetPointer GetDebuggerFilterContext(TargetPointer threadPointer)
-{
-    return target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
-}
 ```

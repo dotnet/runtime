@@ -918,6 +918,32 @@ internal partial class StackWalk_1 : IStackWalk
         return new DebuggerEvalData(debuggerEval.MethodToken, debuggerEval.AssemblyPtr);
     }
 
+    byte[] IStackWalk.GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        byte[] bytes = new byte[context.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
+
+        TargetPointer filterContext = TargetPointer.Null;
+
+        if (contextSource.HasFlag(ThreadContextSource.Debugger))
+            filterContext = threadData.DebuggerFilterContext;
+
+        if (filterContext != TargetPointer.Null)
+        {
+            _target.ReadBuffer(filterContext.Value, buffer);
+            return bytes;
+        }
+
+        if (_target.TryGetThreadContext(threadData.OSId.Value, contextFlags, buffer))
+        {
+            return bytes;
+        }
+
+        // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
+        return ((IStackWalk)this).GetContextFromFrames(threadData);
+    }
+
     byte[] IStackWalk.GetContextFromFrames(ThreadData threadData)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -979,8 +1005,8 @@ internal partial class StackWalk_1 : IStackWalk
 
     private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
     {
-        byte[] bytes = _target.Contracts.Thread.GetContext(
-            threadData.ThreadAddress,
+        byte[] bytes = ((IStackWalk)this).GetContext(
+            threadData,
             ThreadContextSource.Debugger,
             flags);
         context.FillFromBuffer(bytes);

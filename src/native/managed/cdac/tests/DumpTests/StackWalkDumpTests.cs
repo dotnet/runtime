@@ -343,7 +343,7 @@ public class StackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         uint allFlags = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
-        byte[] context = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
+        byte[] context = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
 
         Assert.NotNull(context);
         Assert.True(context.Length > 0, "Expected non-empty context");

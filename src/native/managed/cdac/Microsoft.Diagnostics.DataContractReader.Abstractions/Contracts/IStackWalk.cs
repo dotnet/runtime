@@ -85,6 +85,7 @@ public interface IStackWalk : IContract
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
     byte[] GetContextFromFrames(ThreadData threadData) => throw new NotImplementedException();
     TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
+    byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

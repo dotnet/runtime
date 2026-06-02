@@ -148,7 +148,9 @@ internal readonly struct Thread_1 : IThread
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
             thread.LinkNext,
-            thread.ThreadHandle);
+            thread.ThreadHandle,
+            thread.InteropDebuggingHijacked != 0,
+            thread.DebuggerFilterContext);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -305,46 +307,5 @@ internal readonly struct Thread_1 : IThread
         byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         _target.ReadBuffer(readFrom, rval);
         return rval;
-    }
-
-    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-    {
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        byte[] bytes = new byte[context.Size];
-        Span<byte> buffer = new Span<byte>(bytes);
-
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-
-        TargetPointer filterContext = TargetPointer.Null;
-
-        if (contextSource.HasFlag(ThreadContextSource.Debugger))
-            filterContext = thread.DebuggerFilterContext;
-
-        if (filterContext != TargetPointer.Null)
-        {
-            _target.ReadBuffer(filterContext.Value, buffer);
-            return bytes;
-        }
-
-        if (_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
-        {
-            return bytes;
-        }
-
-        // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
-        ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
-        return _target.Contracts.StackWalk.GetContextFromFrames(threadData);
-    }
-
-    bool IThread.IsInteropDebuggingHijacked(TargetPointer threadPointer)
-    {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        return thread.InteropDebuggingHijacked != 0;
-    }
-
-    TargetPointer IThread.GetDebuggerFilterContext(TargetPointer threadPointer)
-    {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        return thread.DebuggerFilterContext;
     }
 }

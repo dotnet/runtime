@@ -1198,14 +1198,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
     {
         int hr = HResults.S_OK;
-        *pRetVal = 0;
         try
         {
+            *pRetVal = 0;
             Contracts.IThread threadContract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = threadContract.GetThreadData(vmThread);
 
-            if (!threadContract.IsInteropDebuggingHijacked(vmThread))
+            if (!threadData.IsInteropDebuggingHijacked)
             {
-                TargetPointer filterContext = threadContract.GetDebuggerFilterContext(vmThread);
+                TargetPointer filterContext = threadData.DebuggerFilterContext;
                 if (filterContext != TargetPointer.Null)
                 {
                     *pRetVal = filterContext.Value;
@@ -1213,7 +1214,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 else
                 {
                     IStackWalk sw = _target.Contracts.StackWalk;
-                    Contracts.ThreadData threadData = threadContract.GetThreadData(vmThread);
                     TargetPointer redirectedContext = sw.GetRedirectedContextPointer(threadData);
                     if (redirectedContext != TargetPointer.Null)
                     {
@@ -1233,7 +1233,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             int hrLocal = _legacy.GetManagedStoppedContext(vmThread, &pRetValLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal}, DAC: {pRetValLocal}");
+                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal:x}, DAC: {pRetValLocal:x}");
         }
 #endif
         return hr;
@@ -1505,7 +1505,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             uint allFlags = leafCtx.AllContextFlags;
-            byte[] leafContext = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.None, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] leafContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags);
             leafCtx.FillFromBuffer(leafContext);
 
             // Read the given context from the native buffer.
@@ -1539,7 +1540,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
-            byte[] context = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.Debugger, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] context = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
 
             context.AsSpan().CopyTo(new Span<byte>(pContextBuffer, context.Length));
         }

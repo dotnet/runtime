@@ -68,6 +68,10 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 
+// Returns a context for the thread, trying (in order): the debugger filter context,
+// the OS thread context, or a context derived from the explicit Frame chain.
+byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags);
+
 // Walks the thread's explicit (capital-F) Frame chain and looks for a thread context.
 byte[] GetContextFromFrames(ThreadData threadData);
 
@@ -582,6 +586,8 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 ```
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
+
+`GetContext` returns a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from the explicit Frame chain via `GetContextFromFrames`.
 
 The `GetContextFromFrames` implementation walks the Frame chain (`Thread::Frame` linked list) and returns the first frame that yields a usable context:
 * If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
