@@ -5203,7 +5203,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (mustExpand && (retNode == nullptr))
     {
+#ifdef TARGET_WASM
+        NYI_WASM("Unhandled must expand intrinsic");
+#else
         assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+#endif
         return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
