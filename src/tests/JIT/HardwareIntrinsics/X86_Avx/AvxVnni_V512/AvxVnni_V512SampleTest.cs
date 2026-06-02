@@ -48,6 +48,10 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
             Vector512<int> wordResultSat = AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, words, words);
             AssertAllLanesEqual(wordResultSat, 18);
 
+            // Non-trivial pattern test: magnitudes stay small (-3..3 product range)
+            // so the saturating intrinsic produces the same result as the non-saturating
+            // one. The distinct positive/negative-saturation code paths for
+            // VPDPBUSDS / VPDPWSSDS are exercised by the dedicated edge-case blocks below.
             byte[] leftBytes = new byte[Vector512<byte>.Count];
             sbyte[] rightBytes = new sbyte[Vector512<sbyte>.Count];
             int[] byteExpected = new int[Vector512<int>.Count];
