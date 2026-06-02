@@ -2546,9 +2546,10 @@ bool Compiler::fgNeedReturnSpillTemp()
 //   under a GT_QMARK are conditional and ignored.
 //
 //   When the no-return call is not the root of its statement we use
-//   gtSplitTree to hoist the preceding side effects. gtSplitTree cannot
-//   handle a GT_QMARK on the path to the split point, so blocks where a
-//   qmark executes before the no-return call are left unmodified.
+//   gtSplitTree to hoist the preceding side effects. gtSplitTree asserts on
+//   any GT_QMARK it encounters while walking the statement, and qmarks can
+//   still be present here (this phase runs before morph expands them), so
+//   blocks whose trimmed statement contains a qmark are left unmodified.
 //
 PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
 {
@@ -2626,14 +2627,14 @@ PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
         }
 
         // When the no-return call is not the statement root we must split the
-        // tree, but gtSplitTree cannot hoist past a GT_QMARK. If the statement
-        // still contains a qmark (this phase runs before morph expands them),
-        // leave the block as-is rather than tripping the splitter's assert.
+        // tree, but gtSplitTree asserts on any GT_QMARK it walks over. Qmarks
+        // can still be present here (this phase runs before morph expands
+        // them), so conservatively skip any statement that contains one.
         //
         if ((trimStmt->GetRootNode() != noRetCall) && gtTreeContainsOper(trimStmt->GetRootNode(), GT_QMARK))
         {
             JITDUMP("\nfgPostInlineNoReturnCleanup: " FMT_BB
-                    " has a qmark around no-return call [%06u]; skipping\n",
+                    " statement with no-return call [%06u] contains a qmark; skipping\n",
                     block->bbNum, dspTreeID(noRetCall));
             continue;
         }
@@ -2648,7 +2649,7 @@ PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
         {
             Statement* firstNewStmt = nullptr;
             GenTree**  callUse      = nullptr;
-            gtSplitTree(block, trimStmt, noRetCall, &firstNewStmt, &callUse);
+            gtSplitTree(block, trimStmt, noRetCall, &firstNewStmt, &callUse, /* early */ true);
 
             trimStmt->SetRootNode(noRetCall);
             gtUpdateStmtSideEffects(trimStmt);
