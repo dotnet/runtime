@@ -283,7 +283,7 @@ namespace Internal.Cryptography
 
                 stack[stackCount++] = (0, encodedValue.Length);
 
-                while (stackCount > 0)
+                do
                 {
                     (int offset, int length) = stack[--stackCount];
 
@@ -338,7 +338,7 @@ namespace Internal.Cryptography
 
                                 if (stackCount == stack.Length)
                                 {
-                                    Span<(int, int)> nextStack = new (int, int)[int.Min(Array.MaxLength, stack.Length * 2)];
+                                    Span<(int, int)> nextStack = new (int, int)[stack.Length * 2];
                                     stack.CopyTo(nextStack);
                                     stack = nextStack;
                                 }
@@ -350,7 +350,7 @@ namespace Internal.Cryptography
                         // Skip past the current value.
                         reader.ReadEncodedValue();
                     }
-                }
+                } while (stackCount > 0);
             }
             catch (AsnContentException e)
             {
