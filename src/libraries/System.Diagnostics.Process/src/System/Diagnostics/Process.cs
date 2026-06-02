@@ -1393,7 +1393,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment, working directory)
+        /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
         /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
         /// The callback receives a <see cref="ProcessStartArguments"/> instance with the prepared data and must return a
         /// <see cref="SafeProcessHandle"/> representing the created process.
