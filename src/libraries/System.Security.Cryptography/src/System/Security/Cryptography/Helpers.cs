@@ -317,11 +317,13 @@ namespace Internal.Cryptography
                                 {
                                     fixed (byte* contentPtr = content)
                                     {
-                                        PointerMemoryManager<byte> manager = new(contentPtr, content.Length);
-                                        overflow ??= new Queue<AsnReader>();
-                                        overflow.Enqueue(new AsnReader(manager.Memory, AsnEncodingRules.DER));
+                                        using (PointerMemoryManager<byte> manager = new(contentPtr, content.Length))
+                                        {
+                                            overflow ??= new Queue<AsnReader>();
+                                            overflow.Enqueue(new AsnReader(manager.Memory, AsnEncodingRules.DER));
 
-                                        ValidateDeep(overflow);
+                                            ValidateDeep(overflow);
+                                        }
                                     }
                                 }
                             }
