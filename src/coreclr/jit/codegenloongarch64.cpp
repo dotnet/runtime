@@ -4450,7 +4450,28 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI("unimplemented on LOONGARCH64 yet");
+    GenTree*    op1  = treeNode->gtGetOp1();
+    GenTree*    op2  = treeNode->gtGetOp2IfPresent();
+    emitAttr    attr = emitActualTypeSize(treeNode);
+    instruction instr;
+
+    // All intrinsics handled here are binary (two floating-point operands).
+    assert(op2 != nullptr);
+
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_MaxNative:
+            instr = (attr == EA_4BYTE) ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_System_Math_MinNative:
+            instr = (attr == EA_4BYTE) ? INS_fmin_s : INS_fmin_d;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+    genConsumeOperands(treeNode->AsOp());
+    GetEmitter()->emitIns_R_R_R(instr, attr, treeNode->GetRegNum(), op1->GetRegNum(), op2->GetRegNum());
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------

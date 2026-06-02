@@ -301,13 +301,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             //
             // We model the clamp as MinNative(smallMax, MaxNative(smallMin, x)).
             // On xarch / Arm64 this lowers to a pair of scalar min/max instructions
-            // (e.g. maxss/minss, fmax/fmin) which propagate NaN, after which the
-            // saturating R -> int cast maps NaN -> 0 (always in range).
+            // (e.g. maxss/minss, fmax/fmin). On RISC-V and LoongArch64 it lowers to
+            // fmin/fmax instructions. NaN propagates through to the saturating
+            // R -> int cast which maps NaN -> 0 (always in range).
             //
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             if (!tree->gtOverflow())
             {
                 double smallMin;
@@ -334,12 +335,24 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         unreached();
                 }
 
+#ifdef FEATURE_HW_INTRINSICS
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMin, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ true);
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ false);
-            }
+#else  // !FEATURE_HW_INTRINSICS
+                // On RISC-V and LoongArch64, use GT_INTRINSIC nodes which lower to
+                // native fmin/fmax scalar instructions.
+                const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
+                oper = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(srcType, gtNewDconNode(smallMin, srcType), oper,
+                                     NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
+                oper = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(srcType, gtNewDconNode(smallMax, srcType), oper,
+                                     NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
 #endif // FEATURE_HW_INTRINSICS
+            }
+#endif // FEATURE_HW_INTRINSICS || TARGET_RISCV64 || TARGET_LOONGARCH64
 
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
