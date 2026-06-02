@@ -79,8 +79,8 @@ pal::string_t fx_ver_t::as_str() const
     c_ver.major = m_major;
     c_ver.minor = m_minor;
     c_ver.patch = m_patch;
-    c_ver.pre = m_pre.data();
-    c_ver.build = m_build.data();
+    c_ver.pre = const_cast<pal_char_t*>(m_pre.data());
+    c_ver.build = const_cast<pal_char_t*>(m_build.data());
 
     // SemVer does not define a size limit on version string, but calls out a reasonable max of 255 characters:
     // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
@@ -99,13 +99,13 @@ int fx_ver_t::compare(const fx_ver_t& a, const fx_ver_t& b)
     c_a.major = a.m_major;
     c_a.minor = a.m_minor;
     c_a.patch = a.m_patch;
-    c_a.pre = a.m_pre.data();
+    c_a.pre = const_cast<pal_char_t*>(a.m_pre.data());
     c_a.build = NULL;
 
     c_b.major = b.m_major;
     c_b.minor = b.m_minor;
     c_b.patch = b.m_patch;
-    c_b.pre = b.m_pre.data();
+    c_b.pre = const_cast<pal_char_t*>(b.m_pre.data());
     c_b.build = NULL;
 
     return c_fx_ver_compare(&c_a, &c_b);
