@@ -72,9 +72,9 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
 #ifdef __clang__
-    int32_t result =__sync_swap(pDst, iValue);
+    int64_t result =__sync_swap(pDst, iValue);
 #else
-    int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+    int64_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
 #endif
     PalInterlockedOperationBarrier();
     return result;

@@ -1849,20 +1849,20 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
         {
-            // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
-            // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
+            // For FMA intrinsics, embedded rounding is limited to the register-to-register
+            // form, so none of op1/op2/op3 can be contained here. However, we still need
+            // to route through genFmaIntrinsic so that the operand swapping and target
+            // register preferencing (selecting the 132/213/231 form) is performed; emitting
+            // the 213 form blindly can otherwise overwrite a source register that aliases
+            // targetReg and trip the assertions in genHWIntrinsic_R_R_R_RM.
             assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
-
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-            GenTree* op3 = node->Op(3);
-
-            regNumber op1Reg = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
+            assert(!node->Op(1)->isContained());
+            assert(!node->Op(2)->isContained());
+            assert(!node->Op(3)->isContained());
 
             auto emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, newInstOptions);
+                genFmaIntrinsic(node, newInstOptions);
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
@@ -2842,7 +2842,9 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId))
     {
+        genConsumeMultiOpOperands(node);
         genFmaIntrinsic(node, instOptions);
+        genProduceReg(node);
         return;
     }
 
@@ -3828,7 +3830,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 // genFmaIntrinsic: Generates the code for an FMA hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used when generating the instruction.
+//
+// Notes:
+//    Callers are responsible for calling genConsumeMultiOpOperands and
+//    genProduceReg around this function. This allows the operand swapping
+//    and target-register preferencing to be reused from the embedded
+//    rounding non-immediate fallback path, which emits the instruction
+//    multiple times via a jump table.
 //
 void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
@@ -3845,8 +3855,6 @@ void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     GenTree*    op3      = node->Op(3);
 
     regNumber targetReg = node->GetRegNum();
-
-    genConsumeMultiOpOperands(node);
 
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
@@ -3933,7 +3941,6 @@ void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);
-    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------
