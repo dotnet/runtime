@@ -4924,7 +4924,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
-        // We expect this bool to be reset.
+        // We expect this bool to be reset when we handle the RET instruction after it gets set.
         assert(!m_matchedAsyncCallRetInAsyncVersion);
 
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
@@ -5707,8 +5707,9 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
             if (retType == InterpTypeVoid && m_pStackPointer > m_pStackBase)
             {
                 INTERP_DUMP("Popping stack for Task<T> in void-returning async version\n");
-                // For covariant cases (e.g. Task<int> being returned from Task function)
-                // we will have a superfluous value on the stack after the return.
+                // For covariant cases like a tailcall to a Task<int>-returning
+                // callee from a Task-returning function we will have a
+                // superfluous value on the stack after the call.
                 m_pStackPointer--;
             }
         }
@@ -5832,7 +5833,7 @@ void InterpCompiler::WrapTopOfStackInAwait()
     assert(awaitSig.numArgs == 1);
     assert(!awaitSig.hasThis());
 
-    // Pop the awaitable off the stack; it becomes the first argument.
+    // Pop the awaitable off the stack; it becomes the last argument.
     int32_t awaitableVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
