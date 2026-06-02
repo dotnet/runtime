@@ -9,9 +9,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <new>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,77 +23,36 @@ static const char CrashReportManagedReportDirectory[] = "crash-reports";
 static const char CrashReportFilePrefix[] = "report-";
 static const char CrashReportFileExtension[] = ".crashreport.json";
 static const char CrashReportTempExtension[] = ".tmp";
-// Bounded retry avoids an unbounded crash-path loop if a process repeatedly
-// crashes in the same second with the same pid and stale files are present.
-static constexpr uint32_t CrashReportMaxSuffixRetry = 32;
-// Directory scans run at initialization, but misconfigured roots should not let
-// a diagnostic feature stall application startup indefinitely.
-static constexpr size_t CrashReportMaxDirectoryEntriesToScan = 4096;
 
-InProcCrashReportLifecycle::~InProcCrashReportLifecycle()
-{
-    delete[] m_deleteCandidates;
-}
+static const uint64_t NanosecondsPerSecond = 1000000000ull;
 
 bool
 InProcCrashReportLifecycle::Initialize(
     const char* rootPath,
-    const char* processName,
     int32_t maxFileCount)
 {
     m_reportFileOutputEnabled = false;
     m_reportDirectory[0] = '\0';
     m_tempReportFilePath[0] = '\0';
+    m_cachedOldestReport.value[0] = '\0';
 
-    if (!EstablishReportDirectory(rootPath, processName))
+    if (!EstablishReportDirectory(rootPath))
     {
         return false;
     }
 
-    RetentionMode mode = GetRetentionMode(maxFileCount);
-
-    FileInfo* reports = nullptr;
-    size_t reportCount = 0;
-    if (CollectExistingReports(mode, &reports, &reportCount) != CollectResult::Ready)
+    if (!PruneExistingReports(maxFileCount))
     {
-        // Both a hard failure and the cleanup-only path leave output disabled; the
-        // former already logged, the latter performed its deletions during the scan.
         return false;
     }
 
-    if (mode == RetentionMode::Bounded && !SelectDeleteCandidates(reports, reportCount, maxFileCount))
-    {
-        free(reports);
-        return false;
-    }
-
-    free(reports);
     m_reportFileOutputEnabled = true;
     return true;
 }
 
-InProcCrashReportLifecycle::RetentionMode
-InProcCrashReportLifecycle::GetRetentionMode(int32_t maxFileCount)
-{
-    if (maxFileCount == CRASHREPORT_CLEANUP_ONLY_FILE_COUNT)
-    {
-        return RetentionMode::CleanupOnly;
-    }
-
-    if (maxFileCount == CRASHREPORT_UNLIMITED_FILE_COUNT)
-    {
-        return RetentionMode::Unlimited;
-    }
-
-    // The configuration layer constrains maxFileCount to the unlimited (-1),
-    // cleanup-only (0), or positive-bound domain, so anything else is a bound.
-    return RetentionMode::Bounded;
-}
-
 bool
 InProcCrashReportLifecycle::EstablishReportDirectory(
-    const char* rootPath,
-    const char* processName)
+    const char* rootPath)
 {
     if (rootPath == nullptr || rootPath[0] == '\0')
     {
@@ -116,16 +73,11 @@ InProcCrashReportLifecycle::EstablishReportDirectory(
         return false;
     }
 
-    char appName[CRASHREPORT_STRING_BUFFER_SIZE];
-    SanitizePathComponent(appName, sizeof(appName), processName);
-
     size_t pos = 0;
     if (!CrashReportStringUtils::AppendString(m_reportDirectory, sizeof(m_reportDirectory), &pos, root) ||
         !AppendPathComponent(m_reportDirectory, sizeof(m_reportDirectory), &pos, CrashReportManagedRootDirectory) ||
         !EnsureDirectory(m_reportDirectory) ||
         !AppendPathComponent(m_reportDirectory, sizeof(m_reportDirectory), &pos, CrashReportManagedReportDirectory) ||
-        !EnsureDirectory(m_reportDirectory) ||
-        !AppendPathComponent(m_reportDirectory, sizeof(m_reportDirectory), &pos, appName) ||
         !EnsureDirectory(m_reportDirectory) ||
         !ProbeDirectoryWritable(m_reportDirectory))
     {
@@ -137,41 +89,60 @@ InProcCrashReportLifecycle::EstablishReportDirectory(
     return true;
 }
 
-InProcCrashReportLifecycle::CollectResult
-InProcCrashReportLifecycle::CollectExistingReports(
-    RetentionMode mode,
-    FileInfo** reports,
-    size_t* reportCount)
+size_t
+InProcCrashReportLifecycle::FindOldestReportIndex(
+    const FileInfo* reports,
+    size_t reportCount)
 {
-    *reports = nullptr;
-    *reportCount = 0;
+    size_t oldest = 0;
+    for (size_t i = 1; i < reportCount; i++)
+    {
+        if (CompareFileInfo(&reports[i], &reports[oldest]) < 0)
+        {
+            oldest = i;
+        }
+    }
 
+    return oldest;
+}
+
+bool
+InProcCrashReportLifecycle::PruneExistingReports(int32_t maxFileCount)
+{
     DIR* dir = opendir(m_reportDirectory);
     if (dir == nullptr)
     {
         InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: failed to scan crash report directory");
-        return CollectResult::Failed;
+        return false;
     }
 
-    FileInfo* collected = nullptr;
-    size_t collectedCount = 0;
-    size_t collectedCapacity = 0;
-    size_t scannedEntries = 0;
-    bool scanExceeded = false;
+    // Retain at most the newest maxFileCount completed reports. The kept set is
+    // held in a fixed array sized to the bound, so a directory with an
+    // unexpectedly large number of reports cannot drive an unbounded allocation;
+    // overflow reports are unlinked inline as they are encountered. maxFileCount
+    // is guaranteed positive by the configuration layer.
+    size_t capacity = static_cast<size_t>(maxFileCount);
+    FileInfo* kept = new (std::nothrow) FileInfo[capacity];
+    if (kept == nullptr)
+    {
+        closedir(dir);
+        InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: failed to allocate retention scan storage");
+        return false;
+    }
 
+    size_t keptCount = 0;
     while (dirent* entry = readdir(dir))
     {
-        if (++scannedEntries > CrashReportMaxDirectoryEntriesToScan)
-        {
-            scanExceeded = true;
-            break;
-        }
-
         FileInfo info = {};
         bool hasTempExtension = false;
         bool parsedOwnedName = TryParseReportName(entry->d_name, &info, &hasTempExtension);
         bool isTemp = parsedOwnedName && hasTempExtension;
         bool isCompleted = parsedOwnedName && !hasTempExtension;
+
+        if (!isTemp && !isCompleted)
+        {
+            continue;
+        }
 
         char fullPath[CRASHREPORT_PATH_BUFFER_SIZE];
         fullPath[0] = '\0';
@@ -184,97 +155,49 @@ InProcCrashReportLifecycle::CollectExistingReports(
 
         if (isTemp)
         {
-            if (!IsProcessAlive(info.pid))
-            {
-                unlink(fullPath);
-            }
-            continue;
-        }
-
-        if (!isCompleted)
-        {
-            continue;
-        }
-
-        if (mode == RetentionMode::CleanupOnly)
-        {
+            // Any leftover temp file is from a previous, now-defunct run of this
+            // app (each app has its own report directory under its private
+            // storage, and the writer renames its temp to the final name before
+            // returning), so it can be removed unconditionally.
             unlink(fullPath);
             continue;
         }
 
-        if (mode == RetentionMode::Unlimited)
+        CrashReportStringUtils::CopyString(info.path.value, sizeof(info.path.value), fullPath);
+
+        if (keptCount < capacity)
         {
+            kept[keptCount++] = info;
             continue;
         }
 
-        if (collectedCount == collectedCapacity)
+        // The kept set is full, so this entry competes with the current oldest
+        // kept report: unlink the older of the two and keep the newer.
+        size_t oldestIndex = FindOldestReportIndex(kept, keptCount);
+        if (CompareFileInfo(&kept[oldestIndex], &info) < 0)
         {
-            size_t newCapacity = collectedCapacity == 0 ? 16 : collectedCapacity * 2;
-            FileInfo* grown = reinterpret_cast<FileInfo*>(realloc(collected, newCapacity * sizeof(FileInfo)));
-            if (grown == nullptr)
-            {
-                free(collected);
-                closedir(dir);
-                InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: failed to allocate retention scan storage");
-                return CollectResult::Failed;
-            }
-
-            collected = grown;
-            collectedCapacity = newCapacity;
+            unlink(kept[oldestIndex].path.value);
+            kept[oldestIndex] = info;
         }
-
-        CrashReportStringUtils::CopyString(info.path.value, sizeof(info.path.value), fullPath);
-        collected[collectedCount++] = info;
+        else
+        {
+            unlink(info.path.value);
+        }
     }
 
     closedir(dir);
 
-    if (scanExceeded)
+    // A full kept set means the directory already holds maxFileCount reports, so
+    // the next crash report would exceed the bound: cache the oldest, and the
+    // crash path unlinks it before publishing the new report. Below the bound
+    // nothing is cached and the crash path deletes nothing.
+    if (keptCount == capacity)
     {
-        free(collected);
-        InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: too many files in crash report directory");
-        return CollectResult::Failed;
+        size_t oldestIndex = FindOldestReportIndex(kept, keptCount);
+        CrashReportStringUtils::CopyString(m_cachedOldestReport.value, sizeof(m_cachedOldestReport.value), kept[oldestIndex].path.value);
     }
 
-    if (mode == RetentionMode::CleanupOnly)
-    {
-        free(collected);
-        return CollectResult::CleanupOnlyComplete;
-    }
-
-    *reports = collected;
-    *reportCount = collectedCount;
-    return CollectResult::Ready;
-}
-
-bool
-InProcCrashReportLifecycle::SelectDeleteCandidates(
-    FileInfo* reports,
-    size_t reportCount,
-    int32_t maxFileCount)
-{
-    qsort(reports, reportCount, sizeof(FileInfo), &CompareFileInfo);
-
-    size_t keepBeforeCrash = static_cast<size_t>(maxFileCount - 1);
-    if (reportCount <= keepBeforeCrash)
-    {
-        return true;
-    }
-
-    m_deleteCandidateCount = reportCount - keepBeforeCrash;
-    m_deleteCandidates = new (std::nothrow) ReportPath[m_deleteCandidateCount];
-    if (m_deleteCandidates == nullptr)
-    {
-        m_deleteCandidateCount = 0;
-        InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: failed to allocate retention candidate storage");
-        return false;
-    }
-
-    for (size_t i = 0; i < m_deleteCandidateCount; i++)
-    {
-        CrashReportStringUtils::CopyString(m_deleteCandidates[i].value, sizeof(m_deleteCandidates[i].value), reports[i].path.value);
-    }
-
+    delete[] kept;
     return true;
 }
 
@@ -293,45 +216,38 @@ InProcCrashReportLifecycle::PrepareReportFile(
 
     reportFilePath[0] = '\0';
     *fd = -1;
-    uint64_t timestamp = static_cast<uint64_t>(time(nullptr));
+
+    // Nanosecond-resolution timestamp keeps report names unique without a retry
+    // loop: even back-to-back crashes in the same process get distinct names.
+    // clock_gettime(CLOCK_REALTIME) is POSIX async-signal-safe, so it is valid
+    // on the crash path. A failed read degrades to a zero timestamp rather than
+    // aborting the report write.
+    struct timespec now = {};
+    clock_gettime(CLOCK_REALTIME, &now);
+    uint64_t timestampNs = static_cast<uint64_t>(now.tv_sec) * NanosecondsPerSecond +
+        static_cast<uint64_t>(now.tv_nsec);
     uint32_t pid = static_cast<uint32_t>(GetCurrentProcessId());
 
-    // Retention candidates are deleted before opening the temp file so the
-    // completed-report set never exceeds the configured bound and old reports
-    // can free space for the new crash report. If the new write later fails,
-    // the deleted candidates are intentionally not restored.
-    DeleteCandidates();
+    // Delete the cached over-retention report (if any) before opening the temp
+    // file, freeing a slot so the completed set stays at the bound. A later write
+    // failure intentionally does not restore it.
+    DeleteCachedReport();
 
-    for (uint32_t suffix = 0; suffix <= CrashReportMaxSuffixRetry; suffix++)
+    if (!BuildReportPaths(formatter, reportFilePath, reportFilePathSize, m_tempReportFilePath, sizeof(m_tempReportFilePath), timestampNs, pid))
     {
-        if (!BuildReportPaths(formatter, reportFilePath, reportFilePathSize, m_tempReportFilePath, sizeof(m_tempReportFilePath), timestamp, pid, suffix))
-        {
-            return false;
-        }
-
-        if (access(reportFilePath, F_OK) == 0)
-        {
-            continue;
-        }
-
-        int tempFd = open(m_tempReportFilePath, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
-        if (tempFd == -1)
-        {
-            if (errno == EEXIST)
-            {
-                continue;
-            }
-
-            return false;
-        }
-
-        *fd = tempFd;
-        return true;
+        return false;
     }
 
-    reportFilePath[0] = '\0';
-    m_tempReportFilePath[0] = '\0';
-    return false;
+    int tempFd = open(m_tempReportFilePath, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+    if (tempFd == -1)
+    {
+        reportFilePath[0] = '\0';
+        m_tempReportFilePath[0] = '\0';
+        return false;
+    }
+
+    *fd = tempFd;
+    return true;
 }
 
 void
@@ -345,17 +261,16 @@ InProcCrashReportLifecycle::FinishReportFile(
     }
 
     // Publish the completed report by renaming the temp file to its final name.
-    // rename is POSIX async-signal-safe and, unlike link, is permitted in the
-    // app-private storage sandboxes on Android and Apple mobile platforms, where
-    // hard links are rejected with EPERM. Temp and final share m_reportDirectory,
-    // so this is an atomic same-directory metadata operation. The access check
-    // best-effort preserves the "never overwrite a completed report" invariant
-    // that link's EEXIST gave us; the final name is collision-resistant by
-    // construction (PrepareReportFile probes and retries suffixes), so the
-    // residual TOCTOU window is benign. On any failure the temp is removed so no
-    // partial report is left behind.
+    // rename is async-signal-safe and, unlike link, is permitted in the Android
+    // and Apple app-private storage sandboxes (where link fails with EPERM); temp
+    // and final share m_reportDirectory, so this is an atomic same-directory op.
+    // Only publish when the destination is absent (access fails with ENOENT) to
+    // preserve the "never overwrite a completed report" invariant; any other
+    // errno leaves the destination state unknown, so decline rather than risk a
+    // replace. The collision-resistant final name (nanosecond timestamp plus pid)
+    // keeps the residual TOCTOU window benign. On any failure the temp is removed.
     if (succeeded && reportFilePath != nullptr && reportFilePath[0] != '\0' &&
-        access(reportFilePath, F_OK) != 0 &&
+        access(reportFilePath, F_OK) != 0 && errno == ENOENT &&
         rename(m_tempReportFilePath, reportFilePath) == 0)
     {
         m_tempReportFilePath[0] = '\0';
@@ -374,8 +289,7 @@ InProcCrashReportLifecycle::BuildReportPaths(
     char* tempReportFilePath,
     size_t tempReportFilePathSize,
     uint64_t timestamp,
-    uint32_t pid,
-    uint32_t suffix)
+    uint32_t pid)
 {
     reportFilePath[0] = '\0';
     tempReportFilePath[0] = '\0';
@@ -390,15 +304,6 @@ InProcCrashReportLifecycle::BuildReportPaths(
         return false;
     }
 
-    if (suffix != 0)
-    {
-        if (!CrashReportStringUtils::AppendString(reportFilePath, reportFilePathSize, &pos, "-") ||
-            !CrashReportStringUtils::AppendString(reportFilePath, reportFilePathSize, &pos, formatter->FormatUnsignedDecimal(suffix)))
-        {
-            return false;
-        }
-    }
-
     if (!CrashReportStringUtils::AppendString(reportFilePath, reportFilePathSize, &pos, CrashReportFileExtension))
     {
         return false;
@@ -410,14 +315,11 @@ InProcCrashReportLifecycle::BuildReportPaths(
 }
 
 void
-InProcCrashReportLifecycle::DeleteCandidates()
+InProcCrashReportLifecycle::DeleteCachedReport()
 {
-    for (size_t i = 0; i < m_deleteCandidateCount; i++)
+    if (m_cachedOldestReport.value[0] != '\0')
     {
-        if (m_deleteCandidates[i].value[0] != '\0')
-        {
-            unlink(m_deleteCandidates[i].value);
-        }
+        unlink(m_cachedOldestReport.value);
     }
 }
 
@@ -466,61 +368,17 @@ InProcCrashReportLifecycle::ResolveRootPath(
         return false;
     }
 
-    buffer[0] = '\0';
-    size_t pos = 0;
-
-    if (rootPath[0] == '~' && (rootPath[1] == '\0' || rootPath[1] == '/'))
-    {
-        const char* home = getenv("HOME");
-        if (home == nullptr || home[0] == '\0')
-        {
-            return false;
-        }
-
-        if (!CrashReportStringUtils::AppendString(buffer, bufferSize, &pos, home))
-        {
-            return false;
-        }
-
-        rootPath++;
-        if (*rootPath == '/')
-        {
-            rootPath++;
-        }
-        if (*rootPath != '\0' && !AppendPathComponent(buffer, bufferSize, &pos, rootPath))
-        {
-            return false;
-        }
-    }
-    else if (strncmp(rootPath, "$HOME", 5) == 0 && (rootPath[5] == '\0' || rootPath[5] == '/'))
-    {
-        const char* home = getenv("HOME");
-        if (home == nullptr || home[0] == '\0')
-        {
-            return false;
-        }
-
-        if (!CrashReportStringUtils::AppendString(buffer, bufferSize, &pos, home))
-        {
-            return false;
-        }
-
-        rootPath += 5;
-        if (*rootPath == '/')
-        {
-            rootPath++;
-        }
-        if (*rootPath != '\0' && !AppendPathComponent(buffer, bufferSize, &pos, rootPath))
-        {
-            return false;
-        }
-    }
-    else if (!CrashReportStringUtils::AppendString(buffer, bufferSize, &pos, rootPath))
+    // The configuring host is responsible for supplying a fully-resolved
+    // absolute path; the runtime does not expand a leading '~' or environment
+    // variables and rejects anything that is not already absolute.
+    if (!IsAbsolutePath(rootPath))
     {
         return false;
     }
 
-    return IsAbsolutePath(buffer);
+    buffer[0] = '\0';
+    size_t pos = 0;
+    return CrashReportStringUtils::AppendString(buffer, bufferSize, &pos, rootPath);
 }
 
 bool
@@ -553,10 +411,10 @@ InProcCrashReportLifecycle::EnsureDirectory(const char* path)
 bool
 InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
 {
-    // Borrow the temp-report path buffer as scratch for the probe path: it is
-    // unused until the crash path calls PrepareReportFile, so reusing it here
-    // keeps the probe off the heap and out of the signal path.
-    char* probePath = m_tempReportFilePath;
+    // This runs only on the initialization path, so the probe paths are kept in
+    // local stack buffers rather than borrowing a member buffer; that keeps the
+    // probe self-contained and off both the heap and the signal path.
+    char probePath[CRASHREPORT_PATH_BUFFER_SIZE];
     probePath[0] = '\0';
     size_t pos = 0;
 
@@ -564,13 +422,16 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
     // and delete (rename is the operation FinishReportFile uses to publish).
     SignalSafeFormatter formatter;
     bool built =
-        CrashReportStringUtils::AppendString(probePath, sizeof(m_tempReportFilePath), &pos, path) &&
-        CrashReportStringUtils::AppendString(probePath, sizeof(m_tempReportFilePath), &pos, "/.probe-") &&
-        CrashReportStringUtils::AppendString(probePath, sizeof(m_tempReportFilePath), &pos, formatter.FormatUnsignedDecimal(static_cast<uint64_t>(GetCurrentProcessId())));
+        CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, path) &&
+        CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, "/.probe-") &&
+        CrashReportStringUtils::AppendString(probePath, sizeof(probePath), &pos, formatter.FormatUnsignedDecimal(static_cast<uint64_t>(GetCurrentProcessId())));
 
     bool writable = false;
     if (built)
     {
+        // Clear any stale probe file so the O_EXCL create below doesn't wrongly report the directory as unwritable.
+        unlink(probePath);
+
         int fd = open(probePath, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
         if (fd != -1)
         {
@@ -590,8 +451,7 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
 
             if (committedBuilt)
             {
-                // Clear any stale probe artifact left by a prior aborted run so the
-                // rename targets a fresh name rather than silently replacing it.
+                // Clear any stale committed artifact so the rename targets a fresh name instead of replacing it.
                 unlink(committedPath);
             }
 
@@ -602,16 +462,12 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
             }
             else
             {
-                // The rename probe failed (or the target path did not fit); remove
-                // the original probe file so no stray artifact is left behind.
+                // The rename probe failed (or the target path did not fit); remove the probe file so no stray artifact remains.
                 unlink(probePath);
             }
         }
     }
 
-    // Leave the borrowed buffer empty so the crash path's "no temp file yet"
-    // invariant continues to hold after initialization.
-    m_tempReportFilePath[0] = '\0';
     return writable;
 }
 
@@ -678,7 +534,6 @@ InProcCrashReportLifecycle::TryParseReportName(
     const char* current = name + prefixLength;
     uint64_t timestamp = 0;
     uint64_t pid = 0;
-    uint64_t suffix = 0;
 
     if (!TryParseUnsigned(&current, &timestamp) || *current != '-')
     {
@@ -689,15 +544,6 @@ InProcCrashReportLifecycle::TryParseReportName(
     if (!TryParseUnsigned(&current, &pid))
     {
         return false;
-    }
-
-    if (*current == '-')
-    {
-        current++;
-        if (!TryParseUnsigned(&current, &suffix))
-        {
-            return false;
-        }
     }
 
     if (strncmp(current, CrashReportFileExtension, extensionLength) != 0)
@@ -720,27 +566,10 @@ InProcCrashReportLifecycle::TryParseReportName(
 
     info->timestamp = timestamp;
     info->pid = pid;
-    info->suffix = suffix;
     return true;
 }
 
-bool
-InProcCrashReportLifecycle::IsProcessAlive(uint64_t pid)
-{
-    if (pid == 0 || pid > static_cast<uint64_t>(INT_MAX))
-    {
-        return false;
-    }
-
-    // Signal 0 probes for process existence without delivering a signal.
-    if (kill(static_cast<pid_t>(pid), 0) == 0)
-    {
-        return true;
-    }
-
-    return errno != ESRCH;
-}
-
+// Comparator ordering reports oldest-first (timestamp, then path).
 int
 InProcCrashReportLifecycle::CompareFileInfo(
     const void* left,
@@ -757,55 +586,5 @@ InProcCrashReportLifecycle::CompareFileInfo(
     {
         return 1;
     }
-    if (leftInfo->suffix < rightInfo->suffix)
-    {
-        return -1;
-    }
-    if (leftInfo->suffix > rightInfo->suffix)
-    {
-        return 1;
-    }
     return strcmp(leftInfo->path.value, rightInfo->path.value);
-}
-
-bool
-InProcCrashReportLifecycle::IsSafePathCharacter(char c)
-{
-    return (c >= 'A' && c <= 'Z') ||
-        (c >= 'a' && c <= 'z') ||
-        (c >= '0' && c <= '9') ||
-        c == '.' ||
-        c == '_' ||
-        c == '-';
-}
-
-void
-InProcCrashReportLifecycle::SanitizePathComponent(
-    char* buffer,
-    size_t bufferSize,
-    const char* value)
-{
-    if (buffer == nullptr || bufferSize == 0)
-    {
-        return;
-    }
-
-    const char* source = (value != nullptr && value[0] != '\0') ? value : "unknown";
-    size_t pos = 0;
-    while (*source != '\0' && pos + 1 < bufferSize)
-    {
-        buffer[pos++] = IsSafePathCharacter(*source) ? *source : '_';
-        source++;
-    }
-
-    if (pos == 0)
-    {
-        const char fallback[] = "unknown";
-        for (size_t i = 0; fallback[i] != '\0' && pos + 1 < bufferSize; i++)
-        {
-            buffer[pos++] = fallback[i];
-        }
-    }
-
-    buffer[pos] = '\0';
 }

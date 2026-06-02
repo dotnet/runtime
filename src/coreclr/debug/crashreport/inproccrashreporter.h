@@ -15,15 +15,11 @@
 #include <minipal/guid.h>
 
 // Scratch-buffer sizes used throughout the in-proc crash reporter:
-// - 1024 (matching createdump's MAX_LONGPATH) for paths (report paths and
-//   expanded dump templates), so DOTNET_DbgMiniDumpName values that work
-//   with createdump also work here.
+// - 1024 (matching createdump's MAX_LONGPATH) for report paths.
 // - 256 for identifiers (process name, type/class/exception names).
 static constexpr size_t CRASHREPORT_PATH_BUFFER_SIZE = 1024;
 static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
 static constexpr int32_t CRASHREPORT_DEFAULT_MAX_FILE_COUNT = 32;
-static constexpr int32_t CRASHREPORT_UNLIMITED_FILE_COUNT = -1;
-static constexpr int32_t CRASHREPORT_CLEANUP_ONLY_FILE_COUNT = 0;
 
 #if defined(__ANDROID__)
 static const char CRASHREPORT_LOG_TAG[] = "DOTNET_CRASH";
@@ -76,7 +72,6 @@ using InProcCrashReportModuleInfoCallback = bool (*)(
 
 struct InProcCrashReporterSettings
 {
-    const char* reportPath;
     const char* lifecycleRootPath;
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;

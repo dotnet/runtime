@@ -590,9 +590,9 @@ CrashReportEnumerateThreads(
     }
 }
 
-// This runs during configuration, not from the crash signal path. It uses
-// strtol because TryAsInteger parses into DWORD via strtoul and cannot
-// represent the -1 unlimited-retention sentinel for this lifecycle setting.
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] (including the
+// non-positive and overflowing ones) fall back to the default.
 static
 int32_t
 GetCrashReportMaxFileCount()
@@ -615,7 +615,7 @@ GetCrashReportMaxFileCount()
     char* end = nullptr;
     long configuredMaxFileCount = strtol(maxFileCountString, &end, 10);
     if (end != maxFileCountString && *end == '\0' && errno != ERANGE &&
-        configuredMaxFileCount >= CRASHREPORT_UNLIMITED_FILE_COUNT && configuredMaxFileCount <= INT32_MAX)
+        configuredMaxFileCount >= 1 && configuredMaxFileCount <= INT32_MAX)
     {
         maxFileCount = static_cast<int32_t>(configuredMaxFileCount);
     }
@@ -661,11 +661,6 @@ CrashReportConfigure()
     {
         settings.lifecycleRootPath = crashReportRootPath;
         settings.maxFileCount = GetCrashReportMaxFileCount();
-    }
-    else
-    {
-        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-        settings.reportPath = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
     }
 
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;

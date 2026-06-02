@@ -102,8 +102,7 @@ static char sccsid[] = "@(#)Version N/A";
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
 // signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
-// queried values are cached for use during crash reporting (mirrors the hostName /
-// gethostname pattern).
+// queried values are cached for use during crash reporting.
 static void CacheSysctlString(const char* sysctlName, char* buffer, size_t bufferSize)
 {
     buffer[0] = '\0';
@@ -388,12 +387,6 @@ private:
         bool jsonEnabled,
         int fd);
 
-    bool BuildReportPath();
-    size_t ExpandDumpTemplate(
-        char* buffer,
-        size_t bufferSize,
-        const char* pattern);
-
     static const char* GetSignalNameAscii(int signal);
 
     SignalSafeJsonWriter m_jsonWriter;
@@ -410,11 +403,8 @@ private:
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
-    bool m_manageReportLifecycle = false;
-    char m_configuredReportPath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
-    char m_hostName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
@@ -462,11 +452,6 @@ public:
 
     static const char* GetFilename(
         const char* path);
-
-    static void CopyString(
-        char* buffer,
-        size_t bufferSize,
-        const char* value);
 
     static void WriteFrameToJson(
         SignalSafeJsonWriter* writer,
@@ -574,9 +559,9 @@ public:
         size_t len);
 
     // SignalSafeJsonWriter callback that drops everything: used when the
-    // crash report is running in compact-log-only mode (no DbgMiniDumpName)
-    // so the JSON formatter still keeps its bookkeeping consistent without
-    // emitting bytes anywhere.
+    // crash report is running in compact-log-only mode (no managed report
+    // directory configured) so the JSON formatter still keeps its bookkeeping
+    // consistent without emitting bytes anywhere.
     static bool DiscardOutputCallback(const char* buffer, size_t len, void* ctx);
 
 };
@@ -592,27 +577,13 @@ InProcCrashReporter::CreateReport(
         return;
     }
     m_reportFilePath[0] = '\0';
-    // The JSON file sink is enabled by lifecycle-managed output or by a
-    // DbgMiniDumpName template that expands to a valid path. Otherwise the
-    // crash report runs in compact-log-only mode: the JSON emitter still
+    // The JSON file sink is enabled only by lifecycle-managed output. Otherwise
+    // the crash report runs in compact-log-only mode: the JSON emitter still
     // executes (so it can keep its bookkeeping consistent) but writes go to a
     // no-op DiscardOutputCallback instead of an open fd.
-    bool jsonEnabled = false;
-
     int fd = -1;
-    if (m_manageReportLifecycle)
-    {
-        jsonEnabled = m_lifecycle.IsReportFileOutputEnabled() &&
-            m_lifecycle.PrepareReportFile(&m_formatter, m_reportFilePath, sizeof(m_reportFilePath), &fd);
-    }
-    else
-    {
-        jsonEnabled = m_configuredReportPath[0] != '\0' && BuildReportPath();
-        if (jsonEnabled)
-        {
-            fd = open(m_reportFilePath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-        }
-    }
+    bool jsonEnabled = m_lifecycle.IsReportFileOutputEnabled() &&
+        m_lifecycle.PrepareReportFile(&m_formatter, m_reportFilePath, sizeof(m_reportFilePath), &fd);
 
     if (jsonEnabled && fd == -1)
     {
@@ -736,8 +707,6 @@ InProcCrashReporter::Initialize(
     m_frameLimitPerThread = settings.frameLimitPerThread;
     m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     m_stackOverflowTrace.available = 0;
-    m_manageReportLifecycle = false;
-    m_configuredReportPath[0] = '\0';
     m_reportFilePath[0] = '\0';
 
     m_processName[0] = '\0';
@@ -754,7 +723,7 @@ InProcCrashReporter::Initialize(
         if (n > 0)
         {
             m_stringScratch[n] = '\0';
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(m_stringScratch));
+            CrashReportStringUtils::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(m_stringScratch));
         }
     }
 #endif
@@ -762,44 +731,17 @@ InProcCrashReporter::Initialize(
     {
         if (char* exePath = minipal_getexepath())
         {
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
+            CrashReportStringUtils::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
             free(exePath);
         }
     }
 
-    // Cache hostname here because gethostname is not on the POSIX
-    // async-signal-safe list; the dump-template expander needs it for %h
-    // expansion at crash time.
-    m_hostName[0] = '\0';
-    if (gethostname(m_hostName, sizeof(m_hostName) - 1) == 0)
-    {
-        m_hostName[sizeof(m_hostName) - 1] = '\0';
-    }
-    else
-    {
-        m_hostName[0] = '\0';
-    }
-
+    // File output is produced only through the lifecycle-managed report
+    // directory. When no root is configured the reporter still runs, emitting
+    // compact console logs without writing a JSON report file.
     if (settings.lifecycleRootPath != nullptr && settings.lifecycleRootPath[0] != '\0')
     {
-        m_manageReportLifecycle = true;
-        size_t pos = 0;
-        if (CrashReportHelpers::AppendString(
-            m_configuredReportPath,
-            sizeof(m_configuredReportPath),
-            &pos,
-            settings.lifecycleRootPath))
-        {
-            m_lifecycle.Initialize(m_configuredReportPath, m_processName, settings.maxFileCount);
-        }
-        else
-        {
-            InProcCrashReportLogInitializationFailure(".NET crash report file output disabled: invalid CrashReportRootPath");
-        }
-    }
-    else
-    {
-        CrashReportHelpers::CopyString(m_configuredReportPath, sizeof(m_configuredReportPath), settings.reportPath);
+        m_lifecycle.Initialize(settings.lifecycleRootPath, settings.maxFileCount);
     }
 
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
@@ -1029,131 +971,6 @@ CrashReportOutputContext::ChunkCallback(
     return outputContext->HandleChunk(buffer, len);
 }
 
-// Expand the coredump template patterns supported by createdump's
-// FormatDumpName for DOTNET_DbgMiniDumpName: %% %p %d (PID), %e (process
-// name, cached at Initialize), %h (hostname, cached at Initialize), and %t
-// (current epoch seconds via time(2), POSIX async-signal-safe). Unknown
-// specifiers are rejected (return 0) to match createdump and to avoid
-// silently producing diverging file names from the same template.
-size_t
-InProcCrashReporter::ExpandDumpTemplate(
-    char* buffer,
-    size_t bufferSize,
-    const char* pattern)
-{
-    if (buffer == nullptr || bufferSize == 0 ||
-        pattern == nullptr)
-    {
-        return 0;
-    }
-
-    size_t pos = 0;
-    unsigned pid = static_cast<unsigned>(GetCurrentProcessId());
-
-    while (*pattern != '\0' && pos + 1 < bufferSize)
-    {
-        if (*pattern != '%')
-        {
-            buffer[pos++] = *pattern++;
-            continue;
-        }
-
-        pattern++;
-        char specifier = *pattern;
-
-        const char* substitution = nullptr;
-
-        switch (specifier)
-        {
-            case '%':
-                if (pos + 1 < bufferSize)
-                {
-                    buffer[pos++] = '%';
-                }
-                pattern++;
-                continue;
-
-            case 'p':
-            case 'd':
-                substitution = m_formatter.FormatUnsignedDecimal(pid);
-                break;
-
-            case 'e':
-                substitution = (m_processName[0] != '\0') ? m_processName : nullptr;
-                break;
-
-            case 'h':
-                substitution = (m_hostName[0] != '\0') ? m_hostName : nullptr;
-                break;
-
-            case 't':
-                substitution = m_formatter.FormatUnsignedDecimal(static_cast<uint64_t>(time(nullptr)));
-                break;
-
-            default:
-                // Unknown / unsupported specifier; fail rather than emit a
-                // path with a literal '%X' that would diverge from the file
-                // name createdump would produce for the same template.
-                return 0;
-        }
-
-        if (substitution == nullptr)
-        {
-            // Required substitution unavailable (e.g. hostname capture failed
-            // at Initialize). Fail rather than emit a path missing this
-            // component, which could collide with the dump file on disk.
-            return 0;
-        }
-
-        size_t subLen = strlen(substitution);
-        if (pos + subLen >= bufferSize)
-        {
-            return 0;
-        }
-        memcpy(buffer + pos, substitution, subLen);
-        pos += subLen;
-
-        if (*pattern != '\0')
-        {
-            pattern++;
-        }
-    }
-
-    buffer[pos] = '\0';
-    if (*pattern != '\0')
-    {
-        // The output buffer filled before the full template was consumed.
-        // Fail rather than returning a truncated path that could collide or
-        // unexpectedly change the report location.
-        return 0;
-    }
-    return pos;
-}
-
-bool
-InProcCrashReporter::BuildReportPath()
-{
-    if (m_configuredReportPath[0] == '\0')
-    {
-        return false;
-    }
-
-    size_t pos = ExpandDumpTemplate(
-        m_reportFilePath,
-        sizeof(m_reportFilePath),
-        m_configuredReportPath);
-    if (pos == 0)
-    {
-        return false;
-    }
-
-    if (!CrashReportHelpers::AppendString(m_reportFilePath, sizeof(m_reportFilePath), &pos, ".crashreport.json"))
-    {
-        return false;
-    }
-    return true;
-}
-
 void
 CrashReportHelpers::GetVersionString(
     char* buffer,
@@ -1338,11 +1155,11 @@ CrashReportHelpers::BuildMethodName(
     }
     else if (className != nullptr)
     {
-        CopyString(buffer, bufferSize, className);
+        CrashReportStringUtils::CopyString(buffer, bufferSize, className);
     }
     else if (methodName != nullptr)
     {
-        CopyString(buffer, bufferSize, methodName);
+        CrashReportStringUtils::CopyString(buffer, bufferSize, methodName);
     }
     else
     {
@@ -1397,15 +1214,6 @@ HasManagedIdentity(
 {
     return methodName != nullptr ||
         (token != 0 && HasModuleName(moduleName));
-}
-
-void
-CrashReportHelpers::CopyString(
-    char* buffer,
-    size_t bufferSize,
-    const char* value)
-{
-    CrashReportStringUtils::CopyString(buffer, bufferSize, value);
 }
 
 void
@@ -2316,14 +2124,7 @@ InProcCrashReporter::EndJsonReport(
 
         bool closeSucceeded = close(fd) == 0;
         bool reportSucceeded = finishSucceeded && !writeFailed && closeSucceeded;
-        if (m_manageReportLifecycle)
-        {
-            m_lifecycle.FinishReportFile(reportSucceeded, m_reportFilePath);
-        }
-        else if (!reportSucceeded)
-        {
-            unlink(m_reportFilePath);
-        }
+        m_lifecycle.FinishReportFile(reportSucceeded, m_reportFilePath);
     }
     else
     {
