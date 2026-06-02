@@ -299,11 +299,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // consistent with the saturating float/double -> int behavior introduced
             // in .NET 9 (https://learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer).
             //
-            // We model the clamp as MinNative(smallMax, MaxNative(smallMin, x)).
-            // On xarch / Arm64 this lowers to a pair of scalar min/max instructions
-            // (e.g. maxss/minss, fmax/fmin). On RISC-V and LoongArch64 it lowers to
-            // fmin/fmax instructions. NaN propagates through to the saturating
-            // R -> int cast which maps NaN -> 0 (always in range).
+            // On xarch / Arm64 / RISC-V / LoongArch64: clamp in the float domain using
+            // MinNative(smallMax, MaxNative(smallMin, x)) before the R -> int cast.
+            // On ARM32: the R -> int cast already saturates, and we then apply SSAT/USAT
+            // in the integer domain to clamp the int32 result to the small type range.
+            // NaN is handled by each platform's saturation mechanism (maps to 0 via the
+            // saturating R -> int cast on all paths).
             //
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
@@ -352,10 +353,46 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                                      NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
 #endif // FEATURE_HW_INTRINSICS
             }
+#elif defined(TARGET_ARM)
+            // ARM32 clamp is applied in the integer domain after R -> int below.
+#else
+#error "New JIT target: add saturating float-to-small-int support. Either add a float-domain clamp " \
+       "(as for xarch/arm64/riscv64/la64) or an integer-domain saturating operation (as for arm32 SSAT/USAT)."
 #endif // FEATURE_HW_INTRINSICS || TARGET_RISCV64 || TARGET_LOONGARCH64
 
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+
+#ifdef TARGET_ARM
+            // On ARM32, apply SSAT/USAT to clamp the int32 result of the R -> int cast to
+            // the small type range, achieving the same saturating semantics as the float-domain
+            // clamp on other targets. NaN input maps to 0 via the saturating R -> int cast
+            // above, which is already in range for any small type.
+            if (!tree->gtOverflow())
+            {
+                NamedIntrinsic satIntrinsic;
+                switch (dstType)
+                {
+                    case TYP_BYTE:
+                        satIntrinsic = NI_PRIMITIVE_SaturateToInt8;
+                        break;
+                    case TYP_UBYTE:
+                        satIntrinsic = NI_PRIMITIVE_SaturateToUInt8;
+                        break;
+                    case TYP_SHORT:
+                        satIntrinsic = NI_PRIMITIVE_SaturateToInt16;
+                        break;
+                    case TYP_USHORT:
+                        satIntrinsic = NI_PRIMITIVE_SaturateToUInt16;
+                        break;
+                    default:
+                        unreached();
+                }
+                const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
+                oper = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(TYP_INT, oper, satIntrinsic, nullptr R2RARG(nullEntry));
+            }
+#endif // TARGET_ARM
 
             tree->AsCast()->CastOp() = oper;
             // We must not mistreat the original cast, which was from a floating point type,
