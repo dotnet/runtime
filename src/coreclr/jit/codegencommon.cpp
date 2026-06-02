@@ -1805,7 +1805,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         if (params.argSize > 0)
         {
             // Call popped these but stack level hasn't been adjusted yet, account for it here
-            stackLevelBias -= params.argSize;
+            stackLevelBias -= (int)params.argSize;
         }
 #endif
 
