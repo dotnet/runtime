@@ -435,6 +435,7 @@ struct cdac_data<ILCodeVersionNode>
     static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
     static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
     static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
+    static constexpr size_t Deoptimized = offsetof(ILCodeVersionNode, m_deoptimized);
 };
 
 class ILCodeVersionCollection
