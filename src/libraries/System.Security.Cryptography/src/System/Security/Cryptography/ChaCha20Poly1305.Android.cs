@@ -127,9 +127,20 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
+            if (!Interop.Crypto.EvpAeadCipherUpdate(
+                _ctxHandle,
+                plaintext.Slice(plaintextBytesWritten),
+                out int bytesWritten,
+                tag,
+                out bool authTagMismatch))
             {
                 CryptographicOperations.ZeroMemory(plaintext);
+
+                if (authTagMismatch)
+                {
+                    throw new AuthenticationTagMismatchException();
+                }
+
                 throw new CryptographicException();
             }
 
@@ -139,7 +150,7 @@ namespace System.Security.Cryptography
                 _ctxHandle,
                 plaintext.Slice(plaintextBytesWritten),
                 out bytesWritten,
-                out bool authTagMismatch))
+                out authTagMismatch))
             {
                 CryptographicOperations.ZeroMemory(plaintext);
 

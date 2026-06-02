@@ -35,6 +35,7 @@ PALEXPORT int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx, uint8_t* pIv, 
 PALEXPORT int32_t AndroidCryptoNative_CipherCtxSetPadding(CipherCtx* ctx, int32_t padding);
 PALEXPORT int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t inl);
 PALEXPORT int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* out, int32_t* outl, uint8_t* in, int32_t inl);
+PALEXPORT int32_t AndroidCryptoNative_AeadCipherUpdate(CipherCtx* ctx, uint8_t* out, int32_t* outl, uint8_t* in, int32_t inl, int32_t* authTagMismatch);
 PALEXPORT int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl);
 PALEXPORT int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl, int32_t* authTagMismatch);
 PALEXPORT CipherInfo* AndroidCryptoNative_Aes128Ecb(void);

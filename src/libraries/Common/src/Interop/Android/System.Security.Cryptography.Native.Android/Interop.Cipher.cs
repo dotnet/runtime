@@ -101,6 +101,32 @@ internal static partial class Interop
                 input.Length);
         }
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_AeadCipherUpdate")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool EvpAeadCipherUpdate(
+            SafeEvpCipherCtxHandle ctx,
+            ref byte @out,
+            out int outl,
+            ref byte @in,
+            int inl,
+            [MarshalAs(UnmanagedType.Bool)] out bool authTagMismatch);
+
+        internal static bool EvpAeadCipherUpdate(
+            SafeEvpCipherCtxHandle ctx,
+            Span<byte> output,
+            out int bytesWritten,
+            ReadOnlySpan<byte> input,
+            out bool authTagMismatch)
+        {
+            return EvpAeadCipherUpdate(
+                ctx,
+                ref MemoryMarshal.GetReference(output),
+                out bytesWritten,
+                ref MemoryMarshal.GetReference(input),
+                input.Length,
+                out authTagMismatch);
+        }
+
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_CipherUpdateAAD")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CipherUpdateAAD(
