@@ -79,10 +79,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
         public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
 
-        /// <summary>
-        /// GcInfo version is 1 up to ReadyTorun version 1.x.
-        /// GcInfo version is current from  ReadyToRun version 2.0
-        /// </summary>
         internal static int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
         {
             if (readyToRunMajorVersion == 1)

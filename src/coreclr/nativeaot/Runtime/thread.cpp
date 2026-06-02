@@ -823,7 +823,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
 #if defined(TARGET_X86)
-        bool isAsync;
+        bool isAsync = false;
         GCRefKind retKind = frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet(), &isAsync);
         m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retKind, isAsync);
 #endif

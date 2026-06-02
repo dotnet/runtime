@@ -47,8 +47,9 @@ inline uintptr_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind, bool isA
 inline GCRefKind TransitionFrameFlagsToReturnKind(uintptr_t transFrameFlags, bool* isAsync)
 {
     GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF)) >> 16);
-    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
     *isAsync = (transFrameFlags & PTFF_RCX_IS_GCREF) != 0;
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
+    ASSERT(!*isAsync || (transFrameFlags & PTFF_SAVE_RCX));
     return returnKind;
 }
 
