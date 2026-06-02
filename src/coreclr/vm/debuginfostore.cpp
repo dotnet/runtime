@@ -355,11 +355,11 @@ static void DoNativeVarInfo(
     // The entries aren't sorted in any particular order.
     trans.DoCookie(0xB);
     // record var number.
-    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
+    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD)ICorDebugInfo::MAX_ILNUM);
 
     trans.DoEncodedU32(pVar->startOffset);
 
-    if (pVar->varNumber == ICorDebugInfo::CALL_RETURN_ILNUM)
+    if (pVar->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
     {
         trans.DoEncodedU32(pVar->callReturnValueILOffset);
         trans.DoImplicitEndOffset(pVar->endOffset, pVar->startOffset);
