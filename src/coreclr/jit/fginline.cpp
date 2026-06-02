@@ -2545,6 +2545,11 @@ bool Compiler::fgNeedReturnSpillTemp()
 //   the statements that follow, and convert the block to BBJ_THROW. Calls
 //   under a GT_QMARK are conditional and ignored.
 //
+//   When the no-return call is not the root of its statement we use
+//   gtSplitTree to hoist the preceding side effects. gtSplitTree cannot
+//   handle a GT_QMARK on the path to the split point, so blocks where a
+//   qmark executes before the no-return call are left unmodified.
+//
 PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
 {
     if (!doesMethodHaveNoReturnCalls())
@@ -2617,6 +2622,19 @@ PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
 
         if (trimStmt == nullptr)
         {
+            continue;
+        }
+
+        // When the no-return call is not the statement root we must split the
+        // tree, but gtSplitTree cannot hoist past a GT_QMARK. If the statement
+        // still contains a qmark (this phase runs before morph expands them),
+        // leave the block as-is rather than tripping the splitter's assert.
+        //
+        if ((trimStmt->GetRootNode() != noRetCall) && gtTreeContainsOper(trimStmt->GetRootNode(), GT_QMARK))
+        {
+            JITDUMP("\nfgPostInlineNoReturnCleanup: " FMT_BB
+                    " has a qmark around no-return call [%06u]; skipping\n",
+                    block->bbNum, dspTreeID(noRetCall));
             continue;
         }
 
