@@ -1,6 +1,6 @@
-# Contract EditAndContinue
+# Contract RuntimeMutableTypeSystem
 
-This contract exposes the runtime's Edit-and-Continue (EnC) bookkeeping.
+This contract exposes runtime type system information about changes that occured after the initial type load, such as from ENC or HotReload.
 
 ## APIs of contract
 

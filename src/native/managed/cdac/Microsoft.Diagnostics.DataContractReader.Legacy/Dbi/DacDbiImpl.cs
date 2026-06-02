@@ -1893,7 +1893,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (isEnCNew)
         {
             // Mirrors native: storage not yet available; carry the FieldDesc pointer through
-            // m_vmFieldDesc but leave all "is" flags false.
+            // m_vmFieldDesc and clear the address-related flags (TLS/RVA/collectible).
             fd.m_fFldStorageAvailable = Interop.BOOL.FALSE;
             fd.m_fFldIsTLS = 0;
             fd.m_fFldIsRVA = 0;
