@@ -127,7 +127,7 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
-            uint spinCount = Environment.IsSingleProcessor ? 0: SpinCount;
+            uint spinCount = Environment.IsSingleProcessor ? 0 : SpinCount;
             for (uint i = 0; i < spinCount; i++)
             {
                 Backoff.Exponential(i);
