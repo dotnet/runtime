@@ -346,8 +346,6 @@ namespace System.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
-        // Passes on the interpreter, but interpreter configurations might still use jit fallback
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116823", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void ConvertToIntegerTest()
         {
             // Signed Values
