@@ -17,7 +17,10 @@ extends:
           - linux_x64
           jobParameters:
             testGroup: outerloop
-            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            # Build clr.wasmjit on x64 hosts so the checked wasm cross-targeting JIT
+            # (clrjit_universal_wasm_x64.dll) is present in the checked Core_Root for
+            # crossgen2-corelib-wasm SPMI collection. clr.alljits does not include it.
+            buildArgs: -s clr+libs+libs.tests+clr.wasmjit -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
@@ -140,10 +143,7 @@ extends:
           - linux_x64
           jobParameters:
             testGroup: outerloop
-            # Build clr.wasmjit on x64 hosts so the wasm cross-targeting JIT
-            # (clrjit_universal_wasm_x64.dll) is present in the release Core_Root for
-            # crossgen2-corelib-wasm SPMI collection. clr.alljits does not include it.
-            buildArgs: -s clr+libs+libs.tests+clr.wasmjit -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
@@ -335,10 +335,13 @@ extends:
       # (clrjit_universal_wasm_x64.dll) under superpmi-shim-collector, producing an MCH
       # uploaded under <jit_ee_version>/browser/x64/ (the wasm mch_arch override in
       # superpmi.py maps target_arch=wasm to mch_arch=<host_arch>=x64).
+      #
+      # Uses buildConfig: checked so the wasm cross-targeting JIT used during collection
+      # is a Checked build.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: release
+          buildConfig: checked
           platforms:
           - windows_x64
           helixQueueGroup: ci
