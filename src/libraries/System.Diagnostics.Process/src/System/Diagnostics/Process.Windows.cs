@@ -322,6 +322,44 @@ namespace System.Diagnostics
             return GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_ALL_ACCESS);
         }
 
+        private static bool TryOpen(int processId, out SafeProcessHandle? processHandle)
+        {
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER.
+            if (processId != 0)
+            {
+                SafeProcessHandle handle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_ALL_ACCESS, false, processId);
+                if (handle.IsInvalid)
+                {
+                    handle.Dispose();
+                    int error = Marshal.GetLastWin32Error();
+                    if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                    {
+                        processHandle = null;
+                        return false;
+                    }
+                    // Fall through to check the process list (e.g. for protected processes
+                    // where OpenProcess fails with ERROR_ACCESS_DENIED).
+                }
+                else
+                {
+                    bool signaled = false;
+                    if (!ProcessManager.HasExited(handle, ref signaled, out _))
+                    {
+                        processHandle = handle;
+                        return true;
+                    }
+                    handle.Dispose();
+                    processHandle = null;
+                    return false;
+                }
+            }
+
+            // Check the process list as a fallback for pid=0 or when OpenProcess fails
+            // for reasons other than ERROR_INVALID_PARAMETER.
+            processHandle = null;
+            return Array.IndexOf(ProcessManager.GetProcessIds(), processId) >= 0;
+        }
+
         /// <summary>Get the minimum and maximum working set limits.</summary>
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {

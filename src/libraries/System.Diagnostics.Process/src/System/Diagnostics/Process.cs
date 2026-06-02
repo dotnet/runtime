@@ -955,15 +955,18 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static bool TryGetProcessById(int processId, [NotNullWhen(true)] out Process? process)
         {
-            if (!SafeProcessHandle.TryOpen(processId, out SafeProcessHandle? processHandle))
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
+
+            if (!TryOpen(processId, out SafeProcessHandle? processHandle))
             {
                 process = null;
                 return false;
             }
 
-            process = new Process(processHandle);
+            process = processHandle != null ? new Process(processHandle) : new Process(".", false, processId, null);
             return true;
         }
+
 
         /// <devdoc>
         ///    <para>

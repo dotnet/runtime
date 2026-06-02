@@ -358,6 +358,19 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
+        private static bool TryOpen(int processId, out SafeProcessHandle? processHandle)
+        {
+            if (!ProcessManager.IsProcessRunning(processId))
+            {
+                processHandle = null;
+                return false;
+            }
+
+            ProcessWaitState.Holder waitStateHolder = new(processId);
+            processHandle = new SafeProcessHandle(waitStateHolder);
+            return true;
+        }
+
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
             SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
