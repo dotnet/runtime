@@ -155,8 +155,17 @@ namespace System.Text.Json.Serialization.Metadata
                 // hits the most-specific declared case before any of its bases.
                 UnionCaseEntry[] orderedCases = BuildTopologicallySortedCaseEntries();
                 ConcurrentDictionary<Type, UnionCaseEntry?> caseIndex = CreateCaseIndex(orderedCases);
+
+                // Pick the canonical nullable case from _caseEntries (the same order as the
+                // public UnionCases list) rather than from orderedCases. UnionNullableCaseType
+                // is later cached by scanning UnionCases in order, and JsonUnionConverter
+                // looks it up to decide which case represents JSON null. If we scanned
+                // orderedCases instead, a union with multiple nullable cases in an inheritance
+                // chain (declaration order [Base, Derived]; topological [Derived, Base])
+                // would advertise Base via UnionNullableCaseType while the constructor/
+                // deconstructor delegates silently dispatched through Derived.
                 UnionCaseEntry? nullableCase = null;
-                foreach (UnionCaseEntry entry in orderedCases)
+                foreach (UnionCaseEntry entry in _caseEntries)
                 {
                     if (entry.CaseInfo.IsNullable)
                     {

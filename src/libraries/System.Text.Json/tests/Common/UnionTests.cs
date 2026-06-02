@@ -494,6 +494,47 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(lab, caseValue);
         }
 
+        // Two nullable reference-type cases in an inheritance relationship: declaration order
+        // is [Animal?, Dog?] but the topological-most-derived-first order used for runtime
+        // dispatch of non-null values is [Dog?, Animal?].
+#pragma warning disable SYSLIB1227
+        public union HierarchyNullableUnion(Animal?, Dog?);
+#pragma warning restore SYSLIB1227
+
+        [Fact]
+        public async Task NullableCase_MultipleNullableCasesInHierarchy_DispatchAgreesWithUnionCases()
+        {
+            JsonTypeInfo<HierarchyNullableUnion> typeInfo = Serializer.GetTypeInfo<HierarchyNullableUnion>();
+
+            // The canonical nullable case — the one JSON null deserializes through and the
+            // one a null-valued union deconstructs to — must be the first nullable entry in
+            // UnionCases. JsonUnionConverter looks up UnionNullableCaseType (cached from that
+            // same scan) before invoking the constructor delegate's null fast-path, so the
+            // delegate must dispatch through the same case to keep metadata and behavior in
+            // agreement.
+            Type expectedCaseType = typeInfo.UnionCases.First(c => c.IsNullable).CaseType;
+
+            (Type? deconstructed, object? value) = typeInfo.UnionDeconstructor!(new HierarchyNullableUnion((Animal?)null));
+            Assert.Equal(expectedCaseType, deconstructed);
+            Assert.Null(value);
+
+            (deconstructed, value) = typeInfo.UnionDeconstructor!(new HierarchyNullableUnion((Dog?)null));
+            Assert.Equal(expectedCaseType, deconstructed);
+            Assert.Null(value);
+
+            HierarchyNullableUnion fromCtor = typeInfo.UnionConstructor!(typeof(Animal), null);
+            (deconstructed, value) = typeInfo.UnionDeconstructor!(fromCtor);
+            Assert.Equal(expectedCaseType, deconstructed);
+            Assert.Null(value);
+
+            // JSON null deserialization exercises JsonUnionConverter's UnionNullableCaseType
+            // lookup followed by the constructor null fast-path.
+            HierarchyNullableUnion fromJson = await Serializer.DeserializeWrapper<HierarchyNullableUnion>("null");
+            (deconstructed, value) = typeInfo.UnionDeconstructor!(fromJson);
+            Assert.Equal(expectedCaseType, deconstructed);
+            Assert.Null(value);
+        }
+
         public union NullableCaseUnion(string?, int);
 
         [Fact]
