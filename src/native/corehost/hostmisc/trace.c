@@ -215,6 +215,7 @@ bool trace_enable(void)
     bool file_open_error = false;
     pal_char_t* tracefile_str = NULL;
     pal_char_t* tracefile_path_to_open = NULL;
+    pal_char_t* trace_path = NULL;
 
     if (g_trace_verbosity)
         return false;
@@ -249,21 +250,20 @@ bool trace_enable(void)
             if (exe_name[0] == _X('\0'))
                 pal_str_printf(exe_name, ARRAY_SIZE(exe_name), _X("host"));
 
-            pal_char_t trace_path[APPHOST_PATH_MAX];
-            int written = pal_str_printf(trace_path, ARRAY_SIZE(trace_path),
-                _X("%s") DIR_SEPARATOR_STR _X("%s.%d.log"),
-                tracefile_str, exe_name, pal_get_pid());
-
-            // pal_str_printf returns -1 (Windows _snwprintf_s _TRUNCATE) or the
-            // would-be length (POSIX snprintf) when the result was truncated.
-            // Treat truncation as an open failure rather than silently using a
-            // bad path.
-            if (written < 0 || (size_t)written >= ARRAY_SIZE(trace_path))
+            // Allocate a buffer sized to fit "<dir>/<exe_name>.<pid>.log".
+            // 16 chars is plenty for the decimal pid; 6 covers the separator,
+            // the '.' before pid, ".log", and the null terminator.
+            size_t trace_path_len = pal_strlen(tracefile_str) + pal_strlen(exe_name) + 16 + 6;
+            trace_path = (pal_char_t*)malloc(trace_path_len * sizeof(pal_char_t));
+            if (trace_path == NULL)
             {
                 file_open_error = true;
             }
             else
             {
+                pal_str_printf(trace_path, trace_path_len,
+                    _X("%s") DIR_SEPARATOR_STR _X("%s.%d.log"),
+                    tracefile_str, exe_name, pal_get_pid());
                 tracefile_path_to_open = trace_path;
             }
         }
@@ -300,6 +300,7 @@ bool trace_enable(void)
         trace_error(_X("Unable to open specified trace file for writing: %s"), tracefile_path_to_open != NULL ? tracefile_path_to_open : tracefile_str);
 
     free(tracefile_str);
+    free(trace_path);
     return true;
 }
 
