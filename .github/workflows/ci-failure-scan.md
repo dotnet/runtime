@@ -231,7 +231,7 @@ test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep 
 printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
 ```
 
-**Cross-definition dedup (check second).** A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, treat as `existing-kbe #aw_<id>` for the purposes of Step 5 (skip Branch A only) and proceed to Branch B; a distinct test-disable PR per definition is still allowed when the same KBE legitimately fails on multiple pipelines. Append this key too after every Branch A emission.
+**Cross-definition dedup (check second).** A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, record `skipped: cross-def dup of filed-issue #aw_<id> earlier in this run` and stop. Do NOT proceed to Branch B: `aw_<id>` is a safe-output ID from this run, not a real issue number, and rule #9 forbids same-run test-disable PRs. The per-definition test-disable PR (if test-disable is welcome on the resulting KBE) will surface on the next run, once the KBE has a real issue number. Append this key too after every Branch A emission.
 
 ```bash
 xkey="<queue>|<stress_mode>|${signature_norm}"
