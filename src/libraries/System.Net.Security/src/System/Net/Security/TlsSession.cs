@@ -6,9 +6,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+#if !TARGET_WINDOWS
+using Microsoft.Win32.SafeHandles;
+#endif
 // macOS PAL has two SafeDelete* derivatives (SecureTransport + Network.framework)
 // and surfaces the base type in ref parameters. Use the base type for the security-context
 // field on macOS so it lines up with the PAL ref signatures; other platforms keep the
@@ -42,7 +46,7 @@ namespace System.Net.Security
     /// is non-empty.
     /// </para>
     /// </remarks>
-    public sealed class TlsSession : IDisposable
+    public sealed partial class TlsSession : IDisposable
     {
         // Matches StreamSizes.Default on Unix; conservative upper bound for a
         // single TLS record's plaintext payload.
@@ -88,6 +92,12 @@ namespace System.Net.Security
         private Socket? _socket;
         private byte[]? _socketInBuf;
         private int _socketInUsed;
+#if !TARGET_WINDOWS
+        // When true, socket-bound I/O delegates ciphertext directly to OpenSSL via
+        // SSL_set_fd / SSL_do_handshake / SSL_read / SSL_write, bypassing the
+        // managed ProcessHandshake/Encrypt/Decrypt loop and its scratch buffers.
+        private bool _useFdMode;
+#endif
 
         private TlsSession(TlsContext context)
         {
@@ -116,6 +126,17 @@ namespace System.Net.Security
             TlsSession session = new TlsSession(context);
             session._socketHandle = socket;
             session._socket = new Socket(socket);
+#if !TARGET_WINDOWS
+            // Bind the socket fd directly to the SSL object so OpenSSL drives
+            // ciphertext I/O itself. AllocateSslHandle inspects SocketFd and
+            // skips ManagedSpanBio installation when set (>= 0).
+            IntPtr raw = socket.DangerousGetHandle();
+            if (raw != IntPtr.Zero && raw.ToInt64() >= 0)
+            {
+                session._options.SocketFd = checked((int)raw.ToInt64());
+                session._useFdMode = true;
+            }
+#endif
             return session;
         }
 
@@ -1528,6 +1549,13 @@ namespace System.Net.Security
                 return TlsOperationStatus.Complete;
             }
 
+#if !TARGET_WINDOWS
+            if (_useFdMode)
+            {
+                return FdHandshake();
+            }
+#endif
+
             _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
             byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
             try
@@ -1642,6 +1670,13 @@ namespace System.Net.Security
                 throw new InvalidOperationException("Handshake has not yet completed.");
             }
 
+#if !TARGET_WINDOWS
+            if (_useFdMode)
+            {
+                return FdRead(buffer, out bytesRead);
+            }
+#endif
+
             _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
 
             while (true)
@@ -1721,6 +1756,13 @@ namespace System.Net.Security
             {
                 throw new InvalidOperationException("Handshake has not yet completed.");
             }
+
+#if !TARGET_WINDOWS
+            if (_useFdMode)
+            {
+                return FdWrite(buffer, out bytesWritten);
+            }
+#endif
 
             // Drain any previously stashed ciphertext first.
             if (_pendingLength > 0)
@@ -1804,6 +1846,82 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(scratch);
             }
         }
+
+#if !TARGET_WINDOWS
+        // FD-mode socket-bound I/O. When the session is created via
+        // Create(TlsContext, SafeSocketHandle) on an OpenSSL platform, OpenSSL
+        // is bound to the socket fd via SSL_set_fd and drives ciphertext I/O
+        // itself - bypassing the managed ProcessHandshake/Encrypt/Decrypt loop
+        // and its scratch buffers.
+
+        private SafeSslHandle EnsureFdSslHandle()
+        {
+            if (_securityContext is SafeSslHandle existing && !existing.IsInvalid)
+            {
+                return existing;
+            }
+            SafeSslHandle handle = Interop.OpenSsl.AllocateSslHandle(_options);
+            _securityContext = handle;
+            return handle;
+        }
+
+        private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, string op)
+        {
+            return error switch
+            {
+                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.WantRead,
+                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.WantWrite,
+                Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
+                _ => throw new AuthenticationException($"OpenSSL {op} failed: {error}"),
+            };
+        }
+
+        private TlsOperationStatus FdHandshake()
+        {
+            SafeSslHandle ssl = EnsureFdSslHandle();
+            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
+            if (ret == 1)
+            {
+                OnHandshakeCompleted();
+                return TlsOperationStatus.Complete;
+            }
+            return MapSslError(err, "SSL_do_handshake");
+        }
+
+        private TlsOperationStatus FdRead(Span<byte> buffer, out int bytesRead)
+        {
+            bytesRead = 0;
+            if (buffer.IsEmpty)
+            {
+                return TlsOperationStatus.Complete;
+            }
+            SafeSslHandle ssl = (SafeSslHandle)_securityContext!;
+            int ret = Interop.Ssl.SslRead(ssl, ref MemoryMarshal.GetReference(buffer), buffer.Length, out Interop.Ssl.SslErrorCode err);
+            if (ret > 0)
+            {
+                bytesRead = ret;
+                return TlsOperationStatus.Complete;
+            }
+            return MapSslError(err, "SSL_read");
+        }
+
+        private TlsOperationStatus FdWrite(ReadOnlySpan<byte> buffer, out int bytesWritten)
+        {
+            bytesWritten = 0;
+            if (buffer.IsEmpty)
+            {
+                return TlsOperationStatus.Complete;
+            }
+            SafeSslHandle ssl = (SafeSslHandle)_securityContext!;
+            int ret = Interop.Ssl.SslWrite(ssl, ref MemoryMarshal.GetReference(buffer), buffer.Length, out Interop.Ssl.SslErrorCode err);
+            if (ret > 0)
+            {
+                bytesWritten = ret;
+                return TlsOperationStatus.Complete;
+            }
+            return MapSslError(err, "SSL_write");
+        }
+#endif
 
         public void Dispose()
         {

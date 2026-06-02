@@ -117,6 +117,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd", SetLastError = true)]
+        internal static partial int SslSetFd(SafeSslHandle ssl, int fd);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
+        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(
             SafeSslHandle ssl,
@@ -479,13 +485,16 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            SafeBioHandle readBio = Interop.Ssl.BioNewManagedSpan();
-            SafeBioHandle writeBio = Interop.Ssl.BioNewManagedSpan();
+            int fd = options.SocketFd;
+            bool useFd = fd >= 0;
+
+            SafeBioHandle? readBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
+            SafeBioHandle? writeBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
-            if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
+            if ((!useFd && (readBio!.IsInvalid || writeBio!.IsInvalid)) || handle.IsInvalid)
             {
-                readBio.Dispose();
-                writeBio.Dispose();
+                readBio?.Dispose();
+                writeBio?.Dispose();
                 handle.Dispose(); // will make IsInvalid==true if it's not already
                 return handle;
             }
@@ -497,21 +506,32 @@ namespace Microsoft.Win32.SafeHandles
             // CertificateValidationException; expose it via the options.
             options.SafeSslHandle = handle;
 
-            // SslSetBio will transfer ownership of the BIO handles to the SSL context
-            try
+            if (useFd)
             {
-                readBio.TransferOwnershipToParent(handle);
-                writeBio.TransferOwnershipToParent(handle);
-                handle._readBio = readBio;
-                handle._writeBio = writeBio;
-                Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                if (Interop.Ssl.SslSetFd(handle, fd) != 1)
+                {
+                    handle.Dispose();
+                    throw Interop.OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
             }
-            catch (Exception exc)
+            else
             {
-                // The only way this should be able to happen without thread aborts is if we hit OOMs while
-                // manipulating the safe handles, in which case we may leak the bio handles.
-                Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
-                throw;
+                // SslSetBio will transfer ownership of the BIO handles to the SSL context
+                try
+                {
+                    readBio!.TransferOwnershipToParent(handle);
+                    writeBio!.TransferOwnershipToParent(handle);
+                    handle._readBio = readBio;
+                    handle._writeBio = writeBio;
+                    Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                }
+                catch (Exception exc)
+                {
+                    // The only way this should be able to happen without thread aborts is if we hit OOMs while
+                    // manipulating the safe handles, in which case we may leak the bio handles.
+                    Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
+                    throw;
+                }
             }
 
             if (options.IsServer)

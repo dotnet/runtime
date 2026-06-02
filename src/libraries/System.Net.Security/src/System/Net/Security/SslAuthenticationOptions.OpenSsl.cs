@@ -16,5 +16,11 @@ namespace System.Net.Security
         // CreateSessionOptions and read by AllocateSslHandle. Not copied by Clone()
         // \u2014 each per-session clone gets the field re-stamped by CreateSessionOptions.
         internal SafeSslContextHandle? PreallocatedSslContext { get; set; }
+
+        // Socket file descriptor to bind to the SSL object via SSL_set_fd. When set
+        // (>= 0), SafeSslHandle.Create skips the ManagedSpanBio installation and the
+        // SSL object reads/writes the socket directly. Used by TlsSession's
+        // socket-bound mode (Create(TlsContext, SafeSocketHandle)).
+        internal int SocketFd { get; set; } = -1;
     }
 }
