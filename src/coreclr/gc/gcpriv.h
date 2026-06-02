@@ -1210,7 +1210,9 @@ struct last_recorded_gc_info
 
 // alignment helpers
 //Alignment constant for allocation
+// [cDAC] [GC]: Contract depends on these values.
 #define ALIGNCONST (DATA_ALIGNMENT-1)
+#define ALIGNCONST_LARGE 7
 
 inline
 size_t Align (size_t nbytes, int alignment=ALIGNCONST)
@@ -1227,7 +1229,7 @@ int get_alignment_constant (BOOL small_object_p)
     // the compiler will tell us so.  Let's not guess an alignment here.
     return ALIGNCONST;
 #else // FEATURE_STRUCTALIGN
-    return small_object_p ? ALIGNCONST : 7;
+    return small_object_p ? ALIGNCONST : ALIGNCONST_LARGE;
 #endif // FEATURE_STRUCTALIGN
 }
 
