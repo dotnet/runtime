@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 class OutOfMemoryExceptionTest
 {
@@ -68,48 +67,41 @@ class OutOfMemoryExceptionTest
     {
         Console.WriteLine($"Testing OOM with {description}...");
 
-        string fileName = Process.GetCurrentProcess().MainModule.FileName;
-        string arguments = TestLibrary.Utilities.IsNativeAot
-            ? allocateArg
-            : $"{typeof(OutOfMemoryExceptionTest).Assembly.Location} {allocateArg}";
+        string fileName = Environment.ProcessPath;
+        string[] arguments = TestLibrary.Utilities.IsNativeAot
+            ? [allocateArg]
+            : [typeof(OutOfMemoryExceptionTest).Assembly.Location, allocateArg];
 
         var psi = new ProcessStartInfo(fileName, arguments)
         {
+            RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = false,
         };
         // 32 MB GC heap limit: small enough to exhaust quickly but large enough for startup.
         psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
         psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
-        using Process? p = Process.Start(psi);
-        if (p is null)
+        ProcessTextOutput output;
+        try
         {
-            Console.WriteLine("Failed to start subprocess.");
-            return Fail;
+            output = Process.RunAndCaptureText(psi, TimeSpan.FromMilliseconds(TimeoutMilliseconds));
         }
-
-        // Read stderr asynchronously so that WaitForExit can enforce the timeout.
-        // A synchronous ReadToEnd() would block until the child exits, defeating the timeout.
-        Task<string> stderrTask = p.StandardError.ReadToEndAsync();
-        if (!p.WaitForExit(TimeoutMilliseconds))
+        catch (TimeoutException)
         {
-            p.Kill(true);
-            p.WaitForExit();
-            _ = stderrTask.GetAwaiter().GetResult();
             Console.WriteLine($"Subprocess timed out after {TimeoutMilliseconds / 1000} seconds.");
             return Fail;
         }
-        string stderr = stderrTask.GetAwaiter().GetResult();
 
-        Console.WriteLine($"Subprocess exit code: {p.ExitCode}");
-        Console.WriteLine($"Subprocess stderr: {stderr}");
+        Console.WriteLine($"Subprocess exit code: {output.ExitStatus.ExitCode}");
+        Console.WriteLine($"Subprocess stderr: {output.StandardError}");
 
-        if (p.ExitCode == 0 || p.ExitCode == Pass)
+        if (output.ExitStatus.ExitCode == 0 || output.ExitStatus.ExitCode == Pass)
         {
             Console.WriteLine("Expected a non-success exit code from the OOM subprocess.");
             return Fail;
         }
+
+        string stderr = output.StandardError;
 
         if (allocateArg == AllocateSmallArg && !stderr.Contains(ExpectedMinimalOomToken))
         {
