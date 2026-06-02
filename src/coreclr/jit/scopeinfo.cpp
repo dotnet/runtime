@@ -1792,7 +1792,7 @@ void CodeGen::genSetScopeInfo()
         return;
     }
 
-    noway_assert(m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0));
+    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) || (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
     m_compiler->eeSetLVcount(varsLocationsCount);
@@ -1805,11 +1805,10 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    // We can have one of both flags defined, both, or none. Specially if we need to compare both
-    // both results. But we cannot report both to the debugger, since there would be overlapping
-    // intervals, and may not indicate the same variable location.
-
-    genSetScopeInfoUsingVariableRanges();
+    if (varLiveKeeper->getLiveRangesCount() > 0)
+    {
+        genSetScopeInfoUsingVariableRanges();
+    }
 
     for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
     {
