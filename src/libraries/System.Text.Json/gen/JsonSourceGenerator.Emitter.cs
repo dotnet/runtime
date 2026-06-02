@@ -731,6 +731,14 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"null => (typeof({nullCase.CaseType.FullyQualifiedName}), (object?)null),");
                     }
+                    else
+                    {
+                        // Always emit a null arm. C# pattern matching treats default(union)
+                        // as the null state (CS8655) and the union's Value property returns
+                        // null in that state. Routing to (null, null) signals
+                        // JsonUnionConverter to write JSON null instead of throwing.
+                        writer.WriteLine("null => ((global::System.Type?)null, (object?)null),");
+                    }
 
                     // unionCases is in topological most-derived-first order, so the first
                     // matching arm always corresponds to the nearest declared case for any

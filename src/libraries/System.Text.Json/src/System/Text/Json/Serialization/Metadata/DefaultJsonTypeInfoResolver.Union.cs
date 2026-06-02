@@ -234,12 +234,15 @@ namespace System.Text.Json.Serialization.Metadata
                     object? value = valueAccessor(union);
                     if (value is null)
                     {
-                        if (nullableCase is null)
-                        {
-                            ThrowHelper.ThrowJsonException_UnionDoesNotAcceptNull(typeof(TUnion));
-                        }
-
-                        return (nullableCase.CaseType, null);
+                        // Always succeed on null. Two scenarios converge here:
+                        //   (1) default(struct union) has no case set and Value returns null.
+                        //   (2) A nullable case was constructed with null (Foo((string?)null)).
+                        // When a nullable case exists, dispatch through it so the converter
+                        // calls the case's own converter for null. Otherwise return
+                        // (null, null) — JsonUnionConverter writes JSON null in that case.
+                        return nullableCase is not null
+                            ? (nullableCase.CaseType, null)
+                            : (null, null);
                     }
 
                     Type runtimeType = value.GetType();

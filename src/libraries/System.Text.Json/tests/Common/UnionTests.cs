@@ -465,11 +465,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void Deconstructor_UnionWithNullValue_NoNullableCase_Throws()
+        public void Deconstructor_UnionWithNullValue_NoNullableCase_ReturnsNullPair()
         {
+            // The deconstructor must succeed when a case payload is null even on a union
+            // with no nullable case (e.g. HierarchyUnion(Animal) where Animal is declared
+            // non-nullable but the user passed null!). Returning (null, null) signals
+            // JsonUnionConverter to write JSON null — matching the class-record behavior
+            // described in https://github.com/dotnet/runtime/issues/128834.
             JsonTypeInfo<HierarchyUnion> typeInfo = Serializer.GetTypeInfo<HierarchyUnion>();
 
-            Assert.ThrowsAny<Exception>(() => typeInfo.UnionDeconstructor!(new HierarchyUnion((Animal)null!)));
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(new HierarchyUnion((Animal)null!));
+
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
         }
 
         [Fact]
@@ -536,6 +544,19 @@ namespace System.Text.Json.Serialization.Tests
 
         public union NoNullableCaseUnion(int);
 
+        public class NoNullableCaseUnionContainer
+        {
+            public NoNullableCaseUnion Union { get; set; }
+            public int After { get; set; }
+        }
+
+        public union IntOrBool(int, bool);
+
+        public class IntOrBoolContainer
+        {
+            public IntOrBool Value { get; set; }
+        }
+
         [Fact]
         public void Constructor_NullValue_NoNullableCase_Throws()
         {
@@ -544,6 +565,129 @@ namespace System.Text.Json.Serialization.Tests
 
             // Both implementations surface a runtime exception when null is rejected.
             Assert.ThrowsAny<Exception>(() => typeInfo.UnionConstructor!(typeof(int), null));
+        }
+
+        [Fact]
+        public void Deconstructor_DefaultValueOfStructUnion_NoNullableCase_ReturnsNullPair()
+        {
+            JsonTypeInfo<NoNullableCaseUnion> typeInfo = Serializer.GetTypeInfo<NoNullableCaseUnion>();
+            Assert.NotNull(typeInfo.UnionDeconstructor);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(default);
+
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public async Task RoundTrip_DefaultValueOfStructUnion_NoNullableCase()
+        {
+            string json = await Serializer.SerializeWrapper(default(NoNullableCaseUnion));
+            Assert.Equal("null", json);
+
+            // Symmetry: JSON null must deserialize back to default(NoNullableCaseUnion),
+            // which deconstructs to (null, null) — the same shape that produced the JSON.
+            NoNullableCaseUnion roundtripped = await Serializer.DeserializeWrapper<NoNullableCaseUnion>(json);
+            JsonTypeInfo<NoNullableCaseUnion> typeInfo = Serializer.GetTypeInfo<NoNullableCaseUnion>();
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(roundtripped);
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public async Task RoundTrip_ContainerWithDefaultStructUnionProperty()
+        {
+            string json = await Serializer.SerializeWrapper(new NoNullableCaseUnionContainer { After = 7 });
+            JsonTestHelper.AssertJsonEqual("""{"Union":null,"After":7}""", json);
+
+            NoNullableCaseUnionContainer? roundtripped =
+                await Serializer.DeserializeWrapper<NoNullableCaseUnionContainer>(json);
+            Assert.NotNull(roundtripped);
+            Assert.Equal(7, roundtripped.After);
+
+            JsonTypeInfo<NoNullableCaseUnion> typeInfo = Serializer.GetTypeInfo<NoNullableCaseUnion>();
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(roundtripped.Union);
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public async Task RoundTrip_ContainerWithMissingUnionProperty_DoesNotThrowOnReserialize()
+        {
+            NoNullableCaseUnionContainer? container =
+                await Serializer.DeserializeWrapper<NoNullableCaseUnionContainer>("""{"After":7}""");
+            Assert.NotNull(container);
+            Assert.Equal(7, container.After);
+
+            // Step 2: serialize the same instance back. The union property must come
+            // back as JSON null — the round-trip must not throw.
+            string json = await Serializer.SerializeWrapper(container);
+            JsonTestHelper.AssertJsonEqual("""{"Union":null,"After":7}""", json);
+        }
+
+        [Fact]
+        public void Deconstructor_DefaultValueOfIntOrBool_ReturnsNullPair()
+        {
+            JsonTypeInfo<IntOrBool> typeInfo = Serializer.GetTypeInfo<IntOrBool>();
+            Assert.NotNull(typeInfo.UnionDeconstructor);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(default);
+
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public async Task RoundTrip_DefaultValueOfIntOrBool()
+        {
+            string json = await Serializer.SerializeWrapper(default(IntOrBool));
+            Assert.Equal("null", json);
+
+            // Symmetry: JSON null must deserialize back to default(IntOrBool).
+            IntOrBool roundtripped = await Serializer.DeserializeWrapper<IntOrBool>(json);
+            JsonTypeInfo<IntOrBool> typeInfo = Serializer.GetTypeInfo<IntOrBool>();
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(roundtripped);
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public async Task RoundTrip_NewContainerOfIntOrBool()
+        {
+            // Exact translation of `JsonSerializer.Serialize(new Container())` from the
+            // issue comment: the container holds a non-nullable IntOrBool whose default
+            // value has no case selected. Before the fix this threw
+            // UnionDoesNotAcceptNull at $.Value. Now it must succeed and emit
+            // {"Value":null} — and the resulting JSON must round-trip back to a
+            // semantically identical container.
+            string json = await Serializer.SerializeWrapper(new IntOrBoolContainer());
+            JsonTestHelper.AssertJsonEqual("""{"Value":null}""", json);
+
+            IntOrBoolContainer? roundtripped =
+                await Serializer.DeserializeWrapper<IntOrBoolContainer>(json);
+            Assert.NotNull(roundtripped);
+
+            JsonTypeInfo<IntOrBool> typeInfo = Serializer.GetTypeInfo<IntOrBool>();
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(roundtripped.Value);
+            Assert.Null(caseType);
+            Assert.Null(caseValue);
+        }
+
+        [Fact]
+        public void Deconstructor_DefaultValueOfIntOrBool_NonDefaultPayload_DispatchesNormally()
+        {
+            // Regression guard: the always-null arm must not shadow the per-case arms.
+            // Construct IntOrBool with a non-null value and verify the deconstructor
+            // still reports the right case type.
+            JsonTypeInfo<IntOrBool> typeInfo = Serializer.GetTypeInfo<IntOrBool>();
+
+            (Type? intCaseType, object? intCaseValue) = typeInfo.UnionDeconstructor!(new IntOrBool(42));
+            Assert.Equal(typeof(int), intCaseType);
+            Assert.Equal(42, intCaseValue);
+
+            (Type? boolCaseType, object? boolCaseValue) = typeInfo.UnionDeconstructor!(new IntOrBool(true));
+            Assert.Equal(typeof(bool), boolCaseType);
+            Assert.Equal(true, boolCaseValue);
         }
 
         [Fact]
