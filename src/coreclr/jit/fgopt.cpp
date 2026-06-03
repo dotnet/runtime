@@ -5492,41 +5492,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    if (retOrThrowBlocks.Height() > 1)
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
-        JITDUMP("Trying tail merge of return and throw blocks\n");
-
-        for (int i = 0; i < retOrThrowBlocks.Height() - 1; i++)
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
         {
-            BasicBlock* const block = retOrThrowBlocks.TopRef(i);
-
             // If this block was already merged, skip it
             //
             if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 continue;
             }
-
-            // Regather all candidates
-            //
-            predInfo.Reset();
-            for (int j = i; j < retOrThrowBlocks.Height(); j++)
-            {
-                BasicBlock* const otherBlock = retOrThrowBlocks.TopRef(j);
-
-                // If this block was already merged, skip it
-                //
-                if (otherBlock->GetKind() != block->GetKind())
-                {
-                    continue;
-                }
-
-                predInfo.Push(PredInfo(otherBlock, otherBlock->lastStmt()));
-            }
-
-            tailMergePreds(nullptr);
+            predInfo.Push(PredInfo(block, block->lastStmt()));
         }
-    }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //
