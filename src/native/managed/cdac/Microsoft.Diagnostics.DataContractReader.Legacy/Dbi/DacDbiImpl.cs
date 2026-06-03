@@ -1745,6 +1745,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
     {
+        if (pObjectSize != null)
+            *pObjectSize = 0;
+
         nuint cdacObjectSize = 0;
         List<FieldData>? cdacFields = null;
 #if DEBUG
@@ -1754,6 +1757,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypeHandle thExactHandle = rts.GetTypeHandle(thExact);
             // Native semantics: thApprox is the same TypeHandle that was passed in.
@@ -1795,6 +1801,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
     {
+        if (pObjectSize != null)
+            *pObjectSize = 0;
+
         nuint cdacObjectSize = 0;
         List<FieldData>? cdacFields = null;
 #if DEBUG
@@ -1804,6 +1813,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
             TypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
