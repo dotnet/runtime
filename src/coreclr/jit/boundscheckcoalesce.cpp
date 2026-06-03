@@ -15,7 +15,7 @@
 // indices 0, 1, 2, 3 and the same length. We rewrite the first BC's index
 // to 3; forward assertion prop then drops the other three as redundant.
 //
-// We ensure no observable side effects (other than a bounds check exception
+// We ensure no observable side effects (other than a bounds check exception)
 // can occur between the original check and the subsequent checks.
 //
 // This phase runs before assertion prop, which then optimizes away
