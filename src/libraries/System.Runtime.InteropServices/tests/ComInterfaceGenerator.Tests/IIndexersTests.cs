@@ -12,6 +12,9 @@ namespace ComInterfaceGenerator.Tests
 {
     public unsafe partial class IIndexersTests
     {
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_indexers")]
+        public static partial void* NewIndexers();
+
         // -------------------------------------------------------------------------
         // Round-trip an in-process [GeneratedComClass] through CCW + RCW so each
         // indexer accessor is invoked through the generator's marshalling pipeline
@@ -103,6 +106,86 @@ namespace ComInterfaceGenerator.Tests
 
             Assert.Equal(value, observed);
             Assert.Equal(value, impl[key]);
+        }
+
+        // -------------------------------------------------------------------------
+        // RCW path only, driven by a hand-rolled native vtable (`new_indexers` from
+        // NativeExports/ComInterfaceGenerator/Indexers.cs). This proves the generated
+        // RCW marshals correctly against external native code, not just against our
+        // own [GeneratedComClass] CCW.
+        // -------------------------------------------------------------------------
+
+        private static IIndexers CreateRcwOverNativeShim()
+        {
+            var cw = new StrategyBasedComWrappers();
+            nint nativePtr = (nint)NewIndexers();
+            try
+            {
+                return (IIndexers)cw.GetOrCreateObjectForComInstance(nativePtr, CreateObjectFlags.None);
+            }
+            finally
+            {
+                Marshal.Release(nativePtr);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 100)]
+        [InlineData(5, -3)]
+        [InlineData(-1, int.MaxValue / 2)]
+        public void NativeShim_SingleParamIndexer_RoundTrips(int index, int value)
+        {
+            IIndexers rcw = CreateRcwOverNativeShim();
+
+            rcw[index] = value;
+            Assert.Equal(value, rcw[index]);
+        }
+
+        [Theory]
+        [InlineData(0, 0, 11)]
+        [InlineData(2, 7, 999)]
+        [InlineData(-3, 4, -123)]
+        public void NativeShim_TwoParamIndexer_RoundTrips(int i, int j, int value)
+        {
+            IIndexers rcw = CreateRcwOverNativeShim();
+
+            rcw[i, j] = value;
+            Assert.Equal(value, rcw[i, j]);
+        }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(11L)]
+        [InlineData(-3L)]
+        public void NativeShim_ReadOnlyIndexer_ReturnsShimValue(long l)
+        {
+            IIndexers rcw = CreateRcwOverNativeShim();
+
+            Assert.Equal(unchecked((int)(l * 7)), rcw[l]);
+        }
+
+        [Theory]
+        [InlineData((short)0, 0)]
+        [InlineData((short)5, 13)]
+        [InlineData((short)-7, -200)]
+        public void NativeShim_WriteOnlyIndexer_DoesNotThrow(short s, int value)
+        {
+            IIndexers rcw = CreateRcwOverNativeShim();
+
+            rcw[s] = value;
+        }
+
+        [Theory]
+        [InlineData("alpha", "first")]
+        [InlineData("", "empty-key")]
+        [InlineData("non-ascii-\u00e9\u00f1\u4e2d", "non-ascii-value-\u00fc\u30a2\u00df")]
+        [InlineData("key", "")]
+        public void NativeShim_StringKeyedIndexer_RoundTrips(string key, string value)
+        {
+            IIndexers rcw = CreateRcwOverNativeShim();
+
+            rcw[key] = value;
+            Assert.Equal(value, rcw[key]);
         }
 
         // -------------------------------------------------------------------------
