@@ -285,6 +285,8 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
 
+    public override TargetNInt ReadNInt(ulong address) => DefaultReadNInt(address);
+
     public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
     {
         value = default;
@@ -498,6 +500,33 @@ internal class TestPlaceholderTarget : Target
         return new TargetNUInt(value);
     }
 
+    protected bool DefaultTryReadNInt(ulong address, out long value)
+    {
+        value = 0;
+        if (PointerSize == sizeof(int)
+            && DefaultTryRead(address, out int value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (PointerSize == sizeof(long)
+            && DefaultTryRead(address, out long value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    protected TargetNInt DefaultReadNInt(ulong address)
+    {
+        if (!DefaultTryReadNInt(address, out long value))
+            throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
+
+        return new TargetNInt(value);
+    }
+
     protected TargetCodePointer DefaultReadCodePointer(ulong address)
     {
         return new TargetCodePointer(DefaultReadPointer(address));
@@ -625,7 +654,7 @@ internal class TestPlaceholderTarget : Target
             return true;
         }
 
-        public override void Flush() { }
+        public override void Flush(FlushScope scope) { }
     }
 
 }

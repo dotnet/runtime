@@ -451,7 +451,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
     pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;

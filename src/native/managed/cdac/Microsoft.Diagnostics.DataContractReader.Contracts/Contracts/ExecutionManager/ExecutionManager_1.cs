@@ -13,8 +13,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     internal ExecutionManager_1(Target target)
     {
         TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
-        Data.RangeSectionMap map = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(addr);
-        _executionManagerCore = new ExecutionManagerCore<NibbleMapLinearLookup>(target, map);
+        _executionManagerCore = new ExecutionManagerCore<NibbleMapLinearLookup>(target, addr);
     }
 
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);
@@ -36,5 +35,5 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
     public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
     public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);
-    public void Flush() => _executionManagerCore.Flush();
+    public void Flush(FlushScope scope) => _executionManagerCore.Flush(scope);
 }
