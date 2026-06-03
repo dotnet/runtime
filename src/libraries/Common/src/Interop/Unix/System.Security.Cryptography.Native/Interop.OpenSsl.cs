@@ -670,7 +670,7 @@ internal static partial class Interop
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.NoRenegotiation, GetSslError(ret, errorCode));
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
