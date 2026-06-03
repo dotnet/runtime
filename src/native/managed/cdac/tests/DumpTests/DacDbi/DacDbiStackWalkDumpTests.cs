@@ -114,8 +114,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         IStackWalk sw = Target.Contracts.StackWalk;
 
         // Find a frame whose SP+IP differs from the leaf context
-        byte[]? nonLeafContext = sw.CreateStackWalk(crashingThread)
-            .Where(ClrDataStackWalk.IsLegacyVisible)
+        byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
             .Select(sw.GetRawContext)
             .FirstOrDefault(ctx =>
             {

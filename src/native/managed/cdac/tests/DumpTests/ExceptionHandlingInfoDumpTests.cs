@@ -35,7 +35,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
+        foreach (IStackDataFrameHandle frame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
