@@ -10,7 +10,7 @@ using Xunit;
 
 public class ElidedBoundsChecks
 {
-    private static readonly bool IsMonoRuntime = Type.GetType("Mono.Runtime") is not null;
+    private static readonly bool IsMonoRuntime = Type.GetType("Mono.RuntimeStructs") is not null;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ComplexBinaryOperators(byte inData)
