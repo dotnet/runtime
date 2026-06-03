@@ -80,6 +80,9 @@ IF_DEF(SR_1A, IS_NONE, NONE)   // mflr rD
 IF_DEF(SR_1B, IS_NONE, NONE)   // mtlr rS
 IF_DEF(SR_1C, IS_NONE, NONE)   // blr
 IF_DEF(SR_1D, IS_NONE, NONE)   // nop
+IF_DEF(SR_1E, IS_NONE, NONE)   // hwsync
+IF_DEF(SR_1F, IS_NONE, NONE)   // lwsync
+IF_DEF(SR_1G, IS_NONE, NONE)   // isync
 
 // Call format
 IF_DEF(CALL, IS_NONE, CALL)    // bl target

@@ -37,6 +37,11 @@
 #define ppc_oris(c,S,A,ui) ppc_emit32 (c, (25 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_xori(c,A,S,ui) ppc_emit32 (c, (26 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_andi(c,A,S,ui) ppc_emit32 (c, (28 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+
+// Memory barrier instructions
+#define ppc_hwsync(c)      ppc_emit32 (c, (31 << 26) | (0 << 21) | (0 << 16) | (0 << 11) | (598 << 1) | 0)  // hwsync is sync with L=0
+#define ppc_lwsync(c)      ppc_emit32 (c, (31 << 26) | (1 << 21) | (0 << 16) | (0 << 11) | (598 << 1) | 0)  // lwsync is sync with L=1
+#define ppc_isync(c)       ppc_emit32 (c, (19 << 26) | (0 << 21) | (0 << 16) | (0 << 11) | (150 << 1) | 0)  // instruction synchronize
 #define ppc_nop(c)         ppc_ori    (c, 0, 0, 0)
 
 // Arithmetic instructions

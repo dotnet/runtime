@@ -356,6 +356,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genCodeForLclVar(treeNode->AsLclVar());
 	    break;
 
+	case GT_LCL_FLD:
+	    genCodeForLclFld(treeNode->AsLclFld());
+	    break;
+
 	case GT_RETFILT:
 	case GT_RETURN:
 	    genReturn(treeNode);
@@ -408,15 +412,19 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     	    break;
 
 	case GT_NOT:
-            genConsumeRegs(treeNode->gtGetOp1());
+	           genConsumeRegs(treeNode->gtGetOp1());
 	    genCodeForNOT(treeNode->AsOp());
-            break;
+	           break;
+
+	case GT_STORE_BLK:
+	    genCodeForStoreBlk(treeNode->AsBlk());
+	    break;
 
 	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
-                   GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
-            printf("Tree node details: type=%s, flags=0x%x\n",
-                   varTypeName(treeNode->TypeGet()), treeNode->gtFlags);
+	                  GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
+	           printf("Tree node details: type=%s, flags=0x%x\n",
+	                  varTypeName(treeNode->TypeGet()), treeNode->gtFlags);
 	    abort();
     }
 }
@@ -839,7 +847,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
             }
 
-            noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
+            // PPC64LE ELFv2 ABI: structs of any size can be passed by value on stack
+            // No size limit for pass-by-value, so don't assert on MAX_PASS_MULTIREG_BYTES
+            // (MAX_PASS_MULTIREG_BYTES only limits what fits in registers, not total struct size)
 
             unsigned dstSize = treeNode->GetStackByteSize();
 
@@ -1726,8 +1736,129 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
-    abort();
+    assert(node->OperIs(GT_STORE_BLK));
+
+    unsigned  dstLclNum      = BAD_VAR_NUM;
+    regNumber dstAddrBaseReg = REG_NA;
+    int       dstOffset      = 0;
+    GenTree*  dstAddr        = node->Addr();
+
+    if (!dstAddr->isContained())
+    {
+        dstAddrBaseReg = genConsumeReg(dstAddr);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        assert(!dstAddr->AsAddrMode()->HasIndex());
+
+        dstAddrBaseReg = genConsumeReg(dstAddr->AsAddrMode()->Base());
+        dstOffset      = dstAddr->AsAddrMode()->Offset();
+    }
+    else
+    {
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
+        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
+    }
+
+    GenTree* src = node->Data();
+
+    if (src->OperIs(GT_INIT_VAL))
+    {
+        assert(src->isContained());
+        src = src->gtGetOp1();
+    }
+
+    if (node->IsVolatile())
+    {
+        instGen_MemoryBarrier();
+    }
+
+    emitter* emit = GetEmitter();
+    unsigned size = node->GetLayout()->GetSize();
+
+    assert(size <= INT32_MAX);
+    assert(dstOffset < INT32_MAX - static_cast<int>(size));
+
+    regNumber srcReg;
+
+    if (!src->isContained())
+    {
+        srcReg = genConsumeReg(src);
+    }
+    else
+    {
+        assert(src->IsIntegralConst(0));
+        // On PPC64LE we can use R0 for zero
+        srcReg = REG_R0;
+    }
+
+    // Unroll the init block using stores of decreasing size
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+    {
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+
+        instruction storeIns;
+        emitAttr    attr;
+
+        switch (regSize)
+        {
+            case 1:
+                storeIns = INS_stb;
+                attr     = EA_1BYTE;
+                break;
+            case 2:
+                storeIns = INS_sth;
+                attr     = EA_2BYTE;
+                break;
+            case 4:
+                storeIns = INS_stw;
+                attr     = EA_4BYTE;
+                break;
+            case 8:
+                storeIns = INS_std;
+                attr     = EA_8BYTE;
+                break;
+            default:
+                unreached();
+        }
+
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(storeIns, attr, srcReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
+        }
+    }
 }
+
+//------------------------------------------------------------------------
+// instGen_MemoryBarrier: Generate a memory barrier instruction
+//
+// Arguments:
+//   barrierKind - The kind of barrier to generate
+//
+void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
+{
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // PPC64LE memory barriers:
+    // Always use hwsync (heavy-weight sync) for full memory barrier
+    // This ensures strongest ordering for all loads and stores
+    
+    GetEmitter()->emitIns(INS_hwsync);
+}
+
 //------------------------------------------------------------------------
 // inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
 //
@@ -1788,8 +1919,50 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(blkOp->OperIs(GT_STORE_BLK));
+
+    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+
+    switch (blkOp->gtBlkOpKind)
+    {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            // CpObj with GC pointers - not yet implemented for PPC64LE
+            NYI_POWERPC64("genCodeForStoreBlk: BlkOpKindCpObjUnroll");
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
+        case GenTreeBlk::BlkOpKindUnroll:
+            if (isCopyBlk)
+            {
+                if (blkOp->gtBlkOpGcUnsafe)
+                {
+                    GetEmitter()->emitDisableGC();
+                }
+                genCodeForCpBlkUnroll(blkOp);
+                if (blkOp->gtBlkOpGcUnsafe)
+                {
+                    GetEmitter()->emitEnableGC();
+                }
+            }
+            else
+            {
+                assert(!blkOp->gtBlkOpGcUnsafe);
+                genCodeForInitBlkUnroll(blkOp);
+            }
+            break;
+
+        case GenTreeBlk::BlkOpKindUnrollMemmove:
+            // Memmove - not yet implemented for PPC64LE
+            NYI_POWERPC64("genCodeForStoreBlk: BlkOpKindUnrollMemmove");
+            break;
+
+        default:
+            unreached();
+    }
 }
 
 
@@ -1801,8 +1974,24 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_LCL_FLD));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+    emitter*  emit       = GetEmitter();
+
+    NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
+    assert(targetReg != REG_NA);
+
+    unsigned offs   = tree->GetLclOffs();
+    unsigned varNum = tree->GetLclNum();
+    assert(varNum < compiler->lvaCount);
+
+    emitAttr    attr = emitActualTypeSize(targetType);
+    instruction ins  = ins_Load(targetType);
+    emit->emitIns_R_S(ins, attr, targetReg, varNum, offs);
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -2431,8 +2620,141 @@ private:
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(node->OperIs(GT_STORE_BLK));
+
+    unsigned  dstLclNum      = BAD_VAR_NUM;
+    regNumber dstAddrBaseReg = REG_NA;
+    int       dstOffset      = 0;
+    GenTree*  dstAddr        = node->Addr();
+
+    if (!dstAddr->isContained())
+    {
+        dstAddrBaseReg = genConsumeReg(dstAddr);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        assert(!dstAddr->AsAddrMode()->HasIndex());
+
+        dstAddrBaseReg = genConsumeReg(dstAddr->AsAddrMode()->Base());
+        dstOffset      = dstAddr->AsAddrMode()->Offset();
+    }
+    else
+    {
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
+        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
+    }
+
+    unsigned  srcLclNum      = BAD_VAR_NUM;
+    regNumber srcAddrBaseReg = REG_NA;
+    int       srcOffset      = 0;
+    GenTree*  src            = node->Data();
+
+    assert(src->isContained());
+
+    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        srcLclNum = src->AsLclVarCommon()->GetLclNum();
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND));
+        GenTree* srcAddr = src->AsIndir()->Addr();
+
+        if (!srcAddr->isContained())
+        {
+            srcAddrBaseReg = genConsumeReg(srcAddr);
+        }
+        else if (srcAddr->OperIsAddrMode())
+        {
+            srcAddrBaseReg = genConsumeReg(srcAddr->AsAddrMode()->Base());
+            srcOffset      = srcAddr->AsAddrMode()->Offset();
+        }
+        else
+        {
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
+            srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
+        }
+    }
+
+    if (node->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile CpBlk operation
+        instGen_MemoryBarrier();
+    }
+
+    emitter* emit = GetEmitter();
+    unsigned size = node->GetLayout()->GetSize();
+
+    assert(size <= INT32_MAX);
+    assert(srcOffset < INT32_MAX - static_cast<int>(size));
+    assert(dstOffset < INT32_MAX - static_cast<int>(size));
+
+    const regNumber tempReg = internalRegisters.Extract(node, RBM_ALLINT);
+
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+    {
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+
+        instruction loadIns;
+        instruction storeIns;
+        emitAttr    attr;
+
+        switch (regSize)
+        {
+            case 1:
+                loadIns  = INS_lbz;
+                storeIns = INS_stb;
+                attr     = EA_1BYTE;
+                break;
+            case 2:
+                loadIns  = INS_lhz;
+                storeIns = INS_sth;
+                attr     = EA_2BYTE;
+                break;
+            case 4:
+                loadIns  = INS_lwz;
+                storeIns = INS_stw;
+                attr     = EA_4BYTE;
+                break;
+            case 8:
+                loadIns  = INS_ld;
+                storeIns = INS_std;
+                attr     = EA_8BYTE;
+                break;
+            default:
+                unreached();
+        }
+
+        if (srcLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_R_S(loadIns, attr, tempReg, srcLclNum, srcOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(loadIns, attr, tempReg, srcAddrBaseReg, srcOffset);
+        }
+
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(storeIns, attr, tempReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset);
+        }
+    }
+
+    if (node->IsVolatile())
+    {
+        // issue a full memory barrier after a volatile CpBlk operation
+        instGen_MemoryBarrier();
+    }
 }
 
 

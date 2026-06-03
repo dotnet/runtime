@@ -432,6 +432,11 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
             return TARGET_POINTER_SIZE;
         }
 //  otherwise will we pass this struct by value in multiple registers
+#elif defined(TARGET_POWERPC64)
+        // PPC64LE ELFv2 ABI: structs are passed by value in registers/stack
+        // No size limit - structs of any size can be passed by value
+        // They consume multiple 8-byte slots as needed
+//  otherwise will we pass this struct by value in multiple registers/stack
 #elif !defined(TARGET_ARM)
         NYI("unknown target");
 #endif // defined(TARGET_XXX)

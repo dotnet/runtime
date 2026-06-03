@@ -347,7 +347,137 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 //
 int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 {
-	    _ASSERTE(!"NYI");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
+
+    GenTree* srcAddrOrFill = nullptr;
+
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            assert(src->isContained());
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        srcAddrOrFill = src;
+
+        switch (blkNode->gtBlkOpKind)
+        {
+            case GenTreeBlk::BlkOpKindUnroll:
+                // For unrolled init, we may need an internal register
+                if (dstAddr->isContained())
+                {
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+                break;
+
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        if (src->OperIs(GT_IND))
+        {
+            assert(src->isContained());
+            srcAddrOrFill = src->AsIndir()->Addr();
+        }
+
+        switch (blkNode->gtBlkOpKind)
+        {
+            case GenTreeBlk::BlkOpKindCpObjUnroll:
+            {
+                // We don't need to materialize the struct size but we still need
+                // a temporary register to perform the sequence of loads and stores.
+                // We can't use the special Write Barrier registers, so exclude them from the mask
+                SingleTypeRegSet internalIntCandidates =
+                    allRegs(TYP_INT) &
+                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
+                buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+
+                if (size >= 2 * REGSIZE_BYTES)
+                {
+                    // We will use multiple load/store to reduce code size
+                    // so we need to reserve an extra internal register
+                    buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+                }
+
+                // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
+                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
+
+                // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
+                if (srcAddrOrFill != nullptr)
+                {
+                    assert(!srcAddrOrFill->isContained());
+                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
+                }
+            }
+            break;
+
+            case GenTreeBlk::BlkOpKindUnroll:
+            {
+                // Need at least one internal register for loads/stores
+                buildInternalIntRegisterDefForNode(blkNode);
+
+                // For larger copies, we may need additional registers
+                if (size >= 2 * REGSIZE_BYTES)
+                {
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+            }
+            break;
+
+            default:
+                unreached();
+        }
+    }
+
+    if (sizeRegMask != RBM_NONE)
+    {
+        // Reserve a temp register for the block size argument.
+        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
+    }
+
+    int useCount = 0;
+
+    if (!dstAddr->isContained())
+    {
+        useCount++;
+        BuildUse(dstAddr, dstAddrRegMask);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        useCount += BuildAddrUses(dstAddr->AsAddrMode()->Base());
+    }
+
+    if (srcAddrOrFill != nullptr)
+    {
+        if (!srcAddrOrFill->isContained())
+        {
+            useCount++;
+            BuildUse(srcAddrOrFill, srcRegMask);
+        }
+        else if (srcAddrOrFill->OperIsAddrMode())
+        {
+            useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
+        }
+    }
+
+    buildInternalRegisterUses();
+    regMaskTP killMask = getKillSetForBlockStore(blkNode);
+    BuildKills(blkNode, killMask);
+    return useCount;
 }
 
 //------------------------------------------------------------------------
@@ -604,6 +734,8 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
 	case GT_LCL_VAR:
+	case GT_LCL_FLD:
+	    // Local variable or field load - no sources, produces one result
 	    srcCount = 0;
 	    BuildDef(tree);
 	    break;
@@ -687,15 +819,19 @@ int LinearScan::BuildNode(GenTree* tree)
               break;
 
 	      case GT_CAST:
-              {
-        	  assert(dstCount == 1);
-                  srcCount = BuildCast(tree->AsCast());
+	             {
+	       	  assert(dstCount == 1);
+	                 srcCount = BuildCast(tree->AsCast());
 	      }
 	      break;
 
+	      case GT_STORE_BLK:
+	          srcCount = BuildBlockStore(tree->AsBlk());
+	          break;
+
 	      default:
 	      {
-	    	 _ASSERTE(!"NYI");
+	      _ASSERTE(!"NYI");
 	      }
     }
 

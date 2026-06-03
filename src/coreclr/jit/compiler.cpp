@@ -747,6 +747,17 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
+#elif defined(TARGET_POWERPC64)
+
+                // PPC64LE ELFv2 ABI: structs are passed by value in multiple registers/stack
+                // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
+                assert(structSize > TARGET_POINTER_SIZE);
+                
+                // setup wbPassType and useType indicate that this is passed by value in multiple registers
+                //  (when all of the parameters registers are used, then the stack will be used)
+                howToPassStruct = SPK_ByValue;
+                useType         = TYP_STRUCT;
+
 #else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
@@ -772,6 +783,14 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
             howToPassStruct = SPK_ByReference;
             useType         = TYP_UNKNOWN;
+
+#elif defined(TARGET_POWERPC64)
+
+            // PPC64LE ELFv2 ABI: even large structs are passed by value
+            // They will be passed on the stack when registers are exhausted
+            // setup wbPassType and useType indicate that this is passed by value
+            howToPassStruct = SPK_ByValue;
+            useType         = TYP_STRUCT;
 
 #else //  TARGET_XXX
 

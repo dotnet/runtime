@@ -471,6 +471,12 @@ enum insBarrier : unsigned
     INS_BARRIER_ST    = 14,
     INS_BARRIER_SY    = 15,
 };
+#elif defined(TARGET_POWERPC64)
+enum insBarrier : unsigned
+{
+    INS_BARRIER_FULL  = 0,  // hwsync - full barrier
+    INS_BARRIER_LOAD_ONLY = 1,  // lwsync - load/store barrier (lighter weight)
+};
 #elif defined(TARGET_LOONGARCH64)
 enum insOpts : unsigned
 {

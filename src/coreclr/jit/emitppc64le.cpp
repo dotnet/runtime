@@ -1230,6 +1230,15 @@ void emitter::emitIns(instruction ins)
         case INS_blr:
             fmt = IF_SR_1C;  // blr
             break;
+        case INS_hwsync:
+            fmt = IF_SR_1E;  // hwsync
+            break;
+        case INS_lwsync:
+            fmt = IF_SR_1F;  // lwsync
+            break;
+        case INS_isync:
+            fmt = IF_SR_1G;  // isync
+            break;
         default:
             fmt = IF_NONE;
             break;
@@ -1502,6 +1511,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
        case INS_blr:
            ppc_blr (dstRW);
+           break;
+
+       case INS_hwsync:
+           ppc_hwsync (dstRW);
+           break;
+
+       case INS_lwsync:
+           ppc_lwsync (dstRW);
+           break;
+
+       case INS_isync:
+           ppc_isync (dstRW);
            break;
 
        case INS_mflr:
@@ -1955,6 +1976,9 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
         case INS_mflr:    return "mflr    ";
         case INS_mtlr:    return "mtlr    ";
         case INS_nop:     return "nop     ";
+        case INS_hwsync:  return "hwsync  ";
+        case INS_lwsync:  return "lwsync  ";
+        case INS_isync:   return "isync   ";
         case INS_sldi:    return "sldi    ";
 	case INS_srdi:    return "srdi    ";
         case INS_oris:    return "oris    ";
@@ -2177,6 +2201,9 @@ void emitter::emitDispIns(
             
         case INS_blr:
         case INS_nop:
+        case INS_hwsync:
+        case INS_lwsync:
+        case INS_isync:
             break;
             
         default:

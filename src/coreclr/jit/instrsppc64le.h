@@ -97,6 +97,11 @@ INST(fcmpu,       "fcmpu",        0,      X_FORM,       0xFC000000)  // Floating
 INST(fcmpo,       "fcmpo",        0,      X_FORM,       0xFC000020)  // Floating Compare Ordered
 INST(frsp,        "frsp",         0,      X_FORM,       0xFC000018)  // Floating Round to Single Precision
 
+// Memory barrier instructions
+INST(hwsync,      "hwsync",       0,      X_FORM,       0x7C0004AC)  // Hardware Synchronize
+INST(lwsync,      "lwsync",       0,      X_FORM,       0x7C2004AC)  // Lightweight Synchronize
+INST(isync,       "isync",        0,      XL_FORM,      0x4C00012C)  // Instruction Synchronize
+
 // Floating-point conversion instructions
 INST(fctiwz,      "fctiwz",       0,      X_FORM,       0xFC00001E)  // Float Convert to Int Word, Round toward Zero
 INST(fctidz,      "fctidz",       0,      X_FORM,       0xFC00065E)  // Float Convert to Int Doubleword, Round toward Zero
