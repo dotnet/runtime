@@ -581,7 +581,7 @@ namespace ILCompiler
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         foreach (var f in field.OwningType.GetFields())
                         {
-                            sb.Clear().Append(prependTypeName).Append("__"u8);
+                            sb.Clear().Append(prependTypeName).Append("__f_"u8);
                             Utf8String name = SanitizeName(f.Name);
 
                             name = DisambiguateName(name, deduplicator);
@@ -598,7 +598,7 @@ namespace ILCompiler
 
 
             Utf8String mangledName = SanitizeName(field.Name);
-            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__"u8).Append(mangledName).ToUtf8String();
+            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__f_"u8).Append(mangledName).ToUtf8String();
 
             lock (this)
             {
