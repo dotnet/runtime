@@ -76,12 +76,12 @@ ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
     return make_java_string(env, type->name);
 }
 
-ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch)
+ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch, bool printException)
 {
     bool result = false;
     INIT_LOCALS(loc, ex);
 
-    if (TryGetJNIException(env, &loc[ex], /* printException: */ false))
+    if (TryGetJNIException(env, &loc[ex], printException))
     {
         result = true;
 
@@ -297,7 +297,7 @@ int32_t AndroidCryptoNative_AeadCipherUpdate(
 
     *outl = 0;
     loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch))
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ true))
     {
         goto cleanup;
     }
@@ -357,7 +357,7 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
 
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
 
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch))
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ false))
     {
         return FAIL;
     }
