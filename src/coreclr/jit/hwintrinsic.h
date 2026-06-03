@@ -78,6 +78,9 @@ enum HWIntrinsicCategory : uint8_t
     // Intrinsics which take an immediate value, generally a lane index
     HW_Category_IMM,
 
+    // Never used on Wasm, but defined for consistency with other platforms
+    HW_Category_Scalar,
+
     // SIMD memory access intrinsics
     HW_Category_MemoryLoad,
     HW_Category_MemoryStore,
@@ -258,6 +261,9 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_HasAllMaskVariant = 0x4000000,
 
 #elif defined(TARGET_WASM)
+    // The intrinsic supports some sort of containment analysis
+    HW_Flag_SupportsContainment = 0x400,
+    HW_Flag_ReturnsPerElementMask = 0x800,
     // TODO-WASM: Add WASM-specific flags as needed.
 #else
 #error Unsupported platform

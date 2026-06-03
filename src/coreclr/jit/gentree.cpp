@@ -20477,6 +20477,7 @@ bool GenTreeVecCon::IsNegativeZero(var_types simdBaseType) const
     return true;
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GenTreeMskCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
 //
@@ -20510,14 +20511,11 @@ void GenTreeMskCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
 void GenTreeMskCon::EvaluateBinaryInPlace(
     genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other)
 {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t result = {};
     EvaluateBinaryMask(oper, scalar, baseType, simdSize, &result, gtSimdMaskVal, other->gtSimdMaskVal);
     gtSimdMaskVal = result;
-#else
-    unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_HW_INTRINSICS*/
 
 //------------------------------------------------------------------------
@@ -22781,6 +22779,8 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, var_types simd
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
+#elif defined(TARGET_WASM) 
+    NYI_WASM_SIMD("gtNewSimdAbsNode");
 #else
 #error Unsupported platform
 #endif
@@ -23490,6 +23490,8 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, var_types sim
     {
         intrinsic = NI_AdvSimd_Ceiling;
     }
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdCeilNode");
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23650,6 +23652,9 @@ GenTree* Compiler::gtNewSimdCvtNode(
     }
 #elif defined(TARGET_ARM64)
     return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseType, simdSourceBaseType, simdSize);
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
+    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23863,6 +23868,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
         default:
             unreached();
     }
+
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
+    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -35527,6 +35536,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     return resultNode;
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)                                                                                                                                                                                                                                                                     
 //------------------------------------------------------------------------------
 // gtFoldExprConvertVecCnsToMask: Folds a constant vector plus conversion to
 //                                mask into a constant mask.
@@ -35589,7 +35599,7 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 
     return mskCon;
 }
-
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------

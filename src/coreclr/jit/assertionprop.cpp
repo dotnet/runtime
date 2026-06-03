@@ -339,6 +339,10 @@ bool IntegralRange::Contains(int64_t value) const
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+#elif defined(TARGET_WASM)
+                case NI_Vector128_ToScalar:
+                        NYI_WASM_SIMD("SIMD operation range assertions");
+                        break;
 #else
 #error Unsupported platform
 #endif

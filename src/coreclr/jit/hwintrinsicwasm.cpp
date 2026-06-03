@@ -30,8 +30,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     }
     else if (strcmp(className, "Vector128") == 0)
     {
-        NYI_WASM("xplat Vector128");
-        //return InstructionSet_Vector128;
+        return InstructionSet_Vector128;
     }
 
     return InstructionSet_ILLEGAL;
@@ -40,6 +39,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
 int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id, var_types baseType)
 {
     NYI_WASM_SIMD("lookupImmUpperBound");
+    return 0;
 }
 
 //------------------------------------------------------------------------
@@ -69,7 +69,8 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
 {
-    NYI_WASM("impNonConstFallback");
+    NYI_WASM_SIMD("impNonConstFallback");
+    return nullptr;
 }
 
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
@@ -81,6 +82,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
-    NYI_WASM("impSpecialIntrinsic");
+    NYI_WASM_SIMD("impSpecialIntrinsic");
+    return nullptr;
 }
 #endif

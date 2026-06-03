@@ -3286,6 +3286,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
             if (ni < LAST_NI_Vector128)
+#elif defined(TARGET_WASM)
+            NYI_WASM_SIMD("impHWIntrinsic");
+            if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
 #endif

@@ -8059,6 +8059,7 @@ ValueNum EvaluateSimdGetElement(
     }
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum EvaluateSimdCvtMaskToVector(ValueNumStore* vns, var_types simdType, var_types baseType, ValueNum arg0VN)
 {
     simdmask_t arg0 = vns->GetConstantSimdMask(arg0VN);
@@ -8160,6 +8161,7 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
 
     return vns->VNForSimdMaskCon(result);
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                                                 VNFunc              func,
@@ -8178,6 +8180,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
         if (oper != GT_NONE)
         {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(type))
             {
                 simdmask_t arg0 = GetConstantSimdMask(arg0VN);
@@ -8186,6 +8189,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 EvaluateUnaryMask(oper, isScalar, baseType, simdSize, &result, arg0);
                 return VNForSimdMaskCon(result);
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
             return EvaluateUnarySimd(this, oper, isScalar, type, baseType, arg0VN);
         }
         else if (tree->OperIsConvertMaskToVector())
@@ -8210,6 +8214,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif
             case NI_Vector128_ExtractMostSignificantBits:
             {
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8250,6 +8256,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
 #ifdef TARGET_XARCH
@@ -8273,9 +8280,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             }
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
             case NI_ArmBase_LeadingZeroCount:
-#else
+#elif defined(TARGET_XARCH)
             case NI_AVX2_LeadingZeroCount:
 #endif
             {
@@ -8613,6 +8620,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
             assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(type))
             {
                 if (varTypeIsMask(TypeOfVN(arg0VN)))
@@ -8631,6 +8639,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     return EvaluateSimdCvtVectorToMask(this, simdType, baseType, simdResult);
                 }
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
