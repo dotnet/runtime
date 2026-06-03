@@ -4251,8 +4251,7 @@ static bool CanShareComMethodTableWithParent(MethodTable* pClassMT, MethodTable*
     for (unsigned i = 0; i < pItfMT->GetNumVirtuals(); i++)
     {
         MethodDesc *pItfMD = pItfMT->GetMethodDescForSlot_NoThrow(i);
-        if (pItfMD == NULL)
-            return false;
+        _ASSERTE(pItfMD != NULL);
 
         if (pItfMD->IsAsyncMethod())
             continue;
