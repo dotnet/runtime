@@ -244,10 +244,16 @@ namespace Microsoft.Win32.SafeHandles
 
                 int resolvedPathByteCount = Encoding.UTF8.GetByteCount(resolvedFileName);
                 // Keep small paths on the stack, while avoiding excessive stack usage for long executable paths.
-                const int ResolvedPathStackBufferSize = 256;
+                const int ResolvedPathStackBufferSize =
+#if DEBUG
+                    2; // make sure we test both code paths
+#else
+                    256;
+#endif
                 Span<byte> resolvedPathBuffer = resolvedPathByteCount + 1 <= ResolvedPathStackBufferSize
-                    ? stackalloc byte[resolvedPathByteCount + 1]
+                    ? stackalloc byte[ResolvedPathStackBufferSize]
                     : new Span<byte>(resolvedPathBufferPtr = (byte*)NativeMemory.Alloc((nuint)(resolvedPathByteCount + 1)), resolvedPathByteCount + 1);
+                resolvedPathBuffer = resolvedPathBuffer[..(resolvedPathByteCount + 1)];
 
                 int resolvedPathBytesWritten = Encoding.UTF8.GetBytes(resolvedFileName, resolvedPathBuffer);
                 Debug.Assert(resolvedPathBytesWritten == resolvedPathByteCount);
