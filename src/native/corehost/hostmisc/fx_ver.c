@@ -133,9 +133,9 @@ static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_met
     return true;
 }
 
-static bool valid_identifiers(const pal_char_t* ids)
+static bool valid_identifiers(const pal_char_t* ids, size_t len)
 {
-    if (ids[0] == _X('\0'))
+    if (len == 0)
         return true;
 
     bool prerelease = ids[0] == _X('-');
@@ -144,7 +144,6 @@ static bool valid_identifiers(const pal_char_t* ids)
     if (!(prerelease || build_meta))
         return false;
 
-    size_t len = pal_strlen(ids);
     size_t id_start = 1;
     for (size_t i = 1; i <= len; i++)
     {
@@ -152,6 +151,7 @@ static bool valid_identifiers(const pal_char_t* ids)
         {
             if (!valid_identifier(ids + id_start, i - id_start, build_meta))
                 return false;
+
             id_start = i + 1;
         }
     }
@@ -219,30 +219,24 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
         ? (size_t)(build_start - pre_start)
         : pal_strlen(pre_start);
 
+    if (!valid_identifiers(pre_start, pre_len))
+        return false;
+
+    size_t build_len = (build_start != NULL) ? pal_strlen(build_start) : 0;
+    if (!valid_identifiers(build_start, build_len))
+        return false;
+
     pal_char_t* pre_buf = pal_strndup(pre_start, pre_len);
     if (pre_buf == NULL)
         return false;
 
-    if (!valid_identifiers(pre_buf))
-    {
-        free(pre_buf);
-        return false;
-    }
-
     pal_char_t* build_buf = NULL;
     if (build_start != NULL)
     {
-        build_buf = pal_strndup(build_start, pal_strlen(build_start));
+        build_buf = pal_strndup(build_start, build_len);
         if (build_buf == NULL)
         {
             free(pre_buf);
-            return false;
-        }
-
-        if (!valid_identifiers(build_buf))
-        {
-            free(pre_buf);
-            free(build_buf);
             return false;
         }
     }
