@@ -384,7 +384,16 @@ void CdacStressPolicy::Initialize()
 
     // Load mscordaccore_universal from next to coreclr
     PathString path;
-    if (WszGetModuleFileName(reinterpret_cast<HMODULE>(GetCurrentModuleBase()), path) == 0)
+    // On Unix, GetCurrentModuleBase() returns a raw dladdr base address, not a
+    // PAL HMODULE -- WszGetModuleFileName will return 0 for it. The DAC has
+    // the same problem and uses PAL_GetPalHostModule() (which is the coreclr
+    // host module, exactly where cdacstress.cpp lives). Mirror that pattern.
+#ifdef HOST_UNIX
+    HMODULE hCoreclr = PAL_GetPalHostModule();
+#else
+    HMODULE hCoreclr = reinterpret_cast<HMODULE>(GetCurrentModuleBase());
+#endif
+    if (hCoreclr == NULL || WszGetModuleFileName(hCoreclr, path) == 0)
     {
         CDAC_ERR("Failed to get coreclr module file name (WszGetModuleFileName returned 0).\n");
         return;
