@@ -5621,7 +5621,13 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), GetSSP(pContext));
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+    TADDR ssp = GetSSP(pContext);
+#else
+    TADDR ssp = 0;
+#endif
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), ssp);
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
     // Do NOT also GCPROTECT it - reporting the same location twice corrupts
     // the GC's relocation logic (see clr-code-guide.md §2.1.5).
