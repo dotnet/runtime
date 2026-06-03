@@ -1197,7 +1197,48 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = 0;
+            Contracts.IThread threadContract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = threadContract.GetThreadData(vmThread);
+
+            if (!threadData.IsInteropDebuggingHijacked)
+            {
+                TargetPointer filterContext = threadData.DebuggerFilterContext;
+                if (filterContext != TargetPointer.Null)
+                {
+                    *pRetVal = filterContext.Value;
+                }
+                else
+                {
+                    IStackWalk sw = _target.Contracts.StackWalk;
+                    TargetPointer redirectedContext = sw.GetRedirectedContextPointer(threadData);
+                    if (redirectedContext != TargetPointer.Null)
+                    {
+                        *pRetVal = redirectedContext.Value;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong pRetValLocal;
+            int hrLocal = _legacy.GetManagedStoppedContext(vmThread, &pRetValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal:x}, DAC: {pRetValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nuint* ppSFIHandle)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;
@@ -1465,7 +1506,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             uint allFlags = leafCtx.AllContextFlags;
-            byte[] leafContext = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.None, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] leafContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags);
             leafCtx.FillFromBuffer(leafContext);
 
             // Read the given context from the native buffer.
@@ -1499,7 +1541,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
-            byte[] context = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.Debugger, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] context = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
 
             context.AsSpan().CopyTo(new Span<byte>(pContextBuffer, context.Length));
         }

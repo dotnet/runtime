@@ -734,4 +734,102 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(Interop.BOOL.FALSE, result);
     }
+
+    private static (DacDbiImpl DacDbi, MockThread Thread, MockFrameBuilder FrameBuilder) CreateManagedStoppedContextDacDbi(
+        MockTarget.Architecture arch,
+        Action<MockFrameBuilder>? configureFrames = null)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
+        MockFrameBuilder frameBuilder = new(targetBuilder.MemoryBuilder);
+
+        MockThread thread = threadBuilder.AddThread(1, 1234);
+        ulong terminator = arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
+        thread.Frame = terminator;
+
+        configureFrames?.Invoke(frameBuilder);
+
+        targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ExceptionInfo] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ExceptionInfoLayout),
+                [DataType.Thread] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadLayout),
+                [DataType.ThreadStore] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadStoreLayout),
+                [DataType.GCAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.GCAllocContextLayout),
+                [DataType.EEAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.EEAllocContextLayout),
+                [DataType.RuntimeThreadLocals] = TargetTestHelpers.CreateTypeInfo(threadBuilder.RuntimeThreadLocalsLayout),
+                [DataType.Frame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FrameLayout),
+                [DataType.ResumableFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.ResumableFrameLayout),
+            })
+            .AddGlobals(
+                (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
+                (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
+                (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress),
+                ("RedirectedThreadFrameIdentifier", MockFrameBuilder.RedirectedThreadFrameIdentifierValue))
+            .AddMockContract(new Mock<IExecutionManager>())
+            .AddMockContract(new Mock<IGCInfo>())
+            .AddContract<IThread>(version: "c1")
+            .AddContract<IStackWalk>(version: "c1");
+        TestPlaceholderTarget target = targetBuilder.Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        return (dacDbi, thread, frameBuilder);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_InteropDebuggingHijacked(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.InteropDebuggingHijacked = 1;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_FilterContextSet(MockTarget.Architecture arch)
+    {
+        const ulong filterContextAddr = 0x0009_0000;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.DebuggerFilterContext = filterContextAddr;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(filterContextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_RedirectedThread(MockTarget.Architecture arch)
+    {
+        const ulong contextAddr = 0x000A_0000;
+        MockResumableFrame? redirectedFrame = null;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch, frameBuilder =>
+        {
+            redirectedFrame = frameBuilder.AddRedirectedThreadFrame(contextAddr);
+        });
+
+        thread.Frame = redirectedFrame!.Address;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(contextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_NoContextAvailable(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
 }
