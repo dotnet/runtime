@@ -20358,7 +20358,7 @@ bool Compiler::IsValidForShuffle(
 //    scalar   - true if this is a scalar operation; otherwise, false
 //    baseType - the base type of the constant being checked
 //
-void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
+bool GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
 {
     switch (gtType)
     {
@@ -20367,7 +20367,7 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
             simd8_t result = {};
             EvaluateUnarySimd<simd8_t>(oper, scalar, baseType, &result, gtSimd8Val);
             gtSimd8Val = result;
-            break;
+            return true;
         }
 
         case TYP_SIMD12:
@@ -20375,7 +20375,7 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
             simd12_t result = {};
             EvaluateUnarySimd<simd12_t>(oper, scalar, baseType, &result, gtSimd12Val);
             gtSimd12Val = result;
-            break;
+            return true;
         }
 
         case TYP_SIMD16:
@@ -20383,7 +20383,7 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
             simd16_t result = {};
             EvaluateUnarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val);
             gtSimd16Val = result;
-            break;
+            return true;
         }
 
 #if defined(TARGET_XARCH)
@@ -20392,7 +20392,7 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
             simd32_t result = {};
             EvaluateUnarySimd<simd32_t>(oper, scalar, baseType, &result, gtSimd32Val);
             gtSimd32Val = result;
-            break;
+            return true;
         }
 
         case TYP_SIMD64:
@@ -20400,9 +20400,22 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
             simd64_t result = {};
             EvaluateUnarySimd<simd64_t>(oper, scalar, baseType, &result, gtSimd64Val);
             gtSimd64Val = result;
-            break;
+            return true;
         }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+        case TYP_SIMD:
+        {
+            simdscalable_t result = {};
+            if (!TryEvaluateUnarySimdScalable(oper, scalar, baseType, &result, gtSimdScalableVal))
+            {
+                return false;
+            }
+            gtSimdScalableVal = result;
+            return true;
+        }
+#endif // TARGET_ARM64
 
         default:
         {
@@ -34206,7 +34219,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
             else
             {
-                cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
+                if (!cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType))
+                {
+                    return tree;
+                }
             }
             resultNode = cnsNode;
         }

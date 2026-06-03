@@ -2270,6 +2270,167 @@ void BroadcastConstantToSimdScalable(simdscalable_t* result, var_types baseType,
     memcpy(&result->gtSimdScalableIndex, &arg0, sizeof(TBase));
 }
 
+template <typename TBase>
+bool SimdBitwiseEqual(TBase left, TBase right)
+{
+    return memcmp(&left, &right, sizeof(TBase)) == 0;
+}
+
+template <typename TBase>
+bool TryEvaluateUnaryScalarForSimdScalable(genTreeOps oper, TBase arg0, TBase* result)
+{
+    if ((oper == GT_LZCNT) && (sizeof(TBase) < sizeof(uint32_t)))
+    {
+        return false;
+    }
+
+    *result = EvaluateUnaryScalar<TBase>(oper, arg0);
+    return true;
+}
+
+template <typename TBase>
+bool TryEvaluateUnarySimdScalable(
+    genTreeOps oper, bool scalar, var_types baseType, simdscalable_t* result, const simdscalable_t& arg0)
+{
+    TBase index;
+    TBase step;
+    memcpy(&index, &arg0.gtSimdScalableIndex, sizeof(TBase));
+    memcpy(&step, &arg0.gtSimdScalableStep, sizeof(TBase));
+
+    auto setResult = [=](SimdScalableKind kind, TBase resultIndex, TBase resultStep, simdscalable_t* result) {
+        result->gtSimdScalableBaseType = baseType;
+        result->gtSimdScalableKind     = kind;
+        result->gtSimdScalableIndex    = 0;
+        result->gtSimdScalableStep     = 0;
+        memcpy(&result->gtSimdScalableIndex, &resultIndex, sizeof(TBase));
+        memcpy(&result->gtSimdScalableStep, &resultStep, sizeof(TBase));
+    };
+
+    TBase resultIndex;
+    if (!TryEvaluateUnaryScalarForSimdScalable(oper, index, &resultIndex))
+    {
+        return false;
+    }
+
+    TBase zero = {};
+
+    if (scalar)
+    {
+        setResult(SimdScalableScalar, resultIndex, zero, result);
+        return true;
+    }
+
+    switch (arg0.gtSimdScalableKind)
+    {
+        case SimdScalableRepeated:
+        {
+            setResult(SimdScalableRepeated, resultIndex, zero, result);
+            return true;
+        }
+
+        case SimdScalableSequence:
+        {
+            if (SimdBitwiseEqual(step, zero))
+            {
+                setResult(SimdScalableRepeated, resultIndex, zero, result);
+                return true;
+            }
+
+            switch (oper)
+            {
+                case GT_NEG:
+                {
+                    setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
+                    return true;
+                }
+
+                case GT_NOT:
+                {
+                    if (varTypeIsFloating(baseType))
+                    {
+                        return false;
+                    }
+                    setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
+                    return true;
+                }
+
+                default:
+                    return false;
+            }
+        }
+
+        case SimdScalableScalar:
+        {
+            TBase upperValue;
+            if (!TryEvaluateUnaryScalarForSimdScalable(oper, zero, &upperValue))
+            {
+                return false;
+            }
+
+            if (SimdBitwiseEqual(upperValue, zero))
+            {
+                setResult(SimdScalableScalar, resultIndex, zero, result);
+                return true;
+            }
+
+            if (SimdBitwiseEqual(upperValue, resultIndex))
+            {
+                setResult(SimdScalableRepeated, resultIndex, zero, result);
+                return true;
+            }
+
+            return false;
+        }
+
+        default:
+            unreached();
+    }
+}
+
+inline bool TryEvaluateUnarySimdScalable(
+    genTreeOps oper, bool scalar, var_types baseType, simdscalable_t* result, const simdscalable_t& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                return TryEvaluateUnarySimdScalable<uint32_t>(oper, scalar, baseType, result, arg0);
+            }
+            return TryEvaluateUnarySimdScalable<float>(oper, scalar, baseType, result, arg0);
+        }
+
+        case TYP_DOUBLE:
+        {
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                return TryEvaluateUnarySimdScalable<uint64_t>(oper, scalar, baseType, result, arg0);
+            }
+            return TryEvaluateUnarySimdScalable<double>(oper, scalar, baseType, result, arg0);
+        }
+
+        case TYP_BYTE:
+            return TryEvaluateUnarySimdScalable<int8_t>(oper, scalar, baseType, result, arg0);
+        case TYP_SHORT:
+            return TryEvaluateUnarySimdScalable<int16_t>(oper, scalar, baseType, result, arg0);
+        case TYP_INT:
+            return TryEvaluateUnarySimdScalable<int32_t>(oper, scalar, baseType, result, arg0);
+        case TYP_LONG:
+            return TryEvaluateUnarySimdScalable<int64_t>(oper, scalar, baseType, result, arg0);
+        case TYP_UBYTE:
+            return TryEvaluateUnarySimdScalable<uint8_t>(oper, scalar, baseType, result, arg0);
+        case TYP_USHORT:
+            return TryEvaluateUnarySimdScalable<uint16_t>(oper, scalar, baseType, result, arg0);
+        case TYP_UINT:
+            return TryEvaluateUnarySimdScalable<uint32_t>(oper, scalar, baseType, result, arg0);
+        case TYP_ULONG:
+            return TryEvaluateUnarySimdScalable<uint64_t>(oper, scalar, baseType, result, arg0);
+        default:
+            unreached();
+    }
+}
+
 //------------------------------------------------------------------------
 // NarrowAndDuplicateSimdLong: Narrow each ULONG element in arg0 to size
 //    TSimd. Each element is then duplicated to the number of TSimd values
