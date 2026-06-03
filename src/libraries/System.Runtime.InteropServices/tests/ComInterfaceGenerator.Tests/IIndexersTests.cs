@@ -229,6 +229,59 @@ namespace ComInterfaceGenerator.Tests
         }
 
         // -------------------------------------------------------------------------
+        // Property-level [MarshalUsing] on an indexer. Verifies that an attribute
+        // placed on the indexer declaration applies only to the value surface
+        // (getter return / setter value parameter) and is NOT propagated onto
+        // index parameters or the setter's `void` return. The test interface
+        // declares `[MarshalUsing(typeof(TrackedIntMarshaller))] int this[int]`
+        // -- the index and value share the same `int` type, so a buggy generator
+        // that propagates the attribute to every parameter would invoke the
+        // marshaller on each index pass as well. Exact-count assertions catch
+        // that regression.
+        // -------------------------------------------------------------------------
+
+        private static (IndexerMarshalling Impl, IIndexerMarshalling Rcw) CreateIndexerMarshallingRcwAroundCcw()
+        {
+            var impl = new IndexerMarshalling();
+            var cw = new StrategyBasedComWrappers();
+            nint comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+            try
+            {
+                var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+                return (impl, (IIndexerMarshalling)comObject);
+            }
+            finally
+            {
+                Marshal.Release(comPtr);
+            }
+        }
+
+        [Fact]
+        public void IndexerLevelMarshalling_Bare_InvokesMarshallerOnValueSurfaceOnly()
+        {
+            TrackedIntMarshaller.Reset();
+
+            (_, IIndexerMarshalling rcw) = CreateIndexerMarshallingRcwAroundCcw();
+
+            rcw[3] = 100;
+            int observed = rcw[3];
+
+            Assert.Equal(100, observed);
+
+            // Each accessor traverses RCW (managed-to-unmanaged on the call out) and CCW
+            // (unmanaged-to-managed on the call in) for inputs, and the reverse for outputs.
+            // Value surface invocations across one set + one get:
+            //   setter value: 1 RCW m2u + 1 CCW u2m
+            //   getter return: 1 CCW m2u + 1 RCW u2m
+            // Total: m2u == 2, u2m == 2.
+            // The index parameter must NOT receive the marshaller. If it did, each accessor
+            // would add an extra m2u (RCW outbound for the index) and u2m (CCW inbound for the
+            // index), yielding 4 / 4 instead of 2 / 2.
+            Assert.Equal(2, TrackedIntMarshaller.ManagedToUnmanagedCount);
+            Assert.Equal(2, TrackedIntMarshaller.UnmanagedToManagedCount);
+        }
+
+        // -------------------------------------------------------------------------
         // Derived-interface shadow propagation. A derived [GeneratedComInterface]
         // that re-declares an inherited indexer with `new` emits a shadow indexer
         // forwarder on the derived interface. We assert that the shadow exists with

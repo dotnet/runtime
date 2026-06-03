@@ -69,6 +69,28 @@ namespace SharedTypes.ComInterfaces
         public int WriteOnlySink => _writeOnly;
     }
 
+    [GeneratedComInterface]
+    [Guid(IID)]
+    internal partial interface IIndexerMarshalling
+    {
+        public const string IID = "9F8E7D6C-5B4A-3210-FEDC-BA9876543210";
+
+        [MarshalUsing(typeof(TrackedIntMarshaller))]
+        int this[int index] { get; set; }
+    }
+
+    [GeneratedComClass]
+    internal partial class IndexerMarshalling : IIndexerMarshalling
+    {
+        private int _value;
+
+        public int this[int index]
+        {
+            get => _value + index;
+            set => _value = value - index;
+        }
+    }
+
     [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedIn, typeof(TrackedIntMarshaller))]
     [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedIn, typeof(TrackedIntMarshaller))]
     [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(TrackedIntMarshaller))]

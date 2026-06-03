@@ -106,18 +106,29 @@ namespace Microsoft.Interop
             // When the underlying method is a property accessor, bare attributes on the property declaration
             // (e.g. `[MarshalUsing(typeof(X))] string Prop { get; set; }`) land on the property symbol and
             // are not otherwise visible to the marshalling pipeline. Fall them through to the accessor's
-            // attribute set, with accessor-level attributes winning over property-level ones on a per-type
-            // basis. Target-scoped attributes (`[return:]`, `[param:]`, `[get:]`, `[set:]`) are routed by
-            // Roslyn onto the accessor directly and so are already in the accessor's attribute set.
+            // value surface only -- the getter's return, or the setter's value parameter (the last
+            // parameter, after any indexer index parameters). Index parameters on indexer accessors and the
+            // setter's `void` return are not value surfaces and do not inherit property-level attributes.
+            // Accessor-level attributes win over property-level ones on a per-type basis. Target-scoped
+            // attributes (`[return:]`, `[param:]`, `[get:]`, `[set:]`) are routed by Roslyn onto the
+            // accessor directly and so are already in the accessor's attribute set.
             ImmutableArray<AttributeData> associatedPropertyAttributes = method.AssociatedSymbol is IPropertySymbol property
                 ? property.GetAttributes()
                 : ImmutableArray<AttributeData>.Empty;
+
+            // The value parameter on a setter is the last parameter (index parameters precede it on
+            // indexer setters). Getters have no value parameter -- their value surface is the return.
+            int valueParameterIndex = method.MethodKind == MethodKind.PropertySet
+                ? method.Parameters.Length - 1
+                : -1;
 
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                ImmutableArray<AttributeData> paramAttributes = MergeAccessorAndPropertyAttributes(param.GetAttributes(), associatedPropertyAttributes);
+                ImmutableArray<AttributeData> paramAttributes = i == valueParameterIndex
+                    ? MergeAccessorAndPropertyAttributes(param.GetAttributes(), associatedPropertyAttributes)
+                    : param.GetAttributes();
                 MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, paramAttributes);
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
@@ -128,7 +139,9 @@ namespace Microsoft.Interop
                 typeInfos.Add(typeInfo);
             }
 
-            ImmutableArray<AttributeData> returnAttributes = MergeAccessorAndPropertyAttributes(method.GetReturnTypeAttributes(), associatedPropertyAttributes);
+            ImmutableArray<AttributeData> returnAttributes = method.MethodKind == MethodKind.PropertyGet
+                ? MergeAccessorAndPropertyAttributes(method.GetReturnTypeAttributes(), associatedPropertyAttributes)
+                : method.GetReturnTypeAttributes();
             TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, returnAttributes));
             retTypeInfo = retTypeInfo with
             {
