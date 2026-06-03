@@ -31,17 +31,15 @@ class OutOfMemoryExceptionTest
     {
         if (args.Length > 0 && args[0] == AllocateSmallArg)
         {
-            // Subprocess mode: allocate until OOM is triggered.
-            // Phase 1: fill quickly with large blocks to use most of the heap.
-            var list = new List<object>();
-            try { while (true) list.Add(new byte[16 * 1024]); } catch (OutOfMemoryException) { }
-            // Phase 2: fill the remaining gaps with 256 bytes allocations.
-            object a = null;
-            try { for (;;) a = new object[] { a, new byte[256] }; } catch (OutOfMemoryException) { }
-            // Phase 3: exhaust the last scraps with tiny allocations so that
-            // virtually no memory is left when OOM is finally thrown.
-            object b = null;
-            for (;;) b = new object[] { b };
+            // Pre-allocate a flat array for storage.
+            object[] storage = new object[8192];
+            int idx = 0;
+            // We expect ~2048 iterations in the first loop and ~64 iterations in the second.
+            try { while (idx < storage.Length) storage[idx++] = new byte[16 * 1024]; } catch (OutOfMemoryException) { }
+            try { while (idx < storage.Length) storage[idx++] = new byte[256]; } catch (OutOfMemoryException) { }
+            // < 280 bytes free.
+            // Use the smallest possible allocation to exhaust the last scraps.
+            while (idx < storage.Length) storage[idx++] = new object();
         }
 
         if (args.Length > 0 && args[0] == AllocateLargeArg)
