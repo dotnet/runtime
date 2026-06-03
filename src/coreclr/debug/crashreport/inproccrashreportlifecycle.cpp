@@ -122,7 +122,7 @@ InProcCrashReportLifecycle::PruneExistingReports(int32_t maxFileCount)
     // overflow reports are unlinked inline as they are encountered. maxFileCount
     // is guaranteed positive by the configuration layer.
     size_t capacity = static_cast<size_t>(maxFileCount);
-    FileInfo* kept = new (std::nothrow) FileInfo[capacity];
+    FileInfo* kept = new (std::nothrow) FileInfo[capacity]();
     if (kept == nullptr)
     {
         closedir(dir);
@@ -163,11 +163,12 @@ InProcCrashReportLifecycle::PruneExistingReports(int32_t maxFileCount)
             continue;
         }
 
-        CrashReportStringUtils::CopyString(info.path.value, sizeof(info.path.value), fullPath);
-
         if (keptCount < capacity)
         {
-            kept[keptCount++] = info;
+            kept[keptCount].timestamp = info.timestamp;
+            kept[keptCount].pid = info.pid;
+            CrashReportStringUtils::CopyString(kept[keptCount].path.value, sizeof(kept[keptCount].path.value), fullPath);
+            keptCount++;
             continue;
         }
 
@@ -180,14 +181,18 @@ InProcCrashReportLifecycle::PruneExistingReports(int32_t maxFileCount)
         // perform better but adds an <algorithm> dependency and heap bookkeeping
         // for no measurable gain here.
         size_t oldestIndex = FindOldestReportIndex(kept, keptCount);
-        if (CompareFileInfo(&kept[oldestIndex], &info) < 0)
+
+        if (kept[oldestIndex].timestamp < info.timestamp ||
+            (kept[oldestIndex].timestamp == info.timestamp && strcmp(kept[oldestIndex].path.value, fullPath) < 0))
         {
             unlink(kept[oldestIndex].path.value);
-            kept[oldestIndex] = info;
+            kept[oldestIndex].timestamp = info.timestamp;
+            kept[oldestIndex].pid = info.pid;
+            CrashReportStringUtils::CopyString(kept[oldestIndex].path.value, sizeof(kept[oldestIndex].path.value), fullPath);
         }
         else
         {
-            unlink(info.path.value);
+            unlink(fullPath);
         }
     }
 
@@ -247,7 +252,7 @@ InProcCrashReportLifecycle::PrepareReportFile(
         return false;
     }
 
-    int tempFd = open(m_tempReportFilePath, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+    int tempFd = open(m_tempReportFilePath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
     if (tempFd == -1)
     {
         reportFilePath[0] = '\0';
@@ -429,10 +434,7 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
     bool writable = false;
     if (built)
     {
-        // Clear any stale probe file so the O_EXCL create below doesn't wrongly report the directory as unwritable.
-        unlink(probePath);
-
-        int fd = open(probePath, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+        int fd = open(probePath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
         if (fd != -1)
         {
             bool closeSucceeded = close(fd) == 0;
