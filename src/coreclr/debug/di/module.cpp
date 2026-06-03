@@ -4632,7 +4632,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     {
         const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
         _ASSERTE(pNativeVarInfo != NULL);
-        if (pNativeVarInfo->varNumber != ICorDebugInfo::CALL_RETURN_ILNUM)
+        if (pNativeVarInfo->varNumber != (unsigned)ICorDebugInfo::CALL_RETURN_ILNUM)
         {
             continue;
         }
