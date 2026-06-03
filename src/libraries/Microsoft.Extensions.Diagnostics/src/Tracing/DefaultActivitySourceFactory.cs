@@ -148,6 +148,14 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     ExceptionRecorder = WrappedExceptionRecorder,
                 };
                 ActivitySource.AddActivityListener(_activityListener);
+
+                // Dispose the user-supplied listener so that, if the caller kept a reference, any
+                // RefreshSources() they invoke on it short-circuits on the IsDisposed check and
+                // does not register their raw listener in s_allListeners in parallel with our
+                // wrapper. We never attached this listener via AddActivityListener, so Dispose
+                // has no other effect: the delegate properties (Sample, ActivityStarted, ...)
+                // remain readable, which is what our wrappers rely on for live lookup.
+                listener.Dispose();
             }
 
             public void Dispose()
