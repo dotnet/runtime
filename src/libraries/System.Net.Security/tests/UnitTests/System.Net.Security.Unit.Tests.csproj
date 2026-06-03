@@ -92,6 +92,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslAuthenticationOptions.OpenSsl.cs"
+             Link="ProductionCode\System\Net\Security\SslAuthenticationOptions.OpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs"
              Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
