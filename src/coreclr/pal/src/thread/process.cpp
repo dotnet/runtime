@@ -152,9 +152,8 @@ Volatile<LONG> terminator = 0;
 // Id of thread generating a core dump
 Volatile<LONG> g_crashingThreadId = 0;
 
-// Process and session ID of this process.
+// Process ID of this process.
 DWORD gPID = (DWORD) -1;
-DWORD gSID = (DWORD) -1;
 
 // Application group ID for this process
 #ifdef __APPLE__
@@ -271,26 +270,6 @@ GetCurrentProcessId(
     LOGEXIT("GetCurrentProcessId returns DWORD %#x\n", gPID);
     PERF_EXIT(GetCurrentProcessId);
     return gPID;
-}
-
-
-/*++
-Function:
-  GetCurrentSessionId
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentSessionId(
-            VOID)
-{
-    PERF_ENTRY(GetCurrentSessionId);
-    ENTRY("GetCurrentSessionId()\n" );
-
-    LOGEXIT("GetCurrentSessionId returns DWORD %#x\n", gSID);
-    PERF_EXIT(GetCurrentSessionId);
-    return gSID;
 }
 
 
