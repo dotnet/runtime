@@ -908,10 +908,16 @@ namespace System.Net.Security
                 return TlsOperationStatus.WantWrite;
             }
 
-            // Need at least a frame header.
+            // Need at least a frame header. If the caller didn't provide a full frame, the PAL
+            // may still have plaintext buffered internally — ciphertext absorbed by OpenSSL's
+            // BIO during ProcessHandshake (e.g. the peer coalesced its Finished with the first
+            // app-data record into one TCP segment) or a record consumed but not yet decrypted
+            // by a prior Decrypt call. On platforms whose PAL maintains such a buffer, probe it
+            // with an empty input before asking the caller for more wire bytes; otherwise the
+            // session deadlocks waiting on data the peer already sent.
             if (ciphertext.Length < TlsFrameHelper.HeaderSize)
             {
-                return TlsOperationStatus.WantRead;
+                return TryDrainBufferedPlaintext(plaintext, out bytesWritten);
             }
 
             TlsFrameHeader header = default;
@@ -923,7 +929,7 @@ namespace System.Net.Security
             int frameSize = header.Length;
             if (ciphertext.Length < frameSize)
             {
-                return TlsOperationStatus.WantRead;
+                return TryDrainBufferedPlaintext(plaintext, out bytesWritten);
             }
 
             // PAL decrypts in place; copy into a writable scratch buffer.
@@ -990,6 +996,64 @@ namespace System.Net.Security
                 default:
                     throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
             }
+        }
+
+        // Empty-input probe used when the caller's buffer doesn't yet hold a complete TLS
+        // frame. On OpenSSL the PAL's record layer may still have plaintext queued from a
+        // prior call (handshake input that included trailing app-data, or a second record
+        // coalesced into the same TCP segment); calling DecryptMessage with an empty span
+        // surfaces it. On SChannel / SecureTransport the equivalent buffer does not exist,
+        // so the probe is skipped and the caller is asked for more bytes instead. The
+        // bytesConsumed out-parameter on the public Decrypt method is necessarily 0 here:
+        // no caller bytes were taken.
+        private TlsOperationStatus TryDrainBufferedPlaintext(Span<byte> plaintext, out int bytesWritten)
+        {
+            bytesWritten = 0;
+
+            if (!OperatingSystem.IsLinux() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsAndroid())
+            {
+                return TlsOperationStatus.WantRead;
+            }
+
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(
+                _securityContext!,
+                Span<byte>.Empty,
+                plaintext,
+                out int decBytesWritten,
+                out int decLeftoverOffset,
+                out int decLeftoverLength);
+
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                // Anything other than success here means there's nothing to drain — the PAL
+                // is genuinely waiting on wire bytes. Surface as WantRead; fatal errors will
+                // resurface on the next regular Decrypt call with real ciphertext.
+                return TlsOperationStatus.WantRead;
+            }
+
+            int produced = decBytesWritten + decLeftoverLength;
+            if (produced == 0)
+            {
+                return TlsOperationStatus.WantRead;
+            }
+
+            if (produced > plaintext.Length)
+            {
+                throw new InvalidOperationException(
+                    $"Plaintext buffer too small: needed {produced}, got {plaintext.Length}.");
+            }
+
+            if (decLeftoverLength > 0)
+            {
+                // PAL stashed overflow in the (empty) input span — impossible here, but mirror
+                // the main Decrypt path for symmetry. With Span<byte>.Empty as input, the OpenSSL
+                // PAL has nowhere to stash leftover and won't take this path.
+                _decryptScratch.AsSpan(decLeftoverOffset, decLeftoverLength)
+                    .CopyTo(plaintext.Slice(decBytesWritten));
+            }
+
+            bytesWritten = produced;
+            return TlsOperationStatus.Complete;
         }
 
         // ── Post-handshake auth ──────────────────────────────────────────
