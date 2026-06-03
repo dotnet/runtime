@@ -2145,8 +2145,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
         // that is holding a reference to us. To make sure that we are not the
         // ones keeping the exposed object alive we need to remove the strong
         // reference we have to it.
-        // m_StrongHndToExposedObject may already be NULL if CooperativeCleanup
-        // destroyed it earlier during OnThreadTerminate.
         if ((retVal == 1) && (m_StrongHndToExposedObject != NULL) && ((*((void**)m_StrongHndToExposedObject)) != NULL))
         {
             // Destroy the strong handle under the handle table lock to avoid
