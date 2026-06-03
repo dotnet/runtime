@@ -14,8 +14,7 @@
     LEAF_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
-// This function signs the input pointer using x1 as salt.
-// Thus we need to move input in lr, sign it and then copy it back to the result register.
+// This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
 .arch_extension pauth
     LEAF_ENTRY PacSignPtr, _TEXT
         mov x17, x0
@@ -24,3 +23,14 @@
         mov x0, x17
         ret
     LEAF_END PacSignPtr, _TEXT
+
+// void* PacAuthPtr(void *, void *);
+// This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
+.arch_extension pauth
+    LEAF_ENTRY PacAuthPtr, _TEXT
+        mov x17, x0
+        mov x16, x1
+        autia1716
+        mov x0, x17
+        ret
+    LEAF_END PacAuthPtr, _TEXT

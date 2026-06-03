@@ -836,6 +836,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
+#if defined(TARGET_ARM64)
+        m_pSpForPacSign = (void*)spForPacSign;
+#endif // TARGET_ARM64
 #if defined(TARGET_X86)
         bool isAsync = false;
         GCRefKind retKind = frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet(), &isAsync);
@@ -972,6 +975,9 @@ void Thread::UnhijackWorker()
     if (m_pvHijackedReturnAddress == NULL)
     {
         ASSERT(m_ppvHijackedReturnAddressLocation == NULL);
+#if defined(TARGET_ARM64)
+        ASSERT(m_pSpForPacSign == NULL);
+#endif // TARGET_ARM64
         return;
     }
 
@@ -982,6 +988,9 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
+#if defined(TARGET_ARM64)
+    m_pSpForPacSign                     = NULL;
+#endif // TARGET_ARM64
 #ifdef TARGET_X86
     m_uHijackedReturnValueFlags         = 0;
 #endif
