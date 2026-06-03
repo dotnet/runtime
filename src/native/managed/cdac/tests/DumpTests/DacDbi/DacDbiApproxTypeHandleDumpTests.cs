@@ -262,7 +262,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
         // up the open generic typeDef MT via the same helper TypeDataWalk uses.
         TargetPointer modulePtr = rts.GetModule(th);
         ILoader loader = Target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
         ulong vmAssembly = loader.GetAssembly(moduleHandle).Value;
         uint metadataToken = rts.GetTypeDefToken(th);
 
