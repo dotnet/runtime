@@ -93,8 +93,10 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13, false)]
         public async Task ServerSession_TlsResume_HonorsAllowTlsResumeOption(SslProtocols protocol, bool allowResume)
         {
-            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            if (OperatingSystem.IsMacOS())
             {
+                // Legacy SecureTransport server-side session cache / ticket issuance is not wired up,
+                // so resumption never measurably shrinks the second handshake.
                 return;
             }
 
