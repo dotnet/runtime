@@ -323,6 +323,17 @@ int32_t AndroidCryptoNative_AeadCipherUpdate(
     *outl = 0;
     jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
 
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch) != SUCCESS)
+    {
+        if (outDataBytes)
+        {
+            (*env)->DeleteLocalRef(env, outDataBytes);
+        }
+
+        (*env)->DeleteLocalRef(env, inDataBytes);
+        return FAIL;
+    }
+
     if (outDataBytes && outm)
     {
         jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
