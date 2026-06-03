@@ -4212,7 +4212,7 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
 // re-implemented pItfMT in its dispatch map, and that the interface methods
 // resolve to the same MethodDescs on both pClassMT and pParentMT.
 //--------------------------------------------------------------------------
-static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable *pParentMT, MethodTable *pItfMT)
+static bool CanShareComMethodTableWithParent(MethodTable* pClassMT, MethodTable* pParentMT, MethodTable* pItfMT)
 {
     CONTRACTL
     {
@@ -4226,7 +4226,7 @@ static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable 
     CONTRACTL_END;
 
     // Check for explicit interface re-implementations in the dispatch map.
-    MethodTable *pMT = pClassMT;
+    MethodTable* pMT = pClassMT;
     do
     {
         DispatchMap::EncodedMapIterator mapIt(pMT);
@@ -4235,7 +4235,7 @@ static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable 
             DispatchMapEntry *pEntry = mapIt.Entry();
             if (pMT->DispatchMapTypeMatchesMethodTable(pEntry->GetTypeID(), pItfMT))
             {
-                return FALSE;
+                return false;
             }
         }
 
@@ -4252,7 +4252,7 @@ static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable 
     {
         MethodDesc *pItfMD = pItfMT->GetMethodDescForSlot_NoThrow(i);
         if (pItfMD == NULL)
-            return FALSE;
+            return false;
 
         if (pItfMD->IsAsyncMethod())
             continue;
@@ -4261,13 +4261,13 @@ static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable 
         DispatchSlot parentSlot(pParentMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));
 
         if (childSlot.IsNull() || parentSlot.IsNull())
-            return FALSE;
+            return false;
 
         if (childSlot.GetMethodDesc() != parentSlot.GetMethodDesc())
-            return FALSE;
+            return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 //--------------------------------------------------------------------------
@@ -4287,7 +4287,7 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
     if (m_pParent != NULL)
     {
         // Check if we can reuse the parent's ComMethodTable for this interface.
-        ComMethodTable *pParentComMT = m_pParent->GetComMTForItf(pItfMT);
+        ComMethodTable* pParentComMT = m_pParent->GetComMTForItf(pItfMT);
         if (pParentComMT != NULL && CanShareComMethodTableWithParent(m_thClass.GetMethodTable(), pParentMT, pItfMT))
         {
             pItfComMT = pParentComMT;
