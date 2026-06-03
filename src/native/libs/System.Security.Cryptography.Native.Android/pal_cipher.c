@@ -325,11 +325,6 @@ int32_t AndroidCryptoNative_AeadCipherUpdate(
 
     if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch) != SUCCESS)
     {
-        if (outDataBytes)
-        {
-            (*env)->DeleteLocalRef(env, outDataBytes);
-        }
-
         (*env)->DeleteLocalRef(env, inDataBytes);
         return FAIL;
     }
