@@ -36,6 +36,22 @@ namespace NativeCallingManaged
             }
             TestFramework.EndTestCase();
 
+            // Regression test for https://github.com/dotnet/runtime/issues/127166:
+            // Native code calling a managed function with 17+ by-ref parameters
+            // hit an OverflowException because StubSigBuilder::EnsureEnoughQuickBytes
+            // only doubled the buffer size once, which was insufficient when the
+            // internal signature (with preserved custom modifiers) exceeded 512 bytes.
+            TestFramework.BeginTestCase("Call managed method with 18 by-ref parameters from native");
+            MethodInfo sum18Method = testType.GetMethod("ManagedEntryPointSum18ByRef");
+            long sum = (long)sum18Method.Invoke(testInstance, null);
+            const long expectedSum = 153; // 0 + (1+2+...+16) + 17
+            if (sum != expectedSum)
+            {
+                TestFramework.LogError("IJW", "Incorrect sum returned: " + sum + " (expected " + expectedSum + ")");
+                success = false;
+            }
+            TestFramework.EndTestCase();
+
             return success ? 100 : 99;
         }
     }

@@ -95,7 +95,6 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -157,7 +156,6 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow charCount either.
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe int GetChars(byte* bytes, int byteCount,
                                            char* chars, int charCount, bool flush)
         {
@@ -269,7 +267,6 @@ namespace System.Text
         // that its likely that we didn't consume as many bytes as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe void Convert(byte* bytes, int byteCount,
                                            char* chars, int charCount, bool flush,
                                            out int bytesUsed, out int charsUsed, out bool completed)

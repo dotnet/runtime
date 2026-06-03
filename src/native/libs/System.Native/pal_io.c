@@ -201,6 +201,12 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
+// Validate that our UserFlags enum values match the platform, since
+// SystemNative_LChflags and SystemNative_FChflags pass them directly to the OS.
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
+c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
+#endif
+
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
@@ -231,10 +237,12 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #endif
 
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
-    dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
+    dst->UserFlags = (uint32_t)src->st_flags;
 #else
     dst->UserFlags = 0;
 #endif
+
+    dst->HardLinkCount = (uint32_t)src->st_nlink;
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
@@ -558,6 +566,15 @@ int32_t SystemNative_CloseDir(DIR* dir)
     }
 
     return result;
+}
+
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
+{
+#if HAVE_PIPE2
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
@@ -1714,7 +1731,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
     if (fsStatDevRes == -1) return 0;
 
     return FileSystemNameSupportsLocking(info.fsh_name);
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1724,7 +1741,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
 
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     unsigned int f_type = (unsigned int)statfsArgs.f_type;
     if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
         f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC

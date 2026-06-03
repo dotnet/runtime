@@ -44,7 +44,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            // The R2R RUNTIME_FUNCTION.BeginAddress encodes thumb code with the thumb bit set on
+            // ARM32. Native RUNTIME_FUNCTION__BeginAddress uses ThumbCodeToDataPointer to strip it
+            // (clrnt.h, ARM32 branch). Mirror that so we store a raw TADDR-style start address.
+            TargetPointer startAddress = CodePointerUtils.AddressFromCodePointer(
+                new TargetCodePointer(imageBase.Value + function.BeginAddress), Target);
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             // Take hot/cold splitting into account for the relative offset
@@ -52,7 +56,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
-                TargetPointer coldStart = imageBase + coldFunction.BeginAddress;
+                TargetPointer coldStart = CodePointerUtils.AddressFromCodePointer(
+                    new TargetCodePointer(imageBase.Value + coldFunction.BeginAddress), Target);
                 if (addr >= coldStart)
                 {
                     // If the address is in the cold part, the relative offset is the size of the
@@ -62,7 +67,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
@@ -142,6 +147,13 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return imageBase + debugInfoOffset;
         }
 
+        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer codeAddress)
+        {
+            if (rangeSection.Data == null)
+                return CodeKind.Unknown;
+            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), codeAddress) ? CodeKind.MethodCallThunk : CodeKind.ReadyToRun;
+        }
+
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
         {
             gcInfo = TargetPointer.Null;
@@ -174,8 +186,9 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // see readytorun.h for the versioning details
             return header.MajorVersion switch
             {
-                < 11 => 3,
+                >= 21 => 5,
                 >= 11 => 4,
+                 < 11 => 3,
             };
         }
 
@@ -329,7 +342,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
         {
             IExecutionManager executionManager = Target.Contracts.ExecutionManager;
-            methodStart = executionManager.GetStartAddress(cbh).AsTargetPointer;
+            methodStart = executionManager.GetStartAddress(cbh);
             rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
         }
 

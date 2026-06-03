@@ -194,13 +194,23 @@ namespace ILCompiler
                     filePath = Path.GetFullPath(filePath);
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
 
+                    try
+                    {
+                        // Ensure the PEHeaders can be read
+                        _ = peReader.PEHeaders;
+
 #if !READYTORUN
-                if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
-                    throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
+                        if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
+                            throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
-                                ?? OpenAssociatedSymbolFile(filePath, peReader);
+                        pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                    ?? OpenAssociatedSymbolFile(filePath, peReader);
+                    }
+                    catch (BadImageFormatException ex)
+                    {
+                        throw new BadImageFormatException(ex.Message, filePath);
+                    }
                 }
                 else
                 {

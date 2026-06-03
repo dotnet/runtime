@@ -8,12 +8,14 @@ namespace System.Net.Tests
     public class TlsSystemDefault
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ServicePointManager_SecurityProtocolDefault_Ok()
         {
             Assert.Equal(SecurityProtocolType.SystemDefault, ServicePointManager.SecurityProtocol);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ServicePointManager_CheckAllowedProtocols_SystemDefault_Allowed()
         {
             SecurityProtocolType orig = ServicePointManager.SecurityProtocol;

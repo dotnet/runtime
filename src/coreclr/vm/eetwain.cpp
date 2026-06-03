@@ -712,6 +712,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
+// FIXME-WASM: Add TARGET_WASM once we implement tail calls on Wasm.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -787,6 +788,9 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             // Skip updating context registers for light unwind
             Thread::VirtualUnwindCallFrame(pRD->pCallerContext, NULL, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
 #endif
         }
         else
@@ -794,7 +798,13 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
-            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext,
+                                           pRD->pCallerContextPointers,
+                                           pCodeInfo
+                                           ARM64_ARG(&pRD->CallerContextSpForPacSign));
         }
 
         pRD->IsCallerContextValid = TRUE;
@@ -811,9 +821,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // Don't add usage of this field.  This is only temporary.
-    // See ExInfo::InitializeCrawlFrame() for more information.
-    if (!pRD->IsCallerSPValid)
+    if (!pRD->IsCallerContextValid)
     {
         ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
@@ -881,7 +889,6 @@ void EECodeManager::LightUnwindStackFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo
     {
         SyncRegDisplayToCurrentContext(pRD);
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
 #else
     PORTABILITY_ASSERT("EECodeManager::LightUnwindStackFrame is not implemented on this platform.");
@@ -1637,7 +1644,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
     CONTRACTL{
         NOTHROW;
@@ -1657,6 +1664,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(R
     }
 
     *returnKind = info.returnKind;
+    *hasAsyncRet = info.isAsync;
     return true;
 #else // !USE_GC_INFO_DECODER
 
@@ -1899,6 +1907,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 #else
     // For WASM, create the TransitionBlock in C++ and call the worker directly
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
     transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
     return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
 #endif
@@ -1930,7 +1939,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
         else
         {
 #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext, NULL);
+            PAL_VirtualUnwind(pContext);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
@@ -1940,7 +1949,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif    
+#endif
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 #endif // TARGET_WASM
 }
@@ -2103,6 +2112,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);
@@ -2110,7 +2120,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0)
         // and move on to the next explicit frame which is the InterpreterFrame.
         // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
         // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.
@@ -2146,7 +2156,6 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
 
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;
 
     return true;
 }

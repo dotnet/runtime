@@ -17,6 +17,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
+#include "cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -54,7 +55,7 @@ struct TaggedMemAllocPtr
     void        *m_pMem;                //Pointer to AllocMem'd block (needed to pass back to BackoutMem)
     size_t       m_dwRequestedSize;     //Requested allocation size (needed to pass back to BackoutMem)
 
-    ILoaderHeapBackout  *m_pHeap;          //The backout target for the allocation (needed to know who to call BackoutMem on)
+    ILoaderHeapBackout  *m_pHeap;          //The heap that alloc'd the block (needed to know who to call BackoutMem on)
 
     //For AllocMem'd blocks, this is always 0.
     //For AllocAlignedMem blocks, you have to add m_dwExtra to m_pMem to arrive
@@ -159,7 +160,7 @@ struct LoaderHeapEvent;
 inline UINT32 GetStubCodePageSize()
 {
 #if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASM)
-    return max(16*1024u, GetOsPageSize());
+    return max(16*1024u, minipal_getpagesize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
 #else
@@ -174,8 +175,13 @@ enum class LoaderHeapImplementationKind
     Interleaved
 };
 
+typedef DPTR(class UnlockedLoaderHeapBaseTraversable) PTR_UnlockedLoaderHeapBaseTraversable;
 class UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -188,6 +194,8 @@ protected:
 #endif
 
 public:
+    // DO NOT REMOVE : This is needed for layout stability.
+    virtual ~UnlockedLoaderHeapBaseTraversable() {}
 #ifdef DACCESS_COMPILE
 public:
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -201,13 +209,18 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
+};
+
 //===============================================================================
 // This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
 // common handling for LoaderHeap events, and the data structures used for bump
 // pointer allocation (although not the actual allocation routines).
 //===============================================================================
-typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
-class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable
+class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
@@ -216,64 +229,9 @@ class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable
     friend class ClrDataAccess;
 #endif
 
-private:
-    class LoaderHeapBackout final : public ILoaderHeapBackout
-    {
-    public:
-        explicit LoaderHeapBackout(UnlockedLoaderHeapBase *pOwner)
-            : m_pOwner(pOwner)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        void RealBackoutMem(void *pMem
-                            , size_t dwSize
-#ifdef _DEBUG
-                            , _In_ _In_z_ const char *szFile
-                            , int lineNum
-                            , _In_ _In_z_ const char *szAllocFile
-                            , int allocLineNum
-#endif
-                            ) override
-        {
-            WRAPPER_NO_CONTRACT;
-            m_pOwner->RealBackoutMem(pMem
-                                     , dwSize
-#ifdef _DEBUG
-                                     , szFile
-                                     , lineNum
-                                     , szAllocFile
-                                     , allocLineNum
-#endif
-                                     );
-        }
-
-    private:
-        UnlockedLoaderHeapBase *m_pOwner;
-    };
-
 protected:
     size_t GetBytesAvailCommittedRegion();
-    ILoaderHeapBackout *GetBackoutInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_backout;
-    }
 
-    virtual void RealBackoutMem(void *pMem
-                                , size_t dwSize
-#ifdef _DEBUG
-                                , _In_ _In_z_ const char *szFile
-                                , int lineNum
-                                , _In_ _In_z_ const char *szAllocFile
-                                , int allocLineNum
-#endif
-                                ) = 0;
-
-private:
-    LoaderHeapBackout m_backout;
-
-protected:
 #ifndef DACCESS_COMPILE
     const 
 #endif
@@ -289,10 +247,7 @@ protected:
     
 public:
 #ifdef DACCESS_COMPILE
-    UnlockedLoaderHeapBase()
-        : m_backout(this)
-    {
-    }
+    UnlockedLoaderHeapBase() {}
 #else
     UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind);
     virtual ~UnlockedLoaderHeapBase();
@@ -657,9 +612,6 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
 
 private:
     // Allocation pointer in current block
@@ -859,7 +811,7 @@ public:
             TaggedMemAllocPtr tmap;
             tmap.m_pMem             = NULL;
             tmap.m_dwRequestedSize  = dwSize.Value();
-            tmap.m_pHeap            = GetBackoutInterface();
+            tmap.m_pHeap            = this;
             tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
             tmap.m_szFile           = szFile;
@@ -894,7 +846,7 @@ private:
                                  );
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
-        tmap.m_pHeap            = GetBackoutInterface();
+        tmap.m_pHeap            = this;
         tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -927,7 +879,7 @@ private:
 
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
-        tmap.m_pHeap            = GetBackoutInterface();
+        tmap.m_pHeap            = this;
         tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -976,7 +928,7 @@ public:
 
         tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
         tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
-        tmap.m_pHeap            = GetBackoutInterface();
+        tmap.m_pHeap            = this;
         tmap.m_dwExtra          = dwExtra;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -1017,7 +969,7 @@ public:
 
         tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
         tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
-        tmap.m_pHeap            = GetBackoutInterface();
+        tmap.m_pHeap            = this;
         tmap.m_dwExtra          = dwExtra;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -1040,7 +992,7 @@ public:
                         , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
-                        ) override
+                        )
     {
         WRAPPER_NO_CONTRACT;
         CRITSEC_Holder csh(m_CriticalSection);
@@ -1151,7 +1103,7 @@ public:
 
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = 1;
-        tmap.m_pHeap            = GetBackoutInterface();
+        tmap.m_pHeap            = this;
         tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -1174,7 +1126,7 @@ public:
                         , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
-                        ) override
+                        )
     {
         WRAPPER_NO_CONTRACT;
         CRITSEC_Holder csh(m_CriticalSection);

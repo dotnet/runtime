@@ -264,7 +264,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
-        public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
+        public void WarnsOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -543,20 +543,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
         {
+            // Inaccessible [JsonConstructor] constructors are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
-            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]
@@ -706,6 +697,278 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 
+        [Fact]
+        public void UnionWithAmbiguousCaseTypes_CompilesWithWarning()
+        {
+            // Two case types serialize as the same JSON value type (Number).
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("IntOrLongUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'IntOrLongUnion': case types 'int', 'long' all serialize as JSON value type 'Number'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithListAndDictionaryCases_CompilesWithoutWarning()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(ListOrDictionaryUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct ListOrDictionaryUnion : IUnion
+                    {
+                        public ListOrDictionaryUnion(List<int> value) { Value = value; }
+                        public ListOrDictionaryUnion(Dictionary<string, int> value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
+        public void UnionWithAmbiguousCaseTypesAndAttributeClassifier_CompilesWithoutWarning()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [JsonUnion(TypeClassifier = typeof(IntOrLongClassifier))]
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+
+                    public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                    {
+                        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+                        public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                            (ref Utf8JsonReader reader) => typeof(int);
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
+        public void UnionWithAmbiguousCaseTypesAndOptionsClassifier_CompilesWithWarning()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSourceGenerationOptions(TypeClassifiers = new[] { typeof(IntOrLongClassifier) })]
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+
+                    public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                    {
+                        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+                        public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                            (ref Utf8JsonReader reader) => typeof(int);
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Location unionLocation = compilation.GetSymbolsWithName("IntOrLongUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'IntOrLongUnion': case types 'int', 'long' all serialize as JSON value type 'Number'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithCustomConverterCaseType_CompilesWithWarning()
+        {
+            // A case type annotated with [JsonConverter] cannot be classified at compile time
+            // because user-defined converters can serialize as any JSON value type.
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MyUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [JsonConverter(typeof(CustomConverter))]
+                    public class CustomCase
+                    {
+                    }
+
+                    public class CustomConverter : JsonConverter<CustomCase>
+                    {
+                        public override CustomCase? Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options) => null;
+                        public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) { }
+                    }
+
+                    public class OtherCase
+                    {
+                    }
+
+                    [Union]
+                    public readonly struct MyUnion : IUnion
+                    {
+                        public MyUnion(CustomCase value) { Value = value; }
+                        public MyUnion(OtherCase value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MyUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MyUnion': case type 'CustomCase' is annotated with [JsonConverter] and may serialize as any JSON value type. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionAttributeWithoutValueProperty_GeneratesDiagnosticWarning()
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MissingShapeUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct MissingShapeUnion : IUnion
+                    {
+                        public MissingShapeUnion(int value) { }
+                        object IUnion.Value => throw new System.NotSupportedException();
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MissingShapeUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MissingShapeUnion' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithValuePropertyButNoCaseConstructor_GeneratesDiagnosticWarning()
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MissingShapeUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct MissingShapeUnion : IUnion
+                    {
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MissingShapeUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MissingShapeUnion' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
 #if NET
         [Fact]
         public void CollectionWithRefStructElement_CompilesWithWarning()
@@ -776,28 +1039,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
+            // SYSLIB1039: Polymorphism not supported for fast-path serialization (Warning, configurable).
             string source = """
-                #pragma warning disable SYSLIB1038
+                #pragma warning disable SYSLIB1039
                 using System.Text.Json.Serialization;
 
-                namespace Test
+                namespace HelloWorld
                 {
-                    public class MyClass
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonInclude]
-                        private int PrivateField;
                     }
 
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
                 }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
-            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1038");
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1039");
             Assert.True(diagnostic.IsSuppressed);
         }
 

@@ -89,10 +89,11 @@ typedef struct
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
 
-#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
-#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
+#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)minipal_getpagesize()-1))
+#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (minipal_getpagesize()-1)) & ~((size_t)minipal_getpagesize()-1))
 
 
+// [cDAC] [ExecutionManager]: Contract depends on the values in this enum.
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
@@ -107,13 +108,12 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
     STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+#endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
-    // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_NOCODE = 0x10,
-    STUB_CODE_BLOCK_MANAGED = 0x11,
-    STUB_CODE_BLOCK_STUBLINK = 0x12,
-    // Placeholdes used by ReadyToRun images
+    // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
 
@@ -123,12 +123,12 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_STUBLINK:
-        return "StubLinkStub";
-    case STUB_CODE_BLOCK_MANAGED:
-        return "Managed";
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return "MethodCallThunk";
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -473,7 +473,17 @@ class CodeHeap
 {
     VPTR_BASE_VTABLE_CLASS(CodeHeap)
 
+    friend struct ::cdac_data<CodeHeap>;
+
 public:
+    // [cDAC] [ExecutionManager] : Contract depends on these values.
+    enum class CodeHeapType : uint8_t
+    {
+        LoaderCodeHeap  = 0,
+        HostCodeHeap    = 1,
+        UnknownCodeHeap = 0xff,
+    };
+
     CodeHeap() = default;
 
     // virtual dtor. Clean up heap
@@ -486,6 +496,9 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
+
+protected:
+    CodeHeapType m_heapType = CodeHeapType::UnknownCodeHeap;
 };
 
 //-----------------------------------------------------------------------------
@@ -508,7 +521,7 @@ struct HeapList
     TADDR               startAddress;
     TADDR               endAddress;     // the current end of the used portion of the Heap
 
-    TADDR               mapBase;        // "startAddress" rounded down to GetOsPageSize(). pHdrMap is relative to this address
+    TADDR               mapBase;        // "startAddress" rounded down to minipal_getpagesize(). pHdrMap is relative to this address
     PTR_DWORD           pHdrMap;        // bit array used to find the start of methods
 
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
@@ -550,6 +563,8 @@ class LoaderCodeHeap final : public CodeHeap
 #endif
 
     VPTR_VTABLE_CLASS(LoaderCodeHeap, CodeHeap)
+
+    friend struct ::cdac_data<LoaderCodeHeap>;
 
 private:
     ExplicitControlLoaderHeap m_LoaderHeap;
@@ -771,6 +786,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t Flags = offsetof(RangeSection, _flags);
     static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
     static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
+    static constexpr size_t RangeList = offsetof(RangeSection, _pRangeList);
 };
 
 enum class RangeSectionLockState
@@ -1026,11 +1042,7 @@ class RangeSectionMap
         bool isCollectibleRangeSectionFragment; // RangeSectionFragments
     };
 
-#ifdef TARGET_64BIT
     static constexpr uintptr_t entriesPerMapLevel = 256;
-#else
-    static constexpr uintptr_t entriesPerMapLevel = 256;
-#endif
 
     typedef RangeSectionFragmentPointer RangeSectionList;
     typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
@@ -2230,6 +2242,14 @@ public:
         return m_CPUCompileFlags;
     }
 
+#if defined(TARGET_ARM64)
+    inline bool UseScalableVectorT()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_CPUCompileFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_VectorT);
+    }
+#endif
+
 private :
     Crst                m_JitLoadLock;
 
@@ -2275,6 +2295,18 @@ struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
     static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
+};
+
+template<>
+struct cdac_data<CodeHeap>
+{
+    static constexpr size_t HeapType = offsetof(CodeHeap, m_heapType);
+};
+
+template<>
+struct cdac_data<LoaderCodeHeap>
+{
+    static constexpr size_t LoaderHeap = offsetof(LoaderCodeHeap, m_LoaderHeap);
 };
 
 

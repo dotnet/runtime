@@ -39,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(InternalParameterizedCtor))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor))]
         [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute))]
+        [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute_And_RequiredProperty))]
         [JsonSerializable(typeof(InternalParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(PrivateParameterlessCtor_WithAttribute))]
@@ -176,6 +177,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_Primitive))]
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_Struct))]
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_ReferenceType))]
+        [JsonSerializable(typeof(ParameterizedClass_WithStringProperty))]
+        [JsonSerializable(typeof(ParameterizedRecord_WithStringProperty))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -210,6 +213,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(InternalParameterizedCtor))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor))]
         [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute))]
+        [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute_And_RequiredProperty))]
         [JsonSerializable(typeof(InternalParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(PrivateParameterlessCtor_WithAttribute))]
@@ -347,6 +351,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_Primitive))]
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_Struct))]
         [JsonSerializable(typeof(TypeWith_RefReadonlyParameter_ReferenceType))]
+        [JsonSerializable(typeof(ParameterizedClass_WithStringProperty))]
+        [JsonSerializable(typeof(ParameterizedRecord_WithStringProperty))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

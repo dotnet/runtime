@@ -45,7 +45,9 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             Reference reference = new Reference(uri);
 
+#if NET
             Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
+#endif
 
             Assert.Null(reference.DigestValue);
             Assert.Null(reference.Id);
@@ -65,7 +67,9 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 Reference reference = new Reference(memoryStream);
 
+#if NET
                 Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
+#endif
 
                 Assert.Null(reference.DigestValue);
                 Assert.Null(reference.Id);

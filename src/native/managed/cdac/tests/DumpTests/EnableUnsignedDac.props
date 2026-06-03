@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
+    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
+    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
+
+    The key must be set in both the native (64-bit) and WoW64 (32-bit) registry views.
+    Without /reg:32, x86 processes running under WoW64 read from
+    HKLM\SOFTWARE\WOW6432Node\... and miss the key, producing degraded dumps.
+  -->
+
+  <PropertyGroup>
+    <DacRegKey>HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings</DacRegKey>
+    <DacRegAdd>reg add &quot;$(DacRegKey)&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f</DacRegAdd>
+    <DacRegAdd32>$(DacRegAdd) /reg:32</DacRegAdd32>
+  </PropertyGroup>
+
+</Project>

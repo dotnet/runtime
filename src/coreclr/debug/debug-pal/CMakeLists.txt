@@ -29,6 +29,8 @@ if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
 
+    include_directories(../../inc) # for volatile.h
+
     set(TWO_WAY_PIPE_SOURCES
       ${EVENTPIPE_PAL_SOURCES}
       unix/twowaypipe.cpp

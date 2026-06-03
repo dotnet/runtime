@@ -3,20 +3,11 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
+[CdacType(nameof(DataType.SoftwareExceptionFrame))]
+internal partial class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
 {
-    static SoftwareExceptionFrame IData<SoftwareExceptionFrame>.Create(Target target, TargetPointer address)
-        => new SoftwareExceptionFrame(target, address);
-
-    public SoftwareExceptionFrame(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.SoftwareExceptionFrame);
-        Address = address;
-        TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
-    }
-
-    public TargetPointer Address { get; }
+    [FieldAddress]
     public TargetPointer TargetContext { get; }
-    public TargetPointer ReturnAddress { get; }
+
+    [Field] public TargetPointer ReturnAddress { get; }
 }

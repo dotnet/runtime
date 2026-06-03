@@ -6,6 +6,7 @@
 //
 
 #include "common.h"
+#include <limits>
 
 #include "vars.hpp"
 #include "clrtypes.h"
@@ -26,824 +27,6 @@
 #include "comdelegate.h"
 #include "finalizerthread.h"
 
-#ifdef _DEBUG
-#define FORCEINLINE_NONDEBUG
-#else
-#define FORCEINLINE_NONDEBUG FORCEINLINE
-#endif
-
-#if !defined(DACCESS_COMPILE)
-
-UINT64 FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame);
-void FieldCallWorkerDebuggerWrapper(Thread *pThread, ComMethodFrame* pFrame);
-void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
-
-#ifdef PROFILING_SUPPORTED
-// The sole purpose of this helper is to transition into preemptive mode
-// and then call the profiler transition callbacks.  We can't use the GCX_PREEMP
-// in a function with SEH (such as COMToCLRWorkerBody()).
-static NOINLINE
-void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_TRANSITION_REASON reason)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(CheckPointer(pThread));
-        PRECONDITION(CORProfilerTrackTransitions());
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP_THREAD_EXISTS(pThread);
-
-    if (reason == COR_PRF_TRANSITION_CALL)
-    {
-        ProfilerUnmanagedToManagedTransitionMD(pMD, COR_PRF_TRANSITION_CALL);
-    }
-    else
-    {
-        ProfilerManagedToUnmanagedTransitionMD(pMD, COR_PRF_TRANSITION_RETURN);
-    }
-}
-#endif // PROFILING_SUPPORTED
-
-// Disable when calling into managed code from a place that fails via HRESULT
-static HRESULT StubRareDisableHRWorker(Thread *pThread)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    HRESULT hr = S_OK;
-
-    // Do not add a CONTRACT here.  We haven't set up SEH.  We rely
-    // on HandleThreadAbort dealing with this situation properly.
-
-    // WARNING!!!!
-    // when we start executing here, we are actually in cooperative mode.  But we
-    // haven't synchronized with the barrier to reentry yet.  So we are in a highly
-    // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occurring!
-
-    // We must do the following in this order, because otherwise we would be constructing
-    // the exception for the abort without synchronizing with the GC.  Also, we have no
-    // CLR SEH set up, despite the fact that we may throw a ThreadAbortException.
-    pThread->RareDisablePreemptiveGC();
-    EX_TRY
-    {
-        pThread->HandleThreadAbort();
-    }
-    EX_CATCH
-    {
-        hr = GET_EXCEPTION()->GetHR();
-    }
-    EX_END_CATCH
-
-    // should always be in coop mode here
-    _ASSERTE(pThread->PreemptiveGCDisabled());
-
-    // Note that this code does not handle rare signatures that do not return HRESULT properly
-
-    return hr;
-}
-
-#ifdef TARGET_X86
-
-// defined in i386\asmhelpers.asm
-extern "C" ARG_SLOT __fastcall COMToCLRDispatchHelper(
-    INT_PTR dwArgECX,
-    INT_PTR dwArgEDX,
-    PCODE   pTarget,
-    PCODE   pSecretArg,
-    INT_PTR *pInputStack,
-    WORD    wOutputStackSlots,
-    UINT16  *pOutputStackOffsets,
-    Frame   *pCurFrame);
-
-
-inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread,
-                              UINT64* pRetValOut)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    INT_PTR *pInputStack = (INT_PTR *)pFrame->GetPointerToArguments();
-    PCODE pStubEntryPoint = pCMD->GetILStub();
-
-    INT_PTR EDX = (pCMD->m_wSourceSlotEDX == (UINT16)-1 ? NULL : pInputStack[pCMD->m_wSourceSlotEDX]);
-
-    ARG_SLOT retVal = 0;
-
-    // Managed code is generally "THROWS" and we have no exception handler here that the contract system can
-    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers
-    // any possible throw points, including all calls within the stub to helpers.
-    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonILStubWillNotThrow);
-
-    //
-    // NOTE! We do not use BEGIN_CALL_TO_MANAGEDEX around this call because COMToCLRDispatchHelper is
-    // responsible for pushing/popping the CPFH into the FS:0 chain.
-    //
-
-    *pRetValOut = COMToCLRDispatchHelper(
-        *((INT_PTR *) &orThis),           // pArgECX
-        EDX,                              // pArgEDX
-        pStubEntryPoint,                  // pTarget
-        pManagedTarget,                   // pSecretArg
-        pInputStack,                      // pInputStack
-        pCMD->m_wStubStackSlotCount,      // wOutputStackSlots
-        pCMD->m_pwStubStackSlotOffsets,   // pOutputStackOffsets
-        pThread->GetFrame());             // pCurFrame
-}
-
-#else // TARGET_X86
-
-// defined in amd64\GenericComCallStubs.asm
-extern "C" ARG_SLOT COMToCLRDispatchHelper(
-    DWORD          dwStackSlots,
-    ComMethodFrame *pFrame,
-    PCODE          pTarget,
-    PCODE          pR10,
-    INT_PTR        pDangerousThis);
-
-
-inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread,
-                              UINT64* pRetValOut)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ARG_SLOT retVal = 0;
-    PCODE pStubEntryPoint = pCMD->GetILStub();
-
-    INT_PTR dangerousThis = (INT_PTR)OBJECTREFToObject(orThis);
-
-    DWORD dwStackSlots = pCMD->GetNumStackBytes() / TARGET_POINTER_SIZE;
-
-    // Managed code is generally "THROWS" and we have no exception handler here that the contract system can
-    // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers
-    // any possible throw points, including all calls within the stub to helpers.
-    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonILStubWillNotThrow);
-
-    //
-    // NOTE! We do not use BEGIN_CALL_TO_MANAGEDEX around this call because we stayed in the SO_TOLERANT
-    // mode and we have no need to push/pop FS:0 on non-x86 Windows platforms.
-    //
-
-    *pRetValOut = COMToCLRDispatchHelper(
-        dwStackSlots,     // dwStackSlots
-        pFrame,           // pFrame
-        pStubEntryPoint,  // pTarget
-        pManagedTarget,   // pSecretArg
-        dangerousThis);   // pDangerousThis
-}
-
-#endif // TARGET_X86
-
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#pragma optimize("t", on)   // optimize for speed
-#endif
-
-static OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF pDelObj = (DELEGATEREF)pWrap->GetObjectRef();
-    _ASSERTE(pDelObj->GetMethodTable()->IsDelegate());
-
-    // We don't have to go through the Invoke slot because we know what the delegate
-    // target is. This is the same optimization that reverse P/Invoke stubs do.
-    *ppManagedTargetOut = (PCODE)pDelObj->GetMethodPtr();
-    return pDelObj->GetTarget();
-}
-
-static FORCEINLINE_NONDEBUG
-OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pObject = pWrap->GetObjectRef();
-
-    MethodTable *pMT = pObject->GetMethodTable();
-
-    if (pRealMD->IsInterface())
-    {
-        // For transparent proxies, we need to call on the interface method desc if
-        // this method represents an interface method and not an IClassX method.
-        *ppManagedTargetOut = pCMD->GetCallMethodDesc()->GetSingleCallableAddrOfCode();
-    }
-    else
-    {
-        // we know the slot number for this method desc, grab the actual
-        // address from the vtable for this slot. The slot number should
-        // remain the same through out the hierarchy.
-        *ppManagedTargetOut = pMT->GetSlotForVirtual(pCMD->GetSlot());
-    }
-    return pObject;
-}
-
-static FORCEINLINE_NONDEBUG
-OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    //NOTE: No need to optimize for stub dispatch since non-virtuals are retrieved quickly.
-    *ppManagedTargetOut = pRealMD->GetSingleCallableAddrOfCode();
-
-    return pWrap->GetObjectRef();
-}
-
-static FORCEINLINE_NONDEBUG
-void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethodDesc * pCMD,
-                          ComMethodFrame * pFrame, Thread * pThread, UINT64* pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerTraceCall())
-    {
-        g_pDebugInterface->TraceCall((const BYTE *)pManagedTarget);
-    }
-#endif // DEBUGGING_SUPPORTED
-
-    InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
-}
-
-static NOINLINE
-void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap,
-                             MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags,
-                             UINT64 * pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    PCODE pManagedTarget;
-    OBJECTREF pObject;
-
-    int fpReturnSize = 0;
-    if (maskedFlags & enum_NativeR8Retval)
-        fpReturnSize = 8;
-    if (maskedFlags & enum_NativeR4Retval)
-        fpReturnSize = 4;
-
-    maskedFlags &= ~(enum_NativeR4Retval|enum_NativeR8Retval);
-
-    switch (maskedFlags)
-    {
-    case enum_IsDelegateInvoke|enum_IsVirtual:
-    case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
-    case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    default:                    UNREACHABLE();
-    }
-
-    COMToCLRInvokeTarget(pManagedTarget, pObject, pCMD, pFrame, pThread, pRetValOut);
-
-    if (fpReturnSize != 0)
-        getFPReturn(fpReturnSize, (INT64*)pRetValOut);
-
-#if defined(PROFILING_SUPPORTED)
-    // Notify the profiler of the return out of the runtime.
-    if (CORProfilerTrackTransitions())
-    {
-        ProfilerTransitionCallbackHelper(pRealMD, pThread, COR_PRF_TRANSITION_RETURN);
-    }
-#endif // PROFILING_SUPPORTED
-
-    return;
-}
-
-
-// This is the factored out body of COMToCLRWorker.
-static FORCEINLINE_NONDEBUG
-void COMToCLRWorkerBody(
-    Thread * pThread,
-    ComMethodFrame * pFrame,
-    ComCallWrapper * pWrap,
-    UINT64 * pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    ComCallMethodDesc* pCMD = pFrame->GetComCallMethodDesc();
-    MethodDesc *pRealMD = pCMD->GetMethodDesc();
-
-#if defined(PROFILING_SUPPORTED)
-    // @TODO: PERF: x86: we are making profiler callbacks in the StubLinker stub as well as here.
-    // The checks for these callbacks add about 5% to the path length, so we should remove these
-    // callbacks in the next SxS release because they are redundant.
-    //
-    // Notify the profiler of the call into the runtime.
-    // 32-bit does this callback in the stubs before calling into COMToCLRWorker().
-    BOOL fNotifyProfiler = CORProfilerTrackTransitions();
-    if (fNotifyProfiler)
-    {
-        ProfilerTransitionCallbackHelper(pRealMD, pThread, COR_PRF_TRANSITION_CALL);
-    }
-#endif // PROFILING_SUPPORTED
-
-    LOG((LF_STUBS, LL_INFO1000000, "Calling COMToCLRWorker %s::%s \n", pRealMD->m_pszDebugClassName, pRealMD->m_pszDebugMethodName));
-
-    //
-    // In order to find the managed target code address and target object, we need to know
-    // what scenario we're in.  We do this by switching on the flags of interest.  We include
-    // the NeedsSecurityCheck flag in the calculation even though it's really orthogonal so
-    // that the faster case--where no security check is needed--can be matched immediately.
-    //
-    PCODE pManagedTarget;
-    OBJECTREF pObject;
-
-    DWORD mask = (
-        enum_IsDelegateInvoke |
-        enum_IsVirtual |
-        enum_NativeR4Retval |
-        enum_NativeR8Retval);
-    DWORD maskedFlags = pCMD->GetFlags() & mask;
-
-    switch (maskedFlags)
-    {
-    case enum_IsDelegateInvoke|enum_IsVirtual:
-    case enum_IsDelegateInvoke: pObject = COMToCLRGetObjectAndTarget_Delegate(pWrap, &pManagedTarget); break;
-    case enum_IsVirtual:        pObject = COMToCLRGetObjectAndTarget_Virtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    case 0:                     pObject = COMToCLRGetObjectAndTarget_NonVirtual(pWrap, pRealMD, pCMD, &pManagedTarget); break;
-    default:
-        COMToCLRWorkerBody_Rare(pThread, pFrame, pWrap, pRealMD, pCMD, maskedFlags, pRetValOut);
-        return;
-    }
-
-    COMToCLRInvokeTarget(pManagedTarget, pObject, pCMD, pFrame, pThread, pRetValOut);
-
-#if defined(PROFILING_SUPPORTED)
-    // Notify the profiler of the return out of the runtime.
-    if (fNotifyProfiler)
-    {
-        ProfilerTransitionCallbackHelper(pRealMD, pThread, COR_PRF_TRANSITION_RETURN);
-    }
-#endif // PROFILING_SUPPORTED
-
-    return;
-}
-
-//------------------------------------------------------------------
-// UINT64 __stdcall COMToCLRWorker(ComMethodFrame* pFrame)
-//------------------------------------------------------------------
-extern "C" UINT64 __stdcall COMToCLRWorker(ComMethodFrame* pFrame)
-{
-    CONTRACTL
-    {
-        NOTHROW; // Although CSE can be thrown
-        GC_TRIGGERS;
-        // This contract is disabled because user code can illegally reenter here through no fault of the
-        // CLR (i.e. it's a user code bug), so we shouldn't be popping ASSERT dialogs in those cases.  Note
-        // that this reentrancy check is already done by the stublinker-generated stub on x86, so it's OK
-        // to leave the MODE_ contract enabled on x86.
-        DISABLED(MODE_PREEMPTIVE);
-        PRECONDITION(CheckPointer(pFrame));
-    }
-    CONTRACTL_END;
-
-    UINT64 retVal = 0;
-
-    ComCallMethodDesc* pCMD = pFrame->GetComCallMethodDesc();
-
-    HRESULT hr = S_OK;
-
-    Thread* pThread = GetThreadNULLOk();
-    if (pThread == NULL)
-    {
-        pThread = SetupThreadNoThrow();
-        if (pThread == NULL)
-        {
-            hr = E_OUTOFMEMORY;
-            goto ErrorExit;
-        }
-    }
-
-    if (pThread->PreemptiveGCDisabled())
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-            COR_E_EXECUTIONENGINE,
-            W("Invalid Program: attempted to call a COM method from managed code."));
-    }
-
-    // Attempt to switch GC modes.  Note that this is performed manually just like in the x86 stub because
-    // we have additional checks for thread abort that are performed only when
-    // g_TrapReturningThreads is set.
-    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-    if (g_TrapReturningThreads)
-    {
-        hr = StubRareDisableHRWorker(pThread);
-        if (S_OK != hr)
-            goto ErrorExit;
-    }
-
-    // Initialize the frame's identifier.
-    *((TADDR*)pFrame) = (TADDR)FrameIdentifier::ComMethodFrame;
-    // Link frame into the chain.
-    pFrame->Push(pThread);
-
-    _ASSERTE(pThread);
-
-    // At this point we should be in preemptive GC mode (regardless of if it happened
-    // in the stub or in the worker).
-    _ASSERTE(pThread->PreemptiveGCDisabled());
-
-    {
-        if (pCMD->IsFieldCall())
-        {
-            retVal = FieldCallWorker(pThread, pFrame);
-        }
-        else
-        {
-            IUnknown **pip = (IUnknown **)pFrame->GetPointerToArguments();
-            IUnknown *pUnk = (IUnknown *)*pip;
-            _ASSERTE(pUnk != NULL);
-
-            // Obtain the managed 'this' for the call
-            ComCallWrapper *pWrap = ComCallWrapper::GetWrapperFromIP(pUnk);
-            COMToCLRWorkerBody(pThread, pFrame, pWrap, &retVal);
-        }
-    }
-
-    // Note: the EH subsystem will handle resetting the frame chain and setting
-    // the correct GC mode on exception.
-    pFrame->Pop(pThread);
-    pThread->EnablePreemptiveGC();
-
-    LOG((LF_STUBS, LL_INFO1000000, "COMToCLRWorker leave\n"));
-
-    // The call was successful. If the native return type is a floating point
-    // value, then we need to set the floating point registers appropriately.
-    if (pCMD->IsNativeFloatingPointRetVal()) // single check skips both cases
-    {
-        if (pCMD->IsNativeR4RetVal())
-            setFPReturn(4, retVal);
-        else
-            setFPReturn(8, retVal);
-    }
-    return retVal;
-
-ErrorExit:
-    if (pThread != NULL && pThread->PreemptiveGCDisabled())
-        pThread->EnablePreemptiveGC();
-
-    // The call failed so we need to report an error to the caller.
-    if (pCMD->IsNativeHResultRetVal())
-    {
-        _ASSERTE(FAILED(hr));
-        retVal = hr;
-    }
-    else if (pCMD->IsNativeBoolRetVal())
-    {
-        retVal = FALSE;
-    }
-    else if (pCMD->IsNativeR4RetVal())
-    {
-        setFPReturn(4, CLR_NAN_32);
-    }
-    else if (pCMD->IsNativeR8RetVal())
-    {
-        setFPReturn(8, CLR_NAN_64);
-    }
-    else
-    {
-        _ASSERTE(pCMD->IsNativeVoidRetVal());
-    }
-
-    return retVal;
-}
-
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#pragma optimize("", on)   // restore settings
-#endif
-
-
-static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pThread));
-        PRECONDITION(CheckPointer(pFrame));
-    }
-    CONTRACTL_END;
-
-    LOG((LF_STUBS, LL_INFO1000000, "FieldCallWorker enter\n"));
-
-    HRESULT hrRetVal = S_OK;
-
-    IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
-    IUnknown* pUnk = (IUnknown *)*pip;
-    _ASSERTE(pUnk != NULL);
-
-    ComCallWrapper* pWrap =  ComCallWrapper::GetWrapperFromIP(pUnk);
-    _ASSERTE(pWrap != NULL);
-
-    GCX_ASSERT_COOP();
-    OBJECTREF pThrowable = NULL;
-    GCPROTECT_BEGIN(pThrowable);
-    {
-        EX_TRY
-        {
-            FieldCallWorkerDebuggerWrapper(pThread, pFrame);
-        }
-        EX_CATCH
-        {
-            pThrowable = GET_THROWABLE();
-        }
-        EX_END_CATCH
-
-        if (pThrowable != NULL)
-        {
-            // Transform the exception into an HRESULT. This also sets up
-            // an IErrorInfo on the current thread for the exception.
-            hrRetVal = SetupErrorInfo(pThrowable);
-        }
-    }
-
-    GCPROTECT_END();
-
-    LOG((LF_STUBS, LL_INFO1000000, "FieldCallWorker leave\n"));
-
-    return hrRetVal;
-}
-
-static void FieldCallWorkerDebuggerWrapper(Thread *pThread, ComMethodFrame* pFrame)
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    struct Param : public NotifyOfCHFFilterWrapperParam {
-        Thread*         pThread;
-    } param;
-    param.pFrame = pFrame;
-    param.pThread = pThread;
-
-    // @todo - we have a PAL_TRY/PAL_EXCEPT here as a general (cross-platform) way to get a 1st-pass
-    // filter. If that's bad perf, we could inline an FS:0 handler for x86-only; and then inline
-    // both this wrapper and the main body.
-    PAL_TRY(Param *, pParam, &param)
-    {
-        FieldCallWorkerBody(pParam->pThread, (ComMethodFrame*)pParam->pFrame);
-    }
-    PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(false);
-    }
-    PAL_ENDTRY
-}
-
-static void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;     // Dependant on machine type (X86 sets COOP in stub)
-        PRECONDITION(CheckPointer(pThread));
-        PRECONDITION(CheckPointer(pFrame));
-    }
-    CONTRACTL_END;
-
-    IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
-    IUnknown* pUnk = (IUnknown *)*pip;
-    _ASSERTE(pUnk != NULL);
-
-    ComCallWrapper* pWrap =  ComCallWrapper::GetWrapperFromIP(pUnk);
-    _ASSERTE(pWrap != NULL);
-
-    ComCallMethodDesc *pCMD = pFrame->GetComCallMethodDesc();
-    _ASSERTE(pCMD->IsFieldCall());
-    _ASSERTE(pCMD->IsNativeHResultRetVal());
-
-#ifdef PROFILING_SUPPORTED
-    // Notify the profiler of the call into the runtime.
-    // 32-bit does this callback in the stubs before calling into FieldCallWorker().
-    if (CORProfilerTrackTransitions())
-    {
-        MethodDesc* pMD = pCMD->GetMethodDesc();
-        ProfilerTransitionCallbackHelper(pMD, pThread, COR_PRF_TRANSITION_CALL);
-    }
-#endif // PROFILING_SUPPORTED
-
-    UINT64 retVal;
-    InvokeStub(pCMD, NULL, pWrap->GetObjectRef(), pFrame, pThread, &retVal);
-
-#ifdef PROFILING_SUPPORTED
-    // Notify the profiler of the return out of the runtime.
-    if (CORProfilerTrackTransitions())
-    {
-        MethodDesc* pMD = pCMD->GetMethodDesc();
-        ProfilerTransitionCallbackHelper(pMD, pThread, COR_PRF_TRANSITION_RETURN);
-    }
-#endif // PROFILING_SUPPORTED
-}
-
-//---------------------------------------------------------
-PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppStubMD)
-{
-    CONTRACT(PCODE)
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(ppStubMD));
-        POSTCONDITION(CheckPointer(*ppStubMD));
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    MethodDesc * pStubMD;
-
-    if (IsFieldCall())
-    {
-        FieldDesc *pFD = GetFieldDesc();
-        pStubMD = ComCall::GetILStubMethodDesc(pFD, dwStubFlags);
-    }
-    else
-    {
-        // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
-        MethodDesc *pMD = GetCallMethodDesc();
-        pStubMD = ComCall::GetILStubMethodDesc(pMD, dwStubFlags);
-    }
-
-    *ppStubMD = pStubMD;
-
-#ifdef TARGET_X86
-    // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
-    _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
-#else // TARGET_X86
-
-    ExecutableWriterHolder<ComCallMethodDesc> comCallMDWriterHolder(this, sizeof(ComCallMethodDesc));
-
-    if (pStubMD->IsILStub())
-    {
-        comCallMDWriterHolder.GetRW()->m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-        _ASSERTE(m_StackBytes == pStubMD->SizeOfArgStack());
-    }
-    else
-    {
-        UINT size = pStubMD->SizeOfArgStack();
-        _ASSERTE(size <= USHRT_MAX);
-        comCallMDWriterHolder.GetRW()->m_StackBytes = (UINT16)size;
-    }
-#endif // TARGET_X86
-
-    RETURN JitILStub(pStubMD);
-}
-
-//---------------------------------------------------------
-void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_X86
-    // Parse the stub signature to figure out how we're going to transform the incoming arguments
-    // into stub arguments (i.e. ECX and possibly EDX get enregisterable args, stack gets reversed).
-
-    MetaSig msig(pStubMD);
-    ArgIterator argit(&msig);
-
-    UINT dwArgStack = argit.SizeOfArgStack();
-    if (!FitsInU2(dwArgStack))
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
-
-    NewArrayHolder<UINT16> pwStubStackSlotOffsets;
-    UINT16 *pOutputStack = NULL;
-
-    UINT16 wStubStackSlotCount = static_cast<UINT16>(dwArgStack) / TARGET_POINTER_SIZE;
-    if (wStubStackSlotCount > 0)
-    {
-        pwStubStackSlotOffsets = new UINT16[wStubStackSlotCount];
-        pOutputStack = pwStubStackSlotOffsets + wStubStackSlotCount;
-    }
-
-    UINT16 wSourceSlotEDX = (UINT16)-1;
-
-    int numRegistersUsed = 0;
-    UINT16 wInputStack   = 0;
-
-    // process this
-    if (!pStubMD->IsStatic())
-    {
-        numRegistersUsed++;
-        wInputStack += TARGET_POINTER_SIZE;
-    }
-
-    // process the return buffer parameter
-    if (argit.HasRetBuffArg())
-    {
-        numRegistersUsed++;
-        wSourceSlotEDX = wInputStack / TARGET_POINTER_SIZE;
-        wInputStack += TARGET_POINTER_SIZE;
-    }
-
-    // process ordinary parameters
-    for (UINT i = msig.NumFixedArgs(); i > 0; i--)
-    {
-        TypeHandle thValueType;
-        CorElementType type = msig.NextArgNormalized(&thValueType);
-
-        UINT cbSize = MetaSig::GetElemSize(type, thValueType);
-
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
-        {
-            wSourceSlotEDX = wInputStack / TARGET_POINTER_SIZE;
-            wInputStack += TARGET_POINTER_SIZE;
-        }
-        else
-        {
-            // we may need more stack slots for larger parameters
-            UINT slotsCount = StackElemSize(cbSize) / TARGET_POINTER_SIZE;
-            pOutputStack -= slotsCount;
-            for (UINT slot = 0; slot < slotsCount; slot++)
-            {
-                pOutputStack[slot] = wInputStack;
-                wInputStack += TARGET_POINTER_SIZE;
-            }
-        }
-    }
-
-    // write the computed data into this ComCallMethodDesc
-    ExecutableWriterHolder<ComCallMethodDesc> comCallMDWriterHolder(this, sizeof(ComCallMethodDesc));
-    comCallMDWriterHolder.GetRW()->m_dwSlotInfo = (wSourceSlotEDX | (wStubStackSlotCount << 16));
-    if (pwStubStackSlotOffsets != NULL)
-    {
-        if (InterlockedCompareExchangeT(&comCallMDWriterHolder.GetRW()->m_pwStubStackSlotOffsets, pwStubStackSlotOffsets.GetValue(), NULL) == NULL)
-        {
-            pwStubStackSlotOffsets.SuppressRelease();
-        }
-    }
-
-    //
-    // Fill in return thunk with proper native arg size.
-    //
-
-    BYTE *pMethodDescMemoryRX = ((BYTE*)this) + GetOffsetOfReturnThunk();
-    BYTE *pMethodDescMemoryRW = ((BYTE*)comCallMDWriterHolder.GetRW()) + GetOffsetOfReturnThunk();
-
-    //
-    // encodes a "ret nativeArgSize" to return and
-    // pop off the args off the stack
-    //
-    pMethodDescMemoryRW[0] = 0xc2;
-
-    UINT16 nativeArgSize = GetNumStackBytes();
-
-    if (!(nativeArgSize < 0x7fff))
-        COMPlusThrow(kTypeLoadException, IDS_EE_SIGTOOCOMPLEX);
-
-    *(SHORT *)&pMethodDescMemoryRW[1] = nativeArgSize;
-
-    FlushInstructionCache(GetCurrentProcess(), pMethodDescMemoryRX, sizeof pMethodDescMemoryRX[0] + sizeof(SHORT));
-#endif // TARGET_X86
-}
-
 void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
 {
     CONTRACTL
@@ -856,24 +39,14 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
     }
     CONTRACTL_END;
 
-    m_flags = pMD->IsVirtual() ? enum_IsVirtual : 0;
+    m_flags = 0;
 
     m_pMD = pMD;
     m_pInterfaceMD = PTR_MethodDesc(pInterfaceMD);
     m_pILStub = NULL;
 
-#ifdef TARGET_X86
-    m_dwSlotInfo = 0;
-    m_pwStubStackSlotOffsets = NULL;
-#endif // TARGET_X86
-
     // Initialize the native type information size of native stack, native retval flags, etc).
     InitNativeInfo();
-
-    if (pMD->IsEEImpl() && COMDelegate::IsDelegateInvokeMethod(pMD))
-    {
-        m_flags |= enum_IsDelegateInvoke;
-    }
 }
 
 void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
@@ -887,11 +60,6 @@ void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
 
     m_pFD = pFD;
     m_pILStub = NULL;
-
-#ifdef TARGET_X86
-    m_dwSlotInfo = 0;
-    m_pwStubStackSlotOffsets = NULL;
-#endif // TARGET_X86
 
     m_flags = enum_IsFieldCall; // mark the attribute as a field
     m_flags |= isGetter ? enum_IsGetter : 0;
@@ -914,11 +82,10 @@ void ComCallMethodDesc::InitNativeInfo()
     }
     CONTRACT_END;
 
-    m_StackBytes = (UINT16)-1;
-
     EX_TRY
     {
 #ifdef TARGET_X86
+        m_StackBytes = (UINT16)-1;
         // On x86, this method has to compute size of arguments because we need to know size of the native stack
         // to be able to return back to unmanaged code
         UINT16 nativeArgSize;
@@ -1180,164 +347,300 @@ Done:
     RETURN;
 }
 
-SpinLock* ComCall::s_plock=NULL;
-
-//---------------------------------------------------------
-// One-time init
-//---------------------------------------------------------
-/*static*/
-void ComCall::Init()
+namespace
 {
-    CONTRACTL
+    void PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubFlags)
     {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pCMD));
+            PRECONDITION(CheckPointer(pdwStubFlags));
+        }
+        CONTRACTL_END;
 
-    s_plock = new SpinLock();
-    s_plock->Init(LOCK_COMCALL);
-}
+        DWORD dwStubFlags = PINVOKESTUB_FL_COM | PINVOKESTUB_FL_REVERSE_INTEROP;
 
-//
-/*static*/
-void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubFlags)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pCMD));
-        PRECONDITION(CheckPointer(pdwStubFlags));
-    }
-    CONTRACTL_END;
+        BOOL BestFit               = TRUE;
+        BOOL ThrowOnUnmappableChar = FALSE;
 
-    DWORD dwStubFlags = PINVOKESTUB_FL_COM | PINVOKESTUB_FL_REVERSE_INTEROP;
+        if (pCMD->IsFieldCall())
+        {
+            if (pCMD->IsFieldGetter())
+                dwStubFlags |= PINVOKESTUB_FL_FIELDGETTER;
+            else
+                dwStubFlags |= PINVOKESTUB_FL_FIELDSETTER;
 
-    BOOL BestFit               = TRUE;
-    BOOL ThrowOnUnmappableChar = FALSE;
+            FieldDesc *pFD = pCMD->GetFieldDesc();
+            _ASSERTE(IsMemberVisibleFromCom(pFD->GetApproxEnclosingMethodTable(), pFD->GetMemberDef(), mdTokenNil) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
-    if (pCMD->IsFieldCall())
-    {
-        if (pCMD->IsFieldGetter())
-            dwStubFlags |= PINVOKESTUB_FL_FIELDGETTER;
+            MethodTable *pMT = pFD->GetEnclosingMethodTable();
+            ReadBestFitCustomAttribute(pMT->GetModule(), pMT->GetCl(), &BestFit, &ThrowOnUnmappableChar);
+        }
         else
-            dwStubFlags |= PINVOKESTUB_FL_FIELDSETTER;
+        {
+            MethodDesc *pMD = pCMD->GetCallMethodDesc();
+            _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
-        FieldDesc *pFD = pCMD->GetFieldDesc();
-        _ASSERTE(IsMemberVisibleFromCom(pFD->GetApproxEnclosingMethodTable(), pFD->GetMemberDef(), mdTokenNil) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
+            ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
+        }
 
-        MethodTable *pMT = pFD->GetEnclosingMethodTable();
-        ReadBestFitCustomAttribute(pMT->GetModule(), pMT->GetCl(), &BestFit, &ThrowOnUnmappableChar);
+        if (BestFit)
+            dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
+
+        if (ThrowOnUnmappableChar)
+            dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
+
+        //
+        // fill in out param
+        //
+        *pdwStubFlags = dwStubFlags;
     }
-    else
+
+    MethodDesc* GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     {
-        MethodDesc *pMD = pCMD->GetCallMethodDesc();
-        _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pCallMD));
+            PRECONDITION(SF_IsReverseCOMStub(dwStubFlags));
+        }
+        CONTRACTL_END;
 
-        // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-        // are not going to affect the marshaling behavior.
-        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
+        // Get the call signature information
+        StubSigDesc sigDesc(pCallMD);
+
+        return PInvoke::CreateCLRToNativeILStub(&sigDesc,
+                                                (CorNativeLinkType)0,
+                                                (CorNativeLinkFlags)0,
+                                                CallConv::GetDefaultUnmanagedCallingConvention(),
+                                                dwStubFlags);
     }
 
-    if (BestFit)
-        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
+    MethodDesc* GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pFD));
+            PRECONDITION(SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags));
+        }
+        CONTRACTL_END;
 
-    if (ThrowOnUnmappableChar)
-        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
+        PCCOR_SIGNATURE pSig;
+        DWORD           cSig;
 
-    //
-    // fill in out param
-    //
-    *pdwStubFlags = dwStubFlags;
+        // Get the field signature information
+        pFD->GetSig(&pSig, &cSig);
+
+        return PInvoke::CreateFieldAccessILStub(pSig,
+                                                cSig,
+                                                pFD->GetModule(),
+                                                pFD->GetMemberDef(),
+                                                dwStubFlags,
+                                                pFD);
+    }
 }
 
-//---------------------------------------------------------
-// Either creates or retrieves from the cache, a stub to
-// invoke ComCall methods. Each call refcounts the returned stub.
-// This routines throws an exception rather than returning
-// NULL.
-//---------------------------------------------------------
-/*static*/
-PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
+PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppStubMD)
 {
-    CONTRACT (PCODE)
+    CONTRACT(PCODE)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pCMD));
+        PRECONDITION(CheckPointer(ppStubMD));
+        POSTCONDITION(CheckPointer(*ppStubMD));
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
 
-    // The stub style we return is to a single generic stub for method calls and to
-    // a single generic stub for field accesses.  The generic stub parameterizes
-    // its behavior based on the ComCallMethodDesc.
+    MethodDesc * pStubMD;
 
-    PCODE             pTempILStub  = NULL;
-    DWORD             dwStubFlags;
+    if (IsFieldCall())
+    {
+        FieldDesc *pFD = GetFieldDesc();
+        pStubMD = GetILStubMethodDesc(pFD, dwStubFlags);
+    }
+    else
+    {
+        // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
+        MethodDesc *pMD = GetCallMethodDesc();
+        pStubMD = GetILStubMethodDesc(pMD, dwStubFlags);
+    }
 
-    PopulateComCallMethodDesc(pCMD, &dwStubFlags);
+    *ppStubMD = pStubMD;
 
-    MethodDesc *pStubMD;
-    pTempILStub = pCMD->CreateCOMToCLRStub(dwStubFlags, &pStubMD);
+    _ASSERTE(pStubMD->IsILStub());
 
-    // Compute stack layout and prepare the return thunk on x86
-    pCMD->InitRuntimeNativeInfo(pStubMD);
+#ifdef TARGET_X86
+    // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
+    _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
+    m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
+#endif // TARGET_X86
 
-    ExecutableWriterHolder<PCODE> addrOfILStubWriterHolder(pCMD->GetAddrOfILStubField(), sizeof(PCODE));
-    InterlockedCompareExchangeT<PCODE>(addrOfILStubWriterHolder.GetRW(), pTempILStub, NULL);
-
-    RETURN GetEEFuncEntryPoint(GenericComCallStub);
+    RETURN JitILStub(pStubMD);
 }
 
-// Called both at run-time and by NGEN - generates method stub.
-/*static*/
-MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
+PLATFORM_THREAD_LOCAL HRESULT t_ComPreStubLastHResult;
+
+#ifdef TARGET_X86
+PLATFORM_THREAD_LOCAL UINT t_ComPreStubLastStackBytes;
+
+extern "C" HRESULT __stdcall ComPreStubGetLastHResult()
+{
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastHResult;
+}
+
+extern "C" UINT __stdcall ComPreStubGetLastStackBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastStackBytes;
+}
+
+extern "C" int ComStubReturnHResult();
+
+extern "C" BOOL ComStubReturnBool();
+
+extern "C" float ComStubReturnR4NaN();
+
+extern "C" double ComStubReturnR8NaN();
+
+extern "C" void ComStubReturnVoid();
+#else
+namespace
+{
+    int ComStubReturnHResult()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return t_ComPreStubLastHResult;
+    }
+
+    BOOL ComStubReturnBool()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return FALSE;
+    }
+
+    float ComStubReturnR4NaN()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // COMPAT: Use -qNaN as our canonical NaN value.
+        return -std::numeric_limits<float>::quiet_NaN();
+    }
+
+    double ComStubReturnR8NaN()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // COMPAT: Use -qNaN as our canonical NaN value.
+        return -std::numeric_limits<double>::quiet_NaN();
+    }
+
+    void ComStubReturnVoid()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return;
+    }
+}
+#endif
+
+namespace
+{
+    PCODE GetReturnStubForComCallMethodDesc(ComCallMethodDesc *pCMD, HRESULT hr)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_X86
+            t_ComPreStubLastStackBytes = pCMD->GetNumStackBytes();
+#endif
+
+        if (pCMD->IsNativeHResultRetVal())
+        {
+            t_ComPreStubLastHResult = hr;
+            return (PCODE)&ComStubReturnHResult;
+        }
+        else if (pCMD->IsNativeBoolRetVal())
+        {
+            return (PCODE)&ComStubReturnBool;
+        }
+        else if (pCMD->IsNativeR4RetVal())
+        {
+            return (PCODE)&ComStubReturnR4NaN;
+        }
+        else if (pCMD->IsNativeR8RetVal())
+        {
+            return (PCODE)&ComStubReturnR8NaN;
+        }
+        else
+        {
+            return (PCODE)&ComStubReturnVoid;
+        }
+    }
+}
+
+PCODE ComCallUMThunkMarshInfo::GetReturnStubForHResult(HRESULT hr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return GetReturnStubForComCallMethodDesc(m_pCMD, hr);
+}
+
+PCODE ComCallUMThunkMarshInfo::RunTimeInit(bool* pCanSkipPreStub)
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pCallMD));
-        PRECONDITION(SF_IsReverseCOMStub(dwStubFlags));
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
-    // Get the call signature information
-    StubSigDesc sigDesc(pCallMD);
+    // We can't skip the prestub as we need to ensure that we always
+    // return E_OUTOFMEMORY if we are called on a new thread and can't set up
+    // the managed thread object.
+    *pCanSkipPreStub = FALSE;
 
-    return PInvoke::CreateCLRToNativeILStub(&sigDesc,
-                                            (CorNativeLinkType)0,
-                                            (CorNativeLinkFlags)0,
-                                            CallConv::GetDefaultUnmanagedCallingConvention(),
-                                            dwStubFlags);
-}
-
-// Called at run-time - generates field access stub. We don't currently NGEN field access stubs
-// as the scenario is too rare to justify the extra NGEN logic. The workaround is trivial - make
-// the field non-public and add a public property to access it.
-/*static*/
-MethodDesc* ComCall::GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
-{
-    CONTRACTL
+    if (IsCompletelyInited())
     {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-        PRECONDITION(SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags));
+        // The stub is already set up, so we can just return.
+        return GetILStubEntry();
     }
-    CONTRACTL_END;
 
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
+    PCODE pStub = NULL;
 
-    // Get the field signature information
-    pFD->GetSig(&pSig, &cSig);
+    // Transition to cooperative GC mode before we start setting up the stub.
+    GCX_COOP();
 
-    return PInvoke::CreateFieldAccessILStub(pSig,
-                                            cSig,
-                                            pFD->GetModule(),
-                                            pFD->GetMemberDef(),
-                                            dwStubFlags,
-                                            pFD);
+    OBJECTREF pThrowable = NULL;
+    GCPROTECT_BEGIN(pThrowable)
+    {
+        EX_TRY
+        {
+            GCX_PREEMP();
+
+            DWORD             dwStubFlags;
+
+            PopulateComCallMethodDesc(m_pCMD, &dwStubFlags);
+
+            MethodDesc *pStubMD;
+            pStub = SetILStubEntry(m_pCMD->CreateCOMToCLRStub(dwStubFlags, &pStubMD));
+        }
+        EX_CATCH
+        {
+            pThrowable = GET_THROWABLE();
+        }
+        EX_END_CATCH
+
+        if (pThrowable != NULL)
+        {
+            // Transform the exception into an HRESULT. This also sets up
+            // an IErrorInfo on the current thread for the exception.
+            HRESULT hr = SetupErrorInfo(pThrowable);
+            pThrowable = NULL;
+
+            return GetReturnStubForComCallMethodDesc(m_pCMD, hr);
+        }
+    }
+    GCPROTECT_END();
+
+    return pStub;
 }
-
-#endif // DACCESS_COMPILE

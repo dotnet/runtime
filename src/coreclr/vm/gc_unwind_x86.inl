@@ -219,6 +219,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->ebpFrame        = header.ebpFrame;
     infoPtr->interruptible   = header.interruptible;
     infoPtr->returnKind      = (ReturnKind) header.returnKind;
+    infoPtr->isAsync         = header.isAsync;
 
     infoPtr->prologSize      = header.prologSize;
     infoPtr->epilogSize      = header.epilogSize;
@@ -555,7 +556,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 3 : 0) + // Does this method save thread + async contexts?
                         1; // for ebpFrame
     return position * sizeof(TADDR);
 }
@@ -3082,10 +3083,14 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
 #endif
 
-    /* Are we in the prolog or epilog of the method? */
+    /* Are we in the prolog or epilog of the method, or is this a
+     * non-interruptible method that will not resume execution at this offset?
+     * In either case, GC slots may not be initialized at the current offset
+     * and we can simply skip all reporting. */
 
     if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
-        info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        info.epilogOffs != hdrInfo::NOT_IN_EPILOG ||
+        ((flags & ExecutionAborted) && !info.interruptible))
     {
 
 #if !DUMP_PTR_REFS

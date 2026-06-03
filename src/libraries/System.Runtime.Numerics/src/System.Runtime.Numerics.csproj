@@ -10,6 +10,8 @@
   <ItemGroup>
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.Bitwise.cs" />
+    <Compile Include="System\Numerics\BigInteger.RentedBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />

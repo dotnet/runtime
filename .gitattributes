@@ -82,3 +82,5 @@ src/tests/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-in
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input-big.txt text eol=lf
 src/mono/browser/runtime/dotnet.d.ts text eol=lf
 src/native/libs/Common/JavaScript/loader/dotnet.d.ts text eol=lf
+
+.github/workflows/*.lock.yml linguist-generated=true merge=ours

@@ -72,8 +72,8 @@ namespace System.Reflection.TypeLoading
                 if (rank != toTypeInfo.GetArrayRank())
                     return false;
 
-                bool fromTypeIsSzArray = fromTypeInfo.IsSZArray();
-                bool toTypeIsSzArray = toTypeInfo.IsSZArray();
+                bool fromTypeIsSzArray = fromTypeInfo.IsSZArray;
+                bool toTypeIsSzArray = toTypeInfo.IsSZArray;
                 if (fromTypeIsSzArray != toTypeIsSzArray)
                 {
                     // T[] is assignable to T[*] but not vice-versa.

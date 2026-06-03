@@ -20,6 +20,15 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         // r12 currently holds the indirection cell address. We need to get the cache structure instead.
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
+        // Validate r2 is a cache pointer matching the expected cache size.
+        // This compensates for a race where the stub was updated to expect a larger cache
+        // but we loaded a stale (smaller or non-cache) m_pCache value.
+        tst         r2, #IDC_CACHE_POINTER_MASK
+        bne         LOCAL_LABEL(RaceRetry_\entries)
+        ldr         r1, [r2, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        cmp         r1, #\entries
+        bne         LOCAL_LABEL(RaceRetry_\entries)
+
         // Load the MethodTable from the object instance in r0.
         GLOBAL_LABEL RhpInterfaceDispatchAVLocation\entries
         ldr         r1, [r0]
@@ -46,6 +55,14 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         ldr         r1, [sp, #-8]
         ldr         r2, [sp, #-4]
         b           C_FUNC(RhpInterfaceDispatchSlow)
+
+        // Race detected: r12 still holds the indirection cell address (not yet clobbered).
+        // Re-dispatch through the indirection cell to retry with the current stub and cache pair.
+        // ldr pc, [r12] branches to the current m_pStub without clobbering r12.
+LOCAL_LABEL(RaceRetry_\entries):
+        ldr         r1, [sp, #-8]
+        ldr         r2, [sp, #-4]
+        ldr         pc, [r12]
 
         // Common epilog for cache hits. Have to out of line it here due to limitation on the number of
         // epilogs imposed by the unwind code macros.

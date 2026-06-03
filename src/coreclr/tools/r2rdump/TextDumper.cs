@@ -87,6 +87,8 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
+                        if (assemblyIndex >= _r2r.ReadyToRunAssemblyHeaders.Count)
+                            break;
                         Guid mvid = _r2r.GetAssemblyMvid(assemblyIndex);
                         WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName} - MVID {mvid:b}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
@@ -228,26 +230,124 @@ namespace R2RDump
             _writer.WriteLine(rtf.Method.SignatureString);
             rtf.WriteTo(_writer, _model);
 
+            bool isWasm = _r2r.CompositeReader is WebcilImageReader;
+
             if (_model.Disasm)
             {
-                DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
+                if (isWasm)
+                {
+                    DumpWasmDisasm(rtf);
+                }
+                else
+                {
+                    DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
+                }
             }
 
             if (_model.Raw)
             {
-                _writer.WriteLine("Raw Bytes:");
-                DumpBytes(rtf.StartAddress, (uint)rtf.Size);
+                if (isWasm)
+                {
+                    _writer.WriteLine("Raw Bytes: (not available for WASM function indices)");
+                }
+                else
+                {
+                    _writer.WriteLine("Raw Bytes:");
+                    DumpBytes(rtf.StartAddress, (uint)rtf.Size);
+                }
             }
             if (_model.Unwind)
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_model.Raw)
+                if (_model.Raw && !isWasm)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
             }
             SkipLine();
+        }
+
+        private void DumpWasmDisasm(RuntimeFunction rtf)
+        {
+            var webcilReader = (WebcilImageReader)_r2r.CompositeReader;
+            var body = webcilReader.GetWasmFunctionBody(rtf.StartAddress);
+            if (body is null)
+            {
+                _writer.WriteLine($"    ; WASM function index: {rtf.StartAddress} (function body not found)");
+                return;
+            }
+
+            var info = body.Value;
+            _writer.WriteLine($"    ; WASM function index: {rtf.StartAddress}");
+
+            // Print parameters with their local indices
+            int localIdx = 0;
+            if (info.ParamTypes.Count > 0)
+            {
+                _writer.WriteLine("    ; Parameters:");
+                foreach (byte paramType in info.ParamTypes)
+                {
+                    _writer.WriteLine($"    ;   [{localIdx}] {WasmValTypeName(paramType)}");
+                    localIdx++;
+                }
+            }
+
+            // Print locals with their local indices
+            if (info.Locals.Count > 0)
+            {
+                _writer.WriteLine("    ; Locals:");
+                foreach (var (count, valType) in info.Locals)
+                {
+                    string typeName = WasmValTypeName(valType);
+                    for (uint k = 0; k < count; k++)
+                    {
+                        _writer.WriteLine($"    ;   [{localIdx}] {typeName}");
+                        localIdx++;
+                    }
+                }
+            }
+
+            // Print result types
+            if (info.ResultTypes.Count > 0)
+            {
+                string resultStr = string.Join(", ", FormatValTypes(info.ResultTypes));
+                _writer.WriteLine($"    ; Results: {resultStr}");
+            }
+
+            _writer.WriteLine();
+            var disasm = new WasmDisassembler(info.Image, info.InstructionOffset, info.InstructionLength, TryGetImportName);
+            _writer.Write(disasm.Disassemble());
+        }
+
+        private string TryGetImportName(int rva)
+        {
+            if (_r2r.ImportSignatures.TryGetValue(rva, out ReadyToRunSignature signature))
+            {
+                return signature.ToString(_model.SignatureFormattingOptions);
+            }
+            return null;
+        }
+
+        private static IEnumerable<string> FormatValTypes(IReadOnlyList<byte> types)
+        {
+            foreach (byte t in types)
+                yield return WasmValTypeName(t);
+        }
+
+        private static string WasmValTypeName(byte b)
+        {
+            return b switch
+            {
+                0x7F => "i32",
+                0x7E => "i64",
+                0x7D => "f32",
+                0x7C => "f64",
+                0x7B => "v128",
+                0x70 => "funcref",
+                0x6F => "externref",
+                _ => $"0x{b:X2}"
+            };
         }
 
         /// <summary>
@@ -503,6 +603,12 @@ namespace R2RDump
                     int ii2EndOffset = ii2Offset + section.Size;
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
+                    break;
+                case ReadyToRunSectionType.CrossModuleInlineInfo:
+                    int cmiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int cmiEndOffset = cmiOffset + section.Size;
+                    CrossModuleInliningInfoSection crossModuleInliningInfo = new CrossModuleInliningInfoSection(_r2r, cmiOffset, cmiEndOffset);
+                    _writer.WriteLine(crossModuleInliningInfo.ToString());
                     break;
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);

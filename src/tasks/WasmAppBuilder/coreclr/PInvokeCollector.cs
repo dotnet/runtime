@@ -9,8 +9,9 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Tasks;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 #pragma warning disable CA1067
 #pragma warning disable CS0649
@@ -60,6 +61,7 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
+    private readonly Dictionary<Type, bool> _typeUnsupportedOnBrowserCache = new();
     private LogAdapter Log { get; init; }
 
     public PInvokeCollector(LogAdapter log)
@@ -122,6 +124,9 @@ internal sealed class PInvokeCollector {
         bool DoesMethodHaveCallbacks(MethodInfo method, LogAdapter log)
         {
             if (!MethodHasCallbackAttributes(method))
+                return false;
+
+            if (IsUnsupportedOnBrowser(method.DeclaringType))
                 return false;
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
@@ -203,6 +208,50 @@ internal sealed class PInvokeCollector {
             _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
                 .GetCustomAttributesData()
                 .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
+        }
+
+        return value;
+    }
+
+    private bool IsUnsupportedOnBrowser(Type? type)
+    {
+        if (type is null)
+            return false;
+
+        if (!_typeUnsupportedOnBrowserCache.TryGetValue(type, out bool value))
+        {
+            value = false;
+            bool hasSupportedOSPlatform = false;
+            bool hasSupportedBrowser = false;
+            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
+            {
+                try
+                {
+                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
+                        cattr.ConstructorArguments.Count > 0 &&
+                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
+                    {
+                        value = true;
+                        break;
+                    }
+                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
+                        cattr.ConstructorArguments.Count > 0)
+                    {
+                        hasSupportedOSPlatform = true;
+                        if (cattr.ConstructorArguments[0].Value?.ToString() == "browser")
+                            hasSupportedBrowser = true;
+                    }
+                }
+                catch
+                {
+                    // Assembly not found, ignore
+                }
+            }
+
+            if (!value && hasSupportedOSPlatform && !hasSupportedBrowser)
+                value = true;
+
+            _typeUnsupportedOnBrowserCache[type] = value;
         }
 
         return value;

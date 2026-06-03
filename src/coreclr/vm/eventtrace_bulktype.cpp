@@ -19,6 +19,7 @@
 
 #include "eventtracepriv.h"
 
+#ifdef FEATURE_COMINTEROP
 //---------------------------------------------------------------------------------------
 // BulkComLogger: Batches up and logs RCW and CCW
 //---------------------------------------------------------------------------------------
@@ -90,7 +91,6 @@ void BulkComLogger::WriteRcw(RCW *pRcw, Object *obj)
 
     _ASSERTE(m_currRcw < kMaxRcwCount);
 
-#ifdef FEATURE_COMINTEROP
     TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
     if (typeHandle == NULL)
     {
@@ -106,7 +106,6 @@ void BulkComLogger::WriteRcw(RCW *pRcw, Object *obj)
 
     if (++m_currRcw >= kMaxRcwCount)
         FlushRcw();
-#endif
 }
 
 void BulkComLogger::FlushRcw()
@@ -132,16 +131,12 @@ void BulkComLogger::FlushRcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currRcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwRcwData, sizeof(EventRCWEntry) * m_currRcw);
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, ARRAY_SIZE(eventData), eventData);
-#else
-    ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
-#endif // !defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -163,7 +158,6 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
 
     _ASSERTE(m_currCcw < kMaxCcwCount);
 
-#ifdef FEATURE_COMINTEROP
     IUnknown *iUnk = NULL;
     int refCount = 0;
     ULONG flags = 0;
@@ -197,7 +191,6 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
 
     if (m_currCcw >= kMaxCcwCount)
         FlushCcw();
-#endif
 }
 
 void BulkComLogger::FlushCcw()
@@ -223,16 +216,12 @@ void BulkComLogger::FlushCcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currCcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
     EventDataDescCreate(&eventData[2], m_etwCcwData, sizeof(EventCCWEntry) * m_currCcw);
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, ARRAY_SIZE(eventData), eventData);
-#else
-    ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
-#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -366,17 +355,13 @@ void BulkComLogger::AddCcwHandle(Object **handle)
 
     curr->Handles[curr->Count++] = handle;
 }
-
-
-
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------------------
 // BulkStaticsLogger: Batches up and logs static variable roots
 //---------------------------------------------------------------------------------------
 
-
-
-#include "domainassembly.h"
+#include "assembly.hpp"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)
@@ -525,8 +510,8 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            DomainAssembly *domainAssembly = module->GetDomainAssembly();
-            if (domainAssembly == NULL)
+            Assembly *assembly = module->GetAssembly();
+            if (assembly == NULL)
                 continue;
 
             // Ensure the module has fully loaded.
@@ -574,7 +559,7 @@ void BulkStaticsLogger::LogAllStatics()
                     WriteEntry(domain, address, *address, field);
                 } // foreach static field
             }
-        } // foreach domain assembly
+        } // foreach assembly
     } // foreach AppDomain
 } // BulkStaticsLogger::LogAllStatics
 

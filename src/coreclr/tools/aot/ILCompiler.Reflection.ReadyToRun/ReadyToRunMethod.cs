@@ -78,6 +78,27 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int CodeLength { get; set; }
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
         public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
+
+        internal static int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
+        {
+            if (readyToRunMajorVersion == 1)
+                return 1;
+
+            // R2R 2.0+ uses GCInfo v2
+            // R2R 9.2+ uses GCInfo v3
+            if (readyToRunMajorVersion < 9 || (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2))
+                return 2;
+
+            // R2R 11.0+ uses GCInfo v4
+            if (readyToRunMajorVersion < 11)
+                return 3;
+
+            // R2R 21.0+ uses GCInfo v5
+            if (readyToRunMajorVersion < 21)
+                return 4;
+
+            return 5;
+        }
     }
 
     /// <summary>
@@ -405,13 +426,20 @@ namespace ILCompiler.Reflection.ReadyToRun
                     MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
                     if (methodDef.RelativeVirtualAddress != 0)
                     {
-                        System.Diagnostics.Debug.Assert(ComponentReader.ImageReader != null, "Component should be a PE and have an associated PEReader");
-                        MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                        if (!mbb.LocalSignature.IsNil)
+                        ImmutableArray<string> localSig = default;
+                        ComponentReader.GetSectionData(methodDef.RelativeVirtualAddress, (BlobReader sectionData) =>
                         {
-                            StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
-                            LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
-                        }
+                            if (sectionData.Length > 0)
+                            {
+                                MethodBodyBlock mbb = MethodBodyBlock.Create(sectionData);
+                                if (!mbb.LocalSignature.IsNil)
+                                {
+                                    StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                    localSig = ss.DecodeLocalSignature(typeProvider, genericContext);
+                                }
+                            }
+                        });
+                        LocalSignature = localSig;
                     }
                     Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
                     Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
@@ -502,19 +530,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (GcInfoRva != 0)
                 {
                     int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
+                    int gcInfoVersion = BaseGcInfo.ReadyToRunVersionToGcInfoVersion(
+                        _readyToRunReader.ReadyToRunHeader.MajorVersion,
+                        _readyToRunReader.ReadyToRunHeader.MinorVersion);
+
                     if (_readyToRunReader.Machine == Machine.I386)
                     {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset);
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, gcInfoVersion);
                     }
                     else
                     {
                         // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(
-                            _readyToRunReader.ImageReader,
-                            gcInfoOffset,
-                            _readyToRunReader.Machine,
-                            _readyToRunReader.ReadyToRunHeader.MajorVersion,
-                            _readyToRunReader.ReadyToRunHeader.MinorVersion);
+                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcInfoVersion);
                     }
                 }
             }
