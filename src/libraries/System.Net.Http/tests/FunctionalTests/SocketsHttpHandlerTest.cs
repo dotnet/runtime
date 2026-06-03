@@ -3108,11 +3108,6 @@ namespace System.Net.Http.Functional.Tests
 
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
 
-            foreach ((Http2LoopbackConnection conn, int _) in firstStreams)
-            {
-                await conn.DisposeAsync().ConfigureAwait(false);
-            }
-
             server.Dispose();
             await acceptTask.ConfigureAwait(false);
             await Task.WhenAll(connectionTasks).ConfigureAwait(false);
