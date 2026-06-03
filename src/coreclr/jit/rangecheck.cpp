@@ -2278,12 +2278,6 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = Range(Limit(Limit::keUnknown));
         JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
-    // TYP_LONG is not supported anyway.
-    else if (expr->TypeIs(TYP_LONG))
-    {
-        range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRangeWorker long, setting to unknown value.\n");
-    }
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
@@ -2300,6 +2294,12 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             // but this would require more handling in other places to take advantage of.
             range = Limit(Limit::keUnknown);
         }
+    }
+    // TYP_LONG is not supported for other operations.
+    else if (expr->TypeIs(TYP_LONG))
+    {
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRangeWorker long, setting to unknown value.\n");
     }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
