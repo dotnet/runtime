@@ -286,8 +286,15 @@ namespace System.Runtime.CompilerServices
             public static readonly Dictionary<(nint, Type), Delegate> Cache = new();
         }
 
+        // This method is used by the JIT as a helper
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Delegate GetDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType)
+        {
+            return DelegateCache.s_cache.TryGetValue((method, delegateType), out Delegate? value) ? value : CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, delegateType);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        private static TDelegate CreateSharedDelegate<TDelegate>(nint method) where TDelegate : Delegate
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -318,13 +325,13 @@ namespace System.Runtime.CompilerServices
             bool throwIfClosed = closureType is null || closureType.IsValueType ||
                                  (!isStatic && closureType.IsGenericType);
 
-            Delegate newDelegate = CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, (RuntimeType)typeof(TDelegate), ref Unsafe.As<TDelegate?, Delegate?>(ref storage));
+            Delegate newDelegate = CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, (RuntimeType)typeof(TDelegate));
             Debug.Assert(newDelegate is TDelegate);
             return Unsafe.As<TDelegate>(newDelegate);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Delegate CreateSharedDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType, ref Delegate? storage)
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType)
         {
             Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
 
@@ -376,7 +383,7 @@ namespace System.Runtime.CompilerServices
             }
 
             Debug.Assert(newDelegate is not null);
-            return Interlocked.CompareExchange(ref storage, null, newDelegate) ?? newDelegate;
+            return DelegateCache.s_cache.TryAdd((method, delegateType), newDelegate) ? newDelegate : DelegateCache.s_cache[(method, delegateType)];
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

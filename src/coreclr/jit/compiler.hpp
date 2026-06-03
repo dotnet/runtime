@@ -1510,8 +1510,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned  helper,
                                                   GenTree*  arg2,
                                                   GenTree*  arg3,
                                                   GenTree*  arg4,
-                                                  GenTree*  arg5,
-                                                  GenTree*  arg6)
+                                                  GenTree*  arg5)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
@@ -1529,12 +1528,6 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned  helper,
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
-
-    if (arg6 != nullptr)
-    {
-        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg6));
-        result->gtFlags |= arg6->gtFlags & GTF_ALL_EFFECT;
-    }
 
     if (arg5 != nullptr)
     {

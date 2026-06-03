@@ -3667,14 +3667,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 assert(sig->sigInst.methInstCount == 1);
 
-                GenTree* op1 = impStackTop(1).val;
-                if (!op1->OperIs(GT_FTN_ADDR))
+                GenTree* methodPtr = impStackTop().val;
+                if (!methodPtr->OperIs(GT_FTN_ADDR))
                 {
                     JITDUMP("Delegate literals require a direct ftn ptr\n");
                     return nullptr;
                 }
 
-                CORINFO_METHOD_HANDLE targetMethod = op1->AsFptrVal()->gtFptrMethod;
+                CORINFO_METHOD_HANDLE targetMethod = methodPtr->AsFptrVal()->gtFptrMethod;
 
                 CORINFO_SIG_INFO exactSig;
                 info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
@@ -3687,14 +3687,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     JITDUMP("Optimized frozen delegate creation\n");
                     retNode = gtNewIconEmbObjHndNode(delegate);
                     impPopStack();
-                    impPopStack();
                     break;
                 }
 
                 if (IsNativeAot())
                 {
-                    GenTree* op2 = impPopStack().val;
-                    op1          = impPopStack().val;
+                    methodPtr = impPopStack().val;
 
                     CORINFO_SIG_INFO callSig;
                     info.compCompHnd->getMethodSig(targetMethod, &callSig);
@@ -3709,8 +3707,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         info.compCompHnd->getArgType(sig, sig->args, &closureType);
                     }
 
-                    int throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
-
+                    bool throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
                     if (!throwIfClosed && callSig.hasThis())
                     {
                         assert(closureType != NO_CLASS_HANDLE);
@@ -3720,10 +3717,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                         throwIfClosed = state == TypeCompareState::Must;
                     }
-
-                    GenTree* refClone;
-                    op2 = impCloneExpr(op2, &refClone, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("RuntimeHelpers.GetDelegate storage"));
 
                     CORINFO_RESOLVED_TOKEN resolvedToken;
                     resolvedToken.tokenContext = impTokenLookupContextHandle;
@@ -3737,27 +3730,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* delegateTypeLookup =
                         impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(memberRef), embedInfo.compileTimeHandle);
 
-                    unsigned delegateSlot = lvaGrabTemp(false DEBUGARG("delegateSlot"));
-                    impStoreToTemp(delegateSlot, gtNewIndir(TYP_REF, op2), CHECK_SPILL_ALL);
-
-                    GenTreeOp* nullcheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
-
                     GenTreeCall* helper =
-                        gtNewHelperCallNode(CORINFO_HELP_NATIVEAOT_CREATE_SHARED_DELEGATE, TYP_REF, op1,
+                        gtNewHelperCallNode(CORINFO_HELP_NATIVEAOT_GET_DELEGATE, TYP_REF, methodPtr,
                                             gtNewIconNode(callSig.hasThis()), gtNewIconNode(callSig.totalILArgs()),
-                                            gtNewIconNode(throwIfClosed),
+                                            gtNewIconNode(throwIfClosed ? 1 : 0),
                                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
-                                                                delegateTypeLookup),
-                                            refClone);
-                    GenTree* storeSlow = gtNewTempStore(delegateSlot, helper);
+                                                                delegateTypeLookup));
 
-                    GenTreeColon* colon = gtNewColonNode(TYP_VOID, storeSlow, gtNewNothingNode());
-                    GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, nullcheck, colon);
-                    qmark->SetThenNodeLikelihood(0);
+                    INDEBUG(helper->gtRawILOffset = impCurStmtDI.GetLocation().GetOffset());
+                    impConvertToUserCallAndMarkForInlining(helper);
 
-                    impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
-
+                    unsigned delegateSlot = lvaGrabTemp(false DEBUGARG("delegateSlot"));
+                    impStoreToTemp(delegateSlot, gtNewIndir(TYP_REF, helper), CHECK_SPILL_ALL);
                     lvaSetClass(delegateSlot, delegateType, /*isExact*/ false);
+
                     retNode = gtNewLclVarNode(delegateSlot);
                     JITDUMP("Expanded GetDelegate for ilc\n");
                     break;

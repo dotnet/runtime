@@ -761,8 +761,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuation;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_NATIVEAOT_CREATE_SHARED_DELEGATE:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "CreateSharedDelegateHelper"u8, null));
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVEAOT_GET_DELEGATE:
+                    id = ReadyToRunHelper.GetDelegate;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));

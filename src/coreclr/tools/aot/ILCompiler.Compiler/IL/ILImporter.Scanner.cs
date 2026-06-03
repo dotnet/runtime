@@ -603,6 +603,8 @@ namespace Internal.IL
                         _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
                         _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
                     }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetDelegate), reason);
                     // do not return here, we want the method itself rooted too
                 }
 

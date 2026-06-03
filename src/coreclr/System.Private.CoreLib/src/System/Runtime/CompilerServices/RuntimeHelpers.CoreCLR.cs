@@ -236,7 +236,7 @@ namespace System.Runtime.CompilerServices
         private static unsafe partial void CreateDelegate(nint method, MethodTable* pMT, ObjectHandleOnStack objHandle);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method) where TDelegate : Delegate
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -253,7 +253,7 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException();
             }
 
-            return Interlocked.CompareExchange(ref storage, null, newDelegate) ?? newDelegate;
+            return DelegateCache.s_cache.TryAdd((method, Unsafe.As<RuntimeType>(typeof(TDelegate))), newDelegate) ? newDelegate : Unsafe.As<TDelegate>(DelegateCache.s_cache[(method, Unsafe.As<RuntimeType>(typeof(TDelegate)))]);
         }
 
         /// <summary>
