@@ -2029,7 +2029,8 @@ namespace Mono.Linker.Steps
 
                 // A reflection-visible method's DeclaringType is also accessible
                 // (e.g., via MethodBase.DeclaringType). Mark it as reflection-visible.
-                MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
+                if (!Annotations.IsReflectionUsed(methodDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
 
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
@@ -2066,7 +2067,8 @@ namespace Mono.Linker.Steps
 
                 // A reflection-visible field's DeclaringType is also accessible
                 // (e.g., via FieldInfo.DeclaringType). Mark it as reflection-visible.
-                MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
+                if (!Annotations.IsReflectionUsed(fieldDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
 
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
