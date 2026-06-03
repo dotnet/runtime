@@ -63,6 +63,7 @@ namespace System.Net.Security
         internal SslAuthenticationOptions CreateSessionOptions()
         {
             SslAuthenticationOptions sessionOptions = _shareOptions ? _options : _options.Clone();
+            sessionOptions.ForceSyncPal = true;
             AttachSharedNativeContext(sessionOptions);
             return sessionOptions;
         }

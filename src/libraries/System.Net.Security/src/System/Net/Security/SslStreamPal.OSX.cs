@@ -366,6 +366,14 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext(sslAuthenticationOptions);
                 }
 
+                if (context is SafeDeleteNwContext)
+                {
+                    // Network Framework drives the handshake and shutdown internally;
+                    // there is no synchronous token to emit here.
+                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                    return token;
+                }
+
                 Debug.Assert(context is SafeDeleteSslContext, "SafeDeleteSslContext expected");
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)context;
 
@@ -475,9 +483,19 @@ namespace System.Net.Security
         private static bool ShouldUseNetworkFramework(
             SslAuthenticationOptions sslAuthenticationOptions)
         {
+            // Transparently fall back to legacy SecureTransport for any configuration
+            // Network Framework cannot satisfy, instead of throwing PlatformNotSupportedException.
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
+            bool encryptionPolicyOk =
+                sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption ||
+                sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.AllowNoEncryption;
+#pragma warning restore SYSLIB0040
+
             return
-                sslAuthenticationOptions.IsClient &&
                 SafeDeleteNwContext.IsNetworkFrameworkAvailable &&
+                !sslAuthenticationOptions.ForceSyncPal &&
+                encryptionPolicyOk &&
+                (sslAuthenticationOptions.IsClient || sslAuthenticationOptions.CertificateContext != null) &&
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
                     (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)));

@@ -281,9 +281,11 @@ namespace System.Net.Security
 #if TARGET_APPLE
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
-                    Debug.Assert(_sslAuthenticationOptions.IsClient);
                     byte[]? dummy = null;
-                    AcquireClientCredentials(ref dummy, true);
+                    if (_sslAuthenticationOptions.IsClient)
+                    {
+                        AcquireClientCredentials(ref dummy, true);
+                    }
 
                     Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
@@ -299,6 +301,10 @@ namespace System.Net.Security
 
                     CompleteHandshake(_sslAuthenticationOptions);
                     return;
+                }
+                else
+                {
+                    _sslAuthenticationOptions.ForceSyncPal = true;
                 }
 #endif // TARGET_APPLE
 

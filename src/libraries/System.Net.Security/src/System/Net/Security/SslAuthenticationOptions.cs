@@ -223,6 +223,7 @@ namespace System.Net.Security
                 AllowTlsResume = AllowTlsResume,
                 AllowRsaPssPadding = AllowRsaPssPadding,
                 AllowRsaPkcs1Padding = AllowRsaPkcs1Padding,
+                ForceSyncPal = ForceSyncPal,
             };
             return copy;
         }
@@ -252,6 +253,9 @@ namespace System.Net.Security
         internal bool AllowTlsResume { get; set; }
         internal bool AllowRsaPssPadding { get; set; }
         internal bool AllowRsaPkcs1Padding { get; set; }
+        // Set by callers (e.g. TlsSession) whose state machine is intrinsically synchronous
+        // and cannot use the async Network Framework PAL path on macOS.
+        internal bool ForceSyncPal { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
