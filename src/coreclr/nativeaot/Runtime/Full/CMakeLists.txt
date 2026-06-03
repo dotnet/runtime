@@ -23,12 +23,16 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
+  if(NOT CMAKE_OBJCOPY)
+    message(FATAL_ERROR "CMAKE_OBJCOPY is required to privatize NativeAOT libunwind symbols")
+  endif()
+
   add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
-  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER MATCHES "llvm-link(\\.exe)?$")
+  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER MATCHES "(^|/)llvm-link(-[0-9.]+)?(\\.exe)?$")
     get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${CMAKE_NM}" DIRECTORY)
     set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR}/ld.lld")
   endif()
@@ -45,7 +49,10 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
     COMMAND "${CMAKE_OBJCOPY}"
             "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    DEPENDS Runtime.PrivateLibunwind $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
+    DEPENDS
+      Runtime.PrivateLibunwind
+      $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
+      "${CMAKE_CURRENT_LIST_DIR}/GeneratePrivateLibunwindSymbols.cmake"
     BYPRODUCTS "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
     COMMENT "Privatizing NativeAOT libunwind symbols"
     COMMAND_EXPAND_LISTS

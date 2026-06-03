@@ -43,14 +43,6 @@ foreach(OBJECT_FILE IN LISTS OBJECT_FILE_LIST)
 
     list(GET NM_FIELDS 2 SYMBOL_NAME)
 
-    # UnwindHelpers.cpp is linked into the private libunwind object because it
-    # instantiates libunwind templates and references libunwind assembly
-    # helpers. Its public runtime entrypoints must remain externally visible to
-    # UnixNativeCodeManager.cpp.
-    if(SYMBOL_NAME MATCHES "^_ZN13UnwindHelpers")
-      continue()
-    endif()
-
     list(APPEND SYMBOLS "${SYMBOL_NAME}")
   endforeach()
 endforeach()
