@@ -217,6 +217,10 @@ namespace System.Net.Security.Tests
 
                 await server.NegotiateClientCertificateAsync(cts.Token);
 
+                // Finish the client's read.
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+
                 // no client certificate is offered/sent
                 Assert.Null(server.RemoteCertificate);
             }
