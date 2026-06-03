@@ -3035,7 +3035,7 @@ namespace System.Net.Http.Functional.Tests
             const int MaxConcurrentStreams = 1;
             const int RequestCount = 10;
 
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             server.AllowMultipleConnections = true;
 
             using SocketsHttpHandler handler = CreateHandler();
@@ -3078,7 +3078,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
-            _ = Task.Run(async () =>
+            Task acceptTask = Task.Run(async () =>
             {
                 try
                 {
@@ -3113,6 +3113,8 @@ namespace System.Net.Http.Functional.Tests
                 await conn.DisposeAsync().ConfigureAwait(false);
             }
 
+            server.Dispose();
+            await acceptTask.ConfigureAwait(false);
             await Task.WhenAll(connectionTasks).ConfigureAwait(false);
         }
 
