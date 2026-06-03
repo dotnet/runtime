@@ -1553,6 +1553,114 @@ namespace System.Threading.Tasks.Tests
             Assert.True(bufferCount >= 3, $"Expected at least 3 buffer flushes, got {bufferCount}");
         }
 
+        // --- Single-threaded compatible test ---
+        // Validates that V1 dispatcher events fire correctly on platforms without threading
+        // support (single-threaded WASM). Uses TaskCompletionSource as a deterministic
+        // suspension/resume primitive instead of Task.Delay / Task.Run, so the test runs
+        // cleanly on the single-threaded runtime.
+        //
+        // The chain suspends on `await gate`; SetResult drives synchronous resumption that
+        // unwinds the entire chain in-order on the calling thread. This exercises the V1
+        // inline-cascade code path (1 Create for the whole chain, full callstack reconstruction).
+        //
+        // Coverage in one test: Create/Resume/Complete events fire, callstack reconstruction
+        // works across all chain levels, marker frame visibility, no double-wrap, balanced
+        // Create/Complete (no leaks). The IsRuntimeAsyncSupported gate (looser than the
+        // IsRuntimeAsyncAndThreadingSupported gate used by the rest of the V1 suite) lets this
+        // test run on single-threaded WASM.
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static async Task TaskAsync_SingleThreadInner(Task gate)
+        {
+            await gate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static async Task TaskAsync_SingleThreadMid(Task gate)
+        {
+            await TaskAsync_SingleThreadInner(gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static async Task TaskAsync_SingleThreadMarker(Task gate)
+        {
+            await TaskAsync_SingleThreadMid(gate);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task TaskAsync_SingleThreadCompatible_ChainEventsAndCallstack()
+        {
+            var events = await CollectEventsAsync(ResumeAsyncCallstackKeyword | CoreKeywords | MethodKeywords, async () =>
+            {
+                var tcs = new TaskCompletionSource();
+                Task chain = TaskAsync_SingleThreadMarker(tcs.Task);
+                // chain is now suspended: Inner awaits gate, Mid awaits Inner, Marker awaits Mid.
+                // SetResult (default, NOT RunContinuationsAsynchronously which requires ThreadPool)
+                // runs continuations synchronously inline on this thread, driving the entire chain
+                // to completion in-order without involving any timer or worker thread.
+                tcs.SetResult();
+                await chain;
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // The marker frame must appear in a Resume callstack — proves the chain was walkable.
+            var markerCallstacks = stream.MergedResumeCallstacksWithMarker(nameof(TaskAsync_SingleThreadMarker));
+            Assert.True(markerCallstacks.Count > 0,
+                $"Expected at least one Resume callstack containing {nameof(TaskAsync_SingleThreadMarker)}");
+
+            // All 3 chain frames must be reconstructable in the deepest callstack — proves the
+            // inline-cascade walker crosses every level without dropping any.
+            var deepest = markerCallstacks.MaxBy(cs => cs.FrameCount)!;
+            var frameNames = deepest.Frames
+                .Select(f => GetMethodNameFromMethodId(deepest.CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+            Assert.Contains(nameof(TaskAsync_SingleThreadInner), frameNames);
+            Assert.Contains(nameof(TaskAsync_SingleThreadMid), frameNames);
+            Assert.Contains(nameof(TaskAsync_SingleThreadMarker), frameNames);
+
+            // No dispatcher leak: every Create balanced by a Complete on the synchronous cascade path.
+            int createCount = stream.OfType(AsyncEventID.CreateAsyncContext).Count();
+            int completeCount = stream.OfType(AsyncEventID.CompleteAsyncContext).Count();
+            Assert.Equal(createCount, completeCount);
+
+            // Inline-cascade optimization: exactly 1 Create for the entire chain (the leaf's
+            // non-box TCS wrapping). A regression that re-introduced per-level wrapping would
+            // push this higher. This is the same strong invariant as the ConfigureAwait(false)
+            // test, validated here on the single-threaded code path.
+            Assert.Equal(1, createCount);
+
+            // Method-level instrumentation: each async method's MoveNext invocation emits a
+            // Resume/Complete pair (distinct from the dispatcher-level Resume/Complete events
+            // above). For our 3-method chain, every method must fire at least one Resume and
+            // at least one Complete.
+            int methodResumeCount = stream.OfType(AsyncEventID.ResumeAsyncMethod).Count();
+            int methodCompleteCount = stream.OfType(AsyncEventID.CompleteAsyncMethod).Count();
+            Assert.True(methodResumeCount >= 3,
+                $"Expected at least 3 ResumeAsyncMethod events (one per chain level), got {methodResumeCount}");
+            Assert.True(methodCompleteCount >= 3,
+                $"Expected at least 3 CompleteAsyncMethod events (one per chain level), got {methodCompleteCount}");
+
+            // Method-level events should be balanced: every method resume must have a matching
+            // complete on this synchronous, exception-free path.
+            Assert.Equal(methodResumeCount, methodCompleteCount);
+
+            // No AppendAsyncCallstack events should be emitted in this scenario. The original
+            // Resume callstack already contained the full 3-frame chain (Inner -> Mid -> Marker),
+            // and Marker's parent chain never grew during the synchronous cascade (the test never
+            // awaits Marker's task before the cascade completes). Any Append here would be a
+            // regression of the duplicate-emission bug where the entering-box overload of
+            // Append re-emitted the LastContinuation box that was already in the trace.
+            int appendCount = stream.OfType(AsyncEventID.AppendAsyncCallstack).Count();
+            Assert.Equal(0, appendCount);
+        }
+
         // --- ConfigureAwait(false) chain test ---
         // Validates that ConfigureAwait(false) at every level of a chain does NOT break the
         // dispatcher cascade or cause the box to be wrapped more than once. ConfigureAwait(false)
