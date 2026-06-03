@@ -81,6 +81,117 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // Two consecutive handshakes against the same TlsContext / SslStream client
+        // pair. With AllowTlsResume=true (default), the second handshake should resume
+        // and transfer significantly fewer bytes than the first (no Certificate
+        // message, abbreviated key exchange). With AllowTlsResume=false the byte
+        // counts must be similar.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [InlineData(SslProtocols.Tls12, true)]
+        [InlineData(SslProtocols.Tls12, false)]
+        [InlineData(SslProtocols.Tls13, true)]
+        [InlineData(SslProtocols.Tls13, false)]
+        public async Task ServerSession_TlsResume_HonorsAllowTlsResumeOption(SslProtocols protocol, bool allowResume)
+        {
+            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            {
+                return;
+            }
+
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using TlsContext serverCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = protocol,
+                ClientCertificateRequired = false,
+                AllowTlsResume = allowResume,
+            });
+
+            long bytes1 = await MeasureHandshakeBytesAsync(serverCtx, serverName, protocol);
+            long bytes2 = await MeasureHandshakeBytesAsync(serverCtx, serverName, protocol);
+
+            if (allowResume)
+            {
+                // Resumption omits the server Certificate (~1KB+ for the test cert) plus
+                // the full key-exchange / cert-verify sequence on TLS 1.2. 60% headroom.
+                Assert.True(bytes2 < bytes1 * 0.6,
+                    $"Expected resumed handshake to be much smaller. first={bytes1} second={bytes2}");
+            }
+            else
+            {
+                // No resume: byte counts must be within ~25% of each other.
+                long diff = Math.Abs(bytes2 - bytes1);
+                Assert.True(diff < bytes1 / 4,
+                    $"Expected similar handshake sizes when resume disabled. first={bytes1} second={bytes2}");
+            }
+        }
+
+        private static async Task<long> MeasureHandshakeBytesAsync(TlsContext serverCtx, string serverName, SslProtocols protocol)
+        {
+            (Socket cs, Socket ss) = await CreateLoopbackSocketPairAsync();
+            using (cs)
+            using (ss)
+            {
+                var counter = new ByteCountingStream(new NetworkStream(ss, ownsSocket: false));
+                using var clientStream = new NetworkStream(cs, ownsSocket: false);
+                using var clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+                using TlsSession session = TlsSession.Create(serverCtx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = protocol,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, counter);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Round-trip a byte so any TLS 1.3 NewSessionTicket records are flushed
+                // and counted before the connection tears down.
+                await clientSsl.WriteAsync(new byte[] { 0xAB });
+                byte[] scratch = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                try
+                {
+                    byte[] received = await ReadOnePlaintextRecordAsync(session, counter, expectedLength: 1);
+                    Assert.Equal(0xAB, received[0]);
+                    await WritePlaintextAsync(session, counter, new byte[] { 0xCD });
+                    byte[] rx = new byte[1];
+                    int n = await clientSsl.ReadAsync(rx);
+                    Assert.Equal(1, n);
+                    Assert.Equal(0xCD, rx[0]);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(scratch);
+                }
+
+                return counter.BytesRead + counter.BytesWritten;
+            }
+        }
+
+        private sealed class ByteCountingStream : Stream
+        {
+            private readonly Stream _inner;
+            public long BytesRead;
+            public long BytesWritten;
+            public ByteCountingStream(Stream inner) { _inner = inner; }
+            public override bool CanRead => _inner.CanRead;
+            public override bool CanWrite => _inner.CanWrite;
+            public override bool CanSeek => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() => _inner.Flush();
+            public override Task FlushAsync(CancellationToken ct) => _inner.FlushAsync(ct);
+            public override long Seek(long o, SeekOrigin r) => throw new NotSupportedException();
+            public override void SetLength(long v) => throw new NotSupportedException();
+            public override int Read(byte[] b, int o, int c) { int n = _inner.Read(b, o, c); BytesRead += n; return n; }
+            public override async ValueTask<int> ReadAsync(Memory<byte> m, CancellationToken ct = default) { int n = await _inner.ReadAsync(m, ct); BytesRead += n; return n; }
+            public override void Write(byte[] b, int o, int c) { _inner.Write(b, o, c); BytesWritten += c; }
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> m, CancellationToken ct = default) { await _inner.WriteAsync(m, ct); BytesWritten += m.Length; }
+        }
+
         [Fact]
         public void TlsContext_NullServerOptions_DefersResolution()
         {
