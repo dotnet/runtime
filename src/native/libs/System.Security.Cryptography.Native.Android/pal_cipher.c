@@ -76,27 +76,23 @@ ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
     return make_java_string(env, type->name);
 }
 
-ARGS_NON_NULL_ALL static int32_t CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch)
+ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch)
 {
-    jthrowable ex = NULL;
+    bool result = false;
+    INIT_LOCALS(loc, ex);
 
-    if (TryGetJNIException(env, &ex, false))
+    if (TryGetJNIException(env, &loc[ex], /* printException: */ false))
     {
-        if (ex == NULL)
-        {
-            return FAIL;
-        }
+        result = true;
 
-        if ((*env)->IsInstanceOf(env, ex, g_AEADBadTagExceptionClass))
+        if (loc[ex] != NULL && (*env)->IsInstanceOf(env, loc[ex], g_AEADBadTagExceptionClass))
         {
             *authTagMismatch = 1;
         }
-
-        (*env)->DeleteLocalRef(env, ex);
-        return FAIL;
     }
 
-    return SUCCESS;
+    RELEASE_LOCALS(loc, env);
+    return result;
 }
 
 int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type)
@@ -270,33 +266,8 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
 
 int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
 {
-    if (!ctx)
-        return FAIL;
-
-    if (!outl && !in)
-        // it means caller wants us to record "inl" but we don't need it.
-        return SUCCESS;
-
-    abort_if_invalid_pointer_argument(outl);
-    abort_if_invalid_pointer_argument(in);
-
-    JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
-
-    *outl = 0;
-    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
-
-    if (outDataBytes && outm)
-    {
-        jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
-        *outl = outDataBytesLen;
-        (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
-        (*env)->DeleteLocalRef(env, outDataBytes);
-    }
-
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    int32_t authTagMismatch = 0;
+    return AndroidCryptoNative_AeadCipherUpdate(ctx, outm, outl, in, inl, &authTagMismatch);
 }
 
 int32_t AndroidCryptoNative_AeadCipherUpdate(
@@ -316,29 +287,34 @@ int32_t AndroidCryptoNative_AeadCipherUpdate(
     abort_if_invalid_pointer_argument(outl);
     abort_if_invalid_pointer_argument(in);
 
+    int32_t result = FAIL;
+    INIT_LOCALS(loc, inDataBytes, outDataBytes);
+
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     *outl = 0;
-    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
-
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch) != SUCCESS)
+    loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch))
     {
-        (*env)->DeleteLocalRef(env, inDataBytes);
-        return FAIL;
+        goto cleanup;
     }
 
-    if (outDataBytes && outm)
+    if (loc[outDataBytes] && outm)
     {
-        jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
+        jsize outDataBytesLen = (*env)->GetArrayLength(env, loc[outDataBytes]);
         *outl = outDataBytesLen;
-        (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
-        (*env)->DeleteLocalRef(env, outDataBytes);
+        (*env)->GetByteArrayRegion(env, loc[outDataBytes], 0, outDataBytesLen, (jbyte*) outm);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch);
+    result = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return result;
 }
 
 int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl)
@@ -381,7 +357,7 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
 
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
 
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch) != SUCCESS)
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch))
     {
         return FAIL;
     }
