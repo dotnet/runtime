@@ -20,10 +20,10 @@ namespace CrashReportStringUtils
         size_t bufferSize,
         const char* value);
 
-    // Appends value to buffer starting at *pos, advancing *pos past the appended
-    // characters, and always null-terminates. Returns false (without advancing
-    // past the buffer) if the value did not fit, the arguments are invalid, or
-    // bufferSize is 0.
+    // Appends value to buffer starting at *pos, copying as much as fits, advancing
+    // *pos past the characters actually written, and always null-terminating.
+    // Returns true if the entire value fit; returns false if the value was
+    // truncated, the arguments are invalid, or bufferSize is 0.
     bool AppendString(
         char* buffer,
         size_t bufferSize,
