@@ -49,7 +49,13 @@ namespace System.Net.Security
                     {
                         // allowCached:false bypasses the global SslContextCacheKey lookup;
                         // the handle returned is exclusively owned by this TlsContext.
-                        ctx = Interop.OpenSsl.GetOrCreateSslContextHandle(sessionOptions, allowCached: false);
+                        // enableResume honors the AllowTlsResume option on the bag so
+                        // server-side session resume works against this owned SSL_CTX.
+                        bool enableResume = sessionOptions.AllowTlsResume
+                            && !LocalAppContextSwitches.DisableTlsResume
+                            && sessionOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption
+                            && sessionOptions.CipherSuitesPolicy == null;
+                        ctx = Interop.OpenSsl.GetOrCreateSslContextHandle(sessionOptions, allowCached: false, enableResume: enableResume);
                         _sslContext = ctx;
                     }
                 }
