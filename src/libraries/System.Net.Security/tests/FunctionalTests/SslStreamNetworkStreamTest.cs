@@ -223,6 +223,11 @@ namespace System.Net.Security.Tests
 
                 // no client certificate is offered/sent
                 Assert.Null(server.RemoteCertificate);
+
+                // Stream should remain usable when post-handshake auth is not offered.
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+                Assert.Null(server.RemoteCertificate);
             }
         }
 
