@@ -10,6 +10,8 @@ using Xunit;
 
 public class ElidedBoundsChecks
 {
+    private static readonly bool IsMonoRuntime = Type.GetType("Mono.Runtime") is not null;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ComplexBinaryOperators(byte inData)
     {
@@ -354,7 +356,10 @@ public class ElidedBoundsChecks
         // between two array checks must act as a barrier: a[0]'s check must not
         // be strengthened across it, otherwise a short array would observe
         // IndexOutOfRangeException instead of ArgumentOutOfRangeException.
-        if (Vector128.IsHardwareAccelerated)
+        // The contiguous Vector128.Create -> single SIMD load recognition and the
+        // bounds-check coalescing being validated here are RyuJIT-specific, so
+        // only assert the exact exception type on CoreCLR.
+        if (!IsMonoRuntime && Vector128.IsHardwareAccelerated)
         {
             if (SimdLoadBetweenBCs(new float[8]) != 0f)
                 return 0;
