@@ -288,15 +288,10 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     optOptimizeBoolsUpdateTrees();
 
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
-               m_b1->bbNum, m_b2->bbNum);
-        m_compiler->gtDispStmt(s1);
-        printf("\n");
-    }
-#endif
+    JITDUMP("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
+            m_b1->bbNum, m_b2->bbNum);
+    DISPSTMT(s1);
+    JITDUMP("\n");
 
     // Return true to continue the bool optimization for the rest of the BB chain
     return true;
@@ -1220,7 +1215,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
             if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
             {
-                JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                JITDUMP("optOptimizeBoolsUpdateTrees: Profile needs to be propagated through " FMT_BB
                         "'s successors. Data %s inconsistent.\n",
                         m_b1->bbNum, m_compiler->fgPgoConsistent ? "is now" : "was already");
                 m_compiler->fgPgoConsistent = false;
@@ -1268,8 +1263,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     {
         return;
     }
-    GenTree* relop  = test.compTree;
-    bool     isBool = test.isBool;
+    GenTree* relop = test.compTree;
 
     if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF))
     {
@@ -1397,17 +1391,13 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 PhaseStatus Compiler::optOptimizeBools()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optOptimizeBools()\n");
-    }
-#endif
+    JITDUMP("*************** In optOptimizeBools()\n");
+
     bool         change    = false;
     bool         retry     = false;
     unsigned     numCond   = 0;
     unsigned     numPasses = 0;
-    unsigned     stress    = false;
+    bool         stress    = false;
     BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
     BitVec       ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
 
