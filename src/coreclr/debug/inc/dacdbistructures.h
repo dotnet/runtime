@@ -664,19 +664,19 @@ public:
     BOOL OkToGetOrSetStaticAddress();
 
     // If this is an instance field, store its offset
-    void SetInstanceOffset( SIZE_T offset );
+    void SetInstanceOffset( ULONG64 offset );
 
     // If this is a "normal" static, store its absolute address
-    void SetStaticAddress( TADDR addr );
+    void SetStaticAddress( CORDB_ADDRESS addr );
 
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    SIZE_T  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset();
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    TADDR GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress();
 
 //
 // Data members
@@ -696,11 +696,11 @@ public:
 
 private:
     // The m_fldInstanceOffset and m_pFldStaticAddress are mutually exclusive. Only one is ever set at a time.
-    SIZE_T          m_fldInstanceOffset;      // The offset of a field within an object instance
+    ULONG64         m_fldInstanceOffset;      // The offset of a field within an object instance
                                               // For EnC fields, this isn't actually within the object instance,
                                               // but has been cooked to still be relative to the beginning of
                                               // the object.
-    TADDR           m_pFldStaticAddress;      // The absolute target address of a static field
+    CORDB_ADDRESS   m_pFldStaticAddress;      // The absolute target address of a static field
 
     PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
                                               // NEVER BE ACCESSED DIRECTLY!
