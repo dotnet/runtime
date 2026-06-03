@@ -79,7 +79,8 @@ namespace System.Diagnostics
         /// listener to sources that now match and detaching from sources that no longer match. Call this after mutating
         /// <see cref="ShouldListenTo"/> or any state captured by its callback (for example, when configuration changes
         /// alter the rules used by the predicate). If the listener has not yet been registered, it is registered as part
-        /// of the refresh; calling this on a disposed listener has no effect.
+        /// of the refresh; calling this on a disposed listener has no effect, including when the disposal races with
+        /// the refresh.
         /// </summary>
         public void RefreshSources()
         {
@@ -96,8 +97,18 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
+            if (Volatile.Read(ref _disposed))
+            {
+                return;
+            }
+
+            // The flag must be published before the cleanup walks so that a concurrent
+            // RefreshSources observes IsDisposed via its post-commit recheck and undoes
+            // any attachments it raced into place.
             Volatile.Write(ref _disposed, true);
             ActivitySource.DetachListener(this);
         }
+
+        internal bool IsDisposed => Volatile.Read(ref _disposed);
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Microsoft.Extensions.Diagnostics.Tracing
 {
     /// <summary>
-    /// Configures the tracing system by registering <see cref="ActivityListener"/> implementations and using
+    /// Configures the tracing system by registering <see cref="System.Diagnostics.ActivityListener"/> instances and using
     /// rules to determine which <see cref="System.Diagnostics.ActivitySource"/> and <see cref="System.Diagnostics.Activity"/>
     /// instances are enabled.
     /// </summary>

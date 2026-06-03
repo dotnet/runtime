@@ -391,9 +391,14 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(listener);
 
+            // Register first so any ActivitySource constructed after this point sees us
+            // in s_allListeners and self-attaches via its own walk (see the ActivitySource
+            // ctor walking s_allListeners). Without this, a source created during the
+            // iteration below could be missed by both us and itself.
             s_allListeners.AddIfNotExist(listener);
 
-            s_activeSources.EnumWithAction((source, obj) => {
+            s_activeSources.EnumWithAction((source, obj) =>
+            {
                 var ls = (ActivityListener)obj;
                 if (ls.ShouldListenTo?.Invoke(source) ?? false)
                 {
@@ -404,6 +409,15 @@ namespace System.Diagnostics
                     source.RemoveListener(ls);
                 }
             }, listener);
+
+            // If Dispose ran concurrently it may have walked some sources before we
+            // attached to them, leaving the listener resurrected. Re-run the same
+            // cleanup Dispose performs; every per-list op is idempotent, so racing
+            // Dispose's walk per source is safe regardless of order.
+            if (listener.IsDisposed)
+            {
+                DetachListener(listener);
+            }
         }
 
         internal delegate void Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext);

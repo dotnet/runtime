@@ -201,6 +201,46 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesLosesRaceWithConcurrentDispose()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new ActivitySource("RefreshDisposeRaceSource");
+
+                using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
+                using ManualResetEventSlim disposeFinished = new ManualResetEventSlim();
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource =>
+                    {
+                        if (ReferenceEquals(source, activitySource))
+                        {
+                            insideShouldListenTo.Set();
+                            // Block phase 1 until the main thread has fully disposed the listener.
+                            disposeFinished.Wait();
+                            return true;
+                        }
+                        return false;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                Task refresher = Task.Run(() => listener.RefreshSources());
+
+                insideShouldListenTo.Wait();
+                listener.Dispose();
+                disposeFinished.Set();
+
+                refresher.Wait();
+
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("after-dispose-during-refresh"));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartActivityWithNoListener()
         {
             RemoteExecutor.Invoke(() => {

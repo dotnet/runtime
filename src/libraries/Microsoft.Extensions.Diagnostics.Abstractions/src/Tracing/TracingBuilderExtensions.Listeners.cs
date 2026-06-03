@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -15,11 +14,10 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     public static partial class TracingBuilderExtensions
     {
         /// <summary>
-        /// Registers a new <see cref="ActivityListener"/> of type <typeparamref name="T"/>.
+        /// Registers a new <see cref="ActivityListener"/> using the supplied factory to materialise the instance from the service provider.
         /// </summary>
-        /// <typeparam name="T">The implementation type of the listener.</typeparam>
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
-        /// <param name="factory">A factory function to create the listener instance.</param>
+        /// <param name="factory">A factory function that produces the listener instance.</param>
         /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
         public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, ActivityListener> factory)
         {
