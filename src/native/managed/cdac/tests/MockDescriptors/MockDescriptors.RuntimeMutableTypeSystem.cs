@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -16,10 +17,35 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// </summary>
 internal sealed class MockEnCModule : TypedView
 {
-    private const string EnCClassListFieldName = "EnCClassList";
+    private const string EnCClassListFieldName = nameof(Data.Module.EnCClassList);
 
     public static Layout<MockEnCModule> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("Module", architecture)
+            // Data.Module is read in full by ProcessedData.GetOrAdd<Module>, which requires
+            // every non-nullable [Field] / [FieldAddress] to be present in the layout. The
+            // RuntimeMutableTypeSystem tests only inspect EnCClassList, so all other fields
+            // are present at zero offsets and left at default (zero) values.
+            .AddPointerField(nameof(Data.Module.Assembly))
+            .AddPointerField(nameof(Data.Module.PEAssembly))
+            .AddUInt32Field(nameof(Data.Module.Flags))
+            .AddPointerField(nameof(Data.Module.Base))
+            .AddPointerField(nameof(Data.Module.LoaderAllocator))
+            .AddPointerField(nameof(Data.Module.DynamicMetadata))
+            .AddPointerField(nameof(Data.Module.SimpleName))
+            .AddPointerField(nameof(Data.Module.Path))
+            .AddPointerField(nameof(Data.Module.FileName))
+            .AddPointerField(nameof(Data.Module.ReadyToRunInfo))
+            .AddPointerField(nameof(Data.Module.GrowableSymbolStream))
+            .AddPointerField(nameof(Data.Module.AvailableTypeParams))
+            .AddPointerField(nameof(Data.Module.InstMethodHashTable))
+            .AddPointerField(nameof(Data.Module.FieldDefToDescMap))
+            .AddPointerField(nameof(Data.Module.ManifestModuleReferencesMap))
+            .AddPointerField(nameof(Data.Module.MemberRefToDescMap))
+            .AddPointerField(nameof(Data.Module.MethodDefToDescMap))
+            .AddPointerField(nameof(Data.Module.TypeDefToMethodTableMap))
+            .AddPointerField(nameof(Data.Module.TypeRefToMethodTableMap))
+            .AddPointerField(nameof(Data.Module.MethodDefToILCodeVersioningStateMap))
+            .AddPointerField(nameof(Data.Module.DynamicILBlobTable))
             .AddField(EnCClassListFieldName, MockUnorderedArrayBase.GetSize(architecture))
             .Build<MockEnCModule>();
 
