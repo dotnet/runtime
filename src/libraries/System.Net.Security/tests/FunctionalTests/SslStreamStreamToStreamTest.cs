@@ -759,7 +759,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestConfiguration), nameof(TestConfiguration.SupportsRenegotiation))]
         public async Task MalformedPacketsDuringHandshake_ThrowsAuthenticationException()
         {
             (Stream client, Stream server) = TestHelper.GetConnectedStreams();
