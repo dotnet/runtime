@@ -36,7 +36,7 @@ internal static class Emitter
         sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Contracts;");
         if (needsGeneratedUsing)
         {
-            // LayoutPair and TypeNameResolver are emitted by the generator
+            // LayoutSet and TypeNameResolver are emitted by the generator
             // via RegisterPostInitializationOutput into this namespace.
             sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Generated;");
         }
@@ -51,7 +51,7 @@ internal static class Emitter
         sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
-        // Emit a static _typeNames array for LayoutPair.Resolve and TypeHandle resolution.
+        // Emit a static _typeNames array for LayoutSet.Resolve and TypeHandle resolution.
         if (model.Names.Count > 0)
         {
             string namesLiteral = NamesArrayLiteral(model.Names);
@@ -134,7 +134,7 @@ internal static class Emitter
 
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(_target, _typeNames);");
+        sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(_target, _typeNames);");
         sb.AppendLine($"        layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
@@ -176,7 +176,7 @@ internal static class Emitter
         if (needsDescriptor)
         {
             sb.AppendLine();
-            sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(target, _typeNames);");
+            sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
         }
         sb.AppendLine();
 

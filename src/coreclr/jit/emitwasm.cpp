@@ -858,7 +858,9 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    return emitOutputPaddedReloc(destination);
+    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
+    // so we don't need to write anything else here.
+    return PADDED_RELOC_SIZE;
 }
 
 size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)

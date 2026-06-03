@@ -32,7 +32,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _methodTables.Clear();
         _methodDescs.Clear();

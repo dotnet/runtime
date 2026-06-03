@@ -1,19 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    cDAC source generator. Lives under gen/ so the auto-detect rule in
+    Directory.Build.props sets IsGeneratorProject=true, which imports
+    eng/generatorProjects.targets (defines GetAnalyzerPackFiles, used by
+    PackAsAnalyzer="true" in consuming packages).
+  -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader.DataGenerator</RootNamespace>
     <Nullable>enable</Nullable>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <!-- Generator ships inline with the consuming assembly; not a standalone package. -->
+    <!-- Generator does not ship on its own; flows inside the Abstractions
+         transport package as an analyzer asset and is linked directly by
+         Contracts via ProjectReference OutputItemType="Analyzer". -->
     <IsShipping>false</IsShipping>
     <IsPackable>false</IsPackable>
-    <!-- Opt out of the repo-wide source-project flag so the DownlevelLibraryImportGenerator
-         isn't applied to this netstandard2.0 generator project (it would emit duplicate
-         polyfills for InteropServices types it doesn't actually need). -->
-    <IsSourceProject>false</IsSourceProject>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
   <ItemGroup>

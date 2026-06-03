@@ -119,11 +119,44 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
+            if (node is INodeWithFunclets nodeWithFunclets)
+            {
+                RecordFunclets(nodeWithFunclets);
+            }
         }
 
+        private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
+        {
+            FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
+            if (funcletKinds.Length < 1)
+            {
+                return;
+            }
+
+            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
+            string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
+
+            for (int i = 0; i < funcletKinds.Length; i++)
+            {
+                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
+                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
+                _methodCount++;
+                RegisterStubIndexAndSignature(funcletSignature);
+            }
+        }
+
+        private WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
+        {
+            return funcletKind switch
+            {
+                FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
+                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
+                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
+            };
+        }
+ 
         private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
@@ -333,17 +366,17 @@ namespace ILCompiler.ObjectWriter
         // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
-        private void RegisterStubIndexAndSignature(WasmFunctionBody body)
+        private void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
-            Utf8String signatureKey = body.Signature.GetMangledName(_nodeFactory.NameMangler);
+            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
             {
                 signatureIndex = _uniqueSignatures.Count;
                 _uniqueSignatures.Add(signatureKey, signatureIndex);
 
                 SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
-                byte[] encodedSignature = new byte[body.Signature.EncodeSize()];
-                body.Signature.Encode(encodedSignature);
+                byte[] encodedSignature = new byte[signature.EncodeSize()];
+                signature.Encode(encodedSignature);
                 typeSectionWriter.EmitData(encodedSignature);
             }
 
@@ -363,7 +396,7 @@ namespace ILCompiler.ObjectWriter
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
 
-            RegisterStubIndexAndSignature(body);
+            RegisterStubIndexAndSignature(body.Signature);
 
         }
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)

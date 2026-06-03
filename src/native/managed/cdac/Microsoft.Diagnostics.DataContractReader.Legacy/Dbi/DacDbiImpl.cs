@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Numerics;
@@ -67,7 +68,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int FlushCache()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
         return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
     }
 
@@ -1693,7 +1694,72 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeAndSig(vmAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pTargetBuffer = default;
+            *pLocalSigToken = (uint)EcmaMetadataUtils.TokenType.mdtSignature;
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+                ?? throw new InvalidOperationException("Module has no metadata.");
+            MethodDefinitionHandle mdMethodHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(functionToken));
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(mdMethodHandle);
+
+            // Reject anything whose metadata CodeType isn't IL.
+            if ((methodDef.ImplAttributes & MethodImplAttributes.CodeTypeMask) != MethodImplAttributes.IL)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
+
+            ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+            TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, functionToken, out _);
+            if (methodDescPtr != TargetPointer.Null)
+            {
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+                if (!rts.IsIL(mdHandle))
+                    throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
+            }
+            else if (methodDef.RelativeVirtualAddress == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
+
+            TargetPointer headerPtr = loader.GetILHeader(moduleHandle, functionToken);
+            if (headerPtr != TargetPointer.Null)
+            {
+                int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
+                int codeSize = HeaderReaderHelpers.GetCodeSize(_target, headerPtr);
+
+                if (HeaderReaderHelpers.TryGetLocalVarSigToken(_target, headerPtr, out int localToken) && localToken != 0)
+                {
+                    *pLocalSigToken = (uint)localToken;
+                }
+
+                pTargetBuffer->pAddress = headerPtr.Value + (ulong)headerSize;
+                pTargetBuffer->cbSize = (uint)codeSize;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer bufferLocal = default;
+            uint sigLocal;
+            int hrLocal = _legacy.GetILCodeAndSig(vmAssembly, functionToken, &bufferLocal, &sigLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetBuffer->pAddress == bufferLocal.pAddress, $"cDAC ILAddr: 0x{pTargetBuffer->pAddress:X}, DAC ILAddr: 0x{bufferLocal.pAddress:X}");
+                Debug.Assert(pTargetBuffer->cbSize == bufferLocal.cbSize, $"cDAC ILSize: {pTargetBuffer->cbSize}, DAC ILSize: {bufferLocal.cbSize}");
+                Debug.Assert(*pLocalSigToken == sigLocal, $"cDAC LocalSig: 0x{*pLocalSigToken:X}, DAC LocalSig: 0x{sigLocal:X}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
@@ -2750,9 +2816,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
