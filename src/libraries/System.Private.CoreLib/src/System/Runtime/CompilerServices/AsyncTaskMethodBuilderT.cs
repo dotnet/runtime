@@ -434,15 +434,50 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
 
-            void IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                methodId = TStateMachineDiagnosticData.MethodId;
-                state = TStateMachineDiagnosticData.GetState(ref StateMachine);
-                nextContinuation = this.DiagnosticContinuationObject;
+                if (AsyncInstrumentation.IsSupported)
+                {
+                    methodId = TStateMachineDiagnosticData.MethodId;
+                    state = TStateMachineDiagnosticData.GetState(ref StateMachine);
+                    nextContinuation = this.DiagnosticContinuationObject;
+                    return true;
+                }
+                else
+                {
+                    methodId = 0;
+                    state = -1;
+                    nextContinuation = null;
+                    return false;
+                }
             }
 
             private static class TStateMachineDiagnosticData
             {
+#if NATIVEAOT
+                // In NativeAOT we don't have reflection to resolve the method handle and state field offset.
+                // Due to the way the state machine is constructed, we can't get a direct pointer to its MoveNext method
+                // and using the interface dispatch to locate the method at slot 0 is unreliable due to Native AOT optimizations.
+                // The state field is also not guaranteed to be at a specific offset due to auto layout and Native AOT optimizations.
+                // To support this on Native AOT we would need to precompute this information in ILC and emit a
+                // hash table keyed by state machine MethodTable. At runtime we would still need to cache
+                // this data in static fields to avoid lookup cost when walking each continuation frame.
+                // On JIT these static fields are lazy evaluated and cached on initial access, but on Native AOT
+                // they will be pre-allocated, so code should be linked out when diagnostics is not supported.
+                // Given the added complexity on Native AOT, the fact that this is only used for diagnostics,
+                // and that Native AOT currently have limited asyncv1 diagnostics support in tooling, we can
+                // postpone the support until proven needed.
+                public static ulong MethodId => 0;
+                public static int GetState(ref TStateMachine? _)
+                {
+                    return -1;
+                }
+#else
+                private static readonly ulong s_methodId = ResolveMethodId();
+                private static readonly int s_resolveStateFieldOffset = ResolveStateFieldOffset();
+
+                public static ulong MethodId => s_methodId;
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static int GetState(ref TStateMachine? stateMachine)
                 {
@@ -463,27 +498,6 @@ namespace System.Runtime.CompilerServices
                     return -1;
                 }
 
-                public static ulong MethodId => s_methodId;
-
-                private static readonly ulong s_methodId = ResolveMethodId();
-                private static readonly int s_resolveStateFieldOffset = ResolveStateFieldOffset();
-
-#if NATIVEAOT
-                private static ulong ResolveMethodId()
-                {
-                    unsafe
-                    {
-                        MethodTable* instanceType = (MethodTable*)typeof(TStateMachine).TypeHandle.Value;
-                        MethodTable* interfaceType = (MethodTable*)typeof(IAsyncStateMachine).TypeHandle.Value;
-                        if (instanceType != null && interfaceType != null)
-                        {
-                            return (ulong)RuntimeImports.RhResolveDispatchOnType(instanceType, interfaceType, slot: 0);
-                        }
-                        return 0;
-                    }
-                }
-#else
-
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090", Justification = "State machine types are always preserved.")]
                 private static ulong ResolveMethodId()
                 {
@@ -495,41 +509,20 @@ namespace System.Runtime.CompilerServices
 
                     return 0;
                 }
-#endif
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090", Justification = "State machine types are always preserved.")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087", Justification = "Only reachable for class state machines (debug builds) where Roslyn always generates constructors. The type is guaranteed preserved because AsyncStateMachineBox<TStateMachine> directly instantiates and uses it.")]
                 private static int ResolveStateFieldOffset()
                 {
                     FieldInfo? stateField = typeof(TStateMachine).GetField("<>1__state", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                     if (stateField != null)
                     {
-#if NATIVEAOT
-                        const int Sentinel = 0x7F345678;
-
-                        object instance = typeof(TStateMachine).IsValueType ? (object)default(TStateMachine)! : RuntimeHelpers.GetUninitializedObject(typeof(TStateMachine));
-                        stateField.SetValue(instance, Sentinel);
-
-                        int size = (int)RuntimeHelpers.GetRawObjectDataSize(instance);
-                        Debug.Assert(size >= sizeof(int), "TStateMachine object is too small to contain a state field.");
-
-                        ref byte data = ref RuntimeHelpers.GetRawData(instance);
-
-                        for (int i = 0; i < size; i += sizeof(int))
-                        {
-                            if (Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref data, i)) == Sentinel)
-                            {
-                                return i;
-                            }
-                        }
-#else
                         Debug.Assert(stateField is RtFieldInfo, $"Expected RtFieldInfo but got {stateField.GetType().Name}");
                         return RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)stateField);
-#endif
                     }
 
                     return 0;
                 }
+#endif
             }
         }
 

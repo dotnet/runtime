@@ -233,18 +233,18 @@ namespace System.Runtime.CompilerServices
             _inner = null;
         }
 
-        public void GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+        public bool GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
         {
             IAsyncStateMachineBox? inner = _inner;
             if (inner != null)
             {
-                inner.GetDiagnosticData(out methodId, out state, out nextContinuation);
-                return;
+                return inner.GetDiagnosticData(out methodId, out state, out nextContinuation);
             }
 
             methodId = 0;
             state = -1;
             nextContinuation = null;
+            return false;
         }
     }
 }

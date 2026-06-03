@@ -1420,8 +1420,7 @@ namespace System.Runtime.CompilerServices
                 IAsyncStateMachineBox? box = ResolveAsyncStateMachineBox(continuationObject);
                 if (box != null)
                 {
-                    box.GetDiagnosticData(out methodId, out state, out nextContinuation);
-                    return true;
+                    return box.GetDiagnosticData(out methodId, out state, out nextContinuation);
                 }
 
                 methodId = 0;
