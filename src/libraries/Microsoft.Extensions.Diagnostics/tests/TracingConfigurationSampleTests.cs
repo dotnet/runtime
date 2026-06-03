@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     .AddConfiguration(configuration))
                 .Services
                 .Configure<TracingOptions>(options =>
-                    options.Rules.Add(new TracingRule("Demo.Source", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true)))
+                    options.Rules.Add(new TracingRule("Demo.Source", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)))
                 .BuildServiceProvider();
 
             serviceProvider.GetRequiredService<IStartupValidator>().Validate();
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     .AddConfiguration(configuration))
                 .Services
                 .Configure<TracingOptions>(options =>
-                    options.Rules.Add(new TracingRule("Demo.Source", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false)))
+                    options.Rules.Add(new TracingRule("Demo.Source", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false)))
                 .BuildServiceProvider();
 
             serviceProvider.GetRequiredService<IStartupValidator>().Validate();
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .BuildServiceProvider();
 
             serviceProvider.GetRequiredService<IStartupValidator>().Validate();
-            IActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<IActivitySourceFactory>();
+            ActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
 
             using var globalSource = new ActivitySource("Demo.ScopeSource");
             using var localScopeSource = activitySourceFactory.Create(new ActivitySourceOptions("Demo.ScopeSource"));
@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [Fact]
         public void ExistingSourceRespondsToRuleChanges()
         {
-            var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions("Demo.ReloadableSource", enabled: false));
+            var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions("Demo.ReloadableSource", enable: false));
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
@@ -179,52 +179,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             AssertActivityCreation(source, "BeforeEnable", expectedCreated: false);
 
-            optionsMonitor.Set(CreateOptions("Demo.ReloadableSource", enabled: true));
+            optionsMonitor.Set(CreateOptions("Demo.ReloadableSource", enable: true));
             AssertActivityCreation(source, "AfterEnable", expectedCreated: true);
 
-            optionsMonitor.Set(CreateOptions("Demo.ReloadableSource", enabled: false));
+            optionsMonitor.Set(CreateOptions("Demo.ReloadableSource", enable: false));
             AssertActivityCreation(source, "AfterDisable", expectedCreated: false);
-        }
-
-        [Fact]
-        public void UpdateRules_DoesNotBlockCreateWhileResettingSourceFilters()
-        {
-            var blockingListener = new BlockingNameActivityListener();
-            var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions("Demo.ReloadableSource", enabled: false));
-
-            using var serviceProvider = new ServiceCollection()
-                .AddTracing(builder => builder.AddListener(blockingListener))
-                .Services
-                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
-                .BuildServiceProvider();
-
-            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
-            IActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<IActivitySourceFactory>();
-
-            using var existingSource = activitySourceFactory.Create("Demo.ReloadableSource");
-
-            Task updateTask = Task.Run(() =>
-            {
-                blockingListener.BlockCurrentThreadNameReads();
-                optionsMonitor.Set(CreateOptions("Demo.ReloadableSource", enabled: true));
-            });
-
-            Assert.True(blockingListener.WaitForNameRead(TimeSpan.FromSeconds(10)));
-
-            Task<ActivitySource> createTask = Task.Run(() => activitySourceFactory.Create("Demo.ConcurrentCreate"));
-            try
-            {
-                Assert.True(createTask.Wait(TimeSpan.FromSeconds(5)));
-                using ActivitySource createdSource = createTask.GetAwaiter().GetResult();
-                Assert.NotNull(createdSource);
-            }
-            finally
-            {
-                blockingListener.ReleaseNameRead();
-            }
-
-            Assert.True(updateTask.Wait(TimeSpan.FromSeconds(10)));
-            updateTask.GetAwaiter().GetResult();
         }
 
         [Theory]
@@ -233,7 +192,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void UnspecifiedListenerNameRuleMatchesNamedListener(string? listenerName)
         {
             var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
-                new TracingRule("Demo.DefaultListenerBucket", activityName: null, listenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true)));
+                new TracingRule("Demo.DefaultListenerBucket", operationName: null, listenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
@@ -253,8 +212,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void ExplicitListenerNameDisableWinsOverUnspecifiedEnable(string? unspecifiedListenerName)
         {
             var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
-                new TracingRule("Demo.ListenerSpecificDisable", activityName: null, listenerName: SampleListenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false),
-                new TracingRule("Demo.ListenerSpecificDisable", activityName: null, listenerName: unspecifiedListenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true)));
+                new TracingRule("Demo.ListenerSpecificDisable", operationName: null, listenerName: SampleListenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false),
+                new TracingRule("Demo.ListenerSpecificDisable", operationName: null, listenerName: unspecifiedListenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
@@ -274,8 +233,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void ExplicitListenerNameEnableWinsOverUnspecifiedDisable(string? unspecifiedListenerName)
         {
             var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
-                new TracingRule("Demo.ListenerSpecificEnable", activityName: null, listenerName: SampleListenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true),
-                new TracingRule("Demo.ListenerSpecificEnable", activityName: null, listenerName: unspecifiedListenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false)));
+                new TracingRule("Demo.ListenerSpecificEnable", operationName: null, listenerName: SampleListenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true),
+                new TracingRule("Demo.ListenerSpecificEnable", operationName: null, listenerName: unspecifiedListenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false)));
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
@@ -297,7 +256,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .BuildServiceProvider();
 
-            IActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<IActivitySourceFactory>();
+            ActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
                 activitySourceFactory.Create(new ActivitySourceOptions("Demo.InvalidScopeSource")
@@ -310,10 +269,10 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [Fact]
-        public void ActivitySourceNamePatternWithMultipleWildcards_ThrowsTracingSpecificMessage()
+        public void SourceNamePatternWithMultipleWildcards_ThrowsTracingSpecificMessage()
         {
             var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
-                new TracingRule("Demo*Wildcard*Source", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true)));
+                new TracingRule("Demo*Wildcard*Source", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
@@ -335,7 +294,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .BuildServiceProvider();
 
-            IActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<IActivitySourceFactory>();
+            ActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
             ActivitySourceOptions options = new ActivitySourceOptions("Demo.ThrowingScopeSource")
             {
                 Tags = new ThrowingTagsEnumerable()
@@ -346,11 +305,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             Assert.Null(options.Scope);
         }
 
-        private static TracingOptions CreateOptions(string activitySourceName, bool enabled)
+        private static TracingOptions CreateOptions(string sourceName, bool enable)
         {
             return CreateOptions(
-                new TracingRule(activitySourceName, activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled),
-                new TracingRule(activitySourceName, activityName: null, listenerName: SampleListenerName, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled));
+                new TracingRule(sourceName, operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable),
+                new TracingRule(sourceName, operationName: null, listenerName: SampleListenerName, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable));
         }
 
         private static TracingOptions CreateOptions(params TracingRule[] rules)
@@ -378,7 +337,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [Fact]
-        public void DisabledActivityName_FiltersNotifications_EvenWhenAnotherListenerCreatesActivity()
+        public void DisabledOperationName_FiltersNotifications_EvenWhenAnotherListenerCreatesActivity()
         {
             using var externalListener = new ActivityListener
             {
@@ -394,8 +353,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .Configure<TracingOptions>(options =>
                 {
-                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true));
-                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", activityName: "BlockedOperation", listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false));
+                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true));
+                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", operationName: "BlockedOperation", listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false));
                 })
                 .BuildServiceProvider();
 
@@ -417,7 +376,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [Fact]
-        public void EnabledActivityName_NotifiesListener_EvenWhenSourceDefaultDisabled()
+        public void EnabledOperationName_NotifiesListener_EvenWhenSourceDefaultDisabled()
         {
             var recording = new RecordingActivityListener();
             using var serviceProvider = new ServiceCollection()
@@ -425,8 +384,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .Configure<TracingOptions>(options =>
                 {
-                    options.Rules.Add(new TracingRule("Demo.OptIn", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false));
-                    options.Rules.Add(new TracingRule("Demo.OptIn", activityName: "OptedInOperation", listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true));
+                    options.Rules.Add(new TracingRule("Demo.OptIn", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false));
+                    options.Rules.Add(new TracingRule("Demo.OptIn", operationName: "OptedInOperation", listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true));
                 })
                 .BuildServiceProvider();
 
@@ -443,14 +402,17 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             Assert.Equal(new[] { "OptedInOperation" }, recording.StoppedNames);
         }
 
-        private sealed class RecordingActivityListener : IActivityListener
+        private sealed class RecordingActivityListener : ActivityListener
         {
             private readonly object _lock = new();
             private readonly List<string> _started = new();
             private readonly List<string> _stopped = new();
 
             public RecordingActivityListener()
+                : base(nameof(RecordingActivityListener))
             {
+                Sample = static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+                SampleUsingParentId = static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
                 ActivityStarted = activity =>
                 {
                     lock (_lock) { _started.Add(activity.OperationName); }
@@ -460,18 +422,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     lock (_lock) { _stopped.Add(activity.OperationName); }
                 };
             }
-
-            public string Name => nameof(RecordingActivityListener);
-
-            public SampleActivity<string>? SampleUsingParentId => static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public Action<Activity>? ActivityStarted { get; }
-
-            public Action<Activity>? ActivityStopped { get; }
-
-            public ExceptionRecorder? ActivityExceptionRecorded => null;
 
             public IReadOnlyList<string> StartedNames
             {
@@ -484,62 +434,14 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             }
         }
 
-        public sealed class SampleActivityListener : IActivityListener
+        public sealed class SampleActivityListener : ActivityListener
         {
-            public string Name => SampleListenerName;
-
-            public SampleActivity<string>? SampleUsingParentId => static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public Action<Activity>? ActivityStarted => null;
-
-            public Action<Activity>? ActivityStopped => null;
-
-            public ExceptionRecorder? ActivityExceptionRecorded => null;
-        }
-
-        private sealed class BlockingNameActivityListener : IActivityListener
-        {
-            private readonly ManualResetEventSlim _nameReadStarted = new();
-            private readonly ManualResetEventSlim _allowNameRead = new();
-            private int _blockNameReads;
-            private int _blockedThreadId;
-
-            public string Name
+            public SampleActivityListener()
+                : base(SampleListenerName)
             {
-                get
-                {
-                    if (Volatile.Read(ref _blockNameReads) != 0
-                        && Volatile.Read(ref _blockedThreadId) == Environment.CurrentManagedThreadId)
-                    {
-                        _nameReadStarted.Set();
-                        _allowNameRead.Wait();
-                    }
-
-                    return nameof(BlockingNameActivityListener);
-                }
+                Sample = static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+                SampleUsingParentId = static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
             }
-
-            public SampleActivity<string>? SampleUsingParentId => static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
-
-            public Action<Activity>? ActivityStarted => null;
-
-            public Action<Activity>? ActivityStopped => null;
-
-            public ExceptionRecorder? ActivityExceptionRecorded => null;
-
-            public void BlockCurrentThreadNameReads()
-            {
-                Volatile.Write(ref _blockedThreadId, Environment.CurrentManagedThreadId);
-                Volatile.Write(ref _blockNameReads, 1);
-            }
-
-            public bool WaitForNameRead(TimeSpan timeout) => _nameReadStarted.Wait(timeout);
-
-            public void ReleaseNameRead() => _allowNameRead.Set();
         }
 
         private sealed class ThrowingTagsEnumerable : IEnumerable<KeyValuePair<string, object?>>

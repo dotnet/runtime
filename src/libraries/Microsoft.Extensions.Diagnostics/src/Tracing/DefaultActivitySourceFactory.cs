@@ -10,14 +10,14 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Tracing
 {
-    internal sealed class DefaultActivitySourceFactory : IActivitySourceFactory
+    internal sealed class DefaultActivitySourceFactory : ActivitySourceFactory
     {
         private readonly Dictionary<string, List<FactoryActivitySource>> _cachedSources = [];
         private readonly ActivityListenerRegistration[] _listenerRegistrations;
         private readonly IDisposable? _changeTokenRegistration;
         private bool _disposed;
 
-        public DefaultActivitySourceFactory(IEnumerable<IActivityListener> listeners, IOptionsMonitor<TracingOptions> options)
+        public DefaultActivitySourceFactory(IEnumerable<ActivityListener> listeners, IOptionsMonitor<TracingOptions> options)
         {
             ArgumentNullException.ThrowIfNull(listeners);
             ArgumentNullException.ThrowIfNull(options);
@@ -26,16 +26,11 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             _changeTokenRegistration = options.OnChange(UpdateRules);
         }
 
-        public ActivitySource Create(ActivitySourceOptions options)
+        protected override ActivitySource CreateCore(ActivitySourceOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
-
-            if (options.Scope is not null && !ReferenceEquals(options.Scope, this))
-            {
-                throw new InvalidOperationException(SR.InvalidActivitySourceScope);
-            }
-
+            Debug.Assert(options is not null);
             Debug.Assert(options.Name is not null);
+            Debug.Assert(ReferenceEquals(options.Scope, this));
 
             lock (_cachedSources)
             {
@@ -60,18 +55,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     _cachedSources.Add(options.Name, sourceList);
                 }
 
-                object? scope = options.Scope;
-                options.Scope = this;
-                FactoryActivitySource activitySource;
-                try
-                {
-                    activitySource = new FactoryActivitySource(options);
-                }
-                finally
-                {
-                    options.Scope = scope;
-                }
-
+                FactoryActivitySource activitySource = new FactoryActivitySource(options);
                 sourceList.Add(activitySource);
                 return activitySource;
             }
@@ -84,15 +68,20 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return;
             }
 
-            IList<TracingRule> rules = options.Rules;
+            List<TracingRule> rules = options.Rules;
             foreach (ActivityListenerRegistration registration in _listenerRegistrations)
             {
                 registration.UpdateRules(rules);
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
+            if (!disposing)
+            {
+                return;
+            }
+
             lock (_cachedSources)
             {
                 if (_disposed)
@@ -134,7 +123,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
         private sealed class ActivityListenerRegistration : IDisposable
         {
-            private readonly IActivityListener _listener;
+            private readonly string? _listenerName;
             private readonly DefaultActivitySourceFactory _activitySourceFactory;
             private readonly object _lock = new();
             private readonly ActivityListener _activityListener;
@@ -144,25 +133,26 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             private readonly Action<Activity>? _userActivityStopped;
             private readonly ExceptionRecorder? _userExceptionRecorder;
             private Dictionary<ActivitySource, SourceFilterState> _sourceFilterStates = new();
-            private IList<TracingRule> _rules = Array.Empty<TracingRule>();
-            private bool _hasActivityNameRules;
+            private List<TracingRule> _rules = [];
+            private bool _hasOperationNameRules;
             private bool _disposed;
 
-            public ActivityListenerRegistration(IActivityListener listener, DefaultActivitySourceFactory activitySourceFactory, TracingOptions options)
+            public ActivityListenerRegistration(ActivityListener listener, DefaultActivitySourceFactory activitySourceFactory, TracingOptions options)
             {
-                _listener = listener ?? throw new ArgumentNullException(nameof(listener));
+                ArgumentNullException.ThrowIfNull(listener);
                 _activitySourceFactory = activitySourceFactory ?? throw new ArgumentNullException(nameof(activitySourceFactory));
+                _listenerName = listener.Name;
                 _userSample = listener.Sample;
                 _userSampleUsingParentId = listener.SampleUsingParentId;
                 _userActivityStarted = listener.ActivityStarted;
                 _userActivityStopped = listener.ActivityStopped;
-                _userExceptionRecorder = listener.ActivityExceptionRecorded;
-                _activityListener = new ActivityListener()
+                _userExceptionRecorder = listener.ExceptionRecorder;
+                _activityListener = new ActivityListener(_listenerName)
                 {
                     ShouldListenTo = ShouldListenTo,
                 };
                 _rules = options.Rules;
-                _hasActivityNameRules = ComputeHasActivityNameRules(_rules);
+                _hasOperationNameRules = ComputeHasOperationNameRules(_rules);
                 ConfigureDelegates();
                 ActivitySource.AddActivityListener(_activityListener);
             }
@@ -178,11 +168,11 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                     _disposed = true;
                     _activityListener.Dispose();
-                    _rules = Array.Empty<TracingRule>();
+                    _rules = [];
                 }
             }
 
-            public void UpdateRules(IList<TracingRule> rules)
+            public void UpdateRules(List<TracingRule> rules)
             {
                 ArgumentNullException.ThrowIfNull(rules);
 
@@ -194,12 +184,12 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     }
 
                     Volatile.Write(ref _rules, rules);
-                    bool hadActivityNameRules = _hasActivityNameRules;
-                    _hasActivityNameRules = ComputeHasActivityNameRules(rules);
+                    bool hadOperationNameRules = _hasOperationNameRules;
+                    _hasOperationNameRules = ComputeHasOperationNameRules(rules);
                     // Drop the per-source decision cache: stale entries would otherwise mis-route notifications.
                     // RefreshSources below will re-invoke ShouldListenTo, which repopulates the dictionary.
                     Volatile.Write(ref _sourceFilterStates, new Dictionary<ActivitySource, SourceFilterState>());
-                    if (hadActivityNameRules != _hasActivityNameRules)
+                    if (hadOperationNameRules != _hasOperationNameRules)
                     {
                         ConfigureDelegates();
                     }
@@ -210,7 +200,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private void ConfigureDelegates()
             {
-                if (_hasActivityNameRules)
+                if (_hasOperationNameRules)
                 {
                     _activityListener.Sample = _userSample is null ? null : WrappedSample;
                     _activityListener.SampleUsingParentId = _userSampleUsingParentId is null ? null : WrappedSampleUsingParentId;
@@ -228,11 +218,11 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 }
             }
 
-            private static bool ComputeHasActivityNameRules(IList<TracingRule> rules)
+            private static bool ComputeHasOperationNameRules(IList<TracingRule> rules)
             {
                 foreach (TracingRule rule in rules)
                 {
-                    if (!string.IsNullOrEmpty(rule.ActivityName))
+                    if (!string.IsNullOrEmpty(rule.OperationName))
                     {
                         return true;
                     }
@@ -285,7 +275,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 }
             }
 
-            private bool IsEnabledFast(ActivitySource source, string activityName)
+            private bool IsEnabledFast(ActivitySource source, string operationName)
             {
                 Dictionary<ActivitySource, SourceFilterState> states = Volatile.Read(ref _sourceFilterStates);
                 if (!states.TryGetValue(source, out SourceFilterState state))
@@ -294,7 +284,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     // Compute on the fly without caching; the next ShouldListenTo for this source repopulates.
                     state = ComputeFilterState(source);
                 }
-                bool divergent = state.Divergent is { } d && d.Contains(activityName);
+                bool divergent = state.Divergent is { } d && d.Contains(operationName);
                 return divergent ? !state.DefaultEnabled : state.DefaultEnabled;
             }
 
@@ -303,40 +293,40 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
                 IList<TracingRule> rules = Volatile.Read(ref _rules);
 
-                TracingRule? defaultRule = GetMostSpecificRule(source.Name, activityName: null, _listener.Name, isLocalScope, considerActivityName: true);
-                bool defaultEnabled = defaultRule?.Enabled ?? false;
+                TracingRule? defaultRule = GetMostSpecificRule(source.Name, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
+                bool defaultEnabled = defaultRule?.Enable ?? false;
 
                 HashSet<string>? divergent = null;
                 HashSet<string>? seen = null;
                 foreach (TracingRule rule in rules)
                 {
-                    if (string.IsNullOrEmpty(rule.ActivityName))
+                    if (string.IsNullOrEmpty(rule.OperationName))
                     {
                         continue;
                     }
 
                     seen ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    if (!seen.Add(rule.ActivityName))
+                    if (!seen.Add(rule.OperationName))
                     {
                         continue;
                     }
 
-                    bool enabled = IsActivityEnabled(source, rule.ActivityName);
+                    bool enabled = IsOperationEnabled(source, rule.OperationName);
                     if (enabled != defaultEnabled)
                     {
                         divergent ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        divergent.Add(rule.ActivityName);
+                        divergent.Add(rule.OperationName);
                     }
                 }
 
                 return new SourceFilterState(defaultEnabled, divergent);
             }
 
-            private bool IsActivityEnabled(ActivitySource source, string activityName)
+            private bool IsOperationEnabled(ActivitySource source, string operationName)
             {
                 bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
-                TracingRule? rule = GetMostSpecificRule(source.Name, activityName, _listener.Name, isLocalScope, considerActivityName: true);
-                return rule?.Enabled ?? false;
+                TracingRule? rule = GetMostSpecificRule(source.Name, operationName, _listenerName, isLocalScope, considerOperationName: true);
+                return rule?.Enable ?? false;
             }
 
             private bool ShouldListenTo(ActivitySource activitySource)
@@ -366,14 +356,14 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return state.DefaultEnabled || state.Divergent is { Count: > 0 };
             }
 
-            private TracingRule? GetMostSpecificRule(string activitySourceName, string? activityName, string listenerName, bool isLocalScope, bool considerActivityName)
+            private TracingRule? GetMostSpecificRule(string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
             {
                 TracingRule? best = null;
                 IList<TracingRule> rules = Volatile.Read(ref _rules);
                 foreach (TracingRule rule in rules)
                 {
-                    if (RuleMatches(rule, activitySourceName, listenerName, isLocalScope, considerActivityName, activityName)
-                        && IsMoreSpecific(rule, best, isLocalScope, considerActivityName))
+                    if (RuleMatches(rule, sourceName, listenerName, isLocalScope, considerOperationName, operationName)
+                        && IsMoreSpecific(rule, best, isLocalScope, considerOperationName))
                     {
                         best = rule;
                     }
@@ -382,7 +372,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return best;
             }
 
-            private static bool RuleMatches(TracingRule rule, string activitySourceName, string listenerName, bool isLocalScope, bool considerActivityName, string? activityName = null)
+            private static bool RuleMatches(TracingRule rule, string sourceName, string? listenerName, bool isLocalScope, bool considerOperationName, string? operationName = null)
             {
                 if (!string.IsNullOrEmpty(rule.ListenerName)
                     && !string.Equals(rule.ListenerName, listenerName, StringComparison.OrdinalIgnoreCase))
@@ -390,20 +380,20 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     return false;
                 }
 
-                if (!rule.Scopes.HasFlag(isLocalScope ? ActivitySourceScope.Local : ActivitySourceScope.Global))
+                if (!rule.Scopes.HasFlag(isLocalScope ? ActivitySourceScopes.Local : ActivitySourceScopes.Global))
                 {
                     return false;
                 }
 
-                if (!Matches(rule.ActivitySourceName, activitySourceName))
+                if (!Matches(rule.SourceName, sourceName))
                 {
                     return false;
                 }
 
-                if (considerActivityName && !string.IsNullOrEmpty(rule.ActivityName))
+                if (considerOperationName && !string.IsNullOrEmpty(rule.OperationName))
                 {
-                    if (activityName is null
-                        || !string.Equals(rule.ActivityName, activityName, StringComparison.OrdinalIgnoreCase))
+                    if (operationName is null
+                        || !string.Equals(rule.OperationName, operationName, StringComparison.OrdinalIgnoreCase))
                     {
                         return false;
                     }
@@ -412,7 +402,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return true;
             }
 
-            private static bool IsMoreSpecific(TracingRule rule, TracingRule? best, bool isLocalScope, bool considerActivityName)
+            private static bool IsMoreSpecific(TracingRule rule, TracingRule? best, bool isLocalScope, bool considerOperationName)
             {
                 if (best is null)
                 {
@@ -428,30 +418,30 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     return false;
                 }
 
-                if (!string.IsNullOrEmpty(rule.ActivitySourceName))
+                if (!string.IsNullOrEmpty(rule.SourceName))
                 {
-                    if (string.IsNullOrEmpty(best.ActivitySourceName))
+                    if (string.IsNullOrEmpty(best.SourceName))
                     {
                         return true;
                     }
 
-                    if (rule.ActivitySourceName.Length != best.ActivitySourceName.Length)
+                    if (rule.SourceName.Length != best.SourceName.Length)
                     {
-                        return rule.ActivitySourceName.Length > best.ActivitySourceName.Length;
+                        return rule.SourceName.Length > best.SourceName.Length;
                     }
                 }
-                else if (!string.IsNullOrEmpty(best.ActivitySourceName))
+                else if (!string.IsNullOrEmpty(best.SourceName))
                 {
                     return false;
                 }
 
-                if (considerActivityName)
+                if (considerOperationName)
                 {
-                    if (!string.IsNullOrEmpty(rule.ActivityName) && string.IsNullOrEmpty(best.ActivityName))
+                    if (!string.IsNullOrEmpty(rule.OperationName) && string.IsNullOrEmpty(best.OperationName))
                     {
                         return true;
                     }
-                    else if (string.IsNullOrEmpty(rule.ActivityName) && !string.IsNullOrEmpty(best.ActivityName))
+                    else if (string.IsNullOrEmpty(rule.OperationName) && !string.IsNullOrEmpty(best.OperationName))
                     {
                         return false;
                     }
@@ -459,22 +449,22 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                 if (isLocalScope)
                 {
-                    if (!rule.Scopes.HasFlag(ActivitySourceScope.Global) && best.Scopes.HasFlag(ActivitySourceScope.Global))
+                    if (!rule.Scopes.HasFlag(ActivitySourceScopes.Global) && best.Scopes.HasFlag(ActivitySourceScopes.Global))
                     {
                         return true;
                     }
-                    else if (rule.Scopes.HasFlag(ActivitySourceScope.Global) && !best.Scopes.HasFlag(ActivitySourceScope.Global))
+                    else if (rule.Scopes.HasFlag(ActivitySourceScopes.Global) && !best.Scopes.HasFlag(ActivitySourceScopes.Global))
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    if (!rule.Scopes.HasFlag(ActivitySourceScope.Local) && best.Scopes.HasFlag(ActivitySourceScope.Local))
+                    if (!rule.Scopes.HasFlag(ActivitySourceScopes.Local) && best.Scopes.HasFlag(ActivitySourceScopes.Local))
                     {
                         return true;
                     }
-                    else if (rule.Scopes.HasFlag(ActivitySourceScope.Local) && !best.Scopes.HasFlag(ActivitySourceScope.Local))
+                    else if (rule.Scopes.HasFlag(ActivitySourceScopes.Local) && !best.Scopes.HasFlag(ActivitySourceScopes.Local))
                     {
                         return false;
                     }

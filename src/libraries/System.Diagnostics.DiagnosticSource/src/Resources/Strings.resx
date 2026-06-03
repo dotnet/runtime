@@ -120,6 +120,9 @@
   <data name="ActivityIdFormatInvalid" xml:space="preserve">
     <value>"Value must be a valid ActivityIdFormat value"</value>
   </data>
+  <data name="InvalidActivitySourceScope" xml:space="preserve">
+    <value>The activity source factory does not allow a custom scope value when creating an activity source.</value>
+  </data>
   <data name="ActivityNotRunning" xml:space="preserve">
     <value>Trying to set an Activity that is not running</value>
   </data>

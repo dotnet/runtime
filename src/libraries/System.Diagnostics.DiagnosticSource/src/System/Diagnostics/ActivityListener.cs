@@ -31,6 +31,20 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Construct a new <see cref="ActivityListener"/> object with a name used by configuration-based filtering to identify this listener.
+        /// </summary>
+        /// <param name="name">A name that identifies this listener for rule matching. Pass <see langword="null"/> to leave the listener unnamed.</param>
+        public ActivityListener(string? name)
+        {
+            Name = name;
+        }
+
+        /// <summary>
+        /// Gets the optional name used by configuration-based filtering to target rules at this specific listener.
+        /// </summary>
+        public string? Name { get; }
+
+        /// <summary>
         /// Set or get the callback used to listen to the <see cref="Activity"/> start event.
         /// </summary>
         public Action<Activity>? ActivityStarted { get; set; }

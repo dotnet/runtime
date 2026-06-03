@@ -13,6 +13,6 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// <summary>
         /// Gets a list of activity rules that identifies which activity sources, activities, and listeners are enabled.
         /// </summary>
-        public IList<TracingRule> Rules { get; } = new List<TracingRule>();
+        public List<TracingRule> Rules { get; } = new List<TracingRule>();
     }
 }

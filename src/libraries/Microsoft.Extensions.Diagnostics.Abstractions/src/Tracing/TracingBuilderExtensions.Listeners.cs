@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -9,60 +10,48 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Microsoft.Extensions.Diagnostics.Tracing
 {
     /// <summary>
-    /// Extension methods for <see cref="ITracingBuilder"/> to add or clear <see cref="IActivityListener"/> registrations.
+    /// Extension methods for <see cref="ITracingBuilder"/> to add or clear <see cref="ActivityListener"/> registrations.
     /// </summary>
     public static partial class TracingBuilderExtensions
     {
         /// <summary>
-        /// Registers a new <see cref="IActivityListener"/> of type <typeparamref name="T"/>.
-        /// </summary>
-        /// <typeparam name="T">The implementation type of the listener.</typeparam>
-        /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
-        /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
-        public static ITracingBuilder AddListener<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this ITracingBuilder builder) where T : class, IActivityListener
-        {
-            ArgumentNullException.ThrowIfNull(builder);
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IActivityListener, T>());
-            return builder;
-        }
-
-        /// <summary>
-        /// Registers a new <see cref="IActivityListener"/> of type <typeparamref name="T"/>.
+        /// Registers a new <see cref="ActivityListener"/> of type <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">The implementation type of the listener.</typeparam>
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
         /// <param name="factory">A factory function to create the listener instance.</param>
         /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
-        public static ITracingBuilder AddListener<T>(this ITracingBuilder builder, Func<IServiceProvider, T> factory) where T : class, IActivityListener
+        public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, ActivityListener> factory)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(factory);
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IActivityListener, T>(factory));
+            builder.Services.AddSingleton<ActivityListener>(factory);
             return builder;
         }
 
         /// <summary>
-        /// Registers a new <see cref="IActivityListener"/> instance.
+        /// Registers a new <see cref="ActivityListener"/> instance.
         /// </summary>
         /// <param name="listener">The listener instance.</param>
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
         /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
-        public static ITracingBuilder AddListener(this ITracingBuilder builder, IActivityListener listener)
+        public static ITracingBuilder AddListener(this ITracingBuilder builder, ActivityListener listener)
         {
             ArgumentNullException.ThrowIfNull(builder);
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(listener));
+            ArgumentNullException.ThrowIfNull(listener);
+            builder.Services.AddSingleton<ActivityListener>(listener);
             return builder;
         }
 
         /// <summary>
-        /// Removes all <see cref="IActivityListener"/> registrations from the dependency injection container.
+        /// Removes all <see cref="ActivityListener"/> registrations from the dependency injection container.
         /// </summary>
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
         /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
         public static ITracingBuilder ClearListeners(this ITracingBuilder builder)
         {
             ArgumentNullException.ThrowIfNull(builder);
-            builder.Services.RemoveAll<IActivityListener>();
+            builder.Services.RemoveAll<ActivityListener>();
             return builder;
         }
     }

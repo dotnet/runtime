@@ -79,26 +79,17 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     {
         Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
     }
-    public interface IActivityListener
-    {
-        public string Name { get; }
-        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get; }
-        public System.Diagnostics.SampleActivity<System.Diagnostics.ActivityContext>? Sample { get; }
-        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get; }
-        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get; }
-        public System.Diagnostics.ExceptionRecorder? ActivityExceptionRecorded { get; }
-    }
     public class TracingRule
     {
-        public TracingRule(string? activitySourceName, string? activityName, string? listenerName, ActivitySourceScope scopes, bool enabled) { }
-        public string? ActivitySourceName { get; }
-        public string? ActivityName { get; }
+        public TracingRule(string? sourceName, string? operationName, string? listenerName, ActivitySourceScopes scopes, bool enable) { }
+        public string? SourceName { get; }
+        public string? OperationName { get; }
         public string? ListenerName { get; }
-        public ActivitySourceScope Scopes { get; }
-        public bool Enabled { get; }
+        public ActivitySourceScopes Scopes { get; }
+        public bool Enable { get; }
     }
     [Flags]
-    public enum ActivitySourceScope
+    public enum ActivitySourceScopes
     {
         None = 0,
         Global = 1,
@@ -106,21 +97,18 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     }
     public static partial class TracingBuilderExtensions
     {
-        public static ITracingBuilder AddListener<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>
-            (this ITracingBuilder builder) where T : class, IActivityListener { throw null!; }
-
-        public static ITracingBuilder AddListener<T>(this ITracingBuilder builder, Func<IServiceProvider, T> factory) where T : class, IActivityListener { throw null!; }
-        public static ITracingBuilder AddListener(this ITracingBuilder builder, IActivityListener listener) { throw null!; }
+        public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, System.Diagnostics.ActivityListener> factory) { throw null!; }
+        public static ITracingBuilder AddListener(this ITracingBuilder builder, System.Diagnostics.ActivityListener listener) { throw null!; }
         public static ITracingBuilder ClearListeners(this ITracingBuilder builder) { throw null!; }
 
-        public static ITracingBuilder EnableTracing(this ITracingBuilder builder, string? activitySourceName = null, string? activityName = null, string? listenerName = null, ActivitySourceScope scopes = ActivitySourceScope.Global | ActivitySourceScope.Local) => throw null!;
-        public static TracingOptions EnableTracing(this TracingOptions options, string? activitySourceName = null, string? activityName = null, string? listenerName = null, ActivitySourceScope scopes = ActivitySourceScope.Global | ActivitySourceScope.Local) => throw null!;
+        public static ITracingBuilder EnableTracing(this ITracingBuilder builder, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+        public static TracingOptions EnableTracing(this TracingOptions options, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
 
-        public static ITracingBuilder DisableTracing(this ITracingBuilder builder, string? activitySourceName = null, string? activityName = null, string? listenerName = null, ActivitySourceScope scopes = ActivitySourceScope.Global | ActivitySourceScope.Local) => throw null!;
-        public static TracingOptions DisableTracing(this TracingOptions options, string? activitySourceName = null, string? activityName = null, string? listenerName = null, ActivitySourceScope scopes = ActivitySourceScope.Global | ActivitySourceScope.Local) => throw null!;
+        public static ITracingBuilder DisableTracing(this ITracingBuilder builder, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+        public static TracingOptions DisableTracing(this TracingOptions options, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
     }
     public class TracingOptions
     {
-        public IList<TracingRule> Rules { get; } = null!;
+        public List<TracingRule> Rules { get; } = null!;
     }
 }

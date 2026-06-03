@@ -183,13 +183,14 @@ namespace System.Diagnostics
         public object? Scope { get { throw null; } set { } }
         public string? TelemetrySchemaUrl { get { throw null; } set { } }
     }
-    public interface IActivitySourceFactory : System.IDisposable
+    public abstract partial class ActivitySourceFactory : System.IDisposable
     {
-        public System.Diagnostics.ActivitySource Create(System.Diagnostics.ActivitySourceOptions options);
-    }
-    public static class ActivitySourceFactoryExtensions
-    {
-        public static System.Diagnostics.ActivitySource Create(this System.Diagnostics.IActivitySourceFactory activitySourceFactory, string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
+        protected ActivitySourceFactory() { }
+        public System.Diagnostics.ActivitySource Create(System.Diagnostics.ActivitySourceOptions options) { throw null; }
+        public System.Diagnostics.ActivitySource Create(string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
+        protected abstract System.Diagnostics.ActivitySource CreateCore(System.Diagnostics.ActivitySourceOptions options);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
     }
     [System.FlagsAttribute]
     public enum ActivityTraceFlags
@@ -304,6 +305,8 @@ namespace System.Diagnostics
     public sealed class ActivityListener : IDisposable
     {
         public ActivityListener() { throw null; }
+        public ActivityListener(string? name) { throw null; }
+        public string? Name { get { throw null; } }
         public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { } }
         public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { } }
         public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { } }

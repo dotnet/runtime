@@ -8,10 +8,10 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     /// <summary>
     /// Represents scopes used by <see cref="TracingRule"/> to distinguish between activity sources created directly
     /// via <see cref="System.Diagnostics.ActivitySource"/> constructors (<see cref="Global"/>) and those created via
-    /// dependency injection with <see cref="System.Diagnostics.IActivitySourceFactory.Create(System.Diagnostics.ActivitySourceOptions)"/> (<see cref="Local"/>).
+    /// dependency injection with <see cref="System.Diagnostics.ActivitySourceFactory.Create(System.Diagnostics.ActivitySourceOptions)"/> (<see cref="Local"/>).
     /// </summary>
     [Flags]
-    public enum ActivitySourceScope
+    public enum ActivitySourceScopes
     {
         /// <summary>
         /// No scope is specified. This field should not be used.
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         Global = 1,
 
         /// <summary>
-        /// Indicates <see cref="System.Diagnostics.ActivitySource"/> instances created via <see cref="System.Diagnostics.IActivitySourceFactory"/>.
+        /// Indicates <see cref="System.Diagnostics.ActivitySource"/> instances created via <see cref="System.Diagnostics.ActivitySourceFactory"/>.
         /// </summary>
         Local = 2
     }

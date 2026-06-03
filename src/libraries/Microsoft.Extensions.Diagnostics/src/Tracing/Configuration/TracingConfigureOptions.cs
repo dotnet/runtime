@@ -30,15 +30,15 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             {
                 if (configurationSection.Key.Equals(EnabledTracingKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScope.Global | ActivitySourceScope.Local, listenerName: null);
+                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScopes.Global | ActivitySourceScopes.Local, listenerName: null);
                 }
                 else if (configurationSection.Key.Equals(EnabledGlobalTracingKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScope.Global, listenerName: null);
+                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScopes.Global, listenerName: null);
                 }
                 else if (configurationSection.Key.Equals(EnabledLocalTracingKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScope.Local, listenerName: null);
+                    LoadActivitySourceRules(options, configurationSection, ActivitySourceScopes.Local, listenerName: null);
                 }
                 else
                 {
@@ -46,25 +46,25 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     var enabledTracingSection = configurationSection.GetSection(EnabledTracingKey);
                     if (enabledTracingSection.Exists())
                     {
-                        LoadActivitySourceRules(options, enabledTracingSection, ActivitySourceScope.Global | ActivitySourceScope.Local, listenerName);
+                        LoadActivitySourceRules(options, enabledTracingSection, ActivitySourceScopes.Global | ActivitySourceScopes.Local, listenerName);
                     }
 
                     var enabledGlobalTracingSection = configurationSection.GetSection(EnabledGlobalTracingKey);
                     if (enabledGlobalTracingSection.Exists())
                     {
-                        LoadActivitySourceRules(options, enabledGlobalTracingSection, ActivitySourceScope.Global, listenerName);
+                        LoadActivitySourceRules(options, enabledGlobalTracingSection, ActivitySourceScopes.Global, listenerName);
                     }
 
                     var enabledLocalTracingSection = configurationSection.GetSection(EnabledLocalTracingKey);
                     if (enabledLocalTracingSection.Exists())
                     {
-                        LoadActivitySourceRules(options, enabledLocalTracingSection, ActivitySourceScope.Local, listenerName);
+                        LoadActivitySourceRules(options, enabledLocalTracingSection, ActivitySourceScopes.Local, listenerName);
                     }
                 }
             }
         }
 
-        internal static void LoadActivitySourceRules(TracingOptions options, IConfigurationSection configurationSection, ActivitySourceScope scopes, string? listenerName)
+        internal static void LoadActivitySourceRules(TracingOptions options, IConfigurationSection configurationSection, ActivitySourceScopes scopes, string? listenerName)
         {
             foreach (var activitySourceSection in configurationSection.GetChildren())
             {
@@ -74,30 +74,30 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 }
                 else if (TryGetEnabledValue(activitySourceSection, out var enabled))
                 {
-                    var activitySourceName = activitySourceSection.Key;
-                    if (string.Equals(DefaultKey, activitySourceName, StringComparison.OrdinalIgnoreCase))
+                    var sourceName = activitySourceSection.Key;
+                    if (string.Equals(DefaultKey, sourceName, StringComparison.OrdinalIgnoreCase))
                     {
-                        activitySourceName = null;
+                        sourceName = null;
                     }
 
-                    options.Rules.Add(new TracingRule(activitySourceName, activityName: null, listenerName, scopes, enabled));
+                    options.Rules.Add(new TracingRule(sourceName, operationName: null, listenerName, scopes, enabled));
                 }
             }
         }
 
-        internal static void LoadActivityRules(TracingOptions options, IConfigurationSection activitySourceSection, ActivitySourceScope scopes, string? listenerName)
+        internal static void LoadActivityRules(TracingOptions options, IConfigurationSection activitySourceSection, ActivitySourceScopes scopes, string? listenerName)
         {
             foreach (var activityPair in activitySourceSection.AsEnumerable(makePathsRelative: true))
             {
-                if (bool.TryParse(activityPair.Value, out var activityEnabled))
+                if (bool.TryParse(activityPair.Value, out var enabled))
                 {
-                    var activityName = activityPair.Key;
-                    if (string.Equals(DefaultKey, activityName, StringComparison.OrdinalIgnoreCase))
+                    var operationName = activityPair.Key;
+                    if (string.Equals(DefaultKey, operationName, StringComparison.OrdinalIgnoreCase))
                     {
-                        activityName = null;
+                        operationName = null;
                     }
 
-                    options.Rules.Add(new TracingRule(activitySourceSection.Key, activityName, listenerName, scopes, activityEnabled));
+                    options.Rules.Add(new TracingRule(activitySourceSection.Key, operationName, listenerName, scopes, enabled));
                 }
             }
         }

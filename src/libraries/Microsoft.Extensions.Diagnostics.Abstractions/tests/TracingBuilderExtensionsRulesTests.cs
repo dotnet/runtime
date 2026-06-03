@@ -16,22 +16,22 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void BuilderEnableAddsRule(string? activitySourceName)
+        public void BuilderEnableAddsRule(string? sourceName)
         {
             var services = new ServiceCollection();
             services.AddOptions();
             var builder = new FakeBuilder(services);
 
-            builder.EnableTracing(activitySourceName: activitySourceName);
+            builder.EnableTracing(sourceName: sourceName);
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.Equal(activitySourceName, rule.ActivitySourceName);
+            Assert.Equal(sourceName, rule.SourceName);
             Assert.Null(rule.ListenerName);
-            Assert.Equal(ActivitySourceScope.Global | ActivitySourceScope.Local, rule.Scopes);
-            Assert.True(rule.Enabled);
+            Assert.Equal(ActivitySourceScopes.Global | ActivitySourceScopes.Local, rule.Scopes);
+            Assert.True(rule.Enable);
         }
 
         [Fact]
@@ -41,16 +41,16 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             services.AddOptions();
             var builder = new FakeBuilder(services);
 
-            builder.DisableTracing(activitySourceName: "source", listenerName: "listener", scopes: ActivitySourceScope.Local);
+            builder.DisableTracing(sourceName: "source", listenerName: "listener", scopes: ActivitySourceScopes.Local);
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.Equal("source", rule.ActivitySourceName);
+            Assert.Equal("source", rule.SourceName);
             Assert.Equal("listener", rule.ListenerName);
-            Assert.Equal(ActivitySourceScope.Local, rule.Scopes);
-            Assert.False(rule.Enabled);
+            Assert.Equal(ActivitySourceScopes.Local, rule.Scopes);
+            Assert.False(rule.Enable);
         }
 
         [Theory]
@@ -58,21 +58,21 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void OptionsEnableAddsRule(string? activitySourceName)
+        public void OptionsEnableAddsRule(string? sourceName)
         {
             var services = new ServiceCollection();
             services.AddOptions();
             services.Configure<TracingOptions>(options =>
-                options.EnableTracing(activitySourceName: activitySourceName));
+                options.EnableTracing(sourceName: sourceName));
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.Equal(activitySourceName, rule.ActivitySourceName);
+            Assert.Equal(sourceName, rule.SourceName);
             Assert.Null(rule.ListenerName);
-            Assert.Equal(ActivitySourceScope.Global | ActivitySourceScope.Local, rule.Scopes);
-            Assert.True(rule.Enabled);
+            Assert.Equal(ActivitySourceScopes.Global | ActivitySourceScopes.Local, rule.Scopes);
+            Assert.True(rule.Enable);
         }
 
         [Fact]
@@ -81,16 +81,16 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             var services = new ServiceCollection();
             services.AddOptions();
             services.Configure<TracingOptions>(options =>
-                options.DisableTracing(activitySourceName: "source", listenerName: "listener", scopes: ActivitySourceScope.Global));
+                options.DisableTracing(sourceName: "source", listenerName: "listener", scopes: ActivitySourceScopes.Global));
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.Equal("source", rule.ActivitySourceName);
+            Assert.Equal("source", rule.SourceName);
             Assert.Equal("listener", rule.ListenerName);
-            Assert.Equal(ActivitySourceScope.Global, rule.Scopes);
-            Assert.False(rule.Enabled);
+            Assert.Equal(ActivitySourceScopes.Global, rule.Scopes);
+            Assert.False(rule.Enable);
         }
 
         [Fact]
@@ -100,13 +100,13 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             services.AddOptions();
             var builder = new FakeBuilder(services);
 
-            builder.EnableTracing("source", activityName: null, "listener", ActivitySourceScope.Local);
+            builder.EnableTracing("source", operationName: null, "listener", ActivitySourceScopes.Local);
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.True(rule.Enabled);
+            Assert.True(rule.Enable);
         }
 
         [Fact]
@@ -116,13 +116,13 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             services.AddOptions();
             var builder = new FakeBuilder(services);
 
-            builder.DisableTracing("source", activityName: null, "listener", ActivitySourceScope.Local);
+            builder.DisableTracing("source", operationName: null, "listener", ActivitySourceScopes.Local);
 
             var container = services.BuildServiceProvider();
             var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
-            Assert.False(rule.Enabled);
+            Assert.False(rule.Enable);
         }
 
         private class FakeBuilder(IServiceCollection services) : ITracingBuilder

@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddOptions();
 
-            services.TryAddSingleton<IActivitySourceFactory, DefaultActivitySourceFactory>();
+            services.TryAddSingleton<ActivitySourceFactory, DefaultActivitySourceFactory>();
             services.AddOptions<NoOpOptions>().ValidateOnStart();
             services.TryAddSingleton<IConfigureOptions<NoOpOptions>, SubscriptionActivator>();
             services.TryAddSingleton<ActivityListenerConfigurationFactory>();
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
         }
 
-        private sealed class SubscriptionActivator(IActivitySourceFactory factory) : IConfigureOptions<NoOpOptions>
+        private sealed class SubscriptionActivator(ActivitySourceFactory factory) : IConfigureOptions<NoOpOptions>
         {
             public void Configure(NoOpOptions options)
             {
