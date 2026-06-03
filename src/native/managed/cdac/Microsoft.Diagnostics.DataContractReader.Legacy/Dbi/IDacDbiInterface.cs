@@ -93,6 +93,13 @@ public struct DacDbiExceptionCallStackData
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct AsyncLocalData
+{
+    public uint Offset;
+    public uint IlVarNum;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_HEAPINFO
 {
     public Interop.BOOL areGCStructuresValid;
@@ -724,7 +731,8 @@ public unsafe partial interface IDacDbiInterface
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
 
     [PreserveSig]
-    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
+    int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
+        delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
