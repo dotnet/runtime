@@ -33,8 +33,7 @@ namespace ILCompiler
         {
             get
             {
-                foreach (EcmaMethod method in UnmanagedEntryPointsNode.GetExportedMethods(_module))
-                    yield return method;
+                return UnmanagedEntryPointsNode.GetExportedMethods(_module);
             }
         }
 
@@ -134,10 +133,7 @@ namespace ILCompiler
 
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
-                    if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType))
-                        continue;
-
-                    if (associatedSourceType is null)
+                    if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is null)
                         continue;
 
                     IEETypeNode effectiveTrimTargetType = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(context, associatedSourceType, conditionConstructed: true);
