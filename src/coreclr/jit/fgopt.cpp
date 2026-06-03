@@ -5524,12 +5524,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 predInfo.Push(PredInfo(otherBlock, otherBlock->lastStmt()));
             }
 
-            // Do the merging and bail if no sets are left
-            //
-            if (!tailMergePreds(nullptr))
-            {
-                break;
-            }
+            tailMergePreds(nullptr);
         }
     }
 
