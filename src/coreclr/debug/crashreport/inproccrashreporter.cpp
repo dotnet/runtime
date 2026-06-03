@@ -291,6 +291,7 @@ public:
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
+        const char* genericArgs,
         void* ctx);
 
 private:
@@ -312,7 +313,8 @@ private:
         const GUID* moduleGuid,
         uint32_t nativeOffset,
         uint32_t token,
-        uint32_t ilOffset);
+        uint32_t ilOffset,
+        const char* genericArgs);
 
     void EndCurrentConsoleThreadBlock();
     void EndCurrentJsonThreadBlock();
@@ -500,7 +502,8 @@ public:
         const GUID* moduleGuid,
         uint32_t nativeOffset,
         uint32_t token,
-        uint32_t ilOffset);
+        uint32_t ilOffset,
+        const char* genericArgs);
 
     static void WriteFrameToConsole(
         SignalSafeConsoleWriter* consoleWriter,
@@ -514,7 +517,8 @@ public:
         const char* fallbackModuleName,
         uint32_t nativeOffset,
         uint32_t token,
-        uint32_t ilOffset);
+        uint32_t ilOffset,
+        const char* genericArgs);
 
     static void WriteStackOverflowFrameToJson(
         SignalSafeJsonWriter* writer,
@@ -568,6 +572,7 @@ public:
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
+        const char* genericArgs,
         void* ctx);
 
     static void WriteFrameToReport(
@@ -583,7 +588,8 @@ public:
         const GUID* moduleGuid,
         uint32_t nativeOffset,
         uint32_t token,
-        uint32_t ilOffset);
+        uint32_t ilOffset,
+        const char* genericArgs);
 
     static bool WriteToFile(
         int fd,
@@ -1417,7 +1423,8 @@ CrashReportHelpers::WriteFrameToJson(
     const GUID* moduleGuid,
     uint32_t nativeOffset,
     uint32_t token,
-    uint32_t ilOffset)
+    uint32_t ilOffset,
+    const char* genericArgs)
 {
     if (writer == nullptr)
     {
@@ -1446,6 +1453,14 @@ CrashReportHelpers::WriteFrameToJson(
         {
             writer->WriteHexAsString("token", token);
             writer->WriteHexAsString("il_offset", ilOffset);
+        }
+        // Generic instantiation arguments cannot be recovered off-device from the
+        // token + PDB (instantiations are a runtime construct, not metadata), so
+        // record them here alongside the deferred keys to keep the JSON report a
+        // complete, self-describing store.
+        if (genericArgs != nullptr && genericArgs[0] != '\0')
+        {
+            writer->WriteString("generic_args", genericArgs);
         }
         if (HasModuleName(moduleName))
         {
@@ -1492,7 +1507,8 @@ CrashReportHelpers::WriteFrameToConsole(
     const char* fallbackModuleName,
     uint32_t nativeOffset,
     uint32_t token,
-    uint32_t ilOffset)
+    uint32_t ilOffset,
+    const char* genericArgs)
 {
     if (consoleWriter == nullptr)
     {
@@ -1534,6 +1550,14 @@ CrashReportHelpers::WriteFrameToConsole(
         consoleWriter->AppendStr(" (token=0x");
         consoleWriter->AppendHex(static_cast<uint64_t>(token));
         consoleWriter->AppendChar(')');
+        // Generic instantiation arguments travel inline because they cannot be
+        // recovered off-device from the token + PDB. Format: "<classArgs;methodArgs>"
+        // (value-type args exact; reference-type args show as System.__Canon).
+        if (genericArgs != nullptr && genericArgs[0] != '\0')
+        {
+            consoleWriter->AppendChar(' ');
+            consoleWriter->AppendStr(genericArgs);
+        }
     }
     else if (token != 0 && HasModuleName(fallbackModuleName))
     {
@@ -1730,6 +1754,7 @@ CrashReportHelpers::WriteFrame(
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
+    const char* genericArgs,
     void* ctx)
 {
     FrameContext* frameContext = reinterpret_cast<FrameContext*>(ctx);
@@ -1751,7 +1776,8 @@ CrashReportHelpers::WriteFrame(
         moduleGuid,
         nativeOffset,
         token,
-        ilOffset);
+        ilOffset,
+        genericArgs);
 }
 
 void
@@ -1768,7 +1794,8 @@ CrashReportHelpers::WriteFrameToReport(
     const GUID* moduleGuid,
     uint32_t nativeOffset,
     uint32_t token,
-    uint32_t ilOffset)
+    uint32_t ilOffset,
+    const char* genericArgs)
 {
     if (frameContext == nullptr)
     {
@@ -1796,7 +1823,8 @@ CrashReportHelpers::WriteFrameToReport(
         methodNameBuffer,
         methodNameBufferSize,
         ip, stackPointer, methodName, className, moduleName,
-        moduleTimestamp, moduleSize, moduleGuid, nativeOffset, token, ilOffset);
+        moduleTimestamp, moduleSize, moduleGuid, nativeOffset, token, ilOffset,
+        genericArgs);
 
     bool consoleCapped = frameLimitPerThread != 0 &&
         frameIndex >= frameLimitPerThread;
@@ -1817,7 +1845,7 @@ CrashReportHelpers::WriteFrameToReport(
             methodNameBuffer,
             methodNameBufferSize,
             frameIndex, moduleIndex, ip, methodName, className, moduleName,
-            nativeOffset, token, ilOffset);
+            nativeOffset, token, ilOffset, genericArgs);
     }
     else if (currentThreadDroppedCount != nullptr)
     {
@@ -1843,7 +1871,8 @@ ThreadEnumerationContext::OnFrame(
     const GUID* moduleGuid,
     uint32_t nativeOffset,
     uint32_t token,
-    uint32_t ilOffset)
+    uint32_t ilOffset,
+    const char* genericArgs)
 {
     CrashReportHelpers::WriteFrameToReport(
         &m_frameContext,
@@ -1858,7 +1887,8 @@ ThreadEnumerationContext::OnFrame(
         moduleGuid,
         nativeOffset,
         token,
-        ilOffset);
+        ilOffset,
+        genericArgs);
 }
 
 void
@@ -1875,6 +1905,7 @@ ThreadEnumerationContext::FrameCallback(
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
+    const char* genericArgs,
     void* ctx)
 {
     if (ctx == nullptr)
@@ -1893,7 +1924,8 @@ ThreadEnumerationContext::FrameCallback(
         moduleGuid,
         nativeOffset,
         token,
-        ilOffset);
+        ilOffset,
+        genericArgs);
 }
 
 void
