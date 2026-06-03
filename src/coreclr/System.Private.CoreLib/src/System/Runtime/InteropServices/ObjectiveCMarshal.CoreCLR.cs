@@ -8,6 +8,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
 {
     public static partial class ObjectiveCMarshal
     {
+        private static bool s_initialized;
+        private static ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
+
         /// <summary>
         /// Sets a pending exception to be thrown the next time the runtime is entered from an Objective-C msgSend P/Invoke.
         /// </summary>
@@ -31,19 +34,41 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
+            ObjectHandleOnStack objectTrackingInfoTable);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
-        private static partial IntPtr CreateReferenceTrackingHandleInternal(
-            ObjectHandleOnStack obj,
-            out int memInSizeT,
-            out IntPtr mem);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
+        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_GetOrCreateReferenceTrackingMemory")]
-        private static partial void GetOrCreateReferenceTrackingMemoryInternal(
-            ObjectHandleOnStack obj,
+        private static IntPtr CreateReferenceTrackingHandleInternal(
+            object obj,
             out int memInSizeT,
-            out IntPtr mem);
+            out IntPtr mem)
+        {
+            // Rely on GetOrCreateReferenceTrackingMemoryInternal for state checking.
+            GetOrCreateReferenceTrackingMemoryInternal(obj, out memInSizeT, out mem);
+            return AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
+        }
+
+        private static unsafe void GetOrCreateReferenceTrackingMemoryInternal(
+            object obj,
+            out int memInSizeT,
+            out IntPtr mem)
+        {
+            if (!s_initialized)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
+            }
+
+            if (!obj.GetMethodTable()->IsTrackedReferenceWithFinalizer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
+            }
+
+            ObjcTrackingInformation trackerInfo = s_objects.GetOrAdd(obj, static _ => new ObjcTrackingInformation());
+            trackerInfo.EnsureInitialized(obj);
+            trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
+        }
 
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)
@@ -61,6 +86,67 @@ namespace System.Runtime.InteropServices.ObjectiveC
             {
                 *pException = ex;
                 return null;
+            }
+        }
+
+        internal sealed class ObjcTrackingInformation
+        {
+            // Keep in sync with NativeAOT.
+            private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+
+            internal IntPtr _memory;
+            private GCHandle _longWeakHandle;
+
+            public ObjcTrackingInformation()
+            {
+                _memory = (IntPtr)NativeMemory.AllocZeroed(TAGGED_MEMORY_SIZE_IN_POINTERS * (nuint)IntPtr.Size);
+            }
+
+            public void GetTaggedMemory(out int memInSizeT, out IntPtr mem)
+            {
+                memInSizeT = TAGGED_MEMORY_SIZE_IN_POINTERS;
+                mem = _memory;
+            }
+
+            public void EnsureInitialized(object o)
+            {
+                if (_longWeakHandle.IsAllocated)
+                {
+                    return;
+                }
+
+                GCHandle newHandle = GCHandle.Alloc(o, GCHandleType.WeakTrackResurrection);
+                lock (this)
+                {
+                    if (_longWeakHandle.IsAllocated)
+                    {
+                        newHandle.Free();
+                    }
+                    else
+                    {
+                        _longWeakHandle = newHandle;
+                    }
+                }
+            }
+
+            ~ObjcTrackingInformation()
+            {
+                if (_longWeakHandle.IsAllocated && _longWeakHandle.Target != null)
+                {
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
+                if (_memory != IntPtr.Zero)
+                {
+                    NativeMemory.Free((void*)_memory);
+                    _memory = IntPtr.Zero;
+                }
+
+                if (_longWeakHandle.IsAllocated)
+                {
+                    _longWeakHandle.Free();
+                }
             }
         }
     }

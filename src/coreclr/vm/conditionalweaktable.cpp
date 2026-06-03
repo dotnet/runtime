@@ -8,8 +8,14 @@
 
 bool ConditionalWeakTableContainerObject::TryGetValue(OBJECTREF key, OBJECTREF* value)
 {
-    STANDARD_VM_CONTRACT;
-    SUPPORTS_DAC;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(key != nullptr && value != nullptr);
+    }
+    CONTRACTL_END;
     _ASSERTE(key != nullptr && value != nullptr);
 
     INT32 hashCode = key->TryGetHashCode();
