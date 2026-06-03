@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
+using ILCompiler.ObjectWriter;
 using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.Reflection.ReadyToRun
@@ -140,6 +141,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         private WasmFunctionInfo[] _wasmFunctionCache;
+        private uint[] _elemTable;
+        private uint _numImportedFunctions;
 
         /// <summary>
         /// Gets the full function info for a WASM function by its index in the code section.
@@ -156,6 +159,224 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return null;
 
             return _wasmFunctionCache[functionIndex];
+        }
+
+        /// <summary>
+        /// Resolves a WASM function table index to a code section function index.
+        /// Returns -1 if the table index is out of range or does not map to a code section function.
+        /// </summary>
+        public int GetFunctionIndexFromTableIndex(uint tableIndex)
+        {
+            if (!IsWasmWrapped)
+                return -1;
+
+            EnsureElemTable();
+
+            if (tableIndex >= (uint)_elemTable.Length)
+                return -1;
+
+            uint globalFuncIndex = _elemTable[tableIndex];
+            if (globalFuncIndex < _numImportedFunctions)
+                return -1;
+
+            return (int)(globalFuncIndex - _numImportedFunctions);
+        }
+
+        private void EnsureElemTable()
+        {
+            if (_elemTable is not null)
+                return;
+
+            ReadOnlySpan<byte> imageSpan = _image.AsSpan();
+            int offset = 8; // Skip WASM magic + version
+            uint numImports = 0;
+            uint[] elemEntries = null;
+
+            while (offset < imageSpan.Length)
+            {
+                byte sectionId = imageSpan[offset++];
+                uint sectionSize = ReadLebU32(imageSpan, ref offset);
+                int sectionEnd = offset + (int)sectionSize;
+
+                if (sectionEnd > imageSpan.Length)
+                    break;
+
+                switch (sectionId)
+                {
+                    case 2: // Import section
+                        numImports = CountFunctionImports(imageSpan, ref offset, sectionEnd);
+                        break;
+                    case 9: // Elem section
+                        elemEntries = ParseElemSection(imageSpan, ref offset, sectionEnd);
+                        break;
+                }
+
+                offset = sectionEnd;
+            }
+
+            _numImportedFunctions = numImports;
+            _elemTable = elemEntries ?? [];
+        }
+
+        private static uint CountFunctionImports(ReadOnlySpan<byte> data, ref int offset, int end)
+        {
+            uint count = ReadLebU32(data, ref offset);
+            uint funcImports = 0;
+            for (uint i = 0; i < count && offset < end; i++)
+            {
+                // module name
+                uint modLen = ReadLebU32(data, ref offset);
+                offset += (int)modLen;
+                // field name
+                uint fieldLen = ReadLebU32(data, ref offset);
+                offset += (int)fieldLen;
+                // import kind
+                byte kind = data[offset++];
+                switch (kind)
+                {
+                    case 0: // function
+                        ReadLebU32(data, ref offset); // type index
+                        funcImports++;
+                        break;
+                    case 1: // table
+                        SkipRefType(data, ref offset);
+                        SkipLimits(data, ref offset);
+                        break;
+                    case 2: // memory
+                        SkipLimits(data, ref offset);
+                        break;
+                    case 3: // global
+                        SkipValType(data, ref offset);
+                        offset++; // mutability
+                        break;
+                    case 4: // tag
+                        if (data[offset++] != 0) // attribute byte for exception tag must be 0
+                            throw new BadImageFormatException("Invalid WASM tag import with non-zero attribute");
+                        ReadLebU32(data, ref offset); // type index
+                        break;
+                    default:
+                        throw new BadImageFormatException($"Invalid WASM import kind: {kind}");
+                }
+            }
+            return funcImports;
+        }
+
+        private static void SkipValType(ReadOnlySpan<byte> data, ref int offset)
+        {
+            if (data[offset] >= 0x7B && data[offset] <= 0x7F)
+            {
+                offset++; // numtype or vectype
+            }
+            else
+            {
+                SkipRefType(data, ref offset);
+            }
+        }
+
+        private static void SkipRefType(ReadOnlySpan<byte> data, ref int offset)
+        {
+            byte refType = data[offset];
+            if (refType >= 0x69 && refType <= 0x74) // ref null absheaptype
+            {
+                offset++;
+                return;
+            }
+
+            if (refType == 0x63 || refType == 0x64) // ref null or ref heaptype
+            {
+                offset++;
+
+                refType = data[offset];
+                if (refType >= 0x69 && refType <= 0x74) // absheaptype
+                {
+                    offset++;
+                    return;
+                }
+                if (ReadSleb33(data, ref offset) < 0) // heaptype index (signed LEB128 with up to 33 bits)
+                {
+                    throw new BadImageFormatException("Invalid WASM reftype with negative heaptype index");
+                }
+                // The heaptype index was positive, and therefore parseable
+                return;
+            }
+            throw new BadImageFormatException("Invalid WASM reftype");
+        }
+
+        private static long ReadSleb33(ReadOnlySpan<byte> data, ref int offset)
+        {
+            // SLEB128 with up to 33 bits to accommodate signed 32-bit values and the special -0 case
+            long result = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                if (offset >= data.Length)
+                    throw new BadImageFormatException("Unexpected end of image while reading SLEB128");
+                b = data[offset++];
+                result |= ((long)(b & 0x7F)) << shift;
+                shift += 7;
+            } while ((b & 0x80) != 0);
+
+            // Sign extend if negative
+            if ((b & 0x40) != 0 && shift < 64)
+            {
+                result |= -1L << shift;
+            }
+
+            return result;
+        }
+
+        private static void SkipLimits(ReadOnlySpan<byte> data, ref int offset)
+        {
+            uint flags = ReadLebU32(data, ref offset);
+            ReadLebU32(data, ref offset); // min
+            if ((flags & 0x01) != 0)
+            {
+                ReadLebU32(data, ref offset); // max
+            }
+        }
+
+        private static uint[] ParseElemSection(ReadOnlySpan<byte> data, ref int offset, int end)
+        {
+            // We're looking for the first elem segment that contains a plain
+            // function index vector. The segment may be active (flags==0) or
+            // passive (flags==1). In the R2R WASM case the compiler arranges
+            // the entries so that position in the vector == table index.
+            uint segCount = ReadLebU32(data, ref offset);
+            if (segCount == 0 || offset >= end)
+                return [];
+
+            if (segCount != 1)
+            {
+                throw new BadImageFormatException("WASM element section contains multiple segments, which is not supported by R2RDump.");
+            }
+
+            uint flags = ReadLebU32(data, ref offset);
+            switch (flags)
+            {
+                case 0:
+                    // Active segment, table 0, offset expr, vec of funcidx
+                    SkipConstExpr(data, ref offset);
+                    break;
+                case 1:
+                    // Passive segment: elemkind byte, then vec of funcidx
+                    if (data[offset] != 0x00) // Only funcref elemkind is supported
+                    {
+                        throw new BadImageFormatException($"Unsupported WASM element segment with flags={flags} and elemkind={data[offset]}");
+                    }
+                    offset++; // skip elemkind (0x00 = funcref)
+                    break;
+                default:
+                    throw new BadImageFormatException($"Unsupported WASM element segment with flags={flags}");
+            }
+
+            uint numElems = ReadLebU32(data, ref offset);
+            uint[] entries = new uint[numElems];
+            for (uint i = 0; i < numElems && offset < end; i++)
+            {
+                entries[i] = ReadLebU32(data, ref offset);
+            }
+            return entries;
         }
 
         private WasmFunctionInfo[] BuildWasmFunctionCache()
@@ -294,17 +515,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private static uint ReadLebU32(ReadOnlySpan<byte> data, ref int offset)
         {
-            uint result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                if (offset >= data.Length)
-                    return result;
-                b = data[offset++];
-                result |= (uint)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
+            uint result = (uint)DwarfHelper.ReadULEB128(data.Slice(offset), out int bytesRead);
+            offset += bytesRead;
             return result;
         }
 
