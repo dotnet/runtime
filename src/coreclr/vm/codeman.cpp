@@ -107,9 +107,23 @@ namespace
     class FlushGateHolder
     {
         volatile LONG* m_pFlag;
+        SRWLOCK* m_pLock;
     public:
-        explicit FlushGateHolder(volatile LONG* pFlag) : m_pFlag(pFlag) {}
-        ~FlushGateHolder() { InterlockedExchange(m_pFlag, 0); }
+        FlushGateHolder(volatile LONG* pFlag, SRWLOCK* pLock) : m_pFlag(pFlag), m_pLock(pLock) {}
+        ~FlushGateHolder()
+        {
+            // We clear the gate under m_flushLock such that threads that called
+            // SleepConditionVariableSRW do not lose the wakeup signal and deadlock.
+            // Both paths execute under the same lock, so if a thread observes
+            // VolatileLoad(&m_flushInProgress) != 0 (has taken the lock), the flushing thread cannot
+            // release the gate and call WakeAllConditionVariable until the first thread actually sleeps
+            // and releases the lock. Otherwise, if the flushing thread releases the gate first,
+            // other threads would observe m_flushInProgress is 0 and continue without sleeping.
+            // Either way, no thread would sleep without a corresponding wakeup, preventing deadlocks.
+            AcquireSRWLockExclusive(m_pLock);
+            InterlockedExchange(m_pFlag, 0);
+            ReleaseSRWLockExclusive(m_pLock);
+        }
 
         FlushGateHolder(const FlushGateHolder&) = delete;
         FlushGateHolder& operator=(const FlushGateHolder&) = delete;
@@ -257,9 +271,7 @@ UnwindInfoTable::~UnwindInfoTable()
 /*****************************************************************************/
 void UnwindInfoTable::Register()
 {
-    // Caller either holds m_publishLock, or has just constructed this object
-    // and has not yet exposed it to other threads.
-
+    // Caller holds m_publishLock.
     NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
     {
@@ -482,13 +494,17 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         {
             // Another thread is flushing. Wait until either our entries are
             // published or the gate becomes free.
-            AcquireSRWLockExclusive(&m_flushLock);
+            bool isSequenceReached;
+
+            AcquireSRWLockShared(&m_flushLock);
             while (!SequenceReached(m_publishedSeq, waitForSeq) && VolatileLoad(&m_flushInProgress) != 0)
             {
-                SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, 0);
+                SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
             }
-            ReleaseSRWLockExclusive(&m_flushLock);
-            if (SequenceReached(m_publishedSeq, waitForSeq))
+            isSequenceReached = SequenceReached(m_publishedSeq, waitForSeq);
+            ReleaseSRWLockShared(&m_flushLock);
+
+            if (isSequenceReached)
                 return;
             // Retry taking the gate.
             continue;
@@ -497,7 +513,7 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         LONG drainedSeq;
         // Scope the gate holder so m_flushInProgress is reset when the scope exits.
         {
-            FlushGateHolder gateHolder(&m_flushInProgress);
+            FlushGateHolder gateHolder(&m_flushInProgress, &m_flushLock);
             drainedSeq = FlushPendingEntriesUnderGate();
 
             // Update published sequence while still holding the gate.
@@ -509,11 +525,12 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
                 ReleaseSRWLockExclusive(&m_flushLock);
             }
         }
-        // Gate released BEFORE WakeAll. Critical for correctness: if a waiter
-        // wakes while the gate is still held and its seq isn't satisfied, it
-        // could sleep again (see waiter loop above), and we'd never wake it
-        // again. By releasing the gate first, the waiter observes
-        // m_flushInProgress == 0 and can take over the flush itself.
+        // The gate was cleared under m_flushLock by ~FlushGateHolder above, which
+        // prevents waiters from missing this wakeup. Calling WakeAll outside the
+        // lock is intentional: if a waiter wakes while the gate is still held and
+        // its seq isn't satisfied, it could sleep again (see waiter loop above),
+        // and we'd never wake it again. By releasing the gate first, the waiter
+        // observes m_flushInProgress == 0 and can take over the flush itself.
         WakeAllConditionVariable(&m_flushCV);
 
         // drainedSeq could be -1 if registration is still in progress.
@@ -614,10 +631,15 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
             // Other threads that observe the table before Register()
             // completes will accumulate entries in the pending buffer.
             // The first successful flush publishes them.
-            newTable->Register();
-            if (newTable->hHandle == NULL)
+            // We take m_publishLock since FlushPendingEntriesUnderGate
+            // checks hHandle under this same lock.
             {
-                newTable->m_registrationFailed = true;
+                CrstHolder publishLock(&newTable->m_publishLock);
+                newTable->Register();
+                if (newTable->hHandle == NULL)
+                {
+                    newTable->m_registrationFailed = true;
+                }
             }
         }
         // else another thread won. NewHolder frees our unregistered table (no OS call).
