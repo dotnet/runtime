@@ -78,6 +78,10 @@ List of directory paths to search for managed assemblies. Paths are delimited by
 
 List of directory paths corresponding to shared store paths and additional probing paths used by the host for [probing paths](./host-probing.md#probing-paths). Paths are delimited by a [platform-specific path separator](#path-separator).
 
+`SYSTEM_CORELIB_DIRECTORY`
+
+Absolute path to the directory containing `System.Private.CoreLib.dll`. When set, the runtime loads `System.Private.CoreLib` from this directory instead of looking for it beside `coreclr`. This is intended for hosts where `System.Private.CoreLib.dll` is not placed alongside `coreclr`. For hosts providing an assembly probe extension, a valid probe result takes precedence over this property. Otherwise, when this property is set, no fallback search is performed - if the file cannot be loaded from the specified directory, startup fails. Host is only allowed to specify directory since the runtime expects corelib to always be called `System.Private.CoreLib.dll`.
+
 ### Single-file
 
 `BUNDLE_EXTRACTION_PATH`
