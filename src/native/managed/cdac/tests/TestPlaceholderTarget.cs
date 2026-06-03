@@ -654,7 +654,7 @@ internal class TestPlaceholderTarget : Target
             return true;
         }
 
-        public override void Flush() { }
+        public override void Flush(FlushScope scope) { }
     }
 
 }

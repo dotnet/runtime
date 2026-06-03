@@ -54,7 +54,7 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
   the instance remembers the address it was constructed from).
 * A `public {Name}(Target target, TargetPointer address)` constructor
   that resolves the type name against native descriptors and managed
-  metadata, then does per-field reads through the `LayoutPair` cascade.
+  metadata, then does per-field reads through the `LayoutSet` cascade.
 * A `static {Name} IData<{Name}>.Create(...) => new {Name}(target, address);`
   one-liner.
 * A `private static readonly string[] _typeNames = { ... }` array
@@ -312,7 +312,7 @@ internal sealed partial class Module : IData<Module>
 // Generated (the class captures _target when any writable fields exist):
 public void WriteFlags(uint value)
 {
-    LayoutPair layouts = LayoutPair.Resolve(_target, _typeNames);
+    LayoutSet layouts = LayoutSet.Resolve(_target, _typeNames);
     layouts.Select(Address, out var t, out var b, out var n, "Flags");
     _target.WriteField<uint>(b, t, n, value);
     Flags = value;
@@ -352,13 +352,13 @@ at a time) without C# changes.
 ### How the cascade works
 
 1. The generator emits a call to
-   `LayoutPair.Resolve(target, typeNames)` at the top of the ctor.
+   `LayoutSet.Resolve(target, typeNames)` at the top of the ctor.
    This tries each candidate type name against the native descriptors
-   first, then against managed metadata. It returns a `LayoutPair`
+   first, then against managed metadata. It returns a `LayoutSet`
    carrying whichever `Target.TypeInfo`(s) exist.
 
 2. Every `[Field]` read calls
-   `LayoutPair.Select(address, out type, out baseAddr, out name, ...names)`.
+   `LayoutSet.Select(address, out type, out baseAddr, out name, ...names)`.
    The helper walks `names` against the native `TypeInfo`'s `Fields`
    map first; if a name matches, the read is anchored at `address`
    (native offsets already include the object header by convention). If
@@ -369,7 +369,7 @@ at a time) without C# changes.
    include the object header). The generated code then calls the
    appropriate `target.ReadField<T>(baseAddr, type, name)` overload.
 
-3. If no name matches in either source, `LayoutPair.Select` throws
+3. If no name matches in either source, `LayoutSet.Select` throws
    `InvalidOperationException` with the candidate name list in the
    message. If the resolution at step 1 found *neither* source, the
    ctor itself throws.
@@ -450,7 +450,7 @@ the header for managed reference types -- so native reads also use
 ### `[FieldAddress]` and `[InstanceDataStart]` under fallback
 
 `[FieldAddress]` accepts the same `params string[]` name list as
-`[Field]`, and works through `LayoutPair.Select` to obtain the
+`[Field]`, and works through `LayoutSet.Select` to obtain the
 resolved type info and base address, then computes the absolute
 field address regardless of which source resolves the field.
 

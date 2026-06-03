@@ -60,6 +60,7 @@
 // R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
 // R2R Version 19 removes the READYTORUN_HELPER_ByRefWriteBarrier helper
 // R2R Version 20 changes NativeVarInfo encoding to include ASYNC_CONTINUATION_ILNUM
+// R2R Version 21 updates GC info version to 5 which adds isAsync to x86 GC info
 // R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
 
 struct READYTORUN_CORE_HEADER

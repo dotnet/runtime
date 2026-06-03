@@ -27,25 +27,25 @@ public sealed class CdacGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Emit the LayoutPair and TypeNameResolver helpers as internal source ONLY
+        // Emit the LayoutSet and TypeNameResolver helpers as internal source ONLY
         // when the consuming assembly doesn't already see them (via project reference
         // + InternalsVisibleTo). This avoids CS0436 type-conflict errors in assemblies
         // that inherit the helpers from a referenced assembly (e.g. the Tests project
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
         // Each helper is gated independently to handle version-skew scenarios where
         // one helper is present but the other is not.
-        IncrementalValueProvider<(bool EmitLayoutPair, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
+        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
-                EmitLayoutPair: compilation.GetTypeByMetadataName(LayoutPairSource.FullyQualifiedName) is null,
-                EmitTypeNameResolver: compilation.GetTypeByMetadataName(TypeNameResolverSource.FullyQualifiedName) is null));
+                EmitLayoutSet: !IsTypeAccessible(compilation, LayoutSetSource.FullyQualifiedName),
+                EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName)));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
-            if (flags.EmitLayoutPair)
+            if (flags.EmitLayoutSet)
             {
                 ctx.AddSource(
-                    LayoutPairSource.HintName,
-                    SourceText.From(LayoutPairSource.Source, Encoding.UTF8));
+                    LayoutSetSource.HintName,
+                    SourceText.From(LayoutSetSource.Source, Encoding.UTF8));
             }
 
             if (flags.EmitTypeNameResolver)
@@ -66,5 +66,23 @@ public sealed class CdacGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(models, static (spc, model) =>
             spc.AddSource(Emitter.HintNameFor(model), SourceText.From(Emitter.Emit(model), Encoding.UTF8)));
+    }
+
+    /// <summary>
+    /// Returns true if the consuming compilation can already see a usable
+    /// <paramref name="metadataName"/> (declared here, or in a referenced assembly
+    /// and accessible).
+    /// </summary>
+    private static bool IsTypeAccessible(Compilation compilation, string metadataName)
+    {
+        foreach (INamedTypeSymbol type in compilation.GetTypesByMetadataName(metadataName))
+        {
+            if (compilation.IsSymbolAccessibleWithin(type, compilation.Assembly))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
