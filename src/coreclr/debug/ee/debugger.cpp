@@ -7159,7 +7159,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
     //
     InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread);
 
-    ipce->ExceptionCallback2.framePointer = framePointer;
+    ipce->ExceptionCallback2.framePointer = PTR_TO_CORDB_ADDRESS(framePointer.GetSPValue());
     ipce->ExceptionCallback2.eventType = eventType;
     ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
     ipce->ExceptionCallback2.dwFlags = dwFlags;
@@ -7312,7 +7312,7 @@ void Debugger::SendExceptionEventsWorker(
 
             InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread);
 
-            ipce->ExceptionCallback2.framePointer = framePointer;
+            ipce->ExceptionCallback2.framePointer = PTR_TO_CORDB_ADDRESS(framePointer.GetSPValue());
             ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_USER_FIRST_CHANCE;
             ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
             ipce->ExceptionCallback2.dwFlags = fIsInterceptable ? DEBUG_EXCEPTION_CAN_BE_INTERCEPTED : 0;
@@ -7971,7 +7971,7 @@ void Debugger::SendCatchHandlerFound(
                 //
                 InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread);
 
-                ipce->ExceptionCallback2.framePointer = fp;
+                ipce->ExceptionCallback2.framePointer = PTR_TO_CORDB_ADDRESS(fp.GetSPValue());
                 ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_CATCH_HANDLER_FOUND;
                 ipce->ExceptionCallback2.nOffset = (UINT)nOffset;
                 ipce->ExceptionCallback2.dwFlags = dwFlags;
@@ -10293,7 +10293,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             LOG((LF_CORDB,LL_INFO10000, "D::HIPCE: frame SP:%p "
                 "StepIn:%s RangeIL:%s RangeCount:%u MapStop:0x%x "
                 "InterceptStop:0x%x AppD:%p\n",
-                pEvent->StepData.frameToken.GetSPValue(),
+                CORDB_ADDRESS_TO_PTR(pEvent->StepData.frameToken),
                 (pEvent->StepData.stepIn ? "true" : "false"),
                 (pEvent->StepData.rangeIL ? "true" : "false"),
                 pEvent->StepData.rangeCount,
@@ -10349,7 +10349,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
                 _ASSERTE(cRanges == 0 || ((cRanges > 0) && (cRanges == pEvent->StepData.rangeCount)));
 
-                if (!pStepper->Step(pEvent->StepData.frameToken,
+                if (!pStepper->Step(FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pEvent->StepData.frameToken)),
                                     pEvent->StepData.stepIn,
                                     &(pEvent->StepData.range),
                                     cRanges,
@@ -10423,7 +10423,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // Safe to stack trace b/c we're stopped.
                 StackTraceTicket ticket(pThread);
 
-                pStepper->StepOut(pEvent->StepData.frameToken, ticket);
+                pStepper->StepOut(FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pEvent->StepData.frameToken)), ticket);
 
                 pIPCResult->StepData.stepperToken.Set(pStepper);
             }
@@ -11108,7 +11108,7 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
             //
             // Now start processing the parameters from the event.
             //
-            FramePointer targetFramePointer = event->InterceptException.frameToken;
+            FramePointer targetFramePointer = FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(event->InterceptException.frameToken));
 
             ControllerStackInfo csi;
 
@@ -11438,7 +11438,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     case ELEMENT_TYPE_BYREF:
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
-        res->vmAssembly.SetRawPtr(NULL);
+        res->vmAssembly = VMPTR_Assembly::NullPtr();
                 break;
 
     case ELEMENT_TYPE_CLASS:
@@ -11456,7 +11456,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     default:
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
-        res->vmAssembly.SetRawPtr(NULL);
+        res->vmAssembly = VMPTR_Assembly::NullPtr();
                 break;
     }
     return;
@@ -15811,7 +15811,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
@@ -15819,7 +15818,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(CONTEXT));
 
@@ -15845,7 +15843,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15869,7 +15866,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15908,7 +15904,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_RISCV64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15948,7 +15943,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_LOONGARCH64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 

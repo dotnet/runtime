@@ -20,6 +20,10 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -3481,6 +3485,13 @@ bool GenerateDump(
 
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (exitCode == COR_E_STACKOVERFLOW)
+    {
+        InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
+    }
+#endif
+
 #ifdef HOST_WINDOWS
     CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
@@ -5264,7 +5275,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifndef TARGET_X86
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_End();
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
@@ -5330,11 +5340,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
@@ -5355,10 +5360,6 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-    (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-    (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
 
@@ -5388,7 +5389,6 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #ifndef TARGET_X86
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -10350,7 +10350,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = ::GetSP(&m_Context);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifndef DACCESS_COMPILE

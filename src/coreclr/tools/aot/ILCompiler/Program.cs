@@ -239,7 +239,24 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    if (SplitExeInitialization)
+
+                    string[] aggregateExeModules = Get(_command.AggregateExeLibrary);
+                    if (aggregateExeModules.Length > 0)
+                    {
+                        foreach (string specifier in aggregateExeModules)
+                        {
+                            int separatorIndex = specifier.IndexOf('=');
+                            if (separatorIndex < 0)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Missing '=' separator between assemblyName and MainEntryPointName. Expected format: assemblyName=MainEntryPointName.");
+
+                            if (separatorIndex == 0 || separatorIndex != specifier.LastIndexOf('=') || separatorIndex == specifier.Length - 1)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Expected format: assemblyName=MainEntryPointName with non-empty assemblyName and MainEntryPointName.");
+
+                            EcmaModule module = typeSystemContext.GetModuleForSimpleName(specifier.Substring(0, separatorIndex));
+                            compilationRoots.Add(new MainMethodRootProvider(module, null, generateLibraryAndModuleInitializers: false, specifier.Substring(separatorIndex + 1)));
+                        }
+                    }
+                    else if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
                     }

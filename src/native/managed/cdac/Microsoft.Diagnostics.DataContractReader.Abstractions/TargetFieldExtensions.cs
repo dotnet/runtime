@@ -80,6 +80,19 @@ public static class TargetFieldExtensions
     }
 
     /// <summary>
+    /// Read a native signed integer field from the target with type validation.
+    /// </summary>
+    public static TargetNInt ReadNIntField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
+    {
+        Target.FieldInfo field = typeInfo.Fields[fieldName];
+        Debug.Assert(
+            field.TypeName is null or "" or "nint",
+            $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected nint");
+
+        return target.ReadNInt(address + (ulong)field.Offset);
+    }
+
+    /// <summary>
     /// Read a code pointer field from the target with type validation.
     /// </summary>
     public static TargetCodePointer ReadCodePointerField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)

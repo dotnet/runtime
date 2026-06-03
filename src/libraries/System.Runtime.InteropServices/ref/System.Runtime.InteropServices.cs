@@ -2448,6 +2448,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public static System.Span<System.IntPtr> GetOrCreateReferenceTrackingMemory(object obj) => throw null;
         public enum MessageSendFunction
         {
             MsgSend,

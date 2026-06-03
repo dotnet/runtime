@@ -138,6 +138,14 @@ public abstract class Target
     public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
+    /// Read a native signed integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
+    public abstract TargetNInt ReadNInt(ulong address);
+
+    /// <summary>
     /// Read a well known global from the target process as a string
     /// </summary>
     /// <param name="name">The name of the global</param>
@@ -239,6 +247,14 @@ public abstract class Target
     public abstract TypeInfo GetTypeInfo(string typeName);
 
     /// <summary>
+    /// Try to resolve a native cdac type info by name. Returns <c>false</c> when the
+    /// descriptor does not define this type, instead of throwing. Used by
+    /// <c>TargetLayoutExtensions.ResolveLayouts</c> for IData classes that opt into
+    /// per-field fallback between native cdac descriptors and managed type metadata.
+    /// </summary>
+    public abstract bool TryGetTypeInfo(string typeName, out TypeInfo info);
+
+    /// <summary>
     /// Get the data cache for the target
     /// </summary>
     public abstract IDataCache ProcessedData { get; }
@@ -316,12 +332,12 @@ public abstract class Target
     public abstract ContractRegistry Contracts { get; }
 
     /// <summary>
-    /// Clear all cached data held by this target, including processed data and contract caches.
+    /// Clear cached data held by this target for the given <paramref name="scope"/>.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public virtual void Flush()
+    public virtual void Flush(FlushScope scope)
     {
         ProcessedData.Clear();
-        Contracts.Flush();
+        Contracts.Flush(scope);
     }
 }
