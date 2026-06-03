@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 

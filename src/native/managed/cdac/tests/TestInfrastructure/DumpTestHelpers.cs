@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// Helpers for resolving method names and other metadata from cDAC contracts.

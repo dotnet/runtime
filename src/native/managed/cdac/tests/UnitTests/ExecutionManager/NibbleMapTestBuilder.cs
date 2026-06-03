@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
@@ -13,10 +14,10 @@ internal abstract class NibbleMapTestBuilderBase
     // For testing we don't actually place anything into this space
     protected TargetPointer MapBase { get; init; }
 
-    internal MockTarget.Architecture Arch { get; init; }
+    public MockTarget.Architecture Arch { get; init; }
 
     // this is the target memory representation of the nibble map itself
-    internal MockMemorySpace.HeapFragment NibbleMapFragment { get; init; }
+    public MockMemorySpace.HeapFragment NibbleMapFragment { get; init; }
 
     protected const int Log2CodeAlign = 2; // This might be different on 64-bit in the future
     protected const int Log2NibblesPerDword = 3;
@@ -34,22 +35,22 @@ internal abstract class NibbleMapTestBuilderBase
 
     protected const uint HighestNibbleMask = NibbleMask << HighestNibbleBit;
 
-    protected static ulong Addr2Pos(ulong addr)
+    protected ulong Addr2Pos(ulong addr)
     {
         return addr >>> Log2BytesPerBucket;
     }
 
-    protected static uint Addr2Offs(ulong addr)
+    protected uint Addr2Offs(ulong addr)
     {
-        return (uint)(((addr & MaskBytesPerBucket) >>> Log2CodeAlign) + 1);
+        return (uint)  (((addr & MaskBytesPerBucket) >>> Log2CodeAlign) + 1);
     }
 
-    protected static int Pos2ShiftCount(ulong addr)
+    protected int Pos2ShiftCount (ulong addr)
     {
         return HighestNibbleBit - (int)((addr & NibblesPerDwordMask) << Log2NibbleSize);
     }
 
-    internal NibbleMapTestBuilderBase(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
+    public NibbleMapTestBuilderBase(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
     {
         MapBase = mapBase;
         Arch = arch;
@@ -61,7 +62,7 @@ internal abstract class NibbleMapTestBuilderBase
         };
     }
 
-    internal NibbleMapTestBuilderBase(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
+    public NibbleMapTestBuilderBase(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
     {
         MapBase = mapBase;
         Arch = arch;
@@ -69,22 +70,22 @@ internal abstract class NibbleMapTestBuilderBase
         NibbleMapFragment = allocator.Allocate((ulong)nibbleMapSize, "Nibble Map");
     }
 
-    internal abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
+    public abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
 }
 
 internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
 {
-    internal NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, mapStart, arch)
     {
     }
 
-    internal NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, allocator, arch)
     {
     }
 
-    internal override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
+    public override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
     {
         // paraphrased from EEJitManager::NibbleMapSetUnlocked
         if (codeStart.Value < MapBase.Value)
@@ -94,12 +95,12 @@ internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
         ulong delta = codeStart.Value - MapBase.Value;
         ulong pos = Addr2Pos(delta);
         bool bSet = true;
-        uint value = bSet ? Addr2Offs(delta) : 0;
+        uint value = bSet?Addr2Offs(delta):0;
 
-        uint index = (uint)(pos >>> Log2NibblesPerDword);
+        uint index = (uint) (pos >>> Log2NibblesPerDword);
         uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
-        value <<= Pos2ShiftCount(pos);
+        value = value << Pos2ShiftCount(pos);
 
         Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
         uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
@@ -116,17 +117,17 @@ internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
 
 internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
 {
-    internal NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, mapStart, arch)
     {
     }
 
-    internal NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, allocator, arch)
     {
     }
 
-    internal override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
+    public override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
     {
         // paraphrased from EEJitManager::NibbleMapSetUnlocked
         if (codeStart.Value < MapBase.Value)
@@ -138,10 +139,10 @@ internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         ulong pos = Addr2Pos(delta);
         uint value = Addr2Offs(delta);
 
-        uint index = (uint)(pos >>> Log2NibblesPerDword);
+        uint index = (uint) (pos >>> Log2NibblesPerDword);
         uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
-        value <<= Pos2ShiftCount(pos);
+        value = value << Pos2ShiftCount(pos);
 
         Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
         uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
@@ -157,11 +158,11 @@ internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         ulong firstByteAfterMethod = delta + (uint)codeSize;
         uint encodedPointer = NibbleMapConstantLookup.EncodePointer((uint)delta);
         index++;
-        while ((index + 1) * 256 <= firstByteAfterMethod)
+        while((index + 1) * 256 <= firstByteAfterMethod)
         {
             entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
             oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
-            if (oldValue != 0)
+            if(oldValue != 0)
             {
                 throw new InvalidOperationException("Overwriting existing offset");
             }

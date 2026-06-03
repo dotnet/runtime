@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal sealed class MockSyncBlockCache : TypedView
@@ -9,19 +10,19 @@ internal sealed class MockSyncBlockCache : TypedView
     private const string FreeSyncTableIndexFieldName = "FreeSyncTableIndex";
     private const string CleanupBlockListFieldName = "CleanupBlockList";
 
-    internal static Layout<MockSyncBlockCache> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockSyncBlockCache> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("SyncBlockCache", architecture)
             .AddUInt32Field(FreeSyncTableIndexFieldName)
             .AddPointerField(CleanupBlockListFieldName)
             .Build<MockSyncBlockCache>();
 
-    internal uint FreeSyncTableIndex
+    public uint FreeSyncTableIndex
     {
         get => ReadUInt32Field(FreeSyncTableIndexFieldName);
         set => WriteUInt32Field(FreeSyncTableIndexFieldName, value);
     }
 
-    internal ulong CleanupBlockList
+    public ulong CleanupBlockList
     {
         get => ReadPointerField(CleanupBlockListFieldName);
         set => WritePointerField(CleanupBlockListFieldName, value);
@@ -35,7 +36,7 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
     private const string CCFFieldName = "CCF";
     private const string TaggedMemoryFieldName = "TaggedMemory";
 
-    internal static Layout<MockInteropSyncBlockInfo> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockInteropSyncBlockInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("InteropSyncBlockInfo", architecture)
             .AddPointerField(RCWFieldName)
             .AddPointerField(CCWFieldName)
@@ -43,25 +44,25 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
             .AddPointerField(TaggedMemoryFieldName)
             .Build<MockInteropSyncBlockInfo>();
 
-    internal ulong RCW
+    public ulong RCW
     {
         get => ReadPointerField(RCWFieldName);
         set => WritePointerField(RCWFieldName, value);
     }
 
-    internal ulong CCW
+    public ulong CCW
     {
         get => ReadPointerField(CCWFieldName);
         set => WritePointerField(CCWFieldName, value);
     }
 
-    internal ulong CCF
+    public ulong CCF
     {
         get => ReadPointerField(CCFFieldName);
         set => WritePointerField(CCFFieldName, value);
     }
 
-    internal ulong TaggedMemory
+    public ulong TaggedMemory
     {
         get => ReadPointerField(TaggedMemoryFieldName);
         set => WritePointerField(TaggedMemoryFieldName, value);
@@ -73,7 +74,7 @@ internal sealed class MockSyncBlock : TypedView
     private const string InteropInfoFieldName = "InteropInfo";
     private const string LinkNextFieldName = "LinkNext";
 
-    internal static Layout<MockSyncBlock> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockSyncBlock> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("SyncBlock", architecture)
             .AddPointerField(InteropInfoFieldName)
             .AddPointerField("Lock")
@@ -82,13 +83,13 @@ internal sealed class MockSyncBlock : TypedView
             .AddUInt32Field("HashCode")
             .Build<MockSyncBlock>();
 
-    internal ulong InteropInfo
+    public ulong InteropInfo
     {
         get => ReadPointerField(InteropInfoFieldName);
         set => WritePointerField(InteropInfoFieldName, value);
     }
 
-    internal ulong LinkNext
+    public ulong LinkNext
     {
         get => ReadPointerField(LinkNextFieldName);
         set => WritePointerField(LinkNextFieldName, value);
@@ -119,16 +120,16 @@ internal sealed class MockSyncBlockBuilder
 
     internal ulong SyncTableEntriesGlobalAddress { get; }
 
-    internal MockSyncBlockBuilder(MockMemorySpace.Builder builder)
+    public MockSyncBlockBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     { }
 
-    internal MockSyncBlockBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockSyncBlockBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         : this(builder, builder.CreateAllocator(allocationRange.Start, allocationRange.End))
     {
     }
 
-    internal MockSyncBlockBuilder(MockMemorySpace.Builder builder, MockMemorySpace.BumpAllocator allocator)
+    public MockSyncBlockBuilder(MockMemorySpace.Builder builder, MockMemorySpace.BumpAllocator allocator)
         : this(builder, allocator, initializeCacheAndGlobals: true)
     {
     }

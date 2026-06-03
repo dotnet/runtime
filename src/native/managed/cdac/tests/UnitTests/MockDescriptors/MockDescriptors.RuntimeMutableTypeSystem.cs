@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 

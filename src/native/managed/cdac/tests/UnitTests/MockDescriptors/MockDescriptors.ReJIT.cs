@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -12,7 +13,7 @@ internal sealed class MockProfControlBlock : TypedView
     private const string MainProfilerProfInterfaceFieldName = "MainProfilerProfInterface";
     private const string NotificationProfilerCountFieldName = "NotificationProfilerCount";
 
-    internal static Layout<MockProfControlBlock> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockProfControlBlock> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ProfControlBlock", architecture)
             .AddUInt64Field(GlobalEventMaskFieldName)
             .AddField(RejitOnAttachEnabledFieldName, sizeof(byte))
@@ -20,25 +21,25 @@ internal sealed class MockProfControlBlock : TypedView
             .AddUInt32Field(NotificationProfilerCountFieldName)
             .Build<MockProfControlBlock>();
 
-    internal ulong GlobalEventMask
+    public ulong GlobalEventMask
     {
         get => ReadUInt64Field(GlobalEventMaskFieldName);
         set => WriteUInt64Field(GlobalEventMaskFieldName, value);
     }
 
-    internal byte RejitOnAttachEnabled
+    public byte RejitOnAttachEnabled
     {
         get => ReadByteField(RejitOnAttachEnabledFieldName);
         set => WriteByteField(RejitOnAttachEnabledFieldName, value);
     }
 
-    internal ulong MainProfilerProfInterface
+    public ulong MainProfilerProfInterface
     {
         get => ReadPointerField(MainProfilerProfInterfaceFieldName);
         set => WritePointerField(MainProfilerProfInterfaceFieldName, value);
     }
 
-    internal int NotificationProfilerCount
+    public int NotificationProfilerCount
     {
         get => (int)ReadUInt32Field(NotificationProfilerCountFieldName);
         set => WriteUInt32Field(NotificationProfilerCountFieldName, (uint)value);
@@ -49,10 +50,11 @@ internal sealed class MockReJITBuilder
 {
     private const ulong DefaultAllocationRangeStart = 0x0010_1000;
     private const ulong DefaultAllocationRangeEnd = 0x00011_0000;
+    private const string ProfilerControlBlockGlobalName = "ProfilerControlBlock";
 
     // see src/coreclr/vm/codeversion.h
     [Flags]
-    internal enum RejitFlags : uint
+    public enum RejitFlags : uint
     {
         kStateRequested = 0x00000000,
         kStateActive = 0x00000002,
@@ -61,22 +63,22 @@ internal sealed class MockReJITBuilder
 
     internal MockMemorySpace.Builder Builder { get; }
     internal Layout<MockProfControlBlock> ProfControlBlockLayout { get; }
-    internal ulong ProfilerControlBlockGlobalAddress { get; }
+    public ulong ProfilerControlBlockGlobalAddress { get; }
 
     private readonly MockCodeVersionsBuilder _codeVersions;
     private readonly MockMemorySpace.BumpAllocator _rejitAllocator;
 
-    internal MockReJITBuilder(MockTarget.Architecture arch, bool rejitOnAttachEnabled = true)
+    public MockReJITBuilder(MockTarget.Architecture arch, bool rejitOnAttachEnabled = true)
         : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
     {
     }
 
-    internal MockReJITBuilder(MockMemorySpace.Builder builder, bool rejitOnAttachEnabled = true)
+    public MockReJITBuilder(MockMemorySpace.Builder builder, bool rejitOnAttachEnabled = true)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
     {
     }
 
-    internal MockReJITBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool rejitOnAttachEnabled = true)
+    public MockReJITBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool rejitOnAttachEnabled = true)
     {
         Builder = builder;
         _rejitAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
@@ -92,7 +94,7 @@ internal sealed class MockReJITBuilder
     internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout => _codeVersions.ILCodeVersionNodeLayout;
     internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout => _codeVersions.GCCoverageInfoLayout;
 
-    internal MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags, bool deoptimized = false)
+    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags, bool deoptimized = false)
         => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags, deoptimized);
 
     private ulong AddProfControlBlock(bool rejitOnAttachEnabled)

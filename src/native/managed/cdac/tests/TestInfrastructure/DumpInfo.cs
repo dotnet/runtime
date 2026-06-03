@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// Metadata about the environment in which a set of dumps was generated.

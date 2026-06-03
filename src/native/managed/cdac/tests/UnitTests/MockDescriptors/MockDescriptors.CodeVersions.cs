@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -11,21 +11,21 @@ internal sealed class MockMethodDescVersioningState : TypedView
     private const string NativeCodeVersionNodeFieldName = "NativeCodeVersionNode";
     private const string FlagsFieldName = "Flags";
 
-    internal const byte IsDefaultVersionActiveChildFlag = 0x4;
+    public const byte IsDefaultVersionActiveChildFlag = 0x4;
 
-    internal static Layout<MockMethodDescVersioningState> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockMethodDescVersioningState> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("MethodDescVersioningState", architecture)
             .AddPointerField(NativeCodeVersionNodeFieldName)
             .AddField(FlagsFieldName, sizeof(byte))
             .Build<MockMethodDescVersioningState>();
 
-    internal ulong NativeCodeVersionNode
+    public ulong NativeCodeVersionNode
     {
         get => ReadPointerField(NativeCodeVersionNodeFieldName);
         set => WritePointerField(NativeCodeVersionNodeFieldName, value);
     }
 
-    internal byte Flags
+    public byte Flags
     {
         get => ReadByteField(FlagsFieldName);
         set => WriteByteField(FlagsFieldName, value);
@@ -42,9 +42,9 @@ internal sealed class MockNativeCodeVersionNode : TypedView
     private const string GCCoverageInfoFieldName = "GCCoverageInfo";
     private const string OptimizationTierFieldName = "OptimizationTier";
 
-    internal const uint IsActiveChildFlag = 0x1;
+    public const uint IsActiveChildFlag = 0x1;
 
-    internal static Layout<MockNativeCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockNativeCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("NativeCodeVersionNode", architecture)
             .AddPointerField(NextFieldName)
             .AddPointerField(MethodDescFieldName)
@@ -55,43 +55,43 @@ internal sealed class MockNativeCodeVersionNode : TypedView
             .AddUInt32Field(OptimizationTierFieldName)
             .Build<MockNativeCodeVersionNode>();
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField(NextFieldName);
         set => WritePointerField(NextFieldName, value);
     }
 
-    internal ulong MethodDesc
+    public ulong MethodDesc
     {
         get => ReadPointerField(MethodDescFieldName);
         set => WritePointerField(MethodDescFieldName, value);
     }
 
-    internal ulong NativeCode
+    public ulong NativeCode
     {
         get => ReadPointerField(NativeCodeFieldName);
         set => WritePointerField(NativeCodeFieldName, value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field(FlagsFieldName);
         set => WriteUInt32Field(FlagsFieldName, value);
     }
 
-    internal ulong ILVersionId
+    public ulong ILVersionId
     {
         get => ReadPointerField(ILVersionIdFieldName);
         set => WritePointerField(ILVersionIdFieldName, value);
     }
 
-    internal ulong GCCoverageInfo
+    public ulong GCCoverageInfo
     {
         get => ReadPointerField(GCCoverageInfoFieldName);
         set => WritePointerField(GCCoverageInfoFieldName, value);
     }
 
-    internal uint OptimizationTier
+    public uint OptimizationTier
     {
         get => ReadUInt32Field(OptimizationTierFieldName);
         set => WriteUInt32Field(OptimizationTierFieldName, value);
@@ -106,7 +106,7 @@ internal sealed class MockILCodeVersioningState : TypedView
     private const string ActiveVersionKindFieldName = "ActiveVersionKind";
     private const string ActiveVersionNodeFieldName = "ActiveVersionNode";
 
-    internal static Layout<MockILCodeVersioningState> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockILCodeVersioningState> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ILCodeVersioningState", architecture)
             .AddPointerField(FirstVersionNodeFieldName)
             .AddUInt32Field(ActiveVersionMethodDefFieldName)
@@ -115,31 +115,31 @@ internal sealed class MockILCodeVersioningState : TypedView
             .AddPointerField(ActiveVersionNodeFieldName)
             .Build<MockILCodeVersioningState>();
 
-    internal ulong FirstVersionNode
+    public ulong FirstVersionNode
     {
         get => ReadPointerField(FirstVersionNodeFieldName);
         set => WritePointerField(FirstVersionNodeFieldName, value);
     }
 
-    internal uint ActiveVersionMethodDef
+    public uint ActiveVersionMethodDef
     {
         get => ReadUInt32Field(ActiveVersionMethodDefFieldName);
         set => WriteUInt32Field(ActiveVersionMethodDefFieldName, value);
     }
 
-    internal ulong ActiveVersionModule
+    public ulong ActiveVersionModule
     {
         get => ReadPointerField(ActiveVersionModuleFieldName);
         set => WritePointerField(ActiveVersionModuleFieldName, value);
     }
 
-    internal uint ActiveVersionKind
+    public uint ActiveVersionKind
     {
         get => ReadUInt32Field(ActiveVersionKindFieldName);
         set => WriteUInt32Field(ActiveVersionKindFieldName, value);
     }
 
-    internal ulong ActiveVersionNode
+    public ulong ActiveVersionNode
     {
         get => ReadPointerField(ActiveVersionNodeFieldName);
         set => WritePointerField(ActiveVersionNodeFieldName, value);
@@ -154,7 +154,7 @@ internal sealed class MockILCodeVersionNode : TypedView
     private const string ILAddressFieldName = "ILAddress";
     private const string DeoptimizedFieldName = "Deoptimized";
 
-    internal static Layout<MockILCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockILCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ILCodeVersionNode", architecture)
             .AddNUIntField(VersionIdFieldName)
             .AddPointerField(NextFieldName)
@@ -163,25 +163,25 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddUInt32Field(DeoptimizedFieldName)
             .Build<MockILCodeVersionNode>();
 
-    internal ulong VersionId
+    public ulong VersionId
     {
         get => ReadPointerField(VersionIdFieldName);
         set => WritePointerField(VersionIdFieldName, value);
     }
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField(NextFieldName);
         set => WritePointerField(NextFieldName, value);
     }
 
-    internal uint RejitState
+    public uint RejitState
     {
         get => ReadUInt32Field(RejitStateFieldName);
         set => WriteUInt32Field(RejitStateFieldName, value);
     }
 
-    internal uint Deoptimized
+    public uint Deoptimized
     {
         get => ReadUInt32Field(DeoptimizedFieldName);
         set => WriteUInt32Field(DeoptimizedFieldName, value);
@@ -193,13 +193,13 @@ internal sealed class MockGCCoverageInfo : TypedView
     private const string DummyFieldName = "DummyField";
     private const string SavedCodeFieldName = "SavedCode";
 
-    internal static Layout<MockGCCoverageInfo> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockGCCoverageInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("GCCoverageInfo", architecture)
             .AddPointerField(DummyFieldName)
             .AddPointerField(SavedCodeFieldName)
             .Build<MockGCCoverageInfo>();
 
-    internal static int GetSavedCodeOffset(MockTarget.Architecture architecture)
+    public static int GetSavedCodeOffset(MockTarget.Architecture architecture)
         => CreateLayout(architecture).GetField(SavedCodeFieldName).Offset;
 }
 
@@ -217,22 +217,22 @@ internal sealed class MockCodeVersionsBuilder
 
     private readonly MockMemorySpace.BumpAllocator _codeVersionsAllocator;
 
-    internal MockCodeVersionsBuilder(MockTarget.Architecture arch)
+    public MockCodeVersionsBuilder(MockTarget.Architecture arch)
         : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockCodeVersionsBuilder(MockMemorySpace.Builder builder)
+    public MockCodeVersionsBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockCodeVersionsBuilder(MockTarget.Architecture arch, (ulong Start, ulong End) allocationRange)
+    public MockCodeVersionsBuilder(MockTarget.Architecture arch, (ulong Start, ulong End) allocationRange)
         : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
     {
     }
 
-    internal MockCodeVersionsBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockCodeVersionsBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -247,11 +247,11 @@ internal sealed class MockCodeVersionsBuilder
         GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(architecture);
     }
 
-    internal MockMethodDescVersioningState AddMethodDescVersioningState()
+    public MockMethodDescVersioningState AddMethodDescVersioningState()
         => MethodDescVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)MethodDescVersioningStateLayout.Size, "MethodDescVersioningState"));
 
-    internal MockNativeCodeVersionNode AddNativeCodeVersionNode()
+    public MockNativeCodeVersionNode AddNativeCodeVersionNode()
     {
         MockNativeCodeVersionNode node = NativeCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)NativeCodeVersionNodeLayout.Size, "NativeCodeVersionNode"));
@@ -259,8 +259,7 @@ internal sealed class MockCodeVersionsBuilder
         return node;
     }
 
-    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as instance method for symmetry with other builder methods.")]
-    internal void FillNativeCodeVersionNode(
+    public void FillNativeCodeVersionNode(
         MockNativeCodeVersionNode dest,
         ulong methodDesc,
         ulong nativeCode,
@@ -281,7 +280,7 @@ internal sealed class MockCodeVersionsBuilder
         dest.OptimizationTier = optimizationTier ?? 0xFFFFFFFFu;
     }
 
-    internal (MockNativeCodeVersionNode First, MockNativeCodeVersionNode? Active) AddNativeCodeVersionNodesForMethod(ulong methodDesc, int count, int activeIndex, ulong activeNativeCode, ulong ilVersion, MockNativeCodeVersionNode? firstNode = null)
+    public (MockNativeCodeVersionNode First, MockNativeCodeVersionNode? Active) AddNativeCodeVersionNodesForMethod(ulong methodDesc, int count, int activeIndex, ulong activeNativeCode, ulong ilVersion, MockNativeCodeVersionNode? firstNode = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
@@ -311,11 +310,11 @@ internal sealed class MockCodeVersionsBuilder
         return (currentFirstNode!, activeVersionNode);
     }
 
-    internal MockILCodeVersioningState AddILCodeVersioningState()
+    public MockILCodeVersioningState AddILCodeVersioningState()
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    internal MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false)
+    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));

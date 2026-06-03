@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 public class MockTarget
 {

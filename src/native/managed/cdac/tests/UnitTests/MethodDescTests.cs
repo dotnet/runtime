@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
 

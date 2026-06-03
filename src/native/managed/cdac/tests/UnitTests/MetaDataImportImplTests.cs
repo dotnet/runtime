@@ -9,6 +9,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;

@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;

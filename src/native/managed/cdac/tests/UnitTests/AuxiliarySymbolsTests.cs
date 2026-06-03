@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
 

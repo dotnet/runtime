@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
-
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 

@@ -10,7 +10,7 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// A mock implementation of Target that has basic implementations of getting types/globals and reading data

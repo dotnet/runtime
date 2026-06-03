@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// Base class for dump-based cDAC integration tests.

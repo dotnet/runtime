@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -16,7 +17,7 @@ internal sealed class MockObjectHeaderData : TypedView
     private const string PaddingFieldName = "Padding";
     private const string SyncBlockValueFieldName = nameof(Data.ObjectHeader.SyncBlockValue);
 
-    internal static Layout<MockObjectHeaderData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockObjectHeaderData> CreateLayout(MockTarget.Architecture architecture)
     {
         SequentialLayoutBuilder builder = new("ObjectHeader", architecture);
         if (architecture.Is64Bit)
@@ -29,7 +30,7 @@ internal sealed class MockObjectHeaderData : TypedView
             .Build<MockObjectHeaderData>();
     }
 
-    internal uint SyncBlockValue
+    public uint SyncBlockValue
     {
         get => ReadUInt32Field(SyncBlockValueFieldName);
         set => WriteUInt32Field(SyncBlockValueFieldName, value);
@@ -40,7 +41,7 @@ internal sealed class MockObjectData : TypedView
 {
     private const string MethodTableFieldName = "m_pMethTab";
 
-    internal static Layout<MockObjectData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockObjectData> CreateLayout(MockTarget.Architecture architecture)
     {
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("Object", architecture);
@@ -49,7 +50,7 @@ internal sealed class MockObjectData : TypedView
         return builder.Build<MockObjectData>();
     }
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
@@ -62,7 +63,7 @@ internal sealed class MockStringObjectData : TypedView
     private const string StringLengthFieldName = "m_StringLength";
     private const string FirstCharFieldName = "m_FirstChar";
 
-    internal static Layout<MockStringObjectData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockStringObjectData> CreateLayout(MockTarget.Architecture architecture)
     {
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("String", architecture);
@@ -73,19 +74,19 @@ internal sealed class MockStringObjectData : TypedView
         return builder.Build<MockStringObjectData>();
     }
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
     }
 
-    internal uint StringLength
+    public uint StringLength
     {
         get => ReadUInt32Field(StringLengthFieldName);
         set => WriteUInt32Field(StringLengthFieldName, value);
     }
 
-    internal ulong FirstCharAddress => GetFieldAddress(FirstCharFieldName);
+    public ulong FirstCharAddress => GetFieldAddress(FirstCharFieldName);
 }
 
 internal sealed class MockArrayObjectData : TypedView
@@ -93,7 +94,7 @@ internal sealed class MockArrayObjectData : TypedView
     private const string MethodTableFieldName = "m_pMethTab";
     private const string NumComponentsFieldName = "m_NumComponents";
 
-    internal static Layout<MockArrayObjectData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockArrayObjectData> CreateLayout(MockTarget.Architecture architecture)
     {
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("Array", architecture);
@@ -103,13 +104,13 @@ internal sealed class MockArrayObjectData : TypedView
         return builder.Build<MockArrayObjectData>();
     }
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
     }
 
-    internal uint NumComponents
+    public uint NumComponents
     {
         get => ReadUInt32Field(NumComponentsFieldName);
         set => WriteUInt32Field(NumComponentsFieldName, value);
@@ -121,19 +122,19 @@ internal sealed class MockSyncTableEntry : TypedView
     private const string SyncBlockFieldName = "SyncBlock";
     private const string ObjectFieldName = "Object";
 
-    internal static Layout<MockSyncTableEntry> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockSyncTableEntry> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("SyncTableEntry", architecture)
             .AddPointerField(SyncBlockFieldName)
             .AddPointerField(ObjectFieldName)
             .Build<MockSyncTableEntry>();
 
-    internal ulong SyncBlock
+    public ulong SyncBlock
     {
         get => ReadPointerField(SyncBlockFieldName);
         set => WritePointerField(SyncBlockFieldName, value);
     }
 
-    internal ulong Object
+    public ulong Object
     {
         get => ReadPointerField(ObjectFieldName);
         set => WritePointerField(ObjectFieldName, value);
@@ -142,13 +143,13 @@ internal sealed class MockSyncTableEntry : TypedView
 
 internal sealed class MockDelegateObjectData : TypedView
 {
-    internal const string MethodTableFieldName = "m_pMethTab";
-    internal const string TargetFieldName = "Target";
-    internal const string MethodPtrFieldName = "MethodPtr";
-    internal const string MethodPtrAuxFieldName = "MethodPtrAux";
-    internal const string InvocationCountFieldName = "InvocationCount";
+    public const string MethodTableFieldName = "m_pMethTab";
+    public const string TargetFieldName = "Target";
+    public const string MethodPtrFieldName = "MethodPtr";
+    public const string MethodPtrAuxFieldName = "MethodPtrAux";
+    public const string InvocationCountFieldName = "InvocationCount";
 
-    internal static Layout<MockDelegateObjectData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockDelegateObjectData> CreateLayout(MockTarget.Architecture architecture)
     {
         SequentialLayoutBuilder builder = new("Delegate", architecture);
         return builder
@@ -160,31 +161,31 @@ internal sealed class MockDelegateObjectData : TypedView
             .Build<MockDelegateObjectData>();
     }
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
     }
 
-    internal ulong Target
+    public ulong Target
     {
         get => ReadPointerField(TargetFieldName);
         set => WritePointerField(TargetFieldName, value);
     }
 
-    internal ulong MethodPtr
+    public ulong MethodPtr
     {
         get => ReadPointerField(MethodPtrFieldName);
         set => WritePointerField(MethodPtrFieldName, value);
     }
 
-    internal ulong MethodPtrAux
+    public ulong MethodPtrAux
     {
         get => ReadPointerField(MethodPtrAuxFieldName);
         set => WritePointerField(MethodPtrAuxFieldName, value);
     }
 
-    internal long InvocationCount
+    public long InvocationCount
     {
         // Stored at pointer width; on 32-bit, WritePointer truncates the upper bits
         // so the signed bit pattern of `value` is preserved (e.g. -1 → 0xFFFFFFFF).
@@ -193,7 +194,7 @@ internal sealed class MockDelegateObjectData : TypedView
     }
 }
 
-internal static partial class MockDescriptors
+internal partial class MockDescriptors
 {
     internal sealed class MockObjectBuilder
     {
@@ -223,12 +224,12 @@ internal static partial class MockDescriptors
         internal Layout<MockSyncBlock> SyncBlockLayout => SyncBlockBuilder.SyncBlockLayout;
         internal Layout<MockInteropSyncBlockInfo> InteropSyncBlockInfoLayout => SyncBlockBuilder.InteropSyncBlockInfoLayout;
 
-        internal MockObjectBuilder(RuntimeTypeSystem rtsBuilder)
+        public MockObjectBuilder(RuntimeTypeSystem rtsBuilder)
             : this(rtsBuilder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
         {
         }
 
-        internal MockObjectBuilder(RuntimeTypeSystem rtsBuilder, (ulong Start, ulong End) allocationRange)
+        public MockObjectBuilder(RuntimeTypeSystem rtsBuilder, (ulong Start, ulong End) allocationRange)
         {
             ArgumentNullException.ThrowIfNull(rtsBuilder);
 

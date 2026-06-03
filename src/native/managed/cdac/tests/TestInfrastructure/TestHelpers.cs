@@ -5,7 +5,7 @@ using System;
 using System.Reflection;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 public static class TestHelpers
 {

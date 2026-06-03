@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;

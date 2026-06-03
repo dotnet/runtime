@@ -3,12 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescriptor;
 
 public class ContractDescriptorBuilder : MockMemorySpace.Builder
 {

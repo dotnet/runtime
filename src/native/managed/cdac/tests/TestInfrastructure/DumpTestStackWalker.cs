@@ -7,7 +7,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// A single resolved stack frame, carrying the method name, the raw

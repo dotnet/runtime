@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -20,7 +21,7 @@ internal sealed class MockExceptionInfo : TypedView
     private const string ClauseForCatchHandlerStartPCFieldName = "ClauseForCatchHandlerStartPC";
     private const string ClauseForCatchHandlerEndPCFieldName = "ClauseForCatchHandlerEndPC";
 
-    internal static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
             .AddPointerField(PreviousNestedInfoFieldName)
             .AddPointerField(ThrownObjectFieldName)
@@ -36,7 +37,7 @@ internal sealed class MockExceptionInfo : TypedView
             .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
             .Build<MockExceptionInfo>();
 
-    internal ulong ThrownObject
+    public ulong ThrownObject
     {
         get => ReadPointerField(ThrownObjectFieldName);
         set => WritePointerField(ThrownObjectFieldName, value);
@@ -50,7 +51,7 @@ internal sealed class MockGCAllocContext : TypedView
     private const string AllocBytesFieldName = "AllocBytes";
     private const string AllocBytesLohFieldName = "AllocBytesLoh";
 
-    internal static Layout<MockGCAllocContext> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockGCAllocContext> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("GCAllocContext", architecture)
             .AddPointerField(PointerFieldName)
             .AddPointerField(LimitFieldName)
@@ -58,25 +59,25 @@ internal sealed class MockGCAllocContext : TypedView
             .AddInt64Field(AllocBytesLohFieldName)
             .Build<MockGCAllocContext>();
 
-    internal ulong Pointer
+    public ulong Pointer
     {
         get => ReadPointerField(PointerFieldName);
         set => WritePointerField(PointerFieldName, value);
     }
 
-    internal ulong Limit
+    public ulong Limit
     {
         get => ReadPointerField(LimitFieldName);
         set => WritePointerField(LimitFieldName, value);
     }
 
-    internal long AllocBytes
+    public long AllocBytes
     {
         get => ReadInt64Field(AllocBytesFieldName);
         set => WriteInt64Field(AllocBytesFieldName, value);
     }
 
-    internal long AllocBytesLoh
+    public long AllocBytesLoh
     {
         get => ReadInt64Field(AllocBytesLohFieldName);
         set => WriteInt64Field(AllocBytesLohFieldName, value);
@@ -87,12 +88,12 @@ internal sealed class MockEEAllocContext : TypedView
 {
     private const string GCAllocationContextFieldName = "GCAllocationContext";
 
-    internal static Layout<MockEEAllocContext> CreateLayout(MockTarget.Architecture architecture, Layout<MockGCAllocContext> gcAllocContextLayout)
+    public static Layout<MockEEAllocContext> CreateLayout(MockTarget.Architecture architecture, Layout<MockGCAllocContext> gcAllocContextLayout)
         => new SequentialLayoutBuilder("EEAllocContext", architecture)
             .AddField(GCAllocationContextFieldName, gcAllocContextLayout.Size)
             .Build<MockEEAllocContext>();
 
-    internal ulong GCAllocationContextAddress => GetFieldAddress(GCAllocationContextFieldName);
+    public ulong GCAllocationContextAddress => GetFieldAddress(GCAllocationContextFieldName);
 }
 
 internal sealed class MockRuntimeThreadLocals : TypedView
@@ -101,17 +102,17 @@ internal sealed class MockRuntimeThreadLocals : TypedView
 
     private Layout<MockGCAllocContext> GCAllocContextLayout { get; set; } = null!;
 
-    internal static Layout<MockRuntimeThreadLocals> CreateLayout(MockTarget.Architecture architecture, Layout<MockEEAllocContext> eeAllocContextLayout)
+    public static Layout<MockRuntimeThreadLocals> CreateLayout(MockTarget.Architecture architecture, Layout<MockEEAllocContext> eeAllocContextLayout)
         => new SequentialLayoutBuilder("RuntimeThreadLocals", architecture)
             .AddField(AllocContextFieldName, eeAllocContextLayout.Size)
             .Build<MockRuntimeThreadLocals>();
 
-    internal ulong AllocContextAddress => GetFieldAddress(AllocContextFieldName);
+    public ulong AllocContextAddress => GetFieldAddress(AllocContextFieldName);
 
     internal void SetGCAllocContextLayout(Layout<MockGCAllocContext> gcAllocContextLayout)
         => GCAllocContextLayout = gcAllocContextLayout;
 
-    internal MockGCAllocContext GCAllocContext
+    public MockGCAllocContext GCAllocContext
     {
         get
         {
@@ -130,7 +131,7 @@ internal sealed class MockThreadStore : TypedView
     private const string PendingCountFieldName = "PendingCount";
     private const string DeadCountFieldName = "DeadCount";
 
-    internal static Layout<MockThreadStore> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockThreadStore> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ThreadStore", architecture)
             .AddUInt32Field(ThreadCountFieldName)
             .AddPointerField(FirstThreadLinkFieldName)
@@ -140,33 +141,33 @@ internal sealed class MockThreadStore : TypedView
             .AddUInt32Field(DeadCountFieldName)
             .Build<MockThreadStore>();
 
-    internal ulong FirstThreadLink
+    public ulong FirstThreadLink
     {
         get => ReadPointerField(FirstThreadLinkFieldName);
         set => WritePointerField(FirstThreadLinkFieldName, value);
     }
 
-    internal int ThreadCount
+    public int ThreadCount
     {
         set => WriteUInt32Field(ThreadCountFieldName, checked((uint)value));
     }
 
-    internal int UnstartedCount
+    public int UnstartedCount
     {
         set => WriteUInt32Field(UnstartedCountFieldName, checked((uint)value));
     }
 
-    internal int BackgroundCount
+    public int BackgroundCount
     {
         set => WriteUInt32Field(BackgroundCountFieldName, checked((uint)value));
     }
 
-    internal int PendingCount
+    public int PendingCount
     {
         set => WriteUInt32Field(PendingCountFieldName, checked((uint)value));
     }
 
-    internal int DeadCount
+    public int DeadCount
     {
         set => WriteUInt32Field(DeadCountFieldName, checked((uint)value));
     }
@@ -195,7 +196,7 @@ internal sealed class MockThread : TypedView
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
     private const string InteropDebuggingHijackedFieldName = "InteropDebuggingHijacked";
 
-    internal static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
     {
         SequentialLayoutBuilder layoutBuilder = new SequentialLayoutBuilder("Thread", architecture)
             .AddUInt32Field(IdFieldName)
@@ -222,97 +223,97 @@ internal sealed class MockThread : TypedView
         return layoutBuilder.Build<MockThread>();
     }
 
-    internal uint Id
+    public uint Id
     {
         get => ReadUInt32Field(IdFieldName);
         set => WriteUInt32Field(IdFieldName, value);
     }
 
-    internal ulong OSId
+    public ulong OSId
     {
         get => ReadPointerField(OSIdFieldName);
         set => WritePointerField(OSIdFieldName, value);
     }
 
-    internal uint State
+    public uint State
     {
         get => ReadUInt32Field(StateFieldName);
         set => WriteUInt32Field(StateFieldName, value);
     }
 
-    internal ulong RuntimeThreadLocals
+    public ulong RuntimeThreadLocals
     {
         get => ReadPointerField(RuntimeThreadLocalsFieldName);
         set => WritePointerField(RuntimeThreadLocalsFieldName, value);
     }
 
-    internal ulong CachedStackBase
+    public ulong CachedStackBase
     {
         get => ReadPointerField(CachedStackBaseFieldName);
         set => WritePointerField(CachedStackBaseFieldName, value);
     }
 
-    internal ulong CachedStackLimit
+    public ulong CachedStackLimit
     {
         get => ReadPointerField(CachedStackLimitFieldName);
         set => WritePointerField(CachedStackLimitFieldName, value);
     }
 
-    internal ulong LinkNext
+    public ulong LinkNext
     {
         get => ReadPointerField(LinkNextFieldName);
         set => WritePointerField(LinkNextFieldName, value);
     }
 
-    internal ulong ExceptionTracker
+    public ulong ExceptionTracker
     {
         get => ReadPointerField(ExceptionTrackerFieldName);
         set => WritePointerField(ExceptionTrackerFieldName, value);
     }
 
-    internal ulong ExposedObject
+    public ulong ExposedObject
     {
         get => ReadPointerField(ExposedObjectFieldName);
         set => WritePointerField(ExposedObjectFieldName, value);
     }
 
-    internal uint LastThrownObjectIsUnhandled
+    public uint LastThrownObjectIsUnhandled
     {
         get => ReadUInt32Field(LastThrownObjectIsUnhandledFieldName);
         set => WriteUInt32Field(LastThrownObjectIsUnhandledFieldName, value);
     }
 
-    internal ulong CurrentCustomDebuggerNotification
+    public ulong CurrentCustomDebuggerNotification
     {
         get => ReadPointerField(CurrentCustomDebuggerNotificationFieldName);
         set => WritePointerField(CurrentCustomDebuggerNotificationFieldName, value);
     }
 
-    internal ulong FrameAddress => GetFieldAddress(FrameFieldName);
+    public ulong FrameAddress => GetFieldAddress(FrameFieldName);
 
     /// <summary>
     /// The value of the Thread's m_pFrame field - the address of the topmost explicit
     /// Frame on this thread's frame chain (or the FRAME_TOP terminator for an empty chain).
     /// </summary>
-    internal ulong Frame
+    public ulong Frame
     {
         get => ReadPointerField(FrameFieldName);
         set => WritePointerField(FrameFieldName, value);
     }
 
-    internal uint DebuggerControlledThreadState
+    public uint DebuggerControlledThreadState
     {
         get => ReadUInt32Field(DebuggerControlledThreadStateFieldName);
         set => WriteUInt32Field(DebuggerControlledThreadStateFieldName, value);
     }
 
-    internal ulong LastThrownObject
+    public ulong LastThrownObject
     {
         get => ReadPointerField(LastThrownObjectFieldName);
         set => WritePointerField(LastThrownObjectFieldName, value);
     }
 
-    internal ulong ThreadHandle
+    public ulong ThreadHandle
     {
         get => ReadPointerField(ThreadHandleFieldName);
         set => WritePointerField(ThreadHandleFieldName, value);
@@ -344,9 +345,9 @@ internal sealed class MockThreadBuilder
     internal Layout<MockEEAllocContext> EEAllocContextLayout { get; }
     internal Layout<MockRuntimeThreadLocals> RuntimeThreadLocalsLayout { get; }
 
-    internal ulong ThreadStoreGlobalAddress { get; }
-    internal ulong FinalizerThreadGlobalAddress { get; }
-    internal ulong GCThreadGlobalAddress { get; }
+    public ulong ThreadStoreGlobalAddress { get; }
+    public ulong FinalizerThreadGlobalAddress { get; }
+    public ulong GCThreadGlobalAddress { get; }
     internal MockThreadStore ThreadStore => _threadStore;
     internal ulong ThreadStoreAddress { get; }
     internal ulong FinalizerThreadAddress { get; }
@@ -357,12 +358,12 @@ internal sealed class MockThreadBuilder
 
     private MockThread? _previousThread;
 
-    internal MockThreadBuilder(MockMemorySpace.Builder builder)
+    public MockThreadBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);

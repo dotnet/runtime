@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -11,12 +12,12 @@ internal sealed class MockLoaderHeap : TypedView
 {
     private const string FirstBlockFieldName = "FirstBlock";
 
-    internal static Layout<MockLoaderHeap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockLoaderHeap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("LoaderHeap", architecture)
             .AddPointerField(FirstBlockFieldName)
             .Build<MockLoaderHeap>();
 
-    internal ulong FirstBlock
+    public ulong FirstBlock
     {
         get => ReadPointerField(FirstBlockFieldName);
         set => WritePointerField(FirstBlockFieldName, value);
@@ -29,26 +30,26 @@ internal sealed class MockLoaderHeapBlock : TypedView
     private const string VirtualAddressFieldName = "VirtualAddress";
     private const string VirtualSizeFieldName = "VirtualSize";
 
-    internal static Layout<MockLoaderHeapBlock> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockLoaderHeapBlock> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("LoaderHeapBlock", architecture)
             .AddPointerField(NextFieldName)
             .AddPointerField(VirtualAddressFieldName)
             .AddNUIntField(VirtualSizeFieldName)
             .Build<MockLoaderHeapBlock>();
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField(NextFieldName);
         set => WritePointerField(NextFieldName, value);
     }
 
-    internal ulong VirtualAddress
+    public ulong VirtualAddress
     {
         get => ReadPointerField(VirtualAddressFieldName);
         set => WritePointerField(VirtualAddressFieldName, value);
     }
 
-    internal ulong VirtualSize
+    public ulong VirtualSize
     {
         get => ReadPointerField(VirtualSizeFieldName);
         set => WritePointerField(VirtualSizeFieldName, value);
@@ -79,7 +80,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string MethodDefToILCodeVersioningStateMapFieldName = "MethodDefToILCodeVersioningStateMap";
     private const string DynamicILBlobTableFieldName = "DynamicILBlobTable";
 
-    internal static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("Module", architecture)
             .AddPointerField(AssemblyFieldName)
             .AddPointerField(PEAssemblyFieldName)
@@ -104,49 +105,49 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(DynamicILBlobTableFieldName)
             .Build<MockLoaderModule>();
 
-    internal ulong Assembly
+    public ulong Assembly
     {
         get => ReadPointerField(AssemblyFieldName);
         set => WritePointerField(AssemblyFieldName, value);
     }
 
-    internal ulong PEAssembly
+    public ulong PEAssembly
     {
         get => ReadPointerField(PEAssemblyFieldName);
         set => WritePointerField(PEAssemblyFieldName, value);
     }
 
-    internal ulong SimpleName
+    public ulong SimpleName
     {
         get => ReadPointerField(SimpleNameFieldName);
         set => WritePointerField(SimpleNameFieldName, value);
     }
 
-    internal ulong Path
+    public ulong Path
     {
         get => ReadPointerField(PathFieldName);
         set => WritePointerField(PathFieldName, value);
     }
 
-    internal ulong FileName
+    public ulong FileName
     {
         get => ReadPointerField(FileNameFieldName);
         set => WritePointerField(FileNameFieldName, value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field(FlagsFieldName);
         set => WriteUInt32Field(FlagsFieldName, value);
     }
 
-    internal ulong ReadyToRunInfo
+    public ulong ReadyToRunInfo
     {
         get => ReadPointerField(ReadyToRunInfoFieldName);
         set => WritePointerField(ReadyToRunInfoFieldName, value);
     }
 
-    internal ulong GrowableSymbolStream
+    public ulong GrowableSymbolStream
     {
         get => ReadPointerField(GrowableSymbolStreamFieldName);
         set => WritePointerField(GrowableSymbolStreamFieldName, value);
@@ -162,7 +163,7 @@ internal sealed class MockLoaderAssembly : TypedView
     private const string NotifyFlagsFieldName = "NotifyFlags";
     private const string IsLoadedFieldName = "IsLoaded";
 
-    internal static Layout<MockLoaderAssembly> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockLoaderAssembly> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("Assembly", architecture)
             .AddPointerField(ModuleFieldName)
             .AddField(IsCollectibleFieldName, sizeof(byte))
@@ -172,7 +173,7 @@ internal sealed class MockLoaderAssembly : TypedView
             .AddField(IsLoadedFieldName, sizeof(byte))
             .Build<MockLoaderAssembly>();
 
-    internal ulong Module
+    public ulong Module
     {
         get => ReadPointerField(ModuleFieldName);
         set => WritePointerField(ModuleFieldName, value);
@@ -183,12 +184,12 @@ internal sealed class MockEEConfig : TypedView
 {
     private const string ModifiableAssembliesFieldName = "ModifiableAssemblies";
 
-    internal static Layout<MockEEConfig> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockEEConfig> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEConfig", architecture)
             .AddUInt32Field(ModifiableAssembliesFieldName)
             .Build<MockEEConfig>();
 
-    internal uint ModifiableAssemblies
+    public uint ModifiableAssemblies
     {
         get => ReadUInt32Field(ModifiableAssembliesFieldName);
         set => WriteUInt32Field(ModifiableAssembliesFieldName, value);
@@ -200,19 +201,19 @@ internal sealed class MockCGrowableSymbolStream : TypedView
     private const string BufferFieldName = "Buffer";
     private const string SizeFieldName = "Size";
 
-    internal static Layout<MockCGrowableSymbolStream> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCGrowableSymbolStream> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CGrowableSymbolStream", architecture)
             .AddPointerField(BufferFieldName)
             .AddUInt32Field(SizeFieldName)
             .Build<MockCGrowableSymbolStream>();
 
-    internal ulong Buffer
+    public ulong Buffer
     {
         get => ReadPointerField(BufferFieldName);
         set => WritePointerField(BufferFieldName, value);
     }
 
-    internal uint Size
+    public uint Size
     {
         get => ReadUInt32Field(SizeFieldName);
         set => WriteUInt32Field(SizeFieldName, value);
@@ -234,12 +235,12 @@ internal sealed class MockLoaderBuilder
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
-    internal MockLoaderBuilder(MockMemorySpace.Builder builder)
+    public MockLoaderBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

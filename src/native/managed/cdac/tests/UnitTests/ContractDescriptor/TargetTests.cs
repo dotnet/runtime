@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescriptor;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;

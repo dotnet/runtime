@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 public unsafe class TargetTestHelpers
 {
     public MockTarget.Architecture Arch { get; init; }

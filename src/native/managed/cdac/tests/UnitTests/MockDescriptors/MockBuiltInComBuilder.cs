@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal sealed class MockComMethodTable : TypedView
@@ -9,31 +11,31 @@ internal sealed class MockComMethodTable : TypedView
     private const string FlagsFieldName = "Flags";
     private const string MethodTableFieldName = "MethodTable";
 
-    internal static Layout<MockComMethodTable> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockComMethodTable> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ComMethodTable", architecture)
             .AddPointerField(FlagsFieldName)
             .AddPointerField(MethodTableFieldName)
             .Build<MockComMethodTable>();
 
-    internal ulong Flags
+    public ulong Flags
     {
         get => ReadPointerField(FlagsFieldName);
         set => WritePointerField(FlagsFieldName, value);
     }
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
     }
 
-    internal ulong VTable
+    public ulong VTable
         => Address + (ulong)Layout.Size;
 
-    internal ulong GetVTableSlot(int index)
+    public ulong GetVTableSlot(int index)
         => ReadPointer(GetVTableSlotSpan(index));
 
-    internal void SetVTableSlot(int index, ulong value)
+    public void SetVTableSlot(int index, ulong value)
         => WritePointer(GetVTableSlotSpan(index), value);
 
     private Span<byte> GetVTableSlotSpan(int index)
@@ -54,7 +56,7 @@ internal sealed class MockStdInterfaceDesc : TypedView
 {
     private const string StdInterfaceKindFieldName = "StdInterfaceKind";
 
-    internal static Layout<MockStdInterfaceDesc> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockStdInterfaceDesc> CreateLayout(MockTarget.Architecture architecture)
     {
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("StdInterfaceDesc", architecture)
@@ -66,19 +68,19 @@ internal sealed class MockStdInterfaceDesc : TypedView
         return builder.Build<MockStdInterfaceDesc>();
     }
 
-    internal uint StdInterfaceKind
+    public uint StdInterfaceKind
     {
         get => ReadUInt32Field(StdInterfaceKindFieldName);
         set => WriteUInt32Field(StdInterfaceKindFieldName, value);
     }
 
-    internal ulong VTable
+    public ulong VTable
         => Address + (ulong)Layout.Size;
 
-    internal ulong GetVTableSlot(int index)
+    public ulong GetVTableSlot(int index)
         => ReadPointer(GetVTableSlotSpan(index));
 
-    internal void SetVTableSlot(int index, ulong value)
+    public void SetVTableSlot(int index, ulong value)
         => WritePointer(GetVTableSlotSpan(index), value);
 
     private Span<byte> GetVTableSlotSpan(int index)
@@ -97,19 +99,19 @@ internal sealed class MockStdInterfaceDesc : TypedView
 
 internal sealed class MockInterfaceEntry : TypedView
 {
-    internal static Layout<MockInterfaceEntry> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockInterfaceEntry> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("InterfaceEntry", architecture)
             .AddPointerField("MethodTable")
             .AddPointerField("Unknown")
             .Build<MockInterfaceEntry>();
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField("MethodTable");
         set => WritePointerField("MethodTable", value);
     }
 
-    internal ulong Unknown
+    public ulong Unknown
     {
         get => ReadPointerField("Unknown");
         set => WritePointerField("Unknown", value);
@@ -118,19 +120,19 @@ internal sealed class MockInterfaceEntry : TypedView
 
 internal sealed class MockCtxEntry : TypedView
 {
-    internal static Layout<MockCtxEntry> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCtxEntry> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CtxEntry", architecture)
             .AddPointerField("STAThread")
             .AddPointerField("CtxCookie")
             .Build<MockCtxEntry>();
 
-    internal ulong STAThread
+    public ulong STAThread
     {
         get => ReadPointerField("STAThread");
         set => WritePointerField("STAThread", value);
     }
 
-    internal ulong CtxCookie
+    public ulong CtxCookie
     {
         get => ReadPointerField("CtxCookie");
         set => WritePointerField("CtxCookie", value);
@@ -139,14 +141,14 @@ internal sealed class MockCtxEntry : TypedView
 
 internal sealed class MockRCW : TypedView
 {
-    internal const uint InterfaceEntryCacheSize = 8;
+    public const uint InterfaceEntryCacheSize = 8;
 
-    internal MockRCW()
+    public MockRCW()
     {
         InterfaceEntries = new InterfaceEntryCollection(this);
     }
 
-    internal static Layout<MockRCW> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRCW> CreateLayout(MockTarget.Architecture architecture)
     {
         int interfaceEntriesSize = checked(MockInterfaceEntry.CreateLayout(architecture).Size * (int)InterfaceEntryCacheSize);
         return new SequentialLayoutBuilder("RCW", architecture)
@@ -165,63 +167,63 @@ internal sealed class MockRCW : TypedView
             .Build<MockRCW>();
     }
 
-    internal InterfaceEntryCollection InterfaceEntries { get; }
+    public InterfaceEntryCollection InterfaceEntries { get; }
 
-    internal ulong IdentityPointer
+    public ulong IdentityPointer
     {
         get => ReadPointerField("IdentityPointer");
         set => WritePointerField("IdentityPointer", value);
     }
 
-    internal ulong UnknownPointer
+    public ulong UnknownPointer
     {
         get => ReadPointerField("UnknownPointer");
         set => WritePointerField("UnknownPointer", value);
     }
 
-    internal ulong VTablePtr
+    public ulong VTablePtr
     {
         get => ReadPointerField("VTablePtr");
         set => WritePointerField("VTablePtr", value);
     }
 
-    internal ulong CreatorThread
+    public ulong CreatorThread
     {
         get => ReadPointerField("CreatorThread");
         set => WritePointerField("CreatorThread", value);
     }
 
-    internal ulong CtxCookie
+    public ulong CtxCookie
     {
         get => ReadPointerField("CtxCookie");
         set => WritePointerField("CtxCookie", value);
     }
 
-    internal ulong CtxEntry
+    public ulong CtxEntry
     {
         get => ReadPointerField("CtxEntry");
         set => WritePointerField("CtxEntry", value);
     }
 
-    internal uint SyncBlockIndex
+    public uint SyncBlockIndex
     {
         get => ReadUInt32Field("SyncBlockIndex");
         set => WriteUInt32Field("SyncBlockIndex", value);
     }
 
-    internal uint RefCount
+    public uint RefCount
     {
         get => ReadUInt32Field("RefCount");
         set => WriteUInt32Field("RefCount", value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field("Flags");
         set => WriteUInt32Field("Flags", value);
     }
 
-    internal sealed class InterfaceEntryCollection
+    public sealed class InterfaceEntryCollection
     {
         private readonly MockRCW _rcw;
 
@@ -230,7 +232,7 @@ internal sealed class MockRCW : TypedView
             _rcw = rcw;
         }
 
-        internal MockInterfaceEntry this[int index]
+        public MockInterfaceEntry this[int index]
             => _rcw.GetInterfaceEntry(index);
     }
 
@@ -252,12 +254,12 @@ internal sealed class MockSimpleComCallWrapper : TypedView
 {
     private const int InlineVTablePointerCount = 2;
 
-    internal MockSimpleComCallWrapper()
+    public MockSimpleComCallWrapper()
     {
         VTablePointers = new VTablePointerCollection(this);
     }
 
-    internal static Layout<MockSimpleComCallWrapper> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockSimpleComCallWrapper> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("SimpleComCallWrapper", architecture)
             .AddPointerField("OuterIUnknown")
             .AddUInt64Field("RefCount")
@@ -266,35 +268,35 @@ internal sealed class MockSimpleComCallWrapper : TypedView
             .AddField("VTablePtr", InlineVTablePointerCount * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint)))
             .Build<MockSimpleComCallWrapper>();
 
-    internal ulong VTablePointerAddress => GetFieldAddress("VTablePtr");
+    public ulong VTablePointerAddress => GetFieldAddress("VTablePtr");
 
-    internal VTablePointerCollection VTablePointers { get; }
+    public VTablePointerCollection VTablePointers { get; }
 
-    internal ulong OuterIUnknown
+    public ulong OuterIUnknown
     {
         get => ReadPointerField("OuterIUnknown");
         set => WritePointerField("OuterIUnknown", value);
     }
 
-    internal ulong RefCount
+    public ulong RefCount
     {
         get => ReadUInt64Field("RefCount");
         set => WriteUInt64Field("RefCount", value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field("Flags");
         set => WriteUInt32Field("Flags", value);
     }
 
-    internal ulong MainWrapper
+    public ulong MainWrapper
     {
         get => ReadPointerField("MainWrapper");
         set => WritePointerField("MainWrapper", value);
     }
 
-    internal sealed class VTablePointerCollection
+    public sealed class VTablePointerCollection
     {
         private readonly MockSimpleComCallWrapper _wrapper;
 
@@ -303,7 +305,7 @@ internal sealed class MockSimpleComCallWrapper : TypedView
             _wrapper = wrapper;
         }
 
-        internal ulong this[int index]
+        public ulong this[int index]
         {
             get => _wrapper.ReadPointer(_wrapper.GetVTablePointerSpan(index));
             set => _wrapper.WritePointer(_wrapper.GetVTablePointerSpan(index), value);
@@ -325,12 +327,12 @@ internal sealed class MockSimpleComCallWrapper : TypedView
 
 internal sealed class MockComCallWrapper : TypedView
 {
-    internal MockComCallWrapper()
+    public MockComCallWrapper()
     {
         InterfacePointers = new InterfacePointerCollection(this);
     }
 
-    internal static Layout<MockComCallWrapper> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockComCallWrapper> CreateLayout(MockTarget.Architecture architecture)
     {
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("ComCallWrapper", architecture)
@@ -345,29 +347,29 @@ internal sealed class MockComCallWrapper : TypedView
         return builder.Build<MockComCallWrapper>();
     }
 
-    internal ulong InterfacePointerAddress => GetFieldAddress("IPtr");
+    public ulong InterfacePointerAddress => GetFieldAddress("IPtr");
 
-    internal InterfacePointerCollection InterfacePointers { get; }
+    public InterfacePointerCollection InterfacePointers { get; }
 
-    internal ulong Handle
+    public ulong Handle
     {
         get => ReadPointerField("Handle");
         set => WritePointerField("Handle", value);
     }
 
-    internal ulong SimpleWrapper
+    public ulong SimpleWrapper
     {
         get => ReadPointerField("SimpleWrapper");
         set => WritePointerField("SimpleWrapper", value);
     }
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField("Next");
         set => WritePointerField("Next", value);
     }
 
-    internal sealed class InterfacePointerCollection
+    public sealed class InterfacePointerCollection
     {
         private readonly MockComCallWrapper _wrapper;
 
@@ -376,7 +378,7 @@ internal sealed class MockComCallWrapper : TypedView
             _wrapper = wrapper;
         }
 
-        internal ulong this[int index]
+        public ulong this[int index]
         {
             get => _wrapper.ReadPointer(_wrapper.GetInterfacePointerSpan(index));
             set => _wrapper.WritePointer(_wrapper.GetInterfacePointerSpan(index), value);
@@ -403,11 +405,11 @@ internal sealed class MockBuiltInComBuilder
     private readonly MockMemorySpace.BumpAllocator _allocator;
     private readonly MockTarget.Architecture _architecture;
 
-    internal const ulong DefaultComRefcountMask = 0x000000007FFFFFFF;
-    internal const uint DefaultNumVtablePtrs = 5;
-    internal const ulong DefaultTearOffAddRefAddress = 0xF000_0001;
-    internal const ulong DefaultTearOffAddRefSimpleAddress = 0xF000_0002;
-    internal const ulong DefaultTearOffAddRefSimpleInnerAddress = 0xF000_0003;
+    public const ulong DefaultComRefcountMask = 0x000000007FFFFFFF;
+    public const uint DefaultNumVtablePtrs = 5;
+    public const ulong DefaultTearOffAddRefAddress = 0xF000_0001;
+    public const ulong DefaultTearOffAddRefSimpleAddress = 0xF000_0002;
+    public const ulong DefaultTearOffAddRefSimpleInnerAddress = 0xF000_0003;
 
     internal MockBuiltInComBuilder(
         MockMemorySpace.Builder builder,
@@ -431,23 +433,23 @@ internal sealed class MockBuiltInComBuilder
         TearOffAddRefSimpleInnerGlobalAddress = AddPointerGlobal("TearOffAddRefSimpleInner", TearOffAddRefSimpleInnerAddress);
     }
 
-    internal ulong ComRefcountMask { get; } = DefaultComRefcountMask;
+    public ulong ComRefcountMask { get; } = DefaultComRefcountMask;
 
-    internal uint CCWNumInterfaces { get; set; } = DefaultNumVtablePtrs;
+    public uint CCWNumInterfaces { get; set; } = DefaultNumVtablePtrs;
 
-    internal ulong CCWThisMask => GetCCWThisMask(_architecture);
+    public ulong CCWThisMask => GetCCWThisMask(_architecture);
 
-    internal ulong TearOffAddRefAddress { get; } = DefaultTearOffAddRefAddress;
+    public ulong TearOffAddRefAddress { get; } = DefaultTearOffAddRefAddress;
 
-    internal ulong TearOffAddRefSimpleAddress { get; } = DefaultTearOffAddRefSimpleAddress;
+    public ulong TearOffAddRefSimpleAddress { get; } = DefaultTearOffAddRefSimpleAddress;
 
-    internal ulong TearOffAddRefSimpleInnerAddress { get; } = DefaultTearOffAddRefSimpleInnerAddress;
+    public ulong TearOffAddRefSimpleInnerAddress { get; } = DefaultTearOffAddRefSimpleInnerAddress;
 
-    internal ulong TearOffAddRefGlobalAddress { get; }
+    public ulong TearOffAddRefGlobalAddress { get; }
 
-    internal ulong TearOffAddRefSimpleGlobalAddress { get; }
+    public ulong TearOffAddRefSimpleGlobalAddress { get; }
 
-    internal ulong TearOffAddRefSimpleInnerGlobalAddress { get; }
+    public ulong TearOffAddRefSimpleInnerGlobalAddress { get; }
 
     internal Layout<MockSimpleComCallWrapper> SimpleComCallWrapperLayout { get; }
 
@@ -463,13 +465,13 @@ internal sealed class MockBuiltInComBuilder
 
     internal Layout<MockRCW> RCWLayout { get; }
 
-    internal MockSimpleComCallWrapper AddSimpleComCallWrapper()
+    public MockSimpleComCallWrapper AddSimpleComCallWrapper()
         => SimpleComCallWrapperLayout.Create(_allocator.Allocate((ulong)SimpleComCallWrapperLayout.Size, "SimpleComCallWrapper"));
 
-    internal MockComCallWrapper AddComCallWrapper()
+    public MockComCallWrapper AddComCallWrapper()
         => ComCallWrapperLayout.Create(_allocator.Allocate((ulong)ComCallWrapperLayout.Size, "ComCallWrapper"));
 
-    internal MockComMethodTable AddComMethodTable(int vtableSlots = 0)
+    public MockComMethodTable AddComMethodTable(int vtableSlots = 0)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(vtableSlots);
 
@@ -478,7 +480,7 @@ internal sealed class MockBuiltInComBuilder
         return ComMethodTableLayout.Create(_allocator.Allocate((ulong)totalSize, "ComMethodTable"));
     }
 
-    internal MockStdInterfaceDesc AddStdInterfaceDesc(int vtableSlots = 0)
+    public MockStdInterfaceDesc AddStdInterfaceDesc(int vtableSlots = 0)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(vtableSlots);
 
@@ -487,10 +489,10 @@ internal sealed class MockBuiltInComBuilder
         return StdInterfaceDescLayout.Create(_allocator.Allocate((ulong)totalSize, "StdInterfaceDesc"));
     }
 
-    internal MockRCW AddRCW()
+    public MockRCW AddRCW()
         => RCWLayout.Create(_allocator.Allocate((ulong)RCWLayout.Size, "Full RCW"));
 
-    internal ulong AddCtxEntry(ulong staThread = 0, ulong ctxCookie = 0)
+    public ulong AddCtxEntry(ulong staThread = 0, ulong ctxCookie = 0)
     {
         MockCtxEntry entry = CtxEntryLayout.Create(_allocator.Allocate((ulong)CtxEntryLayout.Size, "CtxEntry"));
         entry.STAThread = staThread;
@@ -498,7 +500,7 @@ internal sealed class MockBuiltInComBuilder
         return entry.Address;
     }
 
-    internal static ulong GetCCWThisMask(MockTarget.Architecture architecture)
+    public static ulong GetCCWThisMask(MockTarget.Architecture architecture)
         => architecture.Is64Bit ? ~0x3FUL : ~0x1FUL;
 
     private ulong AddPointerGlobal(string name, ulong value)

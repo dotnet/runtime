@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -65,7 +66,7 @@ internal sealed class MockGeneration : TypedView
     private const string StartSegmentFieldName = MockGCFieldNames.GenerationStartSegment;
     private const string AllocationStartFieldName = MockGCFieldNames.GenerationAllocationStart;
 
-    internal static Layout<MockGeneration> CreateLayout(
+    public static Layout<MockGeneration> CreateLayout(
         MockTarget.Architecture architecture,
         Layout<MockGCAllocContext> gcAllocContextLayout)
         => new SequentialLayoutBuilder("Generation", architecture)
@@ -74,7 +75,7 @@ internal sealed class MockGeneration : TypedView
             .AddPointerField(AllocationStartFieldName)
             .Build<MockGeneration>();
 
-    internal MockGCAllocContext GetAllocationContext(Layout<MockGCAllocContext> gcAllocContextLayout)
+    public MockGCAllocContext GetAllocationContext(Layout<MockGCAllocContext> gcAllocContextLayout)
     {
         LayoutField field = Layout.GetField(AllocationContextFieldName);
         return gcAllocContextLayout.Create(
@@ -82,13 +83,13 @@ internal sealed class MockGeneration : TypedView
             GetFieldAddress(AllocationContextFieldName));
     }
 
-    internal ulong StartSegment
+    public ulong StartSegment
     {
         get => ReadPointerField(StartSegmentFieldName);
         set => WritePointerField(StartSegmentFieldName, value);
     }
 
-    internal ulong AllocationStart
+    public ulong AllocationStart
     {
         get => ReadPointerField(AllocationStartFieldName);
         set => WritePointerField(AllocationStartFieldName, value);
@@ -99,12 +100,12 @@ internal sealed class MockCFinalize : TypedView
 {
     private const string FillPointersFieldName = MockGCFieldNames.CFinalizeFillPointers;
 
-    internal static Layout<MockCFinalize> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCFinalize> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CFinalize", architecture)
             .AddPointerField(FillPointersFieldName)
             .Build<MockCFinalize>();
 
-    internal ulong this[int index]
+    public ulong this[int index]
     {
         get => ReadPointer(GetFillPointerSlice(index));
         set => WritePointer(GetFillPointerSlice(index), value);
@@ -130,7 +131,7 @@ internal sealed class MockOomHistory : TypedView
     private const string AvailablePagefileMbFieldName = MockGCFieldNames.OomHistoryAvailablePagefileMb;
     private const string LohPFieldName = MockGCFieldNames.OomHistoryLohP;
 
-    internal static Layout<MockOomHistory> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockOomHistory> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("OomHistory", architecture)
             .AddField(ReasonFieldName, sizeof(int))
             .AddNUIntField(AllocSizeFieldName)
@@ -169,7 +170,7 @@ internal sealed class MockGCHeapSVR : TypedView
     private const string ExpandMechanismsFieldName = MockGCFieldNames.GCHeapSvrExpandMechanisms;
     private const string InterestingMechanismBitsFieldName = MockGCFieldNames.GCHeapSvrInterestingMechanismBits;
 
-    internal static Layout<MockGCHeapSVR> CreateLayout(
+    public static Layout<MockGCHeapSVR> CreateLayout(
         MockTarget.Architecture architecture,
         Layout<MockGeneration> generationLayout,
         Layout<MockOomHistory> oomHistoryLayout,
@@ -194,25 +195,25 @@ internal sealed class MockGCHeapSVR : TypedView
             .AddField(InterestingMechanismBitsFieldName, InterestingMechanismBitsCount * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint)))
             .Build<MockGCHeapSVR>();
 
-    internal ulong FinalizeQueue
+    public ulong FinalizeQueue
     {
         get => ReadPointerField(FinalizeQueueFieldName);
         set => WritePointerField(FinalizeQueueFieldName, value);
     }
 
-    internal ulong AllocAllocated
+    public ulong AllocAllocated
     {
         get => ReadPointerField(AllocAllocatedFieldName);
         set => WritePointerField(AllocAllocatedFieldName, value);
     }
 
-    internal ulong EphemeralHeapSegment
+    public ulong EphemeralHeapSegment
     {
         get => ReadPointerField(EphemeralHeapSegmentFieldName);
         set => WritePointerField(EphemeralHeapSegmentFieldName, value);
     }
 
-    internal MockGeneration GetGeneration(Layout<MockGeneration> generationLayout, int index)
+    public MockGeneration GetGeneration(Layout<MockGeneration> generationLayout, int index)
     {
         LayoutField generationTableField = Layout.GetField(GenerationTableFieldName);
         int offset = checked(generationTableField.Offset + (index * generationLayout.Size));
@@ -232,7 +233,7 @@ internal sealed class MockHeapSegment : TypedView
     private const string BackgroundAllocatedFieldName = MockGCFieldNames.HeapSegmentBackgroundAllocated;
     private const string HeapFieldName = MockGCFieldNames.HeapSegmentHeap;
 
-    internal static Layout<MockHeapSegment> CreateLayout(MockTarget.Architecture architecture, bool includeHeapField)
+    public static Layout<MockHeapSegment> CreateLayout(MockTarget.Architecture architecture, bool includeHeapField)
     {
         SequentialLayoutBuilder b = new SequentialLayoutBuilder("HeapSegment", architecture)
             .AddPointerField(AllocatedFieldName)
@@ -248,15 +249,15 @@ internal sealed class MockHeapSegment : TypedView
         return b.Build<MockHeapSegment>();
     }
 
-    internal ulong Allocated { get => ReadPointerField(AllocatedFieldName); set => WritePointerField(AllocatedFieldName, value); }
-    internal ulong Committed { get => ReadPointerField(CommittedFieldName); set => WritePointerField(CommittedFieldName, value); }
-    internal ulong Reserved { get => ReadPointerField(ReservedFieldName); set => WritePointerField(ReservedFieldName, value); }
-    internal ulong Used { get => ReadPointerField(UsedFieldName); set => WritePointerField(UsedFieldName, value); }
-    internal ulong Mem { get => ReadPointerField(MemFieldName); set => WritePointerField(MemFieldName, value); }
-    internal ulong Next { get => ReadPointerField(NextFieldName); set => WritePointerField(NextFieldName, value); }
-    internal ulong BackgroundAllocated { get => ReadPointerField(BackgroundAllocatedFieldName); set => WritePointerField(BackgroundAllocatedFieldName, value); }
-    internal ulong Flags { get => ReadPointerField(FlagsFieldName); set => WritePointerField(FlagsFieldName, value); }
-    internal ulong Heap { get => ReadPointerField(HeapFieldName); set => WritePointerField(HeapFieldName, value); }
+    public ulong Allocated { get => ReadPointerField(AllocatedFieldName); set => WritePointerField(AllocatedFieldName, value); }
+    public ulong Committed { get => ReadPointerField(CommittedFieldName); set => WritePointerField(CommittedFieldName, value); }
+    public ulong Reserved { get => ReadPointerField(ReservedFieldName); set => WritePointerField(ReservedFieldName, value); }
+    public ulong Used { get => ReadPointerField(UsedFieldName); set => WritePointerField(UsedFieldName, value); }
+    public ulong Mem { get => ReadPointerField(MemFieldName); set => WritePointerField(MemFieldName, value); }
+    public ulong Next { get => ReadPointerField(NextFieldName); set => WritePointerField(NextFieldName, value); }
+    public ulong BackgroundAllocated { get => ReadPointerField(BackgroundAllocatedFieldName); set => WritePointerField(BackgroundAllocatedFieldName, value); }
+    public ulong Flags { get => ReadPointerField(FlagsFieldName); set => WritePointerField(FlagsFieldName, value); }
+    public ulong Heap { get => ReadPointerField(HeapFieldName); set => WritePointerField(HeapFieldName, value); }
 }
 
 internal sealed class MockGCBuilder
@@ -293,20 +294,20 @@ internal sealed class MockGCBuilder
     internal ulong NumHeapsGlobalAddress { get; }
     internal ulong HeapsGlobalAddress { get; }
 
-    internal record struct Generation
+    public record struct Generation
     {
-        internal ulong StartSegment;
-        internal ulong AllocationStart;
-        internal ulong AllocContextPointer;
-        internal ulong AllocContextLimit;
+        public ulong StartSegment;
+        public ulong AllocationStart;
+        public ulong AllocContextPointer;
+        public ulong AllocContextLimit;
     }
 
-    internal MockGCBuilder(MockMemorySpace.Builder builder)
+    public MockGCBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockGCBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockGCBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

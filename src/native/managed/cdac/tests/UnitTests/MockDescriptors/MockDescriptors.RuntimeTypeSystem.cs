@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -19,7 +20,7 @@ internal sealed class MockMethodTable : TypedView
     private const string PerInstInfoFieldName = nameof(Data.MethodTable.PerInstInfo);
     private const string AuxiliaryDataFieldName = nameof(Data.MethodTable.AuxiliaryData);
 
-    internal static Layout<MockMethodTable> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockMethodTable> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("MethodTable", architecture)
             .AddUInt32Field(MTFlagsFieldName)
             .AddUInt32Field(BaseSizeFieldName)
@@ -33,61 +34,61 @@ internal sealed class MockMethodTable : TypedView
             .AddPointerField(AuxiliaryDataFieldName)
             .Build<MockMethodTable>();
 
-    internal uint MTFlags
+    public uint MTFlags
     {
         get => ReadUInt32Field(MTFlagsFieldName);
         set => WriteUInt32Field(MTFlagsFieldName, value);
     }
 
-    internal uint BaseSize
+    public uint BaseSize
     {
         get => ReadUInt32Field(BaseSizeFieldName);
         set => WriteUInt32Field(BaseSizeFieldName, value);
     }
 
-    internal uint MTFlags2
+    public uint MTFlags2
     {
         get => ReadUInt32Field(MTFlags2FieldName);
         set => WriteUInt32Field(MTFlags2FieldName, value);
     }
 
-    internal ulong EEClassOrCanonMT
+    public ulong EEClassOrCanonMT
     {
         get => ReadPointerField(EEClassOrCanonMTFieldName);
         set => WritePointerField(EEClassOrCanonMTFieldName, value);
     }
 
-    internal ulong Module
+    public ulong Module
     {
         get => ReadPointerField(ModuleFieldName);
         set => WritePointerField(ModuleFieldName, value);
     }
 
-    internal ulong ParentMethodTable
+    public ulong ParentMethodTable
     {
         get => ReadPointerField(ParentMethodTableFieldName);
         set => WritePointerField(ParentMethodTableFieldName, value);
     }
 
-    internal ushort NumInterfaces
+    public ushort NumInterfaces
     {
         get => ReadUInt16Field(NumInterfacesFieldName);
         set => WriteUInt16Field(NumInterfacesFieldName, value);
     }
 
-    internal ushort NumVirtuals
+    public ushort NumVirtuals
     {
         get => ReadUInt16Field(NumVirtualsFieldName);
         set => WriteUInt16Field(NumVirtualsFieldName, value);
     }
 
-    internal ulong PerInstInfo
+    public ulong PerInstInfo
     {
         get => ReadPointerField(PerInstInfoFieldName);
         set => WritePointerField(PerInstInfoFieldName, value);
     }
 
-    internal ulong AuxiliaryData
+    public ulong AuxiliaryData
     {
         get => ReadPointerField(AuxiliaryDataFieldName);
         set => WritePointerField(AuxiliaryDataFieldName, value);
@@ -108,7 +109,7 @@ internal sealed class MockEEClass : TypedView
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
     private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
 
-    internal static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
             .AddPointerField(MethodTableFieldName)
             .AddPointerField(MethodDescChunkFieldName)
@@ -123,37 +124,37 @@ internal sealed class MockEEClass : TypedView
             .AddByteField(BaseSizePaddingFieldName)
             .Build<MockEEClass>();
 
-    internal ulong MethodTable
+    public ulong MethodTable
     {
         get => ReadPointerField(MethodTableFieldName);
         set => WritePointerField(MethodTableFieldName, value);
     }
 
-    internal uint CorTypeAttr
+    public uint CorTypeAttr
     {
         get => ReadUInt32Field(CorTypeAttrFieldName);
         set => WriteUInt32Field(CorTypeAttrFieldName, value);
     }
 
-    internal ushort NumMethods
+    public ushort NumMethods
     {
         get => ReadUInt16Field(NumMethodsFieldName);
         set => WriteUInt16Field(NumMethodsFieldName, value);
     }
 
-    internal byte InternalCorElementType
+    public byte InternalCorElementType
     {
         get => ReadByteField(InternalCorElementTypeFieldName);
         set => WriteByteField(InternalCorElementTypeFieldName, value);
     }
 
-    internal ushort NumInstanceFields
+    public ushort NumInstanceFields
     {
         get => ReadUInt16Field(NumInstanceFieldsFieldName);
         set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
     }
 
-    internal ushort NumNonVirtualSlots
+    public ushort NumNonVirtualSlots
     {
         get => ReadUInt16Field(NumNonVirtualSlotsFieldName);
         set => WriteUInt16Field(NumNonVirtualSlotsFieldName, value);
@@ -166,26 +167,26 @@ internal sealed class MockMethodTableAuxiliaryData : TypedView
     private const string OffsetToNonVirtualSlotsFieldName = nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots);
     private const string FlagsFieldName = nameof(Data.MethodTableAuxiliaryData.Flags);
 
-    internal static Layout<MockMethodTableAuxiliaryData> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockMethodTableAuxiliaryData> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("MethodTableAuxiliaryData", architecture)
             .AddPointerField(LoaderModuleFieldName)
             .AddInt16Field(OffsetToNonVirtualSlotsFieldName)
             .AddUInt32Field(FlagsFieldName)
             .Build<MockMethodTableAuxiliaryData>();
 
-    internal ulong LoaderModule
+    public ulong LoaderModule
     {
         get => ReadPointerField(LoaderModuleFieldName);
         set => WritePointerField(LoaderModuleFieldName, value);
     }
 
-    internal short OffsetToNonVirtualSlots
+    public short OffsetToNonVirtualSlots
     {
         get => ReadInt16Field(OffsetToNonVirtualSlotsFieldName);
         set => WriteInt16Field(OffsetToNonVirtualSlotsFieldName, value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field(FlagsFieldName);
         set => WriteUInt32Field(FlagsFieldName, value);
@@ -196,12 +197,12 @@ internal class MockTypeDesc : TypedView
 {
     private const string TypeAndFlagsFieldName = nameof(Data.TypeDesc.TypeAndFlags);
 
-    internal static Layout<MockTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("TypeDesc", architecture)
             .AddUInt32Field(TypeAndFlagsFieldName)
             .Build<MockTypeDesc>();
 
-    internal uint TypeAndFlags
+    public uint TypeAndFlags
     {
         get => ReadUInt32Field(TypeAndFlagsFieldName);
         set => WriteUInt32Field(TypeAndFlagsFieldName, value);
@@ -215,7 +216,7 @@ internal sealed class MockFnPtrTypeDesc : MockTypeDesc
     private const string LoaderModuleFieldName = nameof(Data.FnPtrTypeDesc.LoaderModule);
     private const string RetAndArgTypesFieldName = nameof(Data.FnPtrTypeDesc.RetAndArgTypes);
 
-    internal static new Layout<MockFnPtrTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+    public new static Layout<MockFnPtrTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("FnPtrTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
             .AddUInt32Field(NumArgsFieldName)
             .AddUInt32Field(CallConvFieldName)
@@ -223,25 +224,25 @@ internal sealed class MockFnPtrTypeDesc : MockTypeDesc
             .AddPointerField(RetAndArgTypesFieldName)
             .Build<MockFnPtrTypeDesc>();
 
-    internal uint NumArgs
+    public uint NumArgs
     {
         get => ReadUInt32Field(NumArgsFieldName);
         set => WriteUInt32Field(NumArgsFieldName, value);
     }
 
-    internal uint CallConv
+    public uint CallConv
     {
         get => ReadUInt32Field(CallConvFieldName);
         set => WriteUInt32Field(CallConvFieldName, value);
     }
 
-    internal ulong LoaderModule
+    public ulong LoaderModule
     {
         get => ReadPointerField(LoaderModuleFieldName);
         set => WritePointerField(LoaderModuleFieldName, value);
     }
 
-    internal ulong this[int index]
+    public ulong this[int index]
     {
         get => ReadPointer(GetFieldSlice(index).Span);
         set => WritePointer(GetFieldSlice(index).Span, value);
@@ -260,12 +261,12 @@ internal sealed class MockParamTypeDesc : MockTypeDesc
 {
     private const string TypeArgFieldName = nameof(Data.ParamTypeDesc.TypeArg);
 
-    internal static new Layout<MockParamTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+    public new static Layout<MockParamTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ParamTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
             .AddPointerField(TypeArgFieldName)
             .Build<MockParamTypeDesc>();
 
-    internal ulong TypeArg
+    public ulong TypeArg
     {
         get => ReadPointerField(TypeArgFieldName);
         set => WritePointerField(TypeArgFieldName, value);
@@ -277,28 +278,28 @@ internal sealed class MockTypeVarTypeDesc : MockTypeDesc
     private const string ModuleFieldName = nameof(Data.TypeVarTypeDesc.Module);
     private const string TokenFieldName = nameof(Data.TypeVarTypeDesc.Token);
 
-    internal static new Layout<MockTypeVarTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+    public new static Layout<MockTypeVarTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("TypeVarTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
             .AddPointerField(ModuleFieldName)
             .AddUInt32Field(TokenFieldName)
             .Build<MockTypeVarTypeDesc>();
 
-    internal ulong Module
+    public ulong Module
     {
         get => ReadPointerField(ModuleFieldName);
         set => WritePointerField(ModuleFieldName, value);
     }
 
-    internal uint Token
+    public uint Token
     {
         get => ReadUInt32Field(TokenFieldName);
         set => WriteUInt32Field(TokenFieldName, value);
     }
 }
 
-internal static partial class MockDescriptors
+internal partial class MockDescriptors
 {
-    internal class RuntimeTypeSystem
+    public class RuntimeTypeSystem
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
@@ -329,22 +330,22 @@ internal static partial class MockDescriptors
         internal MockMethodTable ContinuationMethodTable { get; private set; } = null!;
 
         internal ulong FreeObjectMethodTableAddress { get; private set; }
-        internal ulong FreeObjectMethodTableGlobalAddress { get; } = TestFreeObjectMethodTableGlobalAddress;
-        internal ulong ContinuationMethodTableGlobalAddress { get; } = TestContinuationMethodTableGlobalAddress;
-        internal ulong ContinuationSingletonEEClassGlobalAddress { get; } = TestContinuationSingletonEEClassGlobalAddress;
-        internal ulong ObjectMethodTableGlobalAddress { get; } = TestObjectMethodTableGlobalAddress;
-        internal ulong MulticastDelegateMethodTableGlobalAddress { get; } = TestMulticastDelegateMethodTableGlobalAddress;
+        internal ulong FreeObjectMethodTableGlobalAddress => TestFreeObjectMethodTableGlobalAddress;
+        internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
+        internal ulong ContinuationSingletonEEClassGlobalAddress => TestContinuationSingletonEEClassGlobalAddress;
+        internal ulong ObjectMethodTableGlobalAddress => TestObjectMethodTableGlobalAddress;
+        internal ulong MulticastDelegateMethodTableGlobalAddress => TestMulticastDelegateMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
         // sizeof(ContinuationObject) = sizeof(MT*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags) + sizeof(State)
         internal uint ContinuationObjectSize => 3u * (uint)Builder.TargetTestHelpers.PointerSize + 8;
 
-        internal RuntimeTypeSystem(MockMemorySpace.Builder builder)
+        public RuntimeTypeSystem(MockMemorySpace.Builder builder)
             : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
         {
         }
 
-        internal RuntimeTypeSystem(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+        public RuntimeTypeSystem(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         {
             Builder = builder;
             TypeSystemAllocator = builder.CreateAllocator(allocationRange.Start, allocationRange.End);

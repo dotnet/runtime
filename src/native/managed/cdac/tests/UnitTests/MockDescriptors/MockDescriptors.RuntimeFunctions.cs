@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal sealed class MockRuntimeFunction : TypedView
@@ -10,7 +11,7 @@ internal sealed class MockRuntimeFunction : TypedView
     private const string UnwindDataFieldName = "UnwindData";
     private const string EndAddressFieldName = "EndAddress";
 
-    internal static Layout<MockRuntimeFunction> CreateLayout(MockTarget.Architecture architecture, bool includeEndAddress)
+    public static Layout<MockRuntimeFunction> CreateLayout(MockTarget.Architecture architecture, bool includeEndAddress)
     {
         SequentialLayoutBuilder builder = new SequentialLayoutBuilder("RuntimeFunction", architecture)
             .AddUInt32Field(BeginAddressFieldName)
@@ -24,19 +25,19 @@ internal sealed class MockRuntimeFunction : TypedView
         return builder.Build<MockRuntimeFunction>();
     }
 
-    internal uint BeginAddress
+    public uint BeginAddress
     {
         get => ReadUInt32Field(BeginAddressFieldName);
         set => WriteUInt32Field(BeginAddressFieldName, value);
     }
 
-    internal uint UnwindData
+    public uint UnwindData
     {
         get => ReadUInt32Field(UnwindDataFieldName);
         set => WriteUInt32Field(UnwindDataFieldName, value);
     }
 
-    internal uint EndAddress
+    public uint EndAddress
     {
         get => ReadUInt32Field(EndAddressFieldName);
         set => WriteUInt32Field(EndAddressFieldName, value);
@@ -48,20 +49,20 @@ internal sealed class MockUnwindInfo : TypedView
     private const string FunctionLengthFieldName = "FunctionLength";
     private const string HeaderFieldName = "Header";
 
-    internal static Layout<MockUnwindInfo> CreateLayout(MockTarget.Architecture architecture, bool isFunctionLength)
+    public static Layout<MockUnwindInfo> CreateLayout(MockTarget.Architecture architecture, bool isFunctionLength)
     {
         SequentialLayoutBuilder builder = new SequentialLayoutBuilder("UnwindInfo", architecture);
         builder.AddUInt32Field(isFunctionLength ? FunctionLengthFieldName : HeaderFieldName);
         return builder.Build<MockUnwindInfo>();
     }
 
-    internal uint FunctionLength
+    public uint FunctionLength
     {
         get => ReadUInt32Field(FunctionLengthFieldName);
         set => WriteUInt32Field(FunctionLengthFieldName, value);
     }
 
-    internal uint Header
+    public uint Header
     {
         get => ReadUInt32Field(HeaderFieldName);
         set => WriteUInt32Field(HeaderFieldName, value);
@@ -80,12 +81,12 @@ internal sealed class MockRuntimeFunctionsBuilder
     internal Layout<MockUnwindInfo> UnwindInfoLayout { get; }
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
-    internal MockRuntimeFunctionsBuilder(MockMemorySpace.Builder builder, bool includeEndAddress = true, bool unwindInfoIsFunctionLength = false)
+    public MockRuntimeFunctionsBuilder(MockMemorySpace.Builder builder, bool includeEndAddress = true, bool unwindInfoIsFunctionLength = false)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), includeEndAddress, unwindInfoIsFunctionLength)
     {
     }
 
-    internal MockRuntimeFunctionsBuilder(
+    public MockRuntimeFunctionsBuilder(
         MockMemorySpace.Builder builder,
         (ulong Start, ulong End) allocationRange,
         bool includeEndAddress,
@@ -99,7 +100,7 @@ internal sealed class MockRuntimeFunctionsBuilder
         UnwindInfoLayout = MockUnwindInfo.CreateLayout(builder.TargetTestHelpers.Arch, unwindInfoIsFunctionLength);
     }
 
-    internal ulong AddRuntimeFunctions(uint[] runtimeFunctions)
+    public ulong AddRuntimeFunctions(uint[] runtimeFunctions)
     {
         ArgumentNullException.ThrowIfNull(runtimeFunctions);
 

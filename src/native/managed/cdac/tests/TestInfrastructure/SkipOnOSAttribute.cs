@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// When applied to a test method, controls whether the test runs based on

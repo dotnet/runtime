@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.PortableExecutable;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using Microsoft.Diagnostics.Runtime;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// Wraps a ClrMD DataTarget to provide the memory read callback and symbol lookup

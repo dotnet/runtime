@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using Xunit;
-
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 

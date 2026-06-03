@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -10,12 +11,12 @@ internal sealed class MockHashMap : TypedView
 {
     private const string BucketsFieldName = "Buckets";
 
-    internal static Layout<MockHashMap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockHashMap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("HashMap", architecture)
             .AddPointerField(BucketsFieldName)
             .Build<MockHashMap>();
 
-    internal ulong Buckets
+    public ulong Buckets
     {
         get => ReadPointerField(BucketsFieldName);
         set => WritePointerField(BucketsFieldName, value);
@@ -27,24 +28,24 @@ internal sealed class MockHashMapBucket : TypedView
     private const string KeysFieldName = "Keys";
     private const string ValuesFieldName = "Values";
 
-    internal const int SlotsPerBucket = 4;
+    public const int SlotsPerBucket = 4;
 
-    internal static Layout<MockHashMapBucket> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockHashMapBucket> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("Bucket", architecture)
             .AddField(KeysFieldName, checked(SlotsPerBucket * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint))))
             .AddField(ValuesFieldName, checked(SlotsPerBucket * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint))))
             .Build<MockHashMapBucket>();
 
-    internal ulong GetKey(int slot)
+    public ulong GetKey(int slot)
         => ReadPointer(GetSlotSlice(KeysFieldName, slot));
 
-    internal void SetKey(int slot, ulong value)
+    public void SetKey(int slot, ulong value)
         => WritePointer(GetSlotSlice(KeysFieldName, slot), value);
 
-    internal ulong GetValue(int slot)
+    public ulong GetValue(int slot)
         => ReadPointer(GetSlotSlice(ValuesFieldName, slot));
 
-    internal void SetValue(int slot, ulong value)
+    public void SetValue(int slot, ulong value)
         => WritePointer(GetSlotSlice(ValuesFieldName, slot), value);
 
     private Span<byte> GetSlotSlice(string fieldName, int slot)
@@ -73,12 +74,12 @@ internal sealed class MockHashMapBuilder
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
-    internal MockHashMapBuilder(MockMemorySpace.Builder builder)
+    public MockHashMapBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    internal MockHashMapBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockHashMapBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -90,7 +91,7 @@ internal sealed class MockHashMapBuilder
         HashMapValueMask = builder.TargetTestHelpers.MaxSignedTargetAddress;
     }
 
-    internal ulong CreateMap((ulong Key, ulong Value)[] entries)
+    public ulong CreateMap((ulong Key, ulong Value)[] entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -99,7 +100,7 @@ internal sealed class MockHashMapBuilder
         return map.Address;
     }
 
-    internal void PopulateMap(ulong mapAddress, (ulong Key, ulong Value)[] entries)
+    public void PopulateMap(ulong mapAddress, (ulong Key, ulong Value)[] entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -147,7 +148,7 @@ internal sealed class MockHashMapBuilder
         map.Buckets = buckets.Address;
     }
 
-    internal ulong CreatePtrMap((ulong Key, ulong Value)[] entries)
+    public ulong CreatePtrMap((ulong Key, ulong Value)[] entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -157,7 +158,7 @@ internal sealed class MockHashMapBuilder
         return CreateMap(ptrMapEntries);
     }
 
-    internal void PopulatePtrMap(ulong mapAddress, (ulong Key, ulong Value)[] entries)
+    public void PopulatePtrMap(ulong mapAddress, (ulong Key, ulong Value)[] entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 

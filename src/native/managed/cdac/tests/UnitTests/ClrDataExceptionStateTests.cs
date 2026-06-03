@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Moq;
-using Xunit;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
+using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 

@@ -7,10 +7,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!--
       Transport package providing reusable cDAC test-authoring infrastructure
-      (mock-memory infrastructure, MockDescriptors, ContractDescriptorBuilder,
-      ClrMD dump host, dump-test base classes, Skip* attributes, etc.) so other
-      repositories that author cDAC contracts can reuse the same harness for
-      their own tests.
+      (mock-memory infrastructure, ContractDescriptorBuilder, ClrMD dump host,
+      dump-test base classes, Skip* attributes, etc.) so other repositories
+      that author cDAC contracts can reuse the same harness for their own
+      tests.
 
       This is NOT a test project (no IsTestProject=true). It's a library of
       reusable test-authoring building blocks. Consumers write their own xUnit

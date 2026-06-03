@@ -3,7 +3,7 @@
 
 using Xunit.Abstractions;
 
-namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 /// <summary>
 /// Describes which dump to load for a parameterized dump test.

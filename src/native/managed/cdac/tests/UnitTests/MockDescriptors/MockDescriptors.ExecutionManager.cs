@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -11,7 +12,7 @@ internal sealed class MockRangeSectionMap : TypedView
 {
     private const string TopLevelDataFieldName = "TopLevelData";
 
-    internal static Layout<MockRangeSectionMap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRangeSectionMap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("RangeSectionMap", architecture)
             .AddPointerField(TopLevelDataFieldName)
             .Build<MockRangeSectionMap>();
@@ -19,9 +20,9 @@ internal sealed class MockRangeSectionMap : TypedView
 
 internal sealed class MockRangeSectionMapLevel : TypedView
 {
-    internal const int EntriesPerMapLevel = 256;
+    public const int EntriesPerMapLevel = 256;
 
-    internal static Layout<MockRangeSectionMapLevel> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRangeSectionMapLevel> CreateLayout(MockTarget.Architecture architecture)
     {
         // Map levels are fixed-size arrays of pointers rather than named struct fields, so use
         // LayoutBuilder directly and access entries by index through the typed view helpers below.
@@ -33,10 +34,10 @@ internal sealed class MockRangeSectionMapLevel : TypedView
         return layoutBuilder.Build<MockRangeSectionMapLevel>();
     }
 
-    internal ulong GetPointer(int index)
+    public ulong GetPointer(int index)
         => ReadPointer(GetEntrySlice(index));
 
-    internal void SetPointer(int index, ulong value)
+    public void SetPointer(int index, ulong value)
         => WritePointer(GetEntrySlice(index), value);
 
     private Span<byte> GetEntrySlice(int index)
@@ -57,7 +58,7 @@ internal sealed class MockRangeSectionFragment : TypedView
     private const string RangeSectionFieldName = "RangeSection";
     private const string NextFieldName = "Next";
 
-    internal static Layout<MockRangeSectionFragment> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRangeSectionFragment> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("RangeSectionFragment", architecture)
             .AddPointerField(RangeBeginFieldName)
             .AddPointerField(RangeEndOpenFieldName)
@@ -65,25 +66,25 @@ internal sealed class MockRangeSectionFragment : TypedView
             .AddPointerField(NextFieldName)
             .Build<MockRangeSectionFragment>();
 
-    internal ulong RangeBegin
+    public ulong RangeBegin
     {
         get => ReadPointerField(RangeBeginFieldName);
         set => WritePointerField(RangeBeginFieldName, value);
     }
 
-    internal ulong RangeEndOpen
+    public ulong RangeEndOpen
     {
         get => ReadPointerField(RangeEndOpenFieldName);
         set => WritePointerField(RangeEndOpenFieldName, value);
     }
 
-    internal ulong RangeSection
+    public ulong RangeSection
     {
         get => ReadPointerField(RangeSectionFieldName);
         set => WritePointerField(RangeSectionFieldName, value);
     }
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField(NextFieldName);
         set => WritePointerField(NextFieldName, value);
@@ -101,7 +102,7 @@ internal sealed class MockRangeSection : TypedView
     private const string R2RModuleFieldName = "R2RModule";
     private const string RangeListFieldName = "RangeList";
 
-    internal static Layout<MockRangeSection> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRangeSection> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("RangeSection", architecture)
             .AddPointerField(RangeBeginFieldName)
             .AddPointerField(RangeEndOpenFieldName)
@@ -113,43 +114,43 @@ internal sealed class MockRangeSection : TypedView
             .AddPointerField(RangeListFieldName)
             .Build<MockRangeSection>();
 
-    internal ulong RangeBegin
+    public ulong RangeBegin
     {
         get => ReadPointerField(RangeBeginFieldName);
         set => WritePointerField(RangeBeginFieldName, value);
     }
 
-    internal ulong RangeEndOpen
+    public ulong RangeEndOpen
     {
         get => ReadPointerField(RangeEndOpenFieldName);
         set => WritePointerField(RangeEndOpenFieldName, value);
     }
 
-    internal ulong JitManager
+    public ulong JitManager
     {
         get => ReadPointerField(JitManagerFieldName);
         set => WritePointerField(JitManagerFieldName, value);
     }
 
-    internal uint Flags
+    public uint Flags
     {
         get => ReadUInt32Field(FlagsFieldName);
         set => WriteUInt32Field(FlagsFieldName, value);
     }
 
-    internal ulong HeapList
+    public ulong HeapList
     {
         get => ReadPointerField(HeapListFieldName);
         set => WritePointerField(HeapListFieldName, value);
     }
 
-    internal ulong R2RModule
+    public ulong R2RModule
     {
         get => ReadPointerField(R2RModuleFieldName);
         set => WritePointerField(R2RModuleFieldName, value);
     }
 
-    internal ulong RangeList
+    public ulong RangeList
     {
         get => ReadPointerField(RangeListFieldName);
         set => WritePointerField(RangeListFieldName, value);
@@ -160,12 +161,12 @@ internal sealed class MockCodeRangeMapRangeList : TypedView
 {
     private const string RangeListTypeFieldName = "RangeListType";
 
-    internal static Layout<MockCodeRangeMapRangeList> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCodeRangeMapRangeList> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CodeRangeMapRangeList", architecture)
             .AddUInt32Field(RangeListTypeFieldName)
             .Build<MockCodeRangeMapRangeList>();
 
-    internal int RangeListType
+    public int RangeListType
     {
         get => (int)ReadUInt32Field(RangeListTypeFieldName);
         set => WriteUInt32Field(RangeListTypeFieldName, (uint)value);
@@ -181,7 +182,7 @@ internal sealed class MockCodeHeapListNode : TypedView
     private const string HeaderMapFieldName = "HeaderMap";
     private const string HeapFieldName = "Heap";
 
-    internal static Layout<MockCodeHeapListNode> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCodeHeapListNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CodeHeapListNode", architecture)
             .AddPointerField(NextFieldName)
             .AddPointerField(StartAddressFieldName)
@@ -191,37 +192,37 @@ internal sealed class MockCodeHeapListNode : TypedView
             .AddPointerField(HeapFieldName)
             .Build<MockCodeHeapListNode>();
 
-    internal ulong Next
+    public ulong Next
     {
         get => ReadPointerField(NextFieldName);
         set => WritePointerField(NextFieldName, value);
     }
 
-    internal ulong StartAddress
+    public ulong StartAddress
     {
         get => ReadPointerField(StartAddressFieldName);
         set => WritePointerField(StartAddressFieldName, value);
     }
 
-    internal ulong EndAddress
+    public ulong EndAddress
     {
         get => ReadPointerField(EndAddressFieldName);
         set => WritePointerField(EndAddressFieldName, value);
     }
 
-    internal ulong MapBase
+    public ulong MapBase
     {
         get => ReadPointerField(MapBaseFieldName);
         set => WritePointerField(MapBaseFieldName, value);
     }
 
-    internal ulong HeaderMap
+    public ulong HeaderMap
     {
         get => ReadPointerField(HeaderMapFieldName);
         set => WritePointerField(HeaderMapFieldName, value);
     }
 
-    internal ulong Heap
+    public ulong Heap
     {
         get => ReadPointerField(HeapFieldName);
         set => WritePointerField(HeapFieldName, value);
@@ -234,14 +235,14 @@ internal sealed class MockCodeHeap : TypedView
     private const string HeapTypePaddingFieldName = "HeapTypePadding";
     private const string HeapTypeFieldName = "HeapType";
 
-    internal static Layout<MockCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockCodeHeap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("CodeHeap", architecture)
             .AddPointerField(VtablePtrFieldName)
             .AddPointerField(HeapTypePaddingFieldName)
             .AddField(HeapTypeFieldName, sizeof(byte))
             .Build<MockCodeHeap>();
 
-    internal byte HeapType
+    public byte HeapType
     {
         get => ReadByteField(HeapTypeFieldName);
         set => WriteByteField(HeapTypeFieldName, value);
@@ -252,12 +253,12 @@ internal sealed class MockLoaderCodeHeap : TypedView
 {
     private const string LoaderHeapFieldName = "LoaderHeap";
 
-    internal static Layout<MockLoaderCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockLoaderCodeHeap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("LoaderCodeHeap", architecture)
             .AddPointerField(LoaderHeapFieldName)
             .Build<MockLoaderCodeHeap>();
 
-    internal ulong LoaderHeapAddress => GetFieldAddress(LoaderHeapFieldName);
+    public ulong LoaderHeapAddress => GetFieldAddress(LoaderHeapFieldName);
 }
 
 internal sealed class MockHostCodeHeap : TypedView
@@ -265,19 +266,19 @@ internal sealed class MockHostCodeHeap : TypedView
     private const string BaseAddressFieldName = "BaseAddress";
     private const string CurrentAddressFieldName = "CurrentAddress";
 
-    internal static Layout<MockHostCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockHostCodeHeap> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("HostCodeHeap", architecture)
             .AddPointerField(BaseAddressFieldName)
             .AddPointerField(CurrentAddressFieldName)
             .Build<MockHostCodeHeap>();
 
-    internal ulong BaseAddress
+    public ulong BaseAddress
     {
         get => ReadPointerField(BaseAddressFieldName);
         set => WritePointerField(BaseAddressFieldName, value);
     }
 
-    internal ulong CurrentAddress
+    public ulong CurrentAddress
     {
         get => ReadPointerField(CurrentAddressFieldName);
         set => WritePointerField(CurrentAddressFieldName, value);
@@ -293,7 +294,7 @@ internal sealed class MockRealCodeHeader : TypedView
     private const string NumUnwindInfosFieldName = "NumUnwindInfos";
     private const string UnwindInfosFieldName = "UnwindInfos";
 
-    internal static Layout<MockRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("RealCodeHeader", architecture)
             .AddPointerField(MethodDescFieldName)
             .AddPointerField(DebugInfoFieldName)
@@ -303,37 +304,37 @@ internal sealed class MockRealCodeHeader : TypedView
             .AddPointerField(UnwindInfosFieldName)
             .Build<MockRealCodeHeader>();
 
-    internal ulong MethodDesc
+    public ulong MethodDesc
     {
         get => ReadPointerField(MethodDescFieldName);
         set => WritePointerField(MethodDescFieldName, value);
     }
 
-    internal ulong DebugInfo
+    public ulong DebugInfo
     {
         get => ReadPointerField(DebugInfoFieldName);
         set => WritePointerField(DebugInfoFieldName, value);
     }
 
-    internal ulong EHInfo
+    public ulong EHInfo
     {
         get => ReadPointerField(EHInfoFieldName);
         set => WritePointerField(EHInfoFieldName, value);
     }
 
-    internal ulong GCInfo
+    public ulong GCInfo
     {
         get => ReadPointerField(GCInfoFieldName);
         set => WritePointerField(GCInfoFieldName, value);
     }
 
-    internal uint NumUnwindInfos
+    public uint NumUnwindInfos
     {
         get => ReadUInt32Field(NumUnwindInfosFieldName);
         set => WriteUInt32Field(NumUnwindInfosFieldName, value);
     }
 
-    internal ulong UnwindInfos
+    public ulong UnwindInfos
     {
         get => ReadPointerField(UnwindInfosFieldName);
         set => WritePointerField(UnwindInfosFieldName, value);
@@ -347,7 +348,7 @@ internal sealed class MockInterpreterRealCodeHeader : TypedView
     private const string GCInfoFieldName = "GCInfo";
     private const string JitEHInfoFieldName = "JitEHInfo";
 
-    internal static Layout<MockInterpreterRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockInterpreterRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("InterpreterRealCodeHeader", architecture)
             .AddPointerField(MethodDescFieldName)
             .AddPointerField(DebugInfoFieldName)
@@ -355,25 +356,25 @@ internal sealed class MockInterpreterRealCodeHeader : TypedView
             .AddPointerField(JitEHInfoFieldName)
             .Build<MockInterpreterRealCodeHeader>();
 
-    internal ulong MethodDesc
+    public ulong MethodDesc
     {
         get => ReadPointerField(MethodDescFieldName);
         set => WritePointerField(MethodDescFieldName, value);
     }
 
-    internal ulong DebugInfo
+    public ulong DebugInfo
     {
         get => ReadPointerField(DebugInfoFieldName);
         set => WritePointerField(DebugInfoFieldName, value);
     }
 
-    internal ulong GCInfo
+    public ulong GCInfo
     {
         get => ReadPointerField(GCInfoFieldName);
         set => WritePointerField(GCInfoFieldName, value);
     }
 
-    internal ulong JitEHInfo
+    public ulong JitEHInfo
     {
         get => ReadPointerField(JitEHInfoFieldName);
         set => WritePointerField(JitEHInfoFieldName, value);
@@ -398,7 +399,7 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string ImportSectionsFieldName = "ImportSections";
     private const string NumImportSectionsFieldName = "NumImportSections";
 
-    internal static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
+    public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
             .AddPointerField(ReadyToRunHeaderFieldName)
             .AddPointerField(CompositeInfoFieldName)
@@ -416,49 +417,49 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddPointerField(CompositeFieldName)
             .Build<MockReadyToRunInfo>();
 
-    internal ulong CompositeInfo
+    public ulong CompositeInfo
     {
         get => ReadPointerField(CompositeInfoFieldName);
         set => WritePointerField(CompositeInfoFieldName, value);
     }
 
-    internal uint NumRuntimeFunctions
+    public uint NumRuntimeFunctions
     {
         get => ReadUInt32Field(NumRuntimeFunctionsFieldName);
         set => WriteUInt32Field(NumRuntimeFunctionsFieldName, value);
     }
 
-    internal ulong RuntimeFunctions
+    public ulong RuntimeFunctions
     {
         get => ReadPointerField(RuntimeFunctionsFieldName);
         set => WritePointerField(RuntimeFunctionsFieldName, value);
     }
 
-    internal uint NumHotColdMap
+    public uint NumHotColdMap
     {
         get => ReadUInt32Field(NumHotColdMapFieldName);
         set => WriteUInt32Field(NumHotColdMapFieldName, value);
     }
 
-    internal ulong HotColdMap
+    public ulong HotColdMap
     {
         get => ReadPointerField(HotColdMapFieldName);
         set => WritePointerField(HotColdMapFieldName, value);
     }
 
-    internal ulong ExceptionInfoSection
+    public ulong ExceptionInfoSection
     {
         get => ReadPointerField(ExceptionInfoSectionFieldName);
         set => WritePointerField(ExceptionInfoSectionFieldName, value);
     }
 
-    internal ulong DelayLoadMethodCallThunks
+    public ulong DelayLoadMethodCallThunks
     {
         get => ReadPointerField(DelayLoadMethodCallThunksFieldName);
         set => WritePointerField(DelayLoadMethodCallThunksFieldName, value);
     }
 
-    internal ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+    public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
 }
 
 internal sealed class MockImageDataDirectory : TypedView
@@ -466,19 +467,19 @@ internal sealed class MockImageDataDirectory : TypedView
     private const string VirtualAddressFieldName = "VirtualAddress";
     private const string SizeFieldName = "Size";
 
-    internal static Layout<MockImageDataDirectory> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockImageDataDirectory> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ImageDataDirectory", architecture)
             .AddUInt32Field(VirtualAddressFieldName)
             .AddUInt32Field(SizeFieldName)
             .Build<MockImageDataDirectory>();
 
-    internal uint VirtualAddress
+    public uint VirtualAddress
     {
         get => ReadUInt32Field(VirtualAddressFieldName);
         set => WriteUInt32Field(VirtualAddressFieldName, value);
     }
 
-    internal uint Size
+    public uint Size
     {
         get => ReadUInt32Field(SizeFieldName);
         set => WriteUInt32Field(SizeFieldName, value);
@@ -490,19 +491,19 @@ internal sealed class MockEEJitManager : TypedView
     private const string StoreRichDebugInfoFieldName = "StoreRichDebugInfo";
     private const string AllCodeHeapsFieldName = "AllCodeHeaps";
 
-    internal static Layout<MockEEJitManager> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockEEJitManager> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEJitManager", architecture)
             .AddField(StoreRichDebugInfoFieldName, sizeof(byte))
             .AddPointerField(AllCodeHeapsFieldName)
             .Build<MockEEJitManager>();
 
-    internal byte StoreRichDebugInfo
+    public byte StoreRichDebugInfo
     {
         get => ReadByteField(StoreRichDebugInfoFieldName);
         set => WriteByteField(StoreRichDebugInfoFieldName, value);
     }
 
-    internal ulong AllCodeHeaps
+    public ulong AllCodeHeaps
     {
         get => ReadPointerField(AllCodeHeapsFieldName);
         set => WritePointerField(AllCodeHeapsFieldName, value);
@@ -514,21 +515,21 @@ internal sealed class MockJittedMethod : TypedView
     private const string CodeHeaderFieldName = "CodeHeader";
     private const string CodeBytesFieldName = "CodeBytes";
 
-    internal static Layout<MockJittedMethod> CreateLayout(MockTarget.Architecture architecture, int codeSize)
+    public static Layout<MockJittedMethod> CreateLayout(MockTarget.Architecture architecture, int codeSize)
         => new SequentialLayoutBuilder("JittedMethod", architecture)
             .AddPointerField(CodeHeaderFieldName)
             .AddField(CodeBytesFieldName, codeSize)
             .Build<MockJittedMethod>();
 
-    internal ulong CodeHeader
+    public ulong CodeHeader
     {
         get => ReadPointerField(CodeHeaderFieldName);
         set => WritePointerField(CodeHeaderFieldName, value);
     }
 
-    internal ulong CodeAddress => GetFieldAddress(CodeBytesFieldName);
+    public ulong CodeAddress => GetFieldAddress(CodeBytesFieldName);
 
-    internal Memory<byte> CodeBytes
+    public Memory<byte> CodeBytes
     {
         get
         {
@@ -546,17 +547,17 @@ internal sealed class MockExecutionManagerBuilder
     private const string EEJitManagerGlobalName = "EEJitManagerGlobalPointer";
     private const int RangeSectionMapBitsPerLevel = 8;
 
-    internal readonly struct AllocationRange
+    public readonly struct AllocationRange
     {
-        internal ulong RangeSectionMapStart { get; init; }
-        internal ulong RangeSectionMapEnd { get; init; }
-        internal ulong NibbleMapStart { get; init; }
-        internal ulong NibbleMapEnd { get; init; }
-        internal ulong ExecutionManagerStart { get; init; }
-        internal ulong ExecutionManagerEnd { get; init; }
+        public ulong RangeSectionMapStart { get; init; }
+        public ulong RangeSectionMapEnd { get; init; }
+        public ulong NibbleMapStart { get; init; }
+        public ulong NibbleMapEnd { get; init; }
+        public ulong ExecutionManagerStart { get; init; }
+        public ulong ExecutionManagerEnd { get; init; }
     }
 
-    internal static readonly AllocationRange DefaultAllocationRange = new()
+    public static readonly AllocationRange DefaultAllocationRange = new()
     {
         RangeSectionMapStart = 0x00dd_0000,
         RangeSectionMapEnd = 0x00de_0000,
@@ -568,25 +569,25 @@ internal sealed class MockExecutionManagerBuilder
 
     private readonly struct RangeSectionMapCursor
     {
-        internal RangeSectionMapCursor(MockRangeSectionMapLevel levelMap, int level, int index)
+        public RangeSectionMapCursor(MockRangeSectionMapLevel levelMap, int level, int index)
         {
             LevelMap = levelMap;
             Level = level;
             Index = index;
         }
 
-        internal MockRangeSectionMapLevel LevelMap { get; }
-        internal int Level { get; }
-        internal int Index { get; }
-        internal bool IsLeaf => Level == 1;
+        public MockRangeSectionMapLevel LevelMap { get; }
+        public int Level { get; }
+        public int Index { get; }
+        public bool IsLeaf => Level == 1;
     }
 
     internal readonly struct JittedCodeRange
     {
-        internal MockMemorySpace.BumpAllocator Allocator { get; init; }
-        internal ulong RangeStart => Allocator.RangeStart;
-        internal ulong RangeEnd => Allocator.RangeEnd;
-        internal ulong RangeSize => RangeEnd - RangeStart;
+        public MockMemorySpace.BumpAllocator Allocator { get; init; }
+        public ulong RangeStart => Allocator.RangeStart;
+        public ulong RangeEnd => Allocator.RangeEnd;
+        public ulong RangeSize => RangeEnd - RangeStart;
     }
 
     internal string Version { get; }
@@ -679,7 +680,7 @@ internal sealed class MockExecutionManagerBuilder
         Globals = [.. globals];
     }
 
-    internal void SetAllCodeHeaps(ulong headNodeAddress)
+    public void SetAllCodeHeaps(ulong headNodeAddress)
         => _eeJitManager.AllCodeHeaps = headNodeAddress;
 
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
@@ -694,13 +695,13 @@ internal sealed class MockExecutionManagerBuilder
         return nibBuilder;
     }
 
-    internal JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
+    public JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
     {
         MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize, minAlign: 1);
         return new JittedCodeRange { Allocator = allocator };
     }
 
-    internal MockRangeSection AddRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
+    public MockRangeSection AddRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
     {
         MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeSection", _rangeSectionMapAllocator);
         rangeSection.RangeBegin = jittedCodeRange.RangeStart;
@@ -711,7 +712,7 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSection;
     }
 
-    internal MockRangeSection AddReadyToRunRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong r2rModuleAddress)
+    public MockRangeSection AddReadyToRunRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong r2rModuleAddress)
     {
         MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeSection", _rangeSectionMapAllocator);
         rangeSection.RangeBegin = jittedCodeRange.RangeStart;
@@ -721,7 +722,7 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSection;
     }
 
-    internal MockRangeSection AddRangeListRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, int rangeListType)
+    public MockRangeSection AddRangeListRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, int rangeListType)
     {
         MockCodeRangeMapRangeList rangeList = AllocateAndCreate(CodeRangeMapRangeListLayout, "CodeRangeMapRangeList");
         rangeList.RangeListType = rangeListType;
@@ -735,7 +736,7 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSection;
     }
 
-    internal MockRangeSection AddInterpreterRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
+    public MockRangeSection AddInterpreterRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
     {
         MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "InterpreterRangeSection", _rangeSectionMapAllocator);
         rangeSection.RangeBegin = jittedCodeRange.RangeStart;
@@ -746,20 +747,20 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSection;
     }
 
-    internal MockJittedMethod AddStubCodeBlock(JittedCodeRange jittedCodeRange, uint codeSize, int stubCodeBlockKind)
+    public MockJittedMethod AddStubCodeBlock(JittedCodeRange jittedCodeRange, uint codeSize, int stubCodeBlockKind)
     {
         MockJittedMethod stub = AllocateJittedMethod(jittedCodeRange, codeSize, "Stub Code Block");
         stub.CodeHeader = (ulong)stubCodeBlockKind;
         return stub;
     }
 
-    internal MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
+    public MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
         => AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
 
-    internal MockRangeSectionFragment AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
+    public MockRangeSectionFragment AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
         => AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: false);
 
-    internal MockRangeSectionFragment AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, ulong rangeSectionAddress, ulong nextFragmentAddress)
+    public MockRangeSectionFragment AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, ulong rangeSectionAddress, ulong nextFragmentAddress)
     {
         MockRangeSectionFragment rangeSectionFragment = AllocateAndCreate(
             RangeSectionFragmentLayout,
@@ -771,7 +772,7 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSectionFragment;
     }
 
-    internal MockCodeHeapListNode AddCodeHeapListNode(ulong next, ulong startAddress, ulong endAddress, ulong mapBase, ulong headerMap, ulong heap = 0)
+    public MockCodeHeapListNode AddCodeHeapListNode(ulong next, ulong startAddress, ulong endAddress, ulong mapBase, ulong headerMap, ulong heap = 0)
     {
         MockCodeHeapListNode codeHeapListNode = AllocateAndCreate(CodeHeapListNodeLayout, "CodeHeapListNode", _rangeSectionMapAllocator);
         codeHeapListNode.Next = next;
@@ -783,7 +784,7 @@ internal sealed class MockExecutionManagerBuilder
         return codeHeapListNode;
     }
 
-    internal MockLoaderCodeHeap AddLoaderCodeHeap()
+    public MockLoaderCodeHeap AddLoaderCodeHeap()
     {
         ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, LoaderCodeHeapLayout.Size);
         MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocationSize, "LoaderCodeHeap");
@@ -795,7 +796,7 @@ internal sealed class MockExecutionManagerBuilder
         return loaderCodeHeap;
     }
 
-    internal MockHostCodeHeap AddHostCodeHeap(ulong baseAddress, ulong currentAddress)
+    public MockHostCodeHeap AddHostCodeHeap(ulong baseAddress, ulong currentAddress)
     {
         ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, HostCodeHeapLayout.Size);
         MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocationSize, "HostCodeHeap");
@@ -809,7 +810,7 @@ internal sealed class MockExecutionManagerBuilder
         return hostCodeHeap;
     }
 
-    internal MockJittedMethod AddJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
+    public MockJittedMethod AddJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
     {
         MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize);
         MockRealCodeHeader codeHeader = AllocateAndCreate(RealCodeHeaderLayout, "RealCodeHeader");
@@ -825,7 +826,7 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethod;
     }
 
-    internal MockJittedMethod AddInterpretedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
+    public MockJittedMethod AddInterpretedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
     {
         MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize, "Interpreter Method Header & Code");
         MockInterpreterRealCodeHeader codeHeader = AllocateAndCreate(InterpreterRealCodeHeaderLayout, "InterpreterRealCodeHeader");
@@ -839,7 +840,7 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethod;
     }
 
-    internal MockReadyToRunInfo AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
+    public MockReadyToRunInfo AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
     {
         ulong runtimeFunctionsAddress = _runtimeFunctions.AddRuntimeFunctions(runtimeFunctions);
         ulong hotColdMapAddress = 0;
@@ -863,7 +864,7 @@ internal sealed class MockExecutionManagerBuilder
         return readyToRunInfo;
     }
 
-    internal void SetDelayLoadMethodCallThunks(MockReadyToRunInfo readyToRunInfo, uint thunkRva, uint thunkSize)
+    public void SetDelayLoadMethodCallThunks(MockReadyToRunInfo readyToRunInfo, uint thunkRva, uint thunkSize)
     {
         MockImageDataDirectory imageDataDir = AllocateAndCreate(ImageDataDirectoryLayout, "DelayLoadMethodCallThunks");
         imageDataDir.VirtualAddress = thunkRva;
@@ -871,7 +872,7 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.DelayLoadMethodCallThunks = imageDataDir.Address;
     }
 
-    internal MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)
+    public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)
     {
         MockLoaderModule module = AllocateAndCreate(ModuleLayout, "R2R Module");
         module.ReadyToRunInfo = readyToRunInfoAddress;

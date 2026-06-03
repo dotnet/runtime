@@ -4,7 +4,7 @@
 using System;
 using System.Numerics;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
 public abstract class TypedView
 {
