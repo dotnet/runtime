@@ -29,7 +29,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
-#define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (long/double).
+#define MAX_PASS_SINGLEREG_BYTES      16 // Maximum size of a struct passed in a single register (long/double/SIMD).
 #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register
 #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HFA or 2 doubles)
 #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument in multiple registers.
@@ -61,8 +61,8 @@
 #define HAS_FIXED_REGISTER_SET   0       // WASM has an unlimited number of locals/registers.
 #define REGNUM_BITS              1       // number of bits in a REG_*
 #define REGSIZE_BYTES            TARGET_POINTER_SIZE // number of bytes in one general purpose register
-#define FP_REGSIZE_BYTES         8      // number of bytes in one FP/SIMD register
-#define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
+#define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
+#define FPSAVE_REGSIZE_BYTES     16      // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
 
 #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
@@ -260,6 +260,12 @@
 // on the stack guard page, and must be touched before any further "SUB SP".
 #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
+#ifdef FEATURE_SIMD
+#define ALIGN_SIMD_TYPES                  0  // Wasm doesn't need special alignment for SIMD locals
+#define FEATURE_PARTIAL_SIMD_CALLEE_SAVE  0  // No callee-save registers on Wasm
+#endif
+
 // clang-format on
 
 #include "registeropswasm.h"
+

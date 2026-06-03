@@ -83,6 +83,11 @@ function(create_standalone_jit)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
   endif ()
+
+  if (TARGETDETAILS_ARCH STREQUAL "wasm")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+  endif ()
 endfunction()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
@@ -309,6 +314,8 @@ set( JIT_WASM_SOURCES
   registeropswasm.cpp
   targetwasm.cpp
   unwindwasm.cpp
+  hwintrinsicwasm.cpp
+  hwintrinsiccodegenwasm.cpp
 )
 
 # We include the headers here for better experience in IDEs.
@@ -500,6 +507,7 @@ set( JIT_WASM_HEADERS
     instrswasm.h
     registerwasm.h
     fgwasm.h
+    hwintrinsiclistwasm.h
 )
 
 set ( JITSHARED_SOURCES

@@ -38,6 +38,21 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
         /* category */ category \
     },
 #include "hwintrinsiclistarm64.h"
+#elif defined(TARGET_WASM)
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ -1, \
+         /* fltCost */ -1, \
+        /* category */ category \
+    },
+#include "hwintrinsiclistwasm.h"
 #else
 #error Unsupported platform
 #endif
@@ -1031,6 +1046,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
+#elif defined(TARGET_WASM)
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
     // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
@@ -1494,6 +1511,11 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
         return true;
     }
 #elif defined(TARGET_ARM64)
+    if (!HWIntrinsicInfo::HasImmediateOperand(id))
+    {
+        return false;
+    }
+#elif defined(TARGET_WASM)
     if (!HWIntrinsicInfo::HasImmediateOperand(id))
     {
         return false;

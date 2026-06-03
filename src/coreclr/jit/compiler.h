@@ -10227,7 +10227,7 @@ public:
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
