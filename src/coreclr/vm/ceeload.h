@@ -881,6 +881,7 @@ protected:
 #endif
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
+    PTR_VOID GetModuleBaseAddress() const { LIMITED_METHOD_DAC_CONTRACT; return m_baseAddress; }
 
     void ApplyMetaData();
 

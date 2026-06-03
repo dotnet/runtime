@@ -36,7 +36,7 @@ internal static class Emitter
         sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Contracts;");
         if (needsGeneratedUsing)
         {
-            // LayoutPair and TypeNameResolver are emitted by the generator
+            // LayoutSet and TypeNameResolver are emitted by the generator
             // via RegisterPostInitializationOutput into this namespace.
             sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Generated;");
         }
@@ -51,7 +51,7 @@ internal static class Emitter
         sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
-        // Emit a static _typeNames array for LayoutPair.Resolve and TypeHandle resolution.
+        // Emit a static _typeNames array for LayoutSet.Resolve and TypeHandle resolution.
         if (model.Names.Count > 0)
         {
             string namesLiteral = NamesArrayLiteral(model.Names);
@@ -134,7 +134,7 @@ internal static class Emitter
 
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(_target, _typeNames);");
+        sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(_target, _typeNames);");
         sb.AppendLine($"        layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
@@ -176,7 +176,7 @@ internal static class Emitter
         if (needsDescriptor)
         {
             sb.AppendLine();
-            sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(target, _typeNames);");
+            sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
         }
         sb.AppendLine();
 
@@ -242,6 +242,7 @@ internal static class Emitter
             FieldReadKind.Bool        => $"target.ReadField<{member.BoolUnderlyingType ?? "byte"}>({baseVar}, {typeVar}, {nameVar}) != 0",
             FieldReadKind.Pointer     => $"target.ReadPointerField({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.NUInt       => $"target.ReadNUIntField({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.NInt        => $"target.ReadNIntField({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.CodePointer => $"target.ReadCodePointerField({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.DataInPlace => $"target.ReadDataField<{typeArg}>({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.DataPointer => $"target.ProcessedData.GetOrAdd<{typeArg}>(target.ReadPointerField({baseVar}, {typeVar}, {nameVar}))",
@@ -325,6 +326,7 @@ internal static class Emitter
             FieldReadKind.Bool => $"target.{readMethod}<byte>({addr}) != 0",
             FieldReadKind.Pointer => $"target.ReadPointer({addr})",
             FieldReadKind.NUInt => $"target.ReadNUInt({addr})",
+            FieldReadKind.NInt => $"target.ReadNInt({addr})",
             FieldReadKind.CodePointer => $"target.ReadCodePointer({addr})",
             FieldReadKind.DataInPlace => $"target.ProcessedData.GetOrAdd<{typeArg}>({addr})",
             _ => $"default({Shorten(member.PropertyOrReturnTypeFqn)})",

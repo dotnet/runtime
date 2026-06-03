@@ -619,9 +619,6 @@ public unsafe partial interface IDacDbiInterface
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal);
-
-    [PreserveSig]
     int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal);
 
     [PreserveSig]
@@ -709,13 +706,10 @@ public unsafe partial interface IDacDbiInterface
     int IsDelegate(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetDelegateType(ulong delegateObject, int* delegateType);
+    int GetDelegateFunctionData(ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
 
     [PreserveSig]
-    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
-
-    [PreserveSig]
-    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
+    int GetDelegateTargetObject(ulong delegateObject, ulong* ppTargetObj);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

@@ -1201,7 +1201,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                                            ValueNumStore::SmallValueNumSet* visited)
 {
     Range assertedRange = Range(Limit(Limit::keUnknown));
-    if (BitVecOps::IsEmpty(comp->apTraits, assertions))
+    if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
         return;
     }
@@ -2287,9 +2287,19 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
-        range = (m_compiler->vnStore->TypeOfVN(vn) == TYP_INT)
-                    ? Range(Limit(Limit::keConstant, m_compiler->vnStore->ConstantValue<int>(vn)))
-                    : Limit(Limit::keUnknown);
+        // We want to handle constants first since it can avoid other more expensive work
+
+        int cns;
+        if (m_compiler->vnStore->IsVNIntegralConstant(vn, &cns))
+        {
+            range = Range(Limit(Limit::keConstant, cns));
+        }
+        else
+        {
+            // TODO: We could return `0, keUnknown` if the constant is known positive
+            // but this would require more handling in other places to take advantage of.
+            range = Limit(Limit::keUnknown);
+        }
     }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
@@ -2331,19 +2341,9 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_compiler));
         }
     }
-    else if (varTypeIsSmall(expr))
-    {
-        range = GetRangeFromType(expr->TypeGet());
-        JITDUMP("%s\n", range.ToString(m_compiler));
-    }
     else if (expr->OperIs(GT_COMMA))
     {
         range = GetRangeWorker(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
-    }
-    else if (expr->OperIs(GT_CAST))
-    {
-        // TODO: consider computing range for CastOp and intersect it with this.
-        range = GetRangeFromType(expr->AsCast()->CastToType());
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
@@ -2359,6 +2359,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             // Better than keUnknown
             range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
         }
+    }
+    else if (genActualType(expr) == TYP_INT)
+    {
+        // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
+        range = GetRangeFromAssertions(m_compiler, vn, block->bbAssertionIn);
     }
     else
     {

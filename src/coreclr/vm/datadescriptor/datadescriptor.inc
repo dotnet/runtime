@@ -46,6 +46,7 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedSt
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_UINT32, DebuggerControlledThreadState, cdac_data<Thread>::DebuggerControlledThreadState)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+CDAC_TYPE_FIELD(Thread, T_UINT32, InteropDebuggingHijacked, cdac_data<Thread>::InteropDebuggingHijacked)
 #ifdef TARGET_WINDOWS
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadHandle, cdac_data<Thread>::ThreadHandle)
 #endif // TARGET_WINDOWS
@@ -191,6 +192,14 @@ CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
+
+CDAC_TYPE_BEGIN(Delegate)
+CDAC_TYPE_SIZE(sizeof(DelegateObject))
+CDAC_TYPE_FIELD(Delegate, T_POINTER, Target, cdac_data<DelegateObject>::Target)
+CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtr, cdac_data<DelegateObject>::MethodPtr)
+CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::MethodPtrAux)
+CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
+CDAC_TYPE_END(Delegate)
 
 CDAC_TYPE_BEGIN(StackTraceArrayHeader)
 CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
@@ -757,9 +766,13 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ReadyToRunHeader, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, CompositeInfo, cdac_data<ReadyToRunInfo>::CompositeInfo)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumRuntimeFunctions, cdac_data<ReadyToRunInfo>::NumRuntimeFunctions)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, RuntimeFunctions, cdac_data<ReadyToRunInfo>::RuntimeFunctions)
+#ifdef FEATURE_COLD_R2R_CODE
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
+#endif // FEATURE_COLD_R2R_CODE
+#ifndef TARGET_WASM
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
+#endif // !TARGET_WASM
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ImportSections, cdac_data<ReadyToRunInfo>::ImportSections)
@@ -1584,7 +1597,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
-CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 1)
 CDAC_GLOBAL(StressLogMaxModules, T_UINT64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)

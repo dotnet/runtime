@@ -90,7 +90,6 @@ typedef int CorElementType;
 typedef int AddressType;
 typedef int SymbolFormat;
 typedef int AreValueTypesBoxed;
-typedef int DelegateType;
 typedef int DynamicMethodType;
 typedef int FrameType;
 typedef int EHijackReason;
@@ -355,8 +354,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
-    // Object Contents and Monitor
-    HRESULT GetObjectContents([in] VMPTR_Object obj, [out] struct TargetBuffer * pRetVal);
+    // Object Monitor
     HRESULT GetThreadOwningMonitorLock([in] VMPTR_Object vmObject, [out] struct MonitorLockInfo * pRetVal);
     HRESULT EnumerateMonitorEventWaitList([in] VMPTR_Object vmObject, [in] FP_THREAD_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
@@ -414,17 +412,13 @@ interface IDacDbiInterface : IUnknown
 
     // Delegate
     HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetDelegateType([in] VMPTR_Object delegateObject, [out] DelegateType * delegateType);
     HRESULT GetDelegateFunctionData(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
         [out] VMPTR_Assembly * ppFunctionAssembly,
         [out] mdMethodDef * pMethodDef);
     HRESULT GetDelegateTargetObject(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
-        [out] VMPTR_Object * ppTargetObj,
-        [out] VMPTR_AppDomain * ppTargetAppDomain);
+        [out] VMPTR_Object * ppTargetObj);
 
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);

@@ -13730,6 +13730,10 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
     }
+    else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
+    {
+        intrinsic->gtVNPair = vnStore->VNPUniqueWithExc(intrinsic->TypeGet(), arg0VNPx);
+    }
     else
     {
         assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
