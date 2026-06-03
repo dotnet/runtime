@@ -300,6 +300,10 @@ bool IntegralRange::Contains(int64_t value) const
                     {
                         rangeType = TYP_USHORT;
                     }
+                    else if ((elementCount == 32) && varTypeIsLong(rangeType))
+                    {
+                        return {SymbolicIntegerValue::Zero, UpperBoundForType(TYP_UINT)};
+                    }
                     break;
                 }
 
@@ -4070,17 +4074,20 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if MergeEdgeAssertions can help us:
-    if (genActualType(tree) == TYP_INT)
+    if (varTypeIsIntegral(tree))
     {
-        Range rng = RangeCheck::GetRangeFromAssertions(this, treeVN, assertions);
-        assert(rng.IsConstantRange());
-        if (rng.LowerLimit().GetConstant() >= 0)
+        Range rng = RangeCheck::GetRangeFromAssertions(this, tree->TypeGet(), treeVN, assertions);
+
+        if (rng.IsConstantRange())
         {
-            *isKnownNonNegative = true;
-        }
-        if ((rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0))
-        {
-            *isKnownNonZero = true;
+            if (rng.LowerLimit().GetConstant() >= 0)
+            {
+                *isKnownNonNegative = true;
+            }
+            if ((rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0))
+            {
+                *isKnownNonZero = true;
+            }
         }
     }
 }
@@ -4106,8 +4113,10 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
 
-        Range op1Rng = RangeCheck::GetRangeFromAssertions(this, optConservativeNormalVN(op1), assertions);
-        Range op2Rng = RangeCheck::GetRangeFromAssertions(this, optConservativeNormalVN(op2), assertions);
+        Range op1Rng =
+            RangeCheck::GetRangeFromAssertions(this, op1->TypeGet(), optConservativeNormalVN(op1), assertions);
+        Range op2Rng =
+            RangeCheck::GetRangeFromAssertions(this, op2->TypeGet(), optConservativeNormalVN(op2), assertions);
         Range result = Limit(Limit::keUnknown);
         if (tree->OperIs(GT_MUL))
         {
@@ -4484,7 +4493,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // We don't need the op1->TypeIs(TYP_INT) check, but it seems to improve the TP quite a bit.
     if (op1->TypeIs(TYP_INT))
     {
-        Range relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
+        Range relopRange = RangeCheck::GetRangeFromAssertions(this, tree->TypeGet(), relopVN, assertions);
 
         int relopResult;
         if (!relopRange.IsSingleValueConstant(&relopResult))
@@ -4500,8 +4509,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             }
             else
             {
-                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
-                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
+                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1->TypeGet(), op1VN, assertions);
+                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2->TypeGet(), op2VN, assertions);
                 relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
             }
         }
@@ -4928,29 +4937,32 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
         {
             Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
-            if (castToTypeRange.IsConstantRange() && (genActualType(cast->CastOp()) == TYP_INT))
+            GenTree* castOp       = cast->CastOp();
+            if (castToTypeRange.IsConstantRange() && (genActualType(castOp) == TYP_INT))
             {
-                ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
-                Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
-                assert(castOpRng.IsConstantRange());
+                ValueNum castOpVN  = optConservativeNormalVN(castOp);
+                Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOp->TypeGet(), castOpVN, assertions);
 
-                int castFromLo = castOpRng.LowerLimit().GetConstant();
-                int castFromHi = castOpRng.UpperLimit().GetConstant();
-                int castToLo   = castToTypeRange.LowerLimit().GetConstant();
-                int castToHi   = castToTypeRange.UpperLimit().GetConstant();
-
-                if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
+                if (castOpRng.IsConstantRange())
                 {
-                    if (canDropCast)
-                    {
-                        JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
-                        return optAssertionProp_Update(cast->CastOp(), cast, stmt);
-                    }
+                    int castFromLo = castOpRng.LowerLimit().GetConstant();
+                    int castFromHi = castOpRng.UpperLimit().GetConstant();
+                    int castToLo   = castToTypeRange.LowerLimit().GetConstant();
+                    int castToHi   = castToTypeRange.UpperLimit().GetConstant();
 
-                    assert(cast->gtOverflow());
-                    JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
-                    cast->ClearOverflow();
-                    return optAssertionProp_Update(cast, cast, stmt);
+                    if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
+                    {
+                        if (canDropCast)
+                        {
+                            JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                            return optAssertionProp_Update(cast->CastOp(), cast, stmt);
+                        }
+
+                        assert(cast->gtOverflow());
+                        JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+                        cast->ClearOverflow();
+                        return optAssertionProp_Update(cast, cast, stmt);
+                    }
                 }
             }
         }
@@ -5519,9 +5531,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
-    GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
-    ValueNum          vnCurIdx   = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
-    ValueNum          vnCurLen   = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
+    GenTreeBoundsChk* arrBndsChk    = tree->AsBoundsChk();
+    GenTree*          arrBndsChkIdx = arrBndsChk->GetIndex();
+    GenTree*          arrBndsChkLen = arrBndsChk->GetArrayLength();
+    ValueNum          vnCurIdx      = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
+    ValueNum          vnCurLen      = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
 
     auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
         JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
@@ -5549,7 +5563,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
         if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
         {
-            Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+            Range rng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen->TypeGet(), vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
@@ -5582,7 +5596,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChk->GetArrayLength()))
+        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChkLen))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
@@ -5593,7 +5607,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             // Are we using zero as the index?
             // It can always be considered as redundant with any previous value
             //       a[*] followed by a[0]
-            else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->GetIndex()->TypeGet()))
+            else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChkIdx->TypeGet()))
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
@@ -5648,8 +5662,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     if ((genActualType(vnStore->TypeOfVN(vnCurIdx)) == TYP_INT) &&
         (genActualType(vnStore->TypeOfVN(vnCurLen)) == TYP_INT))
     {
-        Range idxRng = RangeCheck::GetRangeFromAssertions(this, vnCurIdx, assertions);
-        Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+        Range idxRng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkIdx->TypeGet(), vnCurIdx, assertions);
+        Range lenRng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen->TypeGet(), vnCurLen, assertions);
         if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
         {
             int idxLo = idxRng.LowerLimit().GetConstant();
