@@ -309,8 +309,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
-#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) ||                        \
-    defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
             if (!tree->gtOverflow())
             {
                 double smallMin;
@@ -343,15 +342,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ false);
 #else  // !FEATURE_HW_INTRINSICS
-                // On RISC-V, LoongArch64, and WASM, use GT_INTRINSIC nodes which lower to
-                // native fmin/fmax scalar instructions.
+       // On RISC-V, LoongArch64, and WASM, use GT_INTRINSIC nodes which lower to
+       // native fmin/fmax scalar instructions.
                 const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
-                oper = new (this, GT_INTRINSIC)
-                    GenTreeIntrinsic(srcType, gtNewDconNode(smallMin, srcType), oper,
-                                     NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
-                oper = new (this, GT_INTRINSIC)
-                    GenTreeIntrinsic(srcType, gtNewDconNode(smallMax, srcType), oper,
-                                     NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
+                oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMin, srcType), oper,
+                                                                 NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
+                oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMax, srcType), oper,
+                                                                 NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
 #endif // FEATURE_HW_INTRINSICS
             }
 #elif defined(TARGET_ARM)
@@ -390,8 +387,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         unreached();
                 }
                 const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
-                oper = new (this, GT_INTRINSIC)
-                    GenTreeIntrinsic(TYP_INT, oper, satIntrinsic, nullptr R2RARG(nullEntry));
+                oper =
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, oper, satIntrinsic, nullptr R2RARG(nullEntry));
             }
 #endif // TARGET_ARM
 
