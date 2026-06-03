@@ -941,10 +941,10 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
-        return ((IStackWalk)this).GetContextFromFrames(threadData);
+        return GetContextFromFrames(threadData);
     }
 
-    byte[] IStackWalk.GetContextFromFrames(ThreadData threadData)
+    private byte[] GetContextFromFrames(ThreadData threadData)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
