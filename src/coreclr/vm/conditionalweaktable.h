@@ -48,9 +48,11 @@ class ConditionalWeakTableObject final : public Object
     OBJECTREF _lock;
     VolatilePtr<ConditionalWeakTableContainerObject, CONDITIONAL_WEAK_TABLE_CONTAINER_REF> _container;
 public:
-    // This helper can be used when the runtime is suspended. If we need to use this
-    // in a context where the runtime isn't suspended, we need to add locking and
-    // active enumerator tracking support.
+    // This helper can be used when the runtime is suspended (for example, DAC access
+    // or Objective-C interop callbacks that run under GC suspension). During suspension
+    // the table shape is stable since no mutations can run, so lock-free lookup is safe.
+    // If we need to use this in a context where the runtime isn't suspended, we need to
+    // add locking and active enumerator tracking support.
     template<typename TKey, typename TValue>
     bool TryGetValue(TKey key, TValue* value)
     {

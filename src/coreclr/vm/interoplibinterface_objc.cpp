@@ -154,6 +154,9 @@ namespace
         }
         CONTRACTL_END;
 
+        if (g_ObjectiveCTrackingInfoTable == NULL)
+            return false;
+
         CONDITIONAL_WEAK_TABLE_REF trackingTable = (CONDITIONAL_WEAK_TABLE_REF)ObjectFromHandle(g_ObjectiveCTrackingInfoTable);
         if (trackingTable == NULL)
             return false;

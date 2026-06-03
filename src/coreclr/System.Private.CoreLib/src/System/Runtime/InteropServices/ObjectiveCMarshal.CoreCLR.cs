@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
@@ -45,6 +46,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             // Rely on GetOrCreateReferenceTrackingMemoryInternal for state checking.
             GetOrCreateReferenceTrackingMemoryInternal(obj, out memInSizeT, out mem);
             return AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
@@ -55,6 +58,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (!s_initialized)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
@@ -95,7 +100,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
 
             internal IntPtr _memory;
-            private GCHandle _longWeakHandle;
+            private IntPtr _longWeakHandle;
 
             public ObjcTrackingInformation()
             {
@@ -110,42 +115,37 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
             public void EnsureInitialized(object o)
             {
-                if (_longWeakHandle.IsAllocated)
+                if (_longWeakHandle != IntPtr.Zero)
                 {
                     return;
                 }
 
-                GCHandle newHandle = GCHandle.Alloc(o, GCHandleType.WeakTrackResurrection);
-                lock (this)
+                IntPtr newHandle = GCHandle.ToIntPtr(GCHandle.Alloc(o, GCHandleType.WeakTrackResurrection));
+                if (Interlocked.CompareExchange(ref _longWeakHandle, newHandle, IntPtr.Zero) != IntPtr.Zero)
                 {
-                    if (_longWeakHandle.IsAllocated)
-                    {
-                        newHandle.Free();
-                    }
-                    else
-                    {
-                        _longWeakHandle = newHandle;
-                    }
+                    GCHandle.FromIntPtr(newHandle).Free();
                 }
             }
 
             ~ObjcTrackingInformation()
             {
-                if (_longWeakHandle.IsAllocated && _longWeakHandle.Target != null)
+                IntPtr longWeakHandle = Volatile.Read(ref _longWeakHandle);
+                if (longWeakHandle != IntPtr.Zero && GCHandle.FromIntPtr(longWeakHandle).Target != null)
                 {
                     GC.ReRegisterForFinalize(this);
                     return;
                 }
 
-                if (_memory != IntPtr.Zero)
+                IntPtr memory = Interlocked.Exchange(ref _memory, IntPtr.Zero);
+                if (memory != IntPtr.Zero)
                 {
-                    NativeMemory.Free((void*)_memory);
-                    _memory = IntPtr.Zero;
+                    NativeMemory.Free((void*)memory);
                 }
 
-                if (_longWeakHandle.IsAllocated)
+                longWeakHandle = Interlocked.Exchange(ref _longWeakHandle, IntPtr.Zero);
+                if (longWeakHandle != IntPtr.Zero)
                 {
-                    _longWeakHandle.Free();
+                    GCHandle.FromIntPtr(longWeakHandle).Free();
                 }
             }
         }
