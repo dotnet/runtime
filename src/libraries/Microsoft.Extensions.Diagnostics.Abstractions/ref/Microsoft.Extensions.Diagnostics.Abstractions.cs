@@ -98,7 +98,6 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     public static partial class TracingBuilderExtensions
     {
         public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, System.Diagnostics.ActivityListener> factory) { throw null!; }
-        public static ITracingBuilder AddListener(this ITracingBuilder builder, System.Diagnostics.ActivityListener listener) { throw null!; }
         public static ITracingBuilder ClearListeners(this ITracingBuilder builder) { throw null!; }
 
         public static ITracingBuilder EnableTracing(this ITracingBuilder builder, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;

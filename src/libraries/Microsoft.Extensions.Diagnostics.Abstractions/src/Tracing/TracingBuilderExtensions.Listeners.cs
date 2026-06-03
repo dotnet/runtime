@@ -19,25 +19,20 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
         /// <param name="factory">A factory function that produces the listener instance.</param>
         /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
+        /// <remarks>
+        /// The tracing builder takes ownership of the listener returned by <paramref name="factory"/>
+        /// and wraps it to apply the rules described by the bound <see cref="TracingOptions"/>. Callers
+        /// should not retain a reference to the returned instance, mutate its properties
+        /// (such as <see cref="ActivityListener.Sample"/> or <see cref="ActivityListener.ActivityStarted"/>)
+        /// after the factory has run, or call <see cref="ActivityListener.RefreshSources"/> on it. Such
+        /// out-of-band changes are not observed by the tracing builder. The builder re-evaluates the
+        /// listener automatically when <see cref="TracingOptions"/> change.
+        /// </remarks>
         public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, ActivityListener> factory)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(factory);
             builder.Services.AddSingleton<ActivityListener>(factory);
-            return builder;
-        }
-
-        /// <summary>
-        /// Registers a new <see cref="ActivityListener"/> instance.
-        /// </summary>
-        /// <param name="listener">The listener instance.</param>
-        /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
-        /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
-        public static ITracingBuilder AddListener(this ITracingBuilder builder, ActivityListener listener)
-        {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentNullException.ThrowIfNull(listener);
-            builder.Services.AddSingleton<ActivityListener>(listener);
             return builder;
         }
 
