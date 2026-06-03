@@ -781,7 +781,10 @@ namespace System.Runtime.CompilerServices
             {
                 if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ReachedLastContinuation)
                 {
-                    AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
+                    if (!ReferenceEquals(enteringBox, dispatcher.LastContinuation))
+                    {
+                        AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
+                    }
                 }
             }
 
