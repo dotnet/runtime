@@ -144,10 +144,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       ComputeWasmVfs;
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GenerateBuildWasmBootJsonDependsOn>
     <GeneratePublishWasmBootJsonDependsOn>
       $(GeneratePublishWasmBootJsonDependsOn);
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
@@ -596,8 +598,25 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
     </PropertyGroup>
     <ItemGroup>
-      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
-      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstDescriptor)" Condition="'$(_WasmPerfInstDescriptor)' != ''" />
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != '' and '$(EnableDiagnostics)' == 'true'"/>
+    </ItemGroup>
+  </Target>
+
+  <!-- CoreCLR: transform WasmPerformanceInstrumentation into separate env vars for MethodSet filter + interval.
+       Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for Mono.
+       UseMonoRuntime=false indicates CoreCLR; when true or unset, Mono workload targets handle it. -->
+  <Target Name="_AddWasmPerformanceInstrumentationEnvironmentVariables"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''">
+    <PropertyGroup>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
       <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>

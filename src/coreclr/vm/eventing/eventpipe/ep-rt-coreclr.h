@@ -51,6 +51,10 @@
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) ALIGN_UP(val,align)
 
+extern void ep_rt_coreclr_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_coreclr_sample_profiler_session_enabled (void);
+extern void ep_rt_coreclr_sample_profiler_disabled (void);
+
 static
 inline
 ep_rt_lock_handle_t *
@@ -610,7 +614,7 @@ void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_enabled (sampling_event);
 }
 
 static
@@ -619,7 +623,7 @@ void
 ep_rt_sample_profiler_session_enabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_session_enabled ();
 }
 
 static
@@ -628,7 +632,7 @@ void
 ep_rt_sample_profiler_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_disabled ();
 }
 
 static
