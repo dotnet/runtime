@@ -152,7 +152,8 @@ namespace System.Net.Http
             _nextStream = 1;
             _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
-            _maxConcurrentStreams = InitialMaxConcurrentStreams;
+            uint maxConcurrentStreams = pool._lastSeenHttp2MaxConcurrentStreams;
+            _maxConcurrentStreams = maxConcurrentStreams > 0 ? maxConcurrentStreams : InitialMaxConcurrentStreams;
             _streamsInUse = 0;
 
             _pendingWindowUpdate = 0;
@@ -858,6 +859,7 @@ namespace System.Net.Http
                     {
                         case SettingId.MaxConcurrentStreams:
                             ChangeMaxConcurrentStreams(settingValue);
+                            _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
                             maxConcurrentStreamsReceived = true;
                             break;
 

@@ -52,6 +52,14 @@ namespace System.Net.Http
         internal uint _lastSeenHttp2MaxHeaderListSize;
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
+        // This setting is advertised by the server via SETTINGS_MAX_CONCURRENT_STREAMS.
+        // If we had previous connections to the same host in this pool, memorize the last value seen.
+        // This value is used as an initial value for new connections before they have a chance to observe the SETTINGS frame.
+        // Doing so avoids immediately exceeding the server limit on the first request, potentially causing extra streams to be queued or refused.
+        // 0 means there were no previous connections, or they hadn't advertised this limit.
+        // There is no need to lock when updating this value - we're only interested in saving _a_ value, not necessarily the min/max/last.
+        internal uint _lastSeenHttp2MaxConcurrentStreams;
+
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
