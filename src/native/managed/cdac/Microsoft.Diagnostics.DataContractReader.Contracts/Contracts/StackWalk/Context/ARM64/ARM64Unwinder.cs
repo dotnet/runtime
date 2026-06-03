@@ -764,6 +764,10 @@ internal class ARM64Unwinder(Target target)
                 }
 
                 context.Lr &= 0x0000FFFFFFFFFFFF;
+
+                //
+                // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
+                //
             }
 
             //

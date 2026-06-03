@@ -3,11 +3,17 @@
 
 //
 
+#if defined(NATIVEAOT)
+#include "common.h"
+#include <windows.h>
+#include "daccess.h"
+#else
 #include "stdafx.h"
 #include "utilcode.h"
 #include "crosscomp.h"
 
 #include "unwinder.h"
+#endif
 
 #define NOTHING
 
@@ -2786,6 +2792,7 @@ Return Value:
 
 #endif // !defined(DEBUGGER_UNWIND)
 
+#if !defined(NATIVEAOT)
 BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 {
     DWORD64 ImageBase = 0;
@@ -2853,6 +2860,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
+#endif // !defined(NATIVEAOT)
 
 #if defined(HOST_UNIX)
 
