@@ -7853,9 +7853,6 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
         {
-            assert(tree->OperIsCmpCompare());
-            fgPushConstantsRight(tree->AsOp());
-
             tree = fgOptimizeRelationalComparison(tree->AsOp());
             if (!tree->OperIsBinary())
             {
@@ -8261,7 +8258,33 @@ DONE_MORPHING_CHILDREN:
             if (opts.OptimizationEnabled() && !tree->OperMayThrow(this))
             {
                 JITDUMP("\nNULLCHECK on [%06u] will always succeed\n", dspTreeID(op1));
-                if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+
+                // If op1 is a helper call with no observable side effects (e.g., an
+                // allocator helper without GTF_CALL_M_ALLOC_SIDE_EFFECTS that the JIT
+                // models as non-throwing, like NEWSFAST), we can drop the call itself.
+                // This matches the IR shape produced by stack allocation, allowing
+                // downstream VN/CSE to treat the surrounding code as if no allocator
+                // call were present. We rely on HasSideEffects's helper-properties
+                // model rather than the cached GTF_SIDE_EFFECT bit, which is
+                // conservative for calls. Any side effects in the call's arguments
+                // are preserved.
+                const bool dropRoot = op1->IsCall() && !op1->AsCall()->HasSideEffects(this);
+
+                if (dropRoot)
+                {
+                    GenTree* sideEffects = nullptr;
+                    gtExtractSideEffList(op1, &sideEffects, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
+                    if (sideEffects != nullptr)
+                    {
+                        tree = sideEffects;
+                        tree->SetMorphed(this, /* doChildren */ true);
+                    }
+                    else
+                    {
+                        tree->gtBashToNOP();
+                    }
+                }
+                else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
                     tree = gtUnusedValNode(op1);
                     tree->SetMorphed(this, /* doChildren */ true);
@@ -8774,11 +8797,11 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
+    fgPushConstantsRight(cmp);
+
     GenTree* tree = cmp;
 
-    // TODO-CQ: Should be called for all comparisons
-    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
-        (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
+    if (tree->OperIsCmpCompare() && (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
     {
         tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
     }
