@@ -299,17 +299,22 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // consistent with the saturating float/double -> int behavior introduced
             // in .NET 9 (https://learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer).
             //
-            // On xarch / Arm64 / RISC-V / LoongArch64 / WASM: clamp in the float domain using
+            // On xarch / Arm64 / WASM: clamp in the float domain using
             // MinNative(smallMax, MaxNative(smallMin, x)) before the R -> int cast.
-            // On ARM32: the R -> int cast already saturates, and we then apply SSAT/USAT
-            // in the integer domain to clamp the int32 result to the small type range.
-            // NaN is handled by each platform's saturation mechanism (maps to 0 via the
-            // saturating R -> int cast on all paths).
+            // These platforms' min/max propagate NaN through the clamp so that the
+            // subsequent saturating R -> int maps it to 0.
+            //
+            // On ARM32 / RISC-V64 / LoongArch64: do R -> int first (NaN -> 0 via the
+            // saturating cast), then apply NI_PRIMITIVE_SaturateToIntN/UIntN to clamp
+            // the int32 result to the small type range. This avoids the issue that
+            // RISC-V and LoongArch64 fmin/fmax implement IEEE 754-2019
+            // "minimumNumber"/"maximumNumber" semantics which replace NaN with the
+            // other (non-NaN) operand rather than propagating NaN.
             //
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
-#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASM)
             if (!tree->gtOverflow())
             {
                 double smallMin;
@@ -341,9 +346,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                                                  /* simdSize */ 0, /* isMax */ true);
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ false);
-#else  // !FEATURE_HW_INTRINSICS
-       // On RISC-V, LoongArch64, and WASM, use GT_INTRINSIC nodes which lower to
-       // native fmin/fmax scalar instructions.
+#else  // TARGET_WASM
+                // WASM f32.min/f64.min propagate NaN; use GT_INTRINSIC nodes which
+                // lower to native WebAssembly min/max instructions.
                 const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
                 oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMin, srcType), oper,
                                                                  NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
@@ -351,21 +356,21 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                                                                  NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
 #endif // FEATURE_HW_INTRINSICS
             }
-#elif defined(TARGET_ARM)
-            // ARM32 clamp is applied in the integer domain after R -> int below.
+#elif defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            // Integer-domain clamp is applied after R -> int below.
 #else
 #error "New JIT target: add saturating float-to-small-int support. Either add a float-domain clamp " \
-       "(as for xarch/arm64/riscv64/la64/wasm) or an integer-domain saturating operation (as for arm32 SSAT/USAT)."
-#endif // FEATURE_HW_INTRINSICS || TARGET_RISCV64 || TARGET_LOONGARCH64 || TARGET_WASM
+       "(as for xarch/arm64/wasm) or an integer-domain saturating operation (as for arm32/riscv64/la64)."
+#endif // FEATURE_HW_INTRINSICS || TARGET_WASM
 
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
 
-#ifdef TARGET_ARM
-            // On ARM32, apply SSAT/USAT to clamp the int32 result of the R -> int cast to
-            // the small type range, achieving the same saturating semantics as the float-domain
-            // clamp on other targets. NaN input maps to 0 via the saturating R -> int cast
-            // above, which is already in range for any small type.
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            // On ARM32/RISC-V64/LoongArch64, apply NI_PRIMITIVE_SaturateToIntN/UIntN to
+            // clamp the int32 result of the R -> int cast to the small type range.
+            // NaN input maps to 0 via the saturating R -> int cast above, which is
+            // already in range for any small type.
             if (!tree->gtOverflow())
             {
                 NamedIntrinsic satIntrinsic;
@@ -390,7 +395,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 oper =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, oper, satIntrinsic, nullptr R2RARG(nullEntry));
             }
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64 || TARGET_LOONGARCH64
 
             tree->AsCast()->CastOp() = oper;
             // We must not mistreat the original cast, which was from a floating point type,
