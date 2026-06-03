@@ -447,12 +447,13 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
 
-            void IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                // TODO-AsyncProfiler: Implement when pooling async builders are fully supported in AsyncProfiler. For now, return default values that won't cause confusion in the profiler.
+                // TODO-AsyncProfiler: Implement when pooling async builders are fully supported in AsyncProfiler.
                 methodId = 0;
                 state = -1;
                 nextContinuation = null;
+                return false;
             }
         }
     }
