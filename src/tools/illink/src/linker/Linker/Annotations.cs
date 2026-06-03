@@ -73,6 +73,7 @@ namespace Mono.Linker
         readonly HashSet<IMemberDefinition> reflection_used = new();
         readonly List<(MethodDefinition Method, MessageOrigin Origin)> pending_reflection_visible_methods = new();
         readonly List<(FieldDefinition Field, MessageOrigin Origin)> pending_reflection_visible_fields = new();
+        readonly List<(TypeDefinition Type, MessageOrigin Origin)> pending_reflection_visible_types = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -257,6 +258,12 @@ namespace Mono.Linker
         internal void MarkPendingReflectionVisibleField(FieldDefinition field, in MessageOrigin origin)
             => pending_reflection_visible_fields.Add((field, origin));
 
+        /// <summary>
+        /// Schedules a type for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleType(TypeDefinition type, in MessageOrigin origin)
+            => pending_reflection_visible_types.Add((type, origin));
+
         internal (MethodDefinition Method, MessageOrigin Origin)[] DrainPendingReflectionVisibleMethods()
         {
             var result = pending_reflection_visible_methods.ToArray();
@@ -268,6 +275,13 @@ namespace Mono.Linker
         {
             var result = pending_reflection_visible_fields.ToArray();
             pending_reflection_visible_fields.Clear();
+            return result;
+        }
+
+        internal (TypeDefinition Type, MessageOrigin Origin)[] DrainPendingReflectionVisibleTypes()
+        {
+            var result = pending_reflection_visible_types.ToArray();
+            pending_reflection_visible_types.Clear();
             return result;
         }
 

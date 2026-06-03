@@ -516,6 +516,12 @@ namespace Mono.Linker.Steps
                 MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
             }
 
+            foreach (var (type, origin) in Annotations.DrainPendingReflectionVisibleTypes())
+            {
+                marked = true;
+                MarkTypeVisibleToReflection(type, DependencyInfo.AlreadyMarked, origin);
+            }
+
             return marked;
         }
 
