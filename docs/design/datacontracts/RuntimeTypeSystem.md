@@ -609,8 +609,6 @@ Contracts used:
             or CorElementType.String
             or CorElementType.Array
             or CorElementType.SzArray;
-                or CorElementType.SzArray;
-
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
