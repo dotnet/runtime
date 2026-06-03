@@ -760,7 +760,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task MalformedPacketsDuringHandshake_ThrowsIOException()
+        public async Task MalformedPacketsDuringHandshake_ThrowsAuthenticationException()
         {
             (Stream client, Stream server) = TestHelper.GetConnectedStreams();
 
@@ -768,10 +768,18 @@ namespace System.Net.Security.Tests
             using (server)
             using (var clientSslStream = new SslStream(client, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(server))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             {
-                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false) }, CancellationToken.None);
-                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate }, CancellationToken.None);
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+                {
+                    TargetHost = serverCert.GetNameInfo(X509NameType.SimpleName, false),
+                    ClientCertificates = new X509CertificateCollection() { clientCert }
+                }, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCert
+                }, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
