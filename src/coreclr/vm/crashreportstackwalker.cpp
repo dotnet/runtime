@@ -253,7 +253,7 @@ FrameCallbackAdapter(
     Module* pModule = pMD->GetModule();
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
-    uint32_t ilOffset = 0;
+    uint32_t ilOffset = CRASHREPORT_NO_IL_OFFSET;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
     PREGDISPLAY pRD = pCF->GetRegisterSet();
@@ -282,8 +282,8 @@ FrameCallbackAdapter(
         }
         EX_CATCH
         {
-            // Best-effort: if IL-offset resolution throws, leave ilOffset = 0
-            // and continue with the native frame metadata we already have.
+            // Best-effort: if IL-offset resolution throws, leave ilOffset at the
+            // sentinel and continue with the native frame metadata we already have.
         }
         EX_END_CATCH
         if (haveILOffset)
