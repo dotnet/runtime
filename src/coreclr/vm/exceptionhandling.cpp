@@ -2568,7 +2568,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid || pCF->GetRegisterSet()->IsCallerSPValid );
+        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
