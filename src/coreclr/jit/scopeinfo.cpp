@@ -1787,7 +1787,7 @@ void CodeGen::genSetScopeInfo()
     if (varsLocationsCount == 0)
     {
         // No variable home to report
-        m_compiler->eeSetLVcount(0);
+        m_compiler->eeAllocateLVs(0);
         m_compiler->eeSetLVdone();
         return;
     }
@@ -1796,7 +1796,7 @@ void CodeGen::genSetScopeInfo()
                  (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
-    m_compiler->eeSetLVcount(varsLocationsCount);
+    m_compiler->eeAllocateLVs(varsLocationsCount);
 
 #ifdef DEBUG
     genTrnslLocalVarCount = varsLocationsCount;

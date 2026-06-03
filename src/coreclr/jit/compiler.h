@@ -9578,7 +9578,7 @@ public:
         DWORD                      varNumber;
         CodeGenInterface::siVarLoc loc;
     }*   eeVars;
-    void eeSetLVcount(unsigned count);
+    void eeAllocateLVs(unsigned count);
     void eeSetLVinfo(unsigned                          which,
                      UNATIVE_OFFSET                    startOffs,
                      UNATIVE_OFFSET                    endOffs,

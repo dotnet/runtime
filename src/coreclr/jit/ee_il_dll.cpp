@@ -664,13 +664,15 @@ void Compiler::eeGetStmtOffsets()
  *                  Debugging support - Local var info
  */
 
-void Compiler::eeSetLVcount(unsigned count)
+void Compiler::eeAllocateLVs(unsigned count)
 {
     assert(opts.compScopeInfo);
 
-    JITDUMP("VarLocInfo count is %d\n", count);
+    JITDUMP("Allocating %d VarLocInfo\n", count);
 
+    eeVarsCount    = 0;
     eeVarsCapacity = count;
+
     if (count > 0)
     {
         eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(count * sizeof(eeVars[0]));
