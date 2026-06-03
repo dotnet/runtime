@@ -200,11 +200,10 @@ internal unsafe ref struct TypeDataWalk
 
     private TypeHandle ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData* pInfo, CorElementType elementType)
     {
-        // Skip any children: they are part of a reference-typed argument that canonicalizes to __Canon.
-        uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
-        Console.WriteLine($"ObjRefOrPrimitiveTypeArg: elementType={elementType}, numTypeArgs={numTypeArgs}");
-        for (uint i = 0; i < numTypeArgs; i++)
-            Skip();
+// Skip any children: they are part of a reference-typed argument that canonicalizes to __Canon.
+uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
+for (uint i = 0; i < numTypeArgs; i++)
+    Skip();
 
         if (_rts.IsCorElementTypeObjRef(elementType))
             return _canonTh;
