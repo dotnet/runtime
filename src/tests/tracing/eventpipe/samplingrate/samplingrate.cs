@@ -24,13 +24,17 @@ namespace Tracing.Tests.SamplingRate
         // so the observed rate is unambiguously different.
         private const int ConfiguredSampleIntervalMs = 50;
 
-        // Length of the CPU-burn workload in the child.
-        private const int WorkloadDurationMs = 3000;
+        // Length of the CPU-burn workload in the child. Longer than strictly necessary so that
+        // contested/slow CI machines still accumulate enough samples for the interval analysis below.
+        private const int WorkloadDurationMs = 5000;
 
-        // Lower bound on samples for the busiest thread. With 50ms interval over ~3s we expect ~60.
-        private const int MinExpectedSamples = 30;
+        // Lower bound on samples for the busiest thread. With 50ms interval over ~5s we'd expect ~100,
+        // but contested macOS Helix runners have been observed producing only ~5-6 samples/sec. 10 is a
+        // generous floor: still well above background noise, and large enough to make the median
+        // inter-sample interval check below statistically meaningful (>= 9 intervals).
+        private const int MinExpectedSamples = 10;
 
-        // Upper bound on samples for the busiest thread. With default 1ms over ~3s we'd expect ~3000;
+        // Upper bound on samples for the busiest thread. With default 1ms over ~5s we'd expect ~5000;
         // 600 leaves >5x headroom above the 50ms expectation while still excluding default-rate behavior.
         private const int MaxAllowedSamples = 600;
 
