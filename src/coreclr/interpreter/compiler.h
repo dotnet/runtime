@@ -900,9 +900,6 @@ private:
     bool m_isAsyncMethodWithContextSaveRestore = false;
     int32_t m_asyncFinallyStartOffset = -1; // If the method is async, this is the offset of the start of the fault handler
 
-    bool m_hasAddressExposedLocals = false; // Set when any local/arg address is taken (ldloca/ldarga); blocks implicit tail calls
-    bool m_hasLocalloc = false; // Set when localloc is used in the method; blocks implicit tail calls
-
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
     bool m_shadowCopyOfThisPointerHasVar = false;
     int32_t m_shadowThisVar = -1; // If the method is an instance method and we need a shadow copy of the this pointer, this is the var index of the shadow copy

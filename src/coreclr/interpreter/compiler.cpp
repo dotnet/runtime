@@ -2698,12 +2698,6 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                 // The instruction AFTER a ret is always a different basic block if it exists.
                 GetBB((int32_t)(ip - codeStart));
             }
-            else if (opcode == CEE_LOCALLOC)
-            {
-                // Set here rather than at CEE_LOCALLOC emit time because GenerateCode processes
-                // IL sequentially — a call;ret before localloc would miss the flag.
-                m_hasLocalloc = true;
-            }
             break;
         case InlineString:
         case InlineType:
@@ -2716,16 +2710,10 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip += 5;
             break;
         case InlineVar:
-            // Set here rather than at EmitLdLocA time because GenerateCode processes IL
-            // sequentially — a call;ret before ldloca/ldarga would miss the flag.
-            if (opcode == CEE_LDLOCA || opcode == CEE_LDARGA)
-                m_hasAddressExposedLocals = true;
             ip += 3;
             break;
         case ShortInlineVar:
         case ShortInlineI:
-            if (opcode == CEE_LDLOCA_S || opcode == CEE_LDARGA_S)
-                m_hasAddressExposedLocals = true;
             ip += 2;
             break;
         case ShortInlineBrTarget:
@@ -5059,27 +5047,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
-    // Implicit tail call: convert call+ret into a tail call when safe.
-    // Additional validation (DisallowTailCall, canTailCall) is shared with explicit tail calls below.
-    bool isExplicitTailCall = tailcall; // true only for tail. prefix or jmp
-    if (!tailcall && !newObj && !isJmp
-        && !isCalli && !isVirtual
-        && *m_ip == CEE_RET
-        && !m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)
-        && !m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT)
-        && !(callInfo.methodFlags & CORINFO_FLG_PINVOKE)
-        && !m_hasAddressExposedLocals
-        && !m_hasLocalloc)
-    {
-        tailcall = true;
-    }
-
     if (tailcall && (
         DisallowTailCall(&m_methodInfo->args, &callInfo.sig) // Disallow tail-calls for code gen reasons
         || !m_compHnd->canTailCall(m_methodHnd, // Disallow tail calls due to rules specified by the VM
                                    isCalli ? (CORINFO_METHOD_HANDLE)NULL : callInfo.hMethod, // The method we are attempting to call logically
                                    isCalli ? (CORINFO_METHOD_HANDLE)NULL : (callInfo.kind == CORINFO_CALL ? callInfo.hMethod : (CORINFO_METHOD_HANDLE)NULL),
-                                   isExplicitTailCall) // false for implicit: VM applies stricter checks (entry point, NoInlining, StackCrawlMark)
+                                   true) // The method we are calling exactly. We only know this if it's a non-virtual call
         || (!isJmp && *m_ip != CEE_RET) // Disallow tailcalls that are not immediately before a ret
         ))
     {
