@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -3048,14 +3047,7 @@ namespace System.Net.Http.Functional.Tests
                 sendTasks[i] = client.GetAsync(server.Address);
             }
 
-            // With the fix, every new connection in this pool starts with the memorized limit of 1, so
-            // each request lands on its own fresh connection and succeeds on the first try. Without the
-            // fix, each new connection would again optimistically over-subscribe to InitialMaxConcurrentStreams=100,
-            // and the per-request retry budget would be exhausted before all requests completed.
-            // For robustness, accept any number of HEADERS on each connection: respond to the first one,
-            // and REFUSED_STREAM the rest so the client retries them.
-            ConcurrentBag<Http2LoopbackConnection> connections = new();
-            ConcurrentQueue<(Http2LoopbackConnection conn, int streamId)> firstStreams = new();
+            List<(Http2LoopbackConnection conn, int streamId)> firstStreams = new();
             using SemaphoreSlim connectionEstablished = new(0);
             using SemaphoreSlim firstStreamReady = new(0);
             using CancellationTokenSource cts = new();
@@ -3072,7 +3064,7 @@ namespace System.Net.Http.Functional.Tests
                         if (!gotFirst)
                         {
                             gotFirst = true;
-                            firstStreams.Enqueue((conn, streamId));
+                            lock (firstStreams) firstStreams.Add((conn, streamId));
                             firstStreamReady.Release();
                         }
                         else
@@ -3096,7 +3088,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Http2LoopbackConnection conn = await server.EstablishConnectionAsync(
                             new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
-                        connections.Add(conn);
                         lock (connectionTasks) connectionTasks.Add(Task.Run(() => ServeConnectionAsync(conn)));
                         connectionEstablished.Release();
                     }
@@ -3117,18 +3108,20 @@ namespace System.Net.Http.Functional.Tests
                 await firstStreamReady.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
             }
 
-            while (firstStreams.TryDequeue(out (Http2LoopbackConnection conn, int streamId) item))
+            foreach ((Http2LoopbackConnection conn, int streamId) in firstStreams)
             {
-                await item.conn.SendDefaultResponseAsync(item.streamId).ConfigureAwait(false);
+                await conn.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
             }
 
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
 
             cts.Cancel();
-            foreach (Http2LoopbackConnection connection in connections)
+            foreach ((Http2LoopbackConnection conn, int _) in firstStreams)
             {
-                await connection.DisposeAsync().ConfigureAwait(false);
+                await conn.DisposeAsync().ConfigureAwait(false);
             }
+
+            await Task.WhenAll(connectionTasks).ConfigureAwait(false);
         }
 
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
