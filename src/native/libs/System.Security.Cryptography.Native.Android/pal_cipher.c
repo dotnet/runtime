@@ -76,7 +76,7 @@ ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
     return make_java_string(env, type->name);
 }
 
-ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch, bool printException)
+ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, int32_t* authTagMismatch, bool printException, bool decryptMode)
 {
     bool result = false;
     INIT_LOCALS(loc, ex);
@@ -85,9 +85,27 @@ ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, 
     {
         result = true;
 
-        if (loc[ex] != NULL && (*env)->IsInstanceOf(env, loc[ex], g_AEADBadTagExceptionClass))
+        if (loc[ex] != NULL)
         {
-            *authTagMismatch = 1;
+            if ((*env)->IsInstanceOf(env, loc[ex], g_AEADBadTagExceptionClass))
+            {
+                *authTagMismatch = 1;
+            }
+            else if (decryptMode && (*env)->IsInstanceOf(env, loc[ex], g_GeneralSecurityExceptionClass))
+            {
+                // Workaround for an Android/Conscrypt issue. When an AEAD decryption fails
+                // authentication, the provider determines the thrown exception type by reading
+                // BoringSSL's thread-local error queue. On some devices that queue can still
+                // contain a stale error from a prior unrelated operation on the same thread
+                // (e.g. an RSA error), which is read first (FIFO) and mapped to the wrong
+                // exception type - we have observed java.security.InvalidKeyException instead of
+                // javax.crypto.AEADBadTagException. For a successfully initialized AEAD cipher in
+                // decrypt mode, the key and parameters were already validated at Cipher.init, so
+                // the only legitimate failure at the tag-update/doFinal step is an authentication
+                // failure. Treat any GeneralSecurityException here as an authentication tag
+                // mismatch so the correct AuthenticationTagMismatchException is reported.
+                *authTagMismatch = 1;
+            }
         }
     }
 
@@ -297,7 +315,7 @@ int32_t AndroidCryptoNative_AeadCipherUpdate(
 
     *outl = 0;
     loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ true))
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ true, ctx->encMode == CIPHER_DECRYPT_MODE))
     {
         goto cleanup;
     }
@@ -357,7 +375,7 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
 
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
 
-    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ false))
+    if (CheckJNIExceptionsForAuthTagMismatch(env, authTagMismatch, /* printException: */ false, ctx->encMode == CIPHER_DECRYPT_MODE))
     {
         return FAIL;
     }

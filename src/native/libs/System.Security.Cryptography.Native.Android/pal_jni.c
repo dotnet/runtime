@@ -91,6 +91,9 @@ jmethodID g_sslCtxGetDefaultSslParamsMethod;
 // javax/crypto/spec/AEADBadTagException
 jclass    g_AEADBadTagExceptionClass;
 
+// java/security/GeneralSecurityException
+jclass    g_GeneralSecurityExceptionClass;
+
 // javax/crypto/spec/GCMParameterSpec
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
@@ -738,6 +741,7 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
 
     g_AEADBadTagExceptionClass = GetClassGRef(env, "javax/crypto/AEADBadTagException");
+    g_GeneralSecurityExceptionClass = GetClassGRef(env, "java/security/GeneralSecurityException");
 
     g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
     g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
