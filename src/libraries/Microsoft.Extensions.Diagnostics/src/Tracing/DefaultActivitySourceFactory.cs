@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Options;
 
@@ -22,8 +21,40 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             ArgumentNullException.ThrowIfNull(listeners);
             ArgumentNullException.ThrowIfNull(options);
 
-            _listenerRegistrations = [.. listeners.Select(listener => new ActivityListenerRegistration(listener, this, options.CurrentValue))];
-            _changeTokenRegistration = options.OnChange(UpdateRules);
+            // Each ActivityListenerRegistration ctor attaches a wrapper ActivityListener globally
+            // (ActivitySource.AddActivityListener). If a later registration throws, the wrappers
+            // already attached would leak in s_allListeners/s_activeSources for the process lifetime
+            // because the partially-constructed factory never sees Dispose(). Materialise into a
+            // local list and dispose what we built before rethrowing.
+            TracingOptions initial = options.CurrentValue;
+            List<ActivityListenerRegistration> registrations = new();
+            try
+            {
+                foreach (ActivityListener listener in listeners)
+                {
+                    registrations.Add(new ActivityListenerRegistration(listener, this, initial));
+                }
+
+                _listenerRegistrations = registrations.ToArray();
+                _changeTokenRegistration = options.OnChange(UpdateRules);
+            }
+            catch
+            {
+                foreach (ActivityListenerRegistration registration in registrations)
+                {
+                    try
+                    {
+                        registration.Dispose();
+                    }
+                    catch
+                    {
+                        // Suppress secondary failures during cleanup so the original construction
+                        // exception is the one observed by the caller.
+                    }
+                }
+
+                throw;
+            }
         }
 
         protected override ActivitySource CreateCore(ActivitySourceOptions options)
@@ -451,11 +482,9 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                 const char WildcardChar = '*';
                 int wildcardIndex = pattern.IndexOf(WildcardChar);
-                if (wildcardIndex >= 0 &&
-                    pattern.IndexOf(WildcardChar, wildcardIndex + 1) >= 0)
-                {
-                    throw new InvalidOperationException(SR.MoreThanOneWildcardActivitySourceName);
-                }
+                // TracingRule's constructor validates that at most one '*' is present, so we don't
+                // re-check here. If a pattern with multiple wildcards somehow reaches this code,
+                // the second wildcard is silently treated as a literal '*' inside the suffix.
 
                 ReadOnlySpan<char> prefix;
                 ReadOnlySpan<char> suffix;

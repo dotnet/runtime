@@ -29,8 +29,25 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// <param name="listenerName">The <see cref="ActivityListener.Name"/>. A <see langword="null"/> or empty value matches all listeners.</param>
         /// <param name="scopes">A bitwise combination of the enumeration values that specifies the scopes to consider.</param>
         /// <param name="enable"><see langword="true"/> to enable matched activities for this listener; otherwise, <see langword="false"/>.</param>
+        /// <exception cref="ArgumentException"><paramref name="sourceName"/> contains more than one <c>*</c> wildcard.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="scopes"/> is <see cref="ActivitySourceScopes.None"/>.</exception>
         public TracingRule(string? sourceName, string? operationName, string? listenerName, ActivitySourceScopes scopes, bool enable)
         {
+            // Validate the wildcard pattern eagerly. The equivalent rule type in Microsoft.Extensions.Diagnostics
+            // for metrics defers this validation to the per-event matching path, so a malformed rule introduced
+            // via IOptionsMonitor reload throws out of arbitrary instrument operations later. We diverge from
+            // that here so configuration mistakes surface at bind time (or programmatic-construction call site)
+            // and never reach the StartActivity hot path. The metrics behaviour is shipped public surface and
+            // can't change without a breaking-change process; tracing is new, so we get the cleaner shape now.
+            if (!string.IsNullOrEmpty(sourceName))
+            {
+                int firstWildcard = sourceName.IndexOf('*');
+                if (firstWildcard >= 0 && sourceName.IndexOf('*', firstWildcard + 1) >= 0)
+                {
+                    throw new ArgumentException("Only one '*' wildcard is allowed in an activity source name pattern.", nameof(sourceName));
+                }
+            }
+
             SourceName = sourceName;
             OperationName = operationName;
             ListenerName = listenerName;

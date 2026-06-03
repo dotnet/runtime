@@ -123,7 +123,4 @@
   <data name="MoreThanOneWildcard" xml:space="preserve">
     <value>Only one wildcard character is allowed in category name.</value>
   </data>
-  <data name="MoreThanOneWildcardActivitySourceName" xml:space="preserve">
-    <value>Only one wildcard character is allowed in activity source name.</value>
-  </data>
 </root>

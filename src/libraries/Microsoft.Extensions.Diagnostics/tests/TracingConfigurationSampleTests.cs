@@ -271,17 +271,9 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [Fact]
         public void SourceNamePatternWithMultipleWildcards_ThrowsTracingSpecificMessage()
         {
-            var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
-                new TracingRule("Demo*Wildcard*Source", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
+            ArgumentException ex = Assert.Throws<ArgumentException>("sourceName", () =>
+                new TracingRule("Demo*Wildcard*Source", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true));
 
-            using var serviceProvider = new ServiceCollection()
-                .AddTracing(builder => builder.AddListener(_ => SampleActivityListener.Create()))
-                .Services
-                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
-                .BuildServiceProvider();
-
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-                () => serviceProvider.GetRequiredService<IStartupValidator>().Validate());
             Assert.Contains("activity source", ex.Message, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("category", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
