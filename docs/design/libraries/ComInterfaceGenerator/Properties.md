@@ -1,20 +1,18 @@
-# Properties on `[GeneratedComInterface]`
+# Properties and indexers on `[GeneratedComInterface]`
 
-The ComInterfaceGenerator allows COM interfaces declared with `[GeneratedComInterface]` to expose ordinary C# properties in addition to methods. This document describes the supported surface, the ABI shape produced, and the design constraints that shape both.
+The ComInterfaceGenerator allows COM interfaces declared with `[GeneratedComInterface]` to expose ordinary C# properties and indexers in addition to methods. This document describes the supported surface, the ABI shape produced, and the design constraints that shape both. Indexers reuse the property pipeline almost entirely; their incremental rules are collected in the [Indexers](#indexers) section.
 
 ## Goals
 
-* Let users declare COM interface members using natural C# property syntax instead of hand-rolled `get_X` / `set_X` method pairs.
+* Let users declare COM interface members using natural C# property and indexer syntax instead of hand-rolled `get_X` / `set_X` method pairs.
 * Match the vtable layout that the built-in COM CCW produces for `[ComVisible(true)]` managed interfaces, so source-generated and built-in COM remain wire-compatible for the common shapes.
 * Keep the implementation a layer on top of the existing per-method ABI pipeline; an accessor is, fundamentally, just an `IMethodSymbol` that happens to back a property declaration.
 * Provide a mechanism (default-implemented members, i.e. **DIM**) for users to declare properties or methods that are pure managed sugar and are *not* assigned vtable slots, so that a property can wrap a pair of unrelated or non-adjacent ABI methods.
 
 ## Non-goals
 
-* Indexers (`int this[int i] { get; set; }`). Tracked separately.
 * Distinguishing `propput` from `propputref` at the vtable level. The `propputref` concept exists in TLB metadata and in `IDispatch::Invoke`; it has no representation in an `IUnknown`-only vtable. All setters map to a single vtable slot.
 * `IDispatch` dispid integration. Properties on a `[GeneratedComInterface]` are exposed through the `IUnknown` vtable only.
-* `propputref` support.
 
 ## Vtable layout
 
@@ -76,7 +74,6 @@ The supported surface is intentionally narrow. Anything outside this list is rej
 
 **Disallowed (reported as `SYSLIB1091`):**
 
-* Indexers (`int this[int i] { get; set; }`).
 * `extern` and `required` modifiers on the property.
 * The `init` accessor. `init`-vs-`set` is a C#-call-site distinction with no representation in the COM vtable; declaring an `init` accessor on a `[GeneratedComInterface]` property is rejected regardless of whether the accessor has a body. Use `set` if the accessor should participate in the vtable, or use a default-implemented `init`-style helper through a separate managed-only abstraction.
 * Mixed accessor shapes where one accessor has a body and the other does not (e.g. `int Mixed { get; set { … } }`).
@@ -104,6 +101,33 @@ The legacy per-accessor form using `[return: MarshalUsing(...)]` on the getter a
 `[MarshalAs]` is **not** valid on a property declaration; the BCL's `[AttributeUsage]` on `MarshalAsAttribute` does not include `AttributeTargets.Property`, so C# itself rejects the placement with **CS0592** before the generator runs. Apply it to individual accessor return values / parameters if needed.
 
 The shadow members the generator emits in derived interfaces strip `[MarshalUsing]` and `[MarshalAs]` from their copy of the property attributes; the shadow forwards the call to the base accessor by managed invocation, so re-running marshalling info on it would be redundant.
+
+## Indexers
+
+C# indexers (`T this[I0 i0, …, In in] { get; set; }`) are supported using the same per-accessor pipeline as ordinary properties. Each accessor becomes its own vtable slot, the indexer's getter slot precedes its setter slot, and indexer slots are appended in source-declaration order alongside any other members.
+
+**Slot signatures.** With a default `[IndexerName("Item")]`, the getter slot has the signature `HRESULT get_Item(I0 i0, …, In in, out T value)` and the setter slot has the signature `HRESULT set_Item(I0 i0, …, In in, T value)`. The index parameters precede the trailing value parameter on the setter, matching the order the C# language and the built-in CLR use when surfacing an indexer through COM.
+
+**Read-only and write-only.** `this[I i] { get; }` produces one getter slot; `this[I i] { set; }` produces one setter slot — the same as properties.
+
+**Overloading.** A `[GeneratedComInterface]` may declare multiple indexer overloads distinguished by index-parameter type; each overload's accessors get their own consecutive slot pair, in source order. The C# language requires that all indexers on the same type share a single effective `[IndexerName]` (the compiler enforces this with **CS0668**), so the IL method names on the slots are identical across overloads and overload disambiguation is left to the parameter list:
+
+```csharp
+[GeneratedComInterface, Guid("…")]
+public partial interface IFoo
+{
+    int this[int i]            { get; set; }   // slots 3, 4: get_Item(int, out int) / set_Item(int, int)
+    int this[int i, int j]     { get; set; }   // slots 5, 6: get_Item(int, int, out int) / set_Item(int, int, int)
+    int this[long l]           { get;      }   // slot  7:   get_Item(long, out int)
+    int this[short s]          {      set; }   // slot  8:   set_Item(short, int)
+}
+```
+
+**`[IndexerName]`.** The `[IndexerName(...)]` attribute on an indexer renames the IL accessor methods (e.g. `get_Element` / `set_Element` instead of `get_Item` / `set_Item`). The generator honors this on both ABI slot generation and derived-interface shadow generation, so a derived `[GeneratedComInterface]` that shadows an inherited indexer with the `new` modifier produces shadow accessors whose IL names match the base interface's `[IndexerName]`. Because all indexers on a single C# type must share one `[IndexerName]`, splitting an interface into multiple `[IndexerName]`-distinguished shapes requires declaring them on separate interfaces.
+
+**Supported modifiers and marshalling.** The lists of allowed and disallowed modifiers under [Supported property surface](#supported-property-surface) apply unchanged to indexers, replacing `int Foo { … }` with `int this[I i] { … }`. `[MarshalUsing]` on the indexer is propagated to both accessor stubs as parameter info on the value parameter and as return-value info on the getter, in the same way it is for properties.
+
+**Default-implemented indexers.** As with properties, an indexer whose accessors all carry bodies is treated as a [default-implemented member](#default-implemented-members-dim) and is not assigned a vtable slot. Mixed accessor bodies (`int this[int i] { get; set { … } }`) are rejected by the C# language itself with **CS0501** rather than by the generator — the equivalent property shape triggers **CS0525** instead, but either way the user-facing diagnostic surfaces before generator analysis runs.
 
 ## Default-implemented members (DIM)
 

@@ -34,7 +34,9 @@ A `[GeneratedComInterface]`-attributed interface may now declare ordinary C# pro
 
 `[MarshalUsing]` may be applied directly to a property and is propagated to both accessor stubs. The `new` modifier may be used to shadow an inherited property. The `init` accessor is **not** supported on a `[GeneratedComInterface]` property — `init`-vs-`set` has no representation in the COM vtable, so the generator rejects it (`SYSLIB1091`).
 
-Indexers are not supported. See [Properties.md](./Properties.md) for the full design.
+### Indexers
+
+C# indexers are supported alongside properties starting with .NET 11. Each accessor maps to its own vtable slot in source order, just like a property; the `[IndexerName]` attribute is honored and propagated through derived-interface shadows; and indexer overloads distinguished by index-parameter type are allowed. See the [Indexers](./Properties.md#indexers) section of Properties.md for the full design.
 
 ### Default-implemented members (DIM)
 
