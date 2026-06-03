@@ -657,8 +657,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
         ExInfo::PopExInfos(pThread, sp);
 
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+        TADDR ssp = GetSSP(pContextRecord);
+#else
+        TADDR ssp = 0;
+#endif
+
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContextRecord, GetSSP(pContextRecord));
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContextRecord, ssp);
         DispatchManagedException(oref, pContextRecord, pExceptionRecord);
         UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
     }
