@@ -214,8 +214,8 @@ extern "C" {
 #endif
 
 // Writes the trailing path component (i.e. text after the last DIR_SEPARATOR)
-// of `path` into `out_name`. Returns false if `path` is NULL or the result
-// does not fit in the caller-supplied buffer (out_name is set to empty).
+// of `path` into `out_name`. Returns false if the result does not fit in the
+// caller-supplied buffer (out_name is set to empty).
 bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
 #ifdef __cplusplus
