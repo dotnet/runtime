@@ -75,4 +75,7 @@
   <data name="SystemNetNameResolution_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.NameResolution is not supported on this platform.</value>
   </data>
+  <data name="net_dns_custom_port_not_supported" xml:space="preserve">
+    <value>Specifying a DNS server port other than 53 requires Windows 11 Build 22000 or later.</value>
+  </data>
 </root>
