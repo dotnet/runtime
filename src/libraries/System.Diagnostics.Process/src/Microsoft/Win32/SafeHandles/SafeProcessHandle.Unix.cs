@@ -78,9 +78,9 @@ namespace Microsoft.Win32.SafeHandles
 
         private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
         {
-            int result = Interop.Sys.OpenProcess(processId);
+            int result = Interop.Sys.Kill(processId, 0);
 
-            if (result == -1)
+            if (result != 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 

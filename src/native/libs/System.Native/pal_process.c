@@ -1375,33 +1375,3 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
-
-int32_t SystemNative_OpenProcess(int32_t pid)
-{
-    if (kill(pid, 0) == 0)
-    {
-        return 0;
-    }
-
-    if (errno != EPERM)
-    {
-        return -1;
-    }
-
-    // kill(pid, 0) failed with EPERM. The process may be a child started as a
-    // different user (e.g. via ProcessStartInfo.UserName). Check if we can reap
-    // it via waitid without actually reaping it.
-    siginfo_t si;
-    memset(&si, 0, sizeof(si));
-    int result;
-    while (CheckInterrupted(result = waitid(P_PID, (id_t)pid, &si, WEXITED | WNOHANG | WNOWAIT)));
-    if (result == 0)
-    {
-        // We can reap the process even though we cannot signal it.
-        return 0;
-    }
-
-    // Neither signaling nor reaping is permitted.
-    errno = EPERM;
-    return -1;
-}

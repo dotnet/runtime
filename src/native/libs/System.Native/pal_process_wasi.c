@@ -126,10 +126,3 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
-
-int32_t SystemNative_OpenProcess(int32_t pid)
-{
-    (void)pid;
-    errno = ENOTSUP;
-    return -1;
-}
