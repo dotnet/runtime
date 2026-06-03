@@ -1720,8 +1720,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 {
     QCALL_CONTRACT;
 
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
     _ASSERTE(method != (PCODE)NULL);
     BEGIN_QCALL;
@@ -2002,8 +2001,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     }
     CONTRACTL_END;
 
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
     MethodDesc *pMethodHandle = NULL;
 
@@ -3056,8 +3054,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Another is to pass a gchandle to the delegate ctor. This is fastest, but only works if we can predict the gc handle at this time.
     //  We will use this for the non secure variants
     //
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
 
     if (invokeArgCount == methodArgCount)

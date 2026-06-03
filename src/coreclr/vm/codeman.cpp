@@ -64,6 +64,16 @@ SVAL_IMPL(RangeSectionMapData, ExecutionManager, g_codeRangeMap);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
+#ifdef TARGET_WASM
+VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
+FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
+#ifdef TARGET_64BIT
+static TADDR s_nextVirtualIP = 0x8000000000000001ULL;
+#else
+static TADDR s_nextVirtualIP = 0x80000001;
+#endif
+#endif // TARGET_WASM
+
 #ifndef DACCESS_COMPILE
 
 CrstStatic ExecutionManager::m_JumpStubCrst;
@@ -1132,6 +1142,13 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     *pSize = size;
     return xdata;
 
+#elif defined(TARGET_WASM)
+    PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
+    PTR_BYTE pUnwindData = pUnwindInfo;
+    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
+    DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units
+    *pSize = static_cast<SIZE_T>(pUnwindData - pUnwindInfo);
+    return pUnwindInfo;
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
     return NULL;
@@ -1147,7 +1164,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 #endif
 
-    TADDR baseAddress = pCodeInfo->GetModuleBase();
+    TADDR baseAddress = pCodeInfo->GetModuleFunctionsBase();
     TADDR funcletStartAddress = baseAddress + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry);
 
 #if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
@@ -5006,7 +5023,7 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
     CONTRACTL_END;
 
     CodeHeader * pCH = dac_cast<PTR_CodeHeader>(GetCodeHeader(MethodToken));
-    TADDR moduleBase = JitTokenToModuleBase(MethodToken);
+    TADDR moduleBase = JitTokenToModuleFunctionsBase(MethodToken);
 
     _ASSERTE(pCH->GetNumberOfUnwindInfos() >= 1);
 
@@ -5257,6 +5274,16 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
 
     if (currentPC == (PCODE)NULL)
         return NULL;
+
+#ifdef TARGET_WASM
+    if (IsVirtualIP(currentPC))
+    {
+        VirtualIPRangeSection* pVIPRange = FindVirtualIPRangeSection(currentPC);
+        if (pVIPRange != nullptr)
+            return &pVIPRange->rangeSection;
+        return NULL;
+    }
+#endif // TARGET_WASM
 
     if (scanFlag == ScanReaderLock)
         return FindCodeRangeWithLock(currentPC);
@@ -5702,6 +5729,153 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     if (pRange == NULL)
         ThrowOutOfMemory();
 }
+
+#ifdef TARGET_WASM
+TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
+                                          IJitManager* pJit,
+                                          PTR_Module pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(numVirtualIPs > 0);
+        PRECONDITION(CheckPointer(pJit));
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    // Check for odd number of virtual IPs. We require an even number of virtual IPs to ensure that the encoded virtual IP
+    // Will always have the low bit set to 1.
+    if ((numVirtualIPs & 1) == 1)
+    {
+        COMPlusThrow(kOverflowException, W("Virtual IP: cannot have odd number of virtual IPs"));
+    }
+
+    TADDR endVIP;
+    if (sizeof(TADDR) == 4)
+    {
+        endVIP = (TADDR)InterlockedAdd((LONG*)&s_nextVirtualIP, numVirtualIPs);
+    }
+    else
+    {
+        endVIP = (TADDR)InterlockedAdd64((LONGLONG*)&s_nextVirtualIP, numVirtualIPs);
+    }
+    
+    TADDR startVIP = endVIP - numVirtualIPs;
+
+    // Check for overflow
+    if (endVIP < startVIP)
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+
+    // Create the VirtualIPRangeSection
+    VirtualIPRangeSection* pNewRange = new VirtualIPRangeSection(
+        Range(startVIP, endVIP),
+        pJit,
+        RangeSection::RANGE_SECTION_VIRTUALIP,
+        pModule);
+    
+    VirtualIPRangeSection* pOldRangeSection = nullptr;
+    do
+    {
+        pOldRangeSection = VolatileLoadWithoutBarrier(&s_pVirtualIPRangeList);
+        pNewRange->pNext = pOldRangeSection;
+    } while (pOldRangeSection != InterlockedCompareExchangeT(&s_pVirtualIPRangeList, pNewRange, pOldRangeSection));
+
+    return startVIP;
+}
+
+VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(TADDR virtualIP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    VirtualIPRangeSection* pCurrent = s_pVirtualIPRangeList;
+    while (pCurrent != nullptr)
+    {
+        if (pCurrent->rangeSection._range.IsInRange(virtualIP))
+        {
+            return pCurrent;
+        }
+        pCurrent = pCurrent->pNext;
+    }
+    return nullptr;
+}
+
+void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
+                                                   DWORD numRuntimeFunctions,
+                                                   PTR_Module pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(numRuntimeFunctions > 0);
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
+        minFunctionTableIndex, numRuntimeFunctions, pModule);
+
+    FunctionTableIndexRangeSection* pOldRangeSection = nullptr;
+    do
+    {
+        pOldRangeSection = VolatileLoadWithoutBarrier(&s_pFunctionTableIndexRangeList);
+        pNewRange->pNext = pOldRangeSection;
+    } while (pOldRangeSection != InterlockedCompareExchangeT(&s_pFunctionTableIndexRangeList, pNewRange, pOldRangeSection));
+}
+
+FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSection(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pCurrent = s_pFunctionTableIndexRangeList;
+    while (pCurrent != nullptr)
+    {
+        if (functionIndex >= pCurrent->minFunctionTableIndex &&
+            functionIndex < pCurrent->minFunctionTableIndex + pCurrent->numRuntimeFunctions)
+        {
+            return pCurrent;
+        }
+        pCurrent = pCurrent->pNext;
+    }
+    return nullptr;
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
+    if (pSection == nullptr)
+    {
+        return 0;
+    }
+
+    Module* pModule = pSection->pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+
+    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    do
+    {
+        PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
+        if (RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
+        {
+            // Funclets are handled specially. Their RUNTIME_FUNCTION BeginAddress field describes the virtual IP of the funclet, but
+            // function local virtual ips are relative to the virtual IP of the controlling function, and so the logical VirtualIPFromFunctionTableIndex
+            // for a funclet is actually the virtual IP of the controlling function. Thus, if we encounter a funclet, we index backwards to find the controlling
+            // function.
+            if (localIndex == 0)
+            {
+                // This should never happen, since the first RUNTIME_FUNCTION in a function table index range should always be a non-funclet entry for the main
+                // function, but if it does, we report failure by returning 0.
+                return 0;
+            }
+            localIndex--;
+            continue;
+        }
+        return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+    } while (true);
+}
+#endif // TARGET_WASM
 
 // Deletes a single range starting at pStartRange
 void ExecutionManager::DeleteRange(TADDR pStartRange)
@@ -6295,6 +6469,9 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
 
 #ifdef TARGET_ARM
     RelativePc |= THUMB_CODE;
+#define RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry) ((pFunctionEntry)->BeginAddress)
+#else
+#define RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry) RUNTIME_FUNCTION__BeginAddress(pFunctionEntry)
 #endif
 
     // Entries are sorted and terminated by sentinel value (DWORD)-1
@@ -6307,7 +6484,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
        int Middle = Low + (High - Low) / 2;
 
        PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + Middle;
-       if (RelativePc < pFunctionEntry->BeginAddress)
+       if (RelativePc < RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry))
        {
            High = Middle - 1;
        }
@@ -6322,10 +6499,10 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
         // This is safe because of entries are terminated by sentinel value (DWORD)-1
         PTR_RUNTIME_FUNCTION pNextFunctionEntry = pRuntimeFunctionTable + (i + 1);
 
-        if (RelativePc < pNextFunctionEntry->BeginAddress)
+        if (RelativePc < RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pNextFunctionEntry))
         {
             PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
-            if (RelativePc >= pFunctionEntry->BeginAddress)
+            if (RelativePc >= RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry))
             {
                 return i;
             }
@@ -6336,6 +6513,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     return -1;
 }
 
+#ifdef FEATURE_COLD_R2R_CODE
 int HotColdMappingLookupTable::LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex)
 {
     CONTRACTL {
@@ -6415,7 +6593,7 @@ int HotColdMappingLookupTable::LookupMappingForMethod(ReadyToRunInfo* pInfo, ULO
 
     return -1;
 }
-
+#endif // FEATURE_COLD_R2R_CODE
 
 //***************************************************************************************
 //***************************************************************************************
@@ -6472,7 +6650,7 @@ TADDR ReadyToRunJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToke
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return JitTokenToModuleBase(MethodToken) +
+    return JitTokenToModuleFunctionsBase(MethodToken) +
         RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
 }
 
@@ -6485,7 +6663,7 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     } CONTRACTL_END;
 
     PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(MethodToken);
-    TADDR baseAddress = JitTokenToModuleBase(MethodToken);
+    TADDR baseAddress = JitTokenToModuleRVABase(MethodToken);
 
     SIZE_T nUnwindDataSize;
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
@@ -6518,7 +6696,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
     // at least 2 entries (1 valid entry + 1 sentinel entry)
     _ASSERTE(numLookupTableEntries >= 2);
 
-    DWORD methodStartRVA = (DWORD)(JitTokenToStartAddress(MethodToken) - JitTokenToModuleBase(MethodToken));
+    DWORD methodStartRVA = (DWORD)(JitTokenToStartAddress(MethodToken) - JitTokenToModuleFunctionsBase(MethodToken));
 
     COUNT_T ehInfoSize = 0;
     DWORD exceptionInfoRVA = NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(pExceptionLookupTable,
@@ -6529,7 +6707,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
         return 0;
 
     pEnumState->iCurrentPos = 0;
-    pEnumState->pExceptionClauseArray = JitTokenToModuleBase(MethodToken) + exceptionInfoRVA;
+    pEnumState->pExceptionClauseArray = JitTokenToModuleRVABase(MethodToken) + exceptionInfoRVA;
 
     return ehInfoSize / sizeof(CORCOMPILE_EXCEPTION_CLAUSE);
 }
@@ -6561,6 +6739,9 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
 
 StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
 {
+#ifdef TARGET_WASM
+    return STUB_CODE_BLOCK_UNKNOWN;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -6583,6 +6764,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
     }
 
     return STUB_CODE_BLOCK_UNKNOWN;
+#endif // !TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
@@ -6845,12 +7027,14 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;
 
+#ifdef FEATURE_COLD_R2R_CODE
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
     if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
     {
         // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
         MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
     }
+#endif // FEATURE_COLD_R2R_CODE
 
     MethodDesc *pMethodDesc;
     while ((pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
@@ -6917,7 +7101,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
 {
     PTR_RUNTIME_FUNCTION pFirstFuncletFunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader) + 1;
 
-    TADDR moduleBase = JitTokenToModuleBase(MethodToken);
+    TADDR moduleBase = JitTokenToModuleFunctionsBase(MethodToken);
     DWORD nFunclets = 0;
     MethodRegionInfo regionInfo;
     JitTokenToMethodRegionInfo(MethodToken, &regionInfo);
@@ -6970,6 +7154,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 
     ULONG methodIndex = (ULONG)(pCodeInfo->GetFunctionEntry() - pRuntimeFunctions);
 
+#ifdef FEATURE_COLD_R2R_CODE
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, methodIndex);
 
     if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
@@ -6988,6 +7173,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
         return false;
 #endif
     }
+#endif // FEATURE_COLD_R2R_CODE
 
     // Fall back to existing logic if it is not cold
 
@@ -7056,6 +7242,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 
+#ifdef FEATURE_COLD_R2R_CODE
     ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(MethodToken);
     COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
     PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
@@ -7077,7 +7264,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
     _ASSERTE((lookupIndex & 1) == 0);
     ULONG coldMethodIndex = pInfo->m_pHotColdMap[lookupIndex];
     PTR_RUNTIME_FUNCTION pColdRuntimeFunction = pRuntimeFunctions + coldMethodIndex;
-    methodRegionInfo->coldStartAddress = JitTokenToModuleBase(MethodToken)
+    methodRegionInfo->coldStartAddress = JitTokenToModuleFunctionsBase(MethodToken)
         + RUNTIME_FUNCTION__BeginAddress(pColdRuntimeFunction);
 
     ULONG coldMethodIndexNext;
@@ -7095,6 +7282,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
         - RUNTIME_FUNCTION__BeginAddress(pColdRuntimeFunction);
     methodRegionInfo->hotSize -= methodRegionInfo->coldSize;
 #endif //TARGET_X86
+#endif // FEATURE_COLD_R2R_CODE
 }
 
 #ifdef DACCESS_COMPILE

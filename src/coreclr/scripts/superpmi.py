@@ -1095,6 +1095,17 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        # If we are cross-compiling (target != host), tell crossgen2 explicitly which
+                        # OS/architecture to generate code for. For wasm targets, also pass the wasm
+                        # object format and the crossgen2 codegen option that's required by the wasm
+                        # cross-compiling JIT (mirroring src/coreclr/crossgen-corelib.proj).
+                        if self.coreclr_args.target_arch != self.coreclr_args.arch or self.coreclr_args.target_os != self.coreclr_args.host_os:
+                            rsp_write_handle.write("--targetarch:" + self.coreclr_args.target_arch + "\n")
+                            rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
+                        if self.coreclr_args.target_arch == "wasm":
+                            rsp_write_handle.write("--obj-format:wasm" + "\n")
+                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
+                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -5064,11 +5075,16 @@ def setup_args(args):
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
 
-        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'
+        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'.
+        # Also force --altjit on, since the wasm JIT is always a cross-target altjit and replay
+        # requires AltJit=* to avoid CORJIT_SKIPPED.
         if coreclr_args.target_arch == "wasm":
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
+            if not getattr(args, 'altjit', False):
+                logging.warning("Overriding 'altjit' to True for wasm cross-target JIT")
+                args.altjit = True
 
     def verify_superpmi_common_args():
 

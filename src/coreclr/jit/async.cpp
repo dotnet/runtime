@@ -1975,10 +1975,15 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
-    // At this point we expect both suspensions to agree on the live locals
-    // since they both join at the same point. So we only need to assert that
-    // the layouts match.
-    assert(ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout));
+    // There can still be disagreement on saving a local here if it has its
+    // default value on one path and was assigned a non-default value on the
+    // other path. Do a final layout check to catch that and all other possible
+    // cases.
+    if (!ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout))
+    {
+        return false;
+    }
+
     return true;
 }
 

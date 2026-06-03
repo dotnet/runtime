@@ -125,6 +125,22 @@ internal sealed class MockDebuggerEval : TypedView
     }
 }
 
+internal sealed class MockResumableFrame : MockFrame
+{
+    private const string TargetContextPtrFieldName = "TargetContextPtr";
+
+    public static Layout<MockResumableFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("ResumableFrame", baseLayout.Architecture, baseLayout)
+            .AddPointerField(TargetContextPtrFieldName)
+            .Build<MockResumableFrame>();
+
+    public ulong TargetContextPtr
+    {
+        get => ReadPointerField(TargetContextPtrFieldName);
+        set => WritePointerField(TargetContextPtrFieldName, value);
+    }
+}
+
 /// <summary>
 /// Helper for building a Frame chain in the mock target memory. The Frame chain is
 /// terminated with the FRAME_TOP sentinel (~0 sized to the target pointer width).
@@ -150,6 +166,7 @@ internal sealed class MockFrameBuilder
     public const ulong DebuggerU2MCatchHandlerFrameIdentifierValue = 0x0001_F008;
     public const ulong InterpreterFrameIdentifierValue = 0x0001_F009;
     public const ulong HijackFrameIdentifierValue = 0x0001_F00A;
+    public const ulong RedirectedThreadFrameIdentifierValue = 0x0001_F00B;
 
     private readonly MockMemorySpace.Builder _builder;
     private readonly MockMemorySpace.BumpAllocator _allocator;
@@ -161,6 +178,7 @@ internal sealed class MockFrameBuilder
     public Layout<MockFramedMethodFrame> FramedMethodFrameLayout { get; }
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
+    public Layout<MockResumableFrame> ResumableFrameLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -179,6 +197,7 @@ internal sealed class MockFrameBuilder
         FramedMethodFrameLayout = MockFramedMethodFrame.CreateLayout(FrameLayout);
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
+        ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -216,6 +235,15 @@ internal sealed class MockFrameBuilder
         frame.Identifier = FramedMethodFrameIdentifierValue;
         frame.Next = _terminator;
         frame.MethodDescPtr = methodDescPtr;
+        return frame;
+    }
+
+    public MockResumableFrame AddRedirectedThreadFrame(ulong targetContextPtr)
+    {
+        MockResumableFrame frame = ResumableFrameLayout.Create(_allocator.Allocate((ulong)ResumableFrameLayout.Size, "RedirectedThreadFrame"));
+        frame.Identifier = RedirectedThreadFrameIdentifierValue;
+        frame.Next = _terminator;
+        frame.TargetContextPtr = targetContextPtr;
         return frame;
     }
 

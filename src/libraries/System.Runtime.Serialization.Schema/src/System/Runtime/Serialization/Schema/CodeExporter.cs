@@ -405,6 +405,13 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
+        private bool GetCollectionItemNullability(DataContract collectionContract)
+        {
+            ContractCodeDomInfo contractCodeDomInfo = GetContractCodeDomInfo(collectionContract);
+            return contractCodeDomInfo.CollectionItemIsNullable ?? collectionContract.IsCollectionItemNullable();
+        }
+
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private void GenerateType(DataContract dataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
             if (!contractCodeDomInfo.IsProcessed)
@@ -612,7 +619,7 @@ namespace System.Runtime.Serialization
                     {
                         GenerateKeyValueType(itemContract.As(DataContractType.ClassDataContract));
                     }
-                    bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
+                    bool isItemTypeNullable = GetCollectionItemNullability(collectionContract);
                     if (!TryGetReferencedListType(itemContract, isItemTypeNullable, out typeReference))
                     {
                         CodeTypeReference? elementTypeReference = GetElementTypeReference(itemContract, isItemTypeNullable);
@@ -626,7 +633,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
-        private static bool HasDefaultCollectionNames(DataContract collectionContract)
+        private bool HasDefaultCollectionNames(DataContract collectionContract)
         {
             Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
 
@@ -639,7 +646,7 @@ namespace System.Runtime.Serialization
             if (isDictionary && (keyName != ImportGlobals.KeyLocalName || valueName != ImportGlobals.ValueLocalName))
                 return false;
 
-            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(collectionContract.IsItemTypeNullable());
+            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(GetCollectionItemNullability(collectionContract));
             return (collectionContract.XmlName.Name == expectedType.Name && collectionContract.XmlName.Namespace == expectedType.Namespace);
         }
 
@@ -1204,7 +1211,7 @@ namespace System.Runtime.Serialization
 
             // ItemContract - aka BaseContract - is never null for CollectionDataContract
             DataContract itemContract = collectionContract.BaseContract!;
-            bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
+            bool isItemTypeNullable = GetCollectionItemNullability(collectionContract);
             bool isDictionary = collectionContract.IsDictionaryLike(out string? keyName, out string? valueName, out string? itemName);
 
             CodeTypeReference? baseTypeReference;
