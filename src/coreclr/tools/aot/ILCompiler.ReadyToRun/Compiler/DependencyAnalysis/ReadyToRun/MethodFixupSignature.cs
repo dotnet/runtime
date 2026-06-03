@@ -87,8 +87,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
                 if (HasNonCanonicalInstantiationArguments(canonMethod))
                 {
-                    list = list ?? new DependencyList();
-                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                    GVMDependenciesNode gvmNode = factory.GVMDependencies(Method);
+                    if (gvmNode != null)
+                    {
+                        list = list ?? new DependencyList();
+                        list.Add(gvmNode, "Virtual dispatch dependency");
+                    }
                 }
             }
 

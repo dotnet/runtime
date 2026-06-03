@@ -155,6 +155,13 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.IsVirtual);
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
+
+            MethodDesc methodDefinition = canonMethod.GetTypicalMethodDefinition();
+            if (CanBeInGenericCycle(methodDefinition) || CanBeInGenericCycle(methodDefinition.OwningType))
+            {
+                return null;
+            }
+
             return _gvmDependenciesNode.GetOrAdd(canonMethod);
         }
 
@@ -1275,6 +1282,11 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public bool CanBeInGenericCycle(TypeSystemEntity entity)
+        {
+            return _genericCycleDetector?.CanBeInCycle(entity) == true;
         }
 
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
