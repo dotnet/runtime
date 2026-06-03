@@ -32,6 +32,13 @@
 #include "sstring.h"
 #include "exinfo.h"
 
+#ifdef TARGET_LINUX
+// process_vm_readv is the safe in-process read path on Linux. See
+// ReadFromTargetCallback below for why PAL_TRY around memcpy is not viable.
+#include <sys/uio.h>
+#include <unistd.h>
+#endif
+
 //-----------------------------------------------------------------------------
 // Constants and configuration
 //-----------------------------------------------------------------------------
@@ -267,6 +274,24 @@ static void ReadFromTargetHelper(void* src, uint8_t* dest, uint32_t count)
 
 static int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
 {
+#ifdef TARGET_LINUX
+    // On Linux the PAL signal handler refuses to dispatch hardware exceptions
+    // when the faulting PC is in non-runtime code (see IsSafeToHandleHardwareException
+    // in exceptionhandling.cpp -- only managed code, virtual stubs, and marked JIT
+    // helpers qualify). If the cDAC asks us to read from an invalid address, the
+    // memcpy below would AV inside libc's __memcpy_advsimd, the signal handler
+    // would bail, and the whole process would abort -- a PAL_TRY around memcpy
+    // cannot catch it.
+    //
+    // process_vm_readv performs the copy in the kernel, returning EFAULT for
+    // unmapped pages instead of raising a signal. Same pattern used by
+    // createdump (crashinfounix.cpp:523).
+    void* src = reinterpret_cast<void*>(static_cast<uintptr_t>(addr));
+    iovec local = { dest, count };
+    iovec remote = { src, count };
+    ssize_t bytesRead = process_vm_readv(getpid(), &local, 1, &remote, 1, 0);
+    return (bytesRead == (ssize_t)count) ? S_OK : E_FAIL;
+#else
     void* src = reinterpret_cast<void*>(static_cast<uintptr_t>(addr));
     struct Param { void* src; uint8_t* dest; uint32_t count; } param;
     param.src = src; param.dest = dest; param.count = count;
@@ -280,6 +305,7 @@ static int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, 
     }
     PAL_ENDTRY
     return S_OK;
+#endif
 }
 
 static int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
