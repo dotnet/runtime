@@ -16,7 +16,7 @@
 extern "C" void SamplingProfiler_OnSamplepoint();
 #endif
 
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
 #include "wasm/browserprofiler.h"
 #endif
 
@@ -1958,7 +1958,7 @@ SWITCH_OPCODE:
                     break;
 #endif // PERFTRACING_DISABLE_THREADS
 
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
                 case INTOP_PROF_ENTER:
                     BrowserProfiler_OnMethodEnter(pMethod->pDataItems[ip[1]]);
                     ip += 2;
@@ -1968,7 +1968,7 @@ SWITCH_OPCODE:
                     BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
                     ip++;
                     break;
-#endif // TARGET_BROWSER
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -3453,7 +3453,7 @@ CALL_INTERP_METHOD:
 
                     if (frameNeedsTailcallUpdate)
                     {
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
                         BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
 #endif
                         InterpMethod* pTargetMethod = targetIp->Method;
@@ -4684,7 +4684,7 @@ do                                                                      \
                 // Thus, we need to rethrow it to let it propagate further.
                 throw;
             }
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
             BrowserProfiler_OnMethodLeave(pFrame->startIp->Method->methodHnd);
 #endif
             pThreadContext->frameDataAllocator.PopInfo(pFrame);

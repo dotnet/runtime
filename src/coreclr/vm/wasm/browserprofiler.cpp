@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
 
 #include <emscripten.h>
 #include "method.hpp"
@@ -26,37 +26,56 @@ struct ProfilerStackFrame
 static ProfilerStackFrame s_profilerStack[MAX_STACK_DEPTH];
 static int s_topStackFrameIndex = -1;
 
-// Adaptive sampling state — controls how often we actually call
-// performance.measure(). The shadow stack always tracks enter/leave
-// for correctness, but recording is rate-limited.
-static int32_t s_browserSkipsPerPeriod = 10;
-static int32_t s_browserSampleSkipCounter = 0;
-static double s_browserLastRecordTimeMs = 0.0;
-static constexpr double s_desiredRecordIntervalMs = 1.0;
+// Number of method enters that occurred while the shadow stack was already
+// full. These frames are not recorded; the counter keeps subsequent leaves
+// balanced so the profiler degrades gracefully instead of overflowing.
+static int s_overflowDepth = 0;
 
-static bool ShouldRecordFrame()
+// Adaptive recording state — controls how often we actually call
+// performance.measure(). The shadow stack always tracks enter/leave for
+// correctness, but recording is rate-limited so it occurs approximately
+// once per s_desiredRecordIntervalMs. This mirrors the exponential moving
+// average approach used by the EventPipe sampling profiler in
+// ep-rt-coreclr-wasm-sampling.cpp (kept as a separate copy on purpose).
+static double s_desiredRecordIntervalMs = 1.0;
+static double s_lastRecordTimeMs = 0.0;
+static int32_t s_prevSkipsPerPeriod = 1;
+static int32_t s_skipsPerPeriod = 10;
+static int32_t s_recordSkipCounter = 0;
+
+// Recalculates s_skipsPerPeriod based on how long the last period actually
+// took relative to the desired interval.
+static void UpdateRecordFrequency()
 {
-    if (++s_browserSampleSkipCounter < s_browserSkipsPerPeriod)
-        return false;
-
     double now = emscripten_get_now();
-    if (s_browserLastRecordTimeMs > 0.0)
+
+    if (s_lastRecordTimeMs > 0.0)
     {
-        double elapsed = now - s_browserLastRecordTimeMs;
+        double elapsed = now - s_lastRecordTimeMs;
         if (elapsed > 0.0)
         {
             double ratio = s_desiredRecordIntervalMs / elapsed;
-            int32_t newSkips = (int32_t)((double)s_browserSampleSkipCounter * ratio);
+            int32_t newSkips = (int32_t)((double)s_prevSkipsPerPeriod * ratio);
             if (newSkips < 1)
                 newSkips = 1;
             if (newSkips > 10000)
                 newSkips = 10000;
-            s_browserSkipsPerPeriod = newSkips;
+
+            s_prevSkipsPerPeriod = s_skipsPerPeriod;
+            s_skipsPerPeriod = newSkips;
         }
     }
 
-    s_browserLastRecordTimeMs = now;
-    s_browserSampleSkipCounter = 0;
+    s_lastRecordTimeMs = now;
+}
+
+static bool ShouldRecordFrame()
+{
+    if (++s_recordSkipCounter < s_skipsPerPeriod)
+        return false;
+
+    s_recordSkipCounter = 0;
+    UpdateRecordFrequency();
 
     return true;
 }
@@ -65,12 +84,15 @@ void BrowserProfiler_OnMethodEnter(void *pMethodDesc)
 {
     MethodDesc *pMD = (MethodDesc *)pMethodDesc;
 
-    s_topStackFrameIndex++;
-    if (s_topStackFrameIndex >= MAX_STACK_DEPTH)
+    if (s_topStackFrameIndex + 1 >= MAX_STACK_DEPTH)
     {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Browser profiler stack depth exceeded MAX_STACK_DEPTH"));
+        // Shadow stack is full. Stop recording deeper frames but keep
+        // counting them so the matching leaves stay balanced.
+        s_overflowDepth++;
+        return;
     }
 
+    s_topStackFrameIndex++;
     ProfilerStackFrame *frame = &s_profilerStack[s_topStackFrameIndex];
     frame->pMethod = pMD;
     frame->startMs = emscripten_get_now();
@@ -79,16 +101,31 @@ void BrowserProfiler_OnMethodEnter(void *pMethodDesc)
 
 void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
 {
+    // Unwind frames that were dropped because the shadow stack was full.
+    if (s_overflowDepth > 0)
+    {
+        s_overflowDepth--;
+        return;
+    }
+
     if (s_topStackFrameIndex < 0)
         return;
 
-    ProfilerStackFrame *frame = &s_profilerStack[s_topStackFrameIndex];
+    // Find the matching frame from the top down. The common case is that the
+    // top frame matches (O(1)). Scanning downwards makes the shadow stack
+    // self-healing: if some exit path failed to emit a leave (e.g. an unwind
+    // route the profiler doesn't hook), the next ancestor leave discards the
+    // orphaned frames above it instead of leaking them forever.
+    int idx = s_topStackFrameIndex;
+    while (idx >= 0 && s_profilerStack[idx].pMethod != (MethodDesc *)pMethodDesc)
+        idx--;
 
-    // Only pop if the top frame matches the method being left.
-    // This guards against mismatched enter/leave when methods were
-    // compiled without INTOP_PROF_ENTER (e.g. filtered out).
-    if (frame->pMethod != (MethodDesc *)pMethodDesc)
+    // No matching enter was recorded for this method (filtered out, or an
+    // unbalanced leave). Leave the stack untouched.
+    if (idx < 0)
         return;
+
+    ProfilerStackFrame *frame = &s_profilerStack[idx];
 
     if (frame->shouldRecord)
     {
@@ -97,11 +134,12 @@ void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
         ds_rt_browser_performance_measure(methodName.GetUTF8(), frame->startMs);
 
         // Mark parent frame for recording so the flame chart nests properly.
-        if (s_topStackFrameIndex > 0)
-            s_profilerStack[s_topStackFrameIndex - 1].shouldRecord = true;
+        if (idx > 0)
+            s_profilerStack[idx - 1].shouldRecord = true;
     }
 
-    s_topStackFrameIndex--;
+    // Pop the matched frame along with any orphaned frames above it.
+    s_topStackFrameIndex = idx - 1;
 }
 
-#endif // TARGET_BROWSER
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS

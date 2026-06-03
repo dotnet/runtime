@@ -61,7 +61,7 @@
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
        Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
        Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
-               DOTNET_EventPipeCpuSamplingRate=<ms> (if interval= specified) -->
+               DOTNET_EventPipeThreadSamplingRate=<ms> (if interval= specified) -->
   <PropertyGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
     <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
     <_WasmPerfInstInterval></_WasmPerfInstInterval>
@@ -72,7 +72,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
     <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
-    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeCpuSamplingRate" Value="$(_WasmPerfInstInterval)" />
+    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
