@@ -87,9 +87,25 @@ static bool try_stou(const pal_char_t* str, size_t len, unsigned* num)
     return true;
 }
 
+// Parse a version number (major, minor, or patch).
+// https://semver.org/#spec-item-2
+static bool try_parse_version_number(const pal_char_t* str, size_t len, unsigned* val)
+{
+    if (!try_stou(str, len, val))
+        return false;
+
+    // Version numbers must not have leading zeros.
+    if (len > 1 && str[0] == _X('0'))
+        return false;
+
+    return true;
+}
+
+// Identifiers must comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-].
+// https://semver.org/#spec-item-9
+// https://semver.org/#spec-item-10
 static bool valid_identifier_char_set(const pal_char_t* id, size_t len)
 {
-    // ids must be of the set [0-9a-zA-Z-]
     for (size_t i = 0; i < len; i++)
     {
         pal_char_t c = id[i];
@@ -107,6 +123,7 @@ static bool valid_identifier_char_set(const pal_char_t* id, size_t len)
     return true;
 }
 
+// Validate a single dot-separated identifier
 static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_meta)
 {
     if (id_len == 0)
@@ -117,7 +134,8 @@ static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_met
 
     if (!build_meta && id[0] == _X('0') && id_len > 1)
     {
-        // Numeric identifiers must not be padded with 0s.
+        // Numeric pre-release identifiers must not be padded with 0s.
+        // https://semver.org/#spec-item-9
         bool all_numeric = true;
         for (size_t i = 1; i < id_len; i++)
         {
@@ -133,19 +151,10 @@ static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_met
     return true;
 }
 
-static bool valid_identifiers(const pal_char_t* ids, size_t len)
+static bool validate_dot_separated_identifiers(const pal_char_t* ids, size_t len, bool build_meta)
 {
-    if (len == 0)
-        return true;
-
-    bool prerelease = ids[0] == _X('-');
-    bool build_meta = ids[0] == _X('+');
-
-    if (!(prerelease || build_meta))
-        return false;
-
-    size_t id_start = 1;
-    for (size_t i = 1; i <= len; i++)
+    size_t id_start = 0;
+    for (size_t i = 0; i <= len; i++)
     {
         if (i == len || ids[i] == _X('.'))
         {
@@ -170,10 +179,8 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
 
     size_t maj_len = (size_t)(maj_dot - ver_str);
     unsigned major_val = 0;
-    if (!try_stou(ver_str, maj_len, &major_val))
+    if (!try_parse_version_number(ver_str, maj_len, &major_val))
         return false;
-    if (maj_len > 1 && ver_str[0] == _X('0'))
-        return false; // no leading zeros
 
     const pal_char_t* min_start = maj_dot + 1;
     const pal_char_t* min_dot = pal_strchr(min_start, _X('.'));
@@ -182,9 +189,7 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
 
     size_t min_len = (size_t)(min_dot - min_start);
     unsigned minor_val = 0;
-    if (!try_stou(min_start, min_len, &minor_val))
-        return false;
-    if (min_len > 1 && min_start[0] == _X('0'))
+    if (!try_parse_version_number(min_start, min_len, &minor_val))
         return false;
 
     const pal_char_t* pat_start = min_dot + 1;
@@ -194,10 +199,7 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     if (pat_non_numeric == (size_t)-1)
     {
         // Entire remainder is patch.
-        size_t pat_len = pal_strlen(pat_start);
-        if (!try_stou(pat_start, pat_len, &patch_val))
-            return false;
-        if (pat_len > 1 && pat_start[0] == _X('0'))
+        if (!try_parse_version_number(pat_start, pal_strlen(pat_start), &patch_val))
             return false;
 
         c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
@@ -207,9 +209,7 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     if (parse_only_production)
         return false;
 
-    if (!try_stou(pat_start, pat_non_numeric, &patch_val))
-        return false;
-    if (pat_non_numeric > 1 && pat_start[0] == _X('0'))
+    if (!try_parse_version_number(pat_start, pat_non_numeric, &patch_val))
         return false;
 
     const pal_char_t* pre_start = pat_start + pat_non_numeric;
@@ -219,11 +219,17 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
         ? (size_t)(build_start - pre_start)
         : pal_strlen(pre_start);
 
-    if (!valid_identifiers(pre_start, pre_len))
-        return false;
+    if (pre_len > 0)
+    {
+        if (pre_start[0] != _X('-'))
+            return false;
+
+        if (!validate_dot_separated_identifiers(pre_start + 1, pre_len - 1, /*build_meta*/ false))
+            return false;
+    }
 
     size_t build_len = (build_start != NULL) ? pal_strlen(build_start) : 0;
-    if (!valid_identifiers(build_start, build_len))
+    if (build_len > 0 && !validate_dot_separated_identifiers(build_start + 1, build_len - 1, /*build_meta*/ true))
         return false;
 
     pal_char_t* pre_buf = pal_strndup(pre_start, pre_len);
@@ -262,6 +268,7 @@ static size_t get_id_len(const pal_char_t* ids, size_t id_start)
     return i - id_start;
 }
 
+// https://semver.org/#spec-item-11
 int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
 {
     if (a->major != b->major)
