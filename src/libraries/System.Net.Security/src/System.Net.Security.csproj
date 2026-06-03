@@ -34,6 +34,8 @@
              Link="Common\System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
              Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
