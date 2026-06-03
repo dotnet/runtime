@@ -455,77 +455,46 @@ Function:
   little extra work before exiting. Most importantly, it won't shut
   down any DLLs that are loaded.
 
+  Only terminating current process is supported.
+
 --*/
 static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally)
 {
-    DWORD dwProcessId;
     BOOL ret = FALSE;
 
-    dwProcessId = PROCGetProcessIDFromHandle(hProcess);
-    if (dwProcessId == 0)
-    {
-        SetLastError(ERROR_INVALID_HANDLE);
-    }
-    else if(dwProcessId != GetCurrentProcessId())
-    {
-        if (uExitCode != 0)
-            WARN("exit code 0x%x ignored for external process.\n", uExitCode);
+    _ASSERTE (hProcess != hPseudoCurrentProcess);
 
-        if (kill(dwProcessId, SIGKILL) == 0)
-        {
-            ret = TRUE;
-        }
-        else
-        {
-            switch (errno) {
-            case ESRCH:
-                SetLastError(ERROR_INVALID_HANDLE);
-                break;
-            case EPERM:
-                SetLastError(ERROR_ACCESS_DENIED);
-                break;
-            default:
-                // Unexpected failure.
-                ASSERT(FALSE);
-                SetLastError(ERROR_INTERNAL_ERROR);
-                break;
-            }
-        }
+    // WARN/ERROR before starting the termination process and/or leaving the PAL.
+    if (bTerminateUnconditionally)
+    {
+        WARN("exit code 0x%x ignored for terminate.\n", uExitCode);
+    }
+    else if ((uExitCode & 0xff) != uExitCode)
+    {
+        // TODO: Convert uExitCodes into sysexits(3)?
+        ERROR("exit() only supports the lower 8-bits of an exit code. "
+            "status will only see error 0x%x instead of 0x%x.\n", uExitCode & 0xff, uExitCode);
+    }
+
+    TerminateCurrentProcessNoExit(bTerminateUnconditionally);
+
+    LOGEXIT("PROCEndProcess will not return\n");
+
+    if (bTerminateUnconditionally)
+    {
+        // abort() has the semantics that
+        // (1) it doesn't run atexit handlers
+        // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
+        // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
+        // Watson analyzer needs to know that the process was terminated with a SIGTERM.
+        PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
     }
     else
     {
-        // WARN/ERROR before starting the termination process and/or leaving the PAL.
-        if (bTerminateUnconditionally)
-        {
-            WARN("exit code 0x%x ignored for terminate.\n", uExitCode);
-        }
-        else if ((uExitCode & 0xff) != uExitCode)
-        {
-            // TODO: Convert uExitCodes into sysexits(3)?
-            ERROR("exit() only supports the lower 8-bits of an exit code. "
-                "status will only see error 0x%x instead of 0x%x.\n", uExitCode & 0xff, uExitCode);
-        }
-
-        TerminateCurrentProcessNoExit(bTerminateUnconditionally);
-
-        LOGEXIT("PROCEndProcess will not return\n");
-
-        if (bTerminateUnconditionally)
-        {
-            // abort() has the semantics that
-            // (1) it doesn't run atexit handlers
-            // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
-            // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
-            // Watson analyzer needs to know that the process was terminated with a SIGTERM.
-            PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
-        }
-        else
-        {
-            exit(uExitCode);
-        }
-
-        ASSERT(FALSE); // we shouldn't get here
+        exit(uExitCode);
     }
+
+    ASSERT(FALSE); // we shouldn't get here
 
     return ret;
 }
