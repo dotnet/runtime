@@ -17,7 +17,7 @@ import argparse
 import os
 import shutil
 from coreclr_arguments import *
-from jitutil import run_command
+from jitutil import run_command, determine_jit_name
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -94,14 +94,23 @@ def main(main_args):
 
     log_directory = coreclr_args.log_directory
     platform_name = coreclr_args.platform
-
-    # Figure out which JITs to use
-    os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
-    host_arch_name = "x64" if arch_name.endswith("64") else "x86"
-    os_name = "universal" if arch_name.startswith("arm") else os_name
-    base_jit_path = os.path.join(coreclr_args.base_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
-    diff_jit_path = os.path.join(coreclr_args.diff_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+
+    # Figure out which JITs to use. For wasm, the -arch / -platform passed in describe
+    # the *target* (browser/wasm), not the host. The wasm cross-targeting JIT is named
+    # clrjit_universal_wasm_<host_arch>.dll and must be loaded as an altjit.
+    if arch_name == "wasm":
+        host_os_name = CoreclrArguments.provide_default_host_os()
+        host_arch_name = CoreclrArguments.provide_default_arch()
+        jit_file_name = determine_jit_name(host_os_name, "browser", host_arch_name, "wasm", use_cross_compile_jit=True)
+        base_jit_path = os.path.join(coreclr_args.base_jit_directory, jit_file_name)
+        diff_jit_path = os.path.join(coreclr_args.diff_jit_directory, jit_file_name)
+    else:
+        os_name = "win" if platform_name.lower() == "windows" else "unix"
+        host_arch_name = "x64" if arch_name.endswith("64") else "x86"
+        os_name = "universal" if arch_name.startswith("arm") else os_name
+        base_jit_path = os.path.join(coreclr_args.base_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+        diff_jit_path = os.path.join(coreclr_args.diff_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
     # We pass the full path of the JITs to use as arguments.
@@ -126,7 +135,7 @@ def main(main_args):
     print("Running superpmi.py asmdiffs between checked and release binaries")
     log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
 
-    _, _, return_code = run_command([
+    asmdiffs_command = [
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
@@ -141,7 +150,13 @@ def main(main_args):
         "-spmi_location", spmi_location,
         "-error_limit", "100",
         "-log_level", "debug",
-        "-log_file", log_file])
+        "-log_file", log_file]
+
+    # The wasm jit is a cross-target altjit; superpmi must be told to load it as one.
+    if arch_name == "wasm":
+        asmdiffs_command += ["--altjit"]
+
+    _, _, return_code = run_command(asmdiffs_command)
 
 
     # TODO: the superpmi.py asmdiffs command returns a failure code if there are MISSING data even if there are

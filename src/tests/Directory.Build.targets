@@ -594,6 +594,6 @@
 
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
-          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+          DependsOnTargets="ComputeResolvedFilesToPublishList;NativeCompile" />
 
 </Project>
