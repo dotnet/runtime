@@ -126,34 +126,28 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             private readonly string? _listenerName;
             private readonly DefaultActivitySourceFactory _activitySourceFactory;
             private readonly object _lock = new();
+            private readonly ActivityListener _userListener;
             private readonly ActivityListener _activityListener;
-            private readonly SampleActivity<ActivityContext>? _userSample;
-            private readonly SampleActivity<string>? _userSampleUsingParentId;
-            private readonly Action<Activity>? _userActivityStarted;
-            private readonly Action<Activity>? _userActivityStopped;
-            private readonly ExceptionRecorder? _userExceptionRecorder;
             private Dictionary<ActivitySource, SourceFilterState> _sourceFilterStates = new();
             private List<TracingRule> _rules = [];
-            private bool _hasOperationNameRules;
             private bool _disposed;
 
             public ActivityListenerRegistration(ActivityListener listener, DefaultActivitySourceFactory activitySourceFactory, TracingOptions options)
             {
                 ArgumentNullException.ThrowIfNull(listener);
+                _userListener = listener;
                 _activitySourceFactory = activitySourceFactory ?? throw new ArgumentNullException(nameof(activitySourceFactory));
                 _listenerName = listener.Name;
-                _userSample = listener.Sample;
-                _userSampleUsingParentId = listener.SampleUsingParentId;
-                _userActivityStarted = listener.ActivityStarted;
-                _userActivityStopped = listener.ActivityStopped;
-                _userExceptionRecorder = listener.ExceptionRecorder;
+                _rules = options.Rules;
                 _activityListener = new ActivityListener(_listenerName)
                 {
                     ShouldListenTo = ShouldListenTo,
+                    Sample = WrappedSample,
+                    SampleUsingParentId = WrappedSampleUsingParentId,
+                    ActivityStarted = WrappedActivityStarted,
+                    ActivityStopped = WrappedActivityStopped,
+                    ExceptionRecorder = WrappedExceptionRecorder,
                 };
-                _rules = options.Rules;
-                _hasOperationNameRules = ComputeHasOperationNameRules(_rules);
-                ConfigureDelegates();
                 ActivitySource.AddActivityListener(_activityListener);
             }
 
@@ -184,51 +178,11 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     }
 
                     Volatile.Write(ref _rules, rules);
-                    bool hadOperationNameRules = _hasOperationNameRules;
-                    _hasOperationNameRules = ComputeHasOperationNameRules(rules);
                     // Drop the per-source decision cache: stale entries would otherwise mis-route notifications.
                     // RefreshSources below will re-invoke ShouldListenTo, which repopulates the dictionary.
                     Volatile.Write(ref _sourceFilterStates, new Dictionary<ActivitySource, SourceFilterState>());
-                    if (hadOperationNameRules != _hasOperationNameRules)
-                    {
-                        ConfigureDelegates();
-                    }
-
                     _activityListener.RefreshSources();
                 }
-            }
-
-            private void ConfigureDelegates()
-            {
-                if (_hasOperationNameRules)
-                {
-                    _activityListener.Sample = _userSample is null ? null : WrappedSample;
-                    _activityListener.SampleUsingParentId = _userSampleUsingParentId is null ? null : WrappedSampleUsingParentId;
-                    _activityListener.ActivityStarted = _userActivityStarted is null ? null : WrappedActivityStarted;
-                    _activityListener.ActivityStopped = _userActivityStopped is null ? null : WrappedActivityStopped;
-                    _activityListener.ExceptionRecorder = _userExceptionRecorder is null ? null : WrappedExceptionRecorder;
-                }
-                else
-                {
-                    _activityListener.Sample = _userSample;
-                    _activityListener.SampleUsingParentId = _userSampleUsingParentId;
-                    _activityListener.ActivityStarted = _userActivityStarted;
-                    _activityListener.ActivityStopped = _userActivityStopped;
-                    _activityListener.ExceptionRecorder = _userExceptionRecorder;
-                }
-            }
-
-            private static bool ComputeHasOperationNameRules(IList<TracingRule> rules)
-            {
-                foreach (TracingRule rule in rules)
-                {
-                    if (!string.IsNullOrEmpty(rule.OperationName))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
             }
 
             private ActivitySamplingResult WrappedSample(ref ActivityCreationOptions<ActivityContext> options)
@@ -238,7 +192,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     return ActivitySamplingResult.None;
                 }
 
-                return _userSample!(ref options);
+                return _userListener.Sample?.Invoke(ref options) ?? ActivitySamplingResult.None;
             }
 
             private ActivitySamplingResult WrappedSampleUsingParentId(ref ActivityCreationOptions<string> options)
@@ -248,14 +202,14 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     return ActivitySamplingResult.None;
                 }
 
-                return _userSampleUsingParentId!(ref options);
+                return _userListener.SampleUsingParentId?.Invoke(ref options) ?? ActivitySamplingResult.None;
             }
 
             private void WrappedActivityStarted(Activity activity)
             {
                 if (IsEnabledFast(activity.Source, activity.OperationName))
                 {
-                    _userActivityStarted!(activity);
+                    _userListener.ActivityStarted?.Invoke(activity);
                 }
             }
 
@@ -263,7 +217,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             {
                 if (IsEnabledFast(activity.Source, activity.OperationName))
                 {
-                    _userActivityStopped!(activity);
+                    _userListener.ActivityStopped?.Invoke(activity);
                 }
             }
 
@@ -271,7 +225,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             {
                 if (IsEnabledFast(activity.Source, activity.OperationName))
                 {
-                    _userExceptionRecorder!(activity, exception, ref tags);
+                    _userListener.ExceptionRecorder?.Invoke(activity, exception, ref tags);
                 }
             }
 
@@ -353,7 +307,13 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     }
                 }
 
-                return state.DefaultEnabled || state.Divergent is { Count: > 0 };
+                bool rulesAllow = state.DefaultEnabled || state.Divergent is { Count: > 0 };
+                if (!rulesAllow)
+                {
+                    return false;
+                }
+
+                return _userListener.ShouldListenTo?.Invoke(activitySource) ?? true;
             }
 
             private TracingRule? GetMostSpecificRule(string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
