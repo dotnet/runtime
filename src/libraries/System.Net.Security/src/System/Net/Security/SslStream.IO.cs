@@ -286,6 +286,23 @@ namespace System.Net.Security
                     {
                         AcquireClientCredentials(ref dummy, true);
                     }
+                    else if (_sslAuthenticationOptions.ServerCertSelectionDelegate is null &&
+                             _sslAuthenticationOptions.CertSelectionDelegate is { } certSelectionDelegate)
+                    {
+                        // Match legacy SecureTransport PAL: when CertSelectionDelegate is
+                        // configured and returns null, surface NotSupportedException
+                        // instead of timing out the handshake.
+                        var tempCollection = new X509CertificateCollection();
+                        if (_sslAuthenticationOptions.CertificateContext?.TargetCertificate is X509Certificate2 ctx)
+                        {
+                            tempCollection.Add(ctx);
+                        }
+                        X509Certificate? selected = certSelectionDelegate(this, string.Empty, tempCollection, null, Array.Empty<string>());
+                        if (selected is null)
+                        {
+                            throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                        }
+                    }
 
                     Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
