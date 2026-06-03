@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="ActivityTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="DnsResolverTest.cs" />
     <Compile Include="GetHostByAddressTest.cs" />
     <Compile Include="GetHostByNameTest.cs" />
     <Compile Include="ResolveTest.cs" />
