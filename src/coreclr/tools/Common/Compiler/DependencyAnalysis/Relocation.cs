@@ -715,6 +715,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => 4,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 8,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
@@ -753,6 +755,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.WASM_TABLE_INDEX_I64:
                     return *(long*)location;
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
@@ -792,23 +795,21 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
-                case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB:
-                case RelocType.WASM_TABLE_INDEX_I32:
-                case RelocType.WASM_TABLE_INDEX_REL_I32:
-                case RelocType.WASM_TABLE_INDEX_I64:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return 0;
-
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
-
+                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
+                case RelocType.WASM_TABLE_INDEX_I32:
+                case RelocType.WASM_TABLE_INDEX_REL_I32:
+                    return *(uint*)location;
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);

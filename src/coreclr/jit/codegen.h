@@ -640,6 +640,12 @@ protected:
     void genAmd64EmitterUnitTestsApx();
     void genAmd64EmitterUnitTestsAvx10v2();
     void genAmd64EmitterUnitTestsCCMP();
+    void genAmd64EmitterUnitTestsCFCMOV();
+    void genAmd64EmitterUnitTestsCTEST();
+#endif
+
+#if defined(TARGET_WASM)
+    void genWasmEmitterUnitTestsSimd();
 #endif
 
 #endif // defined(DEBUG)
@@ -1169,8 +1175,6 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpObj(GenTreeBlk* cpObjNode);
-    void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef SWIFT_SUPPORT
@@ -1247,7 +1251,6 @@ protected:
 
     void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void                 genJumpTable(GenTree* tree);
@@ -1655,9 +1658,11 @@ public:
     static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
+#ifdef TARGET_AMD64
     static instruction JumpKindToCcmp(emitJumpKind condition);
     static insOpts     OptsFromCFlags(insCflags flags);
-#endif
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 

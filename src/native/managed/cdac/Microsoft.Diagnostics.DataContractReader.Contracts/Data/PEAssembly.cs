@@ -1,21 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class PEAssembly : IData<PEAssembly>
+[CdacType(nameof(DataType.PEAssembly))]
+internal sealed partial class PEAssembly : IData<PEAssembly>
 {
-    static PEAssembly IData<PEAssembly>.Create(Target target, TargetPointer address) => new PEAssembly(target, address);
-    public PEAssembly(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.PEAssembly);
-
-        PEImage = target.ReadPointerField(address, type, nameof(PEImage));
-        AssemblyBinder = target.ReadPointerField(address, type, nameof(AssemblyBinder));
-    }
-
-    public TargetPointer PEImage { get; init; }
-    public TargetPointer AssemblyBinder { get; init; }
+    [Field] public TargetPointer PEImage { get; }
+    [Field] public TargetPointer AssemblyBinder { get; }
 }

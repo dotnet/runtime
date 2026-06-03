@@ -451,7 +451,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
     pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
@@ -524,11 +523,6 @@ EXTERN_C void JIT_WriteBarrier_End()
 EXTERN_C void JIT_CheckedWriteBarrier_End()
 {
     PORTABILITY_ASSERT("JIT_CheckedWriteBarrier_End is not implemented on wasm");
-}
-
-EXTERN_C void JIT_ByRefWriteBarrier_End()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier_End is not implemented on wasm");
 }
 
 EXTERN_C void JIT_StackProbe_End()
@@ -622,8 +616,6 @@ extern "C" void RhpVTableOffsetDispatch()
 typedef uint8_t CODE_LOCATION;
 CODE_LOCATION RhpAssignRefAVLocation;
 CODE_LOCATION RhpCheckedAssignRefAVLocation;
-CODE_LOCATION RhpByRefAssignRefAVLocation1;
-CODE_LOCATION RhpByRefAssignRefAVLocation2;
 
 extern "C" void ThisPtrRetBufPrecodeWorker()
 {

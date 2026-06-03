@@ -10,6 +10,8 @@
     <Compile Remove="DumpTests\**" />
     <!-- StressTests is a separate test project with its own csproj -->
     <Compile Remove="StressTests\**" />
+    <!-- DataGenerator is a separate test project for the IData source generator -->
+    <Compile Remove="DataGenerator\**" />
   </ItemGroup>
 
   <Import Project="..\..\subproject.props" />
