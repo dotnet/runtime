@@ -38,13 +38,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                    .WithArguments("Event", "INativeAPI"),
             } };
 
-            yield return new object[] { ID(), codeSnippets.InterfaceWithIndexer, new[]
-            {
-               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.IndexerNotSupportedOnGeneratedComInterface)
-                   .WithLocation(0)
-                   .WithArguments("INativeAPI"),
-            } };
-
             yield return new object[] { ID(), codeSnippets.InterfaceWithExternProperty, new[]
             {
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
@@ -90,6 +83,35 @@ namespace ComInterfaceGenerator.Unit.Tests
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
                    .WithLocation(0)
                    .WithArguments("Defaulted", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithExternIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI", "extern"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithInitIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI", "init"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithIndexerMixedAccessorBodies, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI"),
+               DiagnosticResult.CompilerError("CS0501").WithSpan(12, 23, 12, 26).WithArguments("INativeAPI.this[int].get"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI"),
             } };
 
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]

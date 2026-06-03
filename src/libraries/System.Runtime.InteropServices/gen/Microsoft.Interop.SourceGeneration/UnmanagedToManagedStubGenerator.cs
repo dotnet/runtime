@@ -47,7 +47,7 @@ namespace Microsoft.Interop
         /// <remarks>
         /// The generated code assumes it will be in an unsafe context.
         /// </remarks>
-        public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
+        public BlockSyntax GenerateStubBodyForMethod(ExpressionSyntax methodToInvoke)
         {
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
@@ -73,6 +73,35 @@ namespace Microsoft.Interop
                 propertyAccess,
                 isSetter);
             return BuildBodyFromStatements(statements);
+        }
+
+        /// <summary>
+        /// Generate the method body of the unmanaged-to-managed ComWrappers-based stub for an indexer
+        /// accessor. Wraps the supplied <paramref name="instance"/> in an
+        /// <see cref="ElementAccessExpressionSyntax"/> built from the marshalled identifiers for the
+        /// index parameters (which are all managed parameters for an indexer getter, and all-but-the-last
+        /// managed parameter for an indexer setter — the trailing entry is the implicit
+        /// <c>value</c>). The resulting access expression is then handled by the same property-stub
+        /// pipeline.
+        /// </summary>
+        /// <param name="instance">Expression naming the managed-side target instance (e.g.,
+        /// <c>@this</c>); the bracketed argument list is appended to this expression.</param>
+        /// <param name="isSetter">True if this stub is the indexer setter; false for the getter.</param>
+        public BlockSyntax GenerateStubBodyForIndexer(ExpressionSyntax instance, bool isSetter)
+        {
+            var managedParameterMarshallers = _marshallers.ManagedParameterMarshallers;
+            int indexCount = isSetter ? managedParameterMarshallers.Length - 1 : managedParameterMarshallers.Length;
+            var argBuilder = ImmutableArray.CreateBuilder<ArgumentSyntax>(indexCount);
+            for (int i = 0; i < indexCount; i++)
+            {
+                argBuilder.Add(managedParameterMarshallers[i].AsManagedArgument(_context));
+            }
+
+            ExpressionSyntax elementAccess = ElementAccessExpression(
+                instance,
+                BracketedArgumentList(SeparatedList(argBuilder.MoveToImmutable())));
+
+            return GenerateStubBodyForProperty(elementAccess, isSetter);
         }
 
         private BlockSyntax BuildBodyFromStatements(GeneratedStatements statements)

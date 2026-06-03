@@ -728,7 +728,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("IDerived")}}
             """;
 
-        public string InterfaceWithIndexer => $$"""
+        public string InterfaceWithIndexers => $$"""
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -740,7 +740,108 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
-                int {|#0:this|}[int i] { get; set; }
+                int this[int i] { get; set; }
+
+                int this[int i, int j] { get; set; }
+
+                int this[long l] { get; }
+
+                int this[short s] { set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithRenamedIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                [IndexerName("Foo")]
+                int this[int i] { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string DerivedInterfaceWithNewIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IBase
+            {
+                int this[int i] { get; set; }
+            }
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IDerived : IBase
+            {
+                new int this[int i] { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IBase")}}
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IDerived")}}
+            """;
+
+        public string DerivedInterfaceWithNewRenamedIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IBase
+            {
+                [IndexerName("Foo")]
+                int this[int i] { get; set; }
+            }
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IDerived : IBase
+            {
+                [IndexerName("Foo")]
+                new int this[int i] { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IBase")}}
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IDerived")}}
+            """;
+
+        public string InterfaceWithDefaultImplementedIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int this[int i]
+                {
+                    get => 7;
+                    set { }
+                }
             }
 
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
@@ -902,6 +1003,85 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
 
             internal static class IntMarshaller
+            {
+                public static int ConvertToManaged(int value) => value;
+                public static int ConvertToUnmanaged(int value) => value;
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithExternIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                extern int {|#0:this|}[int i] { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithInitIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:this|}[int i] { get; init; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithIndexerMixedAccessorBodies => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:this|}[int i] { get; set { _ = value; } }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithMarshalAttributeOnDefaultImplementedIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                [{|#0:MarshalUsing(typeof(IntIndexerMarshaller))|}]
+                int this[int i] { get => i; set { _ = value; } }
+            }
+
+            internal static class IntIndexerMarshaller
             {
                 public static int ConvertToManaged(int value) => value;
                 public static int ConvertToUnmanaged(int value) => value;

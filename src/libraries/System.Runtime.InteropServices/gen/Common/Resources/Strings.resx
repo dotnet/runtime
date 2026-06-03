@@ -435,15 +435,6 @@
   <data name="InstancePropertyDeclaredInInterfaceTitle" xml:space="preserve">
     <value>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
   </data>
-  <data name="IndexerNotSupportedOnGeneratedComInterfaceDescription" xml:space="preserve">
-    <value>Source-generated COM interfaces do not currently support indexer properties.</value>
-  </data>
-  <data name="IndexerNotSupportedOnGeneratedComInterfaceMessage" xml:space="preserve">
-    <value>The indexer on interface '{0}' is not supported on source-generated COM interfaces</value>
-  </data>
-  <data name="IndexerNotSupportedOnGeneratedComInterfaceTitle" xml:space="preserve">
-    <value>Indexer properties are not supported on source-generated COM interfaces</value>
-  </data>
   <data name="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription" xml:space="preserve">
     <value>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</value>
   </data>

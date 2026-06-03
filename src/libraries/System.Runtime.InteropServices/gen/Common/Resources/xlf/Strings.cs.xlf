@@ -517,21 +517,6 @@
         <target state="translated">Objekty zařazené z VARIANT jako parametry in ve voláních nespravovaných na spravované nebudou šířit zpět aktualizovaný výsledek, a to ani v případě, že VARIANT je varianta VT_BYREF. K šíření aktualizované hodnoty zpět k volajícímu použijte místo parametru in parametr ref.</target>
         <note />
       </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceDescription">
-        <source>Source-generated COM interfaces do not currently support indexer properties.</source>
-        <target state="new">Source-generated COM interfaces do not currently support indexer properties.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceMessage">
-        <source>The indexer on interface '{0}' is not supported on source-generated COM interfaces</source>
-        <target state="new">The indexer on interface '{0}' is not supported on source-generated COM interfaces</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceTitle">
-        <source>Indexer properties are not supported on source-generated COM interfaces</source>
-        <target state="new">Indexer properties are not supported on source-generated COM interfaces</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">Události nejsou konceptem COM, takže pro události instance na rozhraních COM generovaných zdrojem nebude vygenerován žádný kód spolupráce.</target>

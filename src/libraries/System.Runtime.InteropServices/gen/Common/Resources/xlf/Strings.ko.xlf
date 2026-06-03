@@ -517,21 +517,6 @@
         <target state="translated">관리되지 않는 호출에서 관리되는 호출로의 VARIANT에서 'in' 매개 변수로 마샬링된 개체는 VARIANT가 VT_BYREF 변형인 경우에도 업데이트된 결과를 다시 전파하지 않습니다. 'in' 매개 변수 대신 'ref' 매개 변수를 사용하여 업데이트된 값을 호출자에게 다시 전파합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceDescription">
-        <source>Source-generated COM interfaces do not currently support indexer properties.</source>
-        <target state="new">Source-generated COM interfaces do not currently support indexer properties.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceMessage">
-        <source>The indexer on interface '{0}' is not supported on source-generated COM interfaces</source>
-        <target state="new">The indexer on interface '{0}' is not supported on source-generated COM interfaces</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceTitle">
-        <source>Indexer properties are not supported on source-generated COM interfaces</source>
-        <target state="new">Indexer properties are not supported on source-generated COM interfaces</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">이벤트는 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 이벤트에 대해 interop 코드가 생성되지 않습니다.</target>

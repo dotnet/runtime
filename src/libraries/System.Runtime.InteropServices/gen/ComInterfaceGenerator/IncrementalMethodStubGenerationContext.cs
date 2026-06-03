@@ -14,6 +14,34 @@ namespace Microsoft.Interop
         Method,
         PropertyGetter,
         PropertySetter,
+        IndexerGetter,
+        IndexerSetter,
+    }
+
+    internal static class StubMemberKindExtensions
+    {
+        /// <summary>
+        /// Returns true if <paramref name="kind"/> represents any property or indexer accessor
+        /// (<see cref="StubMemberKind.PropertyGetter"/>, <see cref="StubMemberKind.PropertySetter"/>,
+        /// <see cref="StubMemberKind.IndexerGetter"/>, or <see cref="StubMemberKind.IndexerSetter"/>).
+        /// </summary>
+        public static bool IsPropertyOrIndexerAccessor(this StubMemberKind kind)
+            => kind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter
+                    or StubMemberKind.IndexerGetter or StubMemberKind.IndexerSetter;
+
+        /// <summary>
+        /// Returns true if <paramref name="kind"/> represents the setter half of either a property
+        /// or an indexer.
+        /// </summary>
+        public static bool IsAccessorSetter(this StubMemberKind kind)
+            => kind is StubMemberKind.PropertySetter or StubMemberKind.IndexerSetter;
+
+        /// <summary>
+        /// Returns true if <paramref name="kind"/> represents either accessor of an indexer
+        /// (as opposed to an ordinary property).
+        /// </summary>
+        public static bool IsIndexerAccessor(this StubMemberKind kind)
+            => kind is StubMemberKind.IndexerGetter or StubMemberKind.IndexerSetter;
     }
 
     internal record IncrementalMethodStubGenerationContext(
@@ -91,7 +119,7 @@ namespace Microsoft.Interop
             get
             {
                 string templateName = StubMethodSyntaxTemplate.Identifier.Text;
-                if (MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+                if (MemberKind.IsPropertyOrIndexerAccessor())
                 {
                     return GetPropertyNameFromAccessor(templateName);
                 }

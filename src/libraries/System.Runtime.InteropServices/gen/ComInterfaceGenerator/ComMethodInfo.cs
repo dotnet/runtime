@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and the user-declared member syntax (a <see cref="MethodDeclarationSyntax"/> for ordinary methods, or a <see cref="PropertyDeclarationSyntax"/> for property accessors).
+    /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and the user-declared member syntax (a <see cref="MethodDeclarationSyntax"/> for ordinary methods, a <see cref="PropertyDeclarationSyntax"/> for property accessors, or an <see cref="IndexerDeclarationSyntax"/> for indexer accessors).
     /// </summary>
     internal sealed record ComMethodInfo
     {
@@ -263,10 +263,10 @@ namespace Microsoft.Interop
                 return;
             }
 
-            PropertyDeclarationSyntax? propertyDeclaringSyntax = null;
+            BasePropertyDeclarationSyntax? propertyDeclaringSyntax = null;
             foreach (var declaringSyntaxReference in property.DeclaringSyntaxReferences)
             {
-                if (declaringSyntaxReference.GetSyntax(ct) is PropertyDeclarationSyntax candidate
+                if (declaringSyntaxReference.GetSyntax(ct) is BasePropertyDeclarationSyntax candidate
                     && candidate.GetLocation().SourceSpan.Contains(propertyLocationInAttributedInterfaceDeclaration.SourceSpan))
                 {
                     propertyDeclaringSyntax = candidate;
@@ -275,14 +275,11 @@ namespace Microsoft.Interop
             }
             if (propertyDeclaringSyntax is null)
             {
-                // Either no PropertyDeclarationSyntax was found (e.g. indexer with IndexerDeclarationSyntax)
-                // or the syntax tree doesn't cover the located position. Emit the indexer-specific diagnostic
-                // when we can confirm it's an indexer; otherwise fall back to the generic unsupported-property
-                // signal so the user gets a clear "this isn't supported" message.
-                DiagnosticInfo fallback = property.IsIndexer
-                    ? property.CreateDiagnosticInfo(GeneratorDiagnostics.IndexerNotSupportedOnGeneratedComInterface, ifaceSymbol.ToDisplayString())
-                    : property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString());
-                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(fallback));
+                // The syntax tree doesn't cover the located position. This is unexpected for any
+                // BasePropertyDeclarationSyntax shape (property or indexer), so fall back to the generic
+                // unsupported-property signal so the user gets a clear "this isn't supported" message.
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
+                    property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString())));
                 return;
             }
 
@@ -325,7 +322,7 @@ namespace Microsoft.Interop
 
         private static void AddPropertyAccessor(
             ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
-            PropertyDeclarationSyntax propertyDeclaringSyntax,
+            BasePropertyDeclarationSyntax propertyDeclaringSyntax,
             IMethodSymbol? accessor,
             bool isUserDefinedShadowingMethod)
         {
@@ -370,7 +367,7 @@ namespace Microsoft.Interop
         }
 
         private static MemberShapeOutcome AnalyzePropertyShape(
-            PropertyDeclarationSyntax propertyDeclaringSyntax,
+            BasePropertyDeclarationSyntax propertyDeclaringSyntax,
             IPropertySymbol property,
             INamedTypeSymbol ifaceSymbol,
             out DiagnosticInfo? diagnostic)
@@ -404,7 +401,8 @@ namespace Microsoft.Interop
 
             // Auto-property initializers are not legal on interface instance properties at the C# level;
             // they should never reach this point. Defensive check retained from earlier diagnostic.
-            if (propertyDeclaringSyntax.Initializer is not null)
+            // Indexers cannot carry initializers, so this is property-only.
+            if (propertyDeclaringSyntax is PropertyDeclarationSyntax { Initializer: not null })
             {
                 diagnostic = property.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
@@ -430,8 +428,16 @@ namespace Microsoft.Interop
             }
 
             // An expression-bodied property (`T Foo => …;`) is a single-getter default implementation
-            // and is treated as a DIM.
-            if (propertyDeclaringSyntax.ExpressionBody is not null)
+            // and is treated as a DIM. Indexers can also be expression-bodied (`T this[int i] => …;`)
+            // with the same semantics. ExpressionBody lives on the concrete subclasses, not on
+            // BasePropertyDeclarationSyntax, so we pattern-match each shape.
+            ArrowExpressionClauseSyntax? expressionBody = propertyDeclaringSyntax switch
+            {
+                PropertyDeclarationSyntax propertyDecl => propertyDecl.ExpressionBody,
+                IndexerDeclarationSyntax indexerDecl => indexerDecl.ExpressionBody,
+                _ => null,
+            };
+            if (expressionBody is not null)
             {
                 return MemberShapeOutcome.DefaultImplementation;
             }

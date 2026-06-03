@@ -71,10 +71,16 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Create the standard set of generated statements for an unmanaged-to-managed stub whose
-        /// managed-side invocation is a property accessor. For a getter the body assigns the property
-        /// read into the return identifier (<c>__retVal = propertyAccess</c>); for a setter it assigns
-        /// the single managed parameter into the property (<c>propertyAccess = value</c>).
+        /// managed-side invocation is a property or indexer accessor. For a getter the body assigns the
+        /// read expression into the return identifier (<c>__retVal = propertyAccess</c>); for a setter
+        /// it assigns the value parameter into the access expression (<c>propertyAccess = value</c>).
         /// </summary>
+        /// <remarks>
+        /// For indexers the caller is expected to bake the index arguments into
+        /// <paramref name="propertyAccess"/> (as an <c>ElementAccessExpression</c>) before passing it in;
+        /// the value parameter — which is the LAST entry in <c>ManagedParameterMarshallers</c> for both
+        /// property and indexer setters — is consumed here.
+        /// </remarks>
         public static GeneratedStatements CreateForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
         {
             GeneratedStatements statements = Create(marshallers, context);
@@ -173,9 +179,13 @@ namespace Microsoft.Interop
 
             if (isSetter)
             {
-                // Setter: assign the single managed parameter into the property.
+                // Setter: assign the value parameter into the access expression.
                 //   propertyAccess = <managedValueIdentifier>;
-                IBoundMarshallingGenerator valueParameterMarshaller = marshallers.ManagedParameterMarshallers.Single();
+                //
+                // For property setters the only managed parameter IS the value parameter, so .Last() is
+                // identical to .Single(). For indexer setters the value parameter is appended LAST after
+                // the index parameters (Roslyn convention), so .Last() correctly picks it out.
+                IBoundMarshallingGenerator valueParameterMarshaller = marshallers.ManagedParameterMarshallers.Last();
                 ExpressionSyntax valueExpression = valueParameterMarshaller.AsManagedArgument(context).Expression;
                 return ExpressionStatement(
                     AssignmentExpression(

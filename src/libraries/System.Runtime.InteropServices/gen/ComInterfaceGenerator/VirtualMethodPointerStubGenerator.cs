@@ -86,12 +86,12 @@ namespace Microsoft.Interop
             Debug.Assert(methodStub.TypeKeyOwner.Syntax is NameSyntax);
 
             MemberDeclarationSyntax stubDeclaration;
-            if (methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+            if (methodStub.MemberKind.IsPropertyOrIndexerAccessor())
             {
-                // Emit a property declaration containing only the relevant accessor (get or set) with the
-                // stub body inline. The writer is responsible for merging the get and set halves of a single
-                // property's accessor pair into one PropertyDeclarationSyntax before output.
-                stubDeclaration = PrintPropertyAccessorStub(
+                // Emit a property or indexer declaration containing only the relevant accessor (get or set)
+                // with the stub body inline. The writer is responsible for merging the get and set halves
+                // of a single accessor pair into one declaration before output.
+                stubDeclaration = PrintPropertyOrIndexerAccessorStub(
                     methodStub,
                     code)
                     .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax));
@@ -141,20 +141,35 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
-        private static PropertyDeclarationSyntax PrintPropertyAccessorStub(
+        private static BasePropertyDeclarationSyntax PrintPropertyOrIndexerAccessorStub(
             SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             BlockSyntax stubCode)
         {
-            Debug.Assert(methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter);
-            bool isSetter = methodStub.MemberKind is StubMemberKind.PropertySetter;
+            Debug.Assert(methodStub.MemberKind.IsPropertyOrIndexerAccessor());
+            bool isSetter = methodStub.MemberKind.IsAccessorSetter();
+            bool isIndexer = methodStub.MemberKind.IsIndexerAccessor();
 
-            // For a getter, the stub return type is the property's value type and the parameter list is empty.
-            // For a setter, the stub return type is void and the parameter list is a single 'value' parameter
-            // matching the property's value type — but in C# property syntax that parameter is implicit and
-            // its type is taken from the property declaration, so we drop it here.
-            TypeSyntax propertyType = isSetter
-                ? methodStub.SignatureContext.StubParameters.Single().Type!
-                : methodStub.SignatureContext.StubReturnType;
+            // For a getter, the stub return type is the value type and the parameter list contains the
+            // index parameters only (empty for an ordinary property).
+            // For a setter, the stub return type is void and the parameter list is "index parameters +
+            // value". In C# property/indexer syntax the value parameter is implicit (its type is taken
+            // from the declared type), so we drop it from the parameter list and treat its type as the
+            // value type for the declaration.
+            ImmutableArray<ParameterSyntax> stubParameters = methodStub.SignatureContext.StubParameters.ToImmutableArray();
+            TypeSyntax valueType;
+            ImmutableArray<ParameterSyntax> indexParameters;
+            if (isSetter)
+            {
+                // The value parameter is the LAST entry for both property setters (only entry) and
+                // indexer setters (after the index parameters).
+                valueType = stubParameters[stubParameters.Length - 1].Type!;
+                indexParameters = stubParameters.RemoveAt(stubParameters.Length - 1);
+            }
+            else
+            {
+                valueType = methodStub.SignatureContext.StubReturnType;
+                indexParameters = stubParameters;
+            }
 
             SyntaxKind accessorKind = isSetter
                 ? SyntaxKind.SetAccessorDeclaration
@@ -163,7 +178,14 @@ namespace Microsoft.Interop
             AccessorDeclarationSyntax accessor = AccessorDeclaration(accessorKind)
                 .WithBody(stubCode);
 
-            return PropertyDeclaration(propertyType, Identifier(methodStub.TemplateName))
+            if (isIndexer)
+            {
+                return IndexerDeclaration(valueType)
+                    .WithParameterList(BracketedParameterList(SeparatedList(indexParameters)))
+                    .WithAccessorList(AccessorList(SingletonList(accessor)));
+            }
+
+            return PropertyDeclaration(valueType, Identifier(methodStub.TemplateName))
                 .WithAccessorList(
                     AccessorList(SingletonList(accessor)));
         }
@@ -185,19 +207,32 @@ namespace Microsoft.Interop
                 generatorResolverCreator(methodStub.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
             BlockSyntax code;
-            if (methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+            if (methodStub.MemberKind.IsPropertyOrIndexerAccessor())
             {
-                // Property accessors must invoke the managed implementation via property syntax.
-                ExpressionSyntax propertyAccess = MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(ManagedThisParameterIdentifier),
-                    IdentifierName(methodStub.TemplateName));
-                code = stubGenerator.GenerateStubBodyForProperty(propertyAccess, isSetter: methodStub.MemberKind is StubMemberKind.PropertySetter);
+                bool isSetter = methodStub.MemberKind.IsAccessorSetter();
+                if (methodStub.MemberKind.IsIndexerAccessor())
+                {
+                    // For an indexer accessor the managed-side access is element access on @this; the
+                    // helper assembles the bracketed index-argument list from the marshalled identifiers.
+                    code = stubGenerator.GenerateStubBodyForIndexer(
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        isSetter);
+                }
+                else
+                {
+                    // For an ordinary property accessor the managed-side access is member access:
+                    //   @this.Foo
+                    ExpressionSyntax propertyAccess = MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        IdentifierName(methodStub.TemplateName));
+                    code = stubGenerator.GenerateStubBodyForProperty(propertyAccess, isSetter);
+                }
             }
             else
             {
                 Debug.Assert(methodStub.MemberKind is StubMemberKind.Method);
-                code = stubGenerator.GenerateStubBody(
+                code = stubGenerator.GenerateStubBodyForMethod(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(ManagedThisParameterIdentifier),
                         IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
