@@ -128,8 +128,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             private readonly object _lock = new();
             private readonly ActivityListener _userListener;
             private readonly ActivityListener _activityListener;
-            private Dictionary<ActivitySource, SourceFilterState> _sourceFilterStates = new();
-            private List<TracingRule> _rules = [];
+            private ListenerState _state;
             private bool _disposed;
 
             public ActivityListenerRegistration(ActivityListener listener, DefaultActivitySourceFactory activitySourceFactory, TracingOptions options)
@@ -138,7 +137,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 _userListener = listener;
                 _activitySourceFactory = activitySourceFactory ?? throw new ArgumentNullException(nameof(activitySourceFactory));
                 _listenerName = listener.Name;
-                _rules = options.Rules;
+                _state = ListenerState.Create(options.Rules);
                 _activityListener = new ActivityListener(_listenerName)
                 {
                     ShouldListenTo = ShouldListenTo,
@@ -162,7 +161,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                     _disposed = true;
                     _activityListener.Dispose();
-                    _rules = [];
+                    _state = ListenerState.Empty;
                 }
             }
 
@@ -177,17 +176,17 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                         return;
                     }
 
-                    Volatile.Write(ref _rules, rules);
-                    // Drop the per-source decision cache: stale entries would otherwise mis-route notifications.
-                    // RefreshSources below will re-invoke ShouldListenTo, which repopulates the dictionary.
-                    Volatile.Write(ref _sourceFilterStates, new Dictionary<ActivitySource, SourceFilterState>());
+                    // Single atomic publication of rules + flag + fresh per-source cache.
+                    // Readers either see the old snapshot in full or the new one in full.
+                    Volatile.Write(ref _state, ListenerState.Create(rules));
                     _activityListener.RefreshSources();
                 }
             }
 
             private ActivitySamplingResult WrappedSample(ref ActivityCreationOptions<ActivityContext> options)
             {
-                if (!IsEnabledFast(options.Source, options.Name))
+                ListenerState state = Volatile.Read(ref _state);
+                if (state.HasOperationNameRules && !IsEnabledFast(state, options.Source, options.Name))
                 {
                     return ActivitySamplingResult.None;
                 }
@@ -197,7 +196,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private ActivitySamplingResult WrappedSampleUsingParentId(ref ActivityCreationOptions<string> options)
             {
-                if (!IsEnabledFast(options.Source, options.Name))
+                ListenerState state = Volatile.Read(ref _state);
+                if (state.HasOperationNameRules && !IsEnabledFast(state, options.Source, options.Name))
                 {
                     return ActivitySamplingResult.None;
                 }
@@ -207,7 +207,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private void WrappedActivityStarted(Activity activity)
             {
-                if (IsEnabledFast(activity.Source, activity.OperationName))
+                ListenerState state = Volatile.Read(ref _state);
+                if (!state.HasOperationNameRules || IsEnabledFast(state, activity.Source, activity.OperationName))
                 {
                     _userListener.ActivityStarted?.Invoke(activity);
                 }
@@ -215,7 +216,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private void WrappedActivityStopped(Activity activity)
             {
-                if (IsEnabledFast(activity.Source, activity.OperationName))
+                ListenerState state = Volatile.Read(ref _state);
+                if (!state.HasOperationNameRules || IsEnabledFast(state, activity.Source, activity.OperationName))
                 {
                     _userListener.ActivityStopped?.Invoke(activity);
                 }
@@ -223,31 +225,30 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private void WrappedExceptionRecorder(Activity activity, Exception exception, ref TagList tags)
             {
-                if (IsEnabledFast(activity.Source, activity.OperationName))
+                ListenerState state = Volatile.Read(ref _state);
+                if (!state.HasOperationNameRules || IsEnabledFast(state, activity.Source, activity.OperationName))
                 {
                     _userListener.ExceptionRecorder?.Invoke(activity, exception, ref tags);
                 }
             }
 
-            private bool IsEnabledFast(ActivitySource source, string operationName)
+            private bool IsEnabledFast(ListenerState state, ActivitySource source, string operationName)
             {
-                Dictionary<ActivitySource, SourceFilterState> states = Volatile.Read(ref _sourceFilterStates);
-                if (!states.TryGetValue(source, out SourceFilterState state))
+                if (!state.SourceFilterStates.TryGetValue(source, out SourceFilterState filter))
                 {
                     // Cache miss is rare (race against UpdateRules clearing the dictionary).
                     // Compute on the fly without caching; the next ShouldListenTo for this source repopulates.
-                    state = ComputeFilterState(source);
+                    filter = ComputeFilterState(state.Rules, source);
                 }
-                bool divergent = state.Divergent is { } d && d.Contains(operationName);
-                return divergent ? !state.DefaultEnabled : state.DefaultEnabled;
+                bool divergent = filter.Divergent is { } d && d.Contains(operationName);
+                return divergent ? !filter.DefaultEnabled : filter.DefaultEnabled;
             }
 
-            private SourceFilterState ComputeFilterState(ActivitySource source)
+            private SourceFilterState ComputeFilterState(IList<TracingRule> rules, ActivitySource source)
             {
                 bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
-                IList<TracingRule> rules = Volatile.Read(ref _rules);
 
-                TracingRule? defaultRule = GetMostSpecificRule(source.Name, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
+                TracingRule? defaultRule = GetMostSpecificRule(rules, source.Name, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
                 bool defaultEnabled = defaultRule?.Enable ?? false;
 
                 HashSet<string>? divergent = null;
@@ -265,7 +266,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                         continue;
                     }
 
-                    bool enabled = IsOperationEnabled(source, rule.OperationName);
+                    bool enabled = IsOperationEnabled(rules, source, rule.OperationName);
                     if (enabled != defaultEnabled)
                     {
                         divergent ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -276,38 +277,39 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return new SourceFilterState(defaultEnabled, divergent);
             }
 
-            private bool IsOperationEnabled(ActivitySource source, string operationName)
+            private bool IsOperationEnabled(IList<TracingRule> rules, ActivitySource source, string operationName)
             {
                 bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
-                TracingRule? rule = GetMostSpecificRule(source.Name, operationName, _listenerName, isLocalScope, considerOperationName: true);
+                TracingRule? rule = GetMostSpecificRule(rules, source.Name, operationName, _listenerName, isLocalScope, considerOperationName: true);
                 return rule?.Enable ?? false;
             }
 
             private bool ShouldListenTo(ActivitySource activitySource)
             {
-                SourceFilterState state;
+                SourceFilterState filter;
                 while (true)
                 {
-                    Dictionary<ActivitySource, SourceFilterState> snapshot = Volatile.Read(ref _sourceFilterStates);
-                    if (snapshot.TryGetValue(activitySource, out state))
+                    ListenerState state = Volatile.Read(ref _state);
+                    if (state.SourceFilterStates.TryGetValue(activitySource, out filter))
                     {
                         break;
                     }
 
-                    state = ComputeFilterState(activitySource);
+                    filter = ComputeFilterState(state.Rules, activitySource);
                     // Copy-on-write via CAS so IsEnabledFast readers stay lock-free and
-                    // UpdateRules can reset the cache without blocking concurrent ShouldListenTo calls.
-                    var newStates = new Dictionary<ActivitySource, SourceFilterState>(snapshot)
+                    // UpdateRules can swap the whole state without blocking concurrent ShouldListenTo calls.
+                    var newDict = new Dictionary<ActivitySource, SourceFilterState>(state.SourceFilterStates)
                     {
-                        [activitySource] = state,
+                        [activitySource] = filter,
                     };
-                    if (Interlocked.CompareExchange(ref _sourceFilterStates, newStates, snapshot) == snapshot)
+                    ListenerState newState = state.WithSourceFilterStates(newDict);
+                    if (Interlocked.CompareExchange(ref _state, newState, state) == state)
                     {
                         break;
                     }
                 }
 
-                bool rulesAllow = state.DefaultEnabled || state.Divergent is { Count: > 0 };
+                bool rulesAllow = filter.DefaultEnabled || filter.Divergent is { Count: > 0 };
                 if (!rulesAllow)
                 {
                     return false;
@@ -316,10 +318,9 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return _userListener.ShouldListenTo?.Invoke(activitySource) ?? true;
             }
 
-            private TracingRule? GetMostSpecificRule(string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
+            private static TracingRule? GetMostSpecificRule(IList<TracingRule> rules, string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
             {
                 TracingRule? best = null;
-                IList<TracingRule> rules = Volatile.Read(ref _rules);
                 foreach (TracingRule rule in rules)
                 {
                     if (RuleMatches(rule, sourceName, listenerName, isLocalScope, considerOperationName, operationName)
@@ -475,6 +476,41 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                 public bool DefaultEnabled { get; }
                 public HashSet<string>? Divergent { get; }
+            }
+
+            private sealed class ListenerState
+            {
+                public static readonly ListenerState Empty = new([], hasOperationNameRules: false, new Dictionary<ActivitySource, SourceFilterState>());
+
+                public ListenerState(IList<TracingRule> rules, bool hasOperationNameRules, Dictionary<ActivitySource, SourceFilterState> sourceFilterStates)
+                {
+                    Rules = rules;
+                    HasOperationNameRules = hasOperationNameRules;
+                    SourceFilterStates = sourceFilterStates;
+                }
+
+                public IList<TracingRule> Rules { get; }
+                public bool HasOperationNameRules { get; }
+                public Dictionary<ActivitySource, SourceFilterState> SourceFilterStates { get; }
+
+                public static ListenerState Create(IList<TracingRule> rules)
+                    => new(rules, ComputeHasOperationNameRules(rules), new Dictionary<ActivitySource, SourceFilterState>());
+
+                public ListenerState WithSourceFilterStates(Dictionary<ActivitySource, SourceFilterState> sourceFilterStates)
+                    => new(Rules, HasOperationNameRules, sourceFilterStates);
+
+                private static bool ComputeHasOperationNameRules(IList<TracingRule> rules)
+                {
+                    foreach (TracingRule rule in rules)
+                    {
+                        if (!string.IsNullOrEmpty(rule.OperationName))
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
             }
         }
     }
