@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -3021,6 +3022,112 @@ namespace System.Net.Http.Functional.Tests
 
                 await VerifySendTasks(sendTasks0).ConfigureAwait(false);
                 await VerifySendTasks(sendTasks2).ConfigureAwait(false);
+            }
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task Http2_ServerAdvertisesLowMaxConcurrentStreams_PoolMemorizesValueAcrossConnections()
+        {
+            // The server advertises a stream limit of 1 and serves a single request per connection.
+            // Without memoization, every newly created connection would optimistically allow up to
+            // InitialMaxConcurrentStreams (100) streams before observing the SETTINGS frame, the
+            // server would mark the extras as not-processed, and the per-request retry
+            // budget would be exhausted long before all 10 requests completed.
+            const int MaxConcurrentStreams = 1;
+            const int RequestCount = 10;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            Task<HttpResponseMessage>[] sendTasks = new Task<HttpResponseMessage>[RequestCount];
+            for (int i = 0; i < RequestCount; i++)
+            {
+                sendTasks[i] = client.GetAsync(server.Address);
+            }
+
+            // With the fix, every new connection in this pool starts with the memorized limit of 1, so
+            // each request lands on its own fresh connection and succeeds on the first try. Without the
+            // fix, each new connection would again optimistically over-subscribe to InitialMaxConcurrentStreams=100,
+            // and the per-request retry budget would be exhausted before all requests completed.
+            // For robustness, accept any number of HEADERS on each connection: respond to the first one,
+            // and REFUSED_STREAM the rest so the client retries them.
+            ConcurrentBag<Http2LoopbackConnection> connections = new();
+            ConcurrentQueue<(Http2LoopbackConnection conn, int streamId)> firstStreams = new();
+            using SemaphoreSlim connectionEstablished = new(0);
+            using SemaphoreSlim firstStreamReady = new(0);
+            using CancellationTokenSource cts = new();
+            List<Task> connectionTasks = new();
+
+            async Task ServeConnectionAsync(Http2LoopbackConnection conn)
+            {
+                bool gotFirst = false;
+                try
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        (int streamId, _) = await conn.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                        if (!gotFirst)
+                        {
+                            gotFirst = true;
+                            firstStreams.Enqueue((conn, streamId));
+                            firstStreamReady.Release();
+                        }
+                        else
+                        {
+                            await conn.WriteFrameAsync(
+                                new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.REFUSED_STREAM, streamId)).ConfigureAwait(false);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Connection closed/aborted; nothing more to do.
+                }
+            }
+
+            Task acceptTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        Http2LoopbackConnection conn = await server.EstablishConnectionAsync(
+                            new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
+                        connections.Add(conn);
+                        lock (connectionTasks) connectionTasks.Add(Task.Run(() => ServeConnectionAsync(conn)));
+                        connectionEstablished.Release();
+                    }
+                }
+                catch
+                {
+                    // Server disposed; stop accepting.
+                }
+            });
+
+            // Expect RequestCount fresh connections (one per request) and a first stream on each.
+            for (int i = 0; i < RequestCount; i++)
+            {
+                await connectionEstablished.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+            }
+            for (int i = 0; i < RequestCount; i++)
+            {
+                await firstStreamReady.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+            }
+
+            while (firstStreams.TryDequeue(out (Http2LoopbackConnection conn, int streamId) item))
+            {
+                await item.conn.SendDefaultResponseAsync(item.streamId).ConfigureAwait(false);
+            }
+
+            await VerifySendTasks(sendTasks).ConfigureAwait(false);
+
+            cts.Cancel();
+            foreach (Http2LoopbackConnection connection in connections)
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
 
