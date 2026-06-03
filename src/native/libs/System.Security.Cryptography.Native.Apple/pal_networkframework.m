@@ -162,7 +162,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
 // (connectionless semantics mean the inbound has no upstream peer to depend on).
 static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const char* targetName, void* serverIdentity,
     const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol,
-    uint32_t* cipherSuites, int cipherSuitesLength)
+    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue)
 {
     nw_parameters_t parameters = nw_parameters_create_secure_udp(
         NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -289,7 +289,7 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
         }
 
         complete(NULL);
-    }, _tlsQueue);
+    }, sessionQueue);
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete)
@@ -303,7 +303,7 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
         (void)metadata;
         (void)trust_ref;
         complete(true);
-    }, _tlsQueue);
+    }, sessionQueue);
 
     nw_release(sec_options);
 
@@ -332,10 +332,17 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
     }
 
-    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
+    // Per-session serial queue targeting the concurrent root. NW serializes all
+    // callbacks (state changes, framer events) for a single connection on this
+    // queue, while distinct sessions run on different worker threads in parallel.
+    dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
+        "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
+
+    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
     if (parameters == NULL)
     {
         LOG_ERROR(context, "Failed to build TLS parameters");
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -346,8 +353,14 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     if (connection == NULL)
     {
         LOG_ERROR(context, "Failed to create Network Framework connection");
+        dispatch_release(sessionQueue);
         return NULL;
     }
+
+    // Bind the queue to the connection so the caller's NwConnectionStart sees it.
+    // The connection retains the queue; we drop our reference here.
+    nw_connection_set_queue(connection, sessionQueue);
+    dispatch_release(sessionQueue);
 
     return connection;
 }
@@ -373,10 +386,17 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         return NULL;
     }
 
-    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
+    // Per-session serial queue (see client-side comment). The listener and the
+    // inbound connection it delivers share this queue so that all callbacks for
+    // this session are ordered, but separate sessions run in parallel.
+    dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
+        "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
+
+    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
     if (listenerParams == NULL)
     {
         LOG_ERROR(context, "Failed to build server TLS parameters");
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -399,7 +419,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     dispatch_semaphore_t listenerReadySem = dispatch_semaphore_create(0);
     __block int listenerFailed = 0;
 
-    nw_listener_set_queue(listener, _tlsQueue);
+    nw_listener_set_queue(listener, sessionQueue);
 
     nw_listener_set_state_changed_handler(listener, ^(nw_listener_state_t state, nw_error_t error)
     {
@@ -428,6 +448,9 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     {
         if (inbound == NULL)
         {
+            // Inherit the same per-session serial queue so framer/state callbacks
+            // for the inbound stay ordered with respect to the listener's setup.
+            nw_connection_set_queue(conn, sessionQueue);
             inbound = conn;
             nw_retain(inbound);
             dispatch_semaphore_signal(inboundSem);
@@ -443,6 +466,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Listener failed to become ready");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -452,6 +476,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Listener has no port");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -464,6 +489,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Failed to create trigger socket (errno=%d)", errno);
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -480,6 +506,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Trigger sendto failed (errno=%d)", errno);
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
@@ -489,14 +516,17 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Inbound connection not delivered");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
     // Listener is no longer needed: the inbound is independent because UDP is
     // connectionless. Cancelling here releases the listener fd while the
-    // inbound continues to live on its own kernel UDP socket.
+    // inbound continues to live on its own kernel UDP socket. The session queue
+    // remains retained by the inbound connection.
     nw_listener_cancel(listener);
     nw_release(listener);
+    dispatch_release(sessionQueue);
 
     return inbound;
 }
@@ -628,7 +658,9 @@ PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, vo
         }
     });
 
-    nw_connection_set_queue(connection, _tlsQueue);
+    // Queue was assigned at create time (per-session serial queue targeting the
+    // concurrent root) so handshake/state callbacks for this connection are
+    // ordered, while sessions run in parallel.
     nw_connection_start(connection);
 
     return 0;
@@ -775,7 +807,8 @@ PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteC
     _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
         NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
     _tlsDefinition = nw_protocol_copy_tls_definition();
-    _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
+    _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue",
+        dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_CONCURRENT, QOS_CLASS_USER_INITIATED, 0));
     _inputQueue = _tlsQueue;
 
     // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
