@@ -21,6 +21,8 @@ internal enum FieldReadKind
 
     /// <summary><c>target.ReadNUIntField(...)</c>.</summary>
     NUInt,
+    /// <summary><c>target.ReadNIntField(...)</c>.</summary>
+    NInt,
 
     /// <summary><c>target.ReadCodePointerField(...)</c>.</summary>
     CodePointer,

@@ -6,6 +6,7 @@
 // Streams a createdump-shaped JSON skeleton to a crashreport.json file.
 
 #include "inproccrashreporter.h"
+#include "inproccrashreportwatchdog.h"
 #include "signalsafeconsolewriter.h"
 #include "signalsafejsonwriter.h"
 #include "signalsafeformatter.h"
@@ -15,6 +16,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <new>
 #include <unistd.h>
 #include <string.h>
@@ -608,6 +610,7 @@ InProcCrashReporter::CreateReport(
     {
         return;
     }
+    CrashReportWatchdogScope watchdogScope;
 
     m_reportFilePath[0] = '\0';
     // The JSON file sink is only enabled when DbgMiniDumpName supplied a
@@ -745,6 +748,8 @@ InProcCrashReporter::Initialize(
     m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     m_stackOverflowTrace.available = 0;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
+
+    (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
 
     m_processName[0] = '\0';
 #if defined(__ANDROID__)

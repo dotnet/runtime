@@ -5252,7 +5252,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig,
+                                        CORINFO_SIG_INFO*     sig
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5933,6 +5934,8 @@ public:
     PhaseStatus fgMorphInit();
 
     PhaseStatus fgInline();
+
+    PhaseStatus fgPostInlineNoReturnCleanup();
 
     PhaseStatus fgResolveGDVs();
 
@@ -8545,11 +8548,6 @@ public:
             return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
-        bool CanPropBndsCheck() const
-        {
-            return GetOp1().KindIs(O1K_VN);
-        }
-
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
@@ -9059,10 +9057,6 @@ protected:
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
-    bool           optCanPropEqual;
-    bool           optCanPropNonNull;
-    bool           optCanPropBndsChk;
-    bool           optCanPropSubRange;
 
     RangeCheck* optRangeCheck = nullptr;
     RangeCheck* GetRangeCheck();
@@ -9226,6 +9220,7 @@ public:
     };
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
@@ -11553,7 +11548,6 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
-        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 

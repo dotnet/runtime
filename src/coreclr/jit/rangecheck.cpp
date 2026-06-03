@@ -903,6 +903,97 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_ExtractMostSignificantBits:
+            case VNF_HWI_Vector512_ExtractMostSignificantBits:
+            case VNF_HWI_X86Base_MoveMask:
+            case VNF_HWI_AVX_MoveMask:
+            case VNF_HWI_AVX2_MoveMask:
+            case VNF_HWI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_ExtractMostSignificantBits:
+#endif
+            case VNF_HWI_Vector128_ExtractMostSignificantBits:
+            {
+                // We have 1 bit per element, remaining upper bits are 0
+
+                var_types simdBaseType;
+                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                size_t elementSize  = genTypeSize(simdBaseType);
+                size_t elementCount = simdSize / elementSize;
+
+                if (elementCount <= 16)
+                {
+                    result.lLimit = Limit(Limit::keConstant, 0);
+                    result.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_op_Equality:
+            case VNF_HWI_Vector256_op_Inequality:
+            case VNF_HWI_Vector512_op_Equality:
+            case VNF_HWI_Vector512_op_Inequality:
+            case VNF_HWI_X86Base_CompareScalarOrderedEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThan:
+            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedLessThan:
+            case VNF_HWI_X86Base_CompareScalarOrderedLessThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedNotEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThan:
+            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedLessThan:
+            case VNF_HWI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedNotEqual:
+            case VNF_HWI_X86Base_TestC:
+            case VNF_HWI_X86Base_TestNotZAndNotC:
+            case VNF_HWI_X86Base_TestZ:
+            case VNF_HWI_AVX_TestC:
+            case VNF_HWI_AVX_TestNotZAndNotC:
+            case VNF_HWI_AVX_TestZ:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_op_Equality:
+            case VNF_HWI_Vector64_op_Inequality:
+#endif
+            case VNF_HWI_Vector128_op_Equality:
+            case VNF_HWI_Vector128_op_Inequality:
+            {
+                // A boolean [0, 1]
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_GetElement:
+            case VNF_HWI_Vector256_ToScalar:
+            case VNF_HWI_Vector512_GetElement:
+            case VNF_HWI_Vector512_ToScalar:
+            case VNF_HWI_X86Base_Extract:
+            case VNF_HWI_X86Base_X64_Extract:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_GetElement:
+            case VNF_HWI_Vector64_ToScalar:
+            case VNF_HWI_AdvSimd_Extract:
+#endif
+            case VNF_HWI_Vector128_GetElement:
+            case VNF_HWI_Vector128_ToScalar:
+            {
+                // We are extracting a value of the base types width and sign
+
+                var_types simdBaseType;
+                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    result = GetRangeFromType(simdBaseType);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
             case VNF_HWI_AVX2_LeadingZeroCount:
             case VNF_HWI_AVX2_TrailingZeroCount:
             case VNF_HWI_AVX2_X64_LeadingZeroCount:
@@ -912,15 +1003,18 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 #elif defined(TARGET_ARM64)
             case VNF_HWI_ArmBase_LeadingZeroCount:
             case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
 #endif
 #endif
             case VNF_LeadingZeroCount:
             case VNF_TrailingZeroCount:
             case VNF_PopCount:
             {
-                // We can be a bit more precise here if we want to
+                // The actual range is [0..32] or [0..64]
+                var_types baseType = comp->vnStore->TypeOfVN(funcApp.GetArg(0));
+
                 result.lLimit = Limit(Limit::keConstant, 0);
-                result.uLimit = Limit(Limit::keConstant, 64);
+                result.uLimit = Limit(Limit::keConstant, varTypeIsLong(baseType) ? 64 : 32);
                 break;
             }
 
@@ -1107,7 +1201,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                                            ValueNumStore::SmallValueNumSet* visited)
 {
     Range assertedRange = Range(Limit(Limit::keUnknown));
-    if (BitVecOps::IsEmpty(comp->apTraits, assertions))
+    if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
         return;
     }
@@ -2193,9 +2287,19 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
-        range = (m_compiler->vnStore->TypeOfVN(vn) == TYP_INT)
-                    ? Range(Limit(Limit::keConstant, m_compiler->vnStore->ConstantValue<int>(vn)))
-                    : Limit(Limit::keUnknown);
+        // We want to handle constants first since it can avoid other more expensive work
+
+        int cns;
+        if (m_compiler->vnStore->IsVNIntegralConstant(vn, &cns))
+        {
+            range = Range(Limit(Limit::keConstant, cns));
+        }
+        else
+        {
+            // TODO: We could return `0, keUnknown` if the constant is known positive
+            // but this would require more handling in other places to take advantage of.
+            range = Limit(Limit::keUnknown);
+        }
     }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
@@ -2237,19 +2341,9 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_compiler));
         }
     }
-    else if (varTypeIsSmall(expr))
-    {
-        range = GetRangeFromType(expr->TypeGet());
-        JITDUMP("%s\n", range.ToString(m_compiler));
-    }
     else if (expr->OperIs(GT_COMMA))
     {
         range = GetRangeWorker(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
-    }
-    else if (expr->OperIs(GT_CAST))
-    {
-        // TODO: consider computing range for CastOp and intersect it with this.
-        range = GetRangeFromType(expr->AsCast()->CastToType());
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
@@ -2265,6 +2359,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             // Better than keUnknown
             range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
         }
+    }
+    else if (genActualType(expr) == TYP_INT)
+    {
+        // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
+        range = GetRangeFromAssertions(m_compiler, vn, block->bbAssertionIn);
     }
     else
     {
