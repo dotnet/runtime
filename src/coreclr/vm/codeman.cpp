@@ -315,7 +315,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 
     _ASSERTE(s_publishingActive);
 
-    if (m_registrationFailed)
+    if (VolatileLoad(&m_registrationFailed))
         return;
 
     for (int i = 0; i < count; )
