@@ -118,7 +118,7 @@ template<class T>
 inline
 void DacDbiArrayList<T>::Init(const T * pList, int count)
 {
-    _ASSERTE((m_pList == NULL) && (m_nEntries == 0));
+    Dealloc();
     if (count > 0)
     {
         Alloc(count);

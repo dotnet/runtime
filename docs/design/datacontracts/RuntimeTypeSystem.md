@@ -280,7 +280,6 @@ uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
-bool IsFieldDescEnCNew(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
@@ -1149,7 +1148,7 @@ Contracts used:
 
 ### MethodDesc
 
-The version 1 `MethodDesc` APIs depend on the following globals:
+The `MethodDesc` APIs of RuntimeTypeSystem version 1 depend on the following globals:
 
 | Global name | Meaning |
 | --- | --- |
@@ -2032,14 +2031,14 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
 ### FieldDesc
 
-The version 1 FieldDesc APIs depend on the following globals:
+The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following globals:
 
 | Global name | Meaning |
 | --- | --- |
 | `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
 | `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
 
-The version 1 FieldDesc APIs depend on the following data descriptors:
+The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following data descriptors:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `FieldDesc` | `MTOfEnclosingClass` | Pointer to method table of enclosing class |
@@ -2090,13 +2089,6 @@ bool IsFieldDescRVA(TargetPointer fieldDescPointer)
     return (DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
 }
 
-bool IsFieldDescEnCNew(TargetPointer fieldDescPointer)
-{
-    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
-    return offset == _target.ReadGlobal<uint>("FieldOffsetNewEnc");
-}
-
 uint GetFieldDescType(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
@@ -2106,8 +2098,10 @@ uint GetFieldDescType(TargetPointer fieldDescPointer)
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA") && fieldDef.HasValue)
+    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
     {
+        if (fieldDef is null)
+            throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
         return (uint)fieldDef.Value.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;

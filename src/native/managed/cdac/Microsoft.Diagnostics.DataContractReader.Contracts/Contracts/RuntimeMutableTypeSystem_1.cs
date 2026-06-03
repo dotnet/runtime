@@ -6,16 +6,27 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct EditAndContinue_1 : IEditAndContinue
+internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
 {
     private readonly Target _target;
 
-    public EditAndContinue_1(Target target)
+    public RuntimeMutableTypeSystem_1(Target target)
     {
         _target = target;
     }
 
-    IEnumerable<TargetPointer> IEditAndContinue.EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
+    internal enum FieldDescFlags2 : uint
+    {
+        OffsetMask = 0x07ffffff,
+    }
+    bool IRuntimeMutableTypeSystem.IsFieldDescEnCNew(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        return offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetNewEnc);
+    }
+
+    IEnumerable<TargetPointer> IRuntimeMutableTypeSystem.EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
     {
         // Only MethodTable type handles can have EnC-added fields. TypeDescs (TypeVar, FnPtr, etc.) cannot.
         if (!typeHandle.IsMethodTable())

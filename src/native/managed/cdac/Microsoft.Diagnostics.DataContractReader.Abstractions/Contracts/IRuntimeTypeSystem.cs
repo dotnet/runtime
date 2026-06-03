@@ -273,7 +273,6 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    bool IsFieldDescEnCNew(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();

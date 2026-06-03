@@ -10,11 +10,11 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class EditAndContinueTests
+public class RuntimeMutableTypeSystemTests
 {
     private const string EnCContractVersion = "c1";
 
-    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockEditAndContinueBuilder builder)
+    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockRuntimeMutableTypeSystemBuilder builder)
         => new()
         {
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(builder.ModuleLayout),
@@ -25,14 +25,14 @@ public class EditAndContinueTests
 
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
-        MockEditAndContinueBuilder builder,
+        MockRuntimeMutableTypeSystemBuilder builder,
         Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem,
         Mock<ILoader> mockLoader)
     {
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(builder))
-            .AddContract<IEditAndContinue>(version: EnCContractVersion)
+            .AddContract<IRuntimeMutableTypeSystem>(version: EnCContractVersion)
             .AddMockContract(mockRuntimeTypeSystem)
             .AddMockContract(mockLoader)
             .Build();
@@ -59,7 +59,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TypeDescHandle_ReturnsEmpty(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         // Allocate a Module just so the rest of the wiring is valid.
         MockEnCModule module = builder.AddModule(Array.Empty<MockEnCEEClassData>());
 
@@ -68,7 +68,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(tdPtr, module.Address, ModuleFlags.EditAndContinue);
 
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         Assert.NotNull(contract);
 
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(tdPtr);
@@ -80,7 +80,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void EnCNotEnabled_ReturnsEmpty(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         // Class data exists, but EditAndContinue flag is not set on the module.
         ulong mtPtr = 0x0000_8000;
         MockEnCEEClassData classData = builder.AddClassData(mtPtr);
@@ -90,7 +90,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, flags: 0);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
@@ -100,7 +100,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void NoMatchingClassData_ReturnsEmpty(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         // ClassData entry exists but for a different MT.
         MockEnCEEClassData classData = builder.AddClassData(methodTable: 0x0000_8000);
         builder.AddInstanceFields(classData, count: 2);
@@ -110,7 +110,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(otherMt), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(otherMt);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
@@ -120,14 +120,14 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void EmptyClassList_ReturnsEmpty(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         MockEnCModule module = builder.AddModule(Array.Empty<MockEnCEEClassData>());
 
         ulong mtPtr = 0x0000_8000;
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
@@ -137,7 +137,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void InstanceFields_ReturnedInOrder(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         ulong mtPtr = 0x0000_8000;
         MockEnCEEClassData classData = builder.AddClassData(mtPtr);
         IReadOnlyList<MockEnCAddedFieldElement> instanceElems = builder.AddInstanceFields(classData, count: 3);
@@ -147,7 +147,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         // FieldDesc is the address of the FieldDesc subfield within each element.
@@ -163,7 +163,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void StaticFields_ReturnedInOrder(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         ulong mtPtr = 0x0000_8000;
         MockEnCEEClassData classData = builder.AddClassData(mtPtr);
         IReadOnlyList<MockEnCAddedFieldElement> staticElems = builder.AddStaticFields(classData, count: 2);
@@ -172,7 +172,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
@@ -187,7 +187,7 @@ public class EditAndContinueTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void InstanceAndStaticFields_ReturnedSeparately(MockTarget.Architecture arch)
     {
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         ulong mtPtr = 0x0000_8000;
         MockEnCEEClassData classData = builder.AddClassData(mtPtr);
         IReadOnlyList<MockEnCAddedFieldElement> instanceElems = builder.AddInstanceFields(classData, count: 4);
@@ -197,7 +197,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
@@ -214,7 +214,7 @@ public class EditAndContinueTests
     public void SecondEntryMatches(MockTarget.Architecture arch)
     {
         // Validate linear search picks the second entry when the first does not match.
-        var builder = new MockEditAndContinueBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
+        var builder = new MockRuntimeMutableTypeSystemBuilder(new MockMemorySpace.Builder(new TargetTestHelpers(arch)));
         MockEnCEEClassData other = builder.AddClassData(methodTable: 0x0000_7000);
         builder.AddInstanceFields(other, count: 5);
         ulong mtPtr = 0x0000_8000;
@@ -225,7 +225,7 @@ public class EditAndContinueTests
         var (rts, loader) = CreateMocks(new TargetPointer(mtPtr), module.Address, ModuleFlags.EditAndContinue);
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
-        IEditAndContinue contract = target.Contracts.EditAndContinue;
+        IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;

@@ -6,15 +6,17 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public interface IEditAndContinue : IContract
+public interface IRuntimeMutableTypeSystem : IContract
 {
-    static string IContract.Name { get; } = nameof(EditAndContinue);
+    static string IContract.Name { get; } = nameof(IRuntimeMutableTypeSystem);
 
     IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
         => throw new NotImplementedException();
+
+    bool IsFieldDescEnCNew(TargetPointer fieldDescPointer) => throw new NotImplementedException();
 }
 
-public readonly struct EditAndContinue : IEditAndContinue
+public readonly struct RuntimeMutableTypeSystem : IRuntimeMutableTypeSystem
 {
     // Everything throws NotImplementedException
 }

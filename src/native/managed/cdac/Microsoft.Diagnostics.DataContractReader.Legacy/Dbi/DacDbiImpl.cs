@@ -1854,15 +1854,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
         }
 
-        foreach (TargetPointer fdPtr in rts.GetFieldDescList(thApprox))
-            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+        IRuntimeMutableTypeSystem? mts = _target.Contracts.TryGetContract<IRuntimeMutableTypeSystem>(out IRuntimeMutableTypeSystem enc) ? enc : null;
 
-        if (_target.Contracts.TryGetContract<IEditAndContinue>(out IEditAndContinue enc))
+        foreach (TargetPointer fdPtr in rts.GetFieldDescList(thApprox))
+            EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+
+        if (mts is not null)
         {
-            foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: false))
-                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
-            foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: true))
-                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+            foreach (TargetPointer fdPtr in mts.EnumerateAddedFieldDescs(thApprox, staticFields: false))
+                EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+            foreach (TargetPointer fdPtr in mts.EnumerateAddedFieldDescs(thApprox, staticFields: true))
+                EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
         }
     }
 
@@ -1870,6 +1872,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // user callback.
     private static void EmitFieldData(
         IRuntimeTypeSystem rts,
+        IRuntimeMutableTypeSystem? mts,
         TargetPointer fdPtr,
         TargetPointer gcStaticsBase,
         TargetPointer nonGCStaticsBase,
@@ -1889,7 +1892,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         fd.m_fldSignatureCacheSize = 0;
         fd.m_vmFieldDesc = fdPtr.Value;
 
-        bool isEnCNew = rts.IsFieldDescEnCNew(fdPtr);
+        bool isEnCNew = mts?.IsFieldDescEnCNew(fdPtr) ?? false;
         if (isEnCNew)
         {
             // Mirrors native: storage not yet available; carry the FieldDesc pointer through

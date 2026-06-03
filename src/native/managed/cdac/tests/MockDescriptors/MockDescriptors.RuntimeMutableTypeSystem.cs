@@ -8,10 +8,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 /// <summary>
 /// A minimal mock of <c>Module</c> that contains only the Edit-and-Continue
-/// related fields read by <c>EditAndContinue_1</c>. The EnC contract uses
+/// related fields read by <c>RuntimeMutableTypeSystem_1</c>. The contract uses
 /// <c>DataType.Module</c>, so tests register this layout under that key.
 /// The class list is modeled as a single embedded <see cref="MockUnorderedArrayBase"/>
-/// substructure to mirror the native <c>CUnorderedArrayBaseWithAllocator</c> layout.
+/// substructure to mirror the native <c>CUnorderedArray</c>'s
+/// <c>CUnorderedArrayBase</c> layout.
 /// </summary>
 internal sealed class MockEnCModule : TypedView
 {
@@ -30,7 +31,7 @@ internal sealed class MockEnCModule : TypedView
 }
 
 /// <summary>
-/// Models the binary layout of <c>CUnorderedArrayBaseWithAllocator&lt;T, N, A&gt;</c>:
+/// Models the binary layout of <c>CUnorderedArrayWithAllocator&lt;T, N, A&gt;</c>:
 /// an entry count, an allocated size, and a pointer to a contiguous array of
 /// <c>T</c>. The cdac descriptor (<c>DataType.UnorderedArrayBase</c>) only exposes
 /// the count and table; the size field is present here so the pointer falls at
@@ -124,7 +125,7 @@ internal sealed class MockEnCAddedFieldElement : TypedView
     }
 }
 
-internal sealed class MockEditAndContinueBuilder
+internal sealed class MockRuntimeMutableTypeSystemBuilder
 {
     private const ulong DefaultAllocationRangeStart = 0x0010_0000;
     private const ulong DefaultAllocationRangeEnd = 0x0020_0000;
@@ -137,12 +138,12 @@ internal sealed class MockEditAndContinueBuilder
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
-    public MockEditAndContinueBuilder(MockMemorySpace.Builder builder)
+    public MockRuntimeMutableTypeSystemBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    public MockEditAndContinueBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockRuntimeMutableTypeSystemBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -158,7 +159,7 @@ internal sealed class MockEditAndContinueBuilder
     /// <summary>
     /// Allocate a Module with the EnC class list pre-populated. <paramref name="classDataEntries"/>
     /// is written into a contiguous pointer-sized array referenced by the embedded
-    /// <c>CUnorderedArrayBaseWithAllocator</c>'s table pointer.
+    /// <c>CUnorderedArrayWithAllocator</c>'s table pointer.
     /// </summary>
     public MockEnCModule AddModule(ReadOnlySpan<MockEnCEEClassData> classDataEntries)
     {

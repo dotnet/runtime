@@ -1912,13 +1912,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
     }
 
-    bool IRuntimeTypeSystem.IsFieldDescEnCNew(TargetPointer fieldDescPointer)
-    {
-        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
-        uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
-        return offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetNewEnc);
-    }
-
     CorElementType IRuntimeTypeSystem.GetFieldDescType(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);

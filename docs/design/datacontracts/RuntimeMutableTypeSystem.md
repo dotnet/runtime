@@ -1,11 +1,12 @@
 # Contract RuntimeMutableTypeSystem
 
-This contract exposes runtime type system information about changes that occured after the initial type load, such as from ENC or HotReload.
+This contract exposes runtime type system information about changes that occurred after the initial type load, such as from EnC or HotReload.
 
 ## APIs of contract
 
 ```csharp
 IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields);
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer);
 ```
 
 ## Version 1
@@ -14,7 +15,7 @@ IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool 
 
 | Data Descriptor Name   | Field                    | Meaning |
 | ---                    | ---                      | --- |
-| `Module`               | `EnCClassList`           | Address of the embedded `CUnorderedArrayBaseWithAllocator` holding the module's `EnCEEClassData*` entries. Optional: only present when EditAndContinue is configured. |
+| `Module`               | `EnCClassList`           | Address of the embedded `CUnorderedArray` (whose `CUnorderedArrayBase` portion holds `Count`/`Table`) holding the module's `EnCEEClassData*` entries. Optional: only present when EditAndContinue is configured. |
 | `UnorderedArrayBase`       | `Count`                  | Number of valid entries currently stored in the array. |
 | `UnorderedArrayBase`       | `Table`                  | Pointer to the backing storage holding the array's entries. |
 | `EnCEEClassData`       | `MethodTable`            | Pointer to the `MethodTable` whose EnC data is held by this entry. |
@@ -22,6 +23,13 @@ IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool 
 | `EnCEEClassData`       | `AddedStaticFields`      | Head of the linked list of `EnCAddedFieldElement` for added static fields. |
 | `EnCAddedFieldElement` | `Next`                   | Pointer to the next `EnCAddedFieldElement` in the linked list. |
 | `EnCAddedFieldElement` | `FieldDesc`              | Address of the embedded `EnCFieldDesc` (layout-compatible with `FieldDesc`). |
+| `FieldDesc`            | `DWord2`                 | Packed flags/offset word containing the field's offset; the EnC-new sentinel `FieldOffsetNewEnc` is stored here for fields that have been added but do not yet have storage assigned. |
+
+### Globals used
+
+| Global Name           | Type   | Purpose |
+| ---                   | ---    | --- |
+| `FieldOffsetNewEnc`   | uint   | Sentinel offset value stored in `FieldDesc::DWord2` for added fields whose storage has not yet been allocated. |
 
 ### Required contracts
 
@@ -31,6 +39,11 @@ IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool 
 | `ILoader`            |
 
 ```csharp
+internal enum FieldDescFlags2 : uint
+{
+    OffsetMask = 0x07ffffff,
+}
+
 IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
 {
     // get modulePtr and moduleHandle from typeHandle
@@ -60,5 +73,12 @@ IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool 
         yield return node + /* EnCAddedFieldElement::FieldDesc offset */;
         node = target.ReadPointer(node + /* EnCAddedFieldElement::Next offset */);
     }
+}
+
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    return offset == target.ReadGlobal<uint>("FieldOffsetNewEnc");
 }
 ```
