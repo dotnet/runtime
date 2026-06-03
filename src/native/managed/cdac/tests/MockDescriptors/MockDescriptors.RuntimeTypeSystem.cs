@@ -106,6 +106,7 @@ internal sealed class MockEEClass : TypedView
     private const string NumThreadStaticFieldsFieldName = nameof(Data.EEClass.NumThreadStaticFields);
     private const string FieldDescListFieldName = nameof(Data.EEClass.FieldDescList);
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
+    private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -119,6 +120,7 @@ internal sealed class MockEEClass : TypedView
             .AddUInt16Field(NumThreadStaticFieldsFieldName)
             .AddPointerField(FieldDescListFieldName)
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
+            .AddByteField(BaseSizePaddingFieldName)
             .Build<MockEEClass>();
 
     public ulong MethodTable
@@ -137,6 +139,18 @@ internal sealed class MockEEClass : TypedView
     {
         get => ReadUInt16Field(NumMethodsFieldName);
         set => WriteUInt16Field(NumMethodsFieldName, value);
+    }
+
+    public byte InternalCorElementType
+    {
+        get => ReadByteField(InternalCorElementTypeFieldName);
+        set => WriteByteField(InternalCorElementTypeFieldName, value);
+    }
+
+    public ushort NumInstanceFields
+    {
+        get => ReadUInt16Field(NumInstanceFieldsFieldName);
+        set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
     }
 
     public ushort NumNonVirtualSlots
@@ -288,6 +302,9 @@ internal partial class MockDescriptors
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
+        internal const ulong TestContinuationSingletonEEClassGlobalAddress = 0x00000000_7a0000b8;
+        internal const ulong TestObjectMethodTableGlobalAddress = 0x00000000_7a0000c0;
+        internal const ulong TestMulticastDelegateMethodTableGlobalAddress = 0x00000000_7a0000c8;
 
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
@@ -314,8 +331,13 @@ internal partial class MockDescriptors
         internal ulong FreeObjectMethodTableAddress { get; private set; }
         internal ulong FreeObjectMethodTableGlobalAddress => TestFreeObjectMethodTableGlobalAddress;
         internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
+        internal ulong ContinuationSingletonEEClassGlobalAddress => TestContinuationSingletonEEClassGlobalAddress;
+        internal ulong ObjectMethodTableGlobalAddress => TestObjectMethodTableGlobalAddress;
+        internal ulong MulticastDelegateMethodTableGlobalAddress => TestMulticastDelegateMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
+        // sizeof(ContinuationObject) = sizeof(MT*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags) + sizeof(State)
+        internal uint ContinuationObjectSize => 3u * (uint)Builder.TargetTestHelpers.PointerSize + 8;
 
         public RuntimeTypeSystem(MockMemorySpace.Builder builder)
             : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -344,6 +366,8 @@ internal partial class MockDescriptors
         {
             AddFreeObjectMethodTable();
             AddContinuationMethodTableGlobal();
+            AddObjectMethodTableGlobal();
+            AddMulticastDelegateMethodTableGlobal();
         }
 
         private void AddDefaultTypes()
@@ -362,6 +386,18 @@ internal partial class MockDescriptors
         private void AddContinuationMethodTableGlobal()
         {
             AddPointerGlobal("Address of Continuation Method Table", TestContinuationMethodTableGlobalAddress, 0);
+            AddPointerGlobal("Address of Continuation Singleton EEClass", TestContinuationSingletonEEClassGlobalAddress, 0);
+        }
+
+        private void AddObjectMethodTableGlobal()
+        {
+            // Initialized to 0; patched to point to SystemObjectMethodTable in AddSystemObjectType.
+            AddPointerGlobal("Address of Object Method Table", TestObjectMethodTableGlobalAddress, 0);
+        }
+
+        private void AddMulticastDelegateMethodTableGlobal()
+        {
+            AddPointerGlobal("Address of MulticastDelegate Method Table", TestMulticastDelegateMethodTableGlobalAddress, 0);
         }
 
         private void AddSystemObjectType()
@@ -378,6 +414,10 @@ internal partial class MockDescriptors
             SystemObjectMethodTable.NumVirtuals = NumVirtuals;
             SystemObjectEEClass.MethodTable = SystemObjectMethodTable.Address;
             SystemObjectMethodTable.EEClassOrCanonMT = SystemObjectEEClass.Address;
+
+            // Patch the ObjectMethodTable global to point to System.Object's MethodTable.
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestObjectMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, SystemObjectMethodTable.Address);
         }
 
         private void AddContinuationType()
@@ -391,6 +431,7 @@ internal partial class MockDescriptors
             ContinuationEEClass.MethodTable = ContinuationMethodTable.Address;
             ContinuationMethodTable.EEClassOrCanonMT = ContinuationEEClass.Address;
             SetContinuationMethodTable(ContinuationMethodTable.Address);
+            SetContinuationSingletonEEClass(ContinuationEEClass.Address);
         }
 
         private void AddPointerGlobal(string name, ulong address, ulong value)
@@ -410,6 +451,18 @@ internal partial class MockDescriptors
         {
             Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
             Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
+        }
+
+        internal void SetContinuationSingletonEEClass(ulong continuationSingletonEEClass)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationSingletonEEClassGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationSingletonEEClass);
+        }
+
+        internal void SetMulticastDelegateMethodTable(ulong multicastDelegateMethodTable)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestMulticastDelegateMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, multicastDelegateMethodTable);
         }
 
         internal MockEEClass AddEEClass(string name)
@@ -446,6 +499,134 @@ internal partial class MockDescriptors
         {
             MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
             return layout.Create(fragment.Data.AsMemory(), fragment.Address);
+        }
+
+        /// <summary>
+        /// Allocates a method table together with a CGCDesc immediately before it in memory.
+        /// </summary>
+        /// <param name="name">Descriptive name for the allocation.</param>
+        /// <param name="baseSize">Value to store in the method table's <c>BaseSize</c> field.</param>
+        /// <param name="series">
+        /// GC descriptor series ordered from highest to lowest
+        /// (matching <c>CGCDesc::GetHighestSeries</c> down to <c>GetLowestSeries</c>).
+        /// Each entry is <c>(Size, Offset)</c> – the raw field values stored in the
+        /// <c>CGCDescSeries</c> struct (i.e. <c>seriessize</c> already has <c>BaseSize</c> subtracted).
+        /// </param>
+        /// <returns>
+        /// A <see cref="MockMethodTable"/> whose address is <em>after</em> the GCDesc bytes.
+        /// The caller is responsible for setting additional method table flags (e.g.
+        /// <c>ContainsGCPointers = 0x01000000</c>) and linking to an EEClass.
+        /// </returns>
+        internal MockMethodTable AddMethodTableWithGCDesc(string name, uint baseSize, (ulong Size, ulong Offset)[] series)
+        {
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+
+            // GCDesc layout (each slot is pointer-sized):
+            //   [ series[N-1].seriessize ] [ series[N-1].startoffset ]  <- lowest series (fragment start)
+            //   ...
+            //   [ series[0].seriessize   ] [ series[0].startoffset   ]  <- highest series (MT - 3*ptrSize)
+            //   [ NumSeries              ]                               <- MT - 1*ptrSize
+            //   [ MethodTable data starts here ]
+            int gcDescSize = (1 + 2 * series.Length) * pointerSize;
+            int totalSize = gcDescSize + MethodTableLayout.Size;
+
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)totalSize, $"GCDesc+MethodTable '{name}'");
+
+            // Write series entries. The highest series (index 0) lives closest to the MT (highest address),
+            // and the lowest series (index N-1) lives farthest from the MT (lowest address).
+            // So series[i] goes at fragment offset (N-1-i)*2*pointerSize.
+            for (int i = 0; i < series.Length; i++)
+            {
+                int seriesBase = (series.Length - 1 - i) * 2 * pointerSize;
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase, pointerSize), series[i].Size);
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase + pointerSize, pointerSize), series[i].Offset);
+            }
+
+            // Write NumSeries immediately before the MT
+            Builder.TargetTestHelpers.WritePointer(
+                fragment.Data.AsSpan(series.Length * 2 * pointerSize, pointerSize),
+                (ulong)series.Length);
+
+            // The MockMethodTable lives at offset gcDescSize within the combined fragment
+            ulong mtAddress = fragment.Address + (ulong)gcDescSize;
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(gcDescSize, MethodTableLayout.Size), mtAddress);
+            mt.BaseSize = baseSize;
+            return mt;
+        }
+
+        /// <summary>
+        /// Allocates a method table together with a value-class (repeating) CGCDesc immediately before it.
+        /// </summary>
+        /// <param name="name">Descriptive name for the allocation.</param>
+        /// <param name="baseSize">Value to store in the method table's <c>BaseSize</c> field.</param>
+        /// <param name="startOffset">The <c>startoffset</c> field of the CGCDescSeries (offset from object start).</param>
+        /// <param name="valSeries">
+        /// The <c>val_serie_item</c> entries, each as <c>(nptrs, skip)</c>.
+        /// Index 0 corresponds to <c>val_serie[0]</c> (overlapping <c>seriessize</c> in the union).
+        /// </param>
+        /// <returns>
+        /// A <see cref="MockMethodTable"/> whose address is <em>after</em> the GCDesc bytes.
+        /// The caller is responsible for setting additional method table flags (e.g.
+        /// <c>ContainsGCPointers = 0x01000000</c>) and linking to an EEClass.
+        /// </returns>
+        internal MockMethodTable AddMethodTableWithValueClassGCDesc(string name, uint baseSize, ulong startOffset, (uint Nptrs, uint Skip)[] valSeries)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            int pointerSize = helpers.PointerSize;
+            int halfSize = pointerSize / 2;
+
+            // Value-class GCDesc layout (each slot is pointer-sized unless noted):
+            //   [ val_serie[N-1] ]    <- lowest address (fragment start)
+            //   ...
+            //   [ val_serie[0]   ]    <- overlaps seriessize in CGCDescSeries union
+            //   [ startoffset    ]    <- one ptrSize slot
+            //   [ NumSeries (-N) ]    <- one ptrSize slot (negative)
+            //   [ MethodTable data starts here ]
+            //
+            // ComputeSizeRepeating = sizeof(size_t) + sizeof(CGCDescSeries) + (N-1)*sizeof(val_serie_item)
+            //                      = ptrSize + 2*ptrSize + (N-1)*ptrSize = (N+2)*ptrSize
+            int gcDescSize = (valSeries.Length + 2) * pointerSize;
+            int totalSize = gcDescSize + MethodTableLayout.Size;
+
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)totalSize, $"ValueClassGCDesc+MethodTable '{name}'");
+
+            // Write val_serie items. val_serie[0] is closest to MT (highest address in the GCDesc region),
+            // val_serie[N-1] is farthest (lowest address).
+            // Each val_serie_item is { HALF_SIZE_T nptrs; HALF_SIZE_T skip; }
+            for (int i = 0; i < valSeries.Length; i++)
+            {
+                int itemOffset = (valSeries.Length - 1 - i) * pointerSize;
+                if (pointerSize == sizeof(uint))
+                {
+                    helpers.Write(fragment.Data.AsSpan(itemOffset, halfSize), (ushort)valSeries[i].Nptrs);
+                    helpers.Write(fragment.Data.AsSpan(itemOffset + halfSize, halfSize), (ushort)valSeries[i].Skip);
+                }
+                else
+                {
+                    helpers.Write(fragment.Data.AsSpan(itemOffset, halfSize), valSeries[i].Nptrs);
+                    helpers.Write(fragment.Data.AsSpan(itemOffset + halfSize, halfSize), valSeries[i].Skip);
+                }
+            }
+
+            // Write startoffset
+            helpers.WritePointer(fragment.Data.AsSpan(valSeries.Length * pointerSize, pointerSize), startOffset);
+
+            // Write NumSeries as a negative value (-N)
+            long negativeCount = -valSeries.Length;
+            if (pointerSize == sizeof(uint))
+            {
+                helpers.Write(fragment.Data.AsSpan((valSeries.Length + 1) * pointerSize, pointerSize), (int)negativeCount);
+            }
+            else
+            {
+                helpers.WritePointer(fragment.Data.AsSpan((valSeries.Length + 1) * pointerSize, pointerSize), unchecked((ulong)negativeCount));
+            }
+
+            // The MockMethodTable lives at offset gcDescSize within the combined fragment
+            ulong mtAddress = fragment.Address + (ulong)gcDescSize;
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(gcDescSize, MethodTableLayout.Size), mtAddress);
+            mt.BaseSize = baseSize;
+            return mt;
         }
     }
 }

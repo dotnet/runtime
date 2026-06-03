@@ -166,6 +166,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.DynamicInterfaceCastableImplementation,
             DependencyKind.XmlDescriptor,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 
         static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -215,6 +216,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.XmlDescriptor,
             DependencyKind.UnsafeAccessorTarget,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 #endif
 
@@ -3164,19 +3166,8 @@ namespace Mono.Linker.Steps
             if (method == null)
                 return null;
 
-            var methodAction = Annotations.GetAction(method);
-            if (methodAction is MethodAction.ConvertToStub)
-            {
-                // CodeRewriterStep may request the stubbed value for any preserved method
-                // with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
-                // CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
-                // FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
-                Annotations.TryGetMethodStubValue(method, out _);
-            }
-
-            if (methodAction == MethodAction.Nothing)
+            if (Annotations.GetAction(method) == MethodAction.Nothing)
                 Annotations.SetAction(method, MethodAction.Parse);
-
 
             // Use the original reason as it's important to correctly generate warnings
             // the updated reason is only useful for better tracking of dependencies.
@@ -3515,7 +3506,7 @@ namespace Mono.Linker.Steps
             return false;
         }
 
-        protected virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
+        protected internal virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
         {
             if (Annotations.IsInstantiated(type))
                 return;

@@ -272,8 +272,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
 |  __`SYSLIB1225`__ | Type includes ref like property, field or constructor parameter. |
 |  __`SYSLIB1226`__ | 'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations. |
-|  __`SYSLIB1227`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1228`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1227`__ | Union case types cannot be unambiguously classified by JSON value type. |
+|  __`SYSLIB1228`__ | Union type shape is not a valid C# union. |
 |  __`SYSLIB1229`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
 |  __`SYSLIB1231`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |

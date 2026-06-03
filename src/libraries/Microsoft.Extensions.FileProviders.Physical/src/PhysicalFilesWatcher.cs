@@ -34,6 +34,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly object _fileWatcherLock = new();
         private readonly string _root;
         private readonly ExclusionFilters _filters;
+        // True when the FileSystemWatcher watches a strict ancestor of _root (rather than _root
+        // itself). In that case IncludeSubdirectories must always be true so that events occurring
+        // inside _root (which is below the FSW's watched path) are observed.
+        private readonly bool _fileWatcherIsAboveRoot;
+        // Number of currently registered tokens whose pattern requires watching subdirectories.
+        // Maintained as tokens are added and removed so we don't iterate the lookups when
+        // re-evaluating IncludeSubdirectories.
+        private int _subdirectoryRequiringTokenCount;
 
         // A single non-recursive watcher used when _root does not exist.
         // Watches for _root to be created, then enables the main FileSystemWatcher.
@@ -111,10 +119,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     {
                         throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, watcherFullPath, _root), nameof(fileSystemWatcher));
                     }
+
+                    // If the FSW watches an ancestor of _root, every event of interest occurs
+                    // in a subdirectory from the FSW's perspective, so subdirectory watching
+                    // is required to observe any of them.
+                    _fileWatcherIsAboveRoot = !watcherFullPath.Equals(_root, StringComparison.OrdinalIgnoreCase) &&
+                        _root.StartsWith(watcherFullPath, StringComparison.OrdinalIgnoreCase);
                 }
 
                 _fileWatcher = fileSystemWatcher;
-                _fileWatcher.IncludeSubdirectories = true;
                 _fileWatcher.Created += OnChanged;
                 _fileWatcher.Changed += OnChanged;
                 _fileWatcher.Renamed += OnRenamed;
@@ -189,8 +202,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
-                tokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken);
-                tokenInfo = _filePathTokenLookup.GetOrAdd(filePath, tokenInfo);
+                var newTokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken);
+                tokenInfo = _filePathTokenLookup.GetOrAdd(filePath, newTokenInfo);
+
+                // GetOrAdd may not have actually added our entry if another thread won the race.
+                // Compare by reference to detect whether our entry was the one stored.
+                if (ReferenceEquals(tokenInfo.TokenSource, cancellationTokenSource) &&
+                    FilePathRequiresSubdirectories(filePath))
+                {
+                    Interlocked.Increment(ref _subdirectoryRequiringTokenCount);
+                }
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
@@ -227,8 +248,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
                 var matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
                 matcher.AddInclude(pattern);
-                tokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken, matcher);
-                tokenInfo = _wildcardTokenLookup.GetOrAdd(pattern, tokenInfo);
+                var newTokenInfo = new ChangeTokenInfo(cancellationTokenSource, cancellationChangeToken, matcher);
+                tokenInfo = _wildcardTokenLookup.GetOrAdd(pattern, newTokenInfo);
+
+                if (ReferenceEquals(tokenInfo.TokenSource, cancellationTokenSource) &&
+                    WildcardRequiresSubdirectories(pattern))
+                {
+                    Interlocked.Increment(ref _subdirectoryRequiringTokenCount);
+                }
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
@@ -347,17 +374,22 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
-            CancelAll(_filePathTokenLookup);
-            CancelAll(_wildcardTokenLookup);
+            CancelAll(_filePathTokenLookup, FilePathRequiresSubdirectories);
+            CancelAll(_wildcardTokenLookup, WildcardRequiresSubdirectories);
 
             TryDisableFileSystemWatcher();
 
-            static void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens)
+            void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens, Func<string, bool> requiresSubdirectories)
             {
                 foreach (KeyValuePair<string, ChangeTokenInfo> entry in tokens)
                 {
                     if (tokens.TryRemove(entry.Key, out ChangeTokenInfo matchInfo))
                     {
+                        if (requiresSubdirectories(entry.Key))
+                        {
+                            Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                        }
+
                         CancelToken(matchInfo);
                     }
                 }
@@ -418,6 +450,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool matched = false;
             if (_filePathTokenLookup.TryRemove(path, out ChangeTokenInfo matchInfo))
             {
+                if (FilePathRequiresSubdirectories(path))
+                {
+                    Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                }
+
                 CancelToken(matchInfo);
                 matched = true;
             }
@@ -428,6 +465,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 if (matchResult.HasMatches &&
                     _wildcardTokenLookup.TryRemove(wildCardEntry.Key, out matchInfo))
                 {
+                    if (WildcardRequiresSubdirectories(wildCardEntry.Key))
+                    {
+                        Interlocked.Decrement(ref _subdirectoryRequiringTokenCount);
+                    }
+
                     CancelToken(matchInfo);
                     matched = true;
                 }
@@ -491,6 +533,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         // Perf: Turn off the file monitoring if no files or directories to monitor.
                         _fileWatcher.EnableRaisingEvents = false;
                     }
+                    else if (_fileWatcher.IncludeSubdirectories &&
+                        !_fileWatcherIsAboveRoot &&
+                        Volatile.Read(ref _subdirectoryRequiringTokenCount) == 0)
+                    {
+                        // Perf: Some tokens were removed and none of the remaining ones require
+                        // subdirectory watching, so we can stop recursing.
+                        _fileWatcher.IncludeSubdirectories = false;
+                    }
                 }
             }
 
@@ -528,6 +578,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
                 {
                     bool rootExists = Directory.Exists(_root);
+
+                    // Only enable recursive subdirectory watching when at least one registered
+                    // pattern actually references a subdirectory. This avoids creating an inotify
+                    // watch descriptor on every descendant directory on Linux when only root-level files
+                    // (e.g. appsettings.json) are being monitored.
+                    bool needsSubdirectories = _fileWatcherIsAboveRoot ||
+                        Volatile.Read(ref _subdirectoryRequiringTokenCount) > 0;
+                    if (_fileWatcher.IncludeSubdirectories != needsSubdirectories)
+                    {
+                        _fileWatcher.IncludeSubdirectories = needsSubdirectories;
+                    }
 
                     // On some platforms (e.g., Linux), FileSystemWatcher currently does not
                     // invoke OnError when the watched directory is deleted, so we don't disable
@@ -654,6 +715,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 // This can only happen on .NET Framework with the ThrowExceptionIfDisposedCancellationTokenSource compat switch on.
             }
         }
+
+        // Patterns are normalized to use forward slashes. A file path token references a single
+        // file, so it requires subdirectory watching only when the path is in a subdirectory
+        // (i.e. contains '/').
+        private static bool FilePathRequiresSubdirectories(string normalizedFilePath) =>
+            normalizedFilePath.Contains('/');
+
+        // A wildcard pattern requires subdirectory watching when it explicitly references a
+        // subdirectory (contains '/') or uses the recursive globbing wildcard '**'. A simple
+        // wildcard like '*' or '*.json' only matches entries directly in the root directory.
+        private static bool WildcardRequiresSubdirectories(string normalizedPattern) =>
+            normalizedPattern.Contains('/') || normalizedPattern.Contains("**");
 
         private static string NormalizePath(string filter) => filter.Replace('\\', '/');
 

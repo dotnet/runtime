@@ -187,7 +187,6 @@ namespace System.Runtime.CompilerServices
         internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
 
         [Intrinsic]
-        [RequiresUnsafe]
         internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [Intrinsic]

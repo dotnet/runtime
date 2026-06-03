@@ -103,7 +103,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer)
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer) => ReadULEB128(buffer, out _);
+
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer, out int bytesRead)
         {
             ulong value = 0;
             byte @byte;
@@ -116,10 +118,13 @@ namespace ILCompiler.ObjectWriter
                 shift += 7;
             } while ((@byte & 0x80) != 0);
 
+            bytesRead = pos;
             return value;
         }
 
-        public static long ReadSLEB128(ReadOnlySpan<byte> buffer)
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer) => ReadSLEB128(buffer, out _);
+
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer, out int bytesRead)
         {
             ulong value = 0;
             byte @byte;
@@ -135,6 +140,7 @@ namespace ILCompiler.ObjectWriter
             if (((ulong)shift < (8 * sizeof(ulong))) && ((@byte & 0x40) != 0))
                 value |= unchecked((ulong)(long)-1) << shift;
 
+            bytesRead = pos;
             return unchecked((long)value);
         }
     }

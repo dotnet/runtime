@@ -21,7 +21,6 @@
 #include "method.hpp"
 #include "class.h"
 #include "runtimecallablewrapper.h"
-#include "olevariant.h"
 #include "cachelinealloc.h"
 #include "threads.h"
 #include "ceemain.h"
@@ -3223,7 +3222,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     // to access empty slots quickly and, during cleanup, we can tell empty
     // slots from full ones.
     if (m_pMT->IsSparseForCOMInterop())
-        memset(pUnkVtable + cbExtraSlots, -1, m_cbSlots * sizeof(SLOT));
+        memset(((SLOT*)pUnkVtable) + cbExtraSlots, -1, m_cbSlots * sizeof(SLOT));
 
     // Method descs are at the end of the vtable
     // m_cbSlots interfaces methods + IUnk methods

@@ -1129,19 +1129,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= Size)
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - Size);
-
                     // We have at least 16 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<UInt128>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt128BigEndian(source.Slice(source.Length - Size));
                 }
                 else
                 {
@@ -1152,7 +1143,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
                 }
             }
@@ -1186,17 +1177,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= Size)
                 {
                     // We have at least 16 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<UInt128>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt128LittleEndian(source);
                 }
                 else
                 {
@@ -1208,7 +1192,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        UInt128 part = Unsafe.Add(ref sourceRef, i);
+                        UInt128 part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }

@@ -512,9 +512,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;
@@ -772,6 +769,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
+                        return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
@@ -2503,6 +2504,18 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
             return true;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
         }
     }
 }

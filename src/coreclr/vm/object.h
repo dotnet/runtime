@@ -1745,6 +1745,7 @@ class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
     friend class CoreLibBinder;
+    friend struct ::cdac_data<DelegateObject>;
 
 public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
@@ -1791,6 +1792,15 @@ private:
 #define OFFSETOF__DelegateObject__methodDesc      (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodDesc + TARGET_POINTER_SIZE /* _methodDesc */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+
+template<>
+struct cdac_data<DelegateObject>
+{
+    static constexpr size_t Target = offsetof(DelegateObject, _target);
+    static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
+    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
+    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+};
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;
@@ -1980,6 +1990,15 @@ private:
 private:
     // put only things here that can be protected with GCPROTECT
     I1ARRAYREF m_array;
+
+    friend struct ::cdac_data<StackTraceArray>;
+};
+
+template<>
+struct cdac_data<StackTraceArray>
+{
+    static constexpr size_t Size = offsetof(StackTraceArray::ArrayHeader, m_size);
+    static constexpr size_t HeaderSize = sizeof(StackTraceArray::ArrayHeader);
 };
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -2169,6 +2188,20 @@ class ContinuationObject : public Object
         uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
         PTR_BYTE dataAddress = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
         return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+    PTR_OBJECTREF GetExecutionContextObjectStorageOrNull()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE address = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
+        return dac_cast<PTR_OBJECTREF>(address);
     }
 
     PTR_OBJECTREF GetContinuationContextObjectStorageOrNull()

@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 internal sealed class MockExceptionInfo : TypedView
 {
     private const string PreviousNestedInfoFieldName = "PreviousNestedInfo";
-    private const string ThrownObjectHandleFieldName = "ThrownObjectHandle";
+    private const string ThrownObjectFieldName = "ThrownObject";
     private const string ExceptionFlagsFieldName = "ExceptionFlags";
     private const string StackLowBoundFieldName = "StackLowBound";
     private const string StackHighBoundFieldName = "StackHighBound";
@@ -17,11 +17,13 @@ internal sealed class MockExceptionInfo : TypedView
     private const string CSFEHClauseFieldName = "CSFEHClause";
     private const string CSFEnclosingClauseFieldName = "CSFEnclosingClause";
     private const string CallerOfActualHandlerFrameFieldName = "CallerOfActualHandlerFrame";
+    private const string ClauseForCatchHandlerStartPCFieldName = "ClauseForCatchHandlerStartPC";
+    private const string ClauseForCatchHandlerEndPCFieldName = "ClauseForCatchHandlerEndPC";
 
     public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
             .AddPointerField(PreviousNestedInfoFieldName)
-            .AddPointerField(ThrownObjectHandleFieldName)
+            .AddPointerField(ThrownObjectFieldName)
             .AddUInt32Field(ExceptionFlagsFieldName)
             .AddPointerField(StackLowBoundFieldName)
             .AddPointerField(StackHighBoundFieldName)
@@ -30,12 +32,14 @@ internal sealed class MockExceptionInfo : TypedView
             .AddPointerField(CSFEHClauseFieldName)
             .AddPointerField(CSFEnclosingClauseFieldName)
             .AddPointerField(CallerOfActualHandlerFrameFieldName)
+            .AddUInt32Field(ClauseForCatchHandlerStartPCFieldName)
+            .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
             .Build<MockExceptionInfo>();
 
-    public ulong ThrownObjectHandle
+    public ulong ThrownObject
     {
-        get => ReadPointerField(ThrownObjectHandleFieldName);
-        set => WritePointerField(ThrownObjectHandleFieldName, value);
+        get => ReadPointerField(ThrownObjectFieldName);
+        set => WritePointerField(ThrownObjectFieldName, value);
     }
 }
 
@@ -173,6 +177,7 @@ internal sealed class MockThread : TypedView
     private const string IdFieldName = "Id";
     private const string OSIdFieldName = "OSId";
     private const string StateFieldName = "State";
+    private const string DebuggerControlledThreadStateFieldName = "DebuggerControlledThreadState";
     private const string PreemptiveGCDisabledFieldName = "PreemptiveGCDisabled";
     private const string RuntimeThreadLocalsFieldName = "RuntimeThreadLocals";
     private const string FrameFieldName = "Frame";
@@ -185,16 +190,18 @@ internal sealed class MockThread : TypedView
     private const string LinkNextFieldName = "LinkNext";
     private const string ExceptionTrackerFieldName = "ExceptionTracker";
     private const string ThreadLocalDataPtrFieldName = "ThreadLocalDataPtr";
+    private const string ThreadHandleFieldName = "ThreadHandle";
     private const string UEWatsonBucketTrackerBucketsFieldName = "UEWatsonBucketTrackerBuckets";
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
-    private const string ProfilerFilterContextFieldName = "ProfilerFilterContext";
+    private const string InteropDebuggingHijackedFieldName = "InteropDebuggingHijacked";
 
-    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture, bool hasProfilingSupport = true)
+    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
     {
         SequentialLayoutBuilder layoutBuilder = new SequentialLayoutBuilder("Thread", architecture)
             .AddUInt32Field(IdFieldName)
             .AddPointerField(OSIdFieldName)
             .AddUInt32Field(StateFieldName)
+            .AddUInt32Field(DebuggerControlledThreadStateFieldName)
             .AddUInt32Field(PreemptiveGCDisabledFieldName)
             .AddPointerField(RuntimeThreadLocalsFieldName)
             .AddPointerField(FrameFieldName)
@@ -207,13 +214,10 @@ internal sealed class MockThread : TypedView
             .AddPointerField(LinkNextFieldName)
             .AddPointerField(ExceptionTrackerFieldName)
             .AddPointerField(ThreadLocalDataPtrFieldName)
+            .AddPointerField(ThreadHandleFieldName)
             .AddPointerField(UEWatsonBucketTrackerBucketsFieldName)
-            .AddPointerField(DebuggerFilterContextFieldName);
-
-        if (hasProfilingSupport)
-        {
-            layoutBuilder.AddPointerField(ProfilerFilterContextFieldName);
-        }
+            .AddPointerField(DebuggerFilterContextFieldName)
+            .AddUInt32Field(InteropDebuggingHijackedFieldName);
 
         return layoutBuilder.Build<MockThread>();
     }
@@ -228,6 +232,12 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(OSIdFieldName);
         set => WritePointerField(OSIdFieldName, value);
+    }
+
+    public uint State
+    {
+        get => ReadUInt32Field(StateFieldName);
+        set => WriteUInt32Field(StateFieldName, value);
     }
 
     public ulong RuntimeThreadLocals
@@ -279,6 +289,46 @@ internal sealed class MockThread : TypedView
     }
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
+
+    /// <summary>
+    /// The value of the Thread's m_pFrame field - the address of the topmost explicit
+    /// Frame on this thread's frame chain (or the FRAME_TOP terminator for an empty chain).
+    /// </summary>
+    public ulong Frame
+    {
+        get => ReadPointerField(FrameFieldName);
+        set => WritePointerField(FrameFieldName, value);
+    }
+
+    public uint DebuggerControlledThreadState
+    {
+        get => ReadUInt32Field(DebuggerControlledThreadStateFieldName);
+        set => WriteUInt32Field(DebuggerControlledThreadStateFieldName, value);
+    }
+
+    public ulong LastThrownObject
+    {
+        get => ReadPointerField(LastThrownObjectFieldName);
+        set => WritePointerField(LastThrownObjectFieldName, value);
+    }
+
+    public ulong ThreadHandle
+    {
+        get => ReadPointerField(ThreadHandleFieldName);
+        set => WritePointerField(ThreadHandleFieldName, value);
+    }
+
+    public ulong DebuggerFilterContext
+    {
+        get => ReadPointerField(DebuggerFilterContextFieldName);
+        set => WritePointerField(DebuggerFilterContextFieldName, value);
+    }
+
+    public uint InteropDebuggingHijacked
+    {
+        get => ReadUInt32Field(InteropDebuggingHijackedFieldName);
+        set => WriteUInt32Field(InteropDebuggingHijackedFieldName, value);
+    }
 }
 
 internal sealed class MockThreadBuilder
@@ -307,19 +357,19 @@ internal sealed class MockThreadBuilder
 
     private MockThread? _previousThread;
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder, bool hasProfilingSupport = true)
-        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), hasProfilingSupport)
+    public MockThreadBuilder(MockMemorySpace.Builder builder)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool hasProfilingSupport = true)
+    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
         TargetTestHelpers helpers = builder.TargetTestHelpers;
         ExceptionInfoLayout = MockExceptionInfo.CreateLayout(helpers.Arch);
-        ThreadLayout = MockThread.CreateLayout(helpers.Arch, hasProfilingSupport);
+        ThreadLayout = MockThread.CreateLayout(helpers.Arch);
         ThreadStoreLayout = MockThreadStore.CreateLayout(helpers.Arch);
         GCAllocContextLayout = MockGCAllocContext.CreateLayout(helpers.Arch);
         EEAllocContextLayout = MockEEAllocContext.CreateLayout(helpers.Arch, GCAllocContextLayout);

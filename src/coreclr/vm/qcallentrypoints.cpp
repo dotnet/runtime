@@ -394,15 +394,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
@@ -450,6 +441,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
     DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(ObjCMarshal_GetOrCreateReferenceTrackingMemory)
 #endif
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)

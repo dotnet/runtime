@@ -616,7 +616,7 @@ unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
 // This is called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
-// (of length // getClassSize(cls) / sizeof(void*)),
+// (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
 // 'gcPtrs' is a pointer to an array of BYTEs of this length.
 // getClassGClayout fills in this array so that gcPtrs[i] is set
 // to one of the CorInfoGCType values which is the GC type of
@@ -628,14 +628,30 @@ unsigned interceptor_ICJI::getClassGClayout(CORINFO_CLASS_HANDLE cls,   /* IN */
 {
     mc->cr->AddCall("getClassGClayout");
     unsigned temp = original_ICorJitInfo->getClassGClayout(cls, gcPtrs);
+
+    // Use the target's pointer size, not the host's, so cross-target collections
+    // (e.g., wasm32 on an x64 host) record the full GC-layout buffer.
+    unsigned targetPointerSize;
+    switch (original_ICorJitInfo->getExpectedTargetArchitecture())
+    {
+        case CORINFO_ARCH_X86:
+        case CORINFO_ARCH_ARM:
+        case CORINFO_ARCH_WASM32:
+            targetPointerSize = 4;
+            break;
+        default:
+            targetPointerSize = 8;
+            break;
+    }
+
     unsigned len = 0;
     if (isValueClass(cls))
     {
-        len = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     else
     {
-        len = (getHeapClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getHeapClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     mc->recGetClassGClayout(cls, gcPtrs, len, temp);
     return temp;
@@ -2010,6 +2026,13 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
     mc->cr->AddCall("recordCallSite");
     original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
     mc->cr->recRecordCallSite(instrOffset, callSig, methodHandle);
+}
+
+void interceptor_ICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
+{
+    mc->cr->AddCall("recordWasmManagedCallSig");
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+    // No-op in the VM, nothing to record for replay.
 }
 
 // A relocation is recorded if we are pre-jitting.

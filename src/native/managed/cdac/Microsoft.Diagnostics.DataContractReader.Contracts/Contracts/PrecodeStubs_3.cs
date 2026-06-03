@@ -26,6 +26,16 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         return PrecodeStubs_2_Impl.ThisPtrRetBufPrecode_GetMethodDesc(instrPointer, target, precodeMachineDescriptor);
     }
 
+    public static TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer dataAddr = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.InterpreterPrecodeData precodeData = target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
+        Data.InterpByteCodeStart byteCodeStart = target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(precodeData.ByteCodeAddr);
+        Data.InterpMethod interpMethod = target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
+
+        return interpMethod.MethodDesc;
+    }
+
     public static byte StubPrecodeData_GetType(Data.StubPrecodeData_2 stubPrecodeData)
     {
         // Version 3 of this contract behaves just like version 2

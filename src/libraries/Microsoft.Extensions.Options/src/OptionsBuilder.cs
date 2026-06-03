@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Options
@@ -332,6 +333,24 @@ namespace Microsoft.Extensions.Options
                     sp.GetRequiredService<TDep4>(),
                     sp.GetRequiredService<TDep5>(),
                     configureOptions));
+            return this;
+        }
+
+        /// <summary>
+        /// Registers an <see cref="IValidateOptions{TOptions}"/> type for an options type.
+        /// </summary>
+        /// <typeparam name="TValidateOptions">The validation type.</typeparam>
+        /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// Validation is scoped to the options name associated with this builder.
+        /// Dependencies required by <typeparamref name="TValidateOptions"/>
+        /// are resolved from the service provider.
+        /// </remarks>
+        public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
+            where TValidateOptions : class, IValidateOptions<TOptions>
+        {
+            Services.AddTransient<IValidateOptions<TOptions>>(sp =>
+                new NamedValidateOptionsFilter<TOptions, TValidateOptions>(Name, ActivatorUtilities.GetServiceOrCreateInstance<TValidateOptions>(sp)));
             return this;
         }
 
