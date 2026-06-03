@@ -3048,9 +3048,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             List<(Http2LoopbackConnection conn, int streamId)> firstStreams = new();
-            using SemaphoreSlim connectionEstablished = new(0);
             using SemaphoreSlim firstStreamReady = new(0);
-            using CancellationTokenSource cts = new();
             List<Task> connectionTasks = new();
 
             async Task ServeConnectionAsync(Http2LoopbackConnection conn)
@@ -3058,7 +3056,7 @@ namespace System.Net.Http.Functional.Tests
                 bool gotFirst = false;
                 try
                 {
-                    while (!cts.IsCancellationRequested)
+                    while (true)
                     {
                         (int streamId, _) = await conn.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                         if (!gotFirst)
@@ -3080,16 +3078,15 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
-            Task acceptTask = Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    while (!cts.IsCancellationRequested)
+                    while (true)
                     {
                         Http2LoopbackConnection conn = await server.EstablishConnectionAsync(
                             new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
                         lock (connectionTasks) connectionTasks.Add(Task.Run(() => ServeConnectionAsync(conn)));
-                        connectionEstablished.Release();
                     }
                 }
                 catch
@@ -3099,10 +3096,6 @@ namespace System.Net.Http.Functional.Tests
             });
 
             // Expect RequestCount fresh connections (one per request) and a first stream on each.
-            for (int i = 0; i < RequestCount; i++)
-            {
-                await connectionEstablished.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-            }
             for (int i = 0; i < RequestCount; i++)
             {
                 await firstStreamReady.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
@@ -3115,7 +3108,6 @@ namespace System.Net.Http.Functional.Tests
 
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
 
-            cts.Cancel();
             foreach ((Http2LoopbackConnection conn, int _) in firstStreams)
             {
                 await conn.DisposeAsync().ConfigureAwait(false);
