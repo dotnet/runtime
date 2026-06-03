@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tests
             process.WaitForExit(WaitInMS);
 
             Assert.Equal("hello \r\n", output);
-            Assert.Equal("error\r\n", error);
+            Assert.Equal("error \r\n", error);
             Assert.Equal(0, process.ExitCode);
         }
 
