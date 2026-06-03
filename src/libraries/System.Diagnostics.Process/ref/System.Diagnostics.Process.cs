@@ -292,7 +292,7 @@ namespace System.Diagnostics
         public bool StandardError { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    public sealed partial class ProcessStartArguments
+    public ref partial struct ProcessStartArguments
     {
         public ProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]

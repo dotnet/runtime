@@ -8,11 +8,11 @@ namespace System.Diagnostics
 {
     /// <summary>
     /// Provides the prepared arguments for starting a process via a user-supplied callback.
-    /// This class is populated by the <see cref="Process.Start(ProcessStartInfo, Func{ProcessStartArguments, SafeProcessHandle})"/> method
+    /// This ref struct is populated by the <see cref="Process.Start(ProcessStartInfo, Func{ProcessStartArguments, SafeProcessHandle})"/> method
     /// with the resolved executable path, command-line arguments, environment variables, and standard I/O handles.
     /// The user's callback receives this instance and is responsible for invoking the appropriate system call to create the process.
     /// </summary>
-    public sealed class ProcessStartArguments
+    public ref struct ProcessStartArguments
     {
         public ProcessStartArguments() { }
 
