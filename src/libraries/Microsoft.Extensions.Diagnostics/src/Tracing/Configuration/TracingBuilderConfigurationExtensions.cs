@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.Tracing.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Tracing
@@ -38,7 +37,6 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             builder.Services.AddSingleton<IConfigureOptions<TracingOptions>>(new TracingConfigureOptions(configuration));
             builder.Services.AddSingleton<IOptionsChangeTokenSource<TracingOptions>>(new ConfigurationChangeTokenSource<TracingOptions>(configuration));
-            builder.Services.AddSingleton(new TracingConfiguration(configuration));
             return builder;
         }
     }

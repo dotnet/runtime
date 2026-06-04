@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Tracing;
-using Microsoft.Extensions.Diagnostics.Tracing.Configuration;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -70,55 +69,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             using var source = new ActivitySource("Demo.Source");
             AssertActivityCreation(source, "BlockedOperation", expectedCreated: false);
-        }
-
-        [Fact]
-        public void AddTracing_RegistersActivityListenerConfigurationFactory()
-        {
-            using var serviceProvider = new ServiceCollection()
-                .AddTracing()
-                .Services
-                .BuildServiceProvider();
-
-            var factory = serviceProvider.GetService<IActivityListenerConfigurationFactory>();
-            Assert.NotNull(factory);
-        }
-
-        [Fact]
-        public void AddConfiguration_MergesListenerConfigurationAcrossCalls()
-        {
-            const string listenerName = "SampleActivityListener";
-
-            var configuration1 = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    [$"{listenerName}:EnabledTracing:SourceA"] = "true",
-                    [$"{listenerName}:EnabledTracing:SourceB"] = "false",
-                })
-                .Build();
-
-            var configuration2 = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    [$"{listenerName}:EnabledTracing:SourceB"] = "true",
-                    [$"{listenerName}:EnabledTracing:SourceC"] = "false",
-                })
-                .Build();
-
-            using var serviceProvider = new ServiceCollection()
-                .AddTracing(builder => builder
-                    .AddConfiguration(configuration1)
-                    .AddConfiguration(configuration2))
-                .Services
-                .BuildServiceProvider();
-
-            var factory = serviceProvider.GetRequiredService<IActivityListenerConfigurationFactory>();
-            IConfiguration mergedConfiguration = factory.GetConfiguration(listenerName);
-            Assert.NotNull(mergedConfiguration);
-
-            Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceA"]);
-            Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceB"]);
-            Assert.Equal("false", mergedConfiguration["EnabledTracing:SourceC"]);
         }
 
         [Fact]
