@@ -231,7 +231,7 @@ CreateSemaphoreName(
     const UnambiguousProcessDescriptor& unambiguousProcessDescriptor,
     LPCSTR applicationGroupId);
 
-static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally);
+static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally);
 
 /*++
 Function:
@@ -311,7 +311,7 @@ ExitProcess(
         else
         {
             WARN("thread re-called ExitProcess\n");
-            PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
+            PROCEndProcess(uExitCode, FALSE);
         }
     }
     else if (0 != old_terminator)
@@ -335,7 +335,7 @@ ExitProcess(
     */
     if (PALInitLock() && PALIsInitialized())
     {
-        PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
+        PROCEndProcess(uExitCode, FALSE);
 
         /* Should not get here, because we terminate the current process */
         ASSERT("PROCEndProcess has returned\n");
@@ -370,10 +370,12 @@ TerminateProcess(
 {
     BOOL ret;
 
+    _ASSERTE(hProcess == hPseudoCurrentProcess);
+
     PERF_ENTRY(TerminateProcess);
     ENTRY("TerminateProcess(hProcess=%p, uExitCode=%u)\n",hProcess, uExitCode );
 
-    ret = PROCEndProcess(hProcess, uExitCode, TRUE);
+    ret = PROCEndProcess(uExitCode, TRUE);
 
     LOGEXIT("TerminateProcess returns BOOL %d\n", ret);
     PERF_EXIT(TerminateProcess);
@@ -417,11 +419,9 @@ Function:
   Only terminating current process is supported.
 
 --*/
-static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally)
+static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally)
 {
     BOOL ret = FALSE;
-
-    _ASSERTE (hProcess != hPseudoCurrentProcess);
 
     // WARN/ERROR before starting the termination process and/or leaving the PAL.
     if (bTerminateUnconditionally)
