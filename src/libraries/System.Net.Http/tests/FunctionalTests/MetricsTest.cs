@@ -127,16 +127,12 @@ namespace System.Net.Http.Functional.Tests
             VerifyTag(tags, "http.connection.state", state);
         }
 
-        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, IPAddress[] validPeerAddresses = null)
+        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
         {
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
             double value = Assert.IsType<double>(measurement);
 
-            // This flakes for remote requests on CI.
-            if (validPeerAddresses is null)
-            {
-                Assert.InRange(value, double.Epsilon, 60);
-            }
+            Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
         }
@@ -373,8 +369,6 @@ namespace System.Net.Http.Functional.Tests
             Uri uri = UseVersion == HttpVersion.Version11
                 ? Test.Common.Configuration.Http.RemoteHttp11Server.EchoUri
                 : Test.Common.Configuration.Http.RemoteHttp2Server.EchoUri;
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
-            addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
 
             using (HttpMessageInvoker client = CreateHttpMessageInvoker())
             {
@@ -387,7 +381,7 @@ namespace System.Net.Http.Functional.Tests
 
             VerifyRequestDuration(Assert.Single(requestDurationRecorder.GetMeasurements()), uri, UseVersion, 200, "GET");
             Measurement<double> cd = Assert.Single(connectionDurationRecorder.GetMeasurements());
-            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion, addresses);
+            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion);
             Measurement<long> oc = openConnectionsRecorder.GetMeasurements().First();
             VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle");
         }
