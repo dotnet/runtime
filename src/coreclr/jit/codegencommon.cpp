@@ -1843,12 +1843,6 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         info.returnValueLoc.storeVariableInRegisters(REG_INTRET, REG_NA);
     }
 
-    if (emittedCallReturnInfo == nullptr)
-    {
-        emittedCallReturnInfo = new (m_compiler, CMK_DebugInfo)
-            jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
-    }
-
     emittedCallReturnInfo->push_back(info);
 }
 
