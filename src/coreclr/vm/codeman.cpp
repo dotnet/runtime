@@ -516,8 +516,17 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     }
 
     LONG drainedSeq;
+    // Ensure waiters are always woken even if FlushPendingEntriesUnderGate throws.
+    struct WakeAllOnExit
+    {
+        CONDITION_VARIABLE* m_pCV;
+        explicit WakeAllOnExit(CONDITION_VARIABLE* pCV) : m_pCV(pCV) {}
+        ~WakeAllOnExit() { WakeAllConditionVariable(m_pCV); }
+    };
+
     // Scope the gate holder so m_flushInProgress is reset when the scope exits.
     {
+        WakeAllOnExit wakeAll(&m_flushCV);
         FlushGateHolder gateHolder(&m_flushInProgress, &m_flushLock);
         drainedSeq = FlushPendingEntriesUnderGate();
 
@@ -526,14 +535,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         m_publishedSeq = drainedSeq;
         ReleaseSRWLockExclusive(&m_flushLock);
     }
-
-    // The gate was cleared under m_flushLock by ~FlushGateHolder above, which
-    // prevents waiters from missing this wakeup. Calling WakeAll outside the
-    // lock is intentional: if a waiter wakes while the gate is still held and
-    // its seq isn't satisfied, it could sleep again (see waiter loop above),
-    // and we'd never wake it again. By releasing the gate first, the waiter
-    // observes m_flushInProgress == 0 and can take over the flush itself.
-    WakeAllConditionVariable(&m_flushCV);
 
     // Our entries are guaranteed published (drainedSeq >= waitForSeq) since
     // FlushPendingEntriesUnderGate drains all pending entries atomically.
