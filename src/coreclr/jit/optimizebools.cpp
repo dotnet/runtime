@@ -1339,7 +1339,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     {
         return nullptr;
     }
-    
+
     if (!opr2->IsIntegralConst(0) && !opr2->IsIntegralConst(1))
     {
         return nullptr;
