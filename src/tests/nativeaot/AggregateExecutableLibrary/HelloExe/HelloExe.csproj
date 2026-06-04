@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Win32Resource Condition="'$(TargetsWindows)' == 'true'">test.res</Win32Resource>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HelloExe.cs" />
