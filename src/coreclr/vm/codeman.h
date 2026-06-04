@@ -669,7 +669,7 @@ private:
     // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
     // We cannot just check if hHandle is null because it's temporarily set to NULL
     // during the flusher's merge path.
-    bool                m_registrationFailed;
+    Volatile<bool>      m_registrationFailed;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
