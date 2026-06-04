@@ -29,7 +29,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getWasmMemory,
         getWasmTable,
         SystemJS_ScheduleDiagnosticServer: _ems_._SystemJS_ScheduleDiagnosticServer,
-        SystemJS_GetMethodName: _ems_._SystemJS_GetMethodName,
+        SystemJS_GetMethodName: (pMethodDesc: number) => _ems_._SystemJS_GetMethodName(pMethodDesc),
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
