@@ -280,6 +280,7 @@ void UnwindInfoTable::Register()
     {
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
         hHandle = NULL;
+        m_registrationFailed = true;
         STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
     }
     else
@@ -359,24 +360,12 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     CrstHolder publishLock(&m_publishLock);
 
-    if (hHandle == NULL)
+    if (m_registrationFailed)
     {
-        if (!m_registrationFailed)
-        {
-            Register();
-            if (hHandle == NULL)
-            {
-                m_registrationFailed = true;
-            }
-        }
-
-        if (m_registrationFailed)
-        {
-            // Registration failed permanently. Discard pending entries.
-            CrstHolder pendingLock(&m_pendingLock);
-            cPendingCount = 0;
-            return m_pendingSeq;
-        }
+        // Registration failed permanently. Discard pending entries.
+        CrstHolder pendingLock(&m_pendingLock);
+        cPendingCount = 0;
+        return m_pendingSeq;
     }
 
     // Grab the pending entries under the pending lock, then release it so
@@ -406,7 +395,16 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
     {
         memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cTableCurCount += localPendingCount;
-        pRtlGrowFunctionTable(hHandle, cTableCurCount);
+
+        if (hHandle != NULL)
+        {
+            pRtlGrowFunctionTable(hHandle, cTableCurCount);
+        }
+        else
+        {
+            // Register with entries already populated.
+            Register();
+        }
 
         STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
             hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
