@@ -145,6 +145,12 @@ void ep_rt_coreclr_sample_profiler_disabled(void)
 // On multi-threaded platforms the opcode is never emitted.
 extern "C" void SamplingProfiler_OnSamplepoint()
 {
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
     if (++s_sampleSkipCounter < s_skipsPerPeriod)
         return;
 

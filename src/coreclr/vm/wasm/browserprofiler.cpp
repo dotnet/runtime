@@ -82,6 +82,12 @@ static bool ShouldRecordFrame()
 
 void BrowserProfiler_OnMethodEnter(void *pMethodDesc)
 {
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
     MethodDesc *pMD = (MethodDesc *)pMethodDesc;
 
     if (s_topStackFrameIndex + 1 >= MAX_STACK_DEPTH)
@@ -101,6 +107,12 @@ void BrowserProfiler_OnMethodEnter(void *pMethodDesc)
 
 void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
 {
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
     // Unwind frames that were dropped because the shadow stack was full.
     if (s_overflowDepth > 0)
     {
@@ -130,7 +142,7 @@ void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
     if (frame->shouldRecord)
     {
         SString methodName;
-        TypeString::AppendMethodInternal(methodName, frame->pMethod, TypeString::FormatNamespace);
+        TypeString::AppendMethodInternal(methodName, frame->pMethod, TypeString::FormatBasic);
         ds_rt_browser_performance_measure(methodName.GetUTF8(), frame->startMs);
 
         // Mark parent frame for recording so the flame chart nests properly.
