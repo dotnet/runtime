@@ -123,4 +123,7 @@
   <data name="MoreThanOneWildcard" xml:space="preserve">
     <value>Only one wildcard character is allowed in category name.</value>
   </data>
+  <data name="DefaultActivitySourceFactory_UpdateRules_RegistrationThrew" xml:space="preserve">
+    <value>One or more activity listener registrations threw while applying tracing configuration changes.</value>
+  </data>
 </root>

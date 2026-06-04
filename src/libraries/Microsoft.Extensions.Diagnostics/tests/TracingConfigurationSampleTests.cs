@@ -338,6 +338,110 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             Assert.Null(options.Scope);
         }
 
+        [Fact]
+        public void UpdateRules_PropagatesSingleListenerThrow_AfterUpdatingSiblings()
+        {
+            const string SourceName = "Demo.SiblingReloadIsolation.Single";
+
+            int siblingShouldListenCalls = 0;
+            ActivityListener throwingListener = new ActivityListener
+            {
+                ShouldListenTo = src => src.Name == SourceName
+                    ? throw new InvalidOperationException("boom")
+                    : false,
+            };
+            ActivityListener siblingListener = new ActivityListener
+            {
+                ShouldListenTo = src =>
+                {
+                    if (src.Name == SourceName)
+                    {
+                        Interlocked.Increment(ref siblingShouldListenCalls);
+                    }
+                    return true;
+                },
+            };
+
+            TestActivityOptionsMonitor optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(SourceName, enable: false));
+
+            using ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder
+                    .AddListener(_ => throwingListener)
+                    .AddListener(_ => siblingListener))
+                .Services
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            using ActivitySource source = new ActivitySource(SourceName);
+            int baseline = Volatile.Read(ref siblingShouldListenCalls);
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+                optionsMonitor.Set(CreateOptions(SourceName, enable: true)));
+            Assert.Equal("boom", ex.Message);
+
+            Assert.True(Volatile.Read(ref siblingShouldListenCalls) > baseline,
+                "Sibling listener did not receive the rule update; reload aborted at the throwing registration.");
+        }
+
+        [Fact]
+        public void UpdateRules_AggregatesMultipleListenerThrows_AfterUpdatingSiblings()
+        {
+            const string SourceName = "Demo.SiblingReloadIsolation.Multi";
+
+            int siblingShouldListenCalls = 0;
+            ActivityListener throwingListener1 = new ActivityListener
+            {
+                ShouldListenTo = src => src.Name == SourceName
+                    ? throw new InvalidOperationException("boom-1")
+                    : false,
+            };
+            ActivityListener throwingListener2 = new ActivityListener
+            {
+                ShouldListenTo = src => src.Name == SourceName
+                    ? throw new InvalidOperationException("boom-2")
+                    : false,
+            };
+            ActivityListener siblingListener = new ActivityListener
+            {
+                ShouldListenTo = src =>
+                {
+                    if (src.Name == SourceName)
+                    {
+                        Interlocked.Increment(ref siblingShouldListenCalls);
+                    }
+                    return true;
+                },
+            };
+
+            TestActivityOptionsMonitor optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(SourceName, enable: false));
+
+            using ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder
+                    .AddListener(_ => throwingListener1)
+                    .AddListener(_ => throwingListener2)
+                    .AddListener(_ => siblingListener))
+                .Services
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            using ActivitySource source = new ActivitySource(SourceName);
+            int baseline = Volatile.Read(ref siblingShouldListenCalls);
+
+            AggregateException agg = Assert.Throws<AggregateException>(() =>
+                optionsMonitor.Set(CreateOptions(SourceName, enable: true)));
+
+            Assert.Equal(2, agg.InnerExceptions.Count);
+            Assert.Contains(agg.InnerExceptions, e => e is InvalidOperationException { Message: "boom-1" });
+            Assert.Contains(agg.InnerExceptions, e => e is InvalidOperationException { Message: "boom-2" });
+
+            Assert.True(Volatile.Read(ref siblingShouldListenCalls) > baseline,
+                "Sibling listener did not receive the rule update; reload aborted at the throwing registrations.");
+        }
+
         private static TracingOptions CreateOptions(string sourceName, bool enable)
         {
             return CreateOptions(

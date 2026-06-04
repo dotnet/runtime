@@ -347,7 +347,11 @@ namespace System.Diagnostics
         /// <summary>
         /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         protected virtual void Dispose(bool disposing)
         {

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Microsoft.Extensions.Options;
 
@@ -113,10 +114,31 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             }
 
             List<TracingRule> rules = options.Rules;
+            List<Exception>? errors = null;
+
             foreach (ActivityListenerRegistration registration in _listenerRegistrations)
             {
-                registration.UpdateRules(rules);
+                try
+                {
+                    registration.UpdateRules(rules);
+                }
+                catch (Exception ex)
+                {
+                    (errors ??= new List<Exception>()).Add(ex);
+                }
             }
+
+            if (errors is null)
+            {
+                return;
+            }
+
+            if (errors.Count == 1)
+            {
+                ExceptionDispatchInfo.Capture(errors[0]).Throw();
+            }
+
+            throw new AggregateException(SR.DefaultActivitySourceFactory_UpdateRules_RegistrationThrew, errors);
         }
 
         protected override void Dispose(bool disposing)

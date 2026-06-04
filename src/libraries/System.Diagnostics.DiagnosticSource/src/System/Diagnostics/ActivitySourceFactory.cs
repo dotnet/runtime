@@ -56,17 +56,13 @@ namespace System.Diagnostics
         /// <param name="version">The version of the <see cref="ActivitySource"/>.</param>
         /// <param name="tags">The tags to associate with the <see cref="ActivitySource"/>.</param>
         /// <returns>An <see cref="ActivitySource"/> with the specified <paramref name="name"/>, <paramref name="version"/>, and <paramref name="tags"/>.</returns>
-        public ActivitySource Create(string name, string? version = null, IEnumerable<KeyValuePair<string, object?>>? tags = null)
+        public ActivitySource Create(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = null)
         {
             ActivitySourceOptions options = new(name)
             {
+                Version = version,
                 Tags = tags,
             };
-
-            if (version is not null)
-            {
-                options.Version = version;
-            }
 
             return Create(options);
         }

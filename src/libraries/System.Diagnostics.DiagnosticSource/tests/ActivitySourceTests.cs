@@ -1851,6 +1851,32 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivitySourceFactoryCreate_VersionParameterDefaultsAndExplicitNullArePreserved()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TestActivitySourceFactory factory = new TestActivitySourceFactory();
+
+                using ActivitySource defaultVersion = factory.Create("Versioning.Source");
+                using ActivitySource explicitEmpty = factory.Create("Versioning.Source", version: "");
+                using ActivitySource explicitNull = factory.Create("Versioning.Source", version: null);
+                using ActivitySource explicitValue = factory.Create("Versioning.Source", version: "1.0");
+
+                // The default for the version parameter matches the direct ActivitySource(string) ctor convention: "".
+                Assert.Equal(string.Empty, defaultVersion.Version);
+                Assert.Equal(string.Empty, explicitEmpty.Version);
+
+                // Explicit null must be preserved (not collapsed to ""), so callers can dedup against ActivitySourceOptions { Version = null }.
+                Assert.Null(explicitNull.Version);
+
+                Assert.Equal("1.0", explicitValue.Version);
+
+                using ActivitySource baselineDirect = new ActivitySource("Versioning.Source");
+                Assert.Equal(baselineDirect.Version, defaultVersion.Version);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivitySourceFactoryCreate_DoesNotMutateSharedOptions_UnderConcurrentCalls()
         {
             RemoteExecutor.Invoke(() =>

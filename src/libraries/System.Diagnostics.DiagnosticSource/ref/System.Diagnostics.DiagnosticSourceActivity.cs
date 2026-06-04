@@ -187,7 +187,7 @@ namespace System.Diagnostics
     {
         protected ActivitySourceFactory() { }
         public System.Diagnostics.ActivitySource Create(System.Diagnostics.ActivitySourceOptions options) { throw null; }
-        public System.Diagnostics.ActivitySource Create(string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
+        public System.Diagnostics.ActivitySource Create(string name, string? version = "", System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
         protected abstract System.Diagnostics.ActivitySource CreateCore(System.Diagnostics.ActivitySourceOptions options);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
