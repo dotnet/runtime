@@ -872,6 +872,29 @@ namespace ILCompiler.ObjectWriter
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
 
+                if (reloc.Type == RelocType.WASM_GLOBAL_INDEX_LEB)
+                {
+                    // The JIT references the well-known wasm base globals (stack pointer / image base /
+                    // table base) via WASM_GLOBAL_INDEX_LEB relocations against undefined imported symbols.
+                    // For R2R these globals live at fixed indices supplied by the runtime loader, so we
+                    // self-resolve them here. They are intentionally absent from _definedSymbols.
+                    int globalIndex = reloc.SymbolName.ToString() switch
+                    {
+                        WasmBaseGlobalSymbolNode.StackPointerSymbolName => StackPointerGlobalIndex,
+                        WasmBaseGlobalSymbolNode.ImageBaseSymbolName => ImageBaseGlobalIndex,
+                        WasmBaseGlobalSymbolNode.TableBaseSymbolName => TableBaseGlobalIndex,
+                        _ => throw new InvalidDataException($"Unexpected wasm base global symbol '{reloc.SymbolName}'")
+                    };
+
+                    fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
+                    {
+                        Relocation.WriteValue(reloc.Type, pData, globalIndex);
+                        WriteRelocFromDataSpan(reloc, pData, sectionStart);
+                    }
+
+                    continue;
+                }
+
                 SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
 
                 // The virtual address of the relocation we are resolving

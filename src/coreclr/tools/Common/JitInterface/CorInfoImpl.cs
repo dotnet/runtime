@@ -4252,52 +4252,66 @@ namespace Internal.JitInterface
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);
 
-            int relocDelta;
-            BlockType targetBlock = findKnownBlock(target, out relocDelta);
-
+            int relocDelta = 0;
             ISymbolNode relocTarget;
-            switch (targetBlock)
+
+            if (fRelocType == CorInfoReloc.WASM_GLOBAL_INDEX_LEB)
             {
-                case BlockType.Code:
-                    relocTarget = _methodCodeNode;
-                    break;
+                // The JIT references the well-known wasm base globals (stack pointer / image base /
+                // table base) via WASM_GLOBAL_INDEX_LEB relocations, encoding the fixed base-global
+                // index as the relocation target. Map that index to the corresponding base-global
+                // symbol; the object writer resolves it to the final wasm global index. The inline
+                // value is target-only (no addend).
+                Debug.Assert(addlDelta == 0);
+                relocTarget = WasmBaseGlobalSymbolNode.GetForIndex(checked((int)(nint)target));
+            }
+            else
+            {
+                BlockType targetBlock = findKnownBlock(target, out relocDelta);
 
-                case BlockType.ColdCode:
+                switch (targetBlock)
+                {
+                    case BlockType.Code:
+                        relocTarget = _methodCodeNode;
+                        break;
+
+                    case BlockType.ColdCode:
 #if READYTORUN
-                    Debug.Assert(_methodColdCodeNode != null);
-                    relocTarget = _methodColdCodeNode;
-                    break;
+                        Debug.Assert(_methodColdCodeNode != null);
+                        relocTarget = _methodColdCodeNode;
+                        break;
 #else
-                    throw new NotImplementedException("ColdCode relocs");
+                        throw new NotImplementedException("ColdCode relocs");
 #endif
 
-                case BlockType.ROData:
-                    relocTarget = _roDataBlob;
-                    break;
+                    case BlockType.ROData:
+                        relocTarget = _roDataBlob;
+                        break;
 
-                case BlockType.RWData:
-                    relocTarget = _rwDataBlob;
-                    break;
+                    case BlockType.RWData:
+                        relocTarget = _rwDataBlob;
+                        break;
 
 #if READYTORUN
-                case BlockType.BBCounts:
-                    relocTarget = null;
-                    break;
+                    case BlockType.BBCounts:
+                        relocTarget = null;
+                        break;
 #endif
 
-                default:
-                    // Reloc points to something outside of the generated blocks
-                    var targetObject = HandleToObject(target);
+                    default:
+                        // Reloc points to something outside of the generated blocks
+                        var targetObject = HandleToObject(target);
 
 #if READYTORUN
-                    if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
-                    {
-                        throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
-                    }
+                        if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
+                        {
+                            throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
+                        }
 #endif
 
-                    relocTarget = (ISymbolNode)targetObject;
-                    break;
+                        relocTarget = (ISymbolNode)targetObject;
+                        break;
+                }
             }
 
             RelocType relocType = GetRelocType(fRelocType);
