@@ -3461,8 +3461,8 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 #endif  // !HAVE_KQUEUE !HAVE_EPOLL
 
 #if defined(TARGET_WASI)
-// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
-bool descriptor_table_get_ref(int fd, void **entry);
+// from https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/descriptor_table.h
+void* descriptor_table_get_ref(int fd);
 
 // this method is invading private implementation details of wasi-libc
 // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
@@ -3475,10 +3475,12 @@ int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
     }
 
     int fd = ToFileDescriptor(socket);
-    if(!descriptor_table_get_ref(fd, entry))
+    void* ref = descriptor_table_get_ref(fd);
+    if (ref == NULL)
     {
         return Error_EFAULT;
     }
+    *entry = ref;
     return Error_SUCCESS;
 }
 #else
