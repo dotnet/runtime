@@ -39,21 +39,17 @@ namespace System.Runtime.CompilerServices
             get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
         }
 
-        internal static bool IsSuspended => t_current != null && t_current->Dispatcher is { Suspended: true };
-
-        internal static unsafe AsyncTaskDispatcher? SuspendAsyncContext(AsyncInstrumentation.Flags flags)
+        internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()
         {
             AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
             if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
             {
-                Debug.Assert(!activeDispatcher.Suspended);
-                activeDispatcher.Suspended = true;
-
-                if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
-                {
-                    AsyncProfiler.SuspendAsyncContext.Suspend(activeDispatcher, ref current->AsyncProfilerInfo);
-                }
-
+                // V1 dispatchers emit only Resume/Complete per MoveNext invocation — no Suspend
+                // events. Each dispatcher MoveNext is treated as a discrete unit. When a child
+                // wrapper is created here (parent box yielded), the parent's MoveNext will simply
+                // emit Complete on return; the child's lifecycle (Resume + Complete) fires later
+                // when its continuation runs. The logical context spans multiple dispatchers via
+                // shared contextId, with Resume count == Complete count as the balance invariant.
                 return activeDispatcher;
             }
 
@@ -121,8 +117,6 @@ namespace System.Runtime.CompilerServices
 
         internal IAsyncStateMachineBox? InnerBox => _inner;
 
-        internal bool Suspended;
-
         internal Task? LastContinuation;
 
         internal bool ReachedLastContinuation;
@@ -133,10 +127,10 @@ namespace System.Runtime.CompilerServices
             _contextId = 0;
         }
 
-        internal AsyncTaskDispatcher(IAsyncStateMachineBox inner, AsyncTaskDispatcher suspended) : base()
+        internal AsyncTaskDispatcher(IAsyncStateMachineBox inner, AsyncTaskDispatcher parent) : base()
         {
             _inner = inner;
-            _contextId = suspended.ContextId;
+            _contextId = parent.ContextId;
         }
 
         internal ulong ContextId
@@ -156,24 +150,44 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>
         /// Creates a new dispatcher for the given box. If a dispatcher is already active on the
-        /// current thread (mid-chain yield), marks the current frame as suspended and emit a suspend event.
+        /// current thread (mid-chain yield), the new dispatcher becomes a child wrapping the box
+        /// and inherits the active dispatcher's contextId so subsequent events fold into the
+        /// same logical context. Every dispatcher (root or child) emits a CreateAsyncContext
+        /// event with its contextId — children share their parent's contextId, so multiple Create
+        /// events appear for the same logical context. Parsers can reconstruct Suspend semantics
+        /// via per-contextId refcounting: Complete events while refcount > 0 indicate a dispatcher
+        /// MoveNext ended but the chain continues; the final Complete (refcount → 0) marks the
+        /// logical context fully drained. Balance invariant: Create count == Complete count per
+        /// contextId.
+        ///
+        /// When created as a child (parent is mid-MoveNext, about to suspend), the parent
+        /// dispatcher emits an Append event here — this is the last synchronization point where
+        /// the chain state is known stable. Once we return and the new child dispatcher is
+        /// scheduled, other threads may race ahead and walk/mutate state before the parent's
+        /// Complete-time Append fires.
         /// </summary>
-        internal static AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
+        internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
+            AsyncTaskDispatcherInfo* activeInfo = AsyncTaskDispatcherInfo.t_current;
+            AsyncTaskDispatcher? activeDispatcher = (activeInfo != null && activeInfo->Dispatcher is AsyncTaskDispatcher d) ? d : null;
+            AsyncTaskDispatcher dispatcher = activeDispatcher != null
+                ? new AsyncTaskDispatcher(box, activeDispatcher)
+                : new AsyncTaskDispatcher(box);
+
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-            AsyncTaskDispatcher? activeDispatcher = AsyncTaskDispatcherInfo.SuspendAsyncContext(flags);
-            if (activeDispatcher != null)
+            if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                return new AsyncTaskDispatcher(box, activeDispatcher);
+                if (activeDispatcher is not null)
+                {
+                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref activeInfo->AsyncProfilerInfo, (ulong)dispatcher.ContextId);
+                }
+                else
+                {
+                    AsyncProfiler.CreateAsyncContext.Create((ulong)dispatcher.ContextId);
+                }
             }
 
-            AsyncTaskDispatcher newDispatcher = new AsyncTaskDispatcher(box);
-            if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(AsyncInstrumentation.SyncActiveFlags()))
-            {
-                AsyncProfiler.CreateAsyncContext.Create((ulong)newDispatcher.ContextId);
-            }
-
-            return newDispatcher;
+            return dispatcher;
         }
 
         internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext();
@@ -208,15 +222,19 @@ namespace System.Runtime.CompilerServices
             }
             finally
             {
-                if (!Suspended && AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
+                // Always emit Complete in V1 — each dispatcher MoveNext is a discrete unit
+                // emitting one Resume + one Complete. The logical context (shared contextId)
+                // spans multiple dispatchers; Resume count == Complete count per context.
+                if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
                     AsyncProfiler.CompleteAsyncContext.Complete(this, ref dispatcherInfo.AsyncProfilerInfo);
                 }
 
-                // If Suspended, the Suspend event was already emitted inline by Create.
+                // Pop t_current inside finally so the TLS pointer is restored even if
+                // inner.MoveNext() throws. Otherwise t_current would dangle at a destroyed
+                // stack frame and pollute subsequent code on this thread.
+                refCurrent = dispatcherInfo.Next;
             }
-
-            refCurrent = dispatcherInfo.Next;
         }
 
         public Action MoveNextAction => _moveNextAction ??= MoveNext;
