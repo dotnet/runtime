@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -71,7 +73,7 @@ internal static class DumpTestHelpers
         {
             ThreadData threadData = threadContract.GetThreadData(currentThreadPtr);
 
-            foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
+            foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData).Where(ClrDataStackWalk.IsLegacyVisible))
             {
                 TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
                 string? name = GetMethodName(target, methodDescPtr);

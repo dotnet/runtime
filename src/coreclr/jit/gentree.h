@@ -8168,9 +8168,6 @@ public:
     enum
     {
         BlkOpKindInvalid,
-#ifdef TARGET_XARCH
-        BlkOpKindRepInstr,
-#endif
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
