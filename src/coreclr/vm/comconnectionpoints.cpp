@@ -556,14 +556,24 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         {
             UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
+            PCODE pProvCode;
+            PCODE pDlgCtorCode;
+            PCODE pEventMethodCode;
+            {
+                GCX_PREEMP();
+                pProvCode = pProvMethodDesc->GetSingleCallableAddrOfCode();
+                pDlgCtorCode = pDlgCtorMD->GetSingleCallableAddrOfCode();
+                pEventMethodCode = pEventMethodDesc->GetMultiCallableAddrOfCode();
+            }
+
             // Using GetMultiCallableAddrOfCode() for the event target since it is stored for future invokes.
             invokeConnectionPointProviderMethod.InvokeThrowing(
                 &pProvider,
-                pProvMethodDesc->GetSingleCallableAddrOfCode(),
+                pProvCode,
                 &pDelegate,
-                pDlgCtorMD->GetSingleCallableAddrOfCode(),
+                pDlgCtorCode,
                 &pSubscriber,
-                pEventMethodDesc->GetMultiCallableAddrOfCode());
+                pEventMethodCode);
         }
         GCPROTECT_END();
     }

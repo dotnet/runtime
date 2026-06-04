@@ -775,18 +775,22 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
-
-    if (target != NULL)
+    MethodTable *pTargetMT = NULL;
     {
-        pObj.Set(target);
+        GCX_COOP();
 
-        MethodTable* pMT = target->GetMethodTable();
+        OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
 
-        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+        if (target != NULL)
+        {
+            pObj.Set(target);
+
+            pTargetMT = target->GetMethodTable();
+        }
     }
+
+    if (pTargetMT != NULL)
+        funcPtr = pTargetMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
 
     END_QCALL;
 

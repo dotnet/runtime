@@ -2836,7 +2836,7 @@ namespace
         {
             THROWS;
             GC_NOTRIGGER;
-            MODE_ANY;
+            MODE_PREEMPTIVE;
             INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;

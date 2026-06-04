@@ -443,13 +443,16 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
-    if (pMeth->IsVtableMethod())
     {
-        pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
-    }
-    else
-    {
-        pTarget = pMeth->GetSingleCallableAddrOfCode();
+        GCX_PREEMP();
+        if (pMeth->IsVtableMethod())
+        {
+            pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
+        }
+        else
+        {
+            pTarget = pMeth->GetSingleCallableAddrOfCode();
+        }
     }
     callDescrData.pTarget = pTarget;
 

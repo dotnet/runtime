@@ -2099,6 +2099,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
     //
     if ((pDE->m_evalType != DB_IPCE_FET_NEW_OBJECT) && !pDE->m_md->IsStatic() && pDE->m_md->IsUnboxingStub())
     {
+        GCX_PREEMP();
         *ppUnboxedMD = pDE->m_md->GetMethodTable()->GetUnboxedEntryPointMD(pDE->m_md);
     }
 
@@ -2213,13 +2214,19 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
         // Now, find the proper MethodDesc for this interface method based on the object we're invoking the
         // method on.
         //
-        pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pDE->m_ownerTypeHandle);
+        {
+            GCX_PREEMP();
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pDE->m_ownerTypeHandle);
+        }
 
         GCPROTECT_END();
     }
     else
     {
-        pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, pDE->m_ownerTypeHandle);
+        {
+            GCX_PREEMP();
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, pDE->m_ownerTypeHandle);
+        }
     }
 
     //

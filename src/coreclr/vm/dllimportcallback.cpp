@@ -120,7 +120,7 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -268,7 +268,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         POSTCONDITION(CheckPointer(RETVAL));
     }
