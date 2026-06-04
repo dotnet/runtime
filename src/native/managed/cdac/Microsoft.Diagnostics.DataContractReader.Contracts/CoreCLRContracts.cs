@@ -28,7 +28,6 @@ public static class CoreCLRContracts
         registry.Register<ISignature>("c1", static t => new Signature_1(t));
         registry.Register<IBuiltInCOM>("c1", static t => new BuiltInCOM_1(t));
         registry.Register<IObjectiveCMarshal>("c1", static t => new ObjectiveCMarshal_1(t));
-        registry.Register<IObjectiveCMarshal>("c2", static t => new ObjectiveCMarshal_2(t));
         registry.Register<IConditionalWeakTable>("c1", static t => new ConditionalWeakTable_1(t));
         registry.Register<IManagedTypeSource>("c1", static t => new ManagedTypeSource_1(t));
         registry.Register<IAuxiliarySymbols>("c1", static t => new AuxiliarySymbols_1(t));
