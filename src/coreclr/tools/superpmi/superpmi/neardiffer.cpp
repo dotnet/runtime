@@ -645,12 +645,14 @@ bool NearDiffer::compareOffsets(
 //
 // For wasm32, integer immediates that materialize JIT handles (function indices,
 // type indices, memory addresses, globals) are emitted as 5-byte ULEB128/SLEB128
-// placeholders (`80 80 80 80 00`) immediately following the 1-byte opcode, with
-// the real target recorded in a separate reloc table keyed by the byte offset of
-// the *payload* (i.e. opcode-byte + 1). Both baseline and diff JITs write the
-// same placeholder bytes, so byte-by-byte comparison naturally succeeds at reloc
-// sites without any patching. Any immediate mismatch surfaced to this comparator
-// therefore falls into one of three cases:
+// placeholders (`80 80 80 80 00`) that the JIT separately records in a reloc
+// table. For un-prefixed forms like `i32.const`/`call`, the placeholder sits at
+// `opcode-byte + 1`. For un-prefixed memory ops (`i32.load`, `i32.store`, ...),
+// the layout is `<opcode> <align>:u32 <reloc-offset>:u32`, so the relocatable
+// payload sits at `opcode-byte + 2`. Either way, both baseline and diff JITs
+// write the same placeholder bytes, so byte-by-byte comparison naturally
+// succeeds at reloc sites without any patching. Any immediate mismatch surfaced
+// to this comparator therefore falls into one of three cases:
 //
 //   1. Hard-coded non-reloc literal that genuinely differs across baseline/diff.
 //      This is a real codegen change; return false.
@@ -664,10 +666,11 @@ bool NearDiffer::compareOffsets(
 //      Return false.
 //
 // `blockOffset` is the opcode-byte offset within the framed buffer, per the
-// coredistools Wasm32 contract. The recorded reloc location is the payload byte
-// (one byte past the opcode for the un-prefixed `i32.const`/`call`/etc. that the
-// JIT actually relocates today). We search a small window starting at
-// `blockOffset + 1` to be robust to multi-byte prefixed opcodes.
+// coredistools Wasm32 contract. The recorded reloc location is the payload byte,
+// which may be `opcode-byte + 1` (un-prefixed i32.const/call/etc.),
+// `opcode-byte + 2` (un-prefixed loads/stores after the align u32), or further
+// for prefixed opcodes. We search the entire immediate window
+// `[blockOffset+1, blockOffset+instrLen)` to handle all of these uniformly.
 //
 bool NearDiffer::compareOffsetsWasm(
     const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
@@ -679,12 +682,13 @@ bool NearDiffer::compareOffsetsWasm(
 
     const DiffData* data = (const DiffData*)payload;
 
-    // Payload byte for an un-prefixed wasm opcode is opcode-byte + 1. For prefixed
-    // forms (0xFC/0xFD/0xFE) the payload sits one or more bytes deeper, all of
-    // which lie inside [blockOffset+1, blockOffset+instrLen). Walk that range and
-    // accept the first match; mismatched relocations are extremely rare in
-    // practice and a window-scan is much simpler than threading prefix-length
-    // information through coredistools.
+    // The relocated payload byte may live at `opcode-byte + 1` (un-prefixed
+    // i32.const/call/etc.), `opcode-byte + 2` (un-prefixed memory ops, after
+    // the align u32), or even deeper for prefixed forms (0xFC/0xFD/0xFE).
+    // Rather than threading per-opcode payload offsets through coredistools,
+    // walk the entire immediate window [blockOffset+1, blockOffset+instrLen)
+    // and accept the first reloc found. Multiple relocs in a single instruction
+    // are not emitted today.
     const size_t windowStart = blockOffset + 1;
     const size_t windowSize  = (instrLen > 1) ? (instrLen - 1) : 0;
 

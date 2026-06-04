@@ -1182,8 +1182,16 @@ const Agnostic_RecordRelocation* CompileResult::findRelocationInRange(size_t ori
     if (RecordRelocation == nullptr)
         return nullptr;
 
+    if (windowSize == 0)
+        return nullptr;
+
     const size_t rangeLo = originalBufferStart + originalBufferOffset;
     const size_t rangeHi = rangeLo + windowSize;
+
+    // Guard against size_t wraparound (rangeLo near SIZE_MAX). Bail rather than
+    // scan with an inverted half-open range that could match unrelated relocs.
+    if (rangeHi < rangeLo)
+        return nullptr;
 
     const unsigned int count = RecordRelocation->GetCount();
     const Agnostic_RecordRelocation* items = RecordRelocation->GetRawItems();
