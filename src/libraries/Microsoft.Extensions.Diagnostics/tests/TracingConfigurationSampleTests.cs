@@ -5,12 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Tracing;
+using Microsoft.Extensions.Diagnostics.Tracing.Configuration;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -80,8 +80,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .BuildServiceProvider();
 
-            Type factoryType = GetActivityListenerConfigurationFactoryType();
-            var factory = serviceProvider.GetService(factoryType);
+            var factory = serviceProvider.GetService<IActivityListenerConfigurationFactory>();
             Assert.NotNull(factory);
         }
 
@@ -113,20 +112,14 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .Services
                 .BuildServiceProvider();
 
-            Type factoryType = GetActivityListenerConfigurationFactoryType();
-            object factory = serviceProvider.GetRequiredService(factoryType);
-            object? mergedConfigurationObject = factoryType.GetMethod("GetConfiguration")!.Invoke(factory, [listenerName]);
-            Assert.NotNull(mergedConfigurationObject);
-            IConfiguration mergedConfiguration = (IConfiguration)mergedConfigurationObject;
+            var factory = serviceProvider.GetRequiredService<IActivityListenerConfigurationFactory>();
+            IConfiguration mergedConfiguration = factory.GetConfiguration(listenerName);
+            Assert.NotNull(mergedConfiguration);
 
             Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceA"]);
             Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceB"]);
             Assert.Equal("false", mergedConfiguration["EnabledTracing:SourceC"]);
         }
-
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-        private static Type GetActivityListenerConfigurationFactoryType()
-            => typeof(TracingServiceExtensions).Assembly.GetType("Microsoft.Extensions.Diagnostics.Tracing.ActivityListenerConfigurationFactory", throwOnError: true)!;
 
         [Fact]
         public void ScopeConfigurationMatchesSampleBehavior()

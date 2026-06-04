@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Tracing;
+using Microsoft.Extensions.Diagnostics.Tracing.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -28,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<ActivitySourceFactory, DefaultActivitySourceFactory>();
             services.AddOptions<NoOpOptions>().ValidateOnStart();
             services.TryAddSingleton<IConfigureOptions<NoOpOptions>, SubscriptionActivator>();
-            services.TryAddSingleton<ActivityListenerConfigurationFactory>();
+            services.TryAddSingleton<IActivityListenerConfigurationFactory, ActivityListenerConfigurationFactory>();
 
             return new TracingBuilder(services);
         }

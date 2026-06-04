@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
-namespace Microsoft.Extensions.Diagnostics.Tracing
+namespace Microsoft.Extensions.Diagnostics.Tracing.Configuration
 {
-    internal sealed class ActivityListenerConfigurationFactory
+    internal sealed class ActivityListenerConfigurationFactory : IActivityListenerConfigurationFactory
     {
         private readonly IEnumerable<TracingConfiguration> _configurations;
 

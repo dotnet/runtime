@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Tracing.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Tracing

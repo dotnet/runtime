@@ -43,3 +43,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
         Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(string listenerName);
     }
 }
+namespace Microsoft.Extensions.Diagnostics.Tracing.Configuration
+{
+    public interface IActivityListenerConfigurationFactory
+    {
+        Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(string listenerName);
+    }
+}

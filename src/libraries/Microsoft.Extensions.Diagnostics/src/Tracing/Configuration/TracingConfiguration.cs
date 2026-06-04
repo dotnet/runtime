@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Extensions.Configuration;
 
-namespace Microsoft.Extensions.Diagnostics.Tracing
+namespace Microsoft.Extensions.Diagnostics.Tracing.Configuration
 {
     internal sealed class TracingConfiguration
     {
