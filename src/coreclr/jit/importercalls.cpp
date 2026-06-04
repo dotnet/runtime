@@ -11391,9 +11391,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
-                                                               enclosingClassNames[0], enclosingClassNames[1],
-                                                               isXplatIntrinsic);
+                            result =
+                                HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0],
+                                                          enclosingClassNames[1], isXplatIntrinsic);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
