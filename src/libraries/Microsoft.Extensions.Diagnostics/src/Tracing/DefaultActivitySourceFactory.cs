@@ -36,7 +36,18 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 }
 
                 _listenerRegistrations = registrations.ToArray();
-                _changeTokenRegistration = options.OnChange(UpdateRules);
+                // TracingOptions is a public type so other code may register named buckets via
+                // services.Configure<TracingOptions>("foo", ...). We only own the default bucket,
+                // so filter notifications to it. The standard OptionsMonitor pipeline normalises
+                // null -> Options.DefaultName ("") before invoking the listener, but the delegate
+                // signature permits null, so IsNullOrEmpty is the defensive form that covers both.
+                _changeTokenRegistration = options.OnChange((opts, name) =>
+                {
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        UpdateRules(opts);
+                    }
+                });
             }
             catch
             {
@@ -273,21 +284,20 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private bool IsEnabledFast(ListenerState state, ActivitySource source, string operationName)
             {
-                if (!state.SourceFilterStates.TryGetValue(source, out SourceFilterState filter))
+                (string Name, bool IsLocalScope) key = (source.Name, ReferenceEquals(_activitySourceFactory, source.Scope));
+                if (!state.SourceFilterStates.TryGetValue(key, out SourceFilterState filter))
                 {
                     // Cache miss is rare (race against UpdateRules clearing the dictionary).
                     // Compute on the fly without caching; the next ShouldListenTo for this source repopulates.
-                    filter = ComputeFilterState(state.Rules, source);
+                    filter = ComputeFilterState(state.Rules, key.Name, key.IsLocalScope);
                 }
                 bool divergent = filter.Divergent is { } d && d.Contains(operationName);
                 return divergent ? !filter.DefaultEnabled : filter.DefaultEnabled;
             }
 
-            private SourceFilterState ComputeFilterState(IList<TracingRule> rules, ActivitySource source)
+            private SourceFilterState ComputeFilterState(IList<TracingRule> rules, string sourceName, bool isLocalScope)
             {
-                bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
-
-                TracingRule? defaultRule = GetMostSpecificRule(rules, source.Name, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
+                TracingRule? defaultRule = GetMostSpecificRule(rules, sourceName, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
                 bool defaultEnabled = defaultRule?.Enable ?? false;
 
                 HashSet<string>? divergent = null;
@@ -305,7 +315,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                         continue;
                     }
 
-                    bool enabled = IsOperationEnabled(rules, source, rule.OperationName);
+                    bool enabled = IsOperationEnabled(rules, sourceName, isLocalScope, rule.OperationName);
                     if (enabled != defaultEnabled)
                     {
                         divergent ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -316,30 +326,31 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return new SourceFilterState(defaultEnabled, divergent);
             }
 
-            private bool IsOperationEnabled(IList<TracingRule> rules, ActivitySource source, string operationName)
+            private bool IsOperationEnabled(IList<TracingRule> rules, string sourceName, bool isLocalScope, string operationName)
             {
-                bool isLocalScope = ReferenceEquals(_activitySourceFactory, source.Scope);
-                TracingRule? rule = GetMostSpecificRule(rules, source.Name, operationName, _listenerName, isLocalScope, considerOperationName: true);
+                TracingRule? rule = GetMostSpecificRule(rules, sourceName, operationName, _listenerName, isLocalScope, considerOperationName: true);
                 return rule?.Enable ?? false;
             }
 
             private bool ShouldListenTo(ActivitySource activitySource)
             {
+                (string Name, bool IsLocalScope) key = (activitySource.Name, ReferenceEquals(_activitySourceFactory, activitySource.Scope));
+
                 SourceFilterState filter;
                 while (true)
                 {
                     ListenerState state = Volatile.Read(ref _state);
-                    if (state.SourceFilterStates.TryGetValue(activitySource, out filter))
+                    if (state.SourceFilterStates.TryGetValue(key, out filter))
                     {
                         break;
                     }
 
-                    filter = ComputeFilterState(state.Rules, activitySource);
+                    filter = ComputeFilterState(state.Rules, key.Name, key.IsLocalScope);
                     // Copy-on-write via CAS so IsEnabledFast readers stay lock-free and
                     // UpdateRules can swap the whole state without blocking concurrent ShouldListenTo calls.
-                    var newDict = new Dictionary<ActivitySource, SourceFilterState>(state.SourceFilterStates)
+                    var newDict = new Dictionary<(string Name, bool IsLocalScope), SourceFilterState>(state.SourceFilterStates)
                     {
-                        [activitySource] = filter,
+                        [key] = filter,
                     };
                     ListenerState newState = state.WithSourceFilterStates(newDict);
                     if (Interlocked.CompareExchange(ref _state, newState, state) == state)
@@ -517,9 +528,9 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
             private sealed class ListenerState
             {
-                public static readonly ListenerState Empty = new([], hasOperationNameRules: false, new Dictionary<ActivitySource, SourceFilterState>());
+                public static readonly ListenerState Empty = new([], hasOperationNameRules: false, new Dictionary<(string, bool), SourceFilterState>());
 
-                public ListenerState(IList<TracingRule> rules, bool hasOperationNameRules, Dictionary<ActivitySource, SourceFilterState> sourceFilterStates)
+                public ListenerState(IList<TracingRule> rules, bool hasOperationNameRules, Dictionary<(string Name, bool IsLocalScope), SourceFilterState> sourceFilterStates)
                 {
                     Rules = rules;
                     HasOperationNameRules = hasOperationNameRules;
@@ -528,12 +539,18 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                 public IList<TracingRule> Rules { get; }
                 public bool HasOperationNameRules { get; }
-                public Dictionary<ActivitySource, SourceFilterState> SourceFilterStates { get; }
+
+                // Keyed by (Name, IsLocalScope) rather than by ActivitySource instance so that
+                // disposed sources do not stay pinned in the cache, and so that two sources
+                // sharing the same name and scope (e.g. a source recreated after a previous
+                // instance was disposed) share the cached filter state. Name and Scope are both
+                // immutable once an ActivitySource is constructed, so the key is stable.
+                public Dictionary<(string Name, bool IsLocalScope), SourceFilterState> SourceFilterStates { get; }
 
                 public static ListenerState Create(IList<TracingRule> rules)
-                    => new(rules, ComputeHasOperationNameRules(rules), new Dictionary<ActivitySource, SourceFilterState>());
+                    => new(rules, ComputeHasOperationNameRules(rules), new Dictionary<(string, bool), SourceFilterState>());
 
-                public ListenerState WithSourceFilterStates(Dictionary<ActivitySource, SourceFilterState> sourceFilterStates)
+                public ListenerState WithSourceFilterStates(Dictionary<(string Name, bool IsLocalScope), SourceFilterState> sourceFilterStates)
                     => new(Rules, HasOperationNameRules, sourceFilterStates);
 
                 private static bool ComputeHasOperationNameRules(IList<TracingRule> rules)
