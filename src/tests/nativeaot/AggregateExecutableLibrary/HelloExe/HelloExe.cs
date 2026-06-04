@@ -17,13 +17,17 @@ unsafe static class Win32Resources
     {
         nint lib = 0;
 
-        if (GetIntValueFromResource(lib, (ushort*)(nuint)(ushort)10, 0x041B) != 3)
-            throw new Exception();
+        int resourceValue = GetIntValueFromResource(lib, (ushort*)(nuint)(ushort)10, 0x041B);
+        if (resourceValue != 3)
+            throw new Exception($"Expected resource 10 to have value 3, but got {resourceValue}");
 
         ReadOnlySpan<char> resName = "funny";
         fixed (char* pResName = resName)
-            if (GetIntValueFromResource(lib, (ushort*)pResName, 0x041B) != 1)
-                throw new Exception();
+        {
+            resourceValue = GetIntValueFromResource(lib, (ushort*)pResName, 0x041B);
+            if (resourceValue != 1)
+                throw new Exception($"Expected resource 'funny' to have value 1, but got {resourceValue}");
+        }
     }
 
     private static int GetIntValueFromResource(nint hModule, ushort* lpName, ushort wLanguage)

@@ -59,7 +59,11 @@ namespace Build.Tasks
                         {
                             File.Delete(ResourceFile);
                         }
-                        catch { }
+                        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                        {
+                            Log.LogErrorFromException(ex);
+                            return false;
+                        }
                     }
                 }
             }
@@ -129,7 +133,7 @@ namespace Build.Tasks
 
                 if (i < numNamed)
                 {
-                    nameOffsetOrId = nameOffsetOrId &= 0x7FFFFFFF;
+                    nameOffsetOrId &= 0x7FFFFFFF;
                     BlobReader nameReader = _memoryBlock.GetReader(_rsrcOffset + nameOffsetOrId, _rsrcSize - nameOffsetOrId);
                     ushort nameLength = nameReader.ReadUInt16();
                     StringBuilder sb = new StringBuilder(nameLength);
