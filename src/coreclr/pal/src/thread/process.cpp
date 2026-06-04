@@ -120,26 +120,6 @@ extern bool g_running_in_exe;
 
 using namespace CorUnix;
 
-CObjectType CorUnix::otProcess(
-                otiProcess,
-                NULL,   // No cleanup routine
-                0,      // No immutable data
-                NULL,   // No immutable data copy routine
-                NULL,   // No immutable data cleanup routine
-                0,      // No process local data
-                NULL,   // No process local data cleanup routine
-                CObjectType::WaitableObject,
-                CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects
-                );
-
-CAllowedObjectTypes aotProcess(otiProcess);
-
-//
-// The representative IPalObject for this process
-//
-IPalObject* CorUnix::g_pobjProcess;
-
 //
 // The command line and app name for the process
 //
@@ -2094,9 +2074,7 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    IPalObject *pobjProcess = NULL;
     CObjectAttributes oa;
-    HANDLE hProcess;
 
     //
     // Create initial thread object
@@ -2114,57 +2092,7 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 
     (void) g_pObjectManager->RevokeHandle(pThread, hThread);
 
-    //
-    // Create and initialize process object
-    //
-
-    palError = g_pObjectManager->AllocateObject(
-        pThread,
-        &otProcess,
-        &oa,
-        &pobjProcess
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Unable to allocate process object");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    palError = g_pObjectManager->RegisterObject(
-        pThread,
-        pobjProcess,
-        &aotProcess,
-        &hProcess,
-        &g_pobjProcess
-        );
-
-    //
-    // pobjProcess is invalidated by the call to RegisterObject, so
-    // NULL it out here to prevent it from being released later
-    //
-
-    pobjProcess = NULL;
-
-    if (NO_ERROR != palError)
-    {
-        ASSERT("Failure registering process object");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    //
-    // There's no need to keep this handle around, so revoke
-    // it now
-    //
-
-    g_pObjectManager->RevokeHandle(pThread, hProcess);
-
 CreateInitialProcessAndThreadObjectsExit:
-
-    if (NULL != pobjProcess)
-    {
-        pobjProcess->ReleaseReference(pThread);
-    }
 
     return palError;
 }
