@@ -7378,7 +7378,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-#if USE_HELPERS_FOR_INT_DIV
+#ifdef TARGET_ARM
             if (typ == TYP_INT)
             {
                 if (oper == GT_UMOD)
@@ -7392,7 +7392,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                     goto USE_HELPER_FOR_ARITH;
                 }
             }
-#endif
+#endif // TARGET_ARM
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
             if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())

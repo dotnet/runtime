@@ -715,9 +715,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_MUL:
             ins = INS_MUL;
             break;
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
         case GT_DIV:
             ins = INS_sdiv;
+            break;
+        case GT_UDIV:
+            ins = INS_udiv;
             break;
 #endif // !USE_HELPERS_FOR_INT_DIV
         case GT_LSH:
@@ -1066,7 +1069,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     // on float/double args.
     noway_assert(tree->OperIs(GT_DIV) || !varTypeIsFloating(tree));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     noway_assert(!varTypeIsIntOrI(tree));
 #endif // USE_HELPERS_FOR_INT_DIV
 
