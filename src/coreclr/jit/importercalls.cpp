@@ -11980,7 +11980,7 @@ NamedIntrinsic Compiler::lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE 
 //    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
-//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
+//    a gtNewMustThrowException if mustExpand is true or optimizations are enabled; otherwise, nullptr
 //
 GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
                                                 CORINFO_METHOD_HANDLE method,
@@ -11989,17 +11989,19 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
 {
     // We've hit some error case and may need to return a node for the given error.
     //
-    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
-    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-    // match that).
-    //
     // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
     // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
     // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+    //
+    // When `mustExpand=false`, we are attempting to expand the intrinsic directly at the call site (either at the
+    // root method or while importing an inlinee body). When optimizations are enabled it is preferable to surface
+    // a hard throw at the unsupported call site rather than fall back to a managed call into the (unsupported)
+    // intrinsic body, since the body itself will only end up throwing as well. We therefore also return the
+    // `MustThrowException` node when `opts.OptimizationEnabled()` is true. When optimizations are disabled (Tier0
+    // / MinOpts / debug code) we keep the legacy behavior of returning `nullptr` and emitting a GT_CALL so as not
+    // to perturb debugging or tier-up scenarios.
 
-    if (mustExpand)
+    if (mustExpand || opts.OptimizationEnabled())
     {
         for (unsigned i = 0; i < sig->numArgs; i++)
         {
