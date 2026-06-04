@@ -827,6 +827,22 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
+// When enabled, each opcode dispatches directly to the next one via an indirect goto,
+// avoiding the overhead of the central switch dispatch.
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(TARGET_WASM) && !defined(DEBUG)
+#define USE_COMPUTED_GOTO 1
+#endif
+
+#if USE_COMPUTED_GOTO
+#define INTOP_CASE(x) LABEL_ ## x:
+#define INTOP_DISPATCH(op) pFrame->ip = op; opcode = (uint32_t)(op); goto *s_dispatchTable[opcode]
+#define INTOP_NEXT INTOP_DISPATCH(ip[0])
+#else
+#define INTOP_CASE(x) case x:
+#define INTOP_DISPATCH(op) opcode = (uint32_t)(op); goto SWITCH_OPCODE
+#define INTOP_NEXT break
+#endif // USE_COMPUTED_GOTO
+
 
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
 {
@@ -1377,6 +1393,15 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     MethodDesc* targetMethod;
     uint32_t opcode;
 
+#if USE_COMPUTED_GOTO
+    static const void* const s_dispatchTable[] = {
+        #define OPDEF(a,b,c,d,e,f) &&LABEL_ ## a,
+        #include "intops.def"
+        #undef OPDEF
+    };
+    static_assert(sizeof(s_dispatchTable) / sizeof(s_dispatchTable[0]) == INTOP_LAST, "Dispatch table size mismatch");
+#endif // USE_COMPUTED_GOTO
+
 MAIN_LOOP:
     try
     {
@@ -1384,26 +1409,23 @@ MAIN_LOOP:
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         while (true)
         {
-            // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
-            // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
-            // and we can save the IP to the frame at the suspension time.
-            // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
-            // keep it for such purposes until we don't need it anymore.
+#if USE_COMPUTED_GOTO
+            INTOP_NEXT;
+#else
             pFrame->ip = (int32_t*)ip;
             opcode = ip[0];
-#ifdef DEBUGGING_SUPPORTED
 SWITCH_OPCODE:
-#endif // DEBUGGING_SUPPORTED
             switch (opcode)
             {
+#endif // !USE_COMPUTED_GOTO
 #ifdef DEBUG
-                case INTOP_HALT:
+                INTOP_CASE(INTOP_HALT)
                     InterpHalt();
                     ip++;
-                    break;
+                    INTOP_NEXT;
 #endif // DEBUG
 #ifdef DEBUGGING_SUPPORTED
-                case INTOP_BREAKPOINT:
+                INTOP_CASE(INTOP_BREAKPOINT)
                 {
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
@@ -1415,15 +1437,14 @@ SWITCH_OPCODE:
                     {
                         LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Post-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
                         pThreadContext->ClearBypass();
-                        opcode = bypassOpcode;
-                        goto SWITCH_OPCODE;
+                        INTOP_DISPATCH(bypassOpcode);
                     }
 
                     // No bypass
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DEBUG_METHOD_ENTER:
+                INTOP_CASE(INTOP_DEBUG_METHOD_ENTER)
                 {
                     if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
                     {
@@ -1439,101 +1460,101 @@ SWITCH_OPCODE:
                         g_pDebugInterface->OnMethodEnter((void*)callbackIp);
                     }
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DEBUG_SEQ_POINT:
+                INTOP_CASE(INTOP_DEBUG_SEQ_POINT)
                     ip++;
-                    break;
+                    INTOP_NEXT;
 #endif // DEBUGGING_SUPPORTED
-                case INTOP_INITLOCALS:
+                INTOP_CASE(INTOP_INITLOCALS)
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
-                    break;
-                case INTOP_MEMBAR:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_MEMBAR)
                     MemoryBarrier();
                     ip++;
-                    break;
+                    INTOP_NEXT;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-                case INTOP_STORESTUBCONTEXT:
+                INTOP_CASE(INTOP_STORESTUBCONTEXT)
                 {
                     UMEntryThunkData* thunkData = GetMostRecentUMEntryThunkData();
                     _ASSERTE(thunkData);
                     LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
                 }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-                case INTOP_LDC_I4:
+                INTOP_CASE(INTOP_LDC_I4)
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
-                    break;
-                case INTOP_LDC_I4_0:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDC_I4_0)
                     LOCAL_VAR(ip[1], int32_t) = 0;
                     ip += 2;
-                    break;
-                case INTOP_LDC_I8_0:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDC_I8_0)
                     LOCAL_VAR(ip[1], int64_t) = 0;
                     ip += 2;
-                    break;
-                case INTOP_LDC_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDC_I8)
                     LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
-                    break;
-                case INTOP_LDC_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDC_R4)
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
-                    break;
-                case INTOP_LDC_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDC_R8)
                     LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
-                    break;
-                case INTOP_LDPTR:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDPTR)
                     LOCAL_VAR(ip[1], void*) = pMethod->pDataItems[ip[2]];
                     ip += 3;
-                    break;
-                case INTOP_LDPTR_DEREF:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDPTR_DEREF)
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
-                    break;
-                case INTOP_NULLCHECK:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NULLCHECK)
                     NULL_CHECK(LOCAL_VAR(ip[1], void*));
                     ip += 2;
-                    break;
-                case INTOP_RET:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_RET)
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
-                case INTOP_RET_I1:
+                INTOP_CASE(INTOP_RET_I1)
                     // Return int8 value
                     *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
-                case INTOP_RET_U1:
+                INTOP_CASE(INTOP_RET_U1)
                     // Return uint8 value
                     *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
-                case INTOP_RET_I2:
+                INTOP_CASE(INTOP_RET_I2)
                     // Return int16 value
                     *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
-                case INTOP_RET_U2:
+                INTOP_CASE(INTOP_RET_U2)
                     // Return uint16 value
                     *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
-                case INTOP_RET_VT:
+                INTOP_CASE(INTOP_RET_VT)
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
-                case INTOP_RET_VOID:
+                INTOP_CASE(INTOP_RET_VOID)
                     goto EXIT_FRAME;
 
-                case INTOP_LDLOCA:
+                INTOP_CASE(INTOP_LDLOCA)
                     LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
                     ip += 3;
-                    break;
-                case INTOP_LOAD_FRAMEVAR:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LOAD_FRAMEVAR)
                     _ASSERTE((pExceptionClauseArgs != NULL) && (pExceptionClauseArgs->isFilter));
                     LOCAL_VAR(ip[1], void*) = pExceptionClauseArgs->pFrame->pStack;
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
 
 #define MOV(argtype1,argtype2) \
     LOCAL_VAR(ip [1], argtype1) = LOCAL_VAR(ip [2], argtype2); \
@@ -1542,356 +1563,356 @@ SWITCH_OPCODE:
                 // which is our minimum "register" size in interp. They are only needed when
                 // the address of the local is taken and we should try to optimize them out
                 // because the local can't be propagated.
-                case INTOP_MOV_I4_I1: MOV(int32_t, int8_t); break;
-                case INTOP_MOV_I4_U1: MOV(int32_t, uint8_t); break;
-                case INTOP_MOV_I4_I2: MOV(int32_t, int16_t); break;
-                case INTOP_MOV_I4_U2: MOV(int32_t, uint16_t); break;
+                INTOP_CASE(INTOP_MOV_I4_I1) MOV(int32_t, int8_t); INTOP_NEXT;
+                INTOP_CASE(INTOP_MOV_I4_U1) MOV(int32_t, uint8_t); INTOP_NEXT;
+                INTOP_CASE(INTOP_MOV_I4_I2) MOV(int32_t, int16_t); INTOP_NEXT;
+                INTOP_CASE(INTOP_MOV_I4_U2) MOV(int32_t, uint16_t); INTOP_NEXT;
                 // Normal moves between vars
-                case INTOP_MOV_4: MOV(int32_t, int32_t); break;
-                case INTOP_MOV_8: MOV(int64_t, int64_t); break;
+                INTOP_CASE(INTOP_MOV_4) MOV(int32_t, int32_t); INTOP_NEXT;
+                INTOP_CASE(INTOP_MOV_8) MOV(int64_t, int64_t); INTOP_NEXT;
 #undef MOV
 
-                case INTOP_MOV_VT:
+                INTOP_CASE(INTOP_MOV_VT)
                     memmove(LOCAL_VAR_ADDR(ip[1], void), LOCAL_VAR_ADDR(ip[2], void), ip[3]);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CKFINITE_R4:
+                INTOP_CASE(INTOP_CKFINITE_R4)
                     LOCAL_VAR(ip[1], float) = CkfiniteHelper(LOCAL_VAR(ip[2], float));
                     ip += 3;
-                    break;
-                case INTOP_CKFINITE_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CKFINITE_R8)
                     LOCAL_VAR(ip[1], double) = CkfiniteHelper(LOCAL_VAR(ip[2], double));
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_R8_UN_I4:
+                INTOP_CASE(INTOP_CONV_R8_UN_I4)
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R8_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R8_UN_I8)
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R4_UN_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R4_UN_I4)
                     LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R4_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R4_UN_I8)
                     LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I1_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I1_I4)
                     LOCAL_VAR(ip[1], int32_t) = (int8_t)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I1_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I1_I8)
                     LOCAL_VAR(ip[1], int32_t) = (int8_t)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I1_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I1_R4)
                     ConvFpHelper<int8_t, int32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I1_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I1_R8)
                     ConvFpHelper<int8_t, int32_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U1_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U1_I4)
                     LOCAL_VAR(ip[1], int32_t) = (uint8_t)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U1_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U1_I8)
                     LOCAL_VAR(ip[1], int32_t) = (uint8_t)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U1_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U1_R4)
                     ConvFpHelper<uint8_t, int32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U1_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U1_R8)
                     ConvFpHelper<uint8_t, int32_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I2_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I2_I4)
                     LOCAL_VAR(ip[1], int32_t) = (int16_t)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I2_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I2_I8)
                     LOCAL_VAR(ip[1], int32_t) = (int16_t)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I2_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I2_R4)
                     ConvFpHelper<int16_t, int32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I2_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I2_R8)
                     ConvFpHelper<int16_t, int32_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U2_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U2_I4)
                     LOCAL_VAR(ip[1], int32_t) = (uint16_t)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U2_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U2_I8)
                     LOCAL_VAR(ip[1], int32_t) = (uint16_t)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U2_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U2_R4)
                     ConvFpHelper<uint16_t, int32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U2_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U2_R8)
                     ConvFpHelper<uint16_t, int32_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I4_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I4_R4)
                     ConvFpHelper<int32_t, int32_t, float>(stack, ip);
                     ip += 3;
-                    break;;
-                case INTOP_CONV_I4_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I4_R8)
                     ConvFpHelper<int32_t, int32_t, double>(stack, ip);
                     ip += 3;
-                    break;;
-                case INTOP_CONV_U4_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U4_R4)
                     ConvFpHelper<uint32_t, uint32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U4_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U4_R8)
                     ConvFpHelper<uint32_t, uint32_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I8_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I8_I4)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I8_U4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I8_U4)
                     LOCAL_VAR(ip[1], int64_t) = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;;
-                case INTOP_CONV_I8_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I8_R4)
                     ConvFpHelper<int64_t, int64_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_I8_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_I8_R8)
                     ConvFpHelper<int64_t, int64_t, double>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R4_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R4_I4)
                     LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R4_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R4_I8)
                     LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R4_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R4_R8)
                     LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], double);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R8_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R8_I4)
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R8_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R8_I8)
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_R8_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_R8_R4)
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], float);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U8_U4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U8_U4)
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U8_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U8_R4)
                     ConvFpHelper<uint64_t, uint64_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U8_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U8_R8)
                     ConvFpHelper<uint64_t, uint64_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I1_I4:
+                INTOP_CASE(INTOP_CONV_OVF_I1_I4)
                     ConvOvfHelper<int8_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I1_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I1_I8)
                     ConvOvfHelper<int8_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I1_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I1_R4)
                     ConvOvfFpHelper<int8_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I1_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I1_R8)
                     ConvOvfFpHelper<int8_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U1_I4:
+                INTOP_CASE(INTOP_CONV_OVF_U1_I4)
                     ConvOvfHelper<uint8_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U1_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U1_I8)
                     ConvOvfHelper<uint8_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U1_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U1_R4)
                     ConvOvfFpHelper<uint8_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U1_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U1_R8)
                     ConvOvfFpHelper<uint8_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I2_I4:
+                INTOP_CASE(INTOP_CONV_OVF_I2_I4)
                     ConvOvfHelper<int16_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I2_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I2_I8)
                     ConvOvfHelper<int16_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I2_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I2_R4)
                     ConvOvfFpHelper<int16_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I2_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I2_R8)
                     ConvOvfFpHelper<int16_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U2_I4:
+                INTOP_CASE(INTOP_CONV_OVF_U2_I4)
                     ConvOvfHelper<uint16_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U2_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U2_I8)
                     ConvOvfHelper<uint16_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U2_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U2_R4)
                     ConvOvfFpHelper<uint16_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U2_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U2_R8)
                     ConvOvfFpHelper<uint16_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I4_U4:
+                INTOP_CASE(INTOP_CONV_OVF_I4_U4)
                     ConvOvfHelper<int32_t, uint32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I4_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I4_I8)
                     ConvOvfHelper<int32_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I4_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I4_R4)
                     ConvOvfFpHelper<int32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I4_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I4_R8)
                     ConvOvfFpHelper<int32_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U4_I4:
+                INTOP_CASE(INTOP_CONV_OVF_U4_I4)
                     ConvOvfHelper<uint32_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U4_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U4_I8)
                     ConvOvfHelper<uint32_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U4_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U4_R4)
                     ConvOvfFpHelper<uint32_t, float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U4_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U4_R8)
                     ConvOvfFpHelper<uint32_t, double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I8_U8:
+                INTOP_CASE(INTOP_CONV_OVF_I8_U8)
                     ConvOvfHelper<int64_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I8_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I8_R4)
                     ConvOvfFpHelperI64<float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I8_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I8_R8)
                     ConvOvfFpHelperI64<double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U8_I4:
+                INTOP_CASE(INTOP_CONV_OVF_U8_I4)
                     ConvOvfHelper<uint64_t, int32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U8_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U8_I8)
                     ConvOvfHelper<uint64_t, int64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U8_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U8_R4)
                     ConvOvfFpHelperU64<float>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U8_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U8_R8)
                     ConvOvfFpHelperU64<double>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I1_U4:
+                INTOP_CASE(INTOP_CONV_OVF_I1_U4)
                     ConvOvfHelper<int8_t, uint32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I1_U8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I1_U8)
                     ConvOvfHelper<int8_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U1_U4:
+                INTOP_CASE(INTOP_CONV_OVF_U1_U4)
                     ConvOvfHelper<uint8_t, uint32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U1_U8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U1_U8)
                     ConvOvfHelper<uint8_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I2_U4:
+                INTOP_CASE(INTOP_CONV_OVF_I2_U4)
                     ConvOvfHelper<int16_t, uint32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_I2_U8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_I2_U8)
                     ConvOvfHelper<int16_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U2_U4:
+                INTOP_CASE(INTOP_CONV_OVF_U2_U4)
                     ConvOvfHelper<uint16_t, uint32_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_OVF_U2_U8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_OVF_U2_U8)
                     ConvOvfHelper<uint16_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_I4_U8:
+                INTOP_CASE(INTOP_CONV_OVF_I4_U8)
                     ConvOvfHelper<int32_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CONV_OVF_U4_U8:
+                INTOP_CASE(INTOP_CONV_OVF_U4_U8)
                     ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
                     ip += 3;
-                    break;
-                case INTOP_CONV_U4_U8_SAT:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CONV_U4_U8_SAT)
                 {
                     uint64_t val = LOCAL_VAR(ip[2], uint64_t);
                     if (val > UINT32_MAX)
@@ -1899,9 +1920,9 @@ SWITCH_OPCODE:
                     else
                         LOCAL_VAR(ip[1], uint32_t) = (uint32_t)val;
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_SWITCH:
+                INTOP_CASE(INTOP_SWITCH)
                 {
                     uint32_t val = LOCAL_VAR(ip[1], uint32_t);
                     uint32_t n = ip[2];
@@ -1915,10 +1936,10 @@ SWITCH_OPCODE:
                     {
                         ip += n;
                     }
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SAFEPOINT:
+                INTOP_CASE(INTOP_SAFEPOINT)
                     if (g_TrapReturningThreads)
                     {
                         Thread *pThread = GetThread();
@@ -1934,11 +1955,11 @@ SWITCH_OPCODE:
                         GCX_PREEMP();
                     }
                     ip++;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_BR:
+                INTOP_CASE(INTOP_BR)
                     ip += ip[1];
-                    break;
+                    INTOP_NEXT;
 
 #define BR_UNOP(datatype, op)           \
     if (LOCAL_VAR(ip[1], datatype) op)  \
@@ -1946,18 +1967,18 @@ SWITCH_OPCODE:
     else \
         ip += 3;
 
-                case INTOP_BRFALSE_I4:
+                INTOP_CASE(INTOP_BRFALSE_I4)
                     BR_UNOP(int32_t, == 0);
-                    break;
-                case INTOP_BRFALSE_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BRFALSE_I8)
                     BR_UNOP(int64_t, == 0);
-                    break;
-                case INTOP_BRTRUE_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BRTRUE_I4)
                     BR_UNOP(int32_t, != 0);
-                    break;
-                case INTOP_BRTRUE_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BRTRUE_I8)
                     BR_UNOP(int64_t, != 0);
-                    break;
+                    INTOP_NEXT;
 #undef BR_UNOP
 
 #define BR_BINOP_COND(cond) \
@@ -1969,234 +1990,234 @@ SWITCH_OPCODE:
 #define BR_BINOP(datatype, op) \
     BR_BINOP_COND(LOCAL_VAR(ip[1], datatype) op LOCAL_VAR(ip[2], datatype))
 
-                case INTOP_BEQ_I4:
+                INTOP_CASE(INTOP_BEQ_I4)
                     BR_BINOP(int32_t, ==);
-                    break;
-                case INTOP_BEQ_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BEQ_I8)
                     BR_BINOP(int64_t, ==);
-                    break;
-                case INTOP_BEQ_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BEQ_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(!isunordered(f1, f2) && f1 == f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BEQ_R8:
+                INTOP_CASE(INTOP_BEQ_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(!isunordered(d1, d2) && d1 == d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGE_I4:
+                INTOP_CASE(INTOP_BGE_I4)
                     BR_BINOP(int32_t, >=);
-                    break;
-                case INTOP_BGE_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGE_I8)
                     BR_BINOP(int64_t, >=);
-                    break;
-                case INTOP_BGE_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGE_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(!isunordered(f1, f2) && f1 >= f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGE_R8:
+                INTOP_CASE(INTOP_BGE_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(!isunordered(d1, d2) && d1 >= d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGT_I4:
+                INTOP_CASE(INTOP_BGT_I4)
                     BR_BINOP(int32_t, >);
-                    break;
-                case INTOP_BGT_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGT_I8)
                     BR_BINOP(int64_t, >);
-                    break;
-                case INTOP_BGT_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGT_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(!isunordered(f1, f2) && f1 > f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGT_R8:
+                INTOP_CASE(INTOP_BGT_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(!isunordered(d1, d2) && d1 > d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLT_I4:
+                INTOP_CASE(INTOP_BLT_I4)
                     BR_BINOP(int32_t, <);
-                    break;
-                case INTOP_BLT_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLT_I8)
                     BR_BINOP(int64_t, <);
-                    break;
-                case INTOP_BLT_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLT_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(!isunordered(f1, f2) && f1 < f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLT_R8:
+                INTOP_CASE(INTOP_BLT_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(!isunordered(d1, d2) && d1 < d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLE_I4:
+                INTOP_CASE(INTOP_BLE_I4)
                     BR_BINOP(int32_t, <=);
-                    break;
-                case INTOP_BLE_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLE_I8)
                     BR_BINOP(int64_t, <=);
-                    break;
-                case INTOP_BLE_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLE_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(!isunordered(f1, f2) && f1 <= f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLE_R8:
+                INTOP_CASE(INTOP_BLE_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(!isunordered(d1, d2) && d1 <= d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BNE_UN_I4:
+                INTOP_CASE(INTOP_BNE_UN_I4)
                     BR_BINOP(uint32_t, !=);
-                    break;
-                case INTOP_BNE_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BNE_UN_I8)
                     BR_BINOP(uint64_t, !=);
-                    break;
-                case INTOP_BNE_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BNE_UN_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(isunordered(f1, f2) || f1 != f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BNE_UN_R8:
+                INTOP_CASE(INTOP_BNE_UN_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(isunordered(d1, d2) || d1 != d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGE_UN_I4:
+                INTOP_CASE(INTOP_BGE_UN_I4)
                     BR_BINOP(uint32_t, >=);
-                    break;
-                case INTOP_BGE_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGE_UN_I8)
                     BR_BINOP(uint64_t, >=);
-                    break;
-                case INTOP_BGE_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGE_UN_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(isunordered(f1, f2) || f1 >= f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGE_UN_R8:
+                INTOP_CASE(INTOP_BGE_UN_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(isunordered(d1, d2) || d1 >= d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGT_UN_I4:
+                INTOP_CASE(INTOP_BGT_UN_I4)
                     BR_BINOP(uint32_t, >);
-                    break;
-                case INTOP_BGT_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGT_UN_I8)
                     BR_BINOP(uint64_t, >);
-                    break;
-                case INTOP_BGT_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BGT_UN_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(isunordered(f1, f2) || f1 > f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BGT_UN_R8:
+                INTOP_CASE(INTOP_BGT_UN_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(isunordered(d1, d2) || d1 > d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLE_UN_I4:
+                INTOP_CASE(INTOP_BLE_UN_I4)
                     BR_BINOP(uint32_t, <=);
-                    break;
-                case INTOP_BLE_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLE_UN_I8)
                     BR_BINOP(uint64_t, <=);
-                    break;
-                case INTOP_BLE_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLE_UN_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(isunordered(f1, f2) || f1 <= f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLE_UN_R8:
+                INTOP_CASE(INTOP_BLE_UN_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(isunordered(d1, d2) || d1 <= d2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLT_UN_I4:
+                INTOP_CASE(INTOP_BLT_UN_I4)
                     BR_BINOP(uint32_t, <);
-                    break;
-                case INTOP_BLT_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLT_UN_I8)
                     BR_BINOP(uint64_t, <);
-                    break;
-                case INTOP_BLT_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_BLT_UN_R4)
                 {
                     float f1 = LOCAL_VAR(ip[1], float);
                     float f2 = LOCAL_VAR(ip[2], float);
                     BR_BINOP_COND(isunordered(f1, f2) || f1 < f2);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_BLT_UN_R8:
+                INTOP_CASE(INTOP_BLT_UN_R8)
                 {
                     double d1 = LOCAL_VAR(ip[1], double);
                     double d2 = LOCAL_VAR(ip[2], double);
                     BR_BINOP_COND(isunordered(d1, d2) || d1 < d2);
-                    break;
+                    INTOP_NEXT;
                 }
 #undef BR_BINOP_COND
 #undef BR_BINOP
 
-                case INTOP_ADD_I4:
+                INTOP_CASE(INTOP_ADD_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_ADD_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_ADD_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_R4)
                     LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) + LOCAL_VAR(ip[3], float);
                     ip += 4;
-                    break;
-                case INTOP_ADD_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_R8)
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) + LOCAL_VAR(ip[3], double);
                     ip += 4;
-                    break;
-                case INTOP_ADD_I4_IMM:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_I4_IMM)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + ip[3];
                     ip += 4;
-                    break;
-                case INTOP_ADD_I8_IMM:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_I8_IMM)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + ip[3];
                     ip += 4;
-                    break;
-                case INTOP_ADD_OVF_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_ADD_OVF_I4)
                 {
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
@@ -2205,9 +2226,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_ADD_OVF_I8:
+                INTOP_CASE(INTOP_ADD_OVF_I8)
                 {
                     int64_t i1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
@@ -2216,9 +2237,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_ADD_OVF_UN_I4:
+                INTOP_CASE(INTOP_ADD_OVF_UN_I4)
                 {
                     uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
@@ -2227,9 +2248,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_ADD_OVF_UN_I8:
+                INTOP_CASE(INTOP_ADD_OVF_UN_I8)
                 {
                     uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
@@ -2238,26 +2259,26 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_SUB_I4:
+                INTOP_CASE(INTOP_SUB_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) - LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SUB_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SUB_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) - LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_SUB_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SUB_R4)
                     LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) - LOCAL_VAR(ip[3], float);
                     ip += 4;
-                    break;
-                case INTOP_SUB_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SUB_R8)
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) - LOCAL_VAR(ip[3], double);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_SUB_OVF_I4:
+                INTOP_CASE(INTOP_SUB_OVF_I4)
                 {
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
@@ -2266,9 +2287,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_SUB_OVF_I8:
+                INTOP_CASE(INTOP_SUB_OVF_I8)
                 {
                     int64_t i1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
@@ -2277,9 +2298,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_SUB_OVF_UN_I4:
+                INTOP_CASE(INTOP_SUB_OVF_UN_I4)
                 {
                     uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
@@ -2288,9 +2309,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_SUB_OVF_UN_I8:
+                INTOP_CASE(INTOP_SUB_OVF_UN_I8)
                 {
                     uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
@@ -2299,26 +2320,26 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_MUL_I4:
+                INTOP_CASE(INTOP_MUL_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) * LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_MUL_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_MUL_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) * LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_MUL_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_MUL_R4)
                     LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) * LOCAL_VAR(ip[3], float);
                     ip += 4;
-                    break;
-                case INTOP_MUL_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_MUL_R8)
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) * LOCAL_VAR(ip[3], double);
                     ip += 4;
-                    break;
-                case INTOP_MUL_OVF_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_MUL_OVF_I4)
                 {
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
@@ -2327,10 +2348,10 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_MUL_OVF_I8:
+                INTOP_CASE(INTOP_MUL_OVF_I8)
                 {
                     int64_t i1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
@@ -2339,10 +2360,10 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_MUL_OVF_UN_I4:
+                INTOP_CASE(INTOP_MUL_OVF_UN_I4)
                 {
                     uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
@@ -2351,10 +2372,10 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_MUL_OVF_UN_I8:
+                INTOP_CASE(INTOP_MUL_OVF_UN_I8)
                 {
                     uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
@@ -2363,9 +2384,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DIV_I4:
+                INTOP_CASE(INTOP_DIV_I4)
                 {
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
@@ -2375,9 +2396,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 / i2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DIV_I8:
+                INTOP_CASE(INTOP_DIV_I8)
                 {
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
@@ -2387,36 +2408,36 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 / l2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DIV_R4:
+                INTOP_CASE(INTOP_DIV_R4)
                     LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) / LOCAL_VAR(ip[3], float);
                     ip += 4;
-                    break;
-                case INTOP_DIV_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_DIV_R8)
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) / LOCAL_VAR(ip[3], double);
                     ip += 4;
-                    break;
-                case INTOP_DIV_UN_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_DIV_UN_I4)
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
                         COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) / i2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_DIV_UN_I8:
+                INTOP_CASE(INTOP_DIV_UN_I8)
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
                         COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) / l2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_REM_I4:
+                INTOP_CASE(INTOP_REM_I4)
                 {
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
@@ -2426,9 +2447,9 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 % i2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_REM_I8:
+                INTOP_CASE(INTOP_REM_I8)
                 {
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
@@ -2438,109 +2459,109 @@ SWITCH_OPCODE:
                         COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 % l2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_REM_R4:
+                INTOP_CASE(INTOP_REM_R4)
                     LOCAL_VAR(ip[1], float) = fmodf(LOCAL_VAR(ip[2], float), LOCAL_VAR(ip[3], float));
                     ip += 4;
-                    break;
-                case INTOP_REM_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_REM_R8)
                     LOCAL_VAR(ip[1], double) = fmod(LOCAL_VAR(ip[2], double), LOCAL_VAR(ip[3], double));
                     ip += 4;
-                    break;
-                case INTOP_REM_UN_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_REM_UN_I4)
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
                         COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) % i2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_REM_UN_I8:
+                INTOP_CASE(INTOP_REM_UN_I8)
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
                         COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) % l2;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SHL_I4:
+                INTOP_CASE(INTOP_SHL_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) << LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SHL_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SHL_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) << LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SHR_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SHR_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) >> LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SHR_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SHR_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) >> LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SHR_UN_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SHR_UN_I4)
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) >> LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_SHR_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_SHR_UN_I8)
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) >> LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_NEG_I4:
+                INTOP_CASE(INTOP_NEG_I4)
                     LOCAL_VAR(ip[1], int32_t) = - LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_NEG_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NEG_I8)
                     LOCAL_VAR(ip[1], int64_t) = - LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
-                case INTOP_NEG_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NEG_R4)
                     LOCAL_VAR(ip[1], float) = - LOCAL_VAR(ip[2], float);
                     ip += 3;
-                    break;
-                case INTOP_NEG_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NEG_R8)
                     LOCAL_VAR(ip[1], double) = - LOCAL_VAR(ip[2], double);
                     ip += 3;
-                    break;
-                case INTOP_NOT_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NOT_I4)
                     LOCAL_VAR(ip[1], int32_t) = ~ LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
-                    break;
-                case INTOP_NOT_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_NOT_I8)
                     LOCAL_VAR(ip[1], int64_t) = ~ LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_AND_I4:
+                INTOP_CASE(INTOP_AND_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) & LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_AND_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_AND_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) & LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_OR_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_OR_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) | LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_OR_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_OR_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) | LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_XOR_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_XOR_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) ^ LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_XOR_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_XOR_I8)
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) ^ LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
 
 #define CMP_BINOP_FP(datatype, op, noOrderVal)      \
     do {                                            \
@@ -2553,84 +2574,84 @@ SWITCH_OPCODE:
         ip += 4;                                    \
     } while (0)
 
-                case INTOP_CZERO_I:
+                INTOP_CASE(INTOP_CZERO_I)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], intptr_t) != 0;
                     ip += 4;
-                    break;
-                case INTOP_CEQ_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CEQ_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) == LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_CEQ_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CEQ_I8)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) == LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_CEQ_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CEQ_R4)
                     CMP_BINOP_FP(float, ==, 0);
-                    break;
-                case INTOP_CEQ_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CEQ_R8)
                     CMP_BINOP_FP(double, ==, 0);
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CGT_I4:
+                INTOP_CASE(INTOP_CGT_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) > LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_CGT_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_I8)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) > LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_CGT_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_R4)
                     CMP_BINOP_FP(float, >, 0);
-                    break;
-                case INTOP_CGT_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_R8)
                     CMP_BINOP_FP(double, >, 0);
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CGT_UN_I4:
+                INTOP_CASE(INTOP_CGT_UN_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) > LOCAL_VAR(ip[3], uint32_t);
                     ip += 4;
-                    break;
-                case INTOP_CGT_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_UN_I8)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint64_t) > LOCAL_VAR(ip[3], uint64_t);
                     ip += 4;
-                    break;
-                case INTOP_CGT_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_UN_R4)
                     CMP_BINOP_FP(float, >, 1);
-                    break;
-                case INTOP_CGT_UN_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CGT_UN_R8)
                     CMP_BINOP_FP(double, >, 1);
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CLT_I4:
+                INTOP_CASE(INTOP_CLT_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) < LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
-                    break;
-                case INTOP_CLT_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_I8)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) < LOCAL_VAR(ip[3], int64_t);
                     ip += 4;
-                    break;
-                case INTOP_CLT_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_R4)
                     CMP_BINOP_FP(float, <, 0);
-                    break;
-                case INTOP_CLT_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_R8)
                     CMP_BINOP_FP(double, <, 0);
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_CLT_UN_I4:
+                INTOP_CASE(INTOP_CLT_UN_I4)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) < LOCAL_VAR(ip[3], uint32_t);
                     ip += 4;
-                    break;
-                case INTOP_CLT_UN_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_UN_I8)
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint64_t) < LOCAL_VAR(ip[3], uint64_t);
                     ip += 4;
-                    break;
-                case INTOP_CLT_UN_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_UN_R4)
                     CMP_BINOP_FP(float, <, 1);
-                    break;
-                case INTOP_CLT_UN_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_CLT_UN_R8)
                     CMP_BINOP_FP(double, <, 1);
-                    break;
+                    INTOP_NEXT;
 #undef CMP_BINOP_FP
 
 #define LDIND(dtype, ftype)                                 \
@@ -2641,38 +2662,38 @@ SWITCH_OPCODE:
         ip += 4;                                            \
     } while (0)
 
-                case INTOP_LDIND_I1:
+                INTOP_CASE(INTOP_LDIND_I1)
                     LDIND(int32_t, int8_t);
-                    break;
-                case INTOP_LDIND_U1:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_U1)
                     LDIND(int32_t, uint8_t);
-                    break;
-                case INTOP_LDIND_I2:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_I2)
                     LDIND(int32_t, int16_t);
-                    break;
-                case INTOP_LDIND_U2:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_U2)
                     LDIND(int32_t, uint16_t);
-                    break;
-                case INTOP_LDIND_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_I4)
                     LDIND(int32_t, int32_t);
-                    break;
-                case INTOP_LDIND_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_I8)
                     LDIND(int64_t, int64_t);
-                    break;
-                case INTOP_LDIND_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_R4)
                     LDIND(float, float);
-                    break;
-                case INTOP_LDIND_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_LDIND_R8)
                     LDIND(double, double);
-                    break;
+                    INTOP_NEXT;
 #undef LDIND
-                case INTOP_LDIND_VT:
+                INTOP_CASE(INTOP_LDIND_VT)
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
                     memcpy(LOCAL_VAR_ADDR(ip[1], void), (char*)src + ip[3], ip[4]);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
 #define STIND(dtype, ftype)                                         \
@@ -2684,66 +2705,66 @@ SWITCH_OPCODE:
         ip += 4;                                                    \
     } while (0)
 
-                case INTOP_STIND_I1:
+                INTOP_CASE(INTOP_STIND_I1)
                     STIND(int32_t, int8_t);
-                    break;
-                case INTOP_STIND_U1:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_U1)
                     STIND(int32_t, uint8_t);
-                    break;
-                case INTOP_STIND_I2:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_I2)
                     STIND(int32_t, int16_t);
-                    break;
-                case INTOP_STIND_U2:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_U2)
                     STIND(int32_t, uint16_t);
-                    break;
-                case INTOP_STIND_I4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_I4)
                     STIND(int32_t, int32_t);
-                    break;
-                case INTOP_STIND_I8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_I8)
                     STIND(int64_t, int64_t);
-                    break;
-                case INTOP_STIND_R4:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_R4)
                     STIND(float, float);
-                    break;
-                case INTOP_STIND_R8:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_STIND_R8)
                     STIND(double, double);
-                    break;
+                    INTOP_NEXT;
 #undef STIND
-                case INTOP_STIND_O:
+                INTOP_CASE(INTOP_STIND_O)
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
                     OBJECTREF storeObj = LOCAL_VAR(ip[2], OBJECTREF);
                     NULL_CHECK(dst);
                     SetObjectReferenceUnchecked((OBJECTREF*)(dst + ip[3]), storeObj);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STIND_VT_NOREF:
+                INTOP_CASE(INTOP_STIND_VT_NOREF)
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
                     memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), ip[4]);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STIND_VT:
+                INTOP_CASE(INTOP_STIND_VT)
                 {
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
                     CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), pMT);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDFLDA:
+                INTOP_CASE(INTOP_LDFLDA)
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
                     LOCAL_VAR(ip[1], char*) = src + ip[3];
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_CALL_HELPER_P_P:
+                INTOP_CASE(INTOP_CALL_HELPER_P_P)
                 {
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
@@ -2766,10 +2787,10 @@ SWITCH_OPCODE:
 
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_S:
+                INTOP_CASE(INTOP_CALL_HELPER_P_S)
                 {
                     void* helperArg = LOCAL_VAR(ip[2], void*);
 
@@ -2791,10 +2812,10 @@ SWITCH_OPCODE:
 
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_PS:
+                INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
@@ -2818,10 +2839,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_SP:
+                INTOP_CASE(INTOP_CALL_HELPER_P_SP)
                 {
                     void* helperArg1 = LOCAL_VAR(ip[2], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
@@ -2845,10 +2866,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_G:
+                INTOP_CASE(INTOP_CALL_HELPER_P_G)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -2871,10 +2892,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_GS:
+                INTOP_CASE(INTOP_CALL_HELPER_P_GS)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -2899,10 +2920,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_GA:
+                INTOP_CASE(INTOP_CALL_HELPER_P_GA)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -2927,10 +2948,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_P_PA:
+                INTOP_CASE(INTOP_CALL_HELPER_P_PA)
                 {
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
@@ -2953,10 +2974,10 @@ SWITCH_OPCODE:
 
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_V_AGS:
+                INTOP_CASE(INTOP_CALL_HELPER_V_AGS)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
@@ -2983,10 +3004,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_V_APS:
+                INTOP_CASE(INTOP_CALL_HELPER_V_APS)
                 {
                     void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
@@ -3012,10 +3033,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_V_SA:
+                INTOP_CASE(INTOP_CALL_HELPER_V_SA)
                 {
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
@@ -3039,9 +3060,9 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_CALL_HELPER_V_SS:
+                INTOP_CASE(INTOP_CALL_HELPER_V_SS)
                 {
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
@@ -3064,10 +3085,10 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_HELPER_V_SSS:
+                INTOP_CASE(INTOP_CALL_HELPER_V_SSS)
                 {
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
@@ -3092,11 +3113,11 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALLVIRT_TAIL:
-                case INTOP_CALLVIRT:
+                INTOP_CASE(INTOP_CALLVIRT_TAIL)
+                INTOP_CASE(INTOP_CALLVIRT)
                 {
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALLVIRT_TAIL);
                     returnOffset = ip[1];
@@ -3143,8 +3164,8 @@ SWITCH_OPCODE:
                     goto CALL_INTERP_METHOD;
                 }
 
-                case INTOP_CALLI_TAIL:
-                case INTOP_CALLI:
+                INTOP_CASE(INTOP_CALLI_TAIL)
+                INTOP_CASE(INTOP_CALLI)
                 {
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
@@ -3214,10 +3235,10 @@ SWITCH_OPCODE:
                         InvokeCalliStub(&param);
                     }
 
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_PINVOKE:
+                INTOP_CASE(INTOP_CALL_PINVOKE)
                 {
                     // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
                     //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
@@ -3250,11 +3271,11 @@ SWITCH_OPCODE:
                         InvokeUnmanagedMethodWithTransition(&param);
                     }
 
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALLDELEGATE_TAIL:
-                case INTOP_CALLDELEGATE:
+                INTOP_CASE(INTOP_CALLDELEGATE_TAIL)
+                INTOP_CASE(INTOP_CALLDELEGATE)
                 {
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
@@ -3345,7 +3366,7 @@ SWITCH_OPCODE:
                             stack = pFrame->pStack;
                             ip = pFrame->startIp->GetByteCodes();
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
-                            break;
+                            INTOP_NEXT;
                         }
                         else if (isOpenVirtual)
                         {
@@ -3376,15 +3397,17 @@ SWITCH_OPCODE:
                     frameNeedsTailcallUpdate = false;
                     DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
                     InvokeDelegateInvokeMethod(&param);
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_NULLCHECK:
+                INTOP_CASE(INTOP_CALL_NULLCHECK)
                     // Check the target this pointer in the call for null
                     NULL_CHECK(LOCAL_VAR(ip[2], void*));
+#if !USE_COMPUTED_GOTO
                     FALLTHROUGH;
-                case INTOP_CALL_TAIL:
-                case INTOP_CALL:
+#endif
+                INTOP_CASE(INTOP_CALL_TAIL)
+                INTOP_CASE(INTOP_CALL)
                 {
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALL_TAIL);
                     returnOffset = ip[1];
@@ -3413,7 +3436,7 @@ CALL_INTERP_METHOD:
                         frameNeedsTailcallUpdate = false;
                         ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
                         InvokeManagedMethod(&param);
-                        break;
+                        INTOP_NEXT;
                     }
 
                     if (frameNeedsTailcallUpdate)
@@ -3455,9 +3478,9 @@ CALL_INTERP_METHOD:
                         UNREACHABLE();
                     }
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_NEWOBJ_GENERIC:
+                INTOP_CASE(INTOP_NEWOBJ_GENERIC)
                 {
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
@@ -3475,7 +3498,7 @@ CALL_INTERP_METHOD:
 
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_NEWOBJ:
+                INTOP_CASE(INTOP_NEWOBJ)
                 {
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
@@ -3491,22 +3514,22 @@ CALL_INTERP_METHOD:
 
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_NEWMDARR:
+                INTOP_CASE(INTOP_NEWMDARR)
                 {
                     LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray((MethodTable*)pMethod->pDataItems[ip[3]], stack, ip[2], ip[4]);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_NEWMDARR_GENERIC:
+                INTOP_CASE(INTOP_NEWMDARR_GENERIC)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     MethodTable *pMTArray = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[3], void*), pLookup);
 
                     LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray(pMTArray, stack, ip[2], ip[5]);
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_NEWOBJ_VT:
+                INTOP_CASE(INTOP_NEWOBJ_VT)
                 {
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
@@ -3523,15 +3546,15 @@ CALL_INTERP_METHOD:
                     ip += 5;
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_ZEROBLK_IMM:
+                INTOP_CASE(INTOP_ZEROBLK_IMM)
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
                     NULL_CHECK(dst);
                     memset(dst, 0, ip[2]);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_CPBLK:
+                INTOP_CASE(INTOP_CPBLK)
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
                     void* src = LOCAL_VAR(ip[2], void*);
@@ -3541,9 +3564,9 @@ CALL_INTERP_METHOD:
                     else
                         memcpyNoGCRefs(dst, src, size);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_INITBLK:
+                INTOP_CASE(INTOP_INITBLK)
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
                     uint8_t value = LOCAL_VAR(ip[2], uint8_t);
@@ -3553,9 +3576,9 @@ CALL_INTERP_METHOD:
                     else
                         memset(dst, value, size);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LOCALLOC:
+                INTOP_CASE(INTOP_LOCALLOC)
                 {
                     size_t len = LOCAL_VAR(ip[2], size_t);
                     void* pMemory = NULL;
@@ -3575,9 +3598,9 @@ CALL_INTERP_METHOD:
 
                     LOCAL_VAR(ip[1], void*) = pMemory;
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_THROW:
+                INTOP_CASE(INTOP_THROW)
                 {
                     OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
                     if (!throwable)
@@ -3593,22 +3616,22 @@ CALL_INTERP_METHOD:
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
                     UNREACHABLE();
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_RETHROW:
+                INTOP_CASE(INTOP_RETHROW)
                 {
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchRethrownManagedException();
                     UNREACHABLE();
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LOAD_EXCEPTION:
+                INTOP_CASE(INTOP_LOAD_EXCEPTION)
                     // This opcode loads the exception object coming from a catch / filter funclet caller to a variable.
                     _ASSERTE(pExceptionClauseArgs != NULL);
                     LOCAL_VAR(ip[1], OBJECTREF) = pExceptionClauseArgs->throwable;
                     ip += 2;
-                    break;
-                case INTOP_UNBOX_ANY:
+                    INTOP_NEXT;
+                INTOP_CASE(INTOP_UNBOX_ANY)
                 {
                     int dreg = ip[1];
                     int sreg = ip[2];
@@ -3636,9 +3659,9 @@ CALL_INTERP_METHOD:
                     LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
 
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_UNBOX_END:
+                INTOP_CASE(INTOP_UNBOX_END)
                 {
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
@@ -3647,9 +3670,9 @@ CALL_INTERP_METHOD:
                     CopyValueClassUnchecked(dest, src, pMT);
 
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_UNBOX_ANY_GENERIC:
+                INTOP_CASE(INTOP_UNBOX_ANY_GENERIC)
                 {
                     int dreg = ip[1];
                     int sreg = ip[3];
@@ -3679,9 +3702,9 @@ CALL_INTERP_METHOD:
                     LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
 
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_UNBOX_END_GENERIC:
+                INTOP_CASE(INTOP_UNBOX_END_GENERIC)
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     MethodTable *pMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -3691,9 +3714,9 @@ CALL_INTERP_METHOD:
                     CopyValueClassUnchecked(dest, src, pMT->IsNullable() ? pMT->GetInstantiation()[0].AsMethodTable() : pMT);
 
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_NEWARR:
+                INTOP_CASE(INTOP_NEWARR)
                 {
                     int32_t length = LOCAL_VAR(ip[2], int32_t);
 
@@ -3704,9 +3727,9 @@ CALL_INTERP_METHOD:
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_NEWARR_GENERIC:
+                INTOP_CASE(INTOP_NEWARR_GENERIC)
                 {
                     int32_t length = LOCAL_VAR(ip[3], int32_t);
 
@@ -3719,7 +3742,7 @@ CALL_INTERP_METHOD:
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
 #define LDELEM(dtype,etype)                                                    \
 do {                                                                           \
@@ -3739,48 +3762,48 @@ do {                                                                           \
     LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
     ip += 4;                                                                   \
 } while (0)
-                case INTOP_LDELEM_I1:
+                INTOP_CASE(INTOP_LDELEM_I1)
                 {
                     LDELEM(int32_t, int8_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_U1:
+                INTOP_CASE(INTOP_LDELEM_U1)
                 {
                     LDELEM(int32_t, uint8_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_I2:
+                INTOP_CASE(INTOP_LDELEM_I2)
                 {
                     LDELEM(int32_t, int16_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_U2:
+                INTOP_CASE(INTOP_LDELEM_U2)
                 {
                     LDELEM(int32_t, uint16_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_I4:
+                INTOP_CASE(INTOP_LDELEM_I4)
                 {
                     LDELEM(int32_t, int32_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_I8:
+                INTOP_CASE(INTOP_LDELEM_I8)
                 {
                     LDELEM(int64_t, int64_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_R4:
+                INTOP_CASE(INTOP_LDELEM_R4)
                 {
                     LDELEM(float, float);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_R8:
+                INTOP_CASE(INTOP_LDELEM_R8)
                 {
                     LDELEM(double, double);
-                    break;
+                    INTOP_NEXT;
                 }
 #undef LDELEM
-                case INTOP_LDELEM_REF:
+                INTOP_CASE(INTOP_LDELEM_REF)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
@@ -3797,9 +3820,9 @@ do {                                                                           \
                     VALIDATEOBJECT(elem);
                     LOCAL_VAR(ip[1], Object*) = elem;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEM_VT:
+                INTOP_CASE(INTOP_LDELEM_VT)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
@@ -3817,7 +3840,7 @@ do {                                                                           \
                     MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
                     CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void), elemAddr, pElemMT);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 #define STELEM(dtype,etype)                                                    \
 do {                                                                           \
@@ -3837,48 +3860,48 @@ do {                                                                           \
     *pElem = (etype)LOCAL_VAR(ip[3], dtype);                                   \
     ip += 4;                                                                   \
 } while (0)
-                case INTOP_STELEM_I1:
+                INTOP_CASE(INTOP_STELEM_I1)
                 {
                     STELEM(int32_t, int8_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_I2:
+                INTOP_CASE(INTOP_STELEM_I2)
                 {
                     STELEM(int32_t, int16_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_I4:
+                INTOP_CASE(INTOP_STELEM_I4)
                 {
                     STELEM(int32_t, int32_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_I8:
+                INTOP_CASE(INTOP_STELEM_I8)
                 {
                     STELEM(int64_t, int64_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_U1:
+                INTOP_CASE(INTOP_STELEM_U1)
                 {
                     STELEM(int32_t, uint8_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_U2:
+                INTOP_CASE(INTOP_STELEM_U2)
                 {
                     STELEM(int32_t, uint16_t);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_R4:
+                INTOP_CASE(INTOP_STELEM_R4)
                 {
                     STELEM(float, float);
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_R8:
+                INTOP_CASE(INTOP_STELEM_R8)
                 {
                     STELEM(double, double);
-                    break;
+                    INTOP_NEXT;
                 }
 #undef STELEM
-                case INTOP_STELEM_REF:
+                INTOP_CASE(INTOP_STELEM_REF)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
@@ -3907,9 +3930,9 @@ do {                                                                           \
                     uint8_t* pData = arr->GetDataPtr();
                     SetObjectReferenceUnchecked((OBJECTREF*)(pData + idx * sizeof(OBJECTREF)), elemRef);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_VT:
+                INTOP_CASE(INTOP_STELEM_VT)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
@@ -3928,9 +3951,9 @@ do {                                                                           \
 
                     CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void), pMT);
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_STELEM_VT_NOREF:
+                INTOP_CASE(INTOP_STELEM_VT_NOREF)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
@@ -3948,9 +3971,9 @@ do {                                                                           \
 
                     memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void), elemSize);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEMA:
+                INTOP_CASE(INTOP_LDELEMA)
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
@@ -3967,9 +3990,9 @@ do {                                                                           \
                     void* elemAddr = pData + idx * elemSize;
                     LOCAL_VAR(ip[1], void*) = elemAddr;
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LDELEMA_REF:
+                INTOP_CASE(INTOP_LDELEMA_REF)
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
                     if (arrayRef == NULL)
@@ -3993,10 +4016,10 @@ do {                                                                           \
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_LDELEMA_REF_GENERIC:
+                INTOP_CASE(INTOP_LDELEMA_REF_GENERIC)
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
                     if (arrayRef == NULL)
@@ -4021,10 +4044,10 @@ do {                                                                           \
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
                     ip += 6;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CONV_NI:
+                INTOP_CASE(INTOP_CONV_NI)
                 {
                     NULL_CHECK(LOCAL_VAR(ip[2], void*));
                     int64_t index = LOCAL_VAR(ip[3], int64_t);
@@ -4034,20 +4057,20 @@ do {                                                                           \
                     }
                     LOCAL_VAR(ip[1], int64_t) = index;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_GENERICLOOKUP:
+                INTOP_CASE(INTOP_GENERICLOOKUP)
                 {
                     int dreg = ip[1];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[3]];
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_COMPARE_EXCHANGE_U1:
+                INTOP_CASE(INTOP_COMPARE_EXCHANGE_U1)
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
                     NULL_CHECK(dst);
@@ -4075,10 +4098,10 @@ do {                                                                           \
                         break;
                     } while (true);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_COMPARE_EXCHANGE_U2:
+                INTOP_CASE(INTOP_COMPARE_EXCHANGE_U2)
                 {
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
                     NULL_CHECK(dst);
@@ -4111,7 +4134,7 @@ do {                                                                           \
                         break;
                     } while (true);
                     ip += 5;
-                    break;
+                    INTOP_NEXT;
                 }
 
 
@@ -4126,16 +4149,16 @@ do                                                                      \
     LOCAL_VAR(ip[1], type) = old;                                       \
     ip += 5;                                                            \
 } while (0)
-                case INTOP_COMPARE_EXCHANGE_I4:
+                INTOP_CASE(INTOP_COMPARE_EXCHANGE_I4)
                 {
                     COMPARE_EXCHANGE(int32_t);
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_COMPARE_EXCHANGE_I8:
+                INTOP_CASE(INTOP_COMPARE_EXCHANGE_I8)
                 {
                     COMPARE_EXCHANGE(int64_t);
-                    break;
+                    INTOP_NEXT;
                 }
 #undef COMPARE_EXCHANGE
 
@@ -4150,7 +4173,7 @@ do                                                                      \
     ip += 4;                                                            \
 } while (0)
 
-                case INTOP_EXCHANGE_U1:
+                INTOP_CASE(INTOP_EXCHANGE_U1)
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
                     NULL_CHECK(dst);
@@ -4171,10 +4194,10 @@ do                                                                      \
                         }
                     } while (true);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_EXCHANGE_U2:
+                INTOP_CASE(INTOP_EXCHANGE_U2)
                 {
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
                     NULL_CHECK(dst);
@@ -4200,23 +4223,23 @@ do                                                                      \
                         }
                     } while (true);
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_EXCHANGE_I4:
+                INTOP_CASE(INTOP_EXCHANGE_I4)
                 {
                     EXCHANGE(int32_t);
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_EXCHANGE_I8:
+                INTOP_CASE(INTOP_EXCHANGE_I8)
                 {
                     EXCHANGE(int64_t);
-                    break;
+                    INTOP_NEXT;
                 }
 #undef EXCHANGE
 
-                case INTOP_EXCHANGEADD_I4:
+                INTOP_CASE(INTOP_EXCHANGEADD_I4)
                 {
                     LONG* dst = LOCAL_VAR(ip[2], LONG*);
                     NULL_CHECK(dst);
@@ -4224,10 +4247,10 @@ do                                                                      \
                     LONG old = InterlockedExchangeAdd(dst, newValue);
                     LOCAL_VAR(ip[1], LONG) = old;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_EXCHANGEADD_I8:
+                INTOP_CASE(INTOP_EXCHANGEADD_I8)
                 {
                     LONG64* dst = LOCAL_VAR(ip[2], LONG64*);
                     NULL_CHECK(dst);
@@ -4235,26 +4258,26 @@ do                                                                      \
                     LONG64 old = InterlockedExchangeAdd64(dst, newValue);
                     LOCAL_VAR(ip[1], LONG64) = old;
                     ip += 4;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SQRT_R4:
+                INTOP_CASE(INTOP_SQRT_R4)
                 {
                     float value = LOCAL_VAR(ip[2], float);
                     LOCAL_VAR(ip[1], float) = sqrtf(value);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SQRT_R8:
+                INTOP_CASE(INTOP_SQRT_R8)
                 {
                     double value = LOCAL_VAR(ip[2], double);
                     LOCAL_VAR(ip[1], double) = sqrt(value);
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CALL_FINALLY:
+                INTOP_CASE(INTOP_CALL_FINALLY)
                 {
                     const int32_t* targetIp = ip + ip[1];
                     // Save current execution state for when we return from called method
@@ -4277,20 +4300,20 @@ do                                                                      \
 
                     // Set execution state for the new frame
                     ip = targetIp;
-                    break;
+                    INTOP_NEXT;
                 }
-                case INTOP_LEAVE_FILTER:
+                INTOP_CASE(INTOP_LEAVE_FILTER)
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
-                case INTOP_LEAVE_CATCH:
+                INTOP_CASE(INTOP_LEAVE_CATCH)
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
                     goto EXIT_FRAME;
-                case INTOP_THROW_PNSE:
+                INTOP_CASE(INTOP_THROW_PNSE)
                     COMPlusThrow(kPlatformNotSupportedException);
-                    break;
+                    INTOP_NEXT;
 
-                case INTOP_HANDLE_CONTINUATION_GENERIC:
-                case INTOP_HANDLE_CONTINUATION:
+                INTOP_CASE(INTOP_HANDLE_CONTINUATION_GENERIC)
+                INTOP_CASE(INTOP_HANDLE_CONTINUATION)
                 {
                     int32_t helperOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
                     int32_t ipAdjust = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
@@ -4310,7 +4333,7 @@ do                                                                      \
                         // No continuation to handle.
                         LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
                         ip += ipAdjust; // (4 or 5 for this opcode)
-                        break;
+                        INTOP_NEXT;
                     }
                     MethodTable *pContinuationType = pAsyncSuspendData->continuationTypeHnd;
 
@@ -4361,10 +4384,10 @@ do                                                                      \
                         Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
                         *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType));
                     }
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CAPTURE_CONTEXT_ON_SUSPEND:
+                INTOP_CASE(INTOP_CAPTURE_CONTEXT_ON_SUSPEND)
                 {
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
 
@@ -4373,7 +4396,7 @@ do                                                                      \
                         LOCAL_VAR(ip[1], CONTINUATIONREF) = continuation;
                         // No continuation to handle.
                         ip += 4;
-                        break;
+                        INTOP_NEXT;
                     }
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
@@ -4421,11 +4444,11 @@ do                                                                      \
                     else
                     {
                         ip += 4;
-                        break;
+                        INTOP_NEXT;
                     }
                 }
 
-                case INTOP_RESTORE_CONTEXTS_ON_SUSPEND:
+                INTOP_CASE(INTOP_RESTORE_CONTEXTS_ON_SUSPEND)
                 {
                     CONTINUATIONREF newContinuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
                     CONTINUATIONREF continuationArg = LOCAL_VAR(ip[3], CONTINUATIONREF);
@@ -4436,7 +4459,7 @@ do                                                                      \
                         LOCAL_VAR(ip[1], CONTINUATIONREF) = newContinuation;
                         // No continuation to handle.
                         ip += 6;
-                        break;
+                        INTOP_NEXT;
                     }
 
                     OBJECTREF executionContext = LOCAL_VAR(ip[4], OBJECTREF);
@@ -4456,29 +4479,29 @@ do                                                                      \
                     goto CALL_INTERP_METHOD;
                 }
 
-                case INTOP_GET_CONTINUATION:
+                INTOP_CASE(INTOP_GET_CONTINUATION)
                 {
                     LOCAL_VAR(ip[1], OBJECTREF) = pInterpreterFrame->GetContinuation();
                     pInterpreterFrame->SetContinuation(NULL);
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SET_CONTINUATION:
+                INTOP_CASE(INTOP_SET_CONTINUATION)
                 {
                     pInterpreterFrame->SetContinuation(LOCAL_VAR(ip[1], CONTINUATIONREF));
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_SET_CONTINUATION_NULL:
+                INTOP_CASE(INTOP_SET_CONTINUATION_NULL)
                 {
                     pInterpreterFrame->SetContinuation(NULL);
                     ip += 1;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_HANDLE_CONTINUATION_SUSPEND:
+                INTOP_CASE(INTOP_HANDLE_CONTINUATION_SUSPEND)
                 {
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
@@ -4487,7 +4510,7 @@ do                                                                      \
                     {
                         // No continuation to handle.
                         ip += 3 + 2; // (3 for this opcode + 2 for the continuation resume which follows)
-                        break;
+                        INTOP_NEXT;
                     }
                     ip += 3;
 
@@ -4540,20 +4563,20 @@ do                                                                      \
                     goto EXIT_FRAME;
                 }
 
-                case INTOP_RET_EXISTING_CONTINUATION:
+                INTOP_CASE(INTOP_RET_EXISTING_CONTINUATION)
                 {
                     if (pInterpreterFrame->GetContinuation() == NULL)
                     {
                         // No continuation returned
                         ip++;
-                        break;
+                        INTOP_NEXT;
                     }
 
                     // Otherwise exit without modifying current continuation
                     goto EXIT_FRAME;
                 }
 
-                case INTOP_HANDLE_CONTINUATION_RESUME:
+                INTOP_CASE(INTOP_HANDLE_CONTINUATION_RESUME)
                 {
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
                     CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
@@ -4593,10 +4616,10 @@ do                                                                      \
                     }
 
                     ip += 2;
-                    break;
+                    INTOP_NEXT;
                 }
 
-                case INTOP_CHECK_FOR_CONTINUATION:
+                INTOP_CASE(INTOP_CHECK_FOR_CONTINUATION)
                 {
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
@@ -4612,15 +4635,37 @@ do                                                                      \
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
                         _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
-                        break;
+                        INTOP_NEXT;
                     }
                     ip += 3;
-                    break;
+                    INTOP_NEXT;
                 }
+#if USE_COMPUTED_GOTO
+                // Labels for opcodes that are conditionally compiled out or never emitted.
+                // The dispatch table needs valid labels for all enum values.
+#ifndef DEBUG
+                INTOP_CASE(INTOP_HALT)
+#endif
+#ifndef DEBUGGING_SUPPORTED
+                INTOP_CASE(INTOP_BREAKPOINT)
+                INTOP_CASE(INTOP_DEBUG_METHOD_ENTER)
+                INTOP_CASE(INTOP_DEBUG_SEQ_POINT)
+#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                INTOP_CASE(INTOP_STORESTUBCONTEXT)
+#endif
+                // IR-only opcodes (never emitted to bytecode)
+                INTOP_CASE(INTOP_NOP)
+                INTOP_CASE(INTOP_DEF)
+                INTOP_CASE(INTOP_MOV_SRC_OFF)
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
+                    INTOP_NEXT;
+#else
                 default:
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
-                    break;
+                    INTOP_NEXT;
             }
+#endif // !USE_COMPUTED_GOTO
         }
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
