@@ -4,16 +4,11 @@
 //
 // CdacStress.cpp
 //
-// Implements in-process cDAC loading and stack reference verification.
-// Enabled via DOTNET_CdacStress (bit flags).
-// At each enabled stress point we:
-//   1. Ask the cDAC to enumerate stack GC references via ISOSDacInterface::GetStackReferences
-//   2. Ask the runtime to enumerate stack GC references via StackWalkFrames + GcInfoDecoder
-//      (the GC's own root-reporting machinery — the ground-truth oracle)
-//   3. Compare the two sets and report any mismatches
+// At each enabled stress point, asks the cDAC and the runtime to enumerate
+// the current thread's stack GC refs and compares them. The runtime's own
+// GC root enumeration (what the collector actually consumes) is the oracle.
 //
-// The runtime's GC root enumeration is the single oracle: it is what the collector
-// actually consumes, so by definition cDAC must agree with it.
+// Enabled via DOTNET_CdacStress.
 //
 
 #include "common.h"
@@ -44,20 +39,6 @@
 //-----------------------------------------------------------------------------
 
 #define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
-
-// Fixed-size buffer for collecting refs during stack walk.
-// No heap allocation inside the promote callback, we're under NOTHROW contracts.
-static const int MAX_COLLECTED_REFS = 4096;
-
-// Per-frame cap for both the disposition arrays kept on FrameResult AND the
-// number of refs CompareFrameRefs will consider for matching. Frames that
-// exceed this cap are marked truncated and emit a WARN log; the comparison
-// only examines the FIRST MAX_REFS_PER_FRAME refs on each side, which can
-// mask real mismatches AND create spurious ones when the two sides' "first N"
-// subsets disagree. Set high enough to cover the largest observed frame
-// (CreateManifestAndDescriptors has ~109 untracked stack slots); bump if
-// the WARN log fires.
-static const int MAX_REFS_PER_FRAME = 256;
 
 // Sentinel flag set on cDAC StackRefData entries by RecordDeferredFrame to
 // mark a frame whose ref scan was intentionally skipped (e.g. PromoteCallerStack
@@ -338,24 +319,15 @@ static bool IsCdacStressVerboseEnabled()
 }
 
 // Single-line file logger. Self-guards on s_logFile, so callers don't need to.
-// All structured per-verification output (lines beginning with [PASS] / [FAIL]
-// / [FRAME_*] / [STACK_TRACE] / etc.) should go through this macro rather than
-// raw fprintf. Summary / shutdown lines that already check s_logFile may keep
-// their direct fprintf, but using CDAC_LOG is also fine.
 #define CDAC_LOG(...)                                  \
     do {                                               \
         if (s_logFile != nullptr)                      \
             fprintf(s_logFile, __VA_ARGS__);           \
     } while (0)
 
-// Error/diagnostic emitter for messages that must be visible even when the
-// per-process log file is not open (e.g. during framework init, before
-// s_logFile exists, or on failure paths where the framework disables itself
-// silently). Emits to BOTH stderr (always) and the log file (when open) so
-// the message is captured in CI output regardless of where the consumer is
-// looking. Every line is automatically prefixed with "CDAC GC Stress: ".
-// Use for: init success/failure, library-load errors, fatal failures.
-// Don't use for: per-verification output (use CDAC_LOG instead).
+// Diagnostic emitter that always reaches stderr (and the log file when open).
+// Use for init / library-load errors visible in CI. Every line is prefixed
+// with "CDAC GC Stress: ".
 #define CDAC_ERR(...)                                  \
     do {                                               \
         fprintf(stderr, "CDAC GC Stress: ");           \
@@ -366,18 +338,12 @@ static bool IsCdacStressVerboseEnabled()
         }                                              \
     } while (0)
 
-// Pretty-print a processor-encoding register number for the current target.
-// Returns a short interned string. Unknown values render as "?".
-// Implementation: see "Rendering helpers" section at bottom of file.
+// Forward declarations for helpers defined later. Implementations live in
+// the "Rendering helpers" section at the bottom of the file.
 static const char* RegisterName(int reg);
-
-// Format ref Flags as a bit-name list (e.g. "Interior|Pinned" or "-").
-// Writes into caller-supplied buffer to avoid TLS / allocation.
-// Implementation: see "Rendering helpers" section at bottom of file.
 static const char* FormatRefFlags(unsigned int flags, char* buf, size_t bufLen);
 
-// Per-ref disposition coming out of a frame compare. Combined with ref.Side
-// to produce the rendered label (e.g. ONLY+SIDE_CDAC -> "ONLY(cDAC)").
+// Per-ref disposition coming out of a frame compare.
 enum RefDisposition : uint8_t
 {
     REF_MATCHED = 0,    // paired with a ref on the opposite side
@@ -386,8 +352,6 @@ enum RefDisposition : uint8_t
                         // (only meaningful for SIDE_RT)
 };
 
-// Forward declarations for the remaining rendering helpers. All definitions
-// live in the "Rendering helpers" section at bottom of file.
 static const char* SideName(RefSide s);
 static const char* DispositionName(RefDisposition d);
 static void LogRefConcise(RefDisposition disp, const StackRef& r);
@@ -677,8 +641,7 @@ static HRESULT CollectCdacStackRefs(ISOSDacInterface* pSosDac, DWORD osThreadId,
 
 struct RuntimeRefCollectionContext
 {
-    StackRef refs[MAX_COLLECTED_REFS];
-    int count;
+    SArray<StackRef>* refs;   // caller-owned, appended during walk
     bool overflow;
 
     // Per-frame attribution: updated by the crawl callback before each
@@ -703,14 +666,10 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
     RuntimeRefCollectionContext* ctx = reinterpret_cast<RuntimeRefCollectionContext*>(sc->_unused1);
     if (ctx == nullptr)
         return;
-    if (ctx->count >= MAX_COLLECTED_REFS)
-    {
-        ctx->overflow = true;
+    if (ctx->overflow)
         return;
-    }
 
-    StackRef& ref = ctx->refs[ctx->count++];
-
+    StackRef ref;
     ref.Object = reinterpret_cast<CLRDATA_ADDRESS>(*ppObj);
 
     ref.Flags = 0;
@@ -737,17 +696,29 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
     ref.Offset = 0;
     ref.StackPointer = 0;
     ref.Side = SIDE_RT;
+
+    // SArray::Append can throw OutOfMemoryException. The runtime stack walker
+    // CONTRACTs NOTHROW so we must not let an exception escape this callback.
+    // On OOM, set the overflow flag so the caller treats the run as FAIL.
+    EX_TRY
+    {
+        ctx->refs->Append(ref);
+    }
+    EX_CATCH
+    {
+        ctx->overflow = true;
+    }
+    EX_END_CATCH
 }
 
-// Runs the runtime's own ScanStackRoots-equivalent walk and copies the
-// resulting refs into the caller's buffer. Returns S_OK on a clean walk,
-// or S_FALSE if the per-thread buffer overflowed (the walk still ran to
-// completion but the returned ref set is the prefix that fit in
-// MAX_COLLECTED_REFS slots).
-static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* outRefs, int* outCount)
+// Runs the runtime's own ScanStackRoots-equivalent walk and Appends the
+// resulting refs into the caller's SArray. Returns S_OK on a clean walk,
+// or S_FALSE if any Append failed (OOM); the SArray will be non-empty but
+// missing the tail in that case.
+static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<StackRef>* outRefs)
 {
     RuntimeRefCollectionContext collectCtx;
-    collectCtx.count = 0;
+    collectCtx.refs = outRefs;
     collectCtx.overflow = false;
     collectCtx.currentFrameSource = 0;
     collectCtx.currentFrameSourceType = 0;
@@ -846,9 +817,6 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef*
     // does NOT include those. We intentionally omit GCFrame scanning here so our
     // runtime-side collection matches what the cDAC is expected to produce.
 
-    // Copy results out
-    *outCount = collectCtx.count;
-    memcpy(outRefs, collectCtx.refs, collectCtx.count * sizeof(StackRef));
     return collectCtx.overflow ? S_FALSE : S_OK;
 }
 
@@ -915,14 +883,13 @@ static int __cdecl CompareBySource(const void* a, const void* b)
     return 0;
 }
 
-static int GroupRefsByFrame(StackRef* refs, int count, FrameRefGroup* groups, int maxGroups)
+static void GroupRefsByFrame(StackRef* refs, int count, SArray<FrameRefGroup>* groups)
 {
     if (count == 0)
-        return 0;
+        return;
 
     qsort(refs, count, sizeof(StackRef), CompareBySource);
 
-    int groupCount = 0;
     CLRDATA_ADDRESS currentSource = refs[0].Source;
     int startIdx = 0;
 
@@ -930,14 +897,12 @@ static int GroupRefsByFrame(StackRef* refs, int count, FrameRefGroup* groups, in
     {
         if (i == count || refs[i].Source != currentSource)
         {
-            if (groupCount < maxGroups)
-            {
-                groups[groupCount].Source = currentSource;
-                groups[groupCount].SourceType = refs[startIdx].SourceType;
-                groups[groupCount].StartIdx = startIdx;
-                groups[groupCount].Count = i - startIdx;
-                groupCount++;
-            }
+            FrameRefGroup g;
+            g.Source = currentSource;
+            g.SourceType = refs[startIdx].SourceType;
+            g.StartIdx = startIdx;
+            g.Count = i - startIdx;
+            groups->Append(g);
             if (i < count)
             {
                 currentSource = refs[i].Source;
@@ -945,7 +910,6 @@ static int GroupRefsByFrame(StackRef* refs, int count, FrameRefGroup* groups, in
             }
         }
     }
-    return groupCount;
 }
 
 // Compare refs within a single frame using exact matching on a canonical key.
@@ -1000,38 +964,20 @@ static void CompareFrameRefs(StackRef* refsA, int countA, StackRef* refsB, int c
 }
 
 //-----------------------------------------------------------------------------
-// Per-frame comparison + bucketing.
-//
-// Algorithm: group both ref sets by Source (managed PC for frameless JIT
-// frames, Frame* for explicit Frames), merge-walk the two grouped lists, and
-// per matching frame compare refs with CompareFrameRefs. Tracks "true" vs
-// "deferred-known" mismatches so the caller can decide PASS / KNOWN_ISSUE / FAIL
-// in one pass (without a separate flat-comparison + bucketing step).
-//
-// Mismatch classification:
-//   - Frame in A only:                 true mismatch (A reported a Source B didn't)
-//   - Frame in B only, Source deferred: known issue (cDAC intentionally skipped)
-//   - Frame in B only, Source not deferred: true mismatch
-//   - Same Source, refs don't match:   true mismatch (counts/values differ within a frame)
-//
-// emitLog: when true, also writes structured [COMPARE] / [FRAME_*] / [MATCH]
-// lines to s_logFile. When false, the call is verdict-only (no I/O).
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
 // Per-frame comparison.
 //
-// Algorithm: group both ref sets by Source (managed PC for frameless JIT
-// frames, Frame* for explicit Frames), merge-walk the two grouped lists, and
-// per matching frame compare refs with CompareFrameRefs. Captures full
-// per-frame results (including per-ref disposition arrays) into the caller's
-// FrameResult[] buffer. Pure data transform: no I/O, no counter side effects.
+// Group both ref sets by Source (managed PC for frameless JIT frames,
+// Frame* for explicit Frames), merge-walk the two grouped lists, and per
+// matching frame compare refs with CompareFrameRefs. Captures full per-frame
+// results (including per-ref dispositions in a shared SArray) into the
+// caller-owned FrameResult SArray. Pure data transform: no I/O, no counter
+// side effects.
 //
-// Mismatch classification (mirrors RT-as-oracle):
-//   - Frame in cDAC only:                    MISMATCH (cDAC reported a Source RT didn't)
-//   - Frame in RT only, Source deferred:     KNOWN_NIE (cDAC intentionally skipped)
-//   - Frame in RT only, Source not deferred: MISMATCH
-//   - Same Source, refs don't match:         MISMATCH (counts/values differ within a frame)
+// Mismatch classification (runtime is the oracle):
+//   - cDAC-only frame:                  MISMATCH
+//   - RT-only frame, Source deferred:   KNOWN_NIE
+//   - RT-only frame, not deferred:      MISMATCH
+//   - Same Source, refs don't match:    MISMATCH
 //-----------------------------------------------------------------------------
 
 struct CompareVerdict
@@ -1050,6 +996,13 @@ enum FrameOutcome : unsigned char
 // Result of comparing one frame. Carries enough state for the renderer to
 // reconstruct the whole frame (counts, SPs, disposition of each ref) without
 // re-walking the comparison.
+//
+// Per-ref dispositions are stored in a shared SArray<RefDisposition> owned
+// by the caller of CompareFrames. CdacDispStart/RtDispStart index into that
+// buffer; the disposition for ref i on the cDAC side is at
+// dispBuf[CdacDispStart + i]. Storing them out-of-band keeps FrameResult
+// trivially copyable (SArray<FrameResult>::Append memcpys it) and avoids
+// any per-frame ref count cap.
 struct FrameResult
 {
     CLRDATA_ADDRESS Source;
@@ -1063,85 +1016,59 @@ struct FrameResult
     int             RtStart;        // Index into the original RT ref array
     int             RtCount;        // Refs RT reported for this frame
 
-    // Per-ref disposition. Indices 0..min(*Count, MAX_REFS_PER_FRAME).
-    // If a side's Count exceeds MAX_REFS_PER_FRAME, Truncated is set and the
-    // overflow refs are unrendered (but still counted in *Count).
-    RefDisposition  CdacDisp[MAX_REFS_PER_FRAME];
-    RefDisposition  RtDisp[MAX_REFS_PER_FRAME];
-    bool            Truncated;
+    int             CdacDispStart;  // Index into shared disp buffer
+    int             RtDispStart;    // Index into shared disp buffer
 
     FrameOutcome    Outcome;
 };
 
-// TODO(debug-only): dump every slot reported by each side for a MISMATCH frame,
-// sorted by Address, annotated with disposition. Discriminates slot-table vs
-// live-state vs scratch-filter divergence. Impl in "Rendering helpers" section.
-static void LogAllSlots(const FrameResult& fr, const StackRef* cdacBuf, const StackRef* runtimeRefsBuf);
-
-// Helper used by CompareFrames to record per-ref disposition into a frame.
-static void FillDisposition(RefDisposition* out, const bool* used, int count, bool isNie)
+// Helper used by CompareFrames to append per-ref dispositions into the shared
+// disposition buffer. Returns the start index where the dispositions were
+// written, suitable for storing in FrameResult::*DispStart.
+static int AppendDispositions(SArray<RefDisposition>* dispBuf,
+                              const bool* used, int count, bool isNie)
 {
-    int n = count < MAX_REFS_PER_FRAME ? count : MAX_REFS_PER_FRAME;
-    for (int i = 0; i < n; i++)
+    int start = (int)dispBuf->GetCount();
+    for (int i = 0; i < count; i++)
     {
-        if (used[i])
-            out[i] = REF_MATCHED;
-        else if (isNie)
-            out[i] = REF_NIE;
-        else
-            out[i] = REF_ONLY;
+        RefDisposition d;
+        if (used[i])      d = REF_MATCHED;
+        else if (isNie)   d = REF_NIE;
+        else              d = REF_ONLY;
+        dispBuf->Append(d);
     }
+    return start;
 }
 
-// Walks the grouped frames once and fills outResults[] with full per-frame
-// data. Returns the number of frames populated (capped at outCap).
-//
+// Walks the grouped frames once and appends per-frame results into outResults.
 // Both ref arrays must be in source-order (qsort'd in GroupRefsByFrame).
-// The disposition arrays inside each FrameResult are keyed on the ORIGINAL
-// ref array indices via CdacStart / RtStart, so callers can index back into
-// refsCdac / refsRt to retrieve the ref data when rendering.
-
-// Emits a single WARN line per truncated frame. cDAC / RT counts of -1
-// indicate "side not present" (used by the cDAC-only / RT-only paths).
-static void LogRefTruncationWarning(CLRDATA_ADDRESS source, int cdacCount, int rtCount)
-{
-    if (cdacCount > MAX_REFS_PER_FRAME && rtCount > MAX_REFS_PER_FRAME)
-    {
-        CDAC_LOG("WARN: per-frame ref truncation Source=0x%llx cDAC=%d RT=%d cap=%d -- bump MAX_REFS_PER_FRAME\n",
-                 (unsigned long long)source, cdacCount, rtCount, MAX_REFS_PER_FRAME);
-    }
-    else if (cdacCount > MAX_REFS_PER_FRAME)
-    {
-        CDAC_LOG("WARN: per-frame ref truncation Source=0x%llx cDAC=%d cap=%d -- bump MAX_REFS_PER_FRAME\n",
-                 (unsigned long long)source, cdacCount, MAX_REFS_PER_FRAME);
-    }
-    else if (rtCount > MAX_REFS_PER_FRAME)
-    {
-        CDAC_LOG("WARN: per-frame ref truncation Source=0x%llx RT=%d cap=%d -- bump MAX_REFS_PER_FRAME\n",
-                 (unsigned long long)source, rtCount, MAX_REFS_PER_FRAME);
-    }
-}
-
+// Per-ref dispositions are appended into the caller-owned dispBuf SArray;
+// FrameResult::CdacDispStart / RtDispStart index back into dispBuf, and
+// CdacStart / RtStart index back into refsCdac / refsRt for the underlying
+// ref data.
 static int CompareFrames(
     StackRef* refsCdac, int countCdac,
     StackRef* refsRt,   int countRt,
     const CLRDATA_ADDRESS* deferred, int deferredCount,
-    FrameResult* outResults, int outCap)
+    SArray<FrameResult>* outResults,
+    SArray<RefDisposition>* dispBuf)
 {
-    static const int MAX_GROUPS = 256;
-    FrameRefGroup groupsCdac[MAX_GROUPS], groupsRt[MAX_GROUPS];
-    int numGroupsCdac = GroupRefsByFrame(refsCdac, countCdac, groupsCdac, MAX_GROUPS);
-    int numGroupsRt   = GroupRefsByFrame(refsRt,   countRt,   groupsRt,   MAX_GROUPS);
+    SArray<FrameRefGroup> groupsCdac, groupsRt;
+    GroupRefsByFrame(refsCdac, countCdac, &groupsCdac);
+    GroupRefsByFrame(refsRt,   countRt,   &groupsRt);
+
+    int numGroupsCdac = (int)groupsCdac.GetCount();
+    int numGroupsRt   = (int)groupsRt.GetCount();
 
     int idxCdac = 0, idxRt = 0;
     int resultCount = 0;
 
     auto addResult = [&]() -> FrameResult* {
-        if (resultCount >= outCap)
-            return nullptr;
-        FrameResult* fr = &outResults[resultCount++];
-        memset(fr, 0, sizeof(*fr));
-        return fr;
+        FrameResult fr;
+        memset(&fr, 0, sizeof(fr));
+        outResults->Append(fr);
+        resultCount++;
+        return &(*outResults)[outResults->GetCount() - 1];
     };
 
     while (idxCdac < numGroupsCdac || idxRt < numGroupsRt)
@@ -1161,60 +1088,45 @@ static int CompareFrames(
 
             int cC = gC.Count;
             int cR = gR.Count;
-            bool cUsed[MAX_REFS_PER_FRAME] = {};
-            bool rUsed[MAX_REFS_PER_FRAME] = {};
-            int truncated = (cC > MAX_REFS_PER_FRAME) || (cR > MAX_REFS_PER_FRAME);
-            LogRefTruncationWarning(gC.Source, cC, cR);
+            NewArrayHolder<bool> cUsed(new bool[cC]());
+            NewArrayHolder<bool> rUsed(new bool[cR]());
 
-            // CompareFrameRefs writes through aUsed/bUsed sized to MAX_REFS_PER_FRAME;
-            // if a frame exceeds the cap we still run the matcher (so the counts are
-            // correct) but mark the frame truncated for rendering.
-            int matchC = cC < MAX_REFS_PER_FRAME ? cC : MAX_REFS_PER_FRAME;
-            int matchR = cR < MAX_REFS_PER_FRAME ? cR : MAX_REFS_PER_FRAME;
             int unmatchedA = 0, unmatchedB = 0;
-            CompareFrameRefs(&refsCdac[gC.StartIdx], matchC,
-                             &refsRt[gR.StartIdx],   matchR,
+            CompareFrameRefs(&refsCdac[gC.StartIdx], cC,
+                             &refsRt[gR.StartIdx],   cR,
                              &unmatchedA, &unmatchedB, cUsed, rUsed);
 
-            if (fr != nullptr)
-            {
-                fr->Source     = gC.Source;
-                fr->SourceType = gC.SourceType;
-                fr->SP_cdac    = refsCdac[gC.StartIdx].StackPointer;
-                fr->SP_rt      = refsRt[gR.StartIdx].StackPointer;
-                fr->CdacStart  = gC.StartIdx;
-                fr->CdacCount  = cC;
-                fr->RtStart    = gR.StartIdx;
-                fr->RtCount    = cR;
-                fr->Truncated  = truncated;
-                fr->Outcome    = (unmatchedA > 0 || unmatchedB > 0)
-                                 ? FRAME_OUTCOME_MISMATCH
-                                 : FRAME_OUTCOME_MATCH;
-                FillDisposition(fr->CdacDisp, cUsed, cC, /*isNie=*/false);
-                FillDisposition(fr->RtDisp,   rUsed, cR, /*isNie=*/false);
-            }
+            fr->Source     = gC.Source;
+            fr->SourceType = gC.SourceType;
+            fr->SP_cdac    = refsCdac[gC.StartIdx].StackPointer;
+            fr->SP_rt      = refsRt[gR.StartIdx].StackPointer;
+            fr->CdacStart  = gC.StartIdx;
+            fr->CdacCount  = cC;
+            fr->RtStart    = gR.StartIdx;
+            fr->RtCount    = cR;
+            fr->Outcome    = (unmatchedA > 0 || unmatchedB > 0)
+                             ? FRAME_OUTCOME_MISMATCH
+                             : FRAME_OUTCOME_MATCH;
+            fr->CdacDispStart = AppendDispositions(dispBuf, cUsed, cC, /*isNie=*/false);
+            fr->RtDispStart   = AppendDispositions(dispBuf, rUsed, cR, /*isNie=*/false);
             idxCdac++;
             idxRt++;
         }
         else if (cdacOnly)
         {
             FrameRefGroup& gC = groupsCdac[idxCdac];
-            if (fr != nullptr)
-            {
-                fr->Source     = gC.Source;
-                fr->SourceType = gC.SourceType;
-                fr->SP_cdac    = refsCdac[gC.StartIdx].StackPointer;
-                fr->SP_rt      = 0;
-                fr->CdacStart  = gC.StartIdx;
-                fr->CdacCount  = gC.Count;
-                fr->RtStart    = 0;
-                fr->RtCount    = 0;
-                fr->Truncated  = gC.Count > MAX_REFS_PER_FRAME;
-                fr->Outcome    = FRAME_OUTCOME_MISMATCH;
-                LogRefTruncationWarning(gC.Source, gC.Count, 0);
-                int n = gC.Count < MAX_REFS_PER_FRAME ? gC.Count : MAX_REFS_PER_FRAME;
-                for (int i = 0; i < n; i++) fr->CdacDisp[i] = REF_ONLY;
-            }
+            fr->Source     = gC.Source;
+            fr->SourceType = gC.SourceType;
+            fr->SP_cdac    = refsCdac[gC.StartIdx].StackPointer;
+            fr->SP_rt      = 0;
+            fr->CdacStart  = gC.StartIdx;
+            fr->CdacCount  = gC.Count;
+            fr->RtStart    = 0;
+            fr->RtCount    = 0;
+            fr->Outcome    = FRAME_OUTCOME_MISMATCH;
+            fr->CdacDispStart = (int)dispBuf->GetCount();
+            for (int i = 0; i < gC.Count; i++) dispBuf->Append(REF_ONLY);
+            fr->RtDispStart = (int)dispBuf->GetCount();
             idxCdac++;
         }
         else
@@ -1222,24 +1134,20 @@ static int CompareFrames(
             // Frame only in RT. KNOWN_NIE iff Source is on the deferred list.
             FrameRefGroup& gR = groupsRt[idxRt];
             bool isKnownNie = IsDeferredFrame(gR.Source, deferred, deferredCount);
-            if (fr != nullptr)
-            {
-                fr->Source     = gR.Source;
-                fr->SourceType = gR.SourceType;
-                fr->SP_cdac    = 0;
-                fr->SP_rt      = refsRt[gR.StartIdx].StackPointer;
-                fr->CdacStart  = 0;
-                fr->CdacCount  = 0;
-                fr->RtStart    = gR.StartIdx;
-                fr->RtCount    = gR.Count;
-                fr->Truncated  = gR.Count > MAX_REFS_PER_FRAME;
-                fr->Outcome    = isKnownNie ? FRAME_OUTCOME_KNOWN_NIE
-                                            : FRAME_OUTCOME_MISMATCH;
-                LogRefTruncationWarning(gR.Source, 0, gR.Count);
-                int n = gR.Count < MAX_REFS_PER_FRAME ? gR.Count : MAX_REFS_PER_FRAME;
-                for (int i = 0; i < n; i++)
-                    fr->RtDisp[i] = isKnownNie ? REF_NIE : REF_ONLY;
-            }
+            fr->Source     = gR.Source;
+            fr->SourceType = gR.SourceType;
+            fr->SP_cdac    = 0;
+            fr->SP_rt      = refsRt[gR.StartIdx].StackPointer;
+            fr->CdacStart  = 0;
+            fr->CdacCount  = 0;
+            fr->RtStart    = gR.StartIdx;
+            fr->RtCount    = gR.Count;
+            fr->Outcome    = isKnownNie ? FRAME_OUTCOME_KNOWN_NIE
+                                        : FRAME_OUTCOME_MISMATCH;
+            fr->CdacDispStart = (int)dispBuf->GetCount();
+            fr->RtDispStart   = (int)dispBuf->GetCount();
+            RefDisposition d = isKnownNie ? REF_NIE : REF_ONLY;
+            for (int i = 0; i < gR.Count; i++) dispBuf->Append(d);
             idxRt++;
         }
     }
@@ -1276,27 +1184,12 @@ static CompareVerdict ComputeVerdict(const FrameResult* frames, int frameCount)
     return v;
 }
 
-//-----------------------------------------------------------------------------
-// Filter interior stack pointers from a ref set in place.
-//-----------------------------------------------------------------------------
-
-static int FilterRefs(StackRef* refs, int count, Thread* pThread, uintptr_t stackLimit)
-{
-    return FilterInteriorStackRefs(refs, count, pThread, stackLimit);
-}
-
-//-----------------------------------------------------------------------------
 // Extract CDAC_DEFERRED_FRAME sentinel entries from a cDAC ref array.
-// Removes them from `refs` (shifting later elements down) and writes their
-// Source addresses into `deferredOut`. Returns the new ref count and writes
-// the count of extracted sentinels into *pDeferredCount.
-//
-// Sentinels are emitted by Microsoft.Diagnostics.DataContractReader.Contracts
-// GcScanContext.RecordDeferredFrame when an explicit Frame is intentionally
-// skipped because the cDAC code path is not implemented yet (typically
-// PromoteCallerStack pending the ArgIterator port).
-//-----------------------------------------------------------------------------
-
+// Removes them in-place (shifting later elements down), writes their Source
+// addresses into `deferredOut`, and returns the new ref count. Sentinels are
+// emitted by GcScanContext.RecordDeferredFrame for explicit Frames whose cDAC
+// scan path is not implemented yet (typically PromoteCallerStack pending the
+// ArgIterator port).
 static int ExtractDeferredFrames(
     StackRef* refs, int count,
     CLRDATA_ADDRESS* deferredOut, int* pDeferredCount, int deferredMax)
@@ -1347,25 +1240,18 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     DWORD osThreadId = pThread->GetOSThreadId();
 
-    // =====================================================================
-    // Phase A: Collect raw refs from both sides.
-    //
-    // No comparison or filtering happens here - just two independent walks
-    // producing two SArray/buffer pairs that we'll reconcile in Phase B/C.
-    // =====================================================================
+    // Phase A: Collect raw refs from both sides (independent walks).
 
     // A.1: cDAC side. ReadThreadContext callback state is wired here so the
-    //      cDAC's IDacMemoryAccess shim can return the captured register
-    //      context when it queries the active thread's CONTEXT.
+    // cDAC can return the captured CONTEXT for the active thread.
     SArray<StackRef> cdacRefs;
     HRESULT cdacHr;
     {
         s_currentContext = regs;
         s_currentThreadId = osThreadId;
 
-        // Flush only the cDAC's target-state caches (live process state can
-        // change) while keeping immutable metadata caches (e.g. CoreLib type
-        // info) populated across invocations.
+        // Flush only target-state caches (process state can change), keep
+        // immutable metadata caches (e.g. CoreLib type info) populated.
         if (s_cdacProcess != nullptr)
             s_cdacProcess->Request(DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE, 0, NULL, 0, NULL);
 
@@ -1375,13 +1261,11 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         s_currentThreadId = 0;
     }
 
-    // A.2: Runtime side - the oracle. This is the GC's own ScanStackRoots
-    //      walk that the cDAC must agree with.
-    StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
-    int runtimeCount = 0;
-    HRESULT rtHr = CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    // A.2: Runtime side -- the oracle (GC's own ScanStackRoots-equivalent walk).
+    SArray<StackRef> runtimeRefs;
+    HRESULT rtHr = CollectRuntimeStackRefs(pThread, regs, &runtimeRefs);
+    int runtimeCount = (int)runtimeRefs.GetCount();
 
-    // Early-exit reasons.
     if (FAILED(cdacHr))
     {
         InterlockedIncrement(&s_failCount);
@@ -1391,23 +1275,18 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     }
     if (rtHr == S_FALSE)
     {
-        CDAC_LOG("[WARN] Thread=0x%x IP=0x%p - RT overflow (>%d refs); comparison may be partial\n",
-            osThreadId, (void*)GetIP(regs), MAX_COLLECTED_REFS);
+        // OOM mid-Append; comparing a truncated set risks a false PASS.
+        InterlockedIncrement(&s_failCount);
+        CDAC_LOG("[FAIL] Thread=0x%x IP=0x%p - RT collection OOM after %d refs\n",
+            osThreadId, (void*)GetIP(regs), runtimeCount);
+        return;
     }
 
-    // =====================================================================
-    // Phase B: Normalize.
-    //
-    // Both sides report semantically equivalent data but with several
-    // representational differences. Each step below addresses one such
-    // difference; the goal is two ref sets that can be compared directly
-    // in Phase C.
-    // =====================================================================
+    // Phase B: Normalize the cDAC side so it can compare directly with RT.
 
-    // B.1: Compute the live-stack upper bound. PromoteCarefully (siginfo.cpp)
-    //      drops interior pointers whose value lies in the live stack region
-    //      [topStack, ...). We need the same threshold to mirror that filter
-    //      on the cDAC side in step B.3.
+    // B.1: Live-stack upper bound. PromoteCarefully (siginfo.cpp) drops
+    // interior pointers whose value lies in the live stack [topStack, ...).
+    // We mirror that filter on the cDAC side in B.3.
     Frame* pTopFrame = pThread->GetFrame();
     Object** topStack = (Object**)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
@@ -1418,10 +1297,9 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     uintptr_t stackLimit = (uintptr_t)topStack;
 
     // B.2: Extract CDAC_DEFERRED_FRAME sentinels from the cDAC ref set.
-    //      These are markers (not real refs) emitted when the cDAC intentionally
-    //      skips a Frame whose scan code path is not implemented yet (e.g.
-    //      ArgIterator-dependent paths). Their Source addresses are used in
-    //      Phase C to re-classify per-frame diffs as known issues.
+    // These are markers (not real refs) emitted when the cDAC intentionally
+    // skips a Frame whose scan path is not implemented yet. Their Source
+    // addresses are used in Phase C to re-classify diffs as known issues.
     CLRDATA_ADDRESS deferredFrames[MAX_DEFERRED_FRAMES];
     int deferredFrameCount = 0;
     int cdacCount = (int)cdacRefs.GetCount();
@@ -1434,51 +1312,31 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         cdacRefs.CloseRawBuffer();
     }
 
-    // B.3: Filter the cDAC side.
-    //
-    //      - Interior-into-stack filter: the runtime's PromoteCarefully drops
-    //        interior pointers whose value lies in the live stack. The cDAC
-    //        reports raw GcInfo slots (no such filter), so we mirror it here.
+    // B.3: Mirror PromoteCarefully's interior-into-stack filter on the cDAC
+    // side. The cDAC reports raw GcInfo slots without this filter.
     if (cdacCount > 0)
     {
         StackRef* buf = cdacRefs.OpenRawBuffer();
-        cdacCount = FilterRefs(buf, cdacCount, pThread, stackLimit);
+        cdacCount = FilterInteriorStackRefs(buf, cdacCount, pThread, stackLimit);
         cdacRefs.CloseRawBuffer();
     }
 
-    // B.4: No dedup on the runtime side. The runtime's GcInfo decoder
-    //      reports each slot exactly once per frame walk, and per-frame
-    //      grouping in Phase C scopes comparisons correctly without
-    //      collapsing distinct (Addr, Obj, Flags) tuples that legitimately
-    //      appear in multiple frames (e.g. caller-saved area overlap).
-
-    // =====================================================================
-    // Phase C: Compare per-frame.
-    //
-    // Group both sides by Source (PC for frameless, Frame* for explicit),
-    // merge-walk the grouped lists, run CompareFrameRefs within each frame.
-    // Mismatches confined to a deferred Source (B.2) downgrade to
-    // KNOWN_NIE rather than MISMATCH.
-    //
-    // CompareFrames is a pure data transform — no I/O, no counter updates.
-    // ComputeVerdict walks the result array once to bump global counters
-    // and derive the pass/known/fail verdict.
-    // =====================================================================
-    static const int MAX_FRAMES = 256;
-    FrameResult frameResults[MAX_FRAMES];
+    // Phase C: Compare per-frame. CompareFrames is a pure data transform;
+    // ComputeVerdict bumps the global counters once.
+    SArray<FrameResult> frameResults;
+    SArray<RefDisposition> dispBuf;
     StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
+    StackRef* runtimeBuf = runtimeRefs.OpenRawBuffer();
     int frameCount = CompareFrames(
         cdacBuf, cdacCount,
-        runtimeRefsBuf, runtimeCount,
+        runtimeBuf, runtimeCount,
         deferredFrames, deferredFrameCount,
-        frameResults, MAX_FRAMES);
-    CompareVerdict verdict = ComputeVerdict(frameResults, frameCount);
+        &frameResults, &dispBuf);
+    const RefDisposition* dispPtr = dispBuf.GetElements();
+    CompareVerdict verdict = ComputeVerdict(frameResults.GetElements(), frameCount);
 
-    // =====================================================================
-    // Phase D: Bucket the outcome + (on mismatch) emit hierarchical
-    // diagnostics: a self-contained block per broken frame followed by
-    // one stack trace at the end.
-    // =====================================================================
+    // Phase D: Bucket the outcome and (on mismatch) emit hierarchical
+    // diagnostics: one block per broken frame, then one stack trace.
     if (verdict.pass)
         InterlockedIncrement(&s_passCount);
     else if (verdict.allKnown)
@@ -1535,35 +1393,26 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
             if (fr.SP_cdac != 0 && fr.SP_rt != 0 && fr.SP_cdac != fr.SP_rt)
                 spNote = " <-- SP MISMATCH";
 
-            CDAC_LOG("  Frame #%d %s [%s] cDAC=%d RT=%d SP_cDAC=0x%llx SP_RT=0x%llx%s%s\n",
+            CDAC_LOG("  Frame #%d %s [%s] cDAC=%d RT=%d SP_cDAC=0x%llx SP_RT=0x%llx%s\n",
                 i, methodName, outcomeName, fr.CdacCount, fr.RtCount,
                 (unsigned long long)fr.SP_cdac, (unsigned long long)fr.SP_rt,
-                spNote, fr.Truncated ? " (truncated)" : "");
+                spNote);
 
             // Per-ref dump. Verbose -> all refs; concise -> only non-MATCHED
             // refs (which is the actionable signal — what diverges).
-            int nC = fr.CdacCount < MAX_REFS_PER_FRAME ? fr.CdacCount : MAX_REFS_PER_FRAME;
-            for (int j = 0; j < nC; j++)
+            for (int j = 0; j < fr.CdacCount; j++)
             {
-                if (!verbose && fr.CdacDisp[j] == REF_MATCHED)
+                RefDisposition d = dispPtr[fr.CdacDispStart + j];
+                if (!verbose && d == REF_MATCHED)
                     continue;
-                LogRef(fr.CdacDisp[j], cdacBuf[fr.CdacStart + j]);
+                LogRef(d, cdacBuf[fr.CdacStart + j]);
             }
-            int nR = fr.RtCount < MAX_REFS_PER_FRAME ? fr.RtCount : MAX_REFS_PER_FRAME;
-            for (int j = 0; j < nR; j++)
+            for (int j = 0; j < fr.RtCount; j++)
             {
-                if (!verbose && fr.RtDisp[j] == REF_MATCHED)
+                RefDisposition d = dispPtr[fr.RtDispStart + j];
+                if (!verbose && d == REF_MATCHED)
                     continue;
-                LogRef(fr.RtDisp[j], runtimeRefsBuf[fr.RtStart + j]);
-            }
-
-            // TODO(debug-only): drill into the unmatched stack-slot arithmetic.
-            // Dump every slot reported by each side for the mismatch frame,
-            // sorted by Address. Discriminates slot-table vs live-state vs
-            // scratch-filter divergence.
-            if (verbose && fr.Outcome == FRAME_OUTCOME_MISMATCH && fr.RtCount > 0)
-            {
-                LogAllSlots(fr, cdacBuf, runtimeRefsBuf);
+                LogRef(d, runtimeBuf[fr.RtStart + j]);
             }
         }
 
@@ -1593,6 +1442,7 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     }
 
     cdacRefs.CloseRawBuffer();
+    runtimeRefs.CloseRawBuffer();
 }
 
 //-----------------------------------------------------------------------------
@@ -1803,58 +1653,6 @@ static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf,
     }
 
     snprintf(buf, bufLen, "<unknown 0x%llx>", (unsigned long long)source);
-}
-
-// Dump EVERY slot reported by both cDAC and RT for a single MISMATCH frame,
-// each list independently sorted by Address. Annotates each slot with its
-// disposition (MATCH / ONLY / NIE) so the reader can spot:
-//   - same positional rank, different addresses -> slot-table decode bug
-//   - addresses interleaved differently         -> live-state decode bug
-//   - one side reports a slot in [SP, SP+scratch) the other skipped
-//                                                -> scratch-filter bug
-// Caller gates on (verbose && Outcome == MISMATCH).
-static void LogAllSlots(const FrameResult& fr, const StackRef* cdacBuf, const StackRef* runtimeRefsBuf)
-{
-    auto emitSide = [&](const char* sideTag, const StackRef* base, int start, int count,
-                        const RefDisposition* disp)
-    {
-        int n = count < MAX_REFS_PER_FRAME ? count : MAX_REFS_PER_FRAME;
-        if (n <= 0) return;
-
-        int idx[MAX_REFS_PER_FRAME];
-        for (int i = 0; i < n; i++) idx[i] = i;
-
-        // Insertion sort by Address (bounded n, debug-only path)
-        for (int i = 1; i < n; i++)
-        {
-            int key = idx[i];
-            CLRDATA_ADDRESS keyAddr = base[start + key].Address;
-            int j = i - 1;
-            while (j >= 0 && base[start + idx[j]].Address > keyAddr)
-            {
-                idx[j + 1] = idx[j];
-                j--;
-            }
-            idx[j + 1] = key;
-        }
-
-        for (int i = 0; i < n; i++)
-        {
-            const StackRef& r = base[start + idx[i]];
-            char flagBuf[64];
-            FormatRefFlags(r.Flags, flagBuf, ARRAY_SIZE(flagBuf));
-            const char* regName = RegisterName(r.Register);
-            CDAC_LOG("    [ALL_SLOTS %s] #%d %-9s Addr=0x%llx Obj=0x%llx Flags=%s Reg=%d(%s) Off=%d\n",
-                sideTag, idx[i], DispositionName(disp[idx[i]]),
-                (unsigned long long)r.Address, (unsigned long long)r.Object,
-                flagBuf, r.Register, regName, r.Offset);
-        }
-    };
-
-    CDAC_LOG("    [ALL_SLOTS] cDAC=%d RT=%d (sorted by Address; #N = original slot index)\n",
-        fr.CdacCount, fr.RtCount);
-    emitSide("cDAC", cdacBuf, fr.CdacStart, fr.CdacCount, fr.CdacDisp);
-    emitSide("RT  ", runtimeRefsBuf, fr.RtStart, fr.RtCount, fr.RtDisp);
 }
 
 #endif // CDAC_STRESS

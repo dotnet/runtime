@@ -16,7 +16,7 @@ When running `RunStressTests.ps1` (Checked, `DOTNET_CdacStress=0x001` =
 | `[FAIL]` | A real cDAC vs runtime discrepancy, or `GetStackReferences` failed at the API boundary. Investigate. |
 
 The native harness detects the deferred-frame sentinels emitted by the
-cDAC managed code and relabels per-frame diffs as `[FRAME_KNOWN_NIE]`
+cDAC managed code and relabels per-frame diffs as `[KNOWN_NIE]`
 in the structured log.
 
 ## Open buckets
@@ -33,21 +33,20 @@ To prevent these deferred frames from masquerading as real cDAC bugs,
 the managed code records each deferred frame on the `GcScanContext`
 via `RecordDeferredFrame`, which emits a sentinel `StackRefData` entry
 with `GcScanFlags.CDAC_DEFERRED_FRAME` (0x40000000) set. The native
-stress harness strips these sentinels and re-classifies any DAC-only
-diff at a deferred Source address as `[FRAME_KNOWN_NIE]`, and the
+stress harness strips these sentinels and re-classifies any RT-only
+diff at a deferred Source address as `[KNOWN_NIE]`, and the
 whole verification as `[KNOWN_ISSUE]` rather than `[FAIL]`.
 
 Expected pattern in the log:
 
 ```
-[KNOWN_ISSUE] Thread=0x... IP=0x... cDAC=6 RT=7 (deferred frames: 1)
-  [COMPARE cDAC-vs-RT]
-    [FRAME_KNOWN_NIE] Source=0x... (<frame 0x...>): RT=1 (PromoteCallerStack deferred)
-    [MATCH] All 6 refs matched
-  [STACK_TRACE] (cDAC=6 RT=7)
-    #0 System.AppContext.Setup(...)                                   (cDAC=2 RT=2)
+[KNOWN_ISSUE] Thread=0x... IP=0x... cDAC=6 RT=7 frames=5 (match=4 mismatch=0 known_nie=1)
+  Frame #4 <frame PrestubMethodFrame 0x...> [KNOWN_NIE] cDAC=0 RT=1 SP_cDAC=0x0 SP_RT=0x0
+      [NIE(RT)] Addr=0x... Obj=0x... Flags=0x0 Reg=-1 Off=0
+  [STACK_TRACE] (cDAC=6 RT=7 frames=5)
+    #0 System.AppContext.Setup(...) (cDAC=2 RT=2)
     ...
-    #N <frame 0x...>                                                  (cDAC=0 RT=1) <-- KNOWN_NIE
+    #4 <frame PrestubMethodFrame 0x...> (cDAC=0 RT=1) <-- KNOWN_NIE (PromoteCallerStack deferred)
 ```
 
 Every JIT frame's count matches exactly; the only discrepancy is on
@@ -70,18 +69,28 @@ need to be handled — that case currently isn't reachable because
 
 ## Log Format
 
-The stress log uses structured per-frame output with method-name
-resolution:
+Each verification emits a single header line followed by, on `[FAIL]` or
+`[KNOWN_ISSUE]`, a per-broken-frame block and a stack trace.
 
 ```
-[PASS] Thread=0x... IP=0x... cDAC=N RT=N
-[FAIL] Thread=0x... IP=0x... cDAC=N RT=M
-  [COMPARE cDAC-vs-RT]
-    [FRAME_DIFF] Source=0x... (MethodName): cDAC=X RT=Y
-      [cDAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
-      [RT_ONLY] Addr=0x... Obj=0x... Flags=0x...
-    [FRAME_cDAC_ONLY] Source=0x... (MethodName): cDAC=X
-    [FRAME_RT_ONLY] Source=0x... (<frame 0x...>): RT=Y
-  [STACK_TRACE] (cDAC=N RT=M)
+[PASS] Thread=0x... IP=0x... cDAC=N RT=N frames=N
+
+[KNOWN_ISSUE] Thread=0x... IP=0x... cDAC=N RT=M frames=N (match=N mismatch=N known_nie=N)
+  Frame #i <frame TypeName 0x...> [KNOWN_NIE] cDAC=X RT=Y SP_cDAC=0x... SP_RT=0x...
+      [NIE(RT)] Addr=0x... Obj=0x... Flags=0x... Reg=N Off=N
+  [STACK_TRACE] (cDAC=N RT=M frames=N)
+    #i MethodName (cDAC=X RT=Y)
+    #i <frame TypeName 0x...> (cDAC=X RT=Y) <-- KNOWN_NIE (PromoteCallerStack deferred)
+
+[FAIL] Thread=0x... IP=0x... cDAC=N RT=M frames=N (match=N mismatch=N known_nie=N)
+  Frame #i MethodName [MISMATCH] cDAC=X RT=Y SP_cDAC=0x... SP_RT=0x...
+      [ONLY(cDAC)] Addr=0x... Obj=0x... Flags=0x... Reg=N Off=N
+      [ONLY(RT)]   Addr=0x... Obj=0x... Flags=0x... Reg=N Off=N
+  [STACK_TRACE] (cDAC=N RT=M frames=N)
     #i MethodName (cDAC=X RT=Y) [<-- MISMATCH]
 ```
+
+Frames whose counts match are omitted from the per-frame block in
+concise mode; verbose mode (`DOTNET_CdacStress=0x201`) also emits the
+matched refs.
+

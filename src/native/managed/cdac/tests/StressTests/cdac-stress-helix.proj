@@ -58,11 +58,17 @@
     (matches what CdacStressTestBase.GetCoreRunPath expects).
   -->
   <Target Name="_CreateHelixWorkItems" BeforeTargets="CoreTest">
+    <!--
+      Run the xUnit suite directly. CdacStressTestBase.GetCoreRoot discovers
+      shared/Microsoft.NETCore.App/<version>/ from HELIX_CORRELATION_PAYLOAD
+      and the harness ensures corerun is executable, so no env-var setup or
+      framework-version loop is needed here.
+    -->
     <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-      <_StressTestCommand>for /D %25%25V in (%25HELIX_CORRELATION_PAYLOAD%25\shared\Microsoft.NETCore.App\*) do (set &quot;CORE_ROOT=%25%25V&quot; &amp;&amp; %25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo)</_StressTestCommand>
+      <_StressTestCommand>%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo</_StressTestCommand>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
-      <_StressTestCommand>for d in $HELIX_CORRELATION_PAYLOAD/shared/Microsoft.NETCore.App/*/; do export CORE_ROOT=&quot;$d&quot;; chmod +x $CORE_ROOT/corerun; $HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo; done</_StressTestCommand>
+      <_StressTestCommand>$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo</_StressTestCommand>
     </PropertyGroup>
 
     <ItemGroup>

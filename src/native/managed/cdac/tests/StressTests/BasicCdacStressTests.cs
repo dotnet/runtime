@@ -12,11 +12,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 
 /// <summary>
 /// Runs each debuggee app under corerun with DOTNET_CdacStress=0x001 (ALLOC)
-/// and asserts that the cDAC stack reference verification achieves 100% pass rate.
+/// and asserts that the cDAC stack reference verification produces no
+/// `[FAIL]` results. `[KNOWN_ISSUE]` verifications (where the cDAC explicitly
+/// marks a frame as deferred via `RecordDeferredFrame`) are tolerated.
 /// </summary>
 /// <remarks>
 /// Prerequisites:
-/// - Build CoreCLR native + cDAC: build.cmd -subset clr.native+tools.cdac -c Debug -rc Checked -lc Release
+/// - Build CoreCLR + cDAC (Checked): build.cmd -subset clr.runtime+tools.cdac -c Checked
 /// - Generate core_root: src\tests\build.cmd Checked generatelayoutonly /p:LibrariesConfiguration=Release
 /// - Build debuggees: dotnet build this test project
 ///

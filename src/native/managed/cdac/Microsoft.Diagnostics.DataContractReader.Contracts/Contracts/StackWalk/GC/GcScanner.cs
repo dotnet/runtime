@@ -332,7 +332,7 @@ internal class GcScanner
     /// </summary>
     /// <remarks>
     /// Not yet ported. Every call records a deferred frame so the stress harness
-    /// buckets the resulting cDAC-vs-DAC diff at this frame as a known issue
+    /// buckets the resulting cDAC-vs-runtime diff at this frame as a known issue
     /// rather than a real cDAC bug. Will be replaced with a real port once the
     /// signature- and ArgIterator-based ref enumeration lands.
     /// </remarks>

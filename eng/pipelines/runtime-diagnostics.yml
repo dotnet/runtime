@@ -321,7 +321,7 @@ extends:
                 condition: always()
 
     #
-    # cDAC GC Stress Tests — runs in-process cDAC vs DAC vs runtime stack-ref
+    # cDAC GC Stress Tests — runs in-process cDAC vs runtime stack-ref
     # verification at GC stress points. Independent stage with its own build
     # so its status/failures don't get conflated with the dump tests.
     #

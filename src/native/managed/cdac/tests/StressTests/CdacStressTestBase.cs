@@ -34,6 +34,7 @@ public abstract class CdacStressTestBase
         string coreRoot = GetCoreRoot();
         string corerun = Path.Combine(coreRoot, OperatingSystem.IsWindows() ? "corerun.exe" : "corerun");
         Assert.True(File.Exists(corerun), $"corerun not found at '{corerun}'");
+
         string debuggeeDll = GetDebuggeePath(debuggeeName);
         // When running on Helix, write logs into HELIX_WORKITEM_UPLOAD_ROOT so
         // they're uploaded as work-item artifacts and visible via the Helix API.
@@ -123,7 +124,8 @@ public abstract class CdacStressTestBase
     {
         Assert.True(results.TotalVerifications > 0,
             $"GC stress test '{debuggeeName}' produced zero verifications — " +
-            "GCStress may not have triggered or cDAC may not be loaded.");
+            "the cDAC stress framework may not be enabled (DOTNET_CdacStress unset, " +
+            "or coreclr built without CDAC_STRESS).");
 
         if (results.Failed > 0)
         {
@@ -138,10 +140,25 @@ public abstract class CdacStressTestBase
 
     private static string GetCoreRoot()
     {
-        // Explicit override wins (typical in CI / when running under Helix).
+        // Explicit override wins (typical when running locally with a custom layout).
         string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         if (!string.IsNullOrEmpty(coreRoot) && Directory.Exists(coreRoot))
             return coreRoot;
+
+        // Helix layout: testhost is unpacked under HELIX_CORRELATION_PAYLOAD and
+        // corerun lives in shared/Microsoft.NETCore.App/<version>/. Pick the
+        // first version directory; the payload should contain exactly one.
+        string? helixPayload = Environment.GetEnvironmentVariable("HELIX_CORRELATION_PAYLOAD");
+        if (!string.IsNullOrEmpty(helixPayload))
+        {
+            string frameworkRoot = Path.Combine(helixPayload, "shared", "Microsoft.NETCore.App");
+            if (Directory.Exists(frameworkRoot))
+            {
+                string? versionDir = Directory.EnumerateDirectories(frameworkRoot).FirstOrDefault();
+                if (versionDir is not null)
+                    return versionDir;
+            }
+        }
 
         // Local fallback: derive from the repo's standard artifact layout.
         string os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "osx" : "linux";
