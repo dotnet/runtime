@@ -110,6 +110,30 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
+            try
+            {
+                DecryptCoreOnce(nonce, ciphertext, tag, plaintext, associatedData);
+            }
+            catch (CryptographicException ex) when (ex is not AuthenticationTagMismatchException)
+            {
+                // Work around a transient Android/Conscrypt issue: an AEAD authentication
+                // failure can surface with the wrong exception type because the provider
+                // derives it from BoringSSL's thread-local error queue, which may still hold
+                // a stale error from an unrelated prior operation on the same thread. The
+                // failed attempt clears that queue, so an immediate same-thread retry observes
+                // the true result. A valid ciphertext cannot reach this path, so the retry can
+                // never turn an authentication failure into unauthenticated plaintext.
+                DecryptCoreOnce(nonce, ciphertext, tag, plaintext, associatedData);
+            }
+        }
+
+        private void DecryptCoreOnce(
+            ReadOnlySpan<byte> nonce,
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> tag,
+            Span<byte> plaintext,
+            ReadOnlySpan<byte> associatedData)
+        {
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
                 ReadOnlySpan<byte>.Empty,
