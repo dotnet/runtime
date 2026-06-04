@@ -299,7 +299,9 @@ namespace System.Net.Mail
                 //be appended.
                 if (MimeBasePart.IsAscii(_displayName, false) || allowUnicode)
                 {
-                    encodedAddress = "\"" + _displayName + "\"";
+                    // Escape any embedded quotes so the display name forms a valid
+                    // RFC 5322 quoted-string (e.g. Henry "The Fonz" Winkler).
+                    encodedAddress = "\"" + _displayName.Replace("\"", "\\\"") + "\"";
                 }
                 else
                 {

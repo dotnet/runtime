@@ -214,6 +214,37 @@ namespace System.Net.Mail.Tests
                 + " \"test\u00DC\" <test2@example.com>", result);
         }
 
+        [Theory]
+        [MemberData(nameof(MailAddressFactory_AddressDisplayName))]
+        public void EncodeSingleMailAddress_WithAddressAndDisplayNameContainingQuotes_ShouldEscapeQuotes(Func<string, string, MailAddress> factory)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/52439:
+            // embedded double quotes in the DisplayName must be escaped as quoted-pairs
+            // when produced for SMTP headers, otherwise the header is corrupted.
+            MailAddress testAddress = factory("test@example.com", "Henry \"The Fonz\" Winkler");
+
+            string result = testAddress.Encode(0, false);
+            Assert.Equal("\"Henry \\\"The Fonz\\\" Winkler\" <test@example.com>", result);
+
+            result = testAddress.Encode(0, true);
+            Assert.Equal("\"Henry \\\"The Fonz\\\" Winkler\" <test@example.com>", result);
+        }
+
+        [Theory]
+        [MemberData(nameof(MailAddressFactory_AddressDisplayName))]
+        public void EncodeMultipleMailAddress_WithDisplayNameContainingQuotes_ShouldEscapeQuotes(Func<string, string, MailAddress> factory)
+        {
+            MailAddress testAddress = factory("test@example.com", "Henry \"The Fonz\" Winkler");
+            MailAddressCollection collection = new MailAddressCollection();
+            collection.Add(testAddress);
+
+            string result = collection.Encode(0, false);
+            Assert.Equal("\"Henry \\\"The Fonz\\\" Winkler\" <test@example.com>", result);
+
+            result = collection.Encode(0, true);
+            Assert.Equal("\"Henry \\\"The Fonz\\\" Winkler\" <test@example.com>", result);
+        }
+
         [Fact]
         public void CustomEncoding_Null()
         {
