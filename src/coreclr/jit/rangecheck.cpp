@@ -1130,15 +1130,11 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     Range phiRange = Range(Limit(Limit::keUndef));
     auto  visitor  = [comp, vnType, &phiRange, &budget, visited](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         // call GetRangeFromAssertionsWorker for each reaching VN using reachingAssertions
-        Range edgeRange;
+        Range edgeRange = GetRangeFromType(vnType);
 
         if (reachingVN != ValueNumStore::NoVN)
         {
             edgeRange = GetRangeFromAssertionsWorker(comp, reachingVN, reachingAssertions, --budget, visited);
-        }
-        else
-        {
-            edgeRange = GetRangeFromType(vnType);
         }
 
         // If phiRange is not yet set, set it to the first edgeRange
