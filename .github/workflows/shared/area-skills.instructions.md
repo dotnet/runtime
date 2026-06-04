@@ -6,14 +6,18 @@ need to route a failure, a review, or a change to the right area knowledge
 should reference this table instead of re-declaring their own copy, so the
 mapping stays consistent as skills are added or renamed.
 
-Skills live under `.github/skills/<name>/SKILL.md`. Area-owner handles are
-**not** listed here; resolve owners from
-[`docs/area-owners.md`](../../../docs/area-owners.md) by the issue's `area-*`
-label.
+Skill paths in the table below are relative to `.github/skills/`, so
+`mobile-platforms/SKILL.md` means `.github/skills/mobile-platforms/SKILL.md`.
+The one non-skill entry (NativeAOT) is given as a repo-root-relative path and is
+called out as such. Area-owner handles are **not** listed here; resolve owners
+from [`docs/area-owners.md`](../../../docs/area-owners.md) by the issue's
+`area-*` label.
 
 <a id="area-skill-table"></a>
 
 ## Area → skill table
+
+Skill paths are relative to `.github/skills/`.
 
 | Area / pipeline | Skill(s) | What the skill covers |
 |---|---|---|
@@ -21,7 +25,7 @@ label.
 | JIT / GC / PGO stress (codegen) | `jit-regression-test/SKILL.md`; `ci-pipeline-monitor/SKILL.md` | JIT codegen, assertion triage, regression-test extraction. |
 | `System.Net.*` | `system-net-review/SKILL.md` | Networking stack review and conventions. |
 | `Microsoft.Extensions.*` | `extensions-review/SKILL.md` | Extensions (DI, config, logging, hosting, caching) review. |
-| NativeAOT outer loop | `eng/testing/tests.*aot*.targets` + the test `.csproj` | NativeAOT test wiring (no dedicated skill; read the targets). |
+| NativeAOT outer loop | repo-root `eng/testing/tests.*aot*.targets` + the test `.csproj` | NativeAOT test wiring (no dedicated skill; read the targets). |
 | Generic / unmapped | `ci-pipeline-monitor/SKILL.md` | Cross-cutting CI pipeline monitoring and triage. |
 
 When more than one skill is listed, load them in order; the first carries the
