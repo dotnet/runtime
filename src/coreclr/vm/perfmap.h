@@ -19,6 +19,52 @@ enum class PerfMapStubType
     Individual
 };
 
+#ifndef FEATURE_PERFMAP
+
+class PerfMap
+{
+public:
+    static bool IsEnabled()
+    {
+#ifdef DEBUG
+        return true;
+#else
+        return false;
+#endif
+    }
+    static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+    }
+
+    static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+    }
+
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+    {
+        CONTRACTL
+        {
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+    }
+};
+
+#else // FEATURE_PERFMAP
+
 class PerfMap
 {
 private:
@@ -112,4 +158,5 @@ public:
 
     static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };
+#endif // FEATURE_PERFMAP
 #endif // PERFPID_H
