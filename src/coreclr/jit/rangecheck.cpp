@@ -2516,7 +2516,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else
     {
         // Use GetRangeFromAssertions for everything else since they won't produce dependent or symbolic ranges
-        range = GetRangeFromAssertions(m_compiler, expr->TypeGet(), vn, block->bbAssertionIn, m_nVisitBudget);
+        range = GetRangeFromAssertions(m_compiler, expr->TypeGet(), vn, block->bbAssertionIn);
     }
 
     GetRangeMap()->Set(expr, new (m_alloc) Range(range), RangeMap::Overwrite);
