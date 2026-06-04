@@ -136,6 +136,7 @@ if (WIN32)
     list(APPEND FULL_RUNTIME_SOURCES
       ../../unwinder/arm64/unwinder.cpp
     )
+    include_directories(../../inc)
     include_directories(../../unwinder)
     include_directories(../../unwinder/arm64)
   endif()

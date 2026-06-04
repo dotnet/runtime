@@ -156,10 +156,10 @@
     //
     ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
     ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
-    cbz         x16, 0f
+    cbz         x16, clearHijackState
     autia       lr, x16
-0:
 
+clearHijackState:
     //
     // Clear hijack state
     //

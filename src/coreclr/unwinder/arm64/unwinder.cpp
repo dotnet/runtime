@@ -5,15 +5,14 @@
 
 #if defined(NATIVEAOT)
 #include "common.h"
-#include <windows.h>
-#include "daccess.h"
 #else
 #include "stdafx.h"
 #include "utilcode.h"
-#include "crosscomp.h"
-
-#include "unwinder.h"
 #endif
+
+#include "crosscomp.h"
+#include "clrnt.h"
+#include "unwinder.h"
 
 #define NOTHING
 

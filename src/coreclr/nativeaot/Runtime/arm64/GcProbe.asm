@@ -115,7 +115,7 @@ PROBE_FRAME_SIZE    field 0
 ;;  x0-x7 preserved, x10 and x16 trashed
 ;;
     MACRO
-        FixupHijackedCallstack
+        FixupHijackedCallstack $ClearHijackStateLabel
 
         ;; x9 <- GetThread(), TRASHES x10
         INLINE_GETTHREAD x9, x10
@@ -125,10 +125,10 @@ PROBE_FRAME_SIZE    field 0
         ;;
         ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
         ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
-        cbz         x16, ClearHijackState
+        cbz         x16, $ClearHijackStateLabel
         DCD         0xDAC1161E  ;; autib lr, x16 instruction in binary to avoid requiring PAC-enabled assemblers
 
-ClearHijackState
+$ClearHijackStateLabel
         ;;
         ;; Clear hijack state
         ;;
@@ -159,7 +159,7 @@ ClearHijackState
         HijackTargetFakeProlog
 
     LABELED_RETURN_ADDRESS RhpGcProbeHijack
-        FixupHijackedCallstack
+        FixupHijackedCallstack RhpGcProbeClearHijackState
 
         ldr         x10, =RhpTrapThreads
         ldr         w10, [x10]
@@ -206,7 +206,7 @@ WaitForGC
 ;;
 ;;
     LEAF_ENTRY RhpGcStressHijack
-        FixupHijackedCallstack
+        FixupHijackedCallstack RhpGcStressClearHijackState
         mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
