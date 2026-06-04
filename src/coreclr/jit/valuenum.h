@@ -2070,7 +2070,7 @@ private:
 #if defined(TARGET_ARM64)
             if (val.IsScalable())
             {
-                hash = static_cast<unsigned>(hash ^ val.isScalable);
+                hash = static_cast<unsigned>(hash ^ static_cast<unsigned>(val.isScalable));
                 // simdmaskscalable_t::operator== treats all-zero scalable masks as equal
                 // regardless of base type, so canonicalize that case in the hash as well.
                 if (!val.scalable.IsZero())
@@ -2081,7 +2081,7 @@ private:
             }
             else
             {
-                hash = static_cast<unsigned>(hash ^ val.isScalable);
+                hash = static_cast<unsigned>(hash ^ static_cast<unsigned>(val.isScalable));
                 hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
                 hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
             }
