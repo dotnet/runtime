@@ -153,11 +153,6 @@ public abstract class HybridCache
     /// <param name="tags">The tags to associate with this cache item.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The data, either from cache or the underlying data service.</returns>
-    /// <remarks>
-    /// The <see cref="HybridCacheEntryOptions"/> instance passed to the factory is a clone of <paramref name="options"/>
-    /// (or a fresh empty instance when <paramref name="options"/> is <see langword="null"/>), so the caller's instance is never mutated.
-    /// Implementations can use <see cref="HybridCacheEntryOptions.Revision"/> to detect whether the factory mutated the options.
-    /// </remarks>
     public virtual async ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state,
         Func<TState, HybridCacheEntryOptions, CancellationToken, ValueTask<T>> factory,
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
@@ -166,6 +161,7 @@ public abstract class HybridCache
 
         // Suppress writes in the inner call so we can perform a single, correct SetAsync afterwards
         // using the options that the factory ultimately produced.
+        // This introduces some race conditions, but that's considered better than not honoring the factory's options.
         var innerOptions = options is null ? new HybridCacheEntryOptions() : options.Clone();
         innerOptions.Flags = (innerOptions.Flags ?? HybridCacheEntryFlags.None)
             | HybridCacheEntryFlags.DisableLocalCacheWrite
@@ -188,7 +184,10 @@ public abstract class HybridCache
                 | HybridCacheEntryFlags.DisableDistributedCacheWrite;
             if ((factoryOptions.Flags & BothWritesDisabled) != BothWritesDisabled)
             {
-                await SetAsync(key, value, factoryOptions, tags, cancellationToken).ConfigureAwait(false);
+                // Cancellation of the caller should not abort the write: the factory has already
+                // produced a value that we are about to return; aborting SetAsync here would
+                // discard a completed result and force the next caller to re-run the factory.
+                await SetAsync(key, value, factoryOptions, tags, CancellationToken.None).ConfigureAwait(false);
             }
         }
 
