@@ -95,7 +95,7 @@ def main(main_args):
     helix_source_prefix = "official"
     creator = ""
 
-    # (repro url, proj path, sparse path)
+    # (repo url, proj path, sparse path)
     # sparse_path is needed when the tool lives in a subtree of a larger repo, to avoid pulling the entire repo.
     build_repos = {
         "Antigen": ("https://github.com/dotnet/jitutils.git", "src/Antigen/Antigen/Antigen.csproj", "src/Antigen"),
