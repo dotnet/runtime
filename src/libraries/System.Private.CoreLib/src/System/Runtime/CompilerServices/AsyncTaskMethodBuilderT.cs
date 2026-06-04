@@ -361,8 +361,6 @@ namespace System.Runtime.CompilerServices
                     {
                         AsyncTaskDispatcherInfo.TryFireResumeAsyncMethod(this, flags);
                     }
-
-                    Debug.Assert(!AsyncTaskDispatcherInfo.IsSuspended);
                 }
 
                 bool loggingOn = TplEventSource.Log.IsEnabled();

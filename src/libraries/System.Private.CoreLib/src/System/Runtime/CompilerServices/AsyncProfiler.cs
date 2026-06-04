@@ -701,6 +701,30 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class CreateAsyncContext
         {
+            public static void Create(AsyncTaskDispatcher dispatcher, ref Info info, ulong id)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+
+                SyncPoint.Check(context);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                {
+                    long currentTimestamp = Stopwatch.GetTimestamp();
+                    if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
+                    }
+
+                    if (IsEnabled.CreateAsyncContextEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp, id);
+                    }
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
             public static void Create(ulong id)
             {
                 Info info = default;
@@ -802,30 +826,6 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class SuspendAsyncContext
         {
-            public static void Suspend(AsyncTaskDispatcher dispatcher, ref Info info)
-            {
-                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
-
-                SyncPoint.Check(context);
-
-                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
-                {
-                    long currentTimestamp = Stopwatch.GetTimestamp();
-                    if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
-                    {
-                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
-                    }
-
-                    if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
-                    {
-                        EmitEvent(context, currentTimestamp);
-                    }
-                }
-
-                AsyncThreadContext.Release(context);
-            }
-
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.SuspendAsyncContext, 0);
