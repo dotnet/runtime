@@ -32382,14 +32382,6 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
         {
             lvaSetStruct(dummyTemp, clsHnd, false);
             type = lvaTable[dummyTemp].lvType; // struct type is normalized
-
-            // The dummy local is never actually read because the helper call above does not return.
-            // However, downstream importer paths (e.g. the inliner's struct return handling, which
-            // may copy the value into a retbuf) need a well-formed memory location to copy from.
-            // Force the local to live in memory so it has a predictable layout regardless of whether
-            // the type happens to normalize to TYP_STRUCT (e.g. an unsupported Vector512<T> on a target
-            // without AVX-512) or to a SIMD type (e.g. a recognized Vector128<T>).
-            lvaSetVarDoNotEnregister(dummyTemp DEBUGARG(DoNotEnregisterReason::BlockOpRet));
         }
         else
         {
