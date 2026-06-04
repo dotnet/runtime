@@ -1016,6 +1016,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -1071,6 +1072,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1162,6 +1164,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1214,6 +1217,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1272,6 +1276,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1322,6 +1327,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             RemoteServer remoteServer = null;

@@ -351,24 +351,28 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
     [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "Certificates are not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "Certificates are not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Proxy is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "Proxy is not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
@@ -386,6 +390,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "MaxConnectionsPerServer not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -450,6 +455,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "Certificates are not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
@@ -4287,30 +4293,35 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_NullRequestUri_ThrowsInvalidOperationException()
         {
             Throws<InvalidOperationException>(new HttpRequestMessage());
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_RelativeRequestUri_ThrowsInvalidOperationException()
         {
             Throws<InvalidOperationException>(new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative)));
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_UnsupportedRequestUriScheme_ThrowsNotSupportedException()
         {
             Throws<NotSupportedException>(new HttpRequestMessage(HttpMethod.Get, "foo://foo.bar"));
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_MajorVersionZero_ThrowsNotSupportedException()
         {
             Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
         {
             var request = new HttpRequestMessage();
@@ -4321,6 +4332,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_Http10WithTransferEncodingChunked_ThrowsNotSupportedException()
         {
             var request = new HttpRequestMessage
