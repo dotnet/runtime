@@ -27,7 +27,7 @@ namespace Internal
         private static unsafe void WriteCore(string s, bool error)
         {
             int byteCount = Encoding.UTF8.GetByteCount(s);
-             Span<byte> bytes = (uint)byteCount < 1024 ? stackalloc byte[byteCount] : new byte[byteCount];
+            Span<byte> bytes = (uint)byteCount < 1024 ? stackalloc byte[byteCount] : new byte[byteCount];
             int cbytes = Encoding.UTF8.GetBytes(s, bytes);
 
             fixed (byte* pBytes = bytes)
