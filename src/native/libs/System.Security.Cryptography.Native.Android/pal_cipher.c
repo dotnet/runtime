@@ -3,6 +3,8 @@
 
 #include "pal_cipher.h"
 #include "pal_utilities.h"
+#include <stdio.h>
+#include <string.h>
 
 enum
 {
@@ -24,6 +26,143 @@ CipherInfo* AndroidCryptoNative_ ## cipherId(void) \
 { \
     static CipherInfo info = { flags, width, javaName }; \
     return &info; \
+}
+
+static __thread char t_lastCipherDiagnostic[1024];
+
+static void ClearLastCipherDiagnostic(void)
+{
+    t_lastCipherDiagnostic[0] = '\0';
+}
+
+static void CopyJavaString(JNIEnv* env, jstring value, char* destination, size_t destinationLength)
+{
+    if (destinationLength == 0)
+        return;
+
+    destination[0] = '\0';
+
+    if (value == NULL)
+        return;
+
+    const char* utf8 = (*env)->GetStringUTFChars(env, value, NULL);
+    if (utf8 == NULL)
+    {
+        (void)TryClearJNIExceptions(env);
+        return;
+    }
+
+    snprintf(destination, destinationLength, "%s", utf8);
+    (*env)->ReleaseStringUTFChars(env, value, utf8);
+}
+
+static void GetThrowableClassName(JNIEnv* env, jthrowable ex, char* destination, size_t destinationLength)
+{
+    if (destinationLength == 0)
+        return;
+
+    destination[0] = '\0';
+
+    jclass classClass = (*env)->FindClass(env, "java/lang/Class");
+    if (classClass == NULL)
+    {
+        (void)TryClearJNIExceptions(env);
+        return;
+    }
+
+    jmethodID getName = (*env)->GetMethodID(env, classClass, "getName", "()Ljava/lang/String;");
+    if (getName == NULL)
+    {
+        (*env)->DeleteLocalRef(env, classClass);
+        (void)TryClearJNIExceptions(env);
+        return;
+    }
+
+    jclass exClass = (*env)->GetObjectClass(env, ex);
+    if (exClass == NULL)
+    {
+        (*env)->DeleteLocalRef(env, classClass);
+        (void)TryClearJNIExceptions(env);
+        return;
+    }
+
+    jstring name = (jstring)(*env)->CallObjectMethod(env, exClass, getName);
+    if (name != NULL)
+    {
+        CopyJavaString(env, name, destination, destinationLength);
+        (*env)->DeleteLocalRef(env, name);
+    }
+    else
+    {
+        (void)TryClearJNIExceptions(env);
+    }
+
+    (*env)->DeleteLocalRef(env, exClass);
+    (*env)->DeleteLocalRef(env, classClass);
+}
+
+static void RecordCipherExceptionDiagnostic(JNIEnv* env, CipherCtx* ctx, const char* phase, int32_t inputLength, jthrowable ex)
+{
+    char className[256];
+    char message[512];
+    char causeClassName[256];
+    char causeMessage[512];
+
+    className[0] = '\0';
+    message[0] = '\0';
+    causeClassName[0] = '\0';
+    causeMessage[0] = '\0';
+
+    if (ex != NULL)
+    {
+        GetThrowableClassName(env, ex, className, sizeof(className));
+
+        jstring javaMessage = (jstring)(*env)->CallObjectMethod(env, ex, g_ThrowableGetMessage);
+        if (javaMessage != NULL)
+        {
+            CopyJavaString(env, javaMessage, message, sizeof(message));
+            (*env)->DeleteLocalRef(env, javaMessage);
+        }
+        else
+        {
+            (void)TryClearJNIExceptions(env);
+        }
+
+        jthrowable cause = (jthrowable)(*env)->CallObjectMethod(env, ex, g_ThrowableGetCause);
+        if (cause != NULL)
+        {
+            GetThrowableClassName(env, cause, causeClassName, sizeof(causeClassName));
+
+            jstring javaCauseMessage = (jstring)(*env)->CallObjectMethod(env, cause, g_ThrowableGetMessage);
+            if (javaCauseMessage != NULL)
+            {
+                CopyJavaString(env, javaCauseMessage, causeMessage, sizeof(causeMessage));
+                (*env)->DeleteLocalRef(env, javaCauseMessage);
+            }
+            else
+            {
+                (void)TryClearJNIExceptions(env);
+            }
+
+            (*env)->DeleteLocalRef(env, cause);
+        }
+        else
+        {
+            (void)TryClearJNIExceptions(env);
+        }
+    }
+
+    snprintf(
+        t_lastCipherDiagnostic,
+        sizeof(t_lastCipherDiagnostic),
+        "nativePhase=%s; cipher=%s; inputLength=%d; javaExceptionClass=%s; javaExceptionMessage=%s; javaCauseClass=%s; javaCauseMessage=%s",
+        phase,
+        ctx != NULL && ctx->type != NULL ? ctx->type->name : "<unknown>",
+        inputLength,
+        className[0] != '\0' ? className : "<none>",
+        message[0] != '\0' ? message : "<none>",
+        causeClassName[0] != '\0' ? causeClassName : "<none>",
+        causeMessage[0] != '\0' ? causeMessage : "<none>");
 }
 
 DEFINE_CIPHER(Aes128Ecb,        128, "AES/ECB/NoPadding", CIPHER_NONE)
@@ -52,6 +191,28 @@ DEFINE_CIPHER(Des3Cbc,          128, "DESede/CBC/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb8,         128, "DESede/CFB8/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb64,        128, "DESede/CFB/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(ChaCha20Poly1305, 256, "ChaCha20/Poly1305/NoPadding", CIPHER_REQUIRES_IV)
+
+int32_t AndroidCryptoNative_CipherGetLastDiagnostic(uint8_t* buffer, int32_t bufferLength)
+{
+    if (bufferLength < 0)
+        return FAIL;
+
+    size_t diagnosticLength = strlen(t_lastCipherDiagnostic);
+
+    if (buffer != NULL && bufferLength > 0)
+    {
+        size_t bytesToCopy = diagnosticLength;
+        if (bytesToCopy >= (size_t)bufferLength)
+        {
+            bytesToCopy = (size_t)bufferLength - 1;
+        }
+
+        memcpy(buffer, t_lastCipherDiagnostic, bytesToCopy);
+        buffer[bytesToCopy] = '\0';
+    }
+
+    return (int32_t)diagnosticLength;
+}
 
 //
 // We don't have to check whether `CipherInfo` arguments are valid pointers, as these functions will be called after the
@@ -184,6 +345,8 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     if (!ctx)
         return FAIL;
 
+    ClearLastCipherDiagnostic();
+
     // input:  0 for Decrypt, 1 for Encrypt, -1 leave untouched
     // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
     if (enc != -1)
@@ -245,6 +408,14 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
 
     if ((*env)->ExceptionCheck(env))
     {
+        jthrowable ex = NULL;
+        (void)TryGetJNIException(env, &ex, false);
+        RecordCipherExceptionDiagnostic(env, ctx, "updateAAD", inl, ex);
+        if (ex != NULL)
+        {
+            (*env)->Throw(env, ex);
+            (*env)->DeleteLocalRef(env, ex);
+        }
         LOG_ERROR("Cipher.updateAAD failed for %s with input length %d", ctx->type->name, inl);
         return CheckJNIExceptions(env) ? FAIL : SUCCESS;
     }
@@ -283,6 +454,14 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
 
     if ((*env)->ExceptionCheck(env))
     {
+        jthrowable ex = NULL;
+        (void)TryGetJNIException(env, &ex, false);
+        RecordCipherExceptionDiagnostic(env, ctx, "update", inl, ex);
+        if (ex != NULL)
+        {
+            (*env)->Throw(env, ex);
+            (*env)->DeleteLocalRef(env, ex);
+        }
         LOG_ERROR("Cipher.update failed for %s with input length %d", ctx->type->name, inl);
         return CheckJNIExceptions(env) ? FAIL : SUCCESS;
     }
@@ -335,9 +514,12 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
     {
         if (ex == NULL)
         {
+            RecordCipherExceptionDiagnostic(env, ctx, "doFinal", 0, NULL);
             LOG_ERROR("Cipher.doFinal failed for %s without an exception object", ctx->type->name);
             return FAIL;
         }
+
+        RecordCipherExceptionDiagnostic(env, ctx, "doFinal", 0, ex);
 
         if ((*env)->IsInstanceOf(env, ex, g_AEADBadTagExceptionClass))
         {

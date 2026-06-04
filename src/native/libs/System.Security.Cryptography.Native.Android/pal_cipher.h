@@ -24,6 +24,7 @@ typedef struct CipherCtx
     uint8_t* iv;
 } CipherCtx;
 
+PALEXPORT int32_t AndroidCryptoNative_CipherGetLastDiagnostic(uint8_t* buffer, int32_t bufferLength);
 PALEXPORT int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type);
 PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, uint8_t* iv, int32_t enc);
 PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type);

@@ -66,16 +66,26 @@ namespace System.Security.Cryptography.Tests
             AppendAndroidAeadEnvironment(diagnostics, nameof(ChaCha20Poly1305));
 
             int failures = 0;
-            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 0, tamperAAD: false, expectAuthenticationFailure: false);
-            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
-            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 30, tamperAAD: true, expectAuthenticationFailure: true);
-            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 1, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
+            failures += RunAndroidDiagnosticCase(diagnostics, "baseline-valid-empty", dataLength: 0, additionalDataLength: 0, tamperAAD: false, expectAuthenticationFailure: false);
 
-            Assert.True(failures == 0, diagnostics.ToString());
+            foreach (int additionalDataLength in new[] { 1, 2, 15, 16, 17, 30, 31, 32, 33 })
+            {
+                failures += RunAndroidDiagnosticCase(diagnostics, $"empty-ciphertext-aad-{additionalDataLength}", dataLength: 0, additionalDataLength: additionalDataLength, tamperAAD: true, expectAuthenticationFailure: true);
+            }
+
+            failures += RunAndroidDiagnosticCase(diagnostics, "nonempty-ciphertext-aad-1", dataLength: 1, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
+            failures += RunAndroidDiagnosticPrimedCase(diagnostics, "target-after-aad30-auth-failure", primerDataLength: 0, primerAdditionalDataLength: 30);
+            failures += RunAndroidDiagnosticPrimedCase(diagnostics, "target-after-nonempty-auth-failure", primerDataLength: 1, primerAdditionalDataLength: 1);
+
+            if (failures != 0)
+            {
+                Assert.Fail(diagnostics.ToString());
+            }
         }
 
         private static int RunAndroidDiagnosticCase(
             StringBuilder diagnostics,
+            string caseName,
             int dataLength,
             int additionalDataLength,
             bool tamperAAD,
@@ -100,18 +110,21 @@ namespace System.Security.Cryptography.Tests
 
             byte[] decrypted = new byte[dataLength];
             Exception ex = Record.Exception(() => chaChaPoly.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
+            string nativeDiagnostic = GetLastAndroidCipherNativeDiagnostic();
             bool decryptedMatchesPlaintext = plaintext.SequenceEqual(decrypted);
 
             AppendAndroidAeadDiagnostics(
                 diagnostics,
                 nameof(AndroidDiagnostic_TamperedAadDecryptMatrix),
+                caseName,
                 nameof(ChaCha20Poly1305),
                 dataLength,
                 additionalDataLength,
                 tamperAAD,
                 expectAuthenticationFailure,
                 decryptedMatchesPlaintext,
-                ex);
+                ex,
+                nativeDiagnostic);
 
             if (expectAuthenticationFailure)
             {
@@ -119,6 +132,32 @@ namespace System.Security.Cryptography.Tests
             }
 
             return ex is null && plaintext.SequenceEqual(decrypted) ? 0 : 1;
+        }
+
+        private static int RunAndroidDiagnosticPrimedCase(
+            StringBuilder diagnostics,
+            string caseName,
+            int primerDataLength,
+            int primerAdditionalDataLength)
+        {
+            int failures = 0;
+            failures += RunAndroidDiagnosticCase(
+                diagnostics,
+                $"{caseName}-primer",
+                primerDataLength,
+                primerAdditionalDataLength,
+                tamperAAD: true,
+                expectAuthenticationFailure: true);
+
+            failures += RunAndroidDiagnosticCase(
+                diagnostics,
+                $"{caseName}-target",
+                dataLength: 0,
+                additionalDataLength: 1,
+                tamperAAD: true,
+                expectAuthenticationFailure: true);
+
+            return failures;
         }
 
         private static bool ShouldLogAndroidAeadDiagnostics(int dataLength, int additionalDataLength)
@@ -141,13 +180,15 @@ namespace System.Security.Cryptography.Tests
             AppendAndroidAeadDiagnostics(
                 diagnostics,
                 testName,
+                caseName: "theory",
                 algorithm,
                 dataLength,
                 additionalDataLength,
                 tamperAAD,
                 expectAuthenticationFailure,
                 decryptedMatchesPlaintext,
-                ex);
+                ex,
+                GetLastAndroidCipherNativeDiagnostic());
 
             return diagnostics.ToString();
         }
@@ -165,22 +206,44 @@ namespace System.Security.Cryptography.Tests
         private static void AppendAndroidAeadDiagnostics(
             StringBuilder diagnostics,
             string testName,
+            string caseName,
             string algorithm,
             int dataLength,
             int additionalDataLength,
             bool tamperAAD,
             bool expectAuthenticationFailure,
             bool decryptedMatchesPlaintext,
-            Exception ex)
+            Exception ex,
+            string nativeDiagnostic)
         {
             diagnostics.AppendLine(
-                $"Android AEAD diagnostics: test={testName}, algorithm={algorithm}, " +
+                $"Android AEAD diagnostics: test={testName}, case={caseName}, algorithm={algorithm}, " +
                 $"dataLength={dataLength}, additionalDataLength={additionalDataLength}, " +
                 $"tamperAAD={tamperAAD}, expectAuthenticationFailure={expectAuthenticationFailure}, " +
                 $"decryptedMatchesPlaintext={decryptedMatchesPlaintext}, " +
                 $"exceptionType={ex?.GetType().FullName ?? "<none>"}, " +
-                $"exceptionMessage={ex?.Message ?? "<none>"}");
+                $"exceptionMessage={ex?.Message ?? "<none>"}, " +
+                $"nativeDiagnostic={nativeDiagnostic}");
         }
+
+        private static string GetLastAndroidCipherNativeDiagnostic()
+        {
+            if (!PlatformDetection.IsAndroid)
+            {
+                return "<not-android>";
+            }
+
+            byte[] buffer = new byte[2048];
+            int length = AndroidCryptoNative_CipherGetLastDiagnostic(buffer, buffer.Length);
+            int terminator = System.Array.IndexOf(buffer, (byte)0);
+            int bytesToDecode = terminator >= 0 ? terminator : buffer.Length;
+            string value = Encoding.UTF8.GetString(buffer, 0, bytesToDecode);
+
+            return value.Length == 0 ? $"<empty; nativeLength={length}>" : value;
+        }
+
+        [DllImport("libSystem.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_CipherGetLastDiagnostic")]
+        private static extern int AndroidCryptoNative_CipherGetLastDiagnostic(byte[] buffer, int bufferLength);
 
         [Theory]
         [InlineData(0)]
