@@ -15,16 +15,16 @@ unsafe static class Win32Resources
 {
     public static void Validate()
     {
-        nint lib = 0;
+        nint currentModule = 0;
 
-        int resourceValue = GetIntValueFromResource(lib, (ushort*)(nuint)(ushort)10, 0x041B);
+        int resourceValue = GetIntValueFromResource(currentModule, (ushort*)(nuint)(ushort)10, 0x041B);
         if (resourceValue != 3)
             throw new Exception($"Expected resource 10 to have value 3, but got {resourceValue}");
 
         ReadOnlySpan<char> resName = "funny";
         fixed (char* pResName = resName)
         {
-            resourceValue = GetIntValueFromResource(lib, (ushort*)pResName, 0x041B);
+            resourceValue = GetIntValueFromResource(currentModule, (ushort*)pResName, 0x041B);
             if (resourceValue != 1)
                 throw new Exception($"Expected resource 'funny' to have value 1, but got {resourceValue}");
         }

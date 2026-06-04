@@ -53,17 +53,9 @@ namespace Build.Tasks
                 }
                 else
                 {
-                    if (File.Exists(ResourceFile))
+                    using (var bw = new BinaryWriter(File.Create(ResourceFile)))
                     {
-                        try
-                        {
-                            File.Delete(ResourceFile);
-                        }
-                        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-                        {
-                            Log.LogErrorFromException(ex);
-                            return false;
-                        }
+                        ResWriter.WriteEmptyResourceFile(bw);
                     }
                 }
             }
@@ -102,14 +94,18 @@ namespace Build.Tasks
         {
             var rw = new ResWriter(reader.GetEntireImage(), reader, rsrcOffset, rsrcSize, bw);
 
-            // First entry is a null resource entry
+            WriteEmptyResourceFile(bw);
 
+            rw.DumpDirectory(reader.GetEntireImage().GetReader(rsrcOffset, rsrcSize), 0);
+        }
+
+        public static void WriteEmptyResourceFile(BinaryWriter bw)
+        {
+            // First entry is a null resource entry
             bw.Write(new byte[] {
                             0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                         });
-
-            rw.DumpDirectory(reader.GetEntireImage().GetReader(rsrcOffset, rsrcSize), 0);
         }
 
         private void DumpDirectory(BlobReader br, int level)
@@ -117,7 +113,7 @@ namespace Build.Tasks
             // Skip characteristics
             br.ReadInt32();
 
-            // Skip time/date stamp
+            // Skip major/minor version
             br.ReadInt32();
 
             // Skip time/date stamp

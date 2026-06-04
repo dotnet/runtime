@@ -171,7 +171,7 @@ int wmain(int argc, unsigned short** argv)
 }
 ]]></ShimSourceCode>
         <ShimPdbLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'">/PDB:"%(_AggregateExecutableReferencePath.ShimSymbol)"</ShimPdbLinkerArg>
-        <ShimResourceLinkerArg Condition="Exists('%(_AggregateExecutableReferencePath.ShimResourceFile)')">"%(_AggregateExecutableReferencePath.ShimResourceFile)"</ShimResourceLinkerArg>
+        <ShimResourceLinkerArg>"%(_AggregateExecutableReferencePath.ShimResourceFile)"</ShimResourceLinkerArg>
       </_AggregateExecutableReferencePath>
     </ItemGroup>
 
