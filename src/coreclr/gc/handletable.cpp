@@ -993,8 +993,6 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
     // get number of HandleTables per HandleTableBucket
     int n_slots = getNumberOfSlots();
 
-    // After collapsing the legacy multi-bucket / multi-AppDomain handle-table-map
-    // scaffolding, there is at most a single bucket slot at index 0.
     HandleTableBucket* bucket = g_HandleTableMap.pBuckets != NULL ? g_HandleTableMap.pBuckets[0] : NULL;
     if (bucket == NULL)
         return 0;

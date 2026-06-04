@@ -30,11 +30,8 @@ DhContext *g_pDependentHandleContexts;
 
 #ifndef DACCESS_COMPILE
 
-// Returns the single global handle bucket if Ref_Initialize has run and
-// Ref_Shutdown has not. After PR #128646, multi-AppDomain support has been
-// gone since 2019 and g_HandleTableMap.pBuckets[0] is the only ever-populated
-// bucket. Internal walks use this helper instead of iterating the map.
-// g_HandleTableMap itself is retained for DAC layout (gcDacVars->handle_table_map).
+// g_HandleTableMap.pBuckets[0] is the only ever-populated bucket; the map is
+// retained for DAC layout (gcDacVars->handle_table_map).
 static FORCEINLINE HandleTableBucket* GetGlobalHandleTableBucket()
 {
     return g_HandleTableMap.pBuckets != NULL ? g_HandleTableMap.pBuckets[0] : NULL;
@@ -843,8 +840,6 @@ void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // After collapsing the legacy multi-bucket / multi-AppDomain handle-table-map
-    // scaffolding, there is at most a single bucket slot at index 0.
     if (g_HandleTableMap.pBuckets != NULL &&
         pBucket->HandleTableIndex == 0 &&
         g_HandleTableMap.pBuckets[0] == pBucket)
