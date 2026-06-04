@@ -3730,7 +3730,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     LPCWSTR exePath = GetExePath();
     SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // Append assembly path to approximates the command line for generic hosts like `dotnet`. 
+    // Append assembly path to approximate the command line for generic hosts like `dotnet`. 
     // This isn't quite correct for apphost, as the app name will be duplicated.
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
