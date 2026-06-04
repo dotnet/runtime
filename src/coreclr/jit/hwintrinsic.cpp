@@ -1335,7 +1335,27 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (!isIsaSupported)
     {
-        return NI_Throw_PlatformNotSupportedException;
+        // We only want to surface a hard PlatformNotSupportedException when the ISA is
+        // definitely unsupported AND there is no viable managed fallback. That is only
+        // the case for the platform-specific APIs under System.Runtime.Intrinsics.<Arch>
+        // (e.g., Avx512.LoadVector512). The cross-platform APIs in System.Runtime.Intrinsics
+        // (e.g., Vector512.Load, Vector128<T>.AsByte) all have a managed fallback that should
+        // be used when the underlying ISA isn't available. For those, we fall through to the
+        // per-ISA handling below which returns NI_Illegal, allowing the call to be treated as
+        // a normal managed method (so the body can be inlined / executed normally).
+
+        bool isXplatIsa = false;
+#if defined(TARGET_XARCH)
+        isXplatIsa = (isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector256) ||
+                     (isa == InstructionSet_Vector512);
+#elif defined(TARGET_ARM64)
+        isXplatIsa = (isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128);
+#endif
+
+        if (!isXplatIsa)
+        {
+            return NI_Throw_PlatformNotSupportedException;
+        }
     }
 
     // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
