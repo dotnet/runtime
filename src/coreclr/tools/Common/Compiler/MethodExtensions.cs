@@ -3,6 +3,7 @@
 
 using System;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -142,11 +143,11 @@ namespace ILCompiler
 
             if (ret is MetadataType md
                 && md.Module == method.Context.SystemModule
-                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+                && md.Namespace == "System.Threading.Tasks"u8)
             {
-                ReadOnlySpan<byte> name = md.Name;
-                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
-                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                Utf8StringRef name = md.Name;
+                if (name == "Task"u8 || name == "Task`1"u8
+                    || name == "ValueTask"u8 || name == "ValueTask`1"u8)
                 {
                     return true;
                 }

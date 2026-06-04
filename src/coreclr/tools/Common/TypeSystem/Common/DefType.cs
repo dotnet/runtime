@@ -5,6 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -16,22 +18,26 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the namespace of the type.
         /// </summary>
-        public virtual ReadOnlySpan<byte> Namespace => [];
+        public virtual Utf8StringRef Namespace => Array.Empty<byte>();
 
         public string GetNamespace() => System.Text.Encoding.UTF8.GetString(Namespace
 #if NETSTANDARD
             .ToArray()
+#else
+            .AsSpan()
 #endif
             );
 
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
-        public virtual ReadOnlySpan<byte> Name => [];
+        public virtual Utf8StringRef Name => Array.Empty<byte>();
 
         public string GetName() => System.Text.Encoding.UTF8.GetString(Name
 #if NETSTANDARD
             .ToArray()
+#else
+            .AsSpan()
 #endif
             );
 
