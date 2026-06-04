@@ -1356,6 +1356,10 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return NI_Throw_PlatformNotSupportedException;
         }
+        else
+        {
+            return NI_Illegal;
+        }
     }
 
     // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
