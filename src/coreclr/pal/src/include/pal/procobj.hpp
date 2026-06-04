@@ -48,16 +48,12 @@ namespace CorUnix
     {
     public:
         CProcProcessLocalData()
-            :
-            dwProcessId(0)
         {
         };
 
         ~CProcProcessLocalData()
         {
         };
-
-        DWORD dwProcessId;
     };
 
     PAL_ERROR

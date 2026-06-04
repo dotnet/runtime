@@ -1999,69 +1999,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     while(0)
 
 /*++
-Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
-
-Parameter
-  hProcess:  process handle
-
-Return
-  Return the process ID, or 0 if it's not a valid handle
---*/
-DWORD
-PROCGetProcessIDFromHandle(
-        HANDLE hProcess)
-{
-    PAL_ERROR palError;
-    IPalObject *pobjProcess = NULL;
-    CPalThread *pThread = InternalGetCurrentThread();
-
-    DWORD dwProcessId = 0;
-
-    if (hPseudoCurrentProcess == hProcess)
-    {
-        dwProcessId = gPID;
-        goto PROCGetProcessIDFromHandleExit;
-    }
-
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hProcess,
-        &aotProcess,
-        &pobjProcess
-        );
-
-    if (NO_ERROR == palError)
-    {
-        IDataLock *pDataLock;
-        CProcProcessLocalData *pLocalData;
-
-        palError = pobjProcess->GetProcessLocalData(
-            pThread,
-            ReadLock,
-            &pDataLock,
-            reinterpret_cast<void **>(&pLocalData)
-            );
-
-        if (NO_ERROR == palError)
-        {
-            dwProcessId = pLocalData->dwProcessId;
-            pDataLock->ReleaseLock(pThread, FALSE);
-        }
-
-        pobjProcess->ReleaseReference(pThread);
-    }
-
-PROCGetProcessIDFromHandleExit:
-
-    return dwProcessId;
-}
-
-/*++
 Function
     InitializeProcessCommandLine
 
@@ -2209,7 +2146,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
         goto CreateInitialProcessAndThreadObjectsExit;
     }
 
-    pLocalData->dwProcessId = gPID;
     pDataLock->ReleaseLock(pThread, TRUE);
 
     palError = g_pObjectManager->RegisterObject(

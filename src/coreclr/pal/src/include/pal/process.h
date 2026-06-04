@@ -51,15 +51,6 @@ extern PathCharString *gSharedFilesPath;
 
 /*++
 Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
---*/
-DWORD PROCGetProcessIDFromHandle(HANDLE hProcess);
-
-/*++
-Function:
   PROCCreateInitialProcess
 
 Abstract
