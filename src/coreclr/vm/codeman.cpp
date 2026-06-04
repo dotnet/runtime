@@ -361,6 +361,15 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     if (hHandle == NULL)
     {
+        if (!m_registrationFailed)
+        {
+            Register();
+            if (hHandle == NULL)
+            {
+                m_registrationFailed = true;
+            }
+        }
+
         if (m_registrationFailed)
         {
             // Registration failed permanently. Discard pending entries.
@@ -368,9 +377,6 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
             cPendingCount = 0;
             return m_pendingSeq;
         }
-
-        // Registration is still in progress on the winning thread.
-        return -1;
     }
 
     // Grab the pending entries under the pending lock, then release it so
@@ -492,60 +498,48 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     // This thread attempts to become the sole flusher for this table by taking
     // the flush gate. If it wins, publish the pending entries and signal waiters.
     // If it loses, it waits until either its sequence has been published or the gate becomes free.
-    while (true)
+    while (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
     {
-        // Gate: only one thread flushes at a time.
-        if (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
+        // Another thread is flushing. Wait until either our entries are
+        // published or the gate becomes free.
+        bool isSequenceReached;
+
+        AcquireSRWLockShared(&m_flushLock);
+        while (!SequenceReached(m_publishedSeq, waitForSeq) && VolatileLoad(&m_flushInProgress) != 0)
         {
-            // Another thread is flushing. Wait until either our entries are
-            // published or the gate becomes free.
-            bool isSequenceReached;
-
-            AcquireSRWLockShared(&m_flushLock);
-            while (!SequenceReached(m_publishedSeq, waitForSeq) && VolatileLoad(&m_flushInProgress) != 0)
-            {
-                SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
-            }
-            isSequenceReached = SequenceReached(m_publishedSeq, waitForSeq);
-            ReleaseSRWLockShared(&m_flushLock);
-
-            if (isSequenceReached)
-                return;
-            // Retry taking the gate.
-            continue;
+            SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
         }
+        isSequenceReached = SequenceReached(m_publishedSeq, waitForSeq);
+        ReleaseSRWLockShared(&m_flushLock);
 
-        LONG drainedSeq;
-        // Scope the gate holder so m_flushInProgress is reset when the scope exits.
-        {
-            FlushGateHolder gateHolder(&m_flushInProgress, &m_flushLock);
-            drainedSeq = FlushPendingEntriesUnderGate();
-
-            // Update published sequence while still holding the gate.
-            // A return of -1 means registration is still in progress.
-            if (drainedSeq != -1)
-            {
-                AcquireSRWLockExclusive(&m_flushLock);
-                m_publishedSeq = drainedSeq;
-                ReleaseSRWLockExclusive(&m_flushLock);
-            }
-        }
-        // The gate was cleared under m_flushLock by ~FlushGateHolder above, which
-        // prevents waiters from missing this wakeup. Calling WakeAll outside the
-        // lock is intentional: if a waiter wakes while the gate is still held and
-        // its seq isn't satisfied, it could sleep again (see waiter loop above),
-        // and we'd never wake it again. By releasing the gate first, the waiter
-        // observes m_flushInProgress == 0 and can take over the flush itself.
-        WakeAllConditionVariable(&m_flushCV);
-
-        // drainedSeq could be -1 if registration is still in progress.
-        // Our entries are guaranteed published (drainedSeq >= waitForSeq) since
-        // FlushPendingEntriesUnderGate drains all pending entries atomically.
-        // Release the gate and let the next producer take over.
-        _ASSERTE(drainedSeq == -1 || SequenceReached(drainedSeq, waitForSeq));
-        if (drainedSeq != -1)
+        if (isSequenceReached)
             return;
+        // Retry taking the gate.
     }
+
+    LONG drainedSeq;
+    // Scope the gate holder so m_flushInProgress is reset when the scope exits.
+    {
+        FlushGateHolder gateHolder(&m_flushInProgress, &m_flushLock);
+        drainedSeq = FlushPendingEntriesUnderGate();
+
+        // Update published sequence while still holding the gate.
+        AcquireSRWLockExclusive(&m_flushLock);
+        m_publishedSeq = drainedSeq;
+        ReleaseSRWLockExclusive(&m_flushLock);
+    }
+
+    // The gate was cleared under m_flushLock by ~FlushGateHolder above, which
+    // prevents waiters from missing this wakeup. Calling WakeAll outside the
+    // lock is intentional: if a waiter wakes while the gate is still held and
+    // its seq isn't satisfied, it could sleep again (see waiter loop above),
+    // and we'd never wake it again. By releasing the gate first, the waiter
+    // observes m_flushInProgress == 0 and can take over the flush itself.
+    WakeAllConditionVariable(&m_flushCV);
+
+    // Our entries are guaranteed published (drainedSeq >= waitForSeq) since
+    // FlushPendingEntriesUnderGate drains all pending entries atomically.
+    _ASSERTE(SequenceReached(drainedSeq, waitForSeq));
 }
 
 /*****************************************************************************/
@@ -625,27 +619,12 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     if (unwindInfo == NULL)
     {
         // Create the table and try to atomically install it.
-        // Only the winner thread calls Register() so exactly one table
-        // is ever registered with the OS for a given range. This avoids
-        // STATUS_CONFLICTING_ADDRESSES failures.
+        // OS registration is deferred to the first flush in FlushPendingEntriesUnderGate.
         NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
 
         if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
         {
             newTable.SuppressRelease();
-            // Other threads that observe the table before Register()
-            // completes will accumulate entries in the pending buffer.
-            // The first successful flush publishes them.
-            // We take m_publishLock since FlushPendingEntriesUnderGate
-            // checks hHandle under this same lock.
-            {
-                CrstHolder publishLock(&newTable->m_publishLock);
-                newTable->Register();
-                if (newTable->hHandle == NULL)
-                {
-                    newTable->m_registrationFailed = true;
-                }
-            }
         }
         // else another thread won. NewHolder frees our unregistered table (no OS call).
 
