@@ -2,5 +2,6 @@
   <PropertyGroup>
     <DumpTypes>Heap</DumpTypes>
     <R2RModes>R2R;Jit</R2RModes>
+    <PublishModes>Normal;SingleFile</PublishModes>
   </PropertyGroup>
 </Project>

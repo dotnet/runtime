@@ -150,7 +150,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
-             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('%(_DebuggeeWithDumpTypes.EnvironmentVariables)'))" />
+             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes);_DebuggeePublishModes=%(_DebuggeeWithDumpTypes.PublishModes);_DebuggeeEnvVars=$([MSBuild]::Escape('%(_DebuggeeWithDumpTypes.EnvironmentVariables)'))" />
 
     <!-- Write dump-info.json into each version directory so tests can determine
          the OS/arch the dumps were generated on. -->
@@ -172,9 +172,13 @@
       <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap')) AND '$(DumpRuntimeVersion)' != 'net10.0'" DumpDir="heap" />
       <_DumpInfoFull Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" />
       <_DumpInfoByType Include="@(_DumpInfoHeap);@(_DumpInfoFull)" />
-      <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" />
-      <_DumpInfoJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" />
-      <_DumpInfoAll Include="@(_DumpInfoR2R);@(_DumpInfoJit)" />
+      <!-- Normal publish mode: r2r and jit directories -->
+      <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R')) AND $([System.String]::new('%(PublishModes)').Contains('Normal'))" R2RDir="r2r" />
+      <_DumpInfoJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit')) AND $([System.String]::new('%(PublishModes)').Contains('Normal'))" R2RDir="jit" />
+      <!-- SingleFile publish mode: compound directory names (only for local version) -->
+      <_DumpInfoSingleFileR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R')) AND $([System.String]::new('%(PublishModes)').Contains('SingleFile')) AND '$(DumpRuntimeVersion)' == 'local'" R2RDir="singlefile-r2r" />
+      <_DumpInfoSingleFileJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit')) AND $([System.String]::new('%(PublishModes)').Contains('SingleFile')) AND '$(DumpRuntimeVersion)' == 'local'" R2RDir="singlefile-jit" />
+      <_DumpInfoAll Include="@(_DumpInfoR2R);@(_DumpInfoJit);@(_DumpInfoSingleFileR2R);@(_DumpInfoSingleFileJit)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -193,11 +197,24 @@
 
   <!-- Build all debuggees with R2R without running them (for Helix payload preparation).
        Uses dotnet publish (via Exec) with ReadyToRun enabled to produce R2R-compiled
-       framework-dependent binaries. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
+       framework-dependent binaries. Also publishes single-file variants for debuggees
+       that opt in via PublishModes=Normal;SingleFile.
+       Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
   <Target Name="BuildDebuggeesOnly">
+    <!-- Normal (framework-dependent) publish for all debuggees -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_PublishSingleDebuggee"
              Properties="_DebuggeeCsproj=%(DebuggeeCsproj.Identity);DebuggeeName=%(DebuggeeCsproj.Filename)" />
+    <!-- Single-file publish for opted-in debuggees -->
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_BuildDebuggeeWithTypes" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_PublishSingleFileDebuggee"
+             Properties="_DebuggeeCsproj=%(_BuildDebuggeeWithTypes.ProjectPath);DebuggeeName=%(_BuildDebuggeeWithTypes.Identity)"
+             Condition="$([System.String]::new('%(_BuildDebuggeeWithTypes.PublishModes)').Contains('SingleFile'))" />
   </Target>
 
   <Target Name="_PublishSingleDebuggee">
@@ -205,6 +222,13 @@
       <_PublishOutDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_PublishOutDir>
     </PropertyGroup>
     <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishOutDir)&quot;" />
+  </Target>
+
+  <Target Name="_PublishSingleFileDebuggee">
+    <PropertyGroup>
+      <_PublishOutDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)-singlefile'))</_PublishOutDir>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --self-contained /p:PublishSingleFile=true /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishOutDir)&quot;" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
@@ -216,7 +240,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDumpType"
-             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
+             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_DebuggeePublishModes=$(_DebuggeePublishModes);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForDumpType">
@@ -228,6 +252,18 @@
       <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Full'">full</_DumpTypeDirName>
     </PropertyGroup>
 
+    <!-- Expand PublishModes (e.g. "Normal;SingleFile") into individual _PublishModeItem entries -->
+    <ItemGroup>
+      <_PublishModeItem Remove="@(_PublishModeItem)" />
+      <_PublishModeItem Include="$(_DebuggeePublishModes)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateDumpsForPublishMode"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_DebuggeeR2RModes=$(_DebuggeeR2RModes);_PublishModeName=%(_PublishModeItem.Identity);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
+  </Target>
+
+  <Target Name="_GenerateDumpsForPublishMode">
     <!-- Expand R2RModes (e.g. "R2R;Jit") into individual _R2RModeItem entries -->
     <ItemGroup>
       <_R2RModeItem Remove="@(_R2RModeItem)" />
@@ -236,7 +272,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForR2RMode"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_PublishModeName=$(_PublishModeName);_R2RModeName=%(_R2RModeItem.Identity);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))" />
   </Target>
 
   <Target Name="_GenerateDumpsForR2RMode">
@@ -246,13 +282,18 @@
       <_R2RValue Condition="'$(_R2RModeName)' == 'Jit'">0</_R2RValue>
       <_R2RDirName Condition="'$(_R2RModeName)' == 'R2R'">r2r</_R2RDirName>
       <_R2RDirName Condition="'$(_R2RModeName)' == 'Jit'">jit</_R2RDirName>
+      <!-- For SingleFile publish mode, prefix the R2R dir name (e.g., singlefile-r2r) -->
+      <_CompoundDirName Condition="'$(_PublishModeName)' == 'Normal'">$(_R2RDirName)</_CompoundDirName>
+      <_CompoundDirName Condition="'$(_PublishModeName)' == 'SingleFile'">singlefile-$(_R2RDirName)</_CompoundDirName>
     </PropertyGroup>
 
     <Error Condition="'$(_R2RValue)' == '' Or '$(_R2RDirName)' == ''"
            Text="Invalid R2R mode '$(_R2RModeName)' specified for debuggee '$(DebuggeeName)'. Supported values: 'R2R', 'Jit'." />
+    <Error Condition="'$(_CompoundDirName)' == ''"
+           Text="Invalid publish mode '$(_PublishModeName)' specified for debuggee '$(DebuggeeName)'. Supported values: 'Normal', 'SingleFile'." />
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'));DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_CompoundDirName);_PublishModeName=$(_PublishModeName);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'));DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
   </Target>
 
   <Target Name="_GenerateSingleDump">
@@ -268,16 +309,26 @@
     <!-- Skip heap dumps for net10.0 — cDAC is not supported in heap dumps for that version. -->
     <Message Text="[$(_DumpTypeName)] Skipping heap dump for $(DumpRuntimeVersion) (not supported)." Condition="'$(_DumpTypeName)' == 'Heap' AND '$(DumpRuntimeVersion)' == 'net10.0'" Importance="high" />
 
-    <!-- Determine build/run strategy based on runtime version -->
+    <!-- Skip single-file for non-local versions (single-file requires local runtime packs) -->
+    <Message Text="[$(_DumpTypeName)] Skipping single-file dump for $(DumpRuntimeVersion) (only supported for local)." Condition="'$(_PublishModeName)' == 'SingleFile' AND '$(DumpRuntimeVersion)' != 'local'" Importance="high" />
+
+    <!-- Normal publish mode: framework-dependent, run via testhost -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateLocalDump"
              Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
-             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local' AND '$(_PublishModeName)' != 'SingleFile'" />
 
+    <!-- SingleFile publish mode: self-contained single-file, run exe directly -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateSingleFileDump"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local' AND '$(_PublishModeName)' == 'SingleFile'" />
+
+    <!-- Released runtime (net10.0): self-contained publish, run exe directly -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
              Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue);_DebuggeeEnvVars=$([MSBuild]::Escape('$(_DebuggeeEnvVars)'))"
-             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap'" />
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap' AND '$(_PublishModeName)' != 'SingleFile'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
   </Target>
@@ -313,6 +364,29 @@
     </PropertyGroup>
 
     <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_PublishDir)&quot;"
+          WorkingDirectory="$(_DebuggeeDir)" />
+
+    <MakeDir Directories="$(_DumpDir)" />
+
+    <Exec Command="&quot;$(_PublishedExe)&quot;"
+          WorkingDirectory="$(_DumpDir)"
+          IgnoreExitCode="true"
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue);$([MSBuild]::Unescape('$(_DebuggeeEnvVars)'))" />
+
+    <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
+  </Target>
+
+  <!-- Local build, single-file: self-contained single-file publish, run the bundled exe directly.
+       Always published with ReadyToRun — the jit variant controls R2R at runtime via
+       DOTNET_ReadyToRun=0, matching the existing normal-mode approach in _GenerateLocalDump. -->
+  <Target Name="_GenerateSingleFileDump">
+    <PropertyGroup>
+      <_PublishDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)-singlefile'))</_PublishDir>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+      <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --self-contained /p:PublishSingleFile=true /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />

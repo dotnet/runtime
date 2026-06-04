@@ -95,16 +95,20 @@
       <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" MiniDumpType="2" />
       <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" MiniDumpType="4" />
       <_DumpTypeDebuggee Include="@(_HeapDebuggee);@(_FullDebuggee)" />
-      <!-- Cross-product DumpType × R2RMode -->
-      <_R2RDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" R2RValue="1" />
-      <_JitDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" R2RValue="0" />
-      <_AllDebuggeeMetadata Include="@(_R2RDebuggee);@(_JitDebuggee)" />
+      <!-- Cross-product DumpType × PublishMode × R2RMode -->
+      <!-- Normal publish mode -->
+      <_R2RDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R')) AND $([System.String]::new('%(PublishModes)').Contains('Normal'))" R2RDir="r2r" R2RValue="1" IsSingleFile="false" />
+      <_JitDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit')) AND $([System.String]::new('%(PublishModes)').Contains('Normal'))" R2RDir="jit" R2RValue="0" IsSingleFile="false" />
+      <!-- SingleFile publish mode (compound directory names) -->
+      <_SingleFileR2RDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R')) AND $([System.String]::new('%(PublishModes)').Contains('SingleFile'))" R2RDir="singlefile-r2r" R2RValue="1" IsSingleFile="true" />
+      <_SingleFileJitDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit')) AND $([System.String]::new('%(PublishModes)').Contains('SingleFile'))" R2RDir="singlefile-jit" R2RValue="0" IsSingleFile="true" />
+      <_AllDebuggeeMetadata Include="@(_R2RDebuggee);@(_JitDebuggee);@(_SingleFileR2RDebuggee);@(_SingleFileJitDebuggee)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <_MetadataLines Include="&lt;Project&gt;" />
       <_MetadataLines Include="  &lt;ItemGroup&gt;" />
-      <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; R2RDir=&quot;%(R2RDir)&quot; R2RValue=&quot;%(R2RValue)&quot; EnvironmentVariables=&quot;%(EnvironmentVariables)&quot; /&gt;')" />
+      <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; R2RDir=&quot;%(R2RDir)&quot; R2RValue=&quot;%(R2RValue)&quot; IsSingleFile=&quot;%(IsSingleFile)&quot; EnvironmentVariables=&quot;%(EnvironmentVariables)&quot; /&gt;')" />
       <_MetadataLines Include="  &lt;/ItemGroup&gt;" />
       <_MetadataLines Include="&lt;/Project&gt;" />
     </ItemGroup>
@@ -119,11 +123,21 @@
     <PropertyGroup>
       <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
       <_HelixDebuggeeDir>$([MSBuild]::NormalizeDirectory('$(_HelixDebuggeesDir)', '$(DebuggeeName)'))</_HelixDebuggeeDir>
+      <_SingleFileBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)-singlefile'))</_SingleFileBinDir>
+      <_HelixSingleFileDir>$([MSBuild]::NormalizeDirectory('$(_HelixDebuggeesDir)', '$(DebuggeeName)-singlefile'))</_HelixSingleFileDir>
     </PropertyGroup>
 
+    <!-- Copy normal (framework-dependent) build output -->
     <ItemGroup>
       <_DebuggeeOutput Include="$(_DebuggeeBinDir)**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_DebuggeeOutput)" DestinationFolder="$(_HelixDebuggeeDir)%(RecursiveDir)" />
+
+    <!-- Copy single-file build output if it exists -->
+    <ItemGroup>
+      <_SingleFileOutput Include="$(_SingleFileBinDir)**\*" Condition="Exists('$(_SingleFileBinDir)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_SingleFileOutput)" DestinationFolder="$(_HelixSingleFileDir)%(RecursiveDir)"
+          Condition="'@(_SingleFileOutput)' != ''" />
   </Target>
 </Project>
