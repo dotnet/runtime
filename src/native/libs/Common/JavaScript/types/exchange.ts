@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, EmsAmbientSymbolsType } from "../types";
+import type { EmsAmbientSymbolsType } from "../types";
 
 import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
@@ -26,6 +26,7 @@ import type { abortInteropTimers } from "../../../System.Runtime.InteropServices
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 import type { SystemJS_ScheduleDiagnosticServer } from "../../../System.Native.Browser/native";
 import type { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "../../../System.Native.Browser/diagnostics/diagnostic-server";
+import type { ds_rt_browser_performance_measure } from "../../../System.Native.Browser/diagnostics/browser-profiler";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -197,7 +198,7 @@ export type DiagnosticsExportsTable = [
     typeof ds_rt_websocket_poll,
     typeof ds_rt_websocket_recv,
     typeof ds_rt_websocket_close,
-    (namePtr: CharPtr, start: number) => void
+    typeof ds_rt_browser_performance_measure,
 ]
 
 export type DiagnosticsExports = {
@@ -208,5 +209,5 @@ export type DiagnosticsExports = {
     ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
     ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
     ds_rt_websocket_close: typeof ds_rt_websocket_close,
-    ds_rt_browser_performance_measure: (namePtr: CharPtr, start: number) => void
+    ds_rt_browser_performance_measure: typeof ds_rt_browser_performance_measure,
 }
