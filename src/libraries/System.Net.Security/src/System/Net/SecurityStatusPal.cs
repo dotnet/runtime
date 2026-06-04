@@ -70,10 +70,10 @@ namespace System.Net
         UnsupportedPreauth,
         BadBinding,
         DowngradeDetected,
-        MutualAuthFailed,
         ApplicationProtocolMismatch,
         NoRenegotiation,
         KeySetDoesNotExist,
-        ContextExpiredError
+        ContextExpiredError,
+        MutualAuthFailed
     }
 }
