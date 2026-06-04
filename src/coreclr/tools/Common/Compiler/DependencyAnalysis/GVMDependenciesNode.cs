@@ -170,9 +170,12 @@ namespace ILCompiler.DependencyAnalysis
                                 }
                                 else
                                 {
-                                    GVMDependenciesNode gvmNode = factory.GVMDependencies(canonImpl);
-                                    if (gvmNode != null)
-                                        dynamicDependencies.Add(new CombinedDependencyListEntry(gvmNode, null, "ImplementingMethodInstantiation"));
+#if READYTORUN
+                                    if (!factory.CanBeInGenericCycle(canonImpl))
+#endif
+                                    {
+                                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+                                    }
                                 }
 
 #if !READYTORUN

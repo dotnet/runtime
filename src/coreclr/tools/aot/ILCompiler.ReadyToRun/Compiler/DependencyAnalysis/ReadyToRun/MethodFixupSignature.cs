@@ -85,14 +85,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
-                if (HasNonCanonicalInstantiationArguments(canonMethod))
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
                 {
-                    GVMDependenciesNode gvmNode = factory.GVMDependencies(Method);
-                    if (gvmNode != null)
-                    {
-                        list = list ?? new DependencyList();
-                        list.Add(gvmNode, "Virtual dispatch dependency");
-                    }
+                    list = list ?? new DependencyList();
+                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
                 }
             }
 
