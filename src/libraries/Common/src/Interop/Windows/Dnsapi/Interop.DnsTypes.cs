@@ -34,6 +34,8 @@ internal static partial class Interop
             public uint InterfaceIndex;
             public IntPtr pQueryCompletionCallback;
             public IntPtr pQueryContext;
+            public int IsNetworkQueryRequired;   // BOOL
+            public uint RequiredNetworkIndex;
             public uint cCustomServers;
             public DNS_CUSTOM_SERVER* pCustomServers;
         }

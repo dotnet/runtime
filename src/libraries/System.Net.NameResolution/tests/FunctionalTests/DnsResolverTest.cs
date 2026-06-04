@@ -213,6 +213,18 @@ namespace System.Net.NameResolution.Tests
             Assert.NotEmpty(result.Records);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public async Task DnsResolver_CustomServer_NonStandardPort_ThrowsPlatformNotSupported()
+        {
+            // DnsQueryEx only supports custom DNS servers on the standard port 53.
+            DnsResolverOptions opts = new DnsResolverOptions
+            {
+                Servers = { new IPEndPoint(IPAddress.Loopback, 5353) }
+            };
+            using DnsResolver r = new DnsResolver(opts);
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => r.ResolveAddressesAsync(TestHost));
+        }
+
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]

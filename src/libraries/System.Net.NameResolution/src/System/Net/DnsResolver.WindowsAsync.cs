@@ -12,10 +12,6 @@ namespace System.Net
 {
     public sealed partial class DnsResolver
     {
-        // Win11 build 22000 introduced DNS_QUERY_REQUEST3 (with pCustomServers).
-        private static readonly bool s_supportsCustomServers =
-            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
-
         // Cached callback so we don't allocate a new delegate per query.
         private static readonly Interop.Dnsapi.DnsQueryCompletionRoutine s_completionCallback = QueryCompletionCallback;
         private static readonly IntPtr s_completionCallbackPtr =
@@ -40,8 +36,7 @@ namespace System.Net
             private IntPtr _requestPtr;
             private IntPtr _resultPtr;
             private IntPtr _cancelPtr;
-            private IntPtr _serverListPtr;       // DNS_ADDR_ARRAY (v1) buffer
-            private IntPtr _customServersPtr;    // DNS_CUSTOM_SERVER[] (v3) buffer
+            private IntPtr _serverListPtr;       // DNS_ADDR_ARRAY buffer
             private CancellationTokenRegistration _ctReg;
             private int _completed; // 0 = pending, 1 = completed (callback or sync)
 
@@ -55,25 +50,21 @@ namespace System.Net
 
             public Task<DnsQueryRawResult> StartAsync()
             {
-                bool needsV3 = false;
+                // DnsQueryEx only supports DNS servers reachable on the standard port 53.
+                // The sockaddr port field passed to the API must be 0 (the API always
+                // queries port 53); supplying any non-zero port - even 53 itself - results
+                // in ERROR_INVALID_PARAMETER. We therefore reject any server endpoint that
+                // requests a non-default port, since it cannot be honored on Windows.
                 if (_servers is { Count: > 0 })
                 {
                     foreach (IPEndPoint ep in _servers)
                     {
                         if (ep.Port != 0 && ep.Port != 53)
                         {
-                            needsV3 = true;
-                            break;
+                            throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
                         }
                     }
                 }
-
-                if (needsV3 && !s_supportsCustomServers)
-                {
-                    throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
-                }
-
-                bool useV3 = needsV3 && s_supportsCustomServers;
 
                 try
                 {
@@ -81,60 +72,34 @@ namespace System.Net
                     _resultPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_RESULT));
                     NativeMemory.Clear((void*)_resultPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_RESULT));
                     Interop.Dnsapi.DNS_QUERY_RESULT* result = (Interop.Dnsapi.DNS_QUERY_RESULT*)_resultPtr;
-                    result->Version = useV3 ? Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION3 : Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+                    result->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
 
                     _cancelPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
                     NativeMemory.Clear((void*)_cancelPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
 
                     _selfHandle = GCHandle.Alloc(this);
 
-                    int status;
-                    if (useV3)
+                    _requestPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
+                    NativeMemory.Clear((void*)_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
+                    Interop.Dnsapi.DNS_QUERY_REQUEST* req = (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr;
+                    req->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+                    req->QueryName = _namePtr;
+                    req->QueryType = _queryType;
+                    req->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
+                    req->InterfaceIndex = 0;
+                    req->pQueryCompletionCallback = s_completionCallbackPtr;
+                    req->pQueryContext = GCHandle.ToIntPtr(_selfHandle);
+
+                    if (_servers is { Count: > 0 })
                     {
-                        _requestPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST3));
-                        NativeMemory.Clear((void*)_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST3));
-                        Interop.Dnsapi.DNS_QUERY_REQUEST3* req = (Interop.Dnsapi.DNS_QUERY_REQUEST3*)_requestPtr;
-                        req->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION3;
-                        req->QueryName = _namePtr;
-                        req->QueryType = _queryType;
-                        req->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
-                        req->InterfaceIndex = 0;
-                        req->pQueryCompletionCallback = s_completionCallbackPtr;
-                        req->pQueryContext = GCHandle.ToIntPtr(_selfHandle);
-
-                        BuildCustomServers(_servers, out _customServersPtr, out uint count);
-                        req->cCustomServers = count;
-                        req->pCustomServers = (Interop.Dnsapi.DNS_CUSTOM_SERVER*)_customServersPtr;
-
-                        status = Interop.Dnsapi.DnsQueryEx(
-                            (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr,
-                            (Interop.Dnsapi.DNS_QUERY_RESULT*)_resultPtr,
-                            (Interop.Dnsapi.DNS_QUERY_CANCEL*)_cancelPtr);
+                        BuildAddrArray(_servers, out _serverListPtr);
+                        req->pDnsServerList = (Interop.Dnsapi.DNS_ADDR_ARRAY*)_serverListPtr;
                     }
-                    else
-                    {
-                        _requestPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
-                        NativeMemory.Clear((void*)_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
-                        Interop.Dnsapi.DNS_QUERY_REQUEST* req = (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr;
-                        req->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
-                        req->QueryName = _namePtr;
-                        req->QueryType = _queryType;
-                        req->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
-                        req->InterfaceIndex = 0;
-                        req->pQueryCompletionCallback = s_completionCallbackPtr;
-                        req->pQueryContext = GCHandle.ToIntPtr(_selfHandle);
 
-                        if (_servers is { Count: > 0 })
-                        {
-                            BuildAddrArray(_servers, out _serverListPtr);
-                            req->pDnsServerList = (Interop.Dnsapi.DNS_ADDR_ARRAY*)_serverListPtr;
-                        }
-
-                        status = Interop.Dnsapi.DnsQueryEx(
-                            (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr,
-                            (Interop.Dnsapi.DNS_QUERY_RESULT*)_resultPtr,
-                            (Interop.Dnsapi.DNS_QUERY_CANCEL*)_cancelPtr);
-                    }
+                    int status = Interop.Dnsapi.DnsQueryEx(
+                        (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr,
+                        (Interop.Dnsapi.DNS_QUERY_RESULT*)_resultPtr,
+                        (Interop.Dnsapi.DNS_QUERY_CANCEL*)_cancelPtr);
 
                     if (status == Interop.Dnsapi.DNS_REQUEST_PENDING)
                     {
@@ -249,11 +214,6 @@ namespace System.Net
                     Marshal.FreeHGlobal(_serverListPtr);
                     _serverListPtr = IntPtr.Zero;
                 }
-                if (_customServersPtr != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(_customServersPtr);
-                    _customServersPtr = IntPtr.Zero;
-                }
                 if (_selfHandle.IsAllocated)
                 {
                     _selfHandle.Free();
@@ -312,43 +272,19 @@ namespace System.Net
             }
         }
 
-        private static unsafe void BuildCustomServers(IList<IPEndPoint> servers, out IntPtr arrayPtr, out uint count)
-        {
-            if (servers is null or { Count: 0 })
-            {
-                arrayPtr = IntPtr.Zero;
-                count = 0;
-                return;
-            }
-
-            int n = servers.Count;
-            int entrySize = sizeof(Interop.Dnsapi.DNS_CUSTOM_SERVER);
-            arrayPtr = Marshal.AllocHGlobal(entrySize * n);
-            NativeMemory.Clear((void*)arrayPtr, (nuint)(entrySize * n));
-
-            Interop.Dnsapi.DNS_CUSTOM_SERVER* arr = (Interop.Dnsapi.DNS_CUSTOM_SERVER*)arrayPtr;
-            for (int i = 0; i < n; i++)
-            {
-                IPEndPoint ep = servers[i];
-                arr[i].dwServerType = Interop.Dnsapi.DNS_CUSTOM_SERVER_TYPE_UDP;
-                arr[i].ullFlags = 0;
-                arr[i].pwszTemplate = IntPtr.Zero;
-                WriteSockAddr((byte*)&arr[i].ServerAddr[0], ep);
-            }
-            count = (uint)n;
-        }
-
         // Writes a SOCKADDR_IN or SOCKADDR_IN6 representation into the destination buffer.
         // The buffer must be at least 28 bytes (sizeof sockaddr_in6).
         private static unsafe void WriteSockAddr(byte* dest, IPEndPoint ep)
         {
-            int port = ep.Port == 0 ? 53 : ep.Port;
+            // DnsQueryEx always queries DNS servers on port 53 and requires the sockaddr
+            // port field to be left as 0. Supplying a non-zero port (even 53) is rejected
+            // with ERROR_INVALID_PARAMETER. Non-default ports are validated and rejected
+            // earlier in StartAsync, so the port is always written as 0 here.
             if (ep.AddressFamily == AddressFamily.InterNetwork)
             {
                 // sockaddr_in: ushort family, ushort port (net order), uint addr, 8 bytes zero
                 *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET;
-                dest[2] = (byte)(port >> 8);
-                dest[3] = (byte)(port & 0xff);
+                // dest[2..3] (port) left zero
                 Span<byte> addrBytes = stackalloc byte[4];
                 ep.Address.TryWriteBytes(addrBytes, out _);
                 dest[4] = addrBytes[0];
@@ -361,8 +297,7 @@ namespace System.Net
             {
                 // sockaddr_in6: ushort family, ushort port, uint flowinfo, 16-byte addr, uint scope_id
                 *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET6;
-                dest[2] = (byte)(port >> 8);
-                dest[3] = (byte)(port & 0xff);
+                // dest[2..3] (port) left zero
                 // flowinfo (dest[4..7]) left zero
                 Span<byte> addrBytes = stackalloc byte[16];
                 ep.Address.TryWriteBytes(addrBytes, out _);
