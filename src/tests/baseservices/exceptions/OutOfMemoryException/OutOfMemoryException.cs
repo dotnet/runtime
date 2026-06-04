@@ -89,11 +89,10 @@ class OutOfMemoryExceptionTest
             return Fail;
         }
 
-        Console.WriteLine($"Subprocess exit code: {output.ExitStatus.ExitCode}");
-        Console.WriteLine($"Subprocess stderr: {output.StandardError}");
-
         if (output.ExitStatus.ExitCode == 0 || output.ExitStatus.ExitCode == Pass)
         {
+            Console.WriteLine($"Subprocess exit code: {output.ExitStatus.ExitCode}");
+            Console.WriteLine($"Subprocess stderr: {output.StandardError}");
             Console.WriteLine("Expected a non-success exit code from the OOM subprocess.");
             return Fail;
         }
@@ -105,7 +104,9 @@ class OutOfMemoryExceptionTest
         // Either token is acceptable, but at least one should be present to confirm that OOM was the reason for termination.
         if (!(stderr.Contains(ExpectedOomToken) || stderr.Contains(ExpectedMinimalOomToken)))
         {
-            Console.WriteLine($"Expected OOM diagnostic token not found in subprocess stderr.");
+            Console.WriteLine($"Subprocess exit code: {output.ExitStatus.ExitCode}");
+            Console.WriteLine($"Subprocess stderr: {stderr}");
+            Console.WriteLine("Expected OOM diagnostic token not found in subprocess stderr.");
             return Fail;
         }
 
