@@ -309,7 +309,7 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 - Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues and one `missing_data` safe-output. Record `skipped: suspected infra outage` for each signature.
 - Product-shaped (assertion, exception, stack frame, JIT marker) converging on a common element (same assembly / stack frame / assertion file): file ONE representative KBE per element (cap 3 total). Skip the rest with `skipped: representative KBE filed as #aw_<id>`.
 
-**Leg-level failures.** When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE leg-scoped KBE keyed to `(definition_id, leg)` with `Known Build Error` + `blocking-clean-ci`, and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
+**Leg-level failures.** When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, shared-signal)` scoped to that leg with `Known Build Error` + `blocking-clean-ci`, and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
 
 **Branch A — No existing KBE; signature is stable.**
 
