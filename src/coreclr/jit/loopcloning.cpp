@@ -2139,6 +2139,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // block was in some enclosed EH region), put the slow preheader
     // into the appropriate region, and make appropriate extent updates.
     //
+    // The slow preheader was inserted lexically after `beforeSlowPreheader`
+    // but logically lives in `preheader`'s EH region. Any enclosing region
+    // whose lex-last is `beforeSlowPreheader` must be extended to cover the
+    // slow preheader so that the subsequent DuplicateWithEH call can in turn
+    // extend those regions to also cover the cloned slow-path blocks.
+    //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
@@ -2148,11 +2154,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             EHblkDsc* const ebd = ehGetDsc(enclosingRegion - 1);
             for (EHblkDsc* const HBtab : EHClauses(this, ebd))
             {
-                if (HBtab->ebdTryLast == bottom)
+                if (HBtab->ebdTryLast == beforeSlowPreheader)
                 {
                     fgSetTryEnd(HBtab, slowPreheader);
                 }
-                if (HBtab->ebdHndLast == bottom)
+                if (HBtab->ebdHndLast == beforeSlowPreheader)
                 {
                     fgSetHndEnd(HBtab, slowPreheader);
                 }
