@@ -1631,9 +1631,6 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
             );
 
     UINT32 codeLength = gcInfoDecoder.GetCodeLength();
-#ifdef TARGET_WASM
-    codeLength = 1; // WASM-TODO, something isn't working in the GCEncoder/Decoder for WASM, and we're getting back 0 for code length. We'll need to fix this at some point.
-#endif // TARGET_WASM
     _ASSERTE( codeLength > 0 );
     return codeLength;
 
