@@ -9437,6 +9437,12 @@ GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, var_types baseType, boo
 GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 {
 #ifdef FEATURE_SIMD
+#if defined(TARGET_ARM64)
+    if (type == TYP_SIMD)
+    {
+        return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableRepeated, 0xFF);
+    }
+#endif // TARGET_ARM64
     if (varTypeIsSIMD(type))
     {
         GenTreeVecCon* allBitsSet = gtNewVconNode(type);
@@ -9526,6 +9532,25 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = TYP_UNDEF */)
 {
 #if defined(FEATURE_SIMD)
+#if defined(TARGET_ARM64)
+    if (type == TYP_SIMD)
+    {
+        assert(simdBaseType != TYP_UNDEF);
+
+        GenTree* one = nullptr;
+        if (varTypeIsIntegral(simdBaseType))
+        {
+            one = varTypeIsLong(simdBaseType) ? gtNewLconNode(1) : gtNewIconNode(1);
+        }
+        else
+        {
+            assert(varTypeIsFloating(simdBaseType));
+            one = gtNewDconNode(1.0, simdBaseType);
+        }
+
+        return gtNewSimdCreateBroadcastNode(type, one, simdBaseType, SIZE_UNKNOWN);
+    }
+#endif // TARGET_ARM64
     if (varTypeIsSIMD(type))
     {
         GenTreeVecCon* one = gtNewVconNode(type);
@@ -24227,36 +24252,36 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             // We need to treat op1 and op2 as signed for comparison purpose after
             // the transformation.
 
-            var_types      opType  = simdBaseType;
-            GenTreeVecCon* vecCon1 = gtNewVconNode(type);
+            var_types opType  = simdBaseType;
+            GenTree*  vecCon1 = nullptr;
 
             switch (simdBaseType)
             {
                 case TYP_UBYTE:
                 {
                     simdBaseType = TYP_BYTE;
-                    vecCon1->EvaluateBroadcastInPlace<int8_t>(INT8_MIN);
+                    vecCon1      = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(INT8_MIN), opType, simdSize);
                     break;
                 }
 
                 case TYP_USHORT:
                 {
                     simdBaseType = TYP_SHORT;
-                    vecCon1->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
+                    vecCon1      = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(INT16_MIN), opType, simdSize);
                     break;
                 }
 
                 case TYP_UINT:
                 {
                     simdBaseType = TYP_INT;
-                    vecCon1->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
+                    vecCon1      = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(INT32_MIN), opType, simdSize);
                     break;
                 }
 
                 case TYP_ULONG:
                 {
                     simdBaseType = TYP_LONG;
-                    vecCon1->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
+                    vecCon1      = gtNewSimdCreateBroadcastNode(type, gtNewLconNode(INT64_MIN), opType, simdSize);
                     break;
                 }
 
@@ -25470,6 +25495,28 @@ GenTree* Compiler::gtNewSimdGetIndicesNode(var_types type, var_types simdBaseTyp
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(varTypeIsArithmetic(simdBaseType));
+
+#if defined(TARGET_ARM64)
+    if (type == TYP_SIMD)
+    {
+        GenTreeVecCon* indices = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
+
+        if (simdBaseType == TYP_FLOAT)
+        {
+            indices->gtSimdScalableVal.gtSimdScalableStepF32[0] = 1.0f;
+        }
+        else if (simdBaseType == TYP_DOUBLE)
+        {
+            indices->gtSimdScalableVal.gtSimdScalableStepF64[0] = 1.0;
+        }
+        else
+        {
+            indices->gtSimdScalableVal.gtSimdScalableStep = 1;
+        }
+
+        return indices;
+    }
+#endif // TARGET_ARM64
 
     GenTreeVecCon* indices    = gtNewVconNode(type);
     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
@@ -33859,7 +33906,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     simd_t simdVal = {};
 
-    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
+    if ((retType != TYP_SIMD) && GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
     {
         GenTreeVecCon* vecCon = gtNewVconNode(retType);
 

@@ -2926,13 +2926,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             // Import as a constant vector 0
 
-#if defined(DEBUG)
-            if (JitConfig.JitUseScalableVectorT())
+            if (retType == TYP_SIMD)
             {
                 retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated, 0);
                 break;
             }
-#endif // DEBUG
 
             GenTreeVecCon* vecCon = gtNewVconNode(retType);
             vecCon->gtSimdVal     = simd_t::Zero();
@@ -2961,8 +2959,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
 
-#if defined(DEBUG)
-                if (JitConfig.JitUseScalableVectorT())
+                if (retType == TYP_SIMD)
                 {
                     if ((pattern == SVE_PATTERN_ALL) || (pattern == SVE_PATTERN_POW2))
                     {
@@ -2990,7 +2987,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
                 else
-#endif // DEBUG
                 {
                     simd_t simdVal;
 
