@@ -53,6 +53,8 @@ record struct ThreadData (
     bool HasUnhandledException;
     TargetPointer NextThread;
     TargetPointer ThreadHandle;
+    bool IsInteropDebuggingHijacked;
+    TargetPointer DebuggerFilterContext;
 );
 ```
 
@@ -74,7 +76,6 @@ void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlled
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
-byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
 ```
 
 ## Version 1
@@ -131,6 +132,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
+| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
 | `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
@@ -383,30 +385,6 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 
     _target.ReadBuffer(readFrom, span);
     return span.ToArray();
-}
-
-byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-{
-    // Allocate a context buffer for the target platform
-    IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-    byte[] bytes = new byte[context.Size];
-
-    TargetPointer filterContext = TargetPointer.Null;
-
-    if (contextSource.HasFlag(ThreadContextSource.Debugger))
-        filterContext = target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
-
-    if (filterContext != TargetPointer.Null)
-    {
-        // Use the filter context directly
-        target.ReadBuffer(filterContext, bytes);
-        return bytes;
-    }
-
-    // Fall back to the OS thread context
-    ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
-    target.GetThreadContext(osId, contextFlags, bytes);
-    return bytes;
 }
 
 ```

@@ -219,6 +219,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->ebpFrame        = header.ebpFrame;
     infoPtr->interruptible   = header.interruptible;
     infoPtr->returnKind      = (ReturnKind) header.returnKind;
+    infoPtr->isAsync         = header.isAsync;
 
     infoPtr->prologSize      = header.prologSize;
     infoPtr->epilogSize      = header.epilogSize;
@@ -555,7 +556,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 3 : 0) + // Does this method save thread + async contexts?
                         1; // for ebpFrame
     return position * sizeof(TADDR);
 }

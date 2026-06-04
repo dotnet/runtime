@@ -331,6 +331,7 @@ struct hdrInfo
     unsigned char       epilogCnt;
     bool                epilogEnd;      // is the epilog at the end of the method
 
+    bool                isAsync;        // is this an async function with async continuation arg/return
     bool                ebpFrame;       // locals and arguments addressed relative to EBP
     bool                doubleAlign;    // is the stack double-aligned? locals addressed relative to ESP, and arguments relative to EBP
     bool                interruptible;  // intr. at all times (excluding prolog/epilog), not just call sites
