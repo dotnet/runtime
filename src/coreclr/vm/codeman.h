@@ -649,9 +649,6 @@ private:
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
 
-    // Pre-allocated flush buffer.
-    T_RUNTIME_FUNCTION  flushBuffer[cPendingMaxCount];
-
     // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
     // independent RangeSections can publish/unpublish concurrently.
     Crst                m_publishLock; // Protects the main table and OS registration.
