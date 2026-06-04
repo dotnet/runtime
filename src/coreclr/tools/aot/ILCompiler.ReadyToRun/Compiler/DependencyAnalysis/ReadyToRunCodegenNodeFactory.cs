@@ -1283,8 +1283,7 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
-            return _genericCycleDetector.CanBeInCycle(methodDefinition)
-                || _genericCycleDetector.CanBeInCycle(methodDefinition.OwningType);
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
         }
 
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
