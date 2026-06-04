@@ -6,6 +6,8 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <!-- F# does not emit tail calls in Debug builds, leading to stack overflow. See https://github.com/dotnet/runtime/issues/127437 -->
+    <DisableProjectBuild Condition="'$(Configuration)' == 'Debug'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mutual_recursion.fs" />
