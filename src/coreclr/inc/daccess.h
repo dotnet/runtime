@@ -2370,13 +2370,13 @@ typedef DPTR(uint64_t)     PTR_uint64_t;
 typedef DPTR(uintptr_t)    PTR_uintptr_t;
 typedef DPTR(TADDR)        PTR_TADDR;
 
-#ifdef NATIVEAOT
+#if defined(NATIVEAOT) && defined(TARGET_ARM64)
 typedef ArrayDPTR(uint8_t) PTR_BYTE;
 typedef DPTR(uint16_t)     PTR_WORD;
 typedef DPTR(uint32_t)     PTR_DWORD;
 typedef DPTR(uint64_t)     PTR_ULONG64;
 typedef DPTR(uint64_t)     PTR_UINT64;
-#else
+#elif !defined(NATIVEAOT)
 typedef ArrayDPTR(BYTE)    PTR_BYTE;
 typedef DPTR(WORD)         PTR_WORD;
 typedef DPTR(DWORD)        PTR_DWORD;
