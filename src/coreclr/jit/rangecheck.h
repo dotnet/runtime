@@ -284,11 +284,6 @@ struct Range
         return lLimit.IsUndef() && uLimit.IsUndef();
     }
 
-    bool IsUnknown() const
-    {
-        return lLimit.IsUnknown() && uLimit.IsUnknown();
-    }
-
     bool IsFullRange() const
     {
         return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == INT32_MIN) &&

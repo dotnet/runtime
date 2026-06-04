@@ -4117,28 +4117,32 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
             RangeCheck::GetRangeFromAssertions(this, op1->TypeGet(), optConservativeNormalVN(op1), assertions);
         Range op2Rng =
             RangeCheck::GetRangeFromAssertions(this, op2->TypeGet(), optConservativeNormalVN(op2), assertions);
-        Range result = Limit(Limit::keUnknown);
 
-        if (tree->OperIs(GT_MUL))
+        if (op1Rng.IsConstantRange() && op2Rng.IsConstantRange())
         {
-            result = RangeOps::Multiply(op1Rng, op2Rng, tree->IsUnsigned());
-        }
-        else if (tree->OperIs(GT_ADD))
-        {
-            result = RangeOps::Add(op1Rng, op2Rng, tree->IsUnsigned());
-        }
-        else
-        {
-            assert(tree->OperIs(GT_SUB));
-            result = RangeOps::Subtract(op1Rng, op2Rng, tree->IsUnsigned());
-        }
+            Range result = Limit(Limit::keUnknown);
 
-        // If it produced a constant range for the result, we know the operation
-        // cannot overflow for any values consistent with the current assertions.
-        if (result.IsConstantRange())
-        {
-            tree->ClearOverflow();
-            return optAssertionProp_Update(tree, tree, stmt);
+            if (tree->OperIs(GT_MUL))
+            {
+                result = RangeOps::Multiply(op1Rng, op2Rng, tree->IsUnsigned());
+            }
+            else if (tree->OperIs(GT_ADD))
+            {
+                result = RangeOps::Add(op1Rng, op2Rng, tree->IsUnsigned());
+            }
+            else
+            {
+                assert(tree->OperIs(GT_SUB));
+                result = RangeOps::Subtract(op1Rng, op2Rng, tree->IsUnsigned());
+            }
+
+            // If it produced a constant range for the result, we know the operation
+            // cannot overflow for any values consistent with the current assertions.
+            if (result.IsConstantRange())
+            {
+                tree->ClearOverflow();
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
         }
     }
     return nullptr;
@@ -4496,31 +4500,34 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     {
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, tree->TypeGet(), relopVN, assertions);
 
-        int relopResult;
-        if (!relopRange.IsSingleValueConstant(&relopResult))
+        if (relopRange.IsConstantRange())
         {
-            // Retry by obtaining operand ranges individually. This accounts for cases where the
-            // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
-            VNFuncApp relopFuncApp;
-            if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
-                (((relopFuncApp.GetArg(0) == op1VN) && (relopFuncApp.GetArg(1) == op2VN)) ||
-                 ((relopFuncApp.GetArg(0) == op2VN) && (relopFuncApp.GetArg(1) == op1VN))))
+            int relopResult;
+            if (!relopRange.IsSingleValueConstant(&relopResult))
             {
-                // VNs match - we'll find nothing new by looking at individual operand ranges.
+                // Retry by obtaining operand ranges individually. This accounts for cases where the
+                // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
+                VNFuncApp relopFuncApp;
+                if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
+                    (((relopFuncApp.GetArg(0) == op1VN) && (relopFuncApp.GetArg(1) == op2VN)) ||
+                     ((relopFuncApp.GetArg(0) == op2VN) && (relopFuncApp.GetArg(1) == op1VN))))
+                {
+                    // VNs match - we'll find nothing new by looking at individual operand ranges.
+                }
+                else
+                {
+                    Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1->TypeGet(), op1VN, assertions);
+                    Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2->TypeGet(), op2VN, assertions);
+                    relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
+                }
             }
-            else
-            {
-                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1->TypeGet(), op1VN, assertions);
-                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2->TypeGet(), op2VN, assertions);
-                relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
-            }
-        }
 
-        if (relopRange.IsSingleValueConstant(&relopResult))
-        {
-            assert((relopResult == 0) || (relopResult == 1));
-            newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
-            return optAssertionProp_Update(newTree, tree, stmt);
+            if (relopRange.IsSingleValueConstant(&relopResult))
+            {
+                assert((relopResult == 0) || (relopResult == 1));
+                newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
         }
     }
 
@@ -5566,14 +5573,18 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
         {
             Range rng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen->TypeGet(), vnCurLen, assertions);
-            // Lower known limit of ArrLen:
-            const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
-            // Negative delta in the array access (ArrLen + -CNS)
-            const int delta = vnStore->GetConstantInt32(add1);
-            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            if (rng.IsConstantRange())
             {
-                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+                // Lower known limit of ArrLen:
+                const int lenLowerLimit = rng.LowerLimit().GetConstant();
+
+                // Negative delta in the array access (ArrLen + -CNS)
+                const int delta = vnStore->GetConstantInt32(add1);
+                if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+                {
+                    return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+                }
             }
         }
     }

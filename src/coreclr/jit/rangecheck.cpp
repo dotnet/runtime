@@ -866,7 +866,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(Compiler*                        
                             if (r2.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
                             {
                                 // The upper 33-bits will all match post shift, so we are within [INT32_MIN, INT32_MAX]
-                                result = GetRangeFromType(TYP_INT);
+                                binOpResult = GetRangeFromType(TYP_INT);
                                 break;
                             }
                             else
