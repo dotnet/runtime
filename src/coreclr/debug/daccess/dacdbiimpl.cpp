@@ -6052,7 +6052,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_
 
         DWORD threadId = 0;
         DWORD recursionCount = 0;
-        BOOL isLockHeld = pObj->GetHeader()->PassiveGetSyncBlock()->TryGetLockInfo(&threadId, &recursionCount);
+        SyncBlock* psb = pObj->GetHeader()->PassiveGetSyncBlock();
+        BOOL isLockHeld = psb != NULL && psb->TryGetLockInfo(&threadId, &recursionCount);
 
         if (!isLockHeld)
         {

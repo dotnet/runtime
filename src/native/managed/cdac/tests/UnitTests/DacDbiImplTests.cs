@@ -726,57 +726,56 @@ public unsafe class DacDbiImplTests
     {
         foreach (var arch in new MockTarget.StdArch())
         {
-            yield return new object[] { arch[0], false, 0u, 0ul, 0u };
-            yield return new object[] { arch[0], true, 3u, 0x7000ul, 4u };
+            yield return new object[] { arch[0], false, false, 0u, 0ul, 0u };
+            yield return new object[] { arch[0], true, false, 0u, 0ul, 0u };
+            yield return new object[] { arch[0], true, true, 3u, 0x7000ul, 4u };
         }
     }
 
     [Theory]
     [MemberData(nameof(GetThreadOwningMonitorLockData))]
-    public void GetThreadOwningMonitorLock(MockTarget.Architecture arch, bool isLockHeld, uint recursionCount, ulong expectedOwner, uint expectedAcquisitionCount)
+    public void GetThreadOwningMonitorLock(MockTarget.Architecture arch, bool hasSyncBlock, bool isLockHeld, uint recursionCount, ulong expectedOwner, uint expectedAcquisitionCount)
     {
         const ulong ObjectAddr = 0x5000;
         const uint OwnerThreadId = 42;
         TargetPointer syncBlockAddr = new(0x6000);
         TargetPointer ownerThreadPtr = new(0x7000);
-        TargetPointer otherThreadPtr = new(0x8000);
 
         var mockObject = new Mock<IObject>();
         mockObject.Setup(o => o.GetSyncBlockAddress(new TargetPointer(ObjectAddr)))
-            .Returns(syncBlockAddr);
-
-        var mockSyncBlock = new Mock<ISyncBlock>();
-        var lockSetup = mockSyncBlock
-            .Setup(s => s.TryGetLockInfo(syncBlockAddr, out It.Ref<uint>.IsAny, out It.Ref<uint>.IsAny));
-        if (isLockHeld)
-        {
-            lockSetup
-                .Callback(new TryGetLockInfoCallback((TargetPointer _, out uint threadId, out uint recursion) =>
-                {
-                    threadId = OwnerThreadId;
-                    recursion = recursionCount;
-                }))
-                .Returns(true);
-        }
-        else
-        {
-            lockSetup.Returns(false);
-        }
+            .Returns(hasSyncBlock ? syncBlockAddr : TargetPointer.Null);
 
         var builder = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
-            .AddMockContract(mockObject)
-            .AddMockContract(mockSyncBlock);
+            .AddMockContract(mockObject);
+
+        if (hasSyncBlock)
+        {
+            var mockSyncBlock = new Mock<ISyncBlock>();
+            var lockSetup = mockSyncBlock
+                .Setup(s => s.TryGetLockInfo(syncBlockAddr, out It.Ref<uint>.IsAny, out It.Ref<uint>.IsAny));
+            if (isLockHeld)
+            {
+                lockSetup
+                    .Callback(new TryGetLockInfoCallback((TargetPointer _, out uint threadId, out uint recursion) =>
+                    {
+                        threadId = OwnerThreadId;
+                        recursion = recursionCount;
+                    }))
+                    .Returns(true);
+            }
+            else
+            {
+                lockSetup.Returns(false);
+            }
+            builder.AddMockContract(mockSyncBlock);
+        }
 
         if (isLockHeld)
         {
             var mockThread = new Mock<IThread>();
-            mockThread.Setup(t => t.GetThreadStoreData())
-                .Returns(new ThreadStoreData(2, otherThreadPtr, TargetPointer.Null, TargetPointer.Null));
-            mockThread.Setup(t => t.GetThreadData(otherThreadPtr))
-                .Returns(new ThreadData(otherThreadPtr, 99, default, default, default, default, default, default, default, default, default, default, default, default, ownerThreadPtr, default));
-            mockThread.Setup(t => t.GetThreadData(ownerThreadPtr))
-                .Returns(new ThreadData(ownerThreadPtr, OwnerThreadId, default, default, default, default, default, default, default, default, default, default, default, default, TargetPointer.Null, default));
+            mockThread.Setup(t => t.IdToThread(OwnerThreadId))
+                .Returns(ownerThreadPtr);
             builder.AddMockContract(mockThread);
         }
 

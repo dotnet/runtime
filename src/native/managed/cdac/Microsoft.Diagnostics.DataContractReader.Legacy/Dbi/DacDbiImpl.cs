@@ -3133,45 +3133,27 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
     {
         int hr = HResults.S_OK;
+        *pRetVal = default;
         try
         {
             DacDbiMonitorLockInfo info = default;
-            info.lockOwner = TargetPointer.Null;
-            info.acquisitionCount = 0;
-
             uint threadId = 0;
             uint recursionCount = 0;
             TargetPointer syncBlock = _target.Contracts.Object.GetSyncBlockAddress(vmObject);
-            // Note: GetSyncBlockAddress returns TargetPointer.Null when no sync block index is in the header.
-            // Passing Null to TryGetLockInfo will throw, matching the native DAC.
-            // Should we add an explicit null guard here instead?
-            bool isLockHeld = _target.Contracts.SyncBlock.TryGetLockInfo(syncBlock, out threadId, out recursionCount);
 
-            if (!isLockHeld)
+            if (syncBlock == TargetPointer.Null || !_target.Contracts.SyncBlock.TryGetLockInfo(syncBlock, out threadId, out recursionCount))
             {
                 *pRetVal = info;
             }
             else
             {
-                var threadStore = _target.Contracts.Thread.GetThreadStoreData();
-                TargetPointer threadPtr = threadStore.FirstThread;
-                while (threadPtr != TargetPointer.Null)
+                TargetPointer threadPtr = _target.Contracts.Thread.IdToThread(threadId);
+                Debug.Assert(threadPtr != TargetPointer.Null, "A thread should have been found");
+                if (threadPtr != TargetPointer.Null)
                 {
-                    ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
-                    if (threadData.Id == threadId)
-                    {
-                        info.lockOwner = threadPtr;
-                        info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
-                        break;
-                    }
-                    threadPtr = threadData.NextThread;
+                    info.lockOwner = threadPtr;
+                    info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
                 }
-#if DEBUG
-                if (threadPtr == TargetPointer.Null)
-                {
-                    Debug.Assert(false, "A thread should have been found");
-                }
-#endif
                 *pRetVal = info;
             }
         }
