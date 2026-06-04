@@ -825,7 +825,17 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
-#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+
+// Helper that saves the current IP into the frame before throwing.
+// This ensures EH and GC can unwind the interpreter frame correctly.
+NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t* ip, RuntimeExceptionKind exType)
+{
+    pFrame->ip = ip;
+    COMPlusThrow(exType);
+}
+
+#define NULL_CHECK(o) do { if ((o) == NULL) { INTERP_THROW(kNullReferenceException); } } while (0)
+#define INTERP_THROW(exType) InterpThrow(pFrame, ip, exType)
 
 // When enabled, each opcode dispatches directly to the next one via an indirect goto,
 // avoiding the overhead of the central switch dispatch.
@@ -835,7 +845,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
 
 #if USE_COMPUTED_GOTO
 #define INTOP_CASE(x) LABEL_ ## x:
-#define INTOP_DISPATCH(op) pFrame->ip = op; opcode = (uint32_t)(op); goto *s_dispatchTable[opcode]
+#define INTOP_DISPATCH(op) opcode = (uint32_t)(op); goto *s_dispatchTable[opcode]
 #define INTOP_NEXT INTOP_DISPATCH(ip[0])
 #else
 #define INTOP_CASE(x) case x:
@@ -926,7 +936,7 @@ template <typename TResult, typename TIntermediate, typename TSource> static voi
         LOCAL_VAR(ip[1], int32_t) = (int32_t)result;
 }
 
-template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip)
+template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, InterpMethodContextFrame *pFrame)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
     static_assert(std::numeric_limits<TResult>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles to be converted to integers");
@@ -941,7 +951,7 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
     bool inRange = (src > minValue) && (src < maxValue);
 
     if (!inRange)
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
 
     TResult truncated = (TResult)src;
     // According to spec, for result types smaller than int32, we store them on the stack as int32
@@ -950,7 +960,7 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
 // I64 and U64 versions based on mono_math.h
 
-template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const int32_t *ip)
+template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const int32_t *ip, InterpMethodContextFrame *pFrame)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
@@ -963,13 +973,13 @@ template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const 
 
     bool inRange = (src > minValue) && (src < maxValue);
     if (!inRange)
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
 
     int64_t truncated = (int64_t)src;
     LOCAL_VAR(ip[1], int64_t) = truncated;
 }
 
-template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const int32_t *ip)
+template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const int32_t *ip, InterpMethodContextFrame *pFrame)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
@@ -981,13 +991,13 @@ template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const 
 
     bool inRange = (src > minValue) && (src < maxValue);
     if (!inRange)
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
 
     uint64_t truncated = (uint64_t)src;
     LOCAL_VAR(ip[1], uint64_t) = truncated;
 }
 
-template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
+template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip, InterpMethodContextFrame *pFrame)
 {
     static_assert(std::numeric_limits<TSource>::is_integer, "ConvOvfHelper is only for use on integers");
     constexpr bool shrinking = sizeof(TResult) < sizeof(TSource);
@@ -1043,21 +1053,21 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
     }
     else
     {
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
     }
 }
 
-static float CkfiniteHelper(float value)
+static float CkfiniteHelper(float value, InterpMethodContextFrame *pFrame, const int32_t *ip)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
     return value;
 }
 
-static double CkfiniteHelper(double value)
+static double CkfiniteHelper(double value, InterpMethodContextFrame *pFrame, const int32_t *ip)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kOverflowException);
+        InterpThrow(pFrame, ip, kOverflowException);
     return value;
 }
 
@@ -1072,7 +1082,8 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     if (pLookup->lookupType == InterpGenericLookupType::This)
     {
         OBJECTREF thisPtr = ObjectToOBJECTREF((Object*)genericVarAsPtr);
-        NULL_CHECK(thisPtr);
+        if (thisPtr == NULL)
+            COMPlusThrow(kNullReferenceException);
         pMT = thisPtr->GetMethodTable();
         lookup = (uint8_t*)pMT;
     }
@@ -1159,7 +1170,8 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
     frames(pTransitionBlock);
 
     CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont);
-    NULL_CHECK(contRef);
+    if (contRef == NULL)
+        COMPlusThrow(kNullReferenceException);
 
     // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
     size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeInfo);
@@ -1412,7 +1424,6 @@ MAIN_LOOP:
 #if USE_COMPUTED_GOTO
             INTOP_NEXT;
 #else
-            pFrame->ip = (int32_t*)ip;
             opcode = ip[0];
 SWITCH_OPCODE:
             switch (opcode)
@@ -1427,6 +1438,7 @@ SWITCH_OPCODE:
 #ifdef DEBUGGING_SUPPORTED
                 INTOP_CASE(INTOP_BREAKPOINT)
                 {
+                    pFrame->ip = ip;
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
@@ -1446,6 +1458,7 @@ SWITCH_OPCODE:
                 }
                 INTOP_CASE(INTOP_DEBUG_METHOD_ENTER)
                 {
+                    pFrame->ip = ip;
                     if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
                     {
                         // ip[1] holds the native offset of the first INTOP_DEBUG_SEQ_POINT,
@@ -1578,11 +1591,11 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CKFINITE_R4)
-                    LOCAL_VAR(ip[1], float) = CkfiniteHelper(LOCAL_VAR(ip[2], float));
+                    LOCAL_VAR(ip[1], float) = CkfiniteHelper(LOCAL_VAR(ip[2], float), pFrame, ip);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CKFINITE_R8)
-                    LOCAL_VAR(ip[1], double) = CkfiniteHelper(LOCAL_VAR(ip[2], double));
+                    LOCAL_VAR(ip[1], double) = CkfiniteHelper(LOCAL_VAR(ip[2], double), pFrame, ip);
                     ip += 3;
                     INTOP_NEXT;
 
@@ -1736,180 +1749,180 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I1_I4)
-                    ConvOvfHelper<int8_t, int32_t>(stack, ip);
+                    ConvOvfHelper<int8_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I1_I8)
-                    ConvOvfHelper<int8_t, int64_t>(stack, ip);
+                    ConvOvfHelper<int8_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I1_R4)
-                    ConvOvfFpHelper<int8_t, float>(stack, ip);
+                    ConvOvfFpHelper<int8_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I1_R8)
-                    ConvOvfFpHelper<int8_t, double>(stack, ip);
+                    ConvOvfFpHelper<int8_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U1_I4)
-                    ConvOvfHelper<uint8_t, int32_t>(stack, ip);
+                    ConvOvfHelper<uint8_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U1_I8)
-                    ConvOvfHelper<uint8_t, int64_t>(stack, ip);
+                    ConvOvfHelper<uint8_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U1_R4)
-                    ConvOvfFpHelper<uint8_t, float>(stack, ip);
+                    ConvOvfFpHelper<uint8_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U1_R8)
-                    ConvOvfFpHelper<uint8_t, double>(stack, ip);
+                    ConvOvfFpHelper<uint8_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I2_I4)
-                    ConvOvfHelper<int16_t, int32_t>(stack, ip);
+                    ConvOvfHelper<int16_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I2_I8)
-                    ConvOvfHelper<int16_t, int64_t>(stack, ip);
+                    ConvOvfHelper<int16_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I2_R4)
-                    ConvOvfFpHelper<int16_t, float>(stack, ip);
+                    ConvOvfFpHelper<int16_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I2_R8)
-                    ConvOvfFpHelper<int16_t, double>(stack, ip);
+                    ConvOvfFpHelper<int16_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U2_I4)
-                    ConvOvfHelper<uint16_t, int32_t>(stack, ip);
+                    ConvOvfHelper<uint16_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U2_I8)
-                    ConvOvfHelper<uint16_t, int64_t>(stack, ip);
+                    ConvOvfHelper<uint16_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U2_R4)
-                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
+                    ConvOvfFpHelper<uint16_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U2_R8)
-                    ConvOvfFpHelper<uint16_t, double>(stack, ip);
+                    ConvOvfFpHelper<uint16_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I4_U4)
-                    ConvOvfHelper<int32_t, uint32_t>(stack, ip);
+                    ConvOvfHelper<int32_t, uint32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I4_I8)
-                    ConvOvfHelper<int32_t, int64_t>(stack, ip);
+                    ConvOvfHelper<int32_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I4_R4)
-                    ConvOvfFpHelper<int32_t, float>(stack, ip);
+                    ConvOvfFpHelper<int32_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I4_R8)
-                    ConvOvfFpHelper<int32_t, double>(stack, ip);
+                    ConvOvfFpHelper<int32_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U4_I4)
-                    ConvOvfHelper<uint32_t, int32_t>(stack, ip);
+                    ConvOvfHelper<uint32_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U4_I8)
-                    ConvOvfHelper<uint32_t, int64_t>(stack, ip);
+                    ConvOvfHelper<uint32_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U4_R4)
-                    ConvOvfFpHelper<uint32_t, float>(stack, ip);
+                    ConvOvfFpHelper<uint32_t, float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U4_R8)
-                    ConvOvfFpHelper<uint32_t, double>(stack, ip);
+                    ConvOvfFpHelper<uint32_t, double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I8_U8)
-                    ConvOvfHelper<int64_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<int64_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I8_R4)
-                    ConvOvfFpHelperI64<float>(stack, ip);
+                    ConvOvfFpHelperI64<float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I8_R8)
-                    ConvOvfFpHelperI64<double>(stack, ip);
+                    ConvOvfFpHelperI64<double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U8_I4)
-                    ConvOvfHelper<uint64_t, int32_t>(stack, ip);
+                    ConvOvfHelper<uint64_t, int32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U8_I8)
-                    ConvOvfHelper<uint64_t, int64_t>(stack, ip);
+                    ConvOvfHelper<uint64_t, int64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U8_R4)
-                    ConvOvfFpHelperU64<float>(stack, ip);
+                    ConvOvfFpHelperU64<float>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U8_R8)
-                    ConvOvfFpHelperU64<double>(stack, ip);
+                    ConvOvfFpHelperU64<double>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I1_U4)
-                    ConvOvfHelper<int8_t, uint32_t>(stack, ip);
+                    ConvOvfHelper<int8_t, uint32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I1_U8)
-                    ConvOvfHelper<int8_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<int8_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U1_U4)
-                    ConvOvfHelper<uint8_t, uint32_t>(stack, ip);
+                    ConvOvfHelper<uint8_t, uint32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U1_U8)
-                    ConvOvfHelper<uint8_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<uint8_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I2_U4)
-                    ConvOvfHelper<int16_t, uint32_t>(stack, ip);
+                    ConvOvfHelper<int16_t, uint32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_I2_U8)
-                    ConvOvfHelper<int16_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<int16_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U2_U4)
-                    ConvOvfHelper<uint16_t, uint32_t>(stack, ip);
+                    ConvOvfHelper<uint16_t, uint32_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_OVF_U2_U8)
-                    ConvOvfHelper<uint16_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<uint16_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_I4_U8)
-                    ConvOvfHelper<int32_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<int32_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_CONV_OVF_U4_U8)
-                    ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
+                    ConvOvfHelper<uint32_t, uint64_t>(stack, ip, pFrame);
                     ip += 3;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_CONV_U4_U8_SAT)
@@ -1940,6 +1953,7 @@ SWITCH_OPCODE:
                 }
 
                 INTOP_CASE(INTOP_SAFEPOINT)
+                    pFrame->ip = ip;
                     if (g_TrapReturningThreads)
                     {
                         Thread *pThread = GetThread();
@@ -2223,7 +2237,7 @@ SWITCH_OPCODE:
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     int32_t i3;
                     if (!ClrSafeInt<int32_t>::addition(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2234,7 +2248,7 @@ SWITCH_OPCODE:
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
                     int64_t i3;
                     if (!ClrSafeInt<int64_t>::addition(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2245,7 +2259,7 @@ SWITCH_OPCODE:
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     uint32_t i3;
                     if (!ClrSafeInt<uint32_t>::addition(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2256,7 +2270,7 @@ SWITCH_OPCODE:
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
                     uint64_t i3;
                     if (!ClrSafeInt<uint64_t>::addition(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2284,7 +2298,7 @@ SWITCH_OPCODE:
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     int32_t i3;
                     if (!ClrSafeInt<int32_t>::subtraction(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2295,7 +2309,7 @@ SWITCH_OPCODE:
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
                     int64_t i3;
                     if (!ClrSafeInt<int64_t>::subtraction(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2306,7 +2320,7 @@ SWITCH_OPCODE:
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     uint32_t i3;
                     if (!ClrSafeInt<uint32_t>::subtraction(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2317,7 +2331,7 @@ SWITCH_OPCODE:
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
                     uint64_t i3;
                     if (!ClrSafeInt<uint64_t>::subtraction(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2345,7 +2359,7 @@ SWITCH_OPCODE:
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     int32_t i3;
                     if (!ClrSafeInt<int32_t>::multiply(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2357,7 +2371,7 @@ SWITCH_OPCODE:
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
                     int64_t i3;
                     if (!ClrSafeInt<int64_t>::multiply(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2369,7 +2383,7 @@ SWITCH_OPCODE:
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     uint32_t i3;
                     if (!ClrSafeInt<uint32_t>::multiply(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2381,7 +2395,7 @@ SWITCH_OPCODE:
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
                     uint64_t i3;
                     if (!ClrSafeInt<uint64_t>::multiply(i1, i2, i3))
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
                     INTOP_NEXT;
@@ -2391,9 +2405,9 @@ SWITCH_OPCODE:
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     if (i2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     if (i2 == -1 && i1 == INT32_MIN)
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 / i2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2403,9 +2417,9 @@ SWITCH_OPCODE:
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
                     if (l2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     if (l2 == -1 && l1 == INT64_MIN)
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 / l2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2422,7 +2436,7 @@ SWITCH_OPCODE:
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) / i2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2431,7 +2445,7 @@ SWITCH_OPCODE:
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) / l2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2442,9 +2456,9 @@ SWITCH_OPCODE:
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     if (i2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     if (i2 == -1 && i1 == INT32_MIN)
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 % i2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2454,9 +2468,9 @@ SWITCH_OPCODE:
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
                     if (l2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     if (l2 == -1 && l1 == INT64_MIN)
-                        COMPlusThrow(kOverflowException);
+                        INTERP_THROW(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 % l2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2473,7 +2487,7 @@ SWITCH_OPCODE:
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) % i2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2482,7 +2496,7 @@ SWITCH_OPCODE:
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
-                        COMPlusThrow(kDivideByZeroException);
+                        INTERP_THROW(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) % l2;
                     ip += 4;
                     INTOP_NEXT;
@@ -2766,6 +2780,7 @@ SWITCH_OPCODE:
                 }
                 INTOP_CASE(INTOP_CALL_HELPER_P_P)
                 {
+                    pFrame->ip = ip;
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
                     MethodDesc *pILTargetMethod = NULL;
@@ -2792,6 +2807,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_S)
                 {
+                    pFrame->ip = ip;
                     void* helperArg = LOCAL_VAR(ip[2], void*);
 
                     MethodDesc *pILTargetMethod = NULL;
@@ -2817,6 +2833,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
 
@@ -2844,6 +2861,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_SP)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[2], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
 
@@ -2871,6 +2889,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_G)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
@@ -2897,6 +2916,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_GS)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     void* helperArg2 = LOCAL_VAR(ip[3], void*);
@@ -2925,6 +2945,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_GA)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[3], void*);
@@ -2953,6 +2974,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_PA)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
 
@@ -2979,6 +3001,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_AGS)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
                     void* helperArg2 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -3009,6 +3032,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_APS)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
                     void* helperArg3 = LOCAL_VAR(ip[2], void*);
@@ -3038,6 +3062,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_SA)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
 
@@ -3064,6 +3089,7 @@ SWITCH_OPCODE:
                 }
                 INTOP_CASE(INTOP_CALL_HELPER_V_SS)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
                     MethodDesc *pILTargetMethod = NULL;
@@ -3090,6 +3116,7 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_SSS)
                 {
+                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
                     void* helperArg3 = LOCAL_VAR(ip[3], void*);
@@ -3119,6 +3146,7 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_CALLVIRT_TAIL)
                 INTOP_CASE(INTOP_CALLVIRT)
                 {
+                    pFrame->ip = ip;
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALLVIRT_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
@@ -3277,6 +3305,7 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_CALLDELEGATE_TAIL)
                 INTOP_CASE(INTOP_CALLDELEGATE)
                 {
+                    pFrame->ip = ip;
                     frameNeedsTailcallUpdate = (opcode == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
@@ -3482,6 +3511,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_NEWOBJ_GENERIC)
                 {
+                    pFrame->ip = ip;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[4];
@@ -3500,6 +3530,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_NEWOBJ)
                 {
+                    pFrame->ip = ip;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -3516,12 +3547,14 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_NEWMDARR)
                 {
+                    pFrame->ip = ip;
                     LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray((MethodTable*)pMethod->pDataItems[ip[3]], stack, ip[2], ip[4]);
                     ip += 5;
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_NEWMDARR_GENERIC)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     MethodTable *pMTArray = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[3], void*), pLookup);
 
@@ -3560,7 +3593,7 @@ CALL_INTERP_METHOD:
                     void* src = LOCAL_VAR(ip[2], void*);
                     uint32_t size = LOCAL_VAR(ip[3], uint32_t);
                     if (size && (!dst || !src))
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
                     else
                         memcpyNoGCRefs(dst, src, size);
                     ip += 4;
@@ -3572,7 +3605,7 @@ CALL_INTERP_METHOD:
                     uint8_t value = LOCAL_VAR(ip[2], uint8_t);
                     uint32_t size = LOCAL_VAR(ip[3], uint32_t);
                     if (size && !dst)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
                     else
                         memset(dst, value, size);
                     ip += 4;
@@ -3588,7 +3621,7 @@ CALL_INTERP_METHOD:
                         pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
                         if (pMemory == NULL)
                         {
-                            COMPlusThrowOM();
+                            INTERP_THROW(kOutOfMemoryException);
                         }
                         if (pMethod->initLocals)
                         {
@@ -3602,6 +3635,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_THROW)
                 {
+                    pFrame->ip = ip;
                     OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
                     if (!throwable)
                     {
@@ -3620,6 +3654,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_RETHROW)
                 {
+                    pFrame->ip = ip;
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchRethrownManagedException();
                     UNREACHABLE();
@@ -3633,6 +3668,7 @@ CALL_INTERP_METHOD:
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_UNBOX_ANY)
                 {
+                    pFrame->ip = ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
@@ -3674,6 +3710,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_UNBOX_ANY_GENERIC)
                 {
+                    pFrame->ip = ip;
                     int dreg = ip[1];
                     int sreg = ip[3];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
@@ -3706,6 +3743,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_UNBOX_END_GENERIC)
                 {
+                    pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     MethodTable *pMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
@@ -3718,6 +3756,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_NEWARR)
                 {
+                    pFrame->ip = ip;
                     int32_t length = LOCAL_VAR(ip[2], int32_t);
 
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
@@ -3731,6 +3770,7 @@ CALL_INTERP_METHOD:
                 }
                 INTOP_CASE(INTOP_NEWARR_GENERIC)
                 {
+                    pFrame->ip = ip;
                     int32_t length = LOCAL_VAR(ip[3], int32_t);
 
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
@@ -3748,13 +3788,13 @@ CALL_INTERP_METHOD:
 do {                                                                           \
     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);                             \
     if (arr == NULL)                                                           \
-        COMPlusThrow(kNullReferenceException);                                 \
+        INTERP_THROW(kNullReferenceException);                                 \
                                                                                \
     VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
-        COMPlusThrow(kIndexOutOfRangeException);                               \
+        INTERP_THROW(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
@@ -3807,13 +3847,13 @@ do {                                                                           \
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     Object* elem = *(Object**)(pData + idx * sizeof(OBJECTREF));
@@ -3826,13 +3866,13 @@ do {                                                                           \
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     size_t componentSize = arr->GetMethodTable()->GetComponentSize();
@@ -3846,13 +3886,13 @@ do {                                                                           \
 do {                                                                           \
     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);                             \
     if (arr == NULL)                                                           \
-        COMPlusThrow(kNullReferenceException);                                 \
+        INTERP_THROW(kNullReferenceException);                                 \
                                                                                \
     VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
     if (idx >= len)                                                            \
-        COMPlusThrow(kIndexOutOfRangeException);                               \
+        INTERP_THROW(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
@@ -3903,15 +3943,16 @@ do {                                                                           \
 #undef STELEM
                 INTOP_CASE(INTOP_STELEM_REF)
                 {
+                    pFrame->ip = ip;
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     OBJECTREF elemRef = LOCAL_VAR(ip[3], OBJECTREF);
 
@@ -3919,7 +3960,7 @@ do {                                                                           \
                     {
                         TypeHandle arrayElemType = arr->GetArrayElementTypeHandle();
                         if (!ObjIsInstanceOf(OBJECTREFToObject(elemRef), arrayElemType.AsMethodTable()))
-                            COMPlusThrow(kArrayTypeMismatchException);
+                            INTERP_THROW(kArrayTypeMismatchException);
 
                         // ObjIsInstanceOf can trigger GC, so the object references have to be re-fetched
                         arr = LOCAL_VAR(ip[1], ArrayBase*);
@@ -3936,13 +3977,13 @@ do {                                                                           \
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     size_t elemSize = ip[4];
@@ -3957,13 +3998,13 @@ do {                                                                           \
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     size_t elemSize = ip[4];
@@ -3977,13 +4018,13 @@ do {                                                                           \
                 {
                     ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
                     if (arr == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     size_t elemSize = ip[4];
@@ -3996,13 +4037,13 @@ do {                                                                           \
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
                     if (arrayRef == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     void* elemAddr = pData + idx * sizeof(void*);
@@ -4011,7 +4052,7 @@ do {                                                                           \
                     MethodTable* expectedMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     if (arrayElemMT != expectedMT)
                     {
-                        COMPlusThrow(kArrayTypeMismatchException);
+                        INTERP_THROW(kArrayTypeMismatchException);
                     }
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
@@ -4021,15 +4062,16 @@ do {                                                                           \
 
                 INTOP_CASE(INTOP_LDELEMA_REF_GENERIC)
                 {
+                    pFrame->ip = ip;
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
                     if (arrayRef == NULL)
-                        COMPlusThrow(kNullReferenceException);
+                        INTERP_THROW(kNullReferenceException);
 
                     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
                     void* elemAddr = pData + idx * sizeof(void*);
@@ -4039,7 +4081,7 @@ do {                                                                           \
                     MethodTable* expectedMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[4], void*), pLookup);
                     if (arrayElemMT != expectedMT)
                     {
-                        COMPlusThrow(kArrayTypeMismatchException);
+                        INTERP_THROW(kArrayTypeMismatchException);
                     }
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
@@ -4053,7 +4095,7 @@ do {                                                                           \
                     int64_t index = LOCAL_VAR(ip[3], int64_t);
                     if ((index < 0) || (index > UINT_MAX))
                     {
-                        COMPlusThrow(kIndexOutOfRangeException);
+                        INTERP_THROW(kIndexOutOfRangeException);
                     }
                     LOCAL_VAR(ip[1], int64_t) = index;
                     ip += 4;
@@ -4062,6 +4104,7 @@ do {                                                                           \
 
                 INTOP_CASE(INTOP_GENERICLOOKUP)
                 {
+                    pFrame->ip = ip;
                     int dreg = ip[1];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[3]];
                     void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -4114,7 +4157,7 @@ do {                                                                           \
                     if (shift & 8)
                     {
                         // Attempt to do 16-bit exchange on 2-byte unaligned address
-                        COMPlusThrow(kAccessViolationException);
+                        INTERP_THROW(kAccessViolationException);
                     }
                     ULONG mask = ~(((ULONG)0xFFFF) << shift);
                     do
@@ -4209,7 +4252,7 @@ do                                                                      \
                     if (shift & 1)
                     {
                         // Attempt to do 16-bit exchange on 2-byte unaligned address
-                        COMPlusThrow(kAccessViolationException);
+                        INTERP_THROW(kAccessViolationException);
                     }
                     ULONG mask = ~(((ULONG)0xFFFF) << shift);
                     do
@@ -4309,12 +4352,13 @@ do                                                                      \
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
                     goto EXIT_FRAME;
                 INTOP_CASE(INTOP_THROW_PNSE)
-                    COMPlusThrow(kPlatformNotSupportedException);
+                    INTERP_THROW(kPlatformNotSupportedException);
                     INTOP_NEXT;
 
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION_GENERIC)
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION)
                 {
+                    pFrame->ip = ip;
                     int32_t helperOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
                     int32_t ipAdjust = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
                     int32_t suspendDataOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
@@ -4389,6 +4433,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_CAPTURE_CONTEXT_ON_SUSPEND)
                 {
+                    pFrame->ip = ip;
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
 
                     if (continuation == NULL)
@@ -4503,6 +4548,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION_SUSPEND)
                 {
+                    pFrame->ip = ip;
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
 
@@ -4578,6 +4624,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION_RESUME)
                 {
+                    pFrame->ip = ip;
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
                     CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
