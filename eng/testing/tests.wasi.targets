@@ -87,6 +87,13 @@
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
 
+    <!-- Test projects are libraries (OutputType=Library), for which WasmGenerateAppBundle defaults to false.
+         Unlike browser (where the WebAssembly SDK bundles via static web assets), wasi has no such SDK, so the
+         in-tree WasiAppBuilder must run to populate the AppBundle. Force it on for local wasi test builds.
+         Set unconditionally: WasmApp.Common.targets is imported earlier and already defaulted this to 'false',
+         so a '== ''' guard would not take effect. A '/p:' override remains a global property and still wins. -->
+    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
+
     <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->
     <PublishTestAsSelfContainedDependsOn />
     <WasmNestedPublishAppDependsOn>PrepareForWasiBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
