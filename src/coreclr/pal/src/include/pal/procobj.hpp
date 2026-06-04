@@ -23,8 +23,6 @@ Abstract:
 
 namespace CorUnix
 {
-    extern CObjectType otProcess;
-
     PAL_ERROR
     InitializeProcessCommandLine(
         LPWSTR lpwstrCmdLine,
@@ -35,8 +33,6 @@ namespace CorUnix
     CreateInitialProcessAndThreadObjects(
         CPalThread *pThread
         );
-
-    extern IPalObject *g_pobjProcess;
 }
 
 #endif // _PAL_PROCOBJ_HPP_
