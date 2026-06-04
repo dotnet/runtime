@@ -237,11 +237,11 @@ namespace System.Diagnostics
 
                     sb.Append("   ").Append(word_At).Append(' ');
 
-                    bool isAsync = false;
+                    bool isAsync = (mb.MethodImplementationFlags & MethodImplAttributes.Async) != 0;
                     Type? declaringType = mb.DeclaringType;
                     string methodName = mb.Name;
                     bool methodChanged = false;
-                    if (declaringType != null && IsDefinedSafe(declaringType, typeof(CompilerGeneratedAttribute), inherit: false))
+                    if (!isAsync && declaringType != null && IsDefinedSafe(declaringType, typeof(CompilerGeneratedAttribute), inherit: false))
                     {
                         isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
                         if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
@@ -358,7 +358,7 @@ namespace System.Diagnostics
                     }
 
                     // Skip EDI boundary for async
-                    if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync && (mb.MethodImplementationFlags & MethodImplAttributes.Async) == 0)
+                    if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
                         sb.AppendLine();
                         // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
