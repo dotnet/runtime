@@ -147,6 +147,27 @@ namespace System.Threading.Tasks.Tests
             captures.Add((nameof(RuntimeAsync_WrapperTestC), GetCurrentWrapperSlot(nameof(RuntimeAsync_WrapperTestC))));
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_Level1()
+        {
+            await RuntimeAsync_ValueTask_Level2();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_Level2()
+        {
+            await RuntimeAsync_ValueTask_Level3();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_Level3()
+        {
+            await Task.Yield();
+        }
+
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventBufferHeaderFormat()
         {
@@ -1536,6 +1557,229 @@ namespace System.Threading.Tasks.Tests
                     .Count(m => m.Name.StartsWith(WrapperNamePrefix, StringComparison.Ordinal));
                 Assert.Equal(meta.WrapperCount, actualCount);
             }
+        }
+
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_EventSequenceOrder_Marker()
+        {
+            await RuntimeAsync_ValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_EventSequenceOrder()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_EventSequenceOrder_Marker());
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_EventSequenceOrder_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            ulong taskId = markerCallstacks[0].TaskId;
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateAsyncContext);
+            Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteAsyncContext, resumeIdx + 1);
+            Assert.True(completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_MethodEventsEmitted_Marker()
+        {
+            await RuntimeAsync_ValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_MethodEventsEmitted()
+        {
+            var events = await CollectEventsAsync(MethodKeywords | CoreKeywords, async () => await RuntimeAsync_ValueTask_MethodEventsEmitted_Marker());
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var methodEvents = stream.All
+                .Where(e => e.EventId is AsyncEventID.ResumeAsyncMethod or AsyncEventID.CompleteAsyncMethod)
+                .Select(e => e.EventId)
+                .ToList();
+
+            int resumeCount = methodEvents.Count(id => id == AsyncEventID.ResumeAsyncMethod);
+            int completeCount = methodEvents.Count(id => id == AsyncEventID.CompleteAsyncMethod);
+
+            // Marker -> Level1 -> Level2 -> Level3
+            Assert.True(resumeCount >= 4, $"Expected at least 4 ResumeAsyncMethod events for ValueTask chain, got {resumeCount}");
+            Assert.True(completeCount >= 4, $"Expected at least 4 CompleteAsyncMethod events for ValueTask chain, got {completeCount}");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker()
+        {
+            await RuntimeAsync_ValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker());
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // Async lambda -> Marker -> Level1 -> Level2 -> Level3.
+            Assert.Equal(5, markerCallstacks[0].FrameCount);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker()
+        {
+            await RuntimeAsync_ValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker());
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            var methodIds = markerCallstacks[0].Frames.Select(f => f.MethodId).ToList();
+            Assert.Equal(methodIds.Count, methodIds.Distinct().Count());
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_HandledException_InnerThrows_Marker()
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("valuetask inner throw");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_HandledException_Handled_Marker()
+        {
+            try
+            {
+                await RuntimeAsync_ValueTask_HandledException_InnerThrows_Marker();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker()
+        {
+            await RuntimeAsync_ValueTask_HandledException_Handled_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords | UnwindAsyncExceptionKeyword, async () => await RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker());
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            ulong taskId = markerCallstacks[0].TaskId;
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateAsyncContext);
+            Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
+
+            int unwindIdx = ids.IndexOf(AsyncEventID.UnwindAsyncException, resumeIdx + 1);
+            Assert.True(unwindIdx > resumeIdx, "Expected UnwindAsyncException after Resume");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteAsyncContext, unwindIdx + 1);
+            Assert.True(completeIdx > unwindIdx, "Expected CompleteAsyncContext after Unwind");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_UnhandledException_UnhandledOuter_Marker()
+        {
+            await RuntimeAsync_ValueTask_UnhandledException_UnhandledInner_Marker();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_UnhandledException_UnhandledInner_Marker()
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("valuetask unhandled inner");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async ValueTask RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker()
+        {
+            await RuntimeAsync_ValueTask_UnhandledException_UnhandledOuter_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords | UnwindAsyncExceptionKeyword, async () =>
+            {
+                try
+                {
+                    await RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker();
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            ulong taskId = markerCallstacks[0].TaskId;
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateAsyncContext);
+            Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
+
+            int unwindIdx = ids.IndexOf(AsyncEventID.UnwindAsyncException, resumeIdx + 1);
+            Assert.True(unwindIdx > resumeIdx, "Expected UnwindAsyncException after Resume");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteAsyncContext, unwindIdx + 1);
+            Assert.True(completeIdx > unwindIdx, "Expected CompleteAsyncContext after Unwind");
         }
     }
 }
