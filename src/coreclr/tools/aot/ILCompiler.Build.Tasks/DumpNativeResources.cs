@@ -46,7 +46,7 @@ namespace Build.Tasks
                 if (resourceDirectory.Size != 0
                     && peFile.PEHeaders.TryGetDirectoryOffset(resourceDirectory, out int rsrcOffset))
                 {
-                    using (var bw = new BinaryWriter(File.OpenWrite(ResourceFile)))
+                    using (var bw = new BinaryWriter(File.Create(ResourceFile)))
                     {
                         ResWriter.WriteResources(peFile, rsrcOffset, resourceDirectory.Size, bw);
                     }
