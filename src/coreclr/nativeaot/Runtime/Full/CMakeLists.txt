@@ -31,6 +31,12 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
+  # The relocatable object includes UnwindHelpers.cpp so its references to
+  # libunwind implementation symbols are resolved before localization. The
+  # localize list is generated only from the bundled libunwind source objects;
+  # weak template instantiations emitted from libunwind headers in runtime-owned
+  # sources are not the strong duplicate-symbol problem this targets.
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*UnwindHelpers\\.cpp\\.o$>")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
   if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER MATCHES "(^|/)llvm-link(-[0-9.]+)?(\\.exe)?$")
     get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${CMAKE_NM}" DIRECTORY)
@@ -40,11 +46,11 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
   add_custom_command(
     OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    COMMAND "${CMAKE_COMMAND}"
-            "-DNM_TOOL=${CMAKE_NM}"
-            "-DOUTPUT_FILE=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
-            "-DOBJECT_FILES=$<JOIN:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,|>"
-            -P "${CMAKE_CURRENT_LIST_DIR}/GeneratePrivateLibunwindSymbols.cmake"
+    # Generate the objcopy symbol list from libunwind-owned object files only.
+    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only \"$@\" | awk '/^[0-9A-Fa-f]+[ \t]+[A-Za-z][ \t]+[^ \t]+$/ { print $3 }' | sort -u > \"$0\""
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${CMAKE_NM}"
+            ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
     COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_OBJCOPY}"
             "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
@@ -52,7 +58,6 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
     DEPENDS
       Runtime.PrivateLibunwind
       $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
-      "${CMAKE_CURRENT_LIST_DIR}/GeneratePrivateLibunwindSymbols.cmake"
     BYPRODUCTS "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
     COMMENT "Privatizing NativeAOT libunwind symbols"
     COMMAND_EXPAND_LISTS
