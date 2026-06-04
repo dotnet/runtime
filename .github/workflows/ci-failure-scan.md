@@ -304,7 +304,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 <signature-id>  <outcome>  <reason>
 ```
 
-`<outcome>` is one of: `filed-issue #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
+`<outcome>` is one of: `filed-issue #aw_<id>`, `existing-kbe #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
 A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
 
