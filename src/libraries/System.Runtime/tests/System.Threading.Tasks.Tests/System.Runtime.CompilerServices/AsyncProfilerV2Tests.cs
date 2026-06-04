@@ -12,43 +12,36 @@ using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    /// <summary>
-    /// Tests for V2 (runtime-async) async profiler event emission. All scenario methods use
-    /// [RuntimeAsyncMethodGeneration(true)] to ensure they exercise the runtime-async path.
-    /// V2 emits Create/Resume/Suspend/Complete callstacks natively from the runtime dispatch
-    /// loop, unlike V1 which uses the AsyncStateMachineBox dispatcher wrapper.
-    /// </summary>
+    // Tests for V2 (runtime-async) async profiler event emission. All scenario methods use
+    // [RuntimeAsyncMethodGeneration(true)] to ensure they exercise the runtime-async path.
+    // V2 emits Create/Resume/Suspend/Complete callstacks natively from the runtime dispatch
+    // loop, unlike V1 which uses the AsyncStateMachineBox dispatcher wrapper.
     public partial class AsyncProfilerTests
     {
-        // --- V2 (runtime-async) scenario helpers ---
-        // Named with RuntimeAsync_* prefix to mirror the V1 TaskAsync_* convention and the
-        // RuntimeAsync_* test method prefix. All use RuntimeAsyncMethodGeneration(true) to
-        // force the runtime-async code path.
-
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_SingleYield()
+        private static async Task RuntimeAsync_SingleYield()
         {
             await Task.Yield();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_ChainedYield()
+        private static async Task RuntimeAsync_ChainedYield()
         {
             await RuntimeAsync_InnerYield();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_InnerYield()
+        private static async Task RuntimeAsync_InnerYield()
         {
             await Task.Yield();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_OuterCatches()
+        private static async Task RuntimeAsync_OuterCatches()
         {
             try
             {
@@ -62,7 +55,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_InnerThrows()
+        private static async Task RuntimeAsync_InnerThrows()
         {
             await Task.Yield();
             throw new InvalidOperationException("inner");
@@ -70,7 +63,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepOuterCatches()
+        private static async Task RuntimeAsync_DeepOuterCatches()
         {
             try
             {
@@ -83,14 +76,14 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepMiddle()
+        private static async Task RuntimeAsync_DeepMiddle()
         {
             await RuntimeAsync_DeepInnerThrows();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepInnerThrows()
+        private static async Task RuntimeAsync_DeepInnerThrows()
         {
             await Task.Yield();
             throw new InvalidOperationException("deep inner");
@@ -98,21 +91,21 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepUnhandledOuter()
+        private static async Task RuntimeAsync_DeepUnhandledOuter()
         {
             await RuntimeAsync_DeepUnhandledMiddle();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepUnhandledMiddle()
+        private static async Task RuntimeAsync_DeepUnhandledMiddle()
         {
             await RuntimeAsync_DeepUnhandledInnerThrows();
         }
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_DeepUnhandledInnerThrows()
+        private static async Task RuntimeAsync_DeepUnhandledInnerThrows()
         {
             await Task.Yield();
             throw new InvalidOperationException("deep unhandled");
@@ -120,7 +113,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_RecursiveChain(int depth)
+        private static async Task RuntimeAsync_RecursiveChain(int depth)
         {
             if (depth <= 1)
             {
@@ -132,7 +125,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_WrapperTestA(List<(string MethodName, int WrapperSlot)> captures)
+        private static async Task RuntimeAsync_WrapperTestA(List<(string MethodName, int WrapperSlot)> captures)
         {
             await RuntimeAsync_WrapperTestB(captures);
             captures.Add((nameof(RuntimeAsync_WrapperTestA), GetCurrentWrapperSlot(nameof(RuntimeAsync_WrapperTestA))));
@@ -140,7 +133,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_WrapperTestB(List<(string MethodName, int WrapperSlot)> captures)
+        private static async Task RuntimeAsync_WrapperTestB(List<(string MethodName, int WrapperSlot)> captures)
         {
             await RuntimeAsync_WrapperTestC(captures);
             captures.Add((nameof(RuntimeAsync_WrapperTestB), GetCurrentWrapperSlot(nameof(RuntimeAsync_WrapperTestB))));
@@ -148,7 +141,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static async Task RuntimeAsync_WrapperTestC(List<(string MethodName, int WrapperSlot)> captures)
+        private static async Task RuntimeAsync_WrapperTestC(List<(string MethodName, int WrapperSlot)> captures)
         {
             await Task.Yield();
             captures.Add((nameof(RuntimeAsync_WrapperTestC), GetCurrentWrapperSlot(nameof(RuntimeAsync_WrapperTestC))));
@@ -204,7 +197,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SuspendResumeCompleteMarker()
+        private static async Task RuntimeAsync_SuspendResumeCompleteEvents_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_SingleYield();
@@ -213,15 +206,15 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendResumeCompleteEvents()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SuspendResumeCompleteMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendResumeCompleteEvents_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find our context via marker callstack.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(SuspendResumeCompleteMarker));
-            Assert.True(markerCallstacks.Count > 0, "Expected at least one callstack with SuspendResumeCompleteMarker");
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_SuspendResumeCompleteEvents_Marker));
+            Assert.NotEmpty(markerCallstacks);
 
             ulong taskId = markerCallstacks[0].TaskId;
             var taskEvts = stream.ForTask(taskId);
@@ -235,7 +228,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task ContextLifecycleMarker()
+        private static async Task RuntimeAsync_ContextEventIdLifecycle_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_SingleYield();
@@ -244,15 +237,15 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ContextEventIdLifecycle()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, ContextLifecycleMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ContextEventIdLifecycle_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find events in the context that contains our marker method.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(ContextLifecycleMarker));
-            Assert.True(markerCallstacks.Count > 0, "Expected at least one callstack with ContextLifecycleMarker");
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ContextEventIdLifecycle_Marker));
+            Assert.NotEmpty(markerCallstacks);
 
             ulong taskId = markerCallstacks[0].TaskId;
             Assert.True(taskId > 0, "Context ID should be non-zero");
@@ -281,7 +274,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task EventSequenceOrderMarker()
+        private static async Task RuntimeAsync_EventSequenceOrder_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_SingleYield();
@@ -290,15 +283,15 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventSequenceOrder()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, EventSequenceOrderMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_EventSequenceOrder_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find our context via marker callstack.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(EventSequenceOrderMarker));
-            Assert.True(markerCallstacks.Count > 0, "Expected at least one callstack with EventSequenceOrderMarker");
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_EventSequenceOrder_Marker));
+            Assert.NotEmpty(markerCallstacks);
 
             ulong taskId = markerCallstacks[0].TaskId;
             var taskEvts = stream.ForTask(taskId);
@@ -331,7 +324,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CreateCallstackMarker()
+        private static async Task RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker()
         {
             await RuntimeAsync_SingleYield();
         }
@@ -339,12 +332,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CreateCallstackMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreateCallstackMarker));
+            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker));
 
             Assert.NotEmpty(createCallstacks);
             Assert.All(createCallstacks, cs =>
@@ -358,7 +351,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CreateCallstackDepthMarker()
+        private static async Task RuntimeAsync_CreateCallstackDepthMatchesChain_Marker()
         {
             await RuntimeAsync_ChainedYield();
         }
@@ -366,17 +359,17 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CreateCallstackDepthMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateCallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreateCallstackDepthMarker));
+            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(RuntimeAsync_CreateCallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
-            // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> CreateCallstackDepthMarker
+            // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> RuntimeAsync_CreateCallstackDepthMatchesChain_Marker
             Assert.NotEmpty(createCallstacks);
-            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(RuntimeAsync_ChainedYield), nameof(CreateCallstackDepthMarker)];
+            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(RuntimeAsync_ChainedYield), nameof(RuntimeAsync_CreateCallstackDepthMatchesChain_Marker)];
             Assert.True(
                 HasCallstackWithExpectedFrames(createCallstacks, expectedFrames),
                 $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
@@ -384,7 +377,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SuspendCallstackMarker()
+        private static async Task RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_SingleYield();
@@ -393,12 +386,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SuspendCallstackMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendCallstackMarker));
+            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker));
 
             Assert.NotEmpty(suspendCallstacks);
             Assert.All(suspendCallstacks, cs =>
@@ -411,7 +404,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SuspendDepthMarker()
+        private static async Task RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_ChainedYield();
@@ -420,17 +413,17 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SuspendDepthMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendDepthMarker));
+            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
-            // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> SuspendDepthMarker
+            // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker
             Assert.NotEmpty(suspendCallstacks);
-            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(RuntimeAsync_ChainedYield), nameof(SuspendDepthMarker)];
+            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(RuntimeAsync_ChainedYield), nameof(RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker)];
             Assert.True(
                 HasCallstackWithExpectedFrames(suspendCallstacks, expectedFrames),
                 $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
@@ -438,7 +431,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SuspendPrecedesCompleteMarker()
+        private static async Task RuntimeAsync_SuspendCallstackPrecedesComplete_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -447,15 +440,15 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackPrecedesComplete()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SuspendPrecedesCompleteMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackPrecedesComplete_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find the suspend callstack via marker to get the context ID
-            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendPrecedesCompleteMarker));
-            Assert.True(suspendStacks.Count >= 1, $"Expected at least one suspend callstack with marker, got {suspendStacks.Count}");
+            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackPrecedesComplete_Marker));
+            Assert.NotEmpty(suspendStacks);
 
             ulong taskId = suspendStacks[0].TaskId;
             Assert.True(taskId > 0, "Expected non-zero context ID");
@@ -473,7 +466,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SuspendDeeperMarker()
+        private static async Task RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -482,16 +475,16 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDeeperThanInitialResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SuspendDeeperMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(SuspendDeeperMarker));
-            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(SuspendDeeperMarker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
+            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
 
-            Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker, got {resumeStacks.Count}");
-            Assert.True(suspendStacks.Count >= 1, $"Expected at least one suspend callstack with marker, got {suspendStacks.Count}");
+            Assert.NotEmpty(resumeStacks);
+            Assert.NotEmpty(suspendStacks);
 
             // First resume (after initial Yield) should be shallow, first suspend (RuntimeAsync_InnerYield's Yield) should be deeper
             var firstResume = resumeStacks[0];
@@ -502,7 +495,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CreatePrecedesResumeMarker()
+        private static async Task RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -511,13 +504,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackPrecedesResumeCallstack()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CreatePrecedesResumeMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreatePrecedesResumeMarker));
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CreatePrecedesResumeMarker));
+            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
 
             Assert.NotEmpty(createStacks);
             Assert.NotEmpty(resumeStacks);
@@ -539,7 +532,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CreateResumeMatchMarker()
+        private static async Task RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -548,13 +541,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAndFirstResumeCallstacksMatch()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CreateResumeMatchMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(CreateResumeMatchMarker));
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CreateResumeMatchMarker));
+            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
 
             Assert.NotEmpty(createStacks);
             Assert.NotEmpty(resumeStacks);
@@ -580,7 +573,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CallstackOnResumeMarker()
+        private static async Task RuntimeAsync_CallstackEmittedOnResume_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -589,12 +582,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackEmittedOnResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CallstackOnResumeMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackEmittedOnResume_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CallstackOnResumeMarker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackEmittedOnResume_Marker));
 
             Assert.NotEmpty(callstacks);
             Assert.All(callstacks, cs =>
@@ -607,7 +600,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CallstackDepthMarker()
+        private static async Task RuntimeAsync_CallstackDepthMatchesChain_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -616,17 +609,17 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, CallstackDepthMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CallstackDepthMarker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
-            // RuntimeAsync_InnerYield -> CallstackDepthMarker
+            // RuntimeAsync_InnerYield -> RuntimeAsync_CallstackDepthMatchesChain_Marker
             Assert.NotEmpty(callstacks);
-            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(CallstackDepthMarker)];
+            string[] expectedFrames = [nameof(RuntimeAsync_InnerYield), nameof(RuntimeAsync_CallstackDepthMatchesChain_Marker)];
             Assert.True(
                 HasCallstackWithExpectedFrames(callstacks, expectedFrames),
                 $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
@@ -634,7 +627,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SimulationNormalMarker()
+        private static async Task RuntimeAsync_CallstackSimulation_NormalCompletion_Marker()
         {
             await Task.Yield();
             await RuntimeAsync_InnerYield();
@@ -643,17 +636,17 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_NormalCompletion()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SimulationNormalMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_NormalCompletion_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            AssertCallstackSimulationReachesZero(stream, nameof(SimulationNormalMarker));
+            AssertCallstackSimulationReachesZero(stream, nameof(RuntimeAsync_CallstackSimulation_NormalCompletion_Marker));
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SimulationHandledMarker()
+        private static async Task RuntimeAsync_CallstackSimulation_HandledException_Marker()
         {
             await RuntimeAsync_DeepOuterCatches();
         }
@@ -661,28 +654,28 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_HandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SimulationHandledMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            AssertCallstackSimulationReachesZero(stream, nameof(SimulationHandledMarker));
+            AssertCallstackSimulationReachesZero(stream, nameof(RuntimeAsync_CallstackSimulation_HandledException_Marker));
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SimulationUnhandledMarker()
+        private static async Task RuntimeAsync_CallstackSimulation_UnhandledException_Marker()
         {
             await RuntimeAsync_DeepUnhandledOuter();
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task SimulationUnhandledMarkerCatcher()
+        private static async Task RuntimeAsync_CallstackSimulation_UnhandledException_Catcher_Marker()
         {
             try
             {
-                await SimulationUnhandledMarker();
+                await RuntimeAsync_CallstackSimulation_UnhandledException_Marker();
             }
             catch (InvalidOperationException)
             {
@@ -692,28 +685,28 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_UnhandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, SimulationUnhandledMarkerCatcher);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_UnhandledException_Catcher_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            AssertCallstackSimulationReachesZero(stream, nameof(SimulationUnhandledMarker));
+            AssertCallstackSimulationReachesZero(stream, nameof(RuntimeAsync_CallstackSimulation_UnhandledException_Marker));
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task UnhandledUnwindMarker()
+        private static async Task RuntimeAsync_UnhandledExceptionUnwind_Marker()
         {
             await RuntimeAsync_DeepUnhandledOuter();
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task UnhandledUnwindCatcher()
+        private static async Task RuntimeAsync_UnhandledExceptionUnwind_Catcher_Marker()
         {
             try
             {
-                await UnhandledUnwindMarker();
+                await RuntimeAsync_UnhandledExceptionUnwind_Marker();
             }
             catch (InvalidOperationException)
             {
@@ -723,13 +716,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_UnhandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, UnhandledUnwindCatcher);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_UnhandledExceptionUnwind_Catcher_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(UnhandledUnwindMarker));
-            Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{nameof(UnhandledUnwindMarker)}'");
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_UnhandledExceptionUnwind_Marker));
+            Assert.NotEmpty(resumeStacks);
 
             ulong taskId = resumeStacks[0].TaskId;
 
@@ -741,7 +734,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(AsyncEventID.CompleteAsyncContext, eventIds);
 
             // Verify unwind frame count for this task
-            // UnhandledUnwindMarker -> RuntimeAsync_DeepUnhandledOuter -> RuntimeAsync_DeepUnhandledMiddle -> RuntimeAsync_DeepUnhandledInnerThrows, 4 frames deep after the initial resume.
+            // Marker -> RuntimeAsync_DeepUnhandledOuter -> RuntimeAsync_DeepUnhandledMiddle -> RuntimeAsync_DeepUnhandledInnerThrows, 4 frames deep after the initial resume.
             var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.UnwindAsyncException).ToList();
             Assert.NotEmpty(unwindEvents);
             Assert.All(unwindEvents, e => Assert.Equal(4u, e.UnwindFrameCount));
@@ -749,7 +742,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task HandledUnwindMarker()
+        private static async Task RuntimeAsync_HandledExceptionUnwind_Marker()
         {
             await RuntimeAsync_DeepOuterCatches();
         }
@@ -757,13 +750,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_HandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, HandledUnwindMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_HandledExceptionUnwind_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(HandledUnwindMarker));
-            Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{nameof(HandledUnwindMarker)}'");
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_HandledExceptionUnwind_Marker));
+            Assert.NotEmpty(resumeStacks);
 
             ulong taskId = resumeStacks[0].TaskId;
 
@@ -925,14 +918,25 @@ namespace System.Threading.Tasks.Tests
                 listener.RunWithCallback(e =>
                 {
                     if (!workerIdReady.IsSet)
+                    {
                         return;
+                    }
+
                     if (e.EventId != AsyncEventsId || e.Payload is null || e.Payload.Count == 0)
+                    {
                         return;
+                    }
+
                     if (e.Payload[0] is not byte[] payload)
+                    {
                         return;
+                    }
+
                     EventBufferHeader? header = ParseEventBufferHeader(payload);
                     if (header is not null && header.Value.OsThreadId == workerOsThreadId)
+                    {
                         events.Events.Enqueue(e);
+                    }
                 }, () =>
                 {
                     SendFlushCommand();
@@ -1098,7 +1102,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task KeywordGatekeepingMarker()
+        private static async Task RuntimeAsync_KeywordGatekeeping_Marker()
         {
             await RuntimeAsync_OuterCatches();
             await RuntimeAsync_ChainedYield();
@@ -1118,7 +1122,7 @@ namespace System.Threading.Tasks.Tests
             // Run a scenario that exercises all event types: resume, suspend,
             // complete, method events, callstacks, and exception unwinds.
             // Only the events matching the enabled keyword should be emitted.
-            var events = await CollectEventsAsync(kw, KeywordGatekeepingMarker);
+            var events = await CollectEventsAsync(kw, RuntimeAsync_KeywordGatekeeping_Marker);
 
             // DumpAllEvents(events);
 
@@ -1192,7 +1196,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task NativeIPDeltaRoundtripMarker()
+        private static async Task RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker()
         {
             await RuntimeAsync_ChainedYield();
             await RuntimeAsync_DeepOuterCatches();
@@ -1207,10 +1211,10 @@ namespace System.Threading.Tasks.Tests
             // methods at different JIT-assigned addresses, the deltas between consecutive
             // NativeIPs will naturally span both directions. This exercises the full
             // zigzag + LEB128 encode/decode path through the production serializer.
-            var events = await CollectEventsAsync(CallstackKeywords, NativeIPDeltaRoundtripMarker);
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(NativeIPDeltaRoundtripMarker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker));
             Assert.NotEmpty(callstacks);
 
             // Find callstacks with 3+ frames — enough depth for meaningful deltas.
@@ -1251,7 +1255,7 @@ namespace System.Threading.Tasks.Tests
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static async Task CallstackStressMarker(int depth)
+        private static async Task RuntimeAsync_CallstackStressWithVaryingDepths_Marker(int depth)
         {
             await RuntimeAsync_RecursiveChain(depth);
         }
@@ -1266,7 +1270,7 @@ namespace System.Threading.Tasks.Tests
             // Stress test: run many async calls with varying callstack depths.
             // Varying sizes mean some callstacks will land at buffer boundaries,
             // naturally exercising the overflow/rewind path in callstack emission.
-            // lambda -> CallstackStressMarker(d) -> RuntimeAsync_RecursiveChain(d) produces d + 2 frames.
+            // lambda -> Marker(d) -> RuntimeAsync_RecursiveChain(d) produces d + 2 frames.
             const int iterations = 200;
             int[] depths = new int[iterations];
             var rng = new Random(42);
@@ -1278,14 +1282,14 @@ namespace System.Threading.Tasks.Tests
                 RunScenarioAndFlush(async () =>
                 {
                     for (int i = 0; i < iterations; i++)
-                        await CallstackStressMarker(depths[i]);
+                        await RuntimeAsync_CallstackStressWithVaryingDepths_Marker(depths[i]);
                 });
             });
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(CallstackStressMarker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackStressWithVaryingDepths_Marker));
 
             // Verify all callstacks have valid frame data that resolves to managed methods.
             foreach (var cs in callstacks)
@@ -1303,15 +1307,15 @@ namespace System.Threading.Tasks.Tests
             }
 
             // One resume callstack per iteration (marker filters out noise).
-            // lambda -> CallstackStressMarker -> RuntimeAsync_RecursiveChain(d) produces d + 2 frames.
+            // lambda -> Marker -> RuntimeAsync_RecursiveChain(d) produces d + 2 frames.
             Assert.True(callstacks.Count >= iterations, $"Expected at least {iterations} callstacks with marker, got {callstacks.Count}");
 
             for (int i = 0; i < iterations; i++)
             {
-                // lambda + CallstackStressMarker + RuntimeAsync_RecursiveChain(d) = d + 2
+                // lambda + Marker + RuntimeAsync_RecursiveChain(d) = d + 2
                 int expected = depths[i] + 2;
                 int actual = callstacks[i].FrameCount;
-                Assert.True(actual == expected, $"Iteration {i}: expected depth {expected} (lambda -> CallstackStressMarker -> RuntimeAsync_RecursiveChain({depths[i]})), got {actual}");
+                Assert.True(actual == expected, $"Iteration {i}: expected depth {expected} (lambda -> Marker -> RuntimeAsync_RecursiveChain({depths[i]})), got {actual}");
             }
 
             // Verify multiple buffer flushes occurred.

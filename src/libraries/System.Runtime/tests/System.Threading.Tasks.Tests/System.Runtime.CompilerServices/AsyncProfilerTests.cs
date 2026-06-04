@@ -519,12 +519,12 @@ namespace System.Threading.Tasks.Tests
             // AppendAsyncCallstack events for the same context, up until the next Suspend/Complete on that
             // context.
             //
-            /// V1 dispatchers may emit a partial Resume callstack when the parent continuation hasn't yet
-            /// registered (race between dispatcher pickup and parent's AwaitUnsafeOnCompleted). Frames that
-            /// register later are emitted as AppendAsyncCallstack at the next hook point. Merging produces
-            /// the complete chain that was observable during the dispatcher's lifetime.
-            ///
-            /// Returns one ParsedEvent per Resume, with Frames and FrameCount reflecting the merged total.
+            // V1 dispatchers may emit a partial Resume callstack when the parent continuation hasn't yet
+            // registered (race between dispatcher pickup and parent's AwaitUnsafeOnCompleted). Frames that
+            // register later are emitted as AppendAsyncCallstack at the next hook point. Merging produces
+            // the complete chain that was observable during the dispatcher's lifetime.
+            //
+            // Returns one ParsedEvent per Resume, with Frames and FrameCount reflecting the merged total.
             public List<ParsedEvent> MergedResumeCallstacks()
             {
                 var result = new List<ParsedEvent>();
