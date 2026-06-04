@@ -31,24 +31,49 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.nm")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize.unsorted")
   # The relocatable object includes runtime-owned objects so their references to
   # libunwind implementation symbols are resolved before localization. The
   # localize list is generated only from the bundled libunwind source objects.
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
-  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER MATCHES "(^|/)llvm-link(-[0-9.]+)?(\\.exe)?$")
-    get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${CMAKE_NM}" DIRECTORY)
-    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR}/ld.lld")
+  get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" NAME)
+  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME MATCHES "^llvm-link(-[0-9.]+)?(\\.exe)?$")
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION "${CMAKE_MATCH_1}")
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION "${CMAKE_MATCH_2}")
+    get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" DIRECTORY)
+    find_program(NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD
+      NAMES "ld.lld${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION}${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION}" ld.lld
+      PATHS "${NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR}"
+      NO_DEFAULT_PATH)
+    if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD)
+      message(FATAL_ERROR "ld.lld is required to privatize NativeAOT libunwind symbols")
+    endif()
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD}")
   endif()
 
   add_custom_command(
     OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-    COMMAND "${CMAKE_COMMAND}" -E rm -f "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     # Generate the objcopy symbol list from libunwind-owned object files only.
-    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only \"$@\" | awk '/^[0-9A-Fa-f]+[ \t]+[A-Za-z][ \t]+[^ \t]+$/ { print $3 }' | sort -u > \"$0\""
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only \"$@\" > \"$0\""
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
             "${CMAKE_NM}"
             ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
+    COMMAND "${CMAKE_COMMAND}" -E touch "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND awk -v "out=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+            "/^[0-9A-Fa-f]+[ \t]+[A-Za-z][ \t]+[^ \t]+$/ { print \$3 > out }"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
+    COMMAND sort -u -o
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_OBJCOPY}"
             "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
