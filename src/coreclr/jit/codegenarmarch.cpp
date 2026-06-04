@@ -708,6 +708,46 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+        case NI_PRIMITIVE_PopCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidFloatReg(tmpReg));
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            emitAttr attr = emitTypeSize(srcNode->TypeGet());
+
+            if (attr != EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_I(INS_movi, EA_8BYTE, tmpReg, 0, INS_OPTS_8B);
+            }
+            GetEmitter()->emitIns_R_R_I(INS_ins, attr, tmpReg, srcReg, 0, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_cnt, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R(INS_addv, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R_I(INS_umov, attr, dstReg, tmpReg, 0, INS_OPTS_NONE);
+            break;
+        }
+
+        case NI_PRIMITIVE_TrailingZeroCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            GetEmitter()->emitIns_R_R(INS_rbit, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_clz, emitActualTypeSize(srcNode), dstReg, dstReg, INS_OPTS_NONE);
+            break;
+        }
 #endif // TARGET_ARM64
 
         case NI_System_Math_Sqrt:
@@ -3353,6 +3393,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // mrs
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
+            // We remove x0 here since the linker relaxation
+            // sequence will rewrite the instructions we are emitting here with
+            // instructions that may clobber these registers.
+            // (This is more important for the emitter, but we match it here
+            // for symmetry and to avoid confusion about the state of the
+            // registers.)
+            gcInfo.gcMarkRegSetNpt(RBM_R0);
+
             // adrp
             // ldr
             // add
@@ -3439,6 +3487,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 regNumber tmpReg = internalRegisters.GetSingle(call);
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
                 params.callType = EC_INDIR_R;
+                params.addr     = nullptr;
                 params.ireg     = tmpReg;
                 genEmitCallWithCurrentGC(params);
             }
@@ -3823,7 +3872,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         //  -saved off FP
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
@@ -3841,6 +3890,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncThreadObjectVar) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
@@ -4004,11 +4060,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
@@ -4476,6 +4527,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     }
 #endif // DEBUG
 
+#if defined(TARGET_ARM64)
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+#endif // TARGET_ARM64
+
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.
     int frameType = 0;
@@ -4873,14 +4931,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 }
 
 #if defined(TARGET_ARM64)
-/*****************************************************************************
- *
- * Generates code for creating the UnknownSizeFrame stack space.
- *
- * See Compiler::UnknownSizeFrame for implementation details. The space contains
- * stack allocations for Vector<T>.
- */
-
+//----------------------------------------------------------------------------
+//
+// genUnknownSizeFrame: Generates code for creating the UnknownSizeFrame stack space.
+//
+// See Compiler::UnknownSizeFrame for implementation details. The space contains
+// stack allocations for Vector<T>.
+//
 void CodeGen::genUnknownSizeFrame()
 {
     assert(m_compiler->compLocallocUsed && m_compiler->compUsesUnknownSizeFrame);

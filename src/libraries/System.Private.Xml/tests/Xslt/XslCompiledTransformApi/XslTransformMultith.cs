@@ -35,8 +35,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd;           // Loads XML file
@@ -320,8 +319,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd; // Loads XML file

@@ -32,14 +32,14 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task AOT_InvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization);
 
         // TODO: What else should we use to verify a relinked build?
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
 
@@ -61,6 +61,10 @@ namespace Wasm.Build.Tests
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
+            // The InvariantGlobalization test program does not use JS interop, so the JS interop
+            // assembly would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js
+            // (which calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var globalizationMode = invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
             PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode, AOT: aot), isNativeBuild: isNativeBuild);

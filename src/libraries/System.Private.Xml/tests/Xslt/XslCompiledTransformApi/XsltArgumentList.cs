@@ -17,8 +17,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetParam", Desc = "Get Param Test Cases")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgIntegrity : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -602,7 +601,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetExtensionObject", Desc = "XsltArgumentList.GetExtensionObject")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgGetExtObj : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -986,7 +985,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgAddParam : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1691,7 +1690,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgAddParamMisc : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2419,7 +2418,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgAddExtObj : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3396,7 +3395,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltArgumentList - RemoveParam : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgRemoveParam : XsltApiTestCaseBase2
     {
         private string _baseline = string.Empty;
@@ -3956,7 +3955,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : URI, Reader", Desc = "URI,READER")]
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgRemoveExtObj : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -4223,7 +4222,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - Clear", Desc = "XsltArgumentList.Clear")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CArgClear : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -4477,7 +4476,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "XsltArgumentList - Events", Desc = "Events raised by xsl:message")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class XsltEvents : XsltApiTestCaseBase2
     {
         public bool EventRaised;
@@ -4602,7 +4601,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "XPathNodeIterator Tests", Desc = "XPathNodeIterator Tests using XsltArgumentList")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class XPathNodeIteratorTests : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

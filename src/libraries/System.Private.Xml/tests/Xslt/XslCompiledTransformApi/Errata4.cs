@@ -13,8 +13,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "Xml 4th Errata tests for XslCompiledTransform", Params = new object[] { 300 })]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class Errata4 : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

@@ -469,6 +469,7 @@ enum GenTreeFlags : unsigned
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
+    GTF_FLD_TGT_NONFAULTING     = 0x20000000, // GT_FIELD_ADDR -- consuming indir must perform the implicit null check.
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
@@ -3339,6 +3340,7 @@ struct GenTreeIntConCommon : public GenTree
     inline ssize_t IconValue() const;
     inline void    SetIconValue(ssize_t val);
     inline INT64   IntegralValue() const;
+    UINT64         UnsignedIntegralValue() const;
     inline void    SetIntegralValue(int64_t value);
 
     template <typename T>
@@ -3538,7 +3540,7 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #ifdef TARGET_64BIT
     return LngValue();
 #else
-    return OperIs(GT_CNS_LNG) ? LngValue() : (INT64)IconValue();
+    return OperIs(GT_CNS_LNG) ? LngValue() : static_cast<INT64>(IconValue());
 #endif // TARGET_64BIT
 }
 
@@ -3849,6 +3851,8 @@ public:
     {
     }
 #endif
+
+    static bool EqualsLocal(GenTreeLclVarCommon* lcl1, GenTreeLclVarCommon* lcl2);
 };
 
 //------------------------------------------------------------------------
@@ -5155,7 +5159,7 @@ struct GenTreeCall final : public GenTree
 {
     CallArgs gtArgs;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // Used to register callsites with the EE
     CORINFO_SIG_INFO* callSig;
 #endif
@@ -8108,13 +8112,6 @@ public:
     enum
     {
         BlkOpKindInvalid,
-        BlkOpKindCpObjUnroll,
-#ifdef TARGET_XARCH
-        BlkOpKindCpObjRepInstr,
-#endif
-#ifdef TARGET_XARCH
-        BlkOpKindRepInstr,
-#endif
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
@@ -8132,7 +8129,7 @@ public:
 
     bool IsOnHeapAndContainsReferences()
     {
-        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR) && ((gtFlags & GTF_IND_TGT_NOT_HEAP) == 0);
     }
 
     bool IsZeroingGcPointersOnHeap()
@@ -10475,7 +10472,7 @@ inline bool GenTree::IsIntegralConstUnsignedPow2() const
 {
     if (IsIntegralConst())
     {
-        return isPow2((UINT64)AsIntConCommon()->IntegralValue());
+        return isPow2(AsIntConCommon()->UnsignedIntegralValue());
     }
 
     return false;
@@ -10493,9 +10490,7 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
     {
-        INT64  svalue = AsIntConCommon()->IntegralValue();
-        size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
-        return isPow2(value);
+        return isAbsPow2(AsIntConCommon()->IntegralValue());
     }
 
     return false;

@@ -81,7 +81,12 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig)
+            # Pass -clrinterpreter so FEATURE_INTERPRETER is compiled into the Release
+            # CoreCLR. This lets the Interpreter SOS leg below share a single build with
+            # the cDAC/cDAC_no_fallback/DAC legs instead of producing a separate Checked
+            # drop. (Note from review on dotnet/runtime#127840: -clrinterpreter enables
+            # the interpreter in Release as well.)
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
@@ -114,6 +119,7 @@ extends:
           jobParameters:
             name: cDAC
             useCdac: true
+            testInterpreter: true
             methodFilter: SOS*
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
@@ -168,6 +174,7 @@ extends:
             name: cDAC_no_fallback
             useCdac: true
             noFallback: true
+            testInterpreter: true
             methodFilter: SOS*
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
@@ -221,6 +228,7 @@ extends:
           jobParameters:
             name: DAC
             useCdac: false
+            testInterpreter: true
             methodFilter: SOS*
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime

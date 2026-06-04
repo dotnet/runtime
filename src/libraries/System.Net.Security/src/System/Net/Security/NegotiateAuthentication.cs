@@ -253,20 +253,39 @@ namespace System.Net.Security
         /// </remarks>
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            byte[]? decodedIncomingBlob = null;
-            if (!string.IsNullOrEmpty(incomingBlob))
+            byte[]? rentedBuffer = null;
+            try
             {
-                decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
-            }
-            byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+                ReadOnlySpan<byte> decodedIncomingBlob = default;
+                if (!string.IsNullOrEmpty(incomingBlob))
+                {
+                    rentedBuffer = ArrayPool<byte>.Shared.Rent((incomingBlob.Length / 4) * 3);
+                    if (!Convert.TryFromBase64String(incomingBlob, rentedBuffer, out int decodedLength))
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                        return null;
+                    }
 
-            string? outgoingBlob = null;
-            if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+                    decodedIncomingBlob = rentedBuffer.AsSpan(0, decodedLength);
+                }
+
+                byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+
+                string? outgoingBlob = null;
+                if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+                {
+                    outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                }
+
+                return outgoingBlob;
+            }
+            finally
             {
-                outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
+                }
             }
-
-            return outgoingBlob;
         }
 
         /// <summary>
