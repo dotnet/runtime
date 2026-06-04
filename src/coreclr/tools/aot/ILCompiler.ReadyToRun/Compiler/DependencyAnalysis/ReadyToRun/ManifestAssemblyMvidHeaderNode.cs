@@ -56,7 +56,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             byte[] manifestAssemblyMvidTable = _manifestNode.GetManifestAssemblyMvidTableData();
-            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 1, new ISymbolDefinitionNode[] { this });
+
+            // The runtime reads each entry of this table as a GUID by value (see
+            // ReadyToRunInfo::ReadyToRunInfo in readytoruninfo.cpp). GUID has a natural
+            // alignment of 4, so the table must be at least 4-byte aligned. Without this,
+            // a misaligned base causes an alignment fault (SIGBUS) on architectures that
+            // do not permit unaligned multi-word loads, such as 32-bit ARM.
+            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 4, new ISymbolDefinitionNode[] { this });
         }
     }
 }
