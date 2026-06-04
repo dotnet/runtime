@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -43,12 +44,16 @@ namespace System.Security.Cryptography.Tests
                 }
                 catch (Exception ex) when (ShouldLogAndroidAeadDiagnostics(dataLength, additionalDataLength))
                 {
-                    LogAndroidAeadDiagnostics(
-                        nameof(EncryptTamperAADDecrypt),
-                        nameof(ChaCha20Poly1305),
-                        dataLength,
-                        additionalDataLength,
-                        ex);
+                    Assert.Fail(
+                        CreateAndroidAeadDiagnostics(
+                            nameof(EncryptTamperAADDecrypt),
+                            nameof(ChaCha20Poly1305),
+                            dataLength,
+                            additionalDataLength,
+                            tamperAAD: true,
+                            expectAuthenticationFailure: true,
+                            decryptedMatchesPlaintext: false,
+                            ex));
                     throw;
                 }
             }
@@ -57,18 +62,20 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
         public static void AndroidDiagnostic_TamperedAadDecryptMatrix()
         {
-            LogAndroidAeadEnvironment(nameof(ChaCha20Poly1305));
+            StringBuilder diagnostics = new();
+            AppendAndroidAeadEnvironment(diagnostics, nameof(ChaCha20Poly1305));
 
             int failures = 0;
-            failures += RunAndroidDiagnosticCase(dataLength: 0, additionalDataLength: 0, tamperAAD: false, expectAuthenticationFailure: false);
-            failures += RunAndroidDiagnosticCase(dataLength: 0, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
-            failures += RunAndroidDiagnosticCase(dataLength: 0, additionalDataLength: 30, tamperAAD: true, expectAuthenticationFailure: true);
-            failures += RunAndroidDiagnosticCase(dataLength: 1, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
+            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 0, tamperAAD: false, expectAuthenticationFailure: false);
+            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
+            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 0, additionalDataLength: 30, tamperAAD: true, expectAuthenticationFailure: true);
+            failures += RunAndroidDiagnosticCase(diagnostics, dataLength: 1, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
 
-            Assert.Equal(0, failures);
+            Assert.True(failures == 0, diagnostics.ToString());
         }
 
         private static int RunAndroidDiagnosticCase(
+            StringBuilder diagnostics,
             int dataLength,
             int additionalDataLength,
             bool tamperAAD,
@@ -93,12 +100,17 @@ namespace System.Security.Cryptography.Tests
 
             byte[] decrypted = new byte[dataLength];
             Exception ex = Record.Exception(() => chaChaPoly.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
+            bool decryptedMatchesPlaintext = plaintext.SequenceEqual(decrypted);
 
-            LogAndroidAeadDiagnostics(
+            AppendAndroidAeadDiagnostics(
+                diagnostics,
                 nameof(AndroidDiagnostic_TamperedAadDecryptMatrix),
                 nameof(ChaCha20Poly1305),
                 dataLength,
                 additionalDataLength,
+                tamperAAD,
+                expectAuthenticationFailure,
+                decryptedMatchesPlaintext,
                 ex);
 
             if (expectAuthenticationFailure)
@@ -114,27 +126,58 @@ namespace System.Security.Cryptography.Tests
             return PlatformDetection.IsAndroid && dataLength == 0 && additionalDataLength == 1;
         }
 
-        private static void LogAndroidAeadEnvironment(string algorithm)
-        {
-            Console.WriteLine(
-                $"Android AEAD diagnostics for {algorithm}: " +
-                $"RuntimeIdentifier={RuntimeInformation.RuntimeIdentifier}, " +
-                $"ProcessArchitecture={RuntimeInformation.ProcessArchitecture}, " +
-                $"OSArchitecture={RuntimeInformation.OSArchitecture}, " +
-                $"IntPtr.Size={IntPtr.Size}, " +
-                $"Framework={RuntimeInformation.FrameworkDescription}");
-        }
-
-        private static void LogAndroidAeadDiagnostics(
+        private static string CreateAndroidAeadDiagnostics(
             string testName,
             string algorithm,
             int dataLength,
             int additionalDataLength,
+            bool tamperAAD,
+            bool expectAuthenticationFailure,
+            bool decryptedMatchesPlaintext,
             Exception ex)
         {
-            Console.WriteLine(
+            StringBuilder diagnostics = new();
+            AppendAndroidAeadEnvironment(diagnostics, algorithm);
+            AppendAndroidAeadDiagnostics(
+                diagnostics,
+                testName,
+                algorithm,
+                dataLength,
+                additionalDataLength,
+                tamperAAD,
+                expectAuthenticationFailure,
+                decryptedMatchesPlaintext,
+                ex);
+
+            return diagnostics.ToString();
+        }
+
+        private static void AppendAndroidAeadEnvironment(StringBuilder diagnostics, string algorithm)
+        {
+            diagnostics.AppendLine($"Android AEAD diagnostics for {algorithm}:");
+            diagnostics.AppendLine($"RuntimeIdentifier={RuntimeInformation.RuntimeIdentifier}");
+            diagnostics.AppendLine($"ProcessArchitecture={RuntimeInformation.ProcessArchitecture}");
+            diagnostics.AppendLine($"OSArchitecture={RuntimeInformation.OSArchitecture}");
+            diagnostics.AppendLine($"IntPtr.Size={IntPtr.Size}");
+            diagnostics.AppendLine($"Framework={RuntimeInformation.FrameworkDescription}");
+        }
+
+        private static void AppendAndroidAeadDiagnostics(
+            StringBuilder diagnostics,
+            string testName,
+            string algorithm,
+            int dataLength,
+            int additionalDataLength,
+            bool tamperAAD,
+            bool expectAuthenticationFailure,
+            bool decryptedMatchesPlaintext,
+            Exception ex)
+        {
+            diagnostics.AppendLine(
                 $"Android AEAD diagnostics: test={testName}, algorithm={algorithm}, " +
                 $"dataLength={dataLength}, additionalDataLength={additionalDataLength}, " +
+                $"tamperAAD={tamperAAD}, expectAuthenticationFailure={expectAuthenticationFailure}, " +
+                $"decryptedMatchesPlaintext={decryptedMatchesPlaintext}, " +
                 $"exceptionType={ex?.GetType().FullName ?? "<none>"}, " +
                 $"exceptionMessage={ex?.Message ?? "<none>"}");
         }
