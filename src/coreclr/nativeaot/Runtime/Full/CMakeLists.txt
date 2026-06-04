@@ -31,12 +31,10 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
-  # The relocatable object includes UnwindHelpers.cpp so its references to
+  # The relocatable object includes runtime-owned objects so their references to
   # libunwind implementation symbols are resolved before localization. The
-  # localize list is generated only from the bundled libunwind source objects;
-  # weak template instantiations emitted from libunwind headers in runtime-owned
-  # sources are not the strong duplicate-symbol problem this targets.
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*UnwindHelpers\\.cpp\\.o$>")
+  # localize list is generated only from the bundled libunwind source objects.
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
   if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER MATCHES "(^|/)llvm-link(-[0-9.]+)?(\\.exe)?$")
     get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${CMAKE_NM}" DIRECTORY)

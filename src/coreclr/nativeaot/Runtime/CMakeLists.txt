@@ -185,15 +185,16 @@ else()
   endif()
 
   if(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS)
-    # Build the bundled libunwind implementation and the runtime unwinder
-    # helper into one relocatable object. UnwindHelpers.cpp is part of the
-    # partial link so its references to libunwind's implementation symbols are
-    # resolved before those symbols are localized.
+    # Build the bundled libunwind implementation and the runtime unwinder code
+    # that references it into one relocatable object. The runtime sources are
+    # part of the partial link so their references to libunwind's implementation
+    # symbols are resolved before those symbols are localized.
     set(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES
       unix/UnwindHelpers.cpp
+      unix/UnixNativeCodeManager.cpp
       ${LLVM_LIBUNWIND_SOURCES}
       ${LLVM_LIBUNWIND_ASM_SOURCES})
-    list(REMOVE_ITEM FULL_RUNTIME_SOURCES unix/UnwindHelpers.cpp)
+    list(REMOVE_ITEM FULL_RUNTIME_SOURCES unix/UnwindHelpers.cpp unix/UnixNativeCodeManager.cpp)
   else()
     list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
     set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
