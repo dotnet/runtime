@@ -1484,7 +1484,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was ret and we will use it later as needed.
@@ -1625,7 +1625,7 @@ namespace System.Net.Sockets
             int optLen = sizeof(int);
             Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was set and we will use it later as needed.

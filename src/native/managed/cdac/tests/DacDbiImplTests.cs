@@ -635,4 +635,201 @@ public unsafe class DacDbiImplTests
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
+
+    private const uint MdtMethodDef = 0x06000000;
+
+    private static DacDbiImpl CreateDacDbiWithMockContracts(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader,
+        Mock<ICodeVersions> mockCodeVersions,
+        Mock<IReJIT> mockReJIT)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockCodeVersions)
+            .AddMockContract(mockReJIT)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
+    {
+        var mockLoader = new Mock<ILoader>();
+        var moduleHandle = new Contracts.ModuleHandle(modulePtr);
+        var lookupTables = new ModuleLookupTables { MethodDefToDesc = new TargetPointer(0x4000) };
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
+        mockLoader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
+        return mockLoader;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullOutput_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, MdtMethodDef | 1, null);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_InvalidToken_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, 0x01000001, &result);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    public static IEnumerable<object[]> ArchWithDeoptimized()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], true];
+            yield return [stdArch[0], false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithDeoptimized))]
+    public void AreOptimizationsDisabled_WithMethodDesc(MockTarget.Architecture arch, bool deoptimized)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+        TargetPointer methodDesc = new(0x2000);
+        var ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x3000));
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, methodDesc);
+
+        var mockCodeVersions = new Mock<ICodeVersions>();
+        mockCodeVersions.Setup(cv => cv.GetActiveILCodeVersion(methodDesc)).Returns(ilCodeVersion);
+
+        var mockReJIT = new Mock<IReJIT>();
+        mockReJIT.Setup(r => r.IsDeoptimized(ilCodeVersion)).Returns(deoptimized);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, mockCodeVersions, mockReJIT);
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(deoptimized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullMethodDesc_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, TargetPointer.Null);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
+    private static (DacDbiImpl DacDbi, MockThread Thread, MockFrameBuilder FrameBuilder) CreateManagedStoppedContextDacDbi(
+        MockTarget.Architecture arch,
+        Action<MockFrameBuilder>? configureFrames = null)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
+        MockFrameBuilder frameBuilder = new(targetBuilder.MemoryBuilder);
+
+        MockThread thread = threadBuilder.AddThread(1, 1234);
+        ulong terminator = arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
+        thread.Frame = terminator;
+
+        configureFrames?.Invoke(frameBuilder);
+
+        targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ExceptionInfo] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ExceptionInfoLayout),
+                [DataType.Thread] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadLayout),
+                [DataType.ThreadStore] = TargetTestHelpers.CreateTypeInfo(threadBuilder.ThreadStoreLayout),
+                [DataType.GCAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.GCAllocContextLayout),
+                [DataType.EEAllocContext] = TargetTestHelpers.CreateTypeInfo(threadBuilder.EEAllocContextLayout),
+                [DataType.RuntimeThreadLocals] = TargetTestHelpers.CreateTypeInfo(threadBuilder.RuntimeThreadLocalsLayout),
+                [DataType.Frame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FrameLayout),
+                [DataType.ResumableFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.ResumableFrameLayout),
+            })
+            .AddGlobals(
+                (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
+                (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
+                (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress),
+                ("RedirectedThreadFrameIdentifier", MockFrameBuilder.RedirectedThreadFrameIdentifierValue))
+            .AddMockContract(new Mock<IExecutionManager>())
+            .AddMockContract(new Mock<IGCInfo>())
+            .AddContract<IThread>(version: "c1")
+            .AddContract<IStackWalk>(version: "c1");
+        TestPlaceholderTarget target = targetBuilder.Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        return (dacDbi, thread, frameBuilder);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_InteropDebuggingHijacked(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.InteropDebuggingHijacked = 1;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_FilterContextSet(MockTarget.Architecture arch)
+    {
+        const ulong filterContextAddr = 0x0009_0000;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+        thread.DebuggerFilterContext = filterContextAddr;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(filterContextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_RedirectedThread(MockTarget.Architecture arch)
+    {
+        const ulong contextAddr = 0x000A_0000;
+        MockResumableFrame? redirectedFrame = null;
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch, frameBuilder =>
+        {
+            redirectedFrame = frameBuilder.AddRedirectedThreadFrame(contextAddr);
+        });
+
+        thread.Frame = redirectedFrame!.Address;
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(contextAddr, retVal);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedStoppedContext_NoContextAvailable(MockTarget.Architecture arch)
+    {
+        var (dacDbi, thread, _) = CreateManagedStoppedContextDacDbi(arch);
+
+        ulong retVal;
+        int hr = dacDbi.GetManagedStoppedContext(thread.Address, &retVal);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, retVal);
+    }
 }

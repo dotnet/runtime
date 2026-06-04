@@ -193,6 +193,7 @@ internal sealed class MockThread : TypedView
     private const string ThreadHandleFieldName = "ThreadHandle";
     private const string UEWatsonBucketTrackerBucketsFieldName = "UEWatsonBucketTrackerBuckets";
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
+    private const string InteropDebuggingHijackedFieldName = "InteropDebuggingHijacked";
 
     public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
     {
@@ -215,7 +216,8 @@ internal sealed class MockThread : TypedView
             .AddPointerField(ThreadLocalDataPtrFieldName)
             .AddPointerField(ThreadHandleFieldName)
             .AddPointerField(UEWatsonBucketTrackerBucketsFieldName)
-            .AddPointerField(DebuggerFilterContextFieldName);
+            .AddPointerField(DebuggerFilterContextFieldName)
+            .AddUInt32Field(InteropDebuggingHijackedFieldName);
 
         return layoutBuilder.Build<MockThread>();
     }
@@ -314,6 +316,18 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(ThreadHandleFieldName);
         set => WritePointerField(ThreadHandleFieldName, value);
+    }
+
+    public ulong DebuggerFilterContext
+    {
+        get => ReadPointerField(DebuggerFilterContextFieldName);
+        set => WritePointerField(DebuggerFilterContextFieldName, value);
+    }
+
+    public uint InteropDebuggingHijacked
+    {
+        get => ReadUInt32Field(InteropDebuggingHijackedFieldName);
+        set => WriteUInt32Field(InteropDebuggingHijackedFieldName, value);
     }
 }
 

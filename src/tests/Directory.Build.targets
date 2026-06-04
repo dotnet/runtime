@@ -518,6 +518,7 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrap)' == 'true'" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
@@ -593,6 +594,6 @@
 
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
-          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+          DependsOnTargets="ComputeResolvedFilesToPublishList;NativeCompile" />
 
 </Project>

@@ -37,6 +37,7 @@ public struct InfoHdr
     public bool GenericsContext { get; private set; }
     public bool GenericsContextIsMethodDesc { get; private set; }
     public ReturnKinds ReturnKind { get; private set; }
+    public bool IsAsync { get; private set; }
 
     public ushort ArgCount { get; private set; }
     public uint FrameSize { get; private set; }
@@ -62,7 +63,8 @@ public struct InfoHdr
     private const byte SET_EPILOGSIZE_MAX = 10;
     private const byte SET_EPILOGCNT_MAX = 4;
     private const byte SET_UNTRACKED_MAX = 3;
-    private const byte SET_RET_KIND_MAX = 3;        // 2 bits for ReturnKind
+    private const byte SET_RET_KIND_MAX_V4 = 3;        // 2 bits for ReturnKind
+    private const byte SET_RET_KIND_MAX_V5 = 7;        // 3 bits for ReturnKind + isAsync
     private const byte SET_NOGCREGIONS_MAX = 4;
     private const byte ADJ_ENCODING_MAX = 0x7f;     // Maximum valid encoding in a byte
                                                     // Also used to mask off next bit from each encoding byte.
@@ -120,8 +122,10 @@ public struct InfoHdr
     private enum InfoHdrAdjust2 : uint
     {
         SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
-        SET_NOGCREGIONS_CNT = SET_RETURNKIND + SET_RET_KIND_MAX + 1,        // 0x04
-        FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+        SET_NOGCREGIONS_CNT_V4 = SET_RETURNKIND + SET_RET_KIND_MAX_V4 + 1,        // 0x04
+        FFFF_NOGCREGION_CNT_V4 = SET_NOGCREGIONS_CNT_V4 + SET_NOGCREGIONS_MAX + 1, // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+        SET_NOGCREGIONS_CNT_V5 = SET_RETURNKIND + SET_RET_KIND_MAX_V5 + 1,        // 0x08
+        FFFF_NOGCREGION_CNT_V5 = SET_NOGCREGIONS_CNT_V5 + SET_NOGCREGIONS_MAX + 1, // 0x0D There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
     };
 
     public enum ReturnKinds
@@ -142,8 +146,12 @@ public struct InfoHdr
         RT_Illegal = 0xFF
     };
 
-    public static InfoHdr DecodeHeader(Target target, ref TargetPointer offset, uint codeLength)
+    public static InfoHdr DecodeHeader(Target target, ref TargetPointer offset, uint codeLength, int version)
     {
+        int SET_RET_KIND_MAX = version >= 5 ? SET_RET_KIND_MAX_V5 : SET_RET_KIND_MAX_V4;
+        InfoHdrAdjust2 SET_NOGCREGIONS_CNT = version >= 5 ? InfoHdrAdjust2.SET_NOGCREGIONS_CNT_V5 : InfoHdrAdjust2.SET_NOGCREGIONS_CNT_V4;
+        InfoHdrAdjust2 FFFF_NOGCREGION_CNT = version >= 5 ? InfoHdrAdjust2.FFFF_NOGCREGION_CNT_V5 : InfoHdrAdjust2.FFFF_NOGCREGION_CNT_V4;
+
         byte nextByte = target.Read<byte>(offset++);
         byte encoding = (byte)(nextByte & 0x7Fu);
 
@@ -259,13 +267,21 @@ public struct InfoHdr
                             // encoding here always corresponds to codes in InfoHdrAdjust2 set
                             if (encoding <= SET_RET_KIND_MAX)
                             {
-                                infoHdr.ReturnKind = (ReturnKinds)encoding;
+                                if (version >= 5)
+                                {
+                                    infoHdr.ReturnKind = (ReturnKinds)(encoding & 3);
+                                    infoHdr.IsAsync = (encoding & 4) != 0;
+                                }
+                                else
+                                {
+                                    infoHdr.ReturnKind = (ReturnKinds)encoding;
+                                }
                             }
-                            else if (encoding < (int)InfoHdrAdjust2.FFFF_NOGCREGION_CNT)
+                            else if (encoding < (int)FFFF_NOGCREGION_CNT)
                             {
-                                infoHdr.NoGCRegionCount = (uint)encoding - (uint)InfoHdrAdjust2.SET_NOGCREGIONS_CNT;
+                                infoHdr.NoGCRegionCount = (uint)encoding - (uint)SET_NOGCREGIONS_CNT;
                             }
-                            else if (encoding == (int)InfoHdrAdjust2.FFFF_NOGCREGION_CNT)
+                            else if (encoding == (int)FFFF_NOGCREGION_CNT)
                             {
                                 infoHdr.NoGCRegionCount = HAS_NOGCREGIONS;
                             }

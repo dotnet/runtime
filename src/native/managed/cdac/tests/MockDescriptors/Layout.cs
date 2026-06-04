@@ -172,6 +172,9 @@ internal sealed class SequentialLayoutBuilder
     public SequentialLayoutBuilder AddNUIntField(string name)
         => AddField(name, _architecture.Is64Bit ? sizeof(ulong) : sizeof(uint));
 
+    public SequentialLayoutBuilder AddNIntField(string name)
+        => AddField(name, _architecture.Is64Bit ? sizeof(long) : sizeof(int));
+
     public SequentialLayoutBuilder AddPointerField(string name)
         => AddField(name, _architecture.Is64Bit ? sizeof(ulong) : sizeof(uint));
 
