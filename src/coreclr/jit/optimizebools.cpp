@@ -107,8 +107,7 @@ private:
 //-----------------------------------------------------------------------------
 // OptBoolsRule: one rewrite rule consumed by OptBoolsDsc::optOptimizeBoolsCondBlock.
 //
-// The table is written in the m_sameTarget == true frame.
-// A rule matches when (sameLcl, op1, op2) agree and produces the folded compare:
+// A rule matches when (sameTarget, sameLcl, op1, op2) agree and produces the folded compare:
 //
 //   foldOp == GT_NONE : keep c1 as the sole operand and rewrite the compare to cmpOp
 //                       (used for redundant tests against the same local).
@@ -120,29 +119,44 @@ private:
 //
 struct OptBoolsRule
 {
+    bool       sameTarget;     // matches OptBoolsDsc::m_sameTarget
     bool       sameLcl;        // c1 and c2 must be the same LCL_VAR
     genTreeOps op1;            // m_testInfo1.compTree oper
-    genTreeOps op2;            // m_testInfo2.compTree oper, normalized to the sameTarget=true frame
+    genTreeOps op2;            // m_testInfo2.compTree oper
     genTreeOps foldOp;         // GT_AND, GT_OR, or GT_NONE (no fold; rewrite cmp only)
-    genTreeOps cmpOp;          // resulting comparison, normalized to the sameTarget=true frame
+    genTreeOps cmpOp;          // resulting comparison
     bool       requiresSigned; // reject if either test has GTF_UNSIGNED
 };
 
 // clang-format off
 static const OptBoolsRule s_optBoolsRules[] =
 {
-    // sameLcl  | op1  | op2  | foldOp | cmpOp | requiresSigned
+    // sameTgt | sameLcl | op1   | op2   | foldOp  | cmpOp | requiresSigned
     //
-    // Redundant tests on the same local fold to a single signed compare.
-    { true,     GT_LT, GT_EQ, GT_NONE,  GT_LE, true  }, // c1<0  || c1==0 -> c1<=0
-    { true,     GT_EQ, GT_LT, GT_NONE,  GT_LE, true  }, // c1==0 || c1<0  -> c1<=0
-    { true,     GT_GT, GT_EQ, GT_NONE,  GT_GE, true  }, // c1>0  || c1==0 -> c1>=0
-    { true,     GT_EQ, GT_GT, GT_NONE,  GT_GE, true  }, // c1==0 || c1>0  -> c1>=0
+    // m_sameTarget == true   ("branch to BX if t1 || t2")
+    //
+    // Same local: fold to a single signed compare.
+    { true,     true,     GT_LT, GT_EQ, GT_NONE,  GT_LE, true  }, // c1<0  || c1==0 -> c1<=0
+    { true,     true,     GT_EQ, GT_LT, GT_NONE,  GT_LE, true  }, // c1==0 || c1<0  -> c1<=0
+    { true,     true,     GT_GT, GT_EQ, GT_NONE,  GT_GE, true  }, // c1>0  || c1==0 -> c1>=0
+    { true,     true,     GT_EQ, GT_GT, GT_NONE,  GT_GE, true  }, // c1==0 || c1>0  -> c1>=0
+    // Independent operands: fold to a single bitwise compare.
+    { true,     false,    GT_EQ, GT_EQ, GT_AND,   GT_EQ, false }, // c1==0 || c2==0 -> (c1&c2)==0
+    { true,     false,    GT_LT, GT_LT, GT_OR,    GT_LT, true  }, // c1<0  || c2<0  -> (c1|c2)<0
+    { true,     false,    GT_NE, GT_NE, GT_OR,    GT_NE, false }, // c1!=0 || c2!=0 -> (c1|c2)!=0
 
-    // Independent tests fold to a single bitwise compare.
-    { false,    GT_EQ, GT_EQ, GT_AND,   GT_EQ, false }, // c1==0 || c2==0 -> (c1&c2)==0
-    { false,    GT_LT, GT_LT, GT_OR,    GT_LT, true  }, // c1<0  || c2<0  -> (c1|c2)<0
-    { false,    GT_NE, GT_NE, GT_OR,    GT_NE, false }, // c1!=0 || c2!=0 -> (c1|c2)!=0
+    //
+    // m_sameTarget == false  ("branch to BX if !t1 && t2")
+    //
+    // Same local: fold to a single signed compare.
+    { false,    true,     GT_LT, GT_NE, GT_NONE,  GT_GT, true  }, // !(c1<0)  && c1!=0  -> c1>0
+    { false,    true,     GT_EQ, GT_GE, GT_NONE,  GT_GT, true  }, // !(c1==0) && c1>=0  -> c1>0
+    { false,    true,     GT_GT, GT_NE, GT_NONE,  GT_LT, true  }, // !(c1>0)  && c1!=0  -> c1<0
+    { false,    true,     GT_EQ, GT_LE, GT_NONE,  GT_LT, true  }, // !(c1==0) && c1<=0  -> c1<0
+    // Independent operands: fold to a single bitwise compare.
+    { false,    false,    GT_EQ, GT_NE, GT_AND,   GT_NE, false }, // !(c1==0) && c2!=0 -> (c1&c2)!=0
+    { false,    false,    GT_LT, GT_GE, GT_OR,    GT_GE, true  }, // !(c1<0)  && c2>=0 -> (c1|c2)>=0
+    { false,    false,    GT_NE, GT_EQ, GT_OR,    GT_EQ, false }, // !(c1!=0) && c2==0 -> (c1|c2)==0
 };
 // clang-format on
 
@@ -245,16 +259,16 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE));
     assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE));
 
-    // Pick the rewrite rule from the s_optBoolsRules table.
+    // Pick the rewrite rule from the s_optBoolsRules table. The match key is the literal
+    // (sameTarget, sameLcl, op1, op2) -- no implicit transform on either side.
     const genTreeOps op1     = m_testInfo1.compTree->OperGet();
-    const genTreeOps op2raw  = m_testInfo2.compTree->OperGet();
-    const genTreeOps op2     = m_sameTarget ? op2raw : GenTree::ReverseRelop(op2raw);
+    const genTreeOps op2     = m_testInfo2.compTree->OperGet();
     const bool       sameLcl = m_c1->OperIs(GT_LCL_VAR) && GenTree::Compare(m_c1, m_c2);
 
     const OptBoolsRule* rule = nullptr;
     for (const OptBoolsRule& r : s_optBoolsRules)
     {
-        if ((r.sameLcl == sameLcl) && (r.op1 == op1) && (r.op2 == op2))
+        if ((r.sameTarget == m_sameTarget) && (r.sameLcl == sameLcl) && (r.op1 == op1) && (r.op2 == op2))
         {
             rule = &r;
             break;
@@ -284,7 +298,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     m_foldOp   = rule->foldOp;
     m_foldType = foldType;
-    m_cmpOp    = m_sameTarget ? rule->cmpOp : GenTree::ReverseRelop(rule->cmpOp);
+    m_cmpOp    = rule->cmpOp;
 
     optOptimizeBoolsUpdateTrees();
 
