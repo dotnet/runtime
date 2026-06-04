@@ -2203,9 +2203,13 @@ struct simdscalable_t
 
     static simdscalable_t Zero()
     {
-        return {.gtSimdScalableBaseType = TYP_BYTE,
-                .gtSimdScalableKind     = SimdScalableRepeated,
-                .gtSimdScalableIndex    = 0};
+        simdscalable_t result = {};
+
+        result.gtSimdScalableBaseType = TYP_BYTE;
+        result.gtSimdScalableKind     = SimdScalableRepeated;
+        result.gtSimdScalableIndex    = 0;
+
+        return result;
     }
 };
 
