@@ -141,6 +141,17 @@ never match because there is no test name. Add:
 Each candidate body must be fetched and read; do not match on title alone. On
 hit, record `existing-PR #<n>`.
 
+### Integrity-filtered PR candidate
+
+If any PR search above returns a `[Filtered]` marker for a candidate whose
+title, source symbol, or assertion slice overlaps the failing signature, do
+**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
+you are not permitted to read, and it may already handle this failure. Record
+`skipped: integrity-filtered candidate, needs human review` and stop for this
+signature. A human can confirm whether the hidden PR fixes the failure; filing a
+duplicate KBE that is immediately closed as "fixed by" the hidden PR is a
+scanner-quality miss the feedback workflow will penalize.
+
 ### Merged fix PR (last 14 days)
 
 Only when an existing KBE or area-team tracker was recorded:
