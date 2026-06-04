@@ -2900,7 +2900,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteRunAndCollectAndRelease(out WeakReference wref)
     {
-        string uniqueName = "XmlSerializerTests.RunAndCollect." + Guid.NewGuid().ToString("N");
+        string uniqueName = "XmlSerializerTests.RunAndCollect.Type_" + Guid.NewGuid().ToString("N");
         var assemblyName = new AssemblyName(uniqueName);
         AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
             assemblyName,
