@@ -11091,8 +11091,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 CORINFO_SIG_INFO sig;
                                 info.compCompHnd->getMethodSig(method, &sig);
 
+                                // System.Numerics.Vector<T> and System.Numerics.Vector are cross-platform
+                                // APIs with managed fallbacks; they must not throw PNSE when the ISA isn't
+                                // available.
                                 result = HWIntrinsicInfo::lookupId(this, &sig, lookupClassName, lookupMethodName,
-                                                                   enclosingClassNames[0], enclosingClassNames[1]);
+                                                                   enclosingClassNames[0], enclosingClassNames[1],
+                                                                   /* isXplatIntrinsic */ true);
                             }
                         }
 #endif // FEATURE_HW_INTRINSICS
@@ -11378,13 +11382,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
                         }
 
-                        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
+                        bool isXplatIntrinsic              = (namespaceName[0] == '\0');
+                        bool isPlatformMatchedIntrinsic    = (strcmp(namespaceName, platformNamespaceName) == 0);
+                        bool isPlatformMismatchedIntrinsic = !isXplatIntrinsic && !isPlatformMatchedIntrinsic;
+
+                        if (isXplatIntrinsic || isPlatformMatchedIntrinsic)
                         {
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
                             result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
-                                                               enclosingClassNames[0], enclosingClassNames[1]);
+                                                               enclosingClassNames[0], enclosingClassNames[1],
+                                                               isXplatIntrinsic);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -11429,6 +11438,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Throw_PlatformNotSupportedException;
                             }
+#ifdef FEATURE_HW_INTRINSICS
+                            else if (isPlatformMismatchedIntrinsic)
+                            {
+                                // The API lives in a platform-specific sub-namespace under
+                                // System.Runtime.Intrinsics (e.g., .X86 on ARM64, .Wasm on xarch) that
+                                // does not match the target architecture. Such APIs are platform-specific
+                                // with no managed fallback, so they must throw PlatformNotSupportedException.
+                                result = NI_Throw_PlatformNotSupportedException;
+                            }
+#endif // FEATURE_HW_INTRINSICS
                             else
                             {
                                 // Otherwise mark this as a general intrinsic in the namespace
