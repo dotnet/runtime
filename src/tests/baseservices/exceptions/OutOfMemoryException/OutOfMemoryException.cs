@@ -35,11 +35,11 @@ class OutOfMemoryExceptionTest
             object[] storage = new object[8192];
             int idx = 0;
             // We expect ~2048 iterations in the first loop and ~64 iterations in the second.
-            try { while (idx < storage.Length) storage[idx++] = new byte[16 * 1024]; } catch (OutOfMemoryException) { }
-            try { while (idx < storage.Length) storage[idx++] = new byte[256]; } catch (OutOfMemoryException) { }
+            try { while (idx < storage.Length) storage[idx++] = GC.AllocateArray<byte>(16 * 1024, pinned: true); } catch (OutOfMemoryException) { }
+            try { while (idx < storage.Length) storage[idx++] = GC.AllocateArray<byte>(256, pinned: true); } catch (OutOfMemoryException) { }
             // < 280 bytes free.
             // Use the smallest possible allocation to exhaust the last scraps.
-            while (idx < storage.Length) storage[idx++] = new object();
+            while (idx < storage.Length) storage[idx++] = GC.AllocateArray<byte>(1, pinned: true);
             return Fail;
         }
 
