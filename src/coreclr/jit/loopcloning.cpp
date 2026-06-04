@@ -1227,6 +1227,95 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // If the loop limit is an array length, compute the underlying ArrIndex
+    // and queue the deref check once up front. Both the optional zero-trip
+    // guard below and the regular limit conditions further down reuse this
+    // single ArrIndex to avoid duplicating the deref entry and allocation.
+    //
+    ArrIndex* limitArrIndex = nullptr;
+    if (iterInfo->HasArrayLengthLimit)
+    {
+        limitArrIndex = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
+        if (!iterInfo->ArrLenLimit(this, limitArrIndex))
+        {
+            JITDUMP("> ArrLen not matching\n");
+            return false;
+        }
+
+        LC_Array array(LC_Array::Jagged, limitArrIndex, LC_Array::None);
+        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+    }
+
+    // If AnalyzeIteration could not prove the loop condition holds on entry,
+    // emit an explicit runtime entry guard as one of the cloning conditions.
+    // The fast path is then only entered when "init TestOper limit" holds.
+    if (iterInfo->NeedsZeroTripGuard)
+    {
+        LC_Ident initIdent;
+        if (iterInfo->HasConstInit)
+        {
+            if (iterInfo->ConstInitValue < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+                return false;
+            }
+            initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+        }
+        else
+        {
+            // Init is unknown statically; use the IV local as it stands at the
+            // preheader (the analysis already verified the local is not
+            // address-exposed and has no extraneous defs inside the loop, so
+            // reading it in the preheader gives the entry value).
+            const unsigned initLcl = iterInfo->IterVar;
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
+                return false;
+            }
+            initIdent = LC_Ident::CreateVar(initLcl);
+        }
+
+        LC_Ident limitIdent;
+        if (iterInfo->HasConstLimit)
+        {
+            int limit = iterInfo->ConstLimit();
+            if (limit < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit %d is invalid\n", limit);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+        }
+        else if (iterInfo->HasInvariantLocalLimit)
+        {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateVar(limitLcl);
+        }
+        else if (iterInfo->HasArrayLengthLimit)
+        {
+            assert(limitArrIndex != nullptr);
+            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+        }
+        else
+        {
+            JITDUMP("> NeedsZeroTripGuard: undetected limit\n");
+            return false;
+        }
+
+        // TestOper() returns the stays-in-loop relop in IV-on-lhs form, already
+        // adjusted for IsReversed and ExitedOnTrue.
+        LC_Condition zeroTrip(iterInfo->TestOper(), LC_Expr(initIdent), LC_Expr(limitIdent),
+                              iterInfo->TestTree->IsUnsigned());
+        context->EnsureConditions(loop->GetIndex())->Push(zeroTrip);
+        JITDUMP("Added zero-trip guard cloning condition\n");
+    }
+
     LC_Ident ident;
     // Init conditions
     if (iterInfo->HasConstInit)
@@ -1311,17 +1400,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
     else if (iterInfo->HasArrayLengthLimit)
     {
-        ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
-        if (!iterInfo->ArrLenLimit(this, index))
-        {
-            JITDUMP("> ArrLen not matching\n");
-            return false;
-        }
-        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
-
-        // Ensure that this array must be dereference-able, before executing the actual condition.
-        LC_Array array(LC_Array::Jagged, index, LC_Array::None);
-        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+        assert(limitArrIndex != nullptr);
+        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
     }
     else
     {
@@ -1826,10 +1906,6 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 //      Returns true if the loop can be cloned. If it returns false,
 //      it prints a message to the JIT dump describing why the loop can't be cloned.
 //
-// Notes: if `true` is returned, then `fgReturnCount` is increased by the number of
-// return blocks in the loop that will be cloned. (REVIEW: this 'predicate' function
-// doesn't seem like the right place to do this change.)
-//
 bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
     if (loop->GetHeader()->isRunRarely())
@@ -1864,20 +1940,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
     }
-
-#ifdef DEBUG
-    // Today we will never see any BBJ_RETURN blocks because we cannot
-    // duplicate loops with EH in them. When we have no try-regions that start
-    // in the loop it is not possible for BBJ_RETURN blocks to be part of the
-    // loop; a BBJ_RETURN block can only be part of the loop if its exceptional
-    // flow can reach the header, but that would require the handler to also be
-    // part of the loop, which guarantees that the loop contains two distinct
-    // EH regions.
-    loop->VisitLoopBlocks([](BasicBlock* block) {
-        assert(!block->KindIs(BBJ_RETURN));
-        return BasicBlockVisit::Continue;
-    });
-#endif
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
@@ -2077,6 +2139,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // block was in some enclosed EH region), put the slow preheader
     // into the appropriate region, and make appropriate extent updates.
     //
+    // The slow preheader was inserted lexically after `beforeSlowPreheader`
+    // but logically lives in `preheader`'s EH region. Any enclosing region
+    // whose lex-last is `beforeSlowPreheader` must be extended to cover the
+    // slow preheader so that the subsequent DuplicateWithEH call can in turn
+    // extend those regions to also cover the cloned slow-path blocks.
+    //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
@@ -2086,11 +2154,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             EHblkDsc* const ebd = ehGetDsc(enclosingRegion - 1);
             for (EHblkDsc* const HBtab : EHClauses(this, ebd))
             {
-                if (HBtab->ebdTryLast == bottom)
+                if (HBtab->ebdTryLast == beforeSlowPreheader)
                 {
                     fgSetTryEnd(HBtab, slowPreheader);
                 }
-                if (HBtab->ebdHndLast == bottom)
+                if (HBtab->ebdHndLast == beforeSlowPreheader)
                 {
                     fgSetHndEnd(HBtab, slowPreheader);
                 }
@@ -2993,7 +3061,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     {
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
-        if (loop->AnalyzeIteration(&iterInfo))
+        if (loop->AnalyzeIteration(&iterInfo, /* allowMissingBaseCase */ true))
         {
             context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
         }
@@ -3024,6 +3092,147 @@ bool Compiler::optLoopCloningEnabled()
 #else
     return true;
 #endif
+}
+
+//------------------------------------------------------------------------
+// optCloningHeuristic: Decide whether a loop cloning candidate
+//   should actually be cloned, based on a per-call benefit
+//   estimate vs a cost estimate.
+//
+//   The per-call ratio is
+//
+//       (cycles saved per method call) / (duplicated body nodes)
+//
+//   and the loop is cloned only if that ratio is at least the configured
+//   threshold JitCloneLoopsMinPerCallRatio (interpreted in hundredths,
+//   so the default value 4 means a threshold of 0.04). Higher threshold
+//   values are stricter and reject more candidates (fewer clones);
+//   setting the threshold to 0 disables the gate and the helper returns
+//   true without doing any analysis.
+//
+// Arguments:
+//   loop     - the loop under consideration
+//   context  - the loop cloning context (must contain a non-empty
+//              LcOptInfo list for this loop)
+//
+// Return Value:
+//   true if the loop should be cloned, false if it should be rejected.
+//
+bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
+{
+    // When the gate is disabled, accept the candidate without any further
+    // work. The config value is interpreted in hundredths, so divide by
+    // 100 to obtain the actual per-call-ratio threshold (e.g. config 4
+    // means a threshold of 0.04).
+    //
+    const weight_t minPerCallRatio = (weight_t)JitConfig.JitCloneLoopsMinPerCallRatio() / 100.0;
+    if (minPerCallRatio <= 0.0)
+    {
+        return true;
+    }
+
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
+    assert(optInfos != nullptr);
+    if (optInfos->Size() == 0)
+    {
+        return false;
+    }
+
+    //
+    // Part 1: benefit estimate.
+    //
+    // Sum cycles saved per call across all opt-infos, weighted by the
+    // per-call execution count of the check block so PGO hot blocks are
+    // valued higher. Per-block cycle figures are 2.0 for array/span
+    // bounds checks and 3.0 for the GDV-style tests.
+    //
+    // getBBWeight returns the block weight scaled by BB_UNITY_WEIGHT
+    // (= 100), so divide by BB_UNITY_WEIGHT to convert to a true
+    // per-call execution count.
+    //
+    BasicBlock* const header         = loop->GetHeader();
+    const weight_t    headerWeight   = header->getBBWeight(this) / BB_UNITY_WEIGHT;
+    weight_t          benefitPerCall = 0.0;
+
+    for (unsigned i = 0; i < optInfos->Size(); i++)
+    {
+        LcOptInfo* const info = optInfos->Get(i);
+        weight_t         cyclesSaved;
+        BasicBlock*      checkBlock = nullptr;
+        switch (info->GetOptType())
+        {
+            case LcOptInfo::LcJaggedArray:
+                cyclesSaved = 2.0;
+                checkBlock  = info->AsLcJaggedArrayOptInfo()->arrIndex.useBlock;
+                break;
+            case LcOptInfo::LcSpan:
+                cyclesSaved = 2.0;
+                checkBlock  = info->AsLcSpanOptInfo()->spanIndex.useBlock;
+                break;
+            case LcOptInfo::LcMdArray:
+                cyclesSaved = 3.0;
+                break;
+            case LcOptInfo::LcTypeTest:
+                cyclesSaved = 3.0;
+                checkBlock  = info->AsLcTypeTestOptInfo()->block;
+                break;
+            case LcOptInfo::LcMethodAddrTest:
+                cyclesSaved = 3.0;
+                checkBlock  = info->AsLcMethodAddrTestOptInfo()->block;
+                break;
+            default:
+                cyclesSaved = 0.0;
+                break;
+        }
+        const weight_t perCallWeight =
+            (checkBlock != nullptr) ? (checkBlock->getBBWeight(this) / BB_UNITY_WEIGHT) : headerWeight;
+        benefitPerCall += cyclesSaved * perCallWeight;
+    }
+
+    //
+    // Part 2: cost estimate.
+    //
+    // Cost is the number of tree nodes that would be duplicated by cloning.
+    // Bound the walker by min(sizeLimit, floor(benefit / minPerCallRatio)):
+    //   - sizeLimit (matches the earlier JitCloneLoopsSizeLimit check) is
+    //     defensive; by construction the body is already <= sizeLimit here.
+    //   - floor(benefit / minPerCallRatio) is the largest body size for
+    //     which the per-call ratio gate could pass, so the walker can
+    //     short-circuit as soon as the body grows past it.
+    //
+    const int      sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+    unsigned       bodyCap   = (sizeLimit >= 0) ? (unsigned)sizeLimit : UINT_MAX;
+    const weight_t bodyMaxW  = benefitPerCall / minPerCallRatio;
+    const unsigned bodyMax   = (bodyMaxW >= (weight_t)UINT_MAX) ? UINT_MAX : (unsigned)bodyMaxW;
+    if (bodyMax < bodyCap)
+    {
+        bodyCap = bodyMax;
+    }
+
+    unsigned bodyNodes  = 0;
+    auto     countNodes = [&bodyNodes](GenTree* tree) -> unsigned {
+        bodyNodes++;
+        return 1;
+    };
+    if (optLoopComplexityExceeds(loop, bodyCap, countNodes))
+    {
+        // Walker exceeded the cap, so the gate must fail.
+        JITDUMP(FMT_LP " rejected by cloning heuristic: body exceeds cap %u\n", loop->GetIndex(), bodyCap);
+        return false;
+    }
+    if (bodyNodes == 0)
+    {
+        return false;
+    }
+
+    const weight_t perCallRatio = benefitPerCall / (weight_t)bodyNodes;
+    if (perCallRatio < minPerCallRatio)
+    {
+        JITDUMP(FMT_LP " rejected by cloning heuristic: PerCallRatio=%f < threshold=%f\n", loop->GetIndex(),
+                perCallRatio, minPerCallRatio);
+        return false;
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -3120,6 +3329,13 @@ PhaseStatus Compiler::optCloneLoops()
     {
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
+            if (!optCloningHeuristic(loop, &context))
+            {
+                Metrics.LoopsRejectedForInsufficientBenefit++;
+                context.CancelLoopOptInfo(loop->GetIndex());
+                continue;
+            }
+
             Metrics.LoopsCloned++;
             context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
             context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));

@@ -197,7 +197,6 @@ CONFIG_DWORD_INFO(INTERNAL_EnCResolveField, W("EnCResolveField"), 0, "Allows bre
 CONFIG_DWORD_INFO(INTERNAL_EncResumeInUpdatedFunction, W("EncResumeInUpdatedFunction"), 0, "Allows breaking when execution resumes in a new EnC version of a function")
 CONFIG_DWORD_INFO(INTERNAL_DbgAssertOnDebuggeeDebugBreak, W("DbgAssertOnDebuggeeDebugBreak"), 0, "If non-zero causes the managed-only debugger to assert on unhandled breakpoints in the debuggee")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException, W("UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException"), 0, "If non-zero, then don't try to unsuspend threads after continuing a 2nd-chance native exception")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgSkipStackCheck, W("DbgSkipStackCheck"), 0, "Skip the stack pointer check during stackwalking")
 #ifdef DACCESS_COMPILE
 CONFIG_DWORD_INFO(INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget, W("IntentionallyCorruptDataFromTarget"), 0, "Intentionally fakes bad data retrieved from target to try and break dump generation.")
 #endif
@@ -578,6 +577,9 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_DbgMiniDumpName, W("DbgMiniDumpName"), "Crash
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgMiniDumpType, W("DbgMiniDumpType"), 0, "Crash dump type: 1 normal, 2 withheap, 3 triage, 4 full")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostics"), 0, "Enable crash dump generation diagnostic logging")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrashReportBeforeSignalChaining, W("CrashReportBeforeSignalChaining"), 0, "Enable crash report generation before chaining to previous signal handler")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportFrameLimitPerThread, W("CrashReportFrameLimitPerThread"), 32, "Maximum number of managed stack frames per thread to emit in the in-proc crash report's compact log; 0 disables the limit; remaining frames are summarized as '... +N more frames'", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+RETAIL_CONFIG_STRING_INFO(INTERNAL_CrashReportRootPath, W("CrashReportRootPath"), "Root path for lifecycle-managed in-proc crash report JSON files")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportMaxFileCount, W("CrashReportMaxFileCount"), 32, "Maximum number of lifecycle-managed in-proc crash report JSON files to retain (positive integer); default 32", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 ///
 /// R2R

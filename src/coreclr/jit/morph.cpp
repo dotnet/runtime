@@ -5549,7 +5549,6 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 // getLookupTree: get a lookup tree
 //
 // Arguments:
-//    pResolvedToken - resolved token of the call
 //    pLookup - the lookup to get the tree for
 //    handleFlags - flags to set on the result node
 //    compileTimeHandle - compile-time handle corresponding to the lookup
@@ -5557,10 +5556,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 // Return Value:
 //    A node representing the lookup tree
 //
-GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                 CORINFO_LOOKUP*         pLookup,
-                                 GenTreeFlags            handleFlags,
-                                 void*                   compileTimeHandle)
+GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -5583,26 +5579,21 @@ GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
 
-    return getRuntimeLookupTree(pResolvedToken, pLookup, compileTimeHandle);
+    return getRuntimeLookupTree(pLookup, compileTimeHandle);
 }
 
 //------------------------------------------------------------------------
 // getRuntimeLookupTree: get a tree for a runtime lookup
 //
 // Arguments:
-//    pResolvedToken - resolved token of the call
 //    pLookup - the lookup to get the tree for
 //    compileTimeHandle - compile-time handle corresponding to the lookup
 //
 // Return Value:
 //    A node representing the runtime lookup tree
 //
-GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        CORINFO_LOOKUP*         pLookup,
-                                        void*                   compileTimeHandle)
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
 {
-    assert(!compIsForInlining());
-
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
@@ -5723,8 +5714,8 @@ GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bo
     //
     info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
-    GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
-                                    embedInfo.compileTimeHandle);
+    GenTree* result =
+        getLookupTree(&embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token), embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -6860,70 +6851,6 @@ void Compiler::fgAssignSetVarDef(GenTree* tree)
     tree->VisitLocalDefs(this, visitDef);
 }
 
-#ifdef FEATURE_SIMD
-
-//--------------------------------------------------------------------------------------------------------------
-// getSIMDStructFromField:
-//   Checking whether the field belongs to a simd struct or not. If it is, return the GenTree* for
-//   the struct node, also base type, field index and simd size. If it is not, just return  nullptr.
-//   Usually if the tree node is from a simd lclvar which is not used in any SIMD intrinsic, then we
-//   should return nullptr, since in this case we should treat SIMD struct as a regular struct.
-//   However if no matter what, you just want get simd struct node, you can set the ignoreUsedInSIMDIntrinsic
-//   as true. Then there will be no IsUsedInSIMDIntrinsic checking, and it will return SIMD struct node
-//   if the struct is a SIMD struct.
-//
-// Arguments:
-//       tree - GentreePtr. This node will be checked to see this is a field which belongs to a simd
-//               struct used for simd intrinsic or not.
-//       indexOut - unsigned pointer, if the tree is used for simd intrinsic, we will set *indexOut
-//                  equals to the index number of this field.
-//       simdSizeOut - unsigned pointer, if the tree is used for simd intrinsic, set the *simdSizeOut
-//                     equals to the simd struct size which this tree belongs to.
-//      ignoreUsedInSIMDIntrinsic - bool. If this is set to true, then this function will ignore
-//                                  the UsedInSIMDIntrinsic check.
-//
-// Return Value:
-//       A GenTree* which points the simd lclvar tree belongs to. If the tree is not the simd
-//       instrinic related field, return nullptr.
-//
-GenTree* Compiler::getSIMDStructFromField(GenTree*  tree,
-                                          unsigned* indexOut,
-                                          unsigned* simdSizeOut,
-                                          bool      ignoreUsedInSIMDIntrinsic /*false*/)
-{
-    if (tree->isIndir())
-    {
-        GenTree* addr = tree->AsIndir()->Addr();
-        if (!addr->OperIs(GT_FIELD_ADDR) || !addr->AsFieldAddr()->IsInstance())
-        {
-            return nullptr;
-        }
-
-        GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
-        if (objRef->IsLclVarAddr())
-        {
-            LclVarDsc* varDsc = lvaGetDesc(objRef->AsLclVarCommon());
-            if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic))
-            {
-                var_types elementType = tree->TypeGet();
-                unsigned  fieldOffset = addr->AsFieldAddr()->gtFldOffset;
-                unsigned  elementSize = genTypeSize(elementType);
-
-                if (varTypeIsArithmetic(elementType) && ((fieldOffset % elementSize) == 0))
-                {
-                    *simdSizeOut = varDsc->lvExactSize();
-                    *indexOut    = fieldOffset / elementSize;
-
-                    return objRef;
-                }
-            }
-        }
-    }
-
-    return nullptr;
-}
-#endif // FEATURE_SIMD
-
 //------------------------------------------------------------------------------
 // fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op C3"
 //                      for commutative operators.
@@ -7862,9 +7789,6 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
         {
-            assert(tree->OperIsCmpCompare());
-            fgPushConstantsRight(tree->AsOp());
-
             tree = fgOptimizeRelationalComparison(tree->AsOp());
             if (!tree->OperIsBinary())
             {
@@ -8270,7 +8194,33 @@ DONE_MORPHING_CHILDREN:
             if (opts.OptimizationEnabled() && !tree->OperMayThrow(this))
             {
                 JITDUMP("\nNULLCHECK on [%06u] will always succeed\n", dspTreeID(op1));
-                if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+
+                // If op1 is a helper call with no observable side effects (e.g., an
+                // allocator helper without GTF_CALL_M_ALLOC_SIDE_EFFECTS that the JIT
+                // models as non-throwing, like NEWSFAST), we can drop the call itself.
+                // This matches the IR shape produced by stack allocation, allowing
+                // downstream VN/CSE to treat the surrounding code as if no allocator
+                // call were present. We rely on HasSideEffects's helper-properties
+                // model rather than the cached GTF_SIDE_EFFECT bit, which is
+                // conservative for calls. Any side effects in the call's arguments
+                // are preserved.
+                const bool dropRoot = op1->IsCall() && !op1->AsCall()->HasSideEffects(this);
+
+                if (dropRoot)
+                {
+                    GenTree* sideEffects = nullptr;
+                    gtExtractSideEffList(op1, &sideEffects, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
+                    if (sideEffects != nullptr)
+                    {
+                        tree = sideEffects;
+                        tree->SetMorphed(this, /* doChildren */ true);
+                    }
+                    else
+                    {
+                        tree->gtBashToNOP();
+                    }
+                }
+                else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
                     tree = gtUnusedValNode(op1);
                     tree->SetMorphed(this, /* doChildren */ true);
@@ -8783,11 +8733,29 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
+    fgPushConstantsRight(cmp);
+
+    // Canonicalize
+    // '(A & pow2) == pow2' -> '(A & pow2) != 0'
+    // '(A & pow2) != pow2' -> '(A & pow2) == 0'
+    if (cmp->OperIs(GT_EQ, GT_NE) && cmp->gtGetOp1()->OperIs(GT_AND) && cmp->gtGetOp2()->IsIntegralConstUnsignedPow2())
+    {
+        if (GenTree::Compare(cmp->gtGetOp1()->gtGetOp2(), cmp->gtGetOp2()))
+        {
+            cmp->SetOper(GenTree::ReverseRelop(cmp->OperGet()), GenTree::PRESERVE_VN);
+            cmp->gtOp2 = gtNewZeroConNode(cmp->gtGetOp2()->TypeGet());
+            fgUpdateConstTreeValueNumber(cmp->gtGetOp2());
+
+            if (fgGlobalMorph)
+            {
+                fgMorphTreeDone(cmp->gtOp2);
+            }
+        }
+    }
+
     GenTree* tree = cmp;
 
-    // TODO-CQ: Should be called for all comparisons
-    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
-        (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
+    if (tree->OperIsCmpCompare() && (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
     {
         tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
     }
@@ -10943,12 +10911,13 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
-    assert(cmp->OperIsCmpCompare());
-    assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
-    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()));
-
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
+
+    assert(cmp->OperIsCmpCompare());
+    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
+    assert((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
     if (!op1->TypeIs(TYP_LONG))
     {
@@ -14469,6 +14438,12 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
 void Compiler::fgSetOptions()
 {
+#if defined(TARGET_WASM)
+    // Wasm requires GC polls, and only supports partially interruptible GC reporting.
+    optMethodFlags |= OMF_NEEDS_GCPOLLS;
+    assert(!GetInterruptible());
+#else
+
 #ifdef DEBUG
     /* Should we force fully interruptible code ? */
     if (JitConfig.JitFullyInt() || compStressCompile(STRESS_GENERIC_VARN, 30))
@@ -14483,6 +14458,7 @@ void Compiler::fgSetOptions()
         assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true); // debugging is easier this way ...
     }
+#endif // defined(TARGET_WASM)
 
     /* Assume we won't need an explicit stack frame if this is allowed */
 

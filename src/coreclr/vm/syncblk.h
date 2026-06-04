@@ -331,7 +331,7 @@ public:
 #ifdef FEATURE_OBJCMARSHAL
 public:
 #ifndef DACCESS_COMPILE
-    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+    PTR_VOID EnsureTaggedMemoryAllocated(_Out_ size_t* memoryInSizeT)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(memoryInSizeT != NULL);
