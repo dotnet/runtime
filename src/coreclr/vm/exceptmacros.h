@@ -238,6 +238,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         }                                                                                                              \
         catch (const ResumeAfterCatchException& ex)                                                                    \
         {                                                                                                              \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */    \
             ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                             \
         }                                                                                                              \
         if (__resumeSP != 0)                                                                                           \
@@ -247,16 +248,17 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         }
 
 
-#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME                                             \
-        }                                                                                           \
-        catch (const ResumeAfterCatchException& ex)                                                 \
-        {                                                                                           \
-            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                          \
-        }                                                                                           \
-        if (__resumeSP != 0)                                                                        \
-        {                                                                                           \
-            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                   \
-            RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame, __pResumeAfterCatchSSP); \
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME                                                             \
+        }                                                                                                           \
+        catch (const ResumeAfterCatchException& ex)                                                                 \
+        {                                                                                                           \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */ \
+            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                          \
+        }                                                                                                           \
+        if (__resumeSP != 0)                                                                                        \
+        {                                                                                                           \
+            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                   \
+            RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame, __pResumeAfterCatchSSP);                 \
         }
 
 #else // FEATURE_INTERPRETER && !HOST_WASM

@@ -4641,6 +4641,7 @@ do                                                                      \
                 // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
                 // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
                 // Thus, we need to rethrow it to let it propagate further.
+                // We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating.
                 goto RETHROW_RESUME_AFTER_CATCH;
             }
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
