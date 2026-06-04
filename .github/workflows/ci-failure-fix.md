@@ -120,6 +120,7 @@ Walk the steps in order. Do not skip. Stop at Step 7.
 Read once at start:
 
 - `.github/workflows/shared/create-kbe.instructions.md` — for the KBE body shape you will parse (`<a id="new-kbe-template"></a>` / `## New-KBE template`; the `Build error leg or test failing: <leg>-<assembly-or-test>` line carries the failing leg and test/assembly).
+- `.github/workflows/shared/area-skills.instructions.md` — the area → skill directory (Step 5.1) and the area-owner mention conventions (Step 6).
 - `docs/area-owners.md` — the area-label → owners mapping you use for hand-off mentions.
 - The skill matching the KBE's pipeline/area (routing table in Step 5.1). Skills live under `.github/skills/`.
 
@@ -168,14 +169,21 @@ For each surviving KBE, locate the failure and a likely cause.
 
 #### Step 5.1 — Load the matching skill
 
-| KBE pipeline / area | Skill | Fix policy |
-|---|---|---|
-| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | `mobile-platforms/SKILL.md` | Small test/csproj/condition fixes in bounds are fair game. |
-| JIT / GC / PGO stress (codegen) | `jit-regression-test/SKILL.md`; `ci-pipeline-monitor/SKILL.md` | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. |
-| `System.Net.*` | `system-net-review/SKILL.md` | In bounds only if it satisfies Step 5.2. |
-| `Microsoft.Extensions.*` | `extensions-review/SKILL.md` | In bounds only if it satisfies Step 5.2. |
-| NativeAOT outer loop | check `eng/testing/tests.*aot*.targets` + the test `.csproj` | In bounds only if it satisfies Step 5.2. |
-| Generic | `ci-pipeline-monitor/SKILL.md` | In bounds only if it satisfies Step 5.2. |
+Resolve the KBE's pipeline/area to its skill using the shared area → skill
+directory in `.github/workflows/shared/area-skills.instructions.md` section
+`<a id="area-skill-table"></a>` / `## Area → skill table`. Load that skill (in
+listed order when more than one) before attempting a fix.
+
+Apply these fixer-specific bounds on top of the skill's guidance:
+
+| KBE pipeline / area | Fix policy |
+|---|---|
+| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. |
+| JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. |
+| `System.Net.*` | In bounds only if it satisfies Step 5.2. |
+| `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |
+| NativeAOT outer loop | In bounds only if it satisfies Step 5.2. |
+| Generic | In bounds only if it satisfies Step 5.2. |
 
 #### Step 5.2 — Attempt a fix, then classify confidence
 
@@ -219,11 +227,14 @@ Respect Hard rule 5 (at most one loop-in comment per KBE, ever) — re-check the
 
 ### Step 6 — Mention rules (apply to help-wanted PR bodies and loop-in comments)
 
+Follow the shared area-owner mention conventions in
+`.github/workflows/shared/area-skills.instructions.md` section
+`<a id="area-mention-conventions"></a>` / `## Area-owner mention conventions`
+(resolve owners from `docs/area-owners.md`; at most one or two individuals; never
+live-mention a team; never mention bots; non-accusatory framing). In addition:
+
 - Live-mention **at most one** individual regression author, and only when Step 4 reached high confidence. Otherwise write "Possible related PR: dotnet/runtime#<n>" with no `@`.
-- Live-mention **at most one or two** individual area owners from `docs/area-owners.md` for the KBE's `area-*` label.
-- **Never live-mention a GitHub team.** When an owner entry is a team handle (`@dotnet/<team>`), render it as inline code `` `@dotnet/<team>` `` so it does not notify the whole team.
-- Put all contacts under a clearly non-accusatory heading: `## Suggested reviewers / area contacts`. Frame as "loop-in for triage", not blame.
-- Never mention bots, `dotnet-maestro`, or `github-actions`.
+- Put all contacts under the heading `## Suggested reviewers / area contacts`.
 
 ### Step 7 — Per-KBE tally + end-of-run summary
 
