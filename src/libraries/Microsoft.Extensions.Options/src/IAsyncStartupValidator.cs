@@ -16,7 +16,10 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <exception cref="OptionsValidationException">
-        /// One or more validators return failed <see cref="ValidateOptionsResult"/> when validating.
+        /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
+        /// </exception>
+        /// <exception cref="System.AggregateException">
+        /// Multiple validators return failed <see cref="ValidateOptionsResult"/> results when validating.
         /// </exception>
         Task ValidateAsync(CancellationToken cancellationToken = default);
     }

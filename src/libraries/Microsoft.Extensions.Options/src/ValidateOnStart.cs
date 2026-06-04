@@ -55,11 +55,8 @@ namespace Microsoft.Extensions.Options
 
         public async Task ValidateAsync(CancellationToken cancellationToken = default)
         {
-            // Run sync validators first. If sync validation fails, skip async validators
-            // to avoid expensive I/O operations on already-invalid configuration (two-stage validation).
-            Validate();
-
-            // Then run async validators
+            // Async validators only — sync validation is handled separately by
+            // IStartupValidator.Validate() in Host.StartAsync() (two-stage orchestration).
             List<Exception>? exceptions = null;
 
             foreach (Func<CancellationToken, Task> asyncValidator in _validatorOptions._asyncValidators.Values)

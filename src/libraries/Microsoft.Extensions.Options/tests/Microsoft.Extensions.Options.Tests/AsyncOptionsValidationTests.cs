@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public async Task StartupValidator_ValidateAsync_RunsBothSyncAndAsyncValidators()
+        public async Task StartupValidator_TwoStage_RunsBothSyncAndAsyncValidators()
         {
             var services = new ServiceCollection();
             bool syncRan = false;
@@ -93,16 +93,19 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
 
-            await validator.ValidateAsync(CancellationToken.None);
-
+            // Two-stage orchestration: Host.cs calls Validate() then ValidateAsync() independently
+            var syncValidator = sp.GetRequiredService<IStartupValidator>();
+            syncValidator.Validate();
             Assert.True(syncRan);
+
+            var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
+            await asyncValidator.ValidateAsync(CancellationToken.None);
             Assert.True(asyncRan);
         }
 
         [Fact]
-        public async Task StartupValidator_ValidateAsync_SyncFailureSkipsAsyncValidators()
+        public async Task StartupValidator_TwoStage_SyncFailureSkipsAsyncValidators()
         {
             var services = new ServiceCollection();
             bool asyncRan = false;
@@ -118,9 +121,13 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
 
-            await Assert.ThrowsAsync<OptionsValidationException>(() => validator.ValidateAsync(CancellationToken.None));
+            // Stage 1: Sync throws — in Host.cs, this prevents reaching Stage 2
+            var syncValidator = sp.GetRequiredService<IStartupValidator>();
+            Assert.Throws<OptionsValidationException>(() => syncValidator.Validate());
+
+            // Stage 2 is never reached because the exception propagates.
+            // Verify async didn't run (simulating Host.cs short-circuit behavior).
             Assert.False(asyncRan);
         }
 

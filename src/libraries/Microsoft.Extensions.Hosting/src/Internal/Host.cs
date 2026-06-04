@@ -66,6 +66,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// Order:
         ///  IHostLifetime.WaitForStartAsync
         ///  Services.GetService{IStartupValidator}().Validate()
+        ///  Services.GetService{IAsyncStartupValidator}().ValidateAsync()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -96,23 +97,31 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                     _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
 
-                    // Call startup validators (prefer async if available).
-                    // IAsyncStartupValidator takes precedence; the built-in StartupValidator implements both
-                    // interfaces and its ValidateAsync() calls Validate() internally.
+                    // Two-stage startup validation:
+                    // Stage 1 (sync): Run IStartupValidator.Validate() — iterates _validators dictionary
+                    //   (or user's custom implementation if registered).
+                    //   If sync validation fails, skip async to avoid expensive I/O on invalid config.
+                    // Stage 2 (async): Run IAsyncStartupValidator.ValidateAsync() — iterates _asyncValidators
+                    //   dictionary (or user's custom implementation if registered).
+                    //
+                    // Each interface is resolved independently via DI. TryAddTransient semantics ensure
+                    // user-registered implementations replace the built-in for each interface separately.
+                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
+                    validator?.Validate();
+
                     IAsyncStartupValidator? asyncValidator = Services.GetService<IAsyncStartupValidator>();
                     if (asyncValidator is not null)
                     {
                         await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
                     }
-                    else
-                    {
-                        IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                        validator?.Validate();
-                    }
                 }
                 catch (Exception ex)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    if (ex is OperationCanceledException)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     // service factory or validation failed, abort startup.
                     exceptions.Add(ex);
                     LogAndRethrow();

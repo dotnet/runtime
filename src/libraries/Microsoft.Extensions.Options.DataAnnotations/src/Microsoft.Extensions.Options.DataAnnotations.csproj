@@ -18,7 +18,6 @@
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
     <Compile Remove="DataAnnotationValidateOptionsAsync.cs" />
-    <Compile Remove="OptionsBuilderDataAnnotationsExtensions.Async.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
