@@ -33901,7 +33901,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     simd_t simdVal = {};
 
-    if ((retType != TYP_SIMD) && GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
+    if (
+#if defined(TARGET_ARM64)
+        (retType != TYP_SIMD) &&
+#endif // TARGET_ARM64
+        GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
     {
         GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
