@@ -279,6 +279,51 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [Fact]
+        public void FactoryConstruction_DisposesPartialRegistrations_WhenLaterListenerRegistrationThrows()
+        {
+            int firstListenerShouldListenCalls = 0;
+            var firstListener = new ActivityListener("PartialCleanupFirstListener")
+            {
+                ShouldListenTo = _ =>
+                {
+                    Interlocked.Increment(ref firstListenerShouldListenCalls);
+                    return false;
+                },
+            };
+
+            var optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(
+                new TracingRule(sourceName: null, operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
+
+            // The second registration returns a null ActivityListener. MS.DI materialises
+            // IEnumerable<ActivityListener> eagerly but accepts null factory returns, so the null
+            // reaches the factory ctor mid-iteration and the registration ctor's
+            // ArgumentNullException.ThrowIfNull throws there. That is exactly the partial-cleanup
+            // case we need to verify: the first registration has already been built (and its
+            // wrapper attached to ActivitySource.s_allListeners) before the throw.
+            using var serviceProvider = new ServiceCollection()
+                .AddTracing()
+                .Services
+                .AddSingleton(firstListener)
+                .AddSingleton<ActivityListener>(_ => null!)
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            Assert.Throws<ArgumentNullException>(
+                () => serviceProvider.GetRequiredService<ActivitySourceFactory>());
+
+            // If the partial-construction cleanup ran, the wrapper attached for firstListener has
+            // been detached from s_allListeners/s_activeSources. Creating a fresh ActivitySource
+            // after the failed construction must not invoke wrapper.ShouldListenTo (and therefore
+            // must not invoke firstListener.ShouldListenTo). If cleanup had not run, the wrapper
+            // would still be attached and would forward the call here.
+            int beforeNewSource = Volatile.Read(ref firstListenerShouldListenCalls);
+            using (var freshSource = new ActivitySource("Demo.PartialCleanupRegression_" + Guid.NewGuid().ToString("N")))
+            {
+                Assert.Equal(beforeNewSource, Volatile.Read(ref firstListenerShouldListenCalls));
+            }
+        }
+
+        [Fact]
         public void ActivitySourceFactoryCreate_RestoresScope_WhenActivitySourceCreationThrows()
         {
             using var serviceProvider = new ServiceCollection()

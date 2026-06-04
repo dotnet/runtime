@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     /// <remarks>
     /// <para>The most specific rule that matches a given activity will be used. The priority of parameters is as follows:</para>
     /// <para>- ListenerName, an exact match. See <see cref="ActivityListener.Name"/>.</para>
-    /// <para>- SourceName, either an exact match or a wildcard match using a single <c>*</c>. See <see cref="ActivitySource.Name"/>.</para>
+    /// <para>- SourceName, either an exact match, the longest prefix match, or a wildcard pattern using a single <c>*</c>. See <see cref="ActivitySource.Name"/>.</para>
     /// <para>- OperationName, an exact match. See <see cref="Activity.OperationName"/>.</para>
     /// <para>- Scopes, where a more constrained scope is preferred over <c>Global | Local</c>.</para>
     /// </remarks>
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// <summary>
         /// Initializes a new instance of the <see cref="TracingRule"/> class.
         /// </summary>
-        /// <param name="sourceName">The <see cref="ActivitySource.Name"/> or pattern with a single <c>*</c> wildcard. A <see langword="null"/> or empty value matches all activity sources.</param>
+        /// <param name="sourceName">The <see cref="ActivitySource.Name"/>, prefix, or pattern with a single <c>*</c> wildcard. A <see langword="null"/> or empty value matches all activity sources.</param>
         /// <param name="operationName">The <see cref="Activity.OperationName"/>, exact match. A <see langword="null"/> or empty value matches all activities within the matching sources.</param>
         /// <param name="listenerName">The <see cref="ActivityListener.Name"/>. A <see langword="null"/> or empty value matches all listeners.</param>
         /// <param name="scopes">A bitwise combination of the enumeration values that specifies the scopes to consider.</param>
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Gets the <see cref="ActivitySource.Name"/>, either an exact match or a wildcard match using a single <c>*</c>.
+        /// Gets the <see cref="ActivitySource.Name"/>, either an exact match, the longest prefix match, or a wildcard pattern using a single <c>*</c>.
         /// </summary>
         /// <value>
         /// The activity source name. If <see langword="null"/> or empty, all activity sources are matched.
