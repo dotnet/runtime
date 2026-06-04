@@ -440,7 +440,7 @@ namespace System.Xml.Serialization
             if (!t.IsCollectible)
                 return null;
 
-            if (AssemblyLoadContext.GetLoadContext(t.Assembly)?.IsCollectible == true)
+            if (t.Assembly.IsCollectible)
                 return t.Assembly;
 
             if (t.IsGenericType && !t.IsGenericTypeDefinition)
@@ -495,7 +495,9 @@ namespace System.Xml.Serialization
                     VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
 
                 string assemblyName = "Microsoft.GeneratedCode";
-                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
+                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(
+                    assemblyName,
+                    collectible: collectibleAssembly is not null);
                 // Add AssemblyVersion attribute to match parent assembly version
                 if (mainType != null)
                 {

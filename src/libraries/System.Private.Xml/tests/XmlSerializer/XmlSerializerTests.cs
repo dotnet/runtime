@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization.Tests;
@@ -2642,6 +2643,19 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         }
         Assert.True(!weakRef.IsAlive);
     }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    public static void Xml_RunAndCollectType_DoesNotRemainCached()
+    {
+        ExecuteRunAndCollectAndRelease(out WeakReference weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
 #endif
 
     [Fact]
@@ -2883,6 +2897,87 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         alc.Unload();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteRunAndCollectAndRelease(out WeakReference wref)
+    {
+        string uniqueName = "XmlSerializerTests.RunAndCollect." + Guid.NewGuid().ToString("N");
+        var assemblyName = new AssemblyName(uniqueName);
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            assemblyName,
+            AssemblyBuilderAccess.RunAndCollect);
+
+        ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(uniqueName);
+        TypeBuilder typeBuilder = moduleBuilder.DefineType(
+            uniqueName + ".SimpleType",
+            TypeAttributes.Public | TypeAttributes.Class);
+
+        typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        DefineAutoProperty(typeBuilder, "P1", typeof(string));
+        DefineAutoProperty(typeBuilder, "P2", typeof(int));
+
+        Type type = typeBuilder.CreateTypeInfo()!.AsType();
+
+        Assert.True(type.IsCollectible);
+        Assert.True(type.Assembly.IsCollectible);
+
+        wref = new WeakReference(type.Assembly);
+
+        object obj = Activator.CreateInstance(type)!;
+        type.GetProperty("P1")!.SetValue(obj, "test");
+        type.GetProperty("P2")!.SetValue(obj, 42);
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+
+        ms.Position = 0;
+        object? rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+        Assert.Equal("test", type.GetProperty("P1")!.GetValue(rtobj));
+        Assert.Equal(42, type.GetProperty("P2")!.GetValue(rtobj));
+    }
+
+    private static void DefineAutoProperty(TypeBuilder typeBuilder, string name, Type propertyType)
+    {
+        FieldBuilder field = typeBuilder.DefineField("_" + name, propertyType, FieldAttributes.Private);
+
+        MethodAttributes methodAttributes =
+            MethodAttributes.Public |
+            MethodAttributes.SpecialName |
+            MethodAttributes.HideBySig;
+
+        MethodBuilder getter = typeBuilder.DefineMethod(
+            "get_" + name,
+            methodAttributes,
+            propertyType,
+            Type.EmptyTypes);
+
+        ILGenerator getterIl = getter.GetILGenerator();
+        getterIl.Emit(OpCodes.Ldarg_0);
+        getterIl.Emit(OpCodes.Ldfld, field);
+        getterIl.Emit(OpCodes.Ret);
+
+        MethodBuilder setter = typeBuilder.DefineMethod(
+            "set_" + name,
+            methodAttributes,
+            null,
+            new[] { propertyType });
+
+        ILGenerator setterIl = setter.GetILGenerator();
+        setterIl.Emit(OpCodes.Ldarg_0);
+        setterIl.Emit(OpCodes.Ldarg_1);
+        setterIl.Emit(OpCodes.Stfld, field);
+        setterIl.Emit(OpCodes.Ret);
+
+        PropertyBuilder property = typeBuilder.DefineProperty(
+            name,
+            PropertyAttributes.None,
+            propertyType,
+            null);
+
+        property.SetGetMethod(getter);
+        property.SetSetMethod(setter);
+    }
 
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
