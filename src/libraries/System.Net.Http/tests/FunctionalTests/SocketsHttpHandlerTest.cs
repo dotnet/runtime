@@ -713,6 +713,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
         public async Task DisposeTargetStream_ThrowsObjectDisposedException(bool knownLength)
         {
             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

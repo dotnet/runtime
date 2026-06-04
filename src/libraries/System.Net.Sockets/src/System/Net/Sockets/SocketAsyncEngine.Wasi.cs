@@ -147,6 +147,12 @@ namespace System.Net.Sockets
             {
                 pollableHandle = Interop.Sys.WasiSubscribeSocketPollable(kind, streamOrSocketHandle);
             }
+            // A 0 handle is not a valid pollable. Adding it to the poll set would corrupt the
+            // WASI poll loop, so fail fast instead of silently registering an invalid handle.
+            if (pollableHandle == 0)
+            {
+                Environment.FailFast("Failed to subscribe WASI pollable for kind " + kind + " and handle " + streamOrSocketHandle);
+            }
             return pollableHandle;
         }
 

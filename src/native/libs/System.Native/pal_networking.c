@@ -3486,7 +3486,8 @@ int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int3
     void** ref = (void**)descriptor_table_get_ref(fd);
     if (ref == NULL)
     {
-        return Error_EFAULT;
+        // The fd is not present in the descriptor table (e.g. closed or not a socket).
+        return Error_EBADF;
     }
     *entry = ref[0];
 
@@ -3494,7 +3495,7 @@ int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int3
     socklen_t length = sizeof(type);
     if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0)
     {
-        return Error_EFAULT;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
     if (type == SOCK_STREAM)
