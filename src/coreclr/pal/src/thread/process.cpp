@@ -126,7 +126,7 @@ CObjectType CorUnix::otProcess(
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
-                sizeof(CProcProcessLocalData),
+                0,      // No process local data
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
@@ -2095,8 +2095,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
     IPalObject *pobjProcess = NULL;
-    IDataLock *pDataLock;
-    CProcProcessLocalData *pLocalData;
     CObjectAttributes oa;
     HANDLE hProcess;
 
@@ -2132,21 +2130,6 @@ CorUnix::CreateInitialProcessAndThreadObjects(
         ERROR("Unable to allocate process object");
         goto CreateInitialProcessAndThreadObjectsExit;
     }
-
-    palError = pobjProcess->GetProcessLocalData(
-        pThread,
-        WriteLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ASSERT("Unable to access local data");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    pDataLock->ReleaseLock(pThread, TRUE);
 
     palError = g_pObjectManager->RegisterObject(
         pThread,
