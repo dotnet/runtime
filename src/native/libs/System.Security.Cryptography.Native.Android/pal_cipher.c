@@ -242,7 +242,14 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
     (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+
+    if ((*env)->ExceptionCheck(env))
+    {
+        LOG_ERROR("Cipher.updateAAD failed for %s with input length %d", ctx->type->name, inl);
+        return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    }
+
+    return SUCCESS;
 }
 
 int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
@@ -273,7 +280,14 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
     }
 
     (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+
+    if ((*env)->ExceptionCheck(env))
+    {
+        LOG_ERROR("Cipher.update failed for %s with input length %d", ctx->type->name, inl);
+        return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    }
+
+    return SUCCESS;
 }
 
 int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl)
@@ -317,10 +331,11 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
     jthrowable ex = NULL;
 
-    if (TryGetJNIException(env, &ex, false))
+    if (TryGetJNIException(env, &ex, true))
     {
         if (ex == NULL)
         {
+            LOG_ERROR("Cipher.doFinal failed for %s without an exception object", ctx->type->name);
             return FAIL;
         }
 
@@ -328,6 +343,11 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
         {
             *authTagMismatch = 1;
         }
+
+        LOG_ERROR(
+            "Cipher.doFinal failed for %s; is AEADBadTagException=%d",
+            ctx->type->name,
+            *authTagMismatch);
 
         (*env)->DeleteLocalRef(env, ex);
         return FAIL;
