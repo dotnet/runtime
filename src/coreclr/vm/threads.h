@@ -3782,6 +3782,7 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t InteropDebuggingHijacked = offsetof(Thread, m_fInteropDebuggingHijacked);
 #ifdef TARGET_WINDOWS
     static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
 #endif

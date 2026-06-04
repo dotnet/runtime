@@ -1497,28 +1497,51 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE HasTypeParams(VMPTR_TypeHandle th, OUT BOOL * pResult) = 0;
 
-    // Get type information for a class
+    // Callback invoked for each FieldData computed by EnumerateClassFields or
+    // EnumerateInstantiationFields.
+    //
+    // Arguments:
+    //    pFieldData - the FieldData for this field. Only valid for the duration of the
+    //                 callback; the consumer must copy the contents if it needs to keep
+    //                 them. The pointer is not null.
+    //    pUserData  - user data passed to the Enumerate* call.
+    typedef void (*FP_FIELDDATA_CALLBACK)(FieldData *pFieldData, CALLBACK_DATA pUserData);
+
+    // Enumerate the FieldData entries for a class.
     //
     // Arguments:
     //     input:  thExact       - exact type handle for type
-    //     output:
-    //             pData         - structure containing information about the class and its
-    //                             fields
+    //             fpCallback    - callback invoked once per field (in iterator order:
+    //                             regular FieldDescs first, then EnC-added instance,
+    //                             then EnC-added static).
+    //             pUserData     - opaque user data passed back to the callback.
+    //     output: pObjectSize   - size of the object in bytes for non-generic types;
+    //                             zero for open generic types. Always written on S_OK.
+    //
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateClassFields(VMPTR_TypeHandle thExact,
+                                                           OUT SIZE_T *pObjectSize,
+                                                           FP_FIELDDATA_CALLBACK fpCallback,
+                                                           CALLBACK_DATA pUserData) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData) = 0;
-
-    // get field information and object size for an instantiated generic
+    // Enumerate the FieldData entries for an instantiated generic type and report its
+    // instantiation-specific object size.
     //
     // Arguments:
     //     input:  vmAssembly  - module containing metadata for the type
-    //             thExact       - exact type handle for type (may be NULL)
-    //             thApprox      - approximate type handle for the type
-    //     output:
-    //             pFieldList    - array of structures containing information about the fields. Clears any previous
-    //                             contents. Allocated and initialized by this function.
-    //             pObjectSize   - size of the instantiated object
+    //             vmThExact   - exact type handle for type (may be NULL)
+    //             vmThApprox  - approximate type handle for the type
+    //             fpCallback  - callback invoked once per field.
+    //             pUserData   - opaque user data passed back to the callback.
+    //     output: pObjectSize - size of the instantiated object. Always written on S_OK.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize) = 0;
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateInstantiationFields(VMPTR_Assembly vmAssembly,
+                                                                   VMPTR_TypeHandle vmThExact,
+                                                                   VMPTR_TypeHandle vmThApprox,
+                                                                   OUT SIZE_T *pObjectSize,
+                                                                   FP_FIELDDATA_CALLBACK fpCallback,
+                                                                   CALLBACK_DATA pUserData) = 0;
 
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
     //
