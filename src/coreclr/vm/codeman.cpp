@@ -335,7 +335,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                     data[i].BeginAddress, cPendingCount);
                 i++;
             }
-            currentSeq = m_pendingSeq.Load() + 1;
+            currentSeq = (LONG)((ULONG)m_pendingSeq.Load() + 1u);
             m_pendingSeq.Store(currentSeq);
         }
         // Flush any pending entries if we run out of space, or when we are at the end
