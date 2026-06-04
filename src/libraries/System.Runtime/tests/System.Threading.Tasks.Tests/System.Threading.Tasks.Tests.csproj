@@ -62,6 +62,7 @@
     <Compile Include="System.Runtime.CompilerServices\RuntimeAsyncTests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="System.Runtime.CompilerServices\AsyncProfilerTests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="System.Runtime.CompilerServices\AsyncProfilerV1Tests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
+    <Compile Include="System.Runtime.CompilerServices\AsyncProfilerV2Tests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
