@@ -447,7 +447,7 @@ namespace System.Text.RegularExpressions
         /// starting at or after the `startat` character position, in an input string. The regular expression pattern for which the
         /// <xref:System.Text.RegularExpressions.Regex.Match(System.String,System.Int32)> method searches is defined by the call to one of the <xref:System.Text.RegularExpressions.Regex>
         /// class constructors. For information about the language elements used to build a regular expression pattern,
-        /// see [Regular Expression Language - Quick Reference](/dotnet/standard/base-types/regular-expression-language-quick-reference).
+        /// see [Regular Expression Language - Quick Reference](https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference).
         ///
         /// ## The `startat` parameter
         ///
@@ -456,7 +456,7 @@ namespace System.Text.RegularExpressions
         /// of `input` in a right-to-left search. Despite starting at `startat`, the index of any returned match is relative to the start of the string.
         ///
         /// Although the regular expression engine doesn't return any match starting before `startat`, it doesn't ignore the string before `startat`. This means that assertions
-        /// such as [anchors](/dotnet/standard/base-types/anchors-in-regular-expressions) or [lookbehind assertions](/dotnet/standard/base-types/backtracking-in-regular-expressions#lookbehind-assertions)
+        /// such as [anchors](https://learn.microsoft.com/dotnet/standard/base-types/anchors-in-regular-expressions) or [lookbehind assertions](https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions#lookbehind-assertions)
         /// still apply to the input as a whole. For example, the following code includes a pattern with a lookbehind assertion that's satisfied even though it occurs
         /// before the `startat` index of 5 in the input string.
         ///
@@ -464,7 +464,7 @@ namespace System.Text.RegularExpressions
         ///
         /// > [!TIP]
         /// > - If a pattern starts with the `^` anchor but `startat` is greater than 0, no matches will ever be found in a single-line search since they are constrained by `^` to start at index 0.
-        /// > - The [`\G` anchor](/dotnet/standard/base-types/anchors-in-regular-expressions#contiguous-matches-g) is satisfied at `startat`. Because of this, if you want to restrict
+        /// > - The [`\G` anchor](https://learn.microsoft.com/dotnet/standard/base-types/anchors-in-regular-expressions#contiguous-matches-g) is satisfied at `startat`. Because of this, if you want to restrict
         /// a match so that it begins exactly at a particular character position in the string, anchor the regular expression with a `\G` on the left for a left-to-right pattern.
         /// This restricts the match so it must start exactly at `startat` (or, when multiple matches are desired, so the matches are contiguous).
         ///
@@ -478,7 +478,7 @@ namespace System.Text.RegularExpressions
         /// - If `startat` is specified, the right-to-left scan begins at the character at `startat` - 1 (not `startat`).
         /// - When the `\G` anchor is specified at the right end of a pattern, it restricts the (first) match to end exactly at `startat` - 1.
         ///
-        /// For more information about right-to-left searches, see [Right-to-left mode](/dotnet/standard/base-types/regular-expression-options#right-to-left-mode).
+        /// For more information about right-to-left searches, see [Right-to-left mode](https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options#right-to-left-mode).
         ///
         /// ## Determine whether a match is found
         ///
