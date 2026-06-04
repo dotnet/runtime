@@ -8562,7 +8562,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             case NI_Vector128_ToScalar:
 #ifdef TARGET_ARM64
             case NI_Vector64_ToScalar:
-#else
+#elif defined(TARGET_XARCH)
             case NI_Vector256_ToScalar:
             case NI_Vector512_ToScalar:
 #endif
@@ -8696,7 +8696,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             case NI_Vector128_GetElement:
 #ifdef TARGET_ARM64
             case NI_Vector64_GetElement:
-#else
+#elif defined(TARGET_XARCH)
             case NI_Vector256_GetElement:
             case NI_Vector512_GetElement:
 #endif
@@ -9618,7 +9618,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
         case NI_Vector128_WithElement:
 #ifdef TARGET_ARM64
         case NI_Vector64_WithElement:
-#else
+#elif defined(TARGET_XARCH)
         case NI_Vector256_WithElement:
         case NI_Vector512_WithElement:
 #endif
