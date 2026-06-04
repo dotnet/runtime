@@ -241,6 +241,107 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesRethrowsSinglePredicateThrowAfterCompletingWalk()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource throwingSource = new ActivitySource("RefreshThrowing.Single.Throwing");
+                using ActivitySource matchedSource = new ActivitySource("RefreshThrowing.Single.Matched");
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src =>
+                    {
+                        if (src.Name == "RefreshThrowing.Single.Throwing")
+                        {
+                            throw new InvalidOperationException("boom");
+                        }
+                        return src.Name == "RefreshThrowing.Single.Matched";
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => listener.RefreshSources());
+                Assert.Equal("boom", ex.Message);
+
+                // The throw must not abort the iteration: the non-throwing source still got attached.
+                Assert.True(matchedSource.HasListeners());
+                Assert.False(throwingSource.HasListeners());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesAggregatesMultiplePredicateThrows()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource throwingA = new ActivitySource("RefreshThrowing.Aggregate.A");
+                using ActivitySource throwingB = new ActivitySource("RefreshThrowing.Aggregate.B");
+                using ActivitySource matchedSource = new ActivitySource("RefreshThrowing.Aggregate.Matched");
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src => src.Name switch
+                    {
+                        "RefreshThrowing.Aggregate.A" => throw new InvalidOperationException("boom-A"),
+                        "RefreshThrowing.Aggregate.B" => throw new ArgumentException("boom-B"),
+                        "RefreshThrowing.Aggregate.Matched" => true,
+                        _ => false,
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                AggregateException ex = Assert.Throws<AggregateException>(() => listener.RefreshSources());
+                Assert.Equal(2, ex.InnerExceptions.Count);
+                Assert.Contains(ex.InnerExceptions, e => e is InvalidOperationException { Message: "boom-A" });
+                Assert.Contains(ex.InnerExceptions, e => e is ArgumentException { Message: "boom-B" });
+
+                Assert.True(matchedSource.HasListeners());
+                Assert.False(throwingA.HasListeners());
+                Assert.False(throwingB.HasListeners());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesPredicateThrowDoesNotDetachPriorAttachment()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new ActivitySource("RefreshThrowing.NoDetach.Source");
+
+                bool throwOnNextEvaluation = false;
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src =>
+                    {
+                        if (src.Name != "RefreshThrowing.NoDetach.Source")
+                        {
+                            return false;
+                        }
+                        if (Volatile.Read(ref throwOnNextEvaluation))
+                        {
+                            throw new InvalidOperationException("boom-after-attach");
+                        }
+                        return true;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                listener.RefreshSources();
+                Assert.True(source.HasListeners());
+
+                Volatile.Write(ref throwOnNextEvaluation, true);
+                Assert.Throws<InvalidOperationException>(() => listener.RefreshSources());
+
+                // The throw left the source's attachment state alone, so the listener is still attached.
+                Assert.True(source.HasListeners());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartActivityWithNoListener()
         {
             RemoteExecutor.Invoke(() => {
@@ -1747,6 +1848,46 @@ namespace System.Diagnostics.Tests
                 a.Stop();
 
             }, data).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivitySourceFactoryCreate_DoesNotMutateSharedOptions_UnderConcurrentCalls()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TestActivitySourceFactory factory = new TestActivitySourceFactory();
+                IEnumerable<KeyValuePair<string, object?>> originalTags = new[] { new KeyValuePair<string, object?>("k", "v") };
+                ActivitySourceOptions sharedOptions = new ActivitySourceOptions("Shared.ConcurrentSource")
+                {
+                    Version = "1.0",
+                    Tags = originalTags,
+                    TelemetrySchemaUrl = "https://schema.test/concurrent",
+                };
+
+                Assert.Null(sharedOptions.Scope);
+
+                Parallel.For(0, 2000, _ =>
+                {
+                    using ActivitySource source = factory.Create(sharedOptions);
+                    Assert.Same(factory, source.Scope);
+                });
+
+                Assert.Equal("Shared.ConcurrentSource", sharedOptions.Name);
+                Assert.Equal("1.0", sharedOptions.Version);
+                Assert.Same(originalTags, sharedOptions.Tags);
+                Assert.Equal("https://schema.test/concurrent", sharedOptions.TelemetrySchemaUrl);
+                Assert.Null(sharedOptions.Scope);
+            }).Dispose();
+        }
+
+        private sealed class TestActivitySourceFactory : ActivitySourceFactory
+        {
+            protected override ActivitySource CreateCore(ActivitySourceOptions options)
+            {
+                Assert.NotNull(options);
+                Assert.Same(this, options.Scope);
+                return new ActivitySource(options);
+            }
         }
 
         public void Dispose() => Activity.Current = null;

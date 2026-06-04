@@ -85,7 +85,9 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 {
                     foreach (ActivitySource source in sourceList)
                     {
-                        if (source.Version == options.Version && DiagnosticsHelper.CompareTags(source.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                        if (source.Version == options.Version
+                            && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
+                            && DiagnosticsHelper.CompareTags(source.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
                         {
                             return source;
                         }

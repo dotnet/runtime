@@ -267,7 +267,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [Fact]
-        public void ActivitySourceFactoryCreate_RestoresScope_WhenActivitySourceCreationThrows()
+        public void ActivitySourceFactoryCreate_ReturnsDistinctSources_WhenTelemetrySchemaUrlDiffers()
         {
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener(_ => SampleActivityListener.Create()))
@@ -275,13 +275,66 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .BuildServiceProvider();
 
             ActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
+
+            ActivitySource schemaV1 = activitySourceFactory.Create(new ActivitySourceOptions("Demo.SchemaCacheKey")
+            {
+                Version = "1.0",
+                TelemetrySchemaUrl = "https://schema.test/v1",
+            });
+            ActivitySource schemaV2 = activitySourceFactory.Create(new ActivitySourceOptions("Demo.SchemaCacheKey")
+            {
+                Version = "1.0",
+                TelemetrySchemaUrl = "https://schema.test/v2",
+            });
+            ActivitySource schemaV1Again = activitySourceFactory.Create(new ActivitySourceOptions("Demo.SchemaCacheKey")
+            {
+                Version = "1.0",
+                TelemetrySchemaUrl = "https://schema.test/v1",
+            });
+            ActivitySource schemaNull = activitySourceFactory.Create(new ActivitySourceOptions("Demo.SchemaCacheKey")
+            {
+                Version = "1.0",
+            });
+            ActivitySource schemaNullAgain = activitySourceFactory.Create(new ActivitySourceOptions("Demo.SchemaCacheKey")
+            {
+                Version = "1.0",
+            });
+
+            Assert.NotSame(schemaV1, schemaV2);
+            Assert.NotSame(schemaV1, schemaNull);
+            Assert.NotSame(schemaV2, schemaNull);
+            Assert.Same(schemaV1, schemaV1Again);
+            Assert.Same(schemaNull, schemaNullAgain);
+
+            Assert.Equal("https://schema.test/v1", schemaV1.TelemetrySchemaUrl);
+            Assert.Equal("https://schema.test/v2", schemaV2.TelemetrySchemaUrl);
+            Assert.Null(schemaNull.TelemetrySchemaUrl);
+        }
+
+        [Fact]
+        public void ActivitySourceFactoryCreate_DoesNotMutateOptions_WhenActivitySourceCreationThrows()
+        {
+            using var serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(_ => SampleActivityListener.Create()))
+                .Services
+                .BuildServiceProvider();
+
+            ActivitySourceFactory activitySourceFactory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
+            ThrowingTagsEnumerable originalTags = new ThrowingTagsEnumerable();
             ActivitySourceOptions options = new ActivitySourceOptions("Demo.ThrowingScopeSource")
             {
-                Tags = new ThrowingTagsEnumerable()
+                Version = "1.0",
+                Tags = originalTags,
+                TelemetrySchemaUrl = "https://schema.test/v1",
             };
 
             Assert.Null(options.Scope);
             Assert.Throws<InvalidOperationException>(() => activitySourceFactory.Create(options));
+
+            Assert.Equal("Demo.ThrowingScopeSource", options.Name);
+            Assert.Equal("1.0", options.Version);
+            Assert.Same(originalTags, options.Tags);
+            Assert.Equal("https://schema.test/v1", options.TelemetrySchemaUrl);
             Assert.Null(options.Scope);
         }
 

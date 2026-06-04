@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -397,10 +398,26 @@ namespace System.Diagnostics
             // iteration below could be missed by both us and itself.
             s_allListeners.AddIfNotExist(listener);
 
+            List<Exception>? predicateFailures = null;
             s_activeSources.EnumWithAction((source, obj) =>
             {
                 var ls = (ActivityListener)obj;
-                if (ls.ShouldListenTo?.Invoke(source) ?? false)
+                bool listen;
+                try
+                {
+                    listen = ls.ShouldListenTo?.Invoke(source) ?? false;
+                }
+                catch (Exception ex)
+                {
+                    // Predicate threw for this source: leave its attachment state untouched
+                    // (the result was inconclusive, so neither attach nor detach is correct)
+                    // and continue with the remaining sources. We surface the throw(s) once
+                    // the walk completes so the caller sees what went wrong.
+                    (predicateFailures ??= new List<Exception>()).Add(ex);
+                    return;
+                }
+
+                if (listen)
                 {
                     source.AddListener(ls);
                 }
@@ -417,6 +434,16 @@ namespace System.Diagnostics
             if (listener.IsDisposed)
             {
                 DetachListener(listener);
+            }
+
+            if (predicateFailures is not null)
+            {
+                if (predicateFailures.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(predicateFailures[0]).Throw();
+                }
+
+                throw new AggregateException(SR.ActivityListener_RefreshSourceFilters_PredicateThrew, predicateFailures);
             }
         }
 

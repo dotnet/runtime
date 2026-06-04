@@ -23,11 +23,11 @@ namespace System.Diagnostics
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><see cref="ActivitySourceOptions.Scope"/> is set to a value other than this factory.</exception>
         /// <remarks>
-        /// The base implementation validates <paramref name="options"/>, sets
-        /// <see cref="ActivitySourceOptions.Scope"/> to this factory for the duration of the call so that the resulting
-        /// <see cref="ActivitySource"/> is associated with this factory, then delegates construction to
-        /// <see cref="CreateCore(ActivitySourceOptions)"/>. The caller's original
-        /// <see cref="ActivitySourceOptions.Scope"/> value is restored before the method returns.
+        /// The base implementation validates <paramref name="options"/>, then constructs a fresh
+        /// <see cref="ActivitySourceOptions"/> copy with <see cref="ActivitySourceOptions.Scope"/> bound to this factory
+        /// and delegates construction to <see cref="CreateCore(ActivitySourceOptions)"/>. The caller-supplied
+        /// <paramref name="options"/> instance is never mutated, so concurrent calls that share an options instance are
+        /// safe.
         /// </remarks>
         public ActivitySource Create(ActivitySourceOptions options)
         {
@@ -38,16 +38,15 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.InvalidActivitySourceScope);
             }
 
-            object? originalScope = options.Scope;
-            options.Scope = this;
-            try
+            ActivitySourceOptions scoped = new(options.Name)
             {
-                return CreateCore(options);
-            }
-            finally
-            {
-                options.Scope = originalScope;
-            }
+                Version = options.Version,
+                Tags = options.Tags,
+                TelemetrySchemaUrl = options.TelemetrySchemaUrl,
+                Scope = this,
+            };
+
+            return CreateCore(scoped);
         }
 
         /// <summary>

@@ -82,6 +82,10 @@ namespace System.Diagnostics
         /// of the refresh; calling this on a disposed listener has no effect, including when the disposal races with
         /// the refresh.
         /// </summary>
+        /// <exception cref="Exception">If <see cref="ShouldListenTo"/> throws while evaluating exactly one source, that
+        /// exception is rethrown unchanged after the refresh completes for every other source. If it throws for more
+        /// than one source, the throws are wrapped in an <see cref="AggregateException"/>. Sources whose evaluation
+        /// threw are left in their previous attachment state; sources whose evaluation succeeded are updated.</exception>
         public void RefreshSources()
         {
             if (Volatile.Read(ref _disposed))

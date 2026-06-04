@@ -186,4 +186,7 @@
   <data name="InvalidHistogramMaxBuckets" xml:space="preserve">
     <value>Invalid Max buckets value {0}. Max buckets must be greater than or equal to {1}.</value>
   </data>
+  <data name="ActivityListener_RefreshSourceFilters_PredicateThrew" xml:space="preserve">
+    <value>One or more 'ShouldListenTo' callbacks threw while refreshing the listener's source filters. See InnerExceptions for details.</value>
+  </data>
 </root>
