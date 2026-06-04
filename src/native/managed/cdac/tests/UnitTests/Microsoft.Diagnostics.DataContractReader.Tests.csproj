@@ -1,14 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(CdacPackageTargetFrameworks)</TargetFrameworks>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <Import Project="..\..\..\subproject.props" />
 
   <ItemGroup>
-    <ProjectReference Include="..\..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
+    <!-- mscordaccore_universal is the NativeAOT-published shim around Legacy and is built
+         only at $(NetCoreAppToolCurrent). Skip it on downlevel TFMs (the test code does
+         not import any types from it; the reference exists only to chain the NAOT publish). -->
+    <ProjectReference Include="..\..\mscordaccore_universal\mscordaccore_universal.csproj"
+                      AdditionalProperties="$(SplitSubprojectProps)"
+                      Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'" />
+    <!-- On downlevel TFMs, reference Legacy directly so tests can use the Legacy COM types
+         (mscordaccore_universal provides this transitively at $(NetCoreAppToolCurrent)). -->
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj"
+                      GlobalPropertiesToRemove="RuntimeIdentifier"
+                      Condition="'$(TargetFramework)' != '$(NetCoreAppToolCurrent)'" />
     <ProjectReference Include="..\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
   </ItemGroup>
   <ItemGroup>

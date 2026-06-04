@@ -55,7 +55,7 @@ internal readonly struct LayoutSet
         }
     }
 
-    public bool TrySelect(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
+    public bool TrySelect(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, ReadOnlySpan<string> names)
     {
         foreach (LazyLayout layout in _layouts)
         {
@@ -73,7 +73,7 @@ internal readonly struct LayoutSet
         return false;
     }
 
-    public void Select(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
+    public void Select(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, ReadOnlySpan<string> names)
     {
         if (!TrySelect(address, out type, out baseAddr, out name, names))
         {

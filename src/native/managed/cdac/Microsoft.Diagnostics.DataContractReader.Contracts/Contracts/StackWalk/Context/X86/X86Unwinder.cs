@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86Context;
 
@@ -487,8 +486,9 @@ public class X86Unwinder(Target target)
             if (gcInfo.Header.DoubleAlign && (curEbp & 0x04) != 0)
                 pSavedRegs -= _pointerSize;
 
-            foreach (RegMask regMask in registerOrder.Reverse())
+            for (int i = registerOrder.Length - 1; i >= 0; i--)
             {
+                RegMask regMask = registerOrder[i];
                 if (regMask == RegMask.EBP) continue;
 
                 if (!gcInfo.SavedRegsMask.HasFlag(regMask)) continue;
@@ -570,8 +570,9 @@ public class X86Unwinder(Target target)
             /* Increment "offset" in steps to see which callee-saved
                registers have been pushed already */
 
-            foreach (RegMask regMask in registerOrder.Reverse())
+            for (int i = registerOrder.Length - 1; i >= 0; i--)
             {
+                RegMask regMask = registerOrder[i];
                 if (regMask == RegMask.EBP) continue;
 
                 if (!gcInfo.SavedRegsMask.HasFlag(regMask)) continue;

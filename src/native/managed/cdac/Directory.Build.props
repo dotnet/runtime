@@ -3,11 +3,21 @@
 
     <PropertyGroup>
       <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-      <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+      <!--
+        Default TFMs for the cDAC managed reader transport packages. These ship via
+        NuGet and must be consumable by diagnostic tools running on shipped runtimes
+        in addition to $(NetCoreAppToolCurrent). Projects that should not multi-target
+        (e.g. mscordaccore_universal, test harnesses) override this with TargetFramework.
+      -->
+      <CdacPackageTargetFrameworks>$(NetCoreAppToolCurrent);net10.0;net9.0;net8.0</CdacPackageTargetFrameworks>
     </PropertyGroup>
 
-    <ItemGroup>
+    <!--
+      ExperimentalAttribute is a .NET 9+ API. When multi-targeting downward
+      (e.g. net8.0 for consumption by tools that target NetCoreAppMinTargetFramework),
+      skip the injection on TFMs where the attribute type does not exist.
+    -->
+    <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
       <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
         <_Parameter1>NETCDAC0001</_Parameter1>
       </AssemblyAttribute>

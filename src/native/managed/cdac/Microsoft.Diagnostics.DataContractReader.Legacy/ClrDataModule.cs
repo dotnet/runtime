@@ -91,7 +91,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 try
                 {
                     Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
-                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
+#pragma warning disable CS9191 // 'ref' is equivalent to 'in' for net9+; net8 requires 'ref'
+                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, ref iidMetaDataImport, out nint ppMdi) >= 0)
+#pragma warning restore CS9191
                     {
                         legacyImport = ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi);
                         Marshal.Release(ppMdi);

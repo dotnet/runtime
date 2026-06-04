@@ -983,7 +983,9 @@ public unsafe class MetaDataImportImplTests
         {
             // Simulate ClrMD: QI for IMetaDataImport
             Guid iidImport = typeof(IMetaDataImport).GUID;
-            int hr = Marshal.QueryInterface(pUnk, in iidImport, out nint pImport);
+#pragma warning disable CS9191 // 'ref' is equivalent to 'in' for net9+; net8 requires 'ref'
+            int hr = Marshal.QueryInterface(pUnk, ref iidImport, out nint pImport);
+#pragma warning restore CS9191
             Assert.Equal(0, hr);
             Assert.NotEqual(nint.Zero, pImport);
 
@@ -994,7 +996,9 @@ public unsafe class MetaDataImportImplTests
                 // redirect, this would return the shorter IMetaDataImport vtable (65 slots) and accessing
                 // slot 65 (EnumGenericParams) would AV.
                 Guid iidImportAgain = typeof(IMetaDataImport).GUID;
-                hr = Marshal.QueryInterface(pImport, in iidImportAgain, out nint pImportAgain);
+#pragma warning disable CS9191 // 'ref' is equivalent to 'in' for net9+; net8 requires 'ref'
+                hr = Marshal.QueryInterface(pImport, ref iidImportAgain, out nint pImportAgain);
+#pragma warning restore CS9191
                 Assert.Equal(0, hr);
                 Assert.NotEqual(nint.Zero, pImportAgain);
 
@@ -1003,7 +1007,9 @@ public unsafe class MetaDataImportImplTests
                     // Verify the returned pointer has IMetaDataImport2 slots accessible.
                     // QI the result for IMetaDataImport2 to verify COM identity is correct.
                     Guid iidImport2 = typeof(IMetaDataImport2).GUID;
-                    hr = Marshal.QueryInterface(pImportAgain, in iidImport2, out nint pImport2);
+#pragma warning disable CS9191 // 'ref' is equivalent to 'in' for net9+; net8 requires 'ref'
+                    hr = Marshal.QueryInterface(pImportAgain, ref iidImport2, out nint pImport2);
+#pragma warning restore CS9191
                     Assert.Equal(0, hr);
                     Assert.NotEqual(nint.Zero, pImport2);
                     Marshal.Release(pImport2);

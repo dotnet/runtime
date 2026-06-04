@@ -262,7 +262,7 @@ internal static class Emitter
         };
 
     private static string NameArgs(MemberModel member)
-        => string.Join(", ", Enumerate(member.Names).Select(n => $"\"{n}\""));
+        => "[" + string.Join(", ", Enumerate(member.Names).Select(n => $"\"{n}\"")) + "]";
 
     private static IEnumerable<string> Enumerate(EquatableArray<string> array)
     {

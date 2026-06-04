@@ -1199,15 +1199,15 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
+    int ISOSDacInterface.GetFrameName(ClrDataAddress vtableAddr, uint count, char* frameName, uint* pNeeded)
     {
         int hr = HResults.S_OK;
         try
         {
-            if (vtable == 0)
+            if (vtableAddr == 0)
                 throw new ArgumentException();
             IStackWalk stackWalk = _target.Contracts.StackWalk;
-            string name = stackWalk.GetFrameName(new(vtable));
+            string name = stackWalk.GetFrameName(new(vtableAddr));
 
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException();
@@ -1234,7 +1234,7 @@ public sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (char* ptr = nameLocal)
             {
-                hrLocal = _legacyImpl.GetFrameName(vtable, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetFrameName(vtableAddr, count, ptr, &neededLocal);
             }
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)

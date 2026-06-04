@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(CdacPackageTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
