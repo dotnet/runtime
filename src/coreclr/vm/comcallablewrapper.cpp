@@ -3587,6 +3587,20 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         if (pClassMD != NULL)
         {
             pNewMD->InitMethod(pClassMD, pIntfMD);
+
+            // Restore the vtable slot on parent MethodTables that may share this ComMethodTable.
+            // This ensures that we do not end up with a NULL slot during COM dispatch due to lazy
+            // entry point allocation.
+            if (pClassMD->IsVirtual())
+            {
+                DWORD slot = pClassMD->GetSlot();
+                MethodTable *pParentWalk = pClsMT->GetParentMethodTable();
+                while (pParentWalk != NULL && slot < pParentWalk->GetNumVirtuals())
+                {
+                    pParentWalk->GetRestoredSlot(slot);
+                    pParentWalk = pParentWalk->GetParentMethodTable();
+                }
+            }
         }
         else
         {

@@ -848,7 +848,12 @@ Dictionary::PopulateEntry(
                 th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
             }
 
-            th.GetMethodTable()->EnsureInstanceActive();
+            if (!th.IsTypeDesc())
+            {
+                MethodTable* pMT = th.AsMethodTable();
+                _ASSERTE(pMT != NULL);
+                pMT->EnsureInstanceActive();
+            }
 
             result = (CORINFO_GENERIC_HANDLE)th.AsPtr();
             break;
