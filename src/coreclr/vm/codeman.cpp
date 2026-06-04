@@ -1331,9 +1331,12 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
 #if defined(FEATURE_INTERPRETER)
-    if (maxVectorTBitWidth != 128 && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    bool interpreterOnly = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
+    interpreterOnly = true;
+#endif
+    if (maxVectorTBitWidth != 128 && interpreterOnly)
     {
-        // Disable larger Vector<T> sizes when interpreter is enabled
         maxVectorTBitWidth = 128;
     }
 #endif
@@ -1702,9 +1705,12 @@ void EEJitManager::SetCpuInfo()
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
 
 #ifdef FEATURE_INTERPRETER
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    bool interpreterOnlyPreferred = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
+    interpreterOnlyPreferred = true;
+#endif
+    if (interpreterOnlyPreferred)
     {
-        // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
         preferredVectorBitWidth = 128;
     }
 #endif
