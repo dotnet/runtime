@@ -11570,7 +11570,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-    if (result == NI_Illegal)
+    if ((result == NI_Illegal) || (result == NI_System_Runtime_Intrinsics_Intrinsic))
     {
         JITDUMP("Not recognized\n");
     }
@@ -12022,6 +12022,8 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
 
     if (mustExpand || opts.OptimizationEnabled())
     {
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impUnsupportedNamedIntrinsic"));
+
         for (unsigned i = 0; i < sig->numArgs; i++)
         {
             impPopStack();
