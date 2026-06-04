@@ -281,7 +281,7 @@ Exactly one outcome fires per signature: either Branch A files a new KBE, or the
 
 No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition_id, signature)` tuple. Do NOT summarize across pipelines. If >= 10 pipelines fail with >= 3 distinct signatures each:
 
-- Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues and one `missing_data` safe-output. Record `skipped: suspected infra outage` for each signature.
+- Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues. Record `skipped: suspected infra outage` for each signature. This workflow has no infra-report safe-output; the recorded skip reason is the only signal, and the feedback workflow aggregates it.
 - Product-shaped (assertion, exception, stack frame, JIT marker) converging on a common element (same assembly / stack frame / assertion file): file ONE representative KBE per element (cap 3 total). Skip the rest with `skipped: representative KBE filed as #aw_<id>`.
 
 **Branch A — No existing KBE; signature is stable.**
@@ -306,7 +306,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
 
 At end of run, print this table to the agent log:
 

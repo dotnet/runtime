@@ -127,7 +127,9 @@ Read once at start:
 
 List open KBE issues this workflow is responsible for. Use the `github` MCP `search_issues` (integrity-gated; `[Filtered]` results are skipped — record the count, do not chase them):
 
-- `repo:dotnet/runtime is:issue is:open label:"Known Build Error" in:title "[ci-scan]" updated:>=<today-30d>`
+- `repo:dotnet/runtime is:issue is:open label:"Known Build Error" in:title "[ci-scan]" sort:created-asc`
+
+Do NOT bound this query by `updated:` recency. Older-but-still-open `[ci-scan]` KBEs are exactly the ones at risk of being stranded with no mitigation, so they must remain in scope. `sort:created-asc` walks the oldest open KBEs first; the per-run PR cap (Step 6 / `create-pull-request max`) bounds how many you act on, and the next run continues where this one left off.
 
 For each result, read the body + latest comments through the `github` MCP (NOT `gh`, so the integrity gate applies). Extract:
 
