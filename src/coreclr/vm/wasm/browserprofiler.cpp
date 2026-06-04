@@ -11,7 +11,7 @@
 #include "wasm/browserprofiler.h"
 
 extern "C" {
-    void ds_rt_browser_performance_measure(const char* name, double start);
+    void ds_rt_browser_performance_measure(void* pMethodDesc, double start);
 }
 
 static constexpr int MAX_STACK_DEPTH = 600;
@@ -141,9 +141,10 @@ void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
 
     if (frame->shouldRecord)
     {
-        SString methodName;
-        TypeString::AppendMethodInternal(methodName, frame->pMethod, TypeString::FormatBasic);
-        ds_rt_browser_performance_measure(methodName.GetUTF8(), frame->startMs);
+        // Pass the MethodDesc* to JS, which caches the formatted name by
+        // pointer and only calls back into SystemJS_GetMethodName()
+        // on a cache miss.
+        ds_rt_browser_performance_measure(frame->pMethod, frame->startMs);
 
         // Mark parent frame for recording so the flame chart nests properly.
         if (idx > 0)
@@ -152,6 +153,31 @@ void BrowserProfiler_OnMethodLeave(void *pMethodDesc)
 
     // Pop the matched frame along with any orphaned frames above it.
     s_topStackFrameIndex = idx - 1;
+}
+
+// Formats the name of a MethodDesc* into a freshly malloc'd UTF-8 string.
+// Called from JS only on a cache miss; the JS caller owns the returned
+// buffer and must free() it. Returns NULL on allocation failure.
+extern "C" const char* SystemJS_GetMethodName(void *pMethodDesc)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    MethodDesc *pMD = (MethodDesc *)pMethodDesc;
+
+    SString methodName;
+    TypeString::AppendMethodInternal(methodName, pMD, TypeString::FormatBasic);
+
+    const char *utf8 = methodName.GetUTF8();
+    size_t size = strlen(utf8) + 1;
+    char *result = (char *)malloc(size);
+    if (result != NULL)
+        memcpy(result, utf8, size);
+
+    return result;
 }
 
 #endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS

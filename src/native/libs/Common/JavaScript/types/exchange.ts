@@ -150,12 +150,14 @@ export type NativeBrowserExports = {
     getWasmMemory: getWasmMemoryType,
     getWasmTable: getWasmTableType,
     SystemJS_ScheduleDiagnosticServer: typeof SystemJS_ScheduleDiagnosticServer,
+    SystemJS_GetMethodName: EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 }
 
 export type NativeBrowserExportsTable = [
     getWasmMemoryType,
     getWasmTableType,
     typeof SystemJS_ScheduleDiagnosticServer,
+    EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 ]
 
 export type BrowserUtilsExports = {

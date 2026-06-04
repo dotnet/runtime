@@ -18,6 +18,10 @@
 void BrowserProfiler_OnMethodEnter(void *pMethodDesc);
 void BrowserProfiler_OnMethodLeave(void *pMethodDesc);
 
+// Returns a freshly malloc'd UTF-8 method name for a MethodDesc*.
+// Called from JS; the caller owns the returned buffer and must free() it.
+extern "C" const char* SystemJS_GetMethodName(void *pMethodDesc);
+
 #endif // PERFTRACING_DISABLE_THREADS
 #endif // TARGET_BROWSER
 

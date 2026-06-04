@@ -179,6 +179,7 @@ export function dotnetUpdateInternalsSubscriber() {
             getWasmMemory: table[0],
             getWasmTable: table[1],
             SystemJS_ScheduleDiagnosticServer: table[2],
+            SystemJS_GetMethodName: table[3],
         };
         Object.assign(interop, interopLocal);
     }
