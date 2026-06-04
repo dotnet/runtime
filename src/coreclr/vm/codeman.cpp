@@ -563,8 +563,8 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
         entryPoint, baseAddress, relativeEntryPoint);
 
-    // AddToUnwindInfoTable guarantees entries are published before returning,
-    // so the entry must be in the published table by the time we get here.
+    // AddToUnwindInfoTable flushes before returning, so once OS registration has succeeded
+    // the entry should be in the published table by the time we get here.
     {
         CrstHolder publishLock(&unwindInfo->m_publishLock);
 
