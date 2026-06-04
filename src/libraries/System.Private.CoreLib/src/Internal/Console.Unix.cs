@@ -26,15 +26,9 @@ namespace Internal
 
         private static unsafe void WriteCore(string s, bool error)
         {
-            int bufferSize = checked(s.Length * 3); // max UTF-8 bytes per char
-            Span<byte> bytes = (uint)bufferSize < 1024 ? stackalloc byte[bufferSize] : new byte[bufferSize];
-            int cbytes;
-
-            fixed (char* pChars = s)
-            fixed (byte* pBytes = bytes)
-            {
-                cbytes = Encoding.UTF8.GetBytes(pChars, s.Length, pBytes, bytes.Length);
-            }
+            int byteCount = Encoding.UTF8.GetByteCount(s);
+             Span<byte> bytes = (uint)byteCount < 1024 ? stackalloc byte[byteCount] : new byte[byteCount];
+            int cbytes = Encoding.UTF8.GetBytes(s, bytes);
 
             fixed (byte* pBytes = bytes)
             {

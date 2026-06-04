@@ -40,6 +40,7 @@ class OutOfMemoryExceptionTest
             // < 280 bytes free.
             // Use the smallest possible allocation to exhaust the last scraps.
             while (idx < storage.Length) storage[idx++] = new object();
+            return Fail;
         }
 
         if (args.Length > 0 && args[0] == AllocateLargeArg)
