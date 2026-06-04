@@ -502,7 +502,6 @@ namespace System.Threading
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
                 long startTime = 0;
-                bool bNeedTimeoutAdjustment = false;
                 int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
                 if (millisecondsTimeout != Timeout.Infinite)
@@ -514,7 +513,6 @@ namespace System.Threading
                     // decide to block in the kernel below.
 
                     startTime = Environment.TickCount64;
-                    bNeedTimeoutAdjustment = true;
                 }
 
                 // Spin
@@ -549,7 +547,7 @@ namespace System.Threading
                             cancellationToken.ThrowIfCancellationRequested();
 
                             // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
-                            if (bNeedTimeoutAdjustment)
+                            if (startTime != 0)
                             {
                                 // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
                                 realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
