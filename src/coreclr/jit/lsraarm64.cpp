@@ -1585,6 +1585,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any additional special cases
     switch (intrin.id)
     {
+        case NI_VectorT_Create:
+        case NI_VectorT_CreateScalarUnsafe:
+            if (varTypeIsFloating(intrin.baseType))
+            {
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+            }
+            break;
+
         case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
         case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
         case NI_Sve2_GatherVectorNonTemporal:
