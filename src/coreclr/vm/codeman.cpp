@@ -375,6 +375,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     // Grab the pending entries under the pending lock, then release it so
     // other threads can keep accumulating new entries while we publish.
+    T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
     ULONG localPendingCount;
     LONG drainedSeq;
     {
@@ -385,19 +386,19 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
         if (localPendingCount == 0)
             return drainedSeq;
 
-        memcpy(flushBuffer, pendingTable, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        memcpy(localPending, pendingTable, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cPendingCount = 0;
         INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
     }
 
-    SortPendingByBeginAddress(flushBuffer, localPendingCount);
+    SortPendingByBeginAddress(localPending, localPendingCount);
 
     // Fast path: if all pending entries can be appended in order with room to spare,
     // we can just append and call RtlGrowFunctionTable.
     if (cTableCurCount + localPendingCount <= cTableMaxCount
-        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < flushBuffer[0].BeginAddress))
+        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
     {
-        memcpy(&pTable[cTableCurCount], flushBuffer, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cTableCurCount += localPendingCount;
         pRtlGrowFunctionTable(hHandle, cTableCurCount);
 
@@ -431,9 +432,9 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
             continue;
         }
 
-        if (flushBuffer[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+        if (localPending[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
         {
-            newPTable[toIdx++] = flushBuffer[pendIdx++];
+            newPTable[toIdx++] = localPending[pendIdx++];
         }
         else
         {
@@ -450,7 +451,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     while (pendIdx < localPendingCount)
     {
-        newPTable[toIdx++] = flushBuffer[pendIdx++];
+        newPTable[toIdx++] = localPending[pendIdx++];
     }
 
     _ASSERTE(toIdx == newCount);
