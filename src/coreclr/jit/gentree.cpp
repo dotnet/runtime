@@ -18388,7 +18388,7 @@ GenTree* Compiler::gtFoldExprForOverflow(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtFoldDistributiveArithmetic: Optimizes distributive Arithmetic.
+// gtFoldDistributiveArithmetic: Optimizes distributive operations.
 //
 // Arguments:
 //   tree - the unchecked GT_AND/GT_OR/GT_XOR/GT_ADD/GT_SUB tree to optimize.
@@ -18434,23 +18434,20 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
 
     if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
     {
-        if (op1->gtGetOp1()->OperIsAnyLocal() && op2->gtGetOp1()->OperIsAnyLocal())
+        if (op1->gtGetOp1()->OperIsAnyLocal() && GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
-            if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+            GenTree* newOp1 = op1->gtGetOp1();
+            GenTree* newOp2 =
+                gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
+            GenTree* result = gtNewOperNode(op1->OperGet(), tree->TypeGet(), newOp1, newOp2);
+            result->SetVNsFromNode(tree);
+
+            if (fgGlobalMorph)
             {
-                GenTree* newOp1 = op1->gtGetOp1();
-                GenTree* newOp2 =
-                    gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
-                GenTree* result = gtNewOperNode(op1->OperGet(), tree->TypeGet(), newOp1, newOp2);
-                result->SetVNsFromNode(tree);
-
-                if (fgGlobalMorph)
-                {
-                    fgMorphTreeDone(result);
-                }
-
-                return result;
+                fgMorphTreeDone(result);
             }
+
+            return result;
         }
     }
 

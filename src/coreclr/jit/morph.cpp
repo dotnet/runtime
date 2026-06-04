@@ -8748,7 +8748,7 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 
             if (fgGlobalMorph)
             {
-                fgMorphTreeDone(cmp->gtOp2);
+                fgMorphTreeDone(cmp->gtGetOp2());
             }
         }
     }
@@ -10413,7 +10413,7 @@ void Compiler::fgPushConstantsRight(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeCommutativeArithmetic: Optimizes commutative arithemtic.
+// fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
 //
 // Arguments:
 //   tree - the unchecked GT_ADD/GT_MUL/GT_OR/GT_XOR/GT_AND tree to optimize.
