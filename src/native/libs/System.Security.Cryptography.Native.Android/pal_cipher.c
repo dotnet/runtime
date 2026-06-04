@@ -111,13 +111,19 @@ ARGS_NON_NULL_ALL static bool CheckJNIExceptionsForAuthTagMismatch(JNIEnv* env, 
                 // so that a genuine non-authentication failure, if ever reclassified here, can
                 // still be diagnosed. This does not run for the common AEADBadTagException case.
                 jstring message = (jstring)(*env)->CallObjectMethod(env, loc[ex], g_ThrowableGetMessage);
-                const char* messageChars = message != NULL ? (*env)->GetStringUTFChars(env, message, NULL) : NULL;
+                const char* messageChars =
+                    (message != NULL && !(*env)->ExceptionCheck(env)) ? (*env)->GetStringUTFChars(env, message, NULL) : NULL;
                 LOG_DEBUG("AEAD decrypt reported authentication failure via an unexpected GeneralSecurityException; treating as tag mismatch: %s",
                     messageChars != NULL ? messageChars : "(no message)");
                 if (messageChars != NULL)
                     (*env)->ReleaseStringUTFChars(env, message, messageChars);
                 if (message != NULL)
                     (*env)->DeleteLocalRef(env, message);
+
+                // getMessage()/GetStringUTFChars() are not expected to throw, but make sure we never
+                // return to the caller with a pending JNI exception - the caller goes on to raise the
+                // managed AuthenticationTagMismatchException and must see a clean exception state.
+                TryClearJNIExceptions(env);
             }
         }
     }
