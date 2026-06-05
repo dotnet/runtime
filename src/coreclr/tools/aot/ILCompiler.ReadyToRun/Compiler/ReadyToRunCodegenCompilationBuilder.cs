@@ -43,8 +43,8 @@ namespace ILCompiler
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
-        private int _genericCycleDetectionDepthCutoff = ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff;
-        private int _genericCycleDetectionBreadthCutoff = ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff;
+        private int _genericCycleDetectionDepthCutoff = -1;
+        private int _genericCycleDetectionBreadthCutoff = -1;
         private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
 
         private string _jitPath;
