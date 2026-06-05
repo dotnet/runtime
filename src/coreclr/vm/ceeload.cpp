@@ -3655,6 +3655,7 @@ static LPWSTR GetExePath()
         size_t exePathLen = minipal_get_length_utf8_to_utf16(exePath, strlen(exePath), 0);
         pExePath = new WCHAR[exePathLen + 1];
         minipal_convert_utf8_to_utf16(exePath, strlen(exePath), (CHAR16_T*)pExePath, exePathLen + 1, 0);
+        pExePath[exePathLen] = W('\0');
         free(exePath);
         s_pExePath = pExePath;
     }
