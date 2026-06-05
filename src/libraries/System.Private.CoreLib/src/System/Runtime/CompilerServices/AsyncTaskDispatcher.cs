@@ -149,7 +149,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal bool ContinuationChainChanged => LastContinuation?.GetContinuationForDiagnostics != null;
+        internal bool ContinuationChainChanged => LastContinuation?.ContinuationForDiagnostics != null;
 
         internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
