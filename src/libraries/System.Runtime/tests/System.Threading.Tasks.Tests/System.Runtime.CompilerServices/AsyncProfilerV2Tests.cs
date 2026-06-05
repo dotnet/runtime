@@ -41,6 +41,34 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_DeepChain_Level3()
+        {
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_DeepChain_Level2()
+        {
+            await RuntimeAsync_DeepChain_Level3();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_DeepChain_Level1()
+        {
+            await RuntimeAsync_DeepChain_Level2();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_DeepChain()
+        {
+            await RuntimeAsync_DeepChain_Level1();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_OuterCatches()
         {
             try
@@ -646,6 +674,115 @@ namespace System.Threading.Tasks.Tests
                 $"Expected callstack to contain frames [{string.Join(", ", expectedFrames)}] in order");
         }
 
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_MethodEventCountMatchesChainDepth_Marker()
+        {
+            await RuntimeAsync_DeepChain();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_MethodEventCountMatchesChainDepth()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords | MethodKeywords, RuntimeAsync_MethodEventCountMatchesChainDepth_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // Marker -> DeepChain -> Level1 -> Level2 -> Level3
+            const int ExpectedChainDepth = 5;
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_MethodEventCountMatchesChainDepth_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            Assert.Equal(ExpectedChainDepth, markerCallstacks[0].Frames.Count);
+
+            ulong chainTaskId = markerCallstacks[0].TaskId;
+            var chainEvents = stream.ForTask(chainTaskId);
+
+            int resumeCount = chainEvents.Count(e => e.EventId == AsyncEventID.ResumeAsyncMethod);
+            Assert.Equal(ExpectedChainDepth, resumeCount);
+
+            int completeCount = chainEvents.Count(e => e.EventId == AsyncEventID.CompleteAsyncMethod);
+            Assert.Equal(ExpectedChainDepth, completeCount);
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker()
+        {
+            await RuntimeAsync_DeepChain();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_CallstackFramesHaveDistinctMethodIds()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // Frames in the same callstack should have distinct methodIds (one per async method in the chain).
+            var deepest = markerCallstacks.MaxBy(cs => cs.FrameCount)!;
+            var methodIds = deepest.Frames.Select(f => f.MethodId).ToList();
+            Assert.Equal(methodIds.Count, methodIds.Distinct().Count());
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level3()
+        {
+            await Task.Delay(100);
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level2()
+        {
+            await RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level3();
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level1()
+        {
+            await RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level2();
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker()
+        {
+            await RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker));
+
+            // After Task.Delay resumes: full chain (Level3, Level2, Level1, Marker) = 4 frames
+            // After Level3's yield resumes: Level3 completes, chain is (Level2, Level1, Marker) = 3 frames
+            // After Level2's yield resumes: Level2 completes, chain is (Level1, Marker) = 2 frames
+            Assert.Contains(markerCallstacks, cs => cs.FrameCount == 4);
+            Assert.Contains(markerCallstacks, cs => cs.FrameCount == 3);
+            Assert.Contains(markerCallstacks, cs => cs.FrameCount == 2);
+        }
+
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_CallstackSimulation_NormalCompletion_Marker()
@@ -858,7 +995,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = CollectEvents(AllKeywords, () =>
             {
-                // A shallow chain stays within the first 32 slots —
+                // A shallow chain stays within the first 32 slots --
                 // no reset event should be emitted.
                 RunScenarioAndFlush(async () =>
                 {
@@ -1095,7 +1232,7 @@ namespace System.Threading.Tasks.Tests
                 await RuntimeAsync_SingleYield();
             }
 
-            // Now attach listener but don't run any RuntimeAsync work inside —
+            // Now attach listener but don't run any RuntimeAsync work inside --
             // just call a synchronous no-op. Verify no stale events from above leak through.
             var events = await CollectEventsAsync(CoreKeywords, () => Task.CompletedTask);
 
@@ -1238,7 +1375,7 @@ namespace System.Threading.Tasks.Tests
             var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker));
             Assert.NotEmpty(callstacks);
 
-            // Find callstacks with 3+ frames — enough depth for meaningful deltas.
+            // Find callstacks with 3+ frames -- enough depth for meaningful deltas.
             var deepCallstacks = callstacks.Where(cs => cs.FrameCount >= 3).ToList();
 
             Assert.True(deepCallstacks.Count > 0, "Expected at least one callstack with 3+ frames for delta verification");
@@ -1354,7 +1491,7 @@ namespace System.Threading.Tasks.Tests
             // Targeted test: run random-depth callstacks until we detect the overflow
             // path was exercised, then validate the affected callstack.
             // The overflow path fires when a large callstack doesn't fit inline in the
-            // remaining buffer space — the code rewinds, flushes the partial buffer,
+            // remaining buffer space -- the code rewinds, flushes the partial buffer,
             // and re-writes the callstack as the first event in a fresh buffer.
             //
             // To prove overflow occurred we check consecutive buffer pairs:
@@ -1479,7 +1616,7 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            Assert.True(overflowDetected, "Failed to trigger callstack buffer overflow after 10 attempts — " +
+            Assert.True(overflowDetected, "Failed to trigger callstack buffer overflow after 10 attempts -- " +
                 "no consecutive buffer pair found where buffer N has remaining capacity and buffer N+1 starts with a large callstack");
         }
 
@@ -1559,6 +1696,339 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker()
+        {
+            await Task.Yield();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker()
+        {
+            await Task.Yield();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker()
+        {
+            await Task.Yield();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAll_TracksAllBranches_Marker()
+        {
+            await Task.WhenAll(
+                RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker(),
+                RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker(),
+                RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker());
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_WhenAll_TracksAllBranches()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // Each branch is its own async chain; its inner await of Task.Yield produces a Resume callstack containing the branch frame.
+            var branchACallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
+            var branchBCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
+            var branchCCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
+            Assert.NotEmpty(branchACallstacks);
+            Assert.NotEmpty(branchBCallstacks);
+            Assert.NotEmpty(branchCCallstacks);
+
+            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own TaskId.
+            AssertExactlyOneCreateAndComplete(stream, branchACallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
+            AssertExactlyOneCreateAndComplete(stream, branchBCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
+            AssertExactlyOneCreateAndComplete(stream, branchCCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
+
+            // The outer marker's chain should fire Create -> Resume -> Complete in that order.
+            ulong markerTaskId = markerCallstacks[0].TaskId;
+            var markerIds = stream.ForTask(markerTaskId).Select(e => e.EventId).ToList();
+
+            int createIdx = markerIds.IndexOf(AsyncEventID.CreateAsyncContext);
+            int resumeIdx = markerIds.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create on the outer marker");
+
+            int completeIdx = markerIds.IndexOf(AsyncEventID.CompleteAsyncContext, resumeIdx + 1);
+            Assert.True(completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume on the outer marker");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker()
+        {
+            await Task.Yield();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker()
+        {
+            await Task.Delay(200);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker()
+        {
+            await Task.Delay(300);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_WhenAny_TracksAllBranches_Marker()
+        {
+            Task fast = RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker();
+            Task slow1 = RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker();
+            Task slow2 = RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker();
+
+            await Task.WhenAny(fast, slow1, slow2);
+            await Task.WhenAll(slow1, slow2);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_WhenAny_TracksAllBranches()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAny_TracksAllBranches_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // All branches - including the slow ones whose completion the outer is no longer
+            // strictly waiting on after WhenAny returned - must produce their own Resume callstacks.
+            var fastCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
+            var slow1Callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
+            var slow2Callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
+            Assert.NotEmpty(fastCallstacks);
+            Assert.NotEmpty(slow1Callstacks);
+            Assert.NotEmpty(slow2Callstacks);
+
+            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own TaskId.
+            AssertExactlyOneCreateAndComplete(stream, fastCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
+            AssertExactlyOneCreateAndComplete(stream, slow1Callstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
+            AssertExactlyOneCreateAndComplete(stream, slow2Callstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
+
+            // The outer marker should also be resumed at least once.
+            ulong markerTaskId = markerCallstacks[0].TaskId;
+            var markerIds = stream.ForTask(markerTaskId).Select(e => e.EventId).ToList();
+            int resumeCountForMarker = markerIds.Count(id => id == AsyncEventID.ResumeAsyncContext);
+            Assert.True(resumeCountForMarker >= 1, $"Expected outer marker to be resumed at least once, got {resumeCountForMarker}");
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ConfigureAwaitFalse_Leaf_Marker()
+        {
+            await Task.Yield();
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ConfigureAwaitFalse_Mid_Marker()
+        {
+            await RuntimeAsync_ConfigureAwaitFalse_Leaf_Marker().ConfigureAwait(false);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ConfigureAwaitFalse_Marker()
+        {
+            await RuntimeAsync_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ConfigureAwaitFalse()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            var frameNames = markerCallstacks[0].Frames
+                .Select(f => GetMethodNameFromMethodId(markerCallstacks[0].CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+
+            Assert.Contains(nameof(RuntimeAsync_ConfigureAwaitFalse_Leaf_Marker), frameNames);
+            Assert.Contains(nameof(RuntimeAsync_ConfigureAwaitFalse_Mid_Marker), frameNames);
+            Assert.Contains(nameof(RuntimeAsync_ConfigureAwaitFalse_Marker), frameNames);
+
+            // ConfigureAwait(false) on a sequential await chain collapses Leaf -> Mid -> Marker into one
+            // continuation chain, so exactly one Create / one Complete is expected on the marker's TaskId.
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_TaskCancellation_Inner_Marker(CancellationToken ct)
+        {
+            await Task.Delay(5000, ct);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_TaskCancellation_Marker()
+        {
+            using var cts = new CancellationTokenSource();
+            Task inner = RuntimeAsync_TaskCancellation_Inner_Marker(cts.Token);
+            cts.CancelAfter(50);
+            try
+            {
+                await inner;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_TaskCancellation()
+        {
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_TaskCancellation_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            var innerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
+            Assert.NotEmpty(innerCallstacks);
+
+            // Inner cancelled task + outer marker must each see exactly one Create and one Complete on their own TaskId.
+            AssertExactlyOneCreateAndComplete(stream, innerCallstacks[0].TaskId, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_TaskCancellation_Marker));
+        }
+
+        private static InlinePostSynchronizationContext? s_runtimeAsyncSyncContextCtx;
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker()
+        {
+            // Install a non-default SynchronizationContext on this thread so the await captures it.
+            // The await's continuation will be routed via SynchronizationContextAwaitTaskContinuation,
+            // which the V2 runtime-async dispatch loop should honor when resuming the chain.
+            int callerThreadId = Environment.CurrentManagedThreadId;
+            SynchronizationContext? prev = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(s_runtimeAsyncSyncContextCtx);
+            try
+            {
+                await Task.Delay(100);
+            }
+            finally
+            {
+                if (Environment.CurrentManagedThreadId == callerThreadId)
+                {
+                    SynchronizationContext.SetSynchronizationContext(prev);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack()
+        {
+            s_runtimeAsyncSyncContextCtx = new InlinePostSynchronizationContext();
+
+            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker);
+
+            // DumpAllEvents(events);
+
+            // The custom SyncContext should have received at least one Post for the await continuation.
+            Assert.True(s_runtimeAsyncSyncContextCtx.PostCount > 0,
+                $"Expected custom SynchronizationContext to receive at least one Post, got {s_runtimeAsyncSyncContextCtx.PostCount}");
+
+            var stream = ParseAllEvents(events);
+
+            // The marker frame should appear in the Resume callstack.
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // The marker's chain should see exactly one Create and one Complete on its own TaskId.
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
+
+            // Verify the standard Create -> Resume -> Complete sequence fired in order for our context.
+            ulong taskId = markerCallstacks[0].TaskId;
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateAsyncContext);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteAsyncContext, resumeIdx + 1);
+            Assert.True(completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker()
+        {
+            await Task.Delay(100);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack()
+        {
+            var scheduler = new InlineRunTaskScheduler();
+
+            var events = await CollectEventsAsync(CallstackKeywords, async () =>
+            {
+                // Start the marker on the custom scheduler so the resulting Task is queued through it.
+                await Task.Factory.StartNew(
+                    () => RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker(),
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    scheduler).Unwrap();
+            });
+
+            // DumpAllEvents(events);
+
+            // The custom scheduler must have received at least one QueueTask call.
+            Assert.True(scheduler.QueuedCount >= 1,
+                $"Expected custom TaskScheduler to receive at least one QueueTask call, got {scheduler.QueuedCount}");
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
+            Assert.NotEmpty(markerCallstacks);
+
+            // The marker's chain should see exactly one Create and one Complete on its own TaskId.
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
+
+            // Verify the standard Create -> Resume -> Complete sequence fired in order for our context.
+            ulong taskId = markerCallstacks[0].TaskId;
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateAsyncContext);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeAsyncContext, createIdx + 1);
+            Assert.True(resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteAsyncContext, resumeIdx + 1);
+            Assert.True(completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
+        }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
