@@ -309,13 +309,14 @@ set( JIT_WASM_SOURCES
   codegenwasm.cpp
   emitwasm.cpp
   fgwasm.cpp
+  hwintrinsicwasm.cpp
+  hwintrinsiccodegenwasm.cpp
   lowerwasm.cpp
   regallocwasm.cpp
   registeropswasm.cpp
+  simd.cpp
   targetwasm.cpp
   unwindwasm.cpp
-  hwintrinsicwasm.cpp
-  hwintrinsiccodegenwasm.cpp
 )
 
 # We include the headers here for better experience in IDEs.

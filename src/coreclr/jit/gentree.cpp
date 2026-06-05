@@ -323,8 +323,12 @@ void GenTree::InitNodeSize()
     // obtained from the child node.
     static_assert(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 
-#ifdef FEATURE_HW_INTRINSICS
+// On Wasm, GenTreeJitIntrinsic has embedded inline GenTrees which are both bigger than on native platforms.
+// This is because regNumSmall is 4 bytes instead of 1 due to 'unlimited' registers.
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
     static_assert(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
+#elif defined(FEATURE_HW_INTRINSICS) && defined(TARGET_WASM)
+    static_assert(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
@@ -22781,6 +22785,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, var_types simd
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM) 
     NYI_WASM_SIMD("gtNewSimdAbsNode");
+    return nullptr;
 #else
 #error Unsupported platform
 #endif
@@ -24402,6 +24407,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
     NYI_WASM_SIMD("gtNewSimdCndSelNode");
+    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -27215,6 +27221,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize);
     }
 #elif defined(TARGET_WASM)
+    tmp1 = nullptr;
+    tmp2 = nullptr;
     NYI_WASM_SIMD("gtNewSimdNarrowNode");
     return nullptr;
 #else
@@ -29361,6 +29369,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_typ
 
     return tmp1;
 #elif defined(TARGET_WASM)
+    tmp1 = nullptr;
     NYI_WASM_SIMD("gtNewSimdWidenLowerNode");
     return nullptr;
 #else
@@ -29575,6 +29584,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
         return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseType, 16);
     }
 #elif defined(TARGET_WASM)
+    tmp1 = nullptr;
     NYI_WASM_SIMD("gtNewSimdWidenUpperNode");
     return nullptr;
 #else
