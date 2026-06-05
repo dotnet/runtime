@@ -52,7 +52,39 @@ namespace System.Threading
         private short _spinCount;
 
         private ushort _waiterStartTimeMs;
-        private AutoResetEvent? _waitEvent;
+
+        private object? _waitEventOrCondition;
+        private AutoResetEvent? WaitEvent
+        {
+            get
+            {
+                object? weoc = _waitEventOrCondition;
+                if (weoc is Condition c)
+                    return c._waitEvent;
+
+                return (AutoResetEvent?)weoc;
+            }
+        }
+
+        internal Condition GetOrCreateCondition()
+        {
+            // The loop terminates as _waitEventOrCondition has limited number of
+            // state transitions with no cycles.
+            while (true)
+            {
+                object? weoc = _waitEventOrCondition;
+                if (weoc is Condition c)
+                    return c;
+
+                Condition newCondition = new Condition(this);
+                newCondition._waitEvent = WaitEvent;
+
+                if (Interlocked.CompareExchange(ref _waitEventOrCondition, newCondition, weoc) == weoc)
+                {
+                    return newCondition;
+                }
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
@@ -513,7 +545,8 @@ namespace System.Threading
                 NativeRuntimeEventSource.Log.IsEnabled(
                     EventLevel.Informational,
                     NativeRuntimeEventSource.Keywords.ContentionKeyword);
-            AutoResetEvent waitEvent = _waitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
+
+            AutoResetEvent waitEvent = WaitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
             if (State.TryLockBeforeWait(this))
             {
                 // Lock was acquired and a waiter was not registered
@@ -652,8 +685,13 @@ namespace System.Threading
         private AutoResetEvent CreateWaitEvent(bool areContentionEventsEnabled)
         {
             var newWaitEvent = new AutoResetEvent(false);
-            AutoResetEvent? waitEventBeforeUpdate = Interlocked.CompareExchange(ref _waitEvent, newWaitEvent, null);
-            if (waitEventBeforeUpdate == null)
+            object? weocBeforeUpdate = Interlocked.CompareExchange(ref _waitEventOrCondition, newWaitEvent, null);
+            if (weocBeforeUpdate is Condition c)
+            {
+                weocBeforeUpdate = Interlocked.CompareExchange(ref c._waitEvent, newWaitEvent, null);
+            }
+
+            if (weocBeforeUpdate == null)
             {
                 // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
                 if (areContentionEventsEnabled && NativeRuntimeEventSource.Log.IsEnabled())
@@ -665,7 +703,7 @@ namespace System.Threading
             }
 
             newWaitEvent.Dispose();
-            return waitEventBeforeUpdate;
+            return (AutoResetEvent)weocBeforeUpdate;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -674,8 +712,8 @@ namespace System.Threading
             if (State.TrySetIsWaiterSignaledToWake(this, state))
             {
                 // Signal a waiter to wake
-                Debug.Assert(_waitEvent != null);
-                bool signaled = _waitEvent.Set();
+                Debug.Assert(WaitEvent != null);
+                bool signaled = WaitEvent.Set();
                 Debug.Assert(signaled);
             }
         }
@@ -695,14 +733,14 @@ namespace System.Threading
         }
 
         internal static long ContentionCount => s_contentionCount;
-        internal void Dispose() => _waitEvent?.Dispose();
+        internal void Dispose() => WaitEvent?.Dispose();
 
         internal nint LockIdForEvents
         {
             get
             {
-                Debug.Assert(_waitEvent != null);
-                return _waitEvent.SafeWaitHandle.DangerousGetHandle();
+                Debug.Assert(WaitEvent != null);
+                return WaitEvent.SafeWaitHandle.DangerousGetHandle();
             }
         }
 

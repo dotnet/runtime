@@ -47,6 +47,11 @@ namespace System.Threading
         }
 
         private readonly Lock _lock;
+
+        // When condition is installed in a Lock it takes the same field as waitEvent would.
+        // If waitEvent is also needed it is available through here.
+        internal AutoResetEvent? _waitEvent;
+
         private Waiter? _waitersHead;
         private Waiter? _waitersTail;
 

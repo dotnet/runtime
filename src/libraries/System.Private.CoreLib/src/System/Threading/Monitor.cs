@@ -78,17 +78,15 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
-        #region Object->Condition mapping
-
-        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(GetLockObject(o));
+        #region Condition Wait/Pulse
 
         private static Condition GetCondition(object obj)
         {
             Debug.Assert(
                 obj is not Condition,
                 "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetOrAdd(obj, s_createCondition);
+
+            return GetLockObject(obj).GetOrCreateCondition();
         }
         #endregion
 
