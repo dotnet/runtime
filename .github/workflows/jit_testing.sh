@@ -11,7 +11,7 @@ echo "=========================================="
 apt-get update
 apt-get install -y bc automake clang curl findutils git hostname libtool libkrb5-dev ninja-build llvm make python3 liblttng-ust-dev tar wget jq lld \
 build-essential zlib1g-dev libssl-dev libbrotli-dev ca-certificates
-``
+
 echo "=========================================="
 echo "Environment Information"
 echo "=========================================="
@@ -29,6 +29,13 @@ echo "=========================================="
 git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
 cd runtime
 git checkout ppc64le_coreclr_jit
+
+echo "=========================================="
+echo "Fixing Arcade SDK version"
+echo "=========================================="
+
+sed -i 's/9.0.0-beta.25208.6/8.0.0/g' global.json || true
+cat global.json
 
 echo "=========================================="
 echo "Reading SDK Version"
@@ -80,13 +87,11 @@ echo "=========================================="
 which dotnet
 dotnet --info
 
-#  IMPORTANT: Clean NuGet cache (prevents bad feeds sticking)
+#  Clean NuGet cache
 rm -rf ~/.nuget/packages
 
-#  COMMON restore sources (VALID feeds only)
-RESTORE_SOURCES="https://api.nuget.org/v3/index.json;\
-https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;\
-https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
+#  Valid public feeds
+RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
 
 echo "=========================================="
 echo "Building Runtime"
