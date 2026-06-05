@@ -783,7 +783,7 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 #if defined(FEATURE_SIMD)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
-#endif    
+#endif
 #if defined(FEATURE_SIMD) && defined(FEATURE_MASKED_HW_INTRINSICS)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif

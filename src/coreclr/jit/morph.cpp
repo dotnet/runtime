@@ -11746,7 +11746,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                         op1 = op1Intrinsic->Op(2);
                         DEBUG_DESTROY_NODE(op1Intrinsic->Op(1));
 #elif defined(TARGET_WASM)
-                       NYI_WASM_SIMD("fgMorphHWIntrinsicRequired");
+                        NYI_WASM_SIMD("fgMorphHWIntrinsicRequired");
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM

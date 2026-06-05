@@ -262,7 +262,7 @@ enum HWIntrinsicFlag : unsigned int
 
 #elif defined(TARGET_WASM)
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x400,
+    HW_Flag_SupportsContainment   = 0x400,
     HW_Flag_ReturnsPerElementMask = 0x800,
     // TODO-WASM: Add WASM-specific flags as needed.
 #else
@@ -569,8 +569,7 @@ struct HWIntrinsicInfo
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
 #elif defined(TARGET_WASM)
-    static int lookupImmUpperBound(
-        NamedIntrinsic intrinsic, var_types baseType);
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, var_types baseType);
 #else
 #error Unsupported platform
 #endif

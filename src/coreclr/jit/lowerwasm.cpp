@@ -846,8 +846,7 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     }
 }
 
-
-// --------------------------------------------------------  
+// --------------------------------------------------------
 // LowerHWIntrinsic: Lower a hardware intrinsic node.
 //
 // Arguments:

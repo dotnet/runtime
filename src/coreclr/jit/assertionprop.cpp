@@ -341,8 +341,8 @@ bool IntegralRange::Contains(int64_t value) const
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_WASM)
                 case NI_Vector128_ToScalar:
-                        NYI_WASM_SIMD("SIMD operation range assertions");
-                        break;
+                    NYI_WASM_SIMD("SIMD operation range assertions");
+                    break;
 #else
 #error Unsupported platform
 #endif

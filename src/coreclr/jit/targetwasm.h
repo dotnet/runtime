@@ -268,4 +268,3 @@
 // clang-format on
 
 #include "registeropswasm.h"
-
