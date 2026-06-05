@@ -40,7 +40,7 @@ namespace System.Threading
         private object? m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
 
-        private volatile ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
+        private ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
 
         // -- State -- //
         // For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
@@ -549,28 +549,27 @@ namespace System.Threading
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.UnsafeRegister(s_cancellationTokenCallback, this))
                 {
-                    lock (m_lock)
+                    // Loop to cope with spurious wakeups from other waits being canceled
+                    while (!IsSet)
                     {
-                        // Loop to cope with spurious wakeups from other waits being canceled
-                        while (!IsSet)
+                        // If our token was canceled, we must throw and exit.
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
+                        if (startTime != 0)
                         {
-                            // If our token was canceled, we must throw and exit.
-                            cancellationToken.ThrowIfCancellationRequested();
+                            // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
+                            realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                            if (realMillisecondsTimeout <= 0)
+                                return false;
+                        }
 
-                            // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
-                            if (startTime != 0)
-                            {
-                                // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
-                                realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
-                                if (realMillisecondsTimeout <= 0)
-                                    return false;
-                            }
-
+                        lock (m_lock)
+                        {
                             // There is a race condition that Set will fail to see that there are waiters as Set does not take the lock,
                             // so after updating waiters, we must check IsSet again.
                             // Also, we must ensure there cannot be any reordering of the assignment to Waiters and the
-                            // read from IsSet.  This is guaranteed as Waiters{set;} involves an Interlocked.CompareExchange
-                            // operation which provides a full memory barrier.
+                            // read from IsSet.  This is guaranteed as InterlockedIncrementWaiters is a full memory barrier.
                             // If we see IsSet=false, then we are guaranteed that Set() will see that we are
                             // waiting and will pulse the monitor correctly.
 
