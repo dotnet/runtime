@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.Tests
             bool expectedSupported =
                 PlatformDetection.IsWindows10OrLater ||
                 PlatformDetection.IsApplePlatform ||
+                OperatingSystem.IsAndroidVersionAtLeast(33) ||
                 PlatformDetection.IsOpenSslSupported; // X25519 is in OpenSSL 1.1.0 and .NET's floor is 1.1.1.
 
             Assert.Equal(expectedSupported, X25519DiffieHellman.IsSupported);
