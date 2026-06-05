@@ -646,6 +646,40 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         }
 
         [Fact]
+        public void CtorEcKeyPublicOnlyExportPrivateThrows()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                null, 0);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    ECParameters publicParams = ecKeyBacked.ExportParameters(false);
+                    Assert.NotNull(publicParams.Q.X);
+                    Assert.Null(publicParams.D);
+
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                        ecKeyBacked.ExportParameters(true));
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
         public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();

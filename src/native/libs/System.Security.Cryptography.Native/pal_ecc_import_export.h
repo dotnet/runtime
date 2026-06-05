@@ -64,7 +64,7 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nid
 
 /*
 Returns the EC key parameters (public coordinates and optional private key) from the given EVP_PKEY.
-Returns 1 upon success, otherwise 0.
+Returns 1 upon success, -1 if includePrivate is set but the key has no private component, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     const EVP_PKEY* pkey,
@@ -94,7 +94,7 @@ PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 Generates a new EC key pair for a named curve using EVP_PKEY APIs.
 On OpenSSL 3.0+ uses EVP_PKEY_CTX, otherwise falls back to EC_KEY APIs.
 If keySize is not NULL, it receives the key size in bits.
-Returns 1 upon success, -1 if oid was not found, otherwise 0.
+Returns 1 upon success, 2 if oid was not found, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
     EVP_PKEY** pkey,
@@ -122,7 +122,7 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeySize(EVP_PKEY* pkey);
 /*
 Creates a new EVP_PKEY for a named EC curve using the provided key parameters.
 On success, *pkey receives the new key and *keySize receives the key size in bits.
-Returns 1 upon success, -1 if oid was not found, otherwise 0.
+Returns 1 upon success, 2 if oid was not found, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyCreateByEcParameters(
     EVP_PKEY** pkey,
@@ -155,7 +155,7 @@ PALEXPORT int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
 /*
 Returns the ECC curve parameters of the given EVP_PKEY.
-Returns 1 upon success, otherwise 0.
+Returns 1 upon success, -1 if includePrivate is set but the key has no private component, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     EVP_PKEY* pkey,

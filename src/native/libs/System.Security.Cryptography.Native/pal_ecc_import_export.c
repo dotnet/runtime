@@ -775,7 +775,10 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
         goto error;
 
     if (includePrivate && !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
+    {
+        rc = -1;
         goto error;
+    }
 
     // Success; assign variables
     if (includePrivate)
