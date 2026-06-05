@@ -768,6 +768,7 @@ namespace Internal.JitInterface
         {
             Debug.Assert(handle != null);
 #if DEBUG
+            Debug.Assert((s_handleHighBitSet & (nint)handle) != 0);
             handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif
             int index = ((int)handle - handleBase) / handleMultiplier;

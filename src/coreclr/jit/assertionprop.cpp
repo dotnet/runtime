@@ -1414,8 +1414,16 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     var_types vnType = vnStore->TypeOfVN(vn);
     if (vnType == TYP_INT)
     {
-        *pConstant = vnStore->ConstantValue<int>(vn);
-        *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : GTF_EMPTY;
+        if (vnStore->IsVNHandle(vn))
+        {
+            *pConstant = vnStore->ConstantValue<ssize_t>(vn);
+            *pFlags    = vnStore->GetHandleFlags(vn);
+        }
+        else
+        {
+            *pConstant = vnStore->ConstantValue<int>(vn);
+            *pFlags    = GTF_EMPTY;
+        }
         return true;
     }
 #ifdef TARGET_64BIT
@@ -4612,12 +4620,16 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                    assert(vnStore->IsVNHandle(vnCns));
+                    printf("%p (gcref)\n", dspPtr(vnStore->ConstantValue<ssize_t>(vnCns)));
                 }
             }
             else if (op1->TypeIs(TYP_BYREF))
             {
-                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                ssize_t constant = vnStore->IsVNHandle(vnCns)
+                                       ? vnStore->ConstantValue<ssize_t>(vnCns)
+                                       : static_cast<ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
+                printf("%p (byref)\n", dspPtr(constant));
             }
             else
             {
@@ -4666,11 +4678,17 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
         else if (op1->TypeIs(TYP_REF))
         {
-            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
+            ssize_t constant = vnStore->IsVNHandle(vnCns)
+                                   ? vnStore->ConstantValue<ssize_t>(vnCns)
+                                   : static_cast<ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
+            op1->BashToConst(constant, TYP_REF);
         }
         else if (op1->TypeIs(TYP_BYREF))
         {
-            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
+            ssize_t constant = vnStore->IsVNHandle(vnCns)
+                                   ? vnStore->ConstantValue<ssize_t>(vnCns)
+                                   : static_cast<ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
+            op1->BashToConst(constant, TYP_BYREF);
         }
         else
         {
