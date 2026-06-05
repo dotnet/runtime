@@ -196,6 +196,7 @@ void InitializeOpenSSLShim(void);
 #define HAVE_OPENSSL_EC2M 1
 const EC_METHOD* EC_GF2m_simple_method(void);
 int EC_GROUP_get_curve_GF2m(const EC_GROUP* group, BIGNUM* p, BIGNUM* a, BIGNUM* b, BN_CTX* ctx);
+EC_GROUP* EC_GROUP_new_curve_GF2m(const BIGNUM* p, const BIGNUM* a, const BIGNUM* b, BN_CTX* ctx);
 int EC_GROUP_set_curve_GF2m(EC_GROUP* group, const BIGNUM* p, const BIGNUM* a, const BIGNUM* b, BN_CTX* ctx);
 int EC_POINT_get_affine_coordinates_GF2m(const EC_GROUP* group, const EC_POINT* p, BIGNUM* x, BIGNUM* y, BN_CTX* ctx);
 int EC_POINT_set_affine_coordinates_GF2m(

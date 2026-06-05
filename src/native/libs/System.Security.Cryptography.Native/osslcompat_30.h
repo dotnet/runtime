@@ -158,6 +158,7 @@ OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
 OSSL_PROVIDER* OSSL_PROVIDER_load(OSSL_LIB_CTX*, const char* name);
 OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX*, const char* name, int retain_fallbacks);
 int OSSL_PROVIDER_unload(OSSL_PROVIDER* prov);
+const OSSL_PROVIDER* EVP_PKEY_get0_provider(const EVP_PKEY* pkey);
 int OSSL_STORE_close(OSSL_STORE_CTX* ctx);
 int OSSL_STORE_eof(OSSL_STORE_CTX* ctx);
 OSSL_STORE_INFO* OSSL_STORE_load(OSSL_STORE_CTX* ctx);
