@@ -505,7 +505,7 @@ namespace ILCompiler.ObjectWriter
                             // We cannot emit anchor symbols in executable sections as they may split
                             // existing functions into multiple atoms, and ld-classic corrupts the
                             // unwinding information for such functions. In theory we could support this
-                            // by using nearest preceeding symbol as an anchor but that requires more
+                            // by using nearest preceding symbol as an anchor but that requires more
                             // complex handling and we don't have any such relocs in our current scenarios.
                             throw new NotSupportedException("Executable sections cannot contain RELPTR32 relocations on Mach-O");
                         }
