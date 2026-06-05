@@ -95,7 +95,9 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
+            ArgumentNullException.ThrowIfNull(obj);
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
             return GetCondition(obj).Wait(millisecondsTimeout, obj);
         }
 
