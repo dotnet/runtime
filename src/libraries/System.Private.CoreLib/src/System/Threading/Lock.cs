@@ -965,6 +965,23 @@ namespace System.Threading
             return (short)-adaptiveSpinPeriod;
         }
 
+        internal bool Wait(int millisecondsTimeout)
+        {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+            return GetOrCreateCondition().Wait(millisecondsTimeout, this);
+#pragma warning restore CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+        }
+
+        internal void Pulse()
+        {
+            GetOrCreateCondition().SignalOne();
+        }
+
+        internal void PulseAll()
+        {
+            GetOrCreateCondition().SignalAll();
+        }
+
         private struct State : IEquatable<State>
         {
             // Layout constants for Lock._state

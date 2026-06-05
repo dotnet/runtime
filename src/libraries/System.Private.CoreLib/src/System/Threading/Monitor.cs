@@ -78,18 +78,6 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
-        #region Condition Wait/Pulse
-
-        private static Condition GetCondition(object obj)
-        {
-            Debug.Assert(
-                obj is not Condition,
-                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-
-            return GetLockObject(obj).GetOrCreateCondition();
-        }
-        #endregion
-
         #region Public Wait/Pulse methods
 
         [UnsupportedOSPlatform("browser")]
@@ -98,21 +86,21 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(obj);
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
-            return GetCondition(obj).Wait(millisecondsTimeout, obj);
+            return GetLockObject(obj).Wait(millisecondsTimeout);
         }
 
         public static void Pulse(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalOne();
+            GetLockObject(obj).Pulse();
         }
 
         public static void PulseAll(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalAll();
+            GetLockObject(obj).PulseAll();
         }
 
         #endregion
