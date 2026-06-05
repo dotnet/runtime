@@ -55,7 +55,7 @@ extends:
                     # On scheduled runs (always:false) don't fail the build on Helix work item or
                     # test failures, so flaky outerloop tests don't keep AzDO re-queueing the same
                     # commit. The Send to Helix step fully succeeds (not partiallySucceeded).
-                    ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                    ${{ if in(variables['Build.Reason'], 'Schedule', 'Manual') }}:
                       failOnTestFailures: false
 
         - ${{ if eq(variables['isRollingBuild'], false) }}:
@@ -87,7 +87,7 @@ extends:
                       creator: dotnet-bot
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                       # Don't fail scheduled builds on Helix work item/test failures (see above).
-                      ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                      ${{ if in(variables['Build.Reason'], 'Schedule', 'Manual') }}:
                         failOnTestFailures: false
 
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
@@ -115,5 +115,5 @@ extends:
                       creator: dotnet-bot
                       extraHelixArguments: /p:BuildTargetFramework=net48
                       # Don't fail scheduled builds on Helix work item/test failures (see above).
-                      ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                      ${{ if in(variables['Build.Reason'], 'Schedule', 'Manual') }}:
                         failOnTestFailures: false
