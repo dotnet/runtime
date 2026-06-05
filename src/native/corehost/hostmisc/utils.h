@@ -214,30 +214,25 @@ size_t to_size_t_dbgchecked(T value)
 extern "C" {
 #endif
 
-// Write the trailing path component of `path` (the text after the last
-// DIR_SEPARATOR) into out_name. Return false if it does not fit.
-bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
-// Return the value of a test-only environment variable, or NULL when unset
-// or when the product binary is not stamped as a test build. Caller should
-// free() the returned pointer.
+// Caller should free() the returned pointer.
 pal_char_t* utils_test_only_getenv(const pal_char_t* name);
 
-// Append `component` to the caller-allocated buffer `path`, inserting a
-// DIR_SEPARATOR between them when needed. Silently no-op on overflow or
-// when `component` is NULL/empty.
-void utils_append_path(pal_char_t* path, size_t path_len, const pal_char_t* component);
+void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
 
-// Return <dir>/<file_name> if the file exists, otherwise NULL. Caller should
-// free() the returned pointer.
-pal_char_t* utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name);
+// Caller should free() the returned pointer.
+pal_char_t* utils_append_path_alloc(const pal_char_t* path, const pal_char_t* component);
+
+// Return <dir>/<file_name> if the file exists, otherwise NULL.
+// Caller should free() the returned pointer.
+pal_char_t* utils_find_file_in_dir(const pal_char_t* dir, const pal_char_t* file_name);
 
 // Return the directory portion of `path`, always ending with DIR_SEPARATOR.
 // Caller should free() the returned pointer.
-pal_char_t* utils_get_directory_alloc(const pal_char_t* path);
+pal_char_t* utils_get_directory(const pal_char_t* path);
 
-// Read `env_key` and return the canonicalized value, or NULL if unset or
-// canonicalization fails. Caller should free() the returned pointer.
+// Caller should free() the returned pointer.
 pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
 
 // Find the .NET install root from environment variables in priority order:
@@ -247,9 +242,7 @@ pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
 // Caller should free() out_dotnet_root.
 bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
 
-// Return the download URL for `framework_name` at `framework_version`, or
-// the runtime URL when `framework_name` is NULL or empty. Caller should free()
-// the returned pointer.
+// Caller should free() the returned pointer.
 pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version);
 
 #ifdef __cplusplus

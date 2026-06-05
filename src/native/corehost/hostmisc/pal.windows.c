@@ -116,7 +116,6 @@ pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
         WIN32_FILE_ATTRIBUTE_DATA data;
         if (GetFileAttributesExW(path, GetFileExInfoStandard, &data) != 0)
             return pal_strdup(path);
-        // Fall through and let GetFullPathNameW have a chance, matching C++ pal::fullpath.
     }
 
     // Start with a MAX_PATH-sized buffer; the typical case fits.
@@ -180,9 +179,8 @@ pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
 
 bool pal_file_exists(const pal_char_t* path)
 {
-    // Matches the C++ pal::file_exists semantics: canonicalize and verify
-    // existence (with logging suppressed). This handles long paths via the
-    // \\?\ prefix machinery in pal_fullpath.
+    // pal_fullpath canonicalizes (adding the long-path \\?\ prefix when needed)
+    // and verifies existence, so a non-NULL result means the path exists.
     pal_char_t* resolved = pal_fullpath(path, true);
     bool exists = resolved != NULL;
     free(resolved);
@@ -196,7 +194,7 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 
     // Build the search string: path + "\\*". One extra char beyond path
     // length is needed for the separator if path doesn't already end with one.
-    size_t path_len = wcslen(path);
+    size_t path_len = pal_strlen(path);
     size_t search_len = path_len + 3; // worst case: '\\', '*', NUL
     pal_char_t* search = (pal_char_t*)malloc(search_len * sizeof(pal_char_t));
     if (search == NULL)
@@ -274,89 +272,52 @@ bool pal_is_emulating_x64(void)
 #endif
 }
 
-// Resolves the registry hive and sub-key path consulted to discover the
-// globally-registered .NET install for the current architecture. The value
-// name is always "InstallLocation" (REG_SZ).
-// Honors _DOTNET_TEST_REGISTRY_PATH to replace the default SOFTWARE\dotnet
-// base path; if the override begins with the literal "HKEY_CURRENT_USER\"
-// (case-sensitive), the hive is switched to HKCU and the prefix is stripped.
-// Returns true on success; on failure *out_sub_key is NULL.
+// Get the registry hive and sub-key for the globally-registered .NET install:
+//   HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>.
+// If set, the _DOTNET_TEST_REGISTRY_PATH environment variable can switch the
+// hive to HKCU and change the SOFTWARE\dotnet part of the sub-key.
 static bool get_dotnet_install_location_registry_path(HKEY* out_hive, pal_char_t** out_sub_key)
 {
     *out_hive = HKEY_LOCAL_MACHINE;
-    *out_sub_key = NULL;
 
-    pal_char_t* base = NULL;
+    const pal_char_t* base = _X("SOFTWARE\\dotnet");
     pal_char_t* override = utils_test_only_getenv(_X("_DOTNET_TEST_REGISTRY_PATH"));
     if (override != NULL)
     {
         const pal_char_t hkcu_prefix[] = _X("HKEY_CURRENT_USER\\");
-        const size_t hkcu_prefix_len = ARRAY_SIZE(hkcu_prefix) - 1;
-        if (wcsncmp(override, hkcu_prefix, hkcu_prefix_len) == 0)
+        if (wcsncmp(override, hkcu_prefix, ARRAY_SIZE(hkcu_prefix) - 1) == 0)
         {
             *out_hive = HKEY_CURRENT_USER;
-            base = pal_strdup(override + hkcu_prefix_len);
+            base = override + (ARRAY_SIZE(hkcu_prefix) - 1);
         }
         else
         {
             base = override;
-            override = NULL;
         }
-
-        free(override);
-        if (base == NULL)
-            return false;
-    }
-    else
-    {
-        base = pal_strdup(_X("SOFTWARE\\dotnet"));
-        if (base == NULL)
-            return false;
     }
 
-    const pal_char_t suffix[] = _X("\\Setup\\InstalledVersions\\");
-    const pal_char_t* arch = _STRINGIFY(CURRENT_ARCH_NAME);
-    size_t base_len = wcslen(base);
-    size_t suffix_len = ARRAY_SIZE(suffix) - 1;
-    size_t arch_len = wcslen(arch);
-    size_t total = base_len + suffix_len + arch_len + 1;
+    size_t total = pal_strlen(base) + STRING_LENGTH("\\Setup\\InstalledVersions\\" CURRENT_ARCH_NAME) + 1;
 
     pal_char_t* combined = (pal_char_t*)malloc(total * sizeof(pal_char_t));
-    if (combined == NULL)
-    {
-        free(base);
-        return false;
-    }
+    if (combined != NULL)
+        pal_str_printf(combined, total, _X("%s\\Setup\\InstalledVersions\\") _STRINGIFY(CURRENT_ARCH_NAME), base);
 
-    memcpy(combined, base, base_len * sizeof(pal_char_t));
-    memcpy(combined + base_len, suffix, suffix_len * sizeof(pal_char_t));
-    memcpy(combined + base_len + suffix_len, arch, arch_len * sizeof(pal_char_t));
-    combined[total - 1] = L'\0';
-
-    free(base);
+    free(override);
     *out_sub_key = combined;
-    return true;
+    return combined != NULL;
 }
 
 // Allocates "HKLM\<sub_key>\InstallLocation" or "HKCU\..." for display/tracing.
 static pal_char_t* format_registry_path(HKEY hive, const pal_char_t* sub_key)
 {
     const pal_char_t* prefix = (hive == HKEY_CURRENT_USER) ? _X("HKCU\\") : _X("HKLM\\");
-    const pal_char_t value[] = _X("\\InstallLocation");
-
-    size_t prefix_len = wcslen(prefix);
-    size_t sub_key_len = wcslen(sub_key);
-    size_t value_len = ARRAY_SIZE(value) - 1;
-    size_t total = prefix_len + sub_key_len + value_len + 1;
+    size_t total = pal_strlen(prefix) + pal_strlen(sub_key) + STRING_LENGTH("\\InstallLocation") + 1;
 
     pal_char_t* result = (pal_char_t*)malloc(total * sizeof(pal_char_t));
     if (result == NULL)
         return NULL;
 
-    memcpy(result, prefix, prefix_len * sizeof(pal_char_t));
-    memcpy(result + prefix_len, sub_key, sub_key_len * sizeof(pal_char_t));
-    memcpy(result + prefix_len + sub_key_len, value, value_len * sizeof(pal_char_t));
-    result[total - 1] = L'\0';
+    pal_str_printf(result, total, _X("%s%s\\InstallLocation"), prefix, sub_key);
     return result;
 }
 
@@ -393,7 +354,7 @@ pal_char_t* pal_get_dotnet_self_registered_dir(void)
         }
     }
 
-    // RegOpenKeyEx is required to force the 32-bit registry view via KEY_WOW64_32KEY.
+    // Always look in the 32-bit registry view via KEY_WOW64_32KEY.
     HKEY hkey = NULL;
     LSTATUS status = RegOpenKeyExW(hive, sub_key, 0, KEY_READ | KEY_WOW64_32KEY, &hkey);
     if (status != ERROR_SUCCESS)
@@ -465,7 +426,7 @@ pal_char_t* pal_get_default_installation_dir(void)
     const pal_char_t dotnet_seg[] = _X("\\dotnet");
     const pal_char_t arch_seg[] = _X("\\") _STRINGIFY(CURRENT_ARCH_NAME);
 
-    size_t canonical_len = wcslen(canonical);
+    size_t canonical_len = pal_strlen(canonical);
     size_t dotnet_len = ARRAY_SIZE(dotnet_seg) - 1;
     bool emulating_x64 = pal_is_emulating_x64();
     size_t arch_len = emulating_x64 ? (ARRAY_SIZE(arch_seg) - 1) : 0;

@@ -12,7 +12,7 @@
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
-    pal_char_t* file_path = utils_file_exists_in_dir_alloc(dir.c_str(), file_name);
+    pal_char_t* file_path = utils_find_file_in_dir(dir.c_str(), file_name);
     if (file_path == nullptr)
         return false;
 
@@ -135,7 +135,7 @@ pal::string_t get_filename(const pal::string_t& path)
 
 pal::string_t get_directory(const pal::string_t& path)
 {
-    pal_char_t* result = utils_get_directory_alloc(path.c_str());
+    pal_char_t* result = utils_get_directory(path.c_str());
     if (result == nullptr)
         return pal::string_t();
 

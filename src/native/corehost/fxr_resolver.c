@@ -16,7 +16,6 @@
 #include <assert.h>
 
 // The default search set is app-local + environment variables + global install
-// locations. Mirrors the C++ s_default_search.
 #define FXR_SEARCH_LOCATION_DEFAULT_SET \
     (fxr_search_location_app_local \
      | fxr_search_location_environment_variable \
@@ -75,15 +74,13 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
     c_fx_ver_as_str(&ctx.max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
     c_fx_ver_cleanup(&ctx.max_ver);
 
-    size_t fxr_dir_cap = pal_strlen(fxr_root) + pal_strlen(max_ver_str) + 2; // separator + NUL
-    pal_char_t* fxr_dir = (pal_char_t*)malloc(fxr_dir_cap * sizeof(pal_char_t));
-    fxr_dir[0] = _X('\0');
-    utils_append_path(fxr_dir, fxr_dir_cap, fxr_root);
-    utils_append_path(fxr_dir, fxr_dir_cap, max_ver_str);
+    pal_char_t* fxr_dir = utils_append_path_alloc(fxr_root, max_ver_str);
+    if (fxr_dir == NULL)
+        return false;
 
     trace_info(_X("Detected latest fxr version=[%s]..."), fxr_dir);
 
-    *out_fxr_path = utils_file_exists_in_dir_alloc(fxr_dir, LIBFXR_NAME);
+    *out_fxr_path = utils_find_file_in_dir(fxr_dir, LIBFXR_NAME);
     if (*out_fxr_path == NULL)
     {
         trace_error(_X("Error: the required library %s could not be found in [%s]"), LIBFXR_NAME, fxr_dir);
@@ -96,9 +93,23 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
     return true;
 }
 
-// Build the "you need to install .NET" diagnostic message and emit it via
-// trace_error. Used when no fxr was found. Owns all of its allocations.
-static void emit_missing_runtime_error(
+// Build "<dotnet_root>/host/fxr".
+// Caller should free() the returned pointer.
+static pal_char_t* get_fxr_dir(const pal_char_t* dotnet_root)
+{
+    size_t cap = pal_strlen(dotnet_root) + STRING_LENGTH(_X("host")) + STRING_LENGTH(_X("fxr")) + 3; // 2 separators + NUL
+    pal_char_t* fxr_dir = (pal_char_t*)malloc(cap * sizeof(pal_char_t));
+    if (fxr_dir == NULL)
+        return NULL;
+
+    fxr_dir[0] = _X('\0');
+    utils_append_path(fxr_dir, cap, dotnet_root);
+    utils_append_path(fxr_dir, cap, _X("host"));
+    utils_append_path(fxr_dir, cap, _X("fxr"));
+    return fxr_dir;
+}
+
+static void print_missing_runtime_error(
     const pal_char_t* root_path,
     fxr_search_location search,
     const pal_char_t* app_relative_dotnet_root,
@@ -269,7 +280,7 @@ bool fxr_resolver_try_get_path(
     // If a hostfxr exists in root_path, then assume self-contained.
     if (search_app_local && root_path != NULL && root_path[0] != _X('\0'))
     {
-        pal_char_t* app_local_fxr = utils_file_exists_in_dir_alloc(root_path, LIBFXR_NAME);
+        pal_char_t* app_local_fxr = utils_find_file_in_dir(root_path, LIBFXR_NAME);
         if (app_local_fxr != NULL)
         {
             trace_info(_X("Using app-local location [%s] as runtime location."), root_path);
@@ -310,7 +321,7 @@ bool fxr_resolver_try_get_path(
                 return false;
             }
 
-            pal_char_t* app_rel_fxr = utils_file_exists_in_dir_alloc(canonical_app_relative, LIBFXR_NAME);
+            pal_char_t* app_rel_fxr = utils_find_file_in_dir(canonical_app_relative, LIBFXR_NAME);
             free(canonical_app_relative);
             if (app_rel_fxr != NULL)
             {
@@ -352,12 +363,12 @@ bool fxr_resolver_try_get_path(
     // If any branch picked a dotnet_root, try <dotnet_root>/host/fxr/<latest>.
     if (dotnet_root != NULL)
     {
-        size_t fxr_dir_cap = pal_strlen(dotnet_root) + STRING_LENGTH(_X("host")) + STRING_LENGTH(_X("fxr")) + 3; // 2 separators + NUL
-        pal_char_t* fxr_dir = (pal_char_t*)malloc(fxr_dir_cap * sizeof(pal_char_t));
-        fxr_dir[0] = _X('\0');
-        utils_append_path(fxr_dir, fxr_dir_cap, dotnet_root);
-        utils_append_path(fxr_dir, fxr_dir_cap, _X("host"));
-        utils_append_path(fxr_dir, fxr_dir_cap, _X("fxr"));
+        pal_char_t* fxr_dir = get_fxr_dir(dotnet_root);
+        if (fxr_dir == NULL)
+        {
+            free(dotnet_root);
+            return false;
+        }
 
         if (pal_directory_exists(fxr_dir))
         {
@@ -379,7 +390,7 @@ bool fxr_resolver_try_get_path(
         free(fxr_dir);
     }
 
-    emit_missing_runtime_error(root_path, search, app_relative_dotnet_root,
+    print_missing_runtime_error(root_path, search, app_relative_dotnet_root,
                                env_var_name, dotnet_root);
 
     free(dotnet_root);
@@ -390,7 +401,7 @@ bool fxr_resolver_try_get_path(
     (void)search;
     (void)app_relative_dotnet_root;
 
-    pal_char_t* host_dir = utils_get_directory_alloc(root_path);
+    pal_char_t* host_dir = utils_get_directory(root_path);
     if (host_dir == NULL)
         return false;
 
@@ -411,12 +422,9 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
 {
     *out_fxr_path = NULL;
 
-    size_t fxr_dir_cap = pal_strlen(dotnet_root) + STRING_LENGTH(_X("host")) + STRING_LENGTH(_X("fxr")) + 3; // 2 separators + NUL
-    pal_char_t* fxr_dir = (pal_char_t*)malloc(fxr_dir_cap * sizeof(pal_char_t));
-    fxr_dir[0] = _X('\0');
-    utils_append_path(fxr_dir, fxr_dir_cap, dotnet_root);
-    utils_append_path(fxr_dir, fxr_dir_cap, _X("host"));
-    utils_append_path(fxr_dir, fxr_dir_cap, _X("fxr"));
+    pal_char_t* fxr_dir = get_fxr_dir(dotnet_root);
+    if (fxr_dir == NULL)
+        return false;
 
     if (!pal_directory_exists(fxr_dir))
     {

@@ -123,7 +123,7 @@ extern "C" {
 
 // pal_char_t-based C-callable APIs.
 
-// Returns a heap-allocated, NUL-terminated copy of the current process's
+// Returns a heap-allocated, null-terminated copy of the current process's
 // executable path, or NULL on failure. Caller must free() the returned pointer.
 pal_char_t* pal_get_own_executable_path(void);
 
@@ -132,17 +132,17 @@ bool pal_directory_exists(const pal_char_t* path);
 // Returns true if the file or directory exists. Equivalent to pal::file_exists.
 bool pal_file_exists(const pal_char_t* path);
 
-// Returns a heap-allocated, NUL-terminated copy of the given string, or
+// Returns a heap-allocated, null-terminated copy of the given string, or
 // NULL on allocation failure. Caller should free() the returned pointer.
 pal_char_t* pal_strdup(const pal_char_t* str);
 
-// Returns a heap-allocated, NUL-terminated copy of the named environment
+// Returns a heap-allocated, null-terminated copy of the named environment
 // variable's value, or NULL if the variable is unset or set to the empty
 // string. Caller must free() the returned pointer.
 pal_char_t* pal_getenv(const pal_char_t* name);
 
 // Duplicate the first `len` pal_char_t characters of `src` into a
-// heap-allocated, NUL-terminated buffer. Returns NULL on allocation failure.
+// heap-allocated, null-terminated buffer. Returns NULL on allocation failure.
 static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
 {
     pal_char_t* buf = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
@@ -155,7 +155,7 @@ static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
 }
 
 // Canonicalize a path and verify it exists. Returns a heap-allocated,
-// NUL-terminated canonical path, or NULL on failure. Caller should free()
+// null-terminated canonical path, or NULL on failure. Caller should free()
 // the returned pointer. When skip_error_logging is true, failure-path
 // trace messages are suppressed (used when probing for optional files).
 pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging);
