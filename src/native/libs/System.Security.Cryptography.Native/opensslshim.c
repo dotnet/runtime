@@ -21,7 +21,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 #endif
 
@@ -34,7 +34,7 @@ static void* volatile libssl = NULL;
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
 // Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
 // that expects 32-bit time_t even though our time_t is 64-bit.
@@ -180,7 +180,7 @@ void InitializeOpenSSLShim(void)
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
 #endif
 
@@ -195,7 +195,7 @@ void InitializeOpenSSLShim(void)
         }
     }
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
 
     // This value will represent a time in year 2038 if 64-bit time is used,

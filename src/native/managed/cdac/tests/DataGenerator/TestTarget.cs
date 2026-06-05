@@ -283,7 +283,7 @@ internal sealed class TestTarget : Target
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => throw new NotImplementedException();
 
-        public override void Flush() { }
+        public override void Flush(FlushScope scope) { }
     }
 
     // --- Trivial IDataCache for ReadDataField support ----------------
