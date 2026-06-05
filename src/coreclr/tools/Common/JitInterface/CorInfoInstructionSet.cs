@@ -59,8 +59,9 @@ namespace Internal.JitInterface
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
-        Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
-        Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
+        WASM_WasmBase = InstructionSet_WASM.WasmBase,
+        WASM_PackedSimd = InstructionSet_WASM.PackedSimd,
+        WASM_Vector128 = InstructionSet_WASM.Vector128,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
@@ -208,12 +209,13 @@ namespace Internal.JitInterface
         Zbs = 4,
     }
 
-    public enum InstructionSet_Wasm32
+    public enum InstructionSet_WASM
     {
         ILLEGAL = InstructionSet.ILLEGAL,
         NONE = InstructionSet.NONE,
         WasmBase = 1,
         PackedSimd = 2,
+        Vector128 = 3,
     }
 
     public enum InstructionSet_X64
@@ -329,7 +331,7 @@ namespace Internal.JitInterface
 
         public IEnumerable<InstructionSet_RiscV64> RiscV64Flags => this.Select((x) => (InstructionSet_RiscV64)x);
 
-        public IEnumerable<InstructionSet_Wasm32> Wasm32Flags => this.Select((x) => (InstructionSet_Wasm32)x);
+        public IEnumerable<InstructionSet_WASM> WASMFlags => this.Select((x) => (InstructionSet_WASM)x);
 
         public IEnumerable<InstructionSet_X64> X64Flags => this.Select((x) => (InstructionSet_X64)x);
 
@@ -450,10 +452,10 @@ namespace Internal.JitInterface
                 case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
                 }
                 break;
-            case TargetArchitecture.Wasm32:
+            case TargetArchitecture.WASM:
                 switch (input)
                 {
-                case InstructionSet.Wasm32_Vector128: return InstructionSet.Wasm32_PackedSimd;
+                case InstructionSet.WASM_Vector128: return InstructionSet.WASM_PackedSimd;
                 }
                 break;
             case TargetArchitecture.X64:
@@ -600,11 +602,11 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                     break;
 
-                case TargetArchitecture.Wasm32:
-                    if (resultflags.HasInstructionSet(InstructionSet.Wasm32_Vector128))
-                        resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
-                        resultflags.AddInstructionSet(InstructionSet.Wasm32_WasmBase);
+                case TargetArchitecture.WASM:
+                    if (resultflags.HasInstructionSet(InstructionSet.WASM_Vector128))
+                        resultflags.AddInstructionSet(InstructionSet.WASM_PackedSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.WASM_PackedSimd))
+                        resultflags.AddInstructionSet(InstructionSet.WASM_WasmBase);
                     break;
 
                 case TargetArchitecture.X64:
@@ -905,11 +907,11 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
                     break;
 
-                case TargetArchitecture.Wasm32:
-                    if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
-                        resultflags.AddInstructionSet(InstructionSet.Wasm32_Vector128);
-                    if (resultflags.HasInstructionSet(InstructionSet.Wasm32_WasmBase))
-                        resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
+                case TargetArchitecture.WASM:
+                    if (resultflags.HasInstructionSet(InstructionSet.WASM_PackedSimd))
+                        resultflags.AddInstructionSet(InstructionSet.WASM_Vector128);
+                    if (resultflags.HasInstructionSet(InstructionSet.WASM_WasmBase))
+                        resultflags.AddInstructionSet(InstructionSet.WASM_PackedSimd);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1157,9 +1159,10 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
                     break;
 
-                case TargetArchitecture.Wasm32:
-                    yield return new InstructionSetInfo("base", "WasmBase", InstructionSet.Wasm32_WasmBase, true);
-                    yield return new InstructionSetInfo("simd128", "PackedSimd", InstructionSet.Wasm32_PackedSimd, true);
+                case TargetArchitecture.WASM:
+                    yield return new InstructionSetInfo("base", "WasmBase", InstructionSet.WASM_WasmBase, true);
+                    yield return new InstructionSetInfo("simd128", "PackedSimd", InstructionSet.WASM_PackedSimd, true);
+                    yield return new InstructionSetInfo("Vector128", "", InstructionSet.WASM_Vector128, false);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1353,7 +1356,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.RiscV64:
                     break;
 
-                case TargetArchitecture.Wasm32:
+                case TargetArchitecture.WASM:
                     break;
 
                 case TargetArchitecture.X64:
@@ -1422,7 +1425,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.RiscV64:
                     break;
 
-                case TargetArchitecture.Wasm32:
+                case TargetArchitecture.WASM:
                     break;
 
                 case TargetArchitecture.X64:
@@ -1491,6 +1494,10 @@ namespace Internal.JitInterface
             {
                 case TargetArchitecture.ARM64:
                     platformIntrinsicNamespace = "System.Runtime.Intrinsics.Arm";
+                    break;
+
+                case TargetArchitecture.WASM:
+                    platformIntrinsicNamespace = "System.Runtime.Intrinsics.Wasm32";
                     break;
 
                 case TargetArchitecture.X64:
@@ -1615,15 +1622,15 @@ namespace Internal.JitInterface
                     default:
                         return InstructionSet.ILLEGAL;
                 }
-                case TargetArchitecture.Wasm32:
+                case TargetArchitecture.WASM:
                 switch (typeName)
                 {
 
                     case "WasmBase":
-                        { return InstructionSet.Wasm32_WasmBase; }
+                        { return InstructionSet.WASM_WasmBase; }
 
                     case "PackedSimd":
-                        { return InstructionSet.Wasm32_PackedSimd; }
+                        { return InstructionSet.WASM_PackedSimd; }
 
                     default:
                         return InstructionSet.ILLEGAL;
@@ -2300,6 +2307,26 @@ namespace Internal.JitInterface
                                 yield return nestedType;
                             }
                         }
+                    }
+                }
+                break;
+
+                case (InstructionSet.WASM_WasmBase, TargetArchitecture.WASM):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm32"u8, "WasmBase"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
+                case (InstructionSet.WASM_PackedSimd, TargetArchitecture.WASM):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm32"u8, "PackedSimd"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
                     }
                 }
                 break;
