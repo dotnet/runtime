@@ -34,7 +34,7 @@ echo "=========================================="
 echo "Fixing Arcade SDK version"
 echo "=========================================="
 
-sed -i 's/9.0.0-beta.25208.6/8.0.0/g' global.json || true
+sed -i 's/9.0.0-beta.25208.6/9.0.0-beta.23503.3/g' global.json
 cat global.json
 
 echo "=========================================="
