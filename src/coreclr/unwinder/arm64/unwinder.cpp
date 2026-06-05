@@ -175,10 +175,10 @@ typedef struct _ARM64_VFP_STATE
 
 #if !defined(DEBUGGER_UNWIND)
 
-#define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
-#define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
-#define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
+#define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_uint8_t>(addr))
+#define MEMORY_READ_WORD(params, addr)       (*dac_cast<DPTR(uint16_t)>(addr))
+#define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_uint32_t>(addr))
+#define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_uint64_t>(addr))
 
 #endif
 
