@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 // The default search set is app-local + environment variables + global install
 // locations. Mirrors the C++ s_default_search.
@@ -20,23 +21,6 @@
     (fxr_search_location_app_local \
      | fxr_search_location_environment_variable \
      | fxr_search_location_global)
-
-// Grow-style append. No-op if addition is NULL or empty (some PAL APIs return
-// NULL to signal "not set"). *buf must be non-NULL on entry (caller seeds via
-// pal_strdup or equivalent). Mirrors std::wstring::append in the C++ original:
-// on OOM, realloc returns NULL and the subsequent memcpy crashes, which is the
-// same observable outcome as a C++ std::bad_alloc terminate.
-static void append_str(pal_char_t** buf, const pal_char_t* addition)
-{
-    if (addition == NULL || addition[0] == _X('\0'))
-        return;
-
-    size_t cur_len = pal_strlen(*buf);
-    size_t add_len = pal_strlen(addition);
-
-    *buf = (pal_char_t*)realloc(*buf, (cur_len + add_len + 1) * sizeof(pal_char_t));
-    memcpy(*buf + cur_len, addition, (add_len + 1) * sizeof(pal_char_t));
-}
 
 typedef struct
 {
@@ -131,88 +115,113 @@ static void emit_missing_runtime_error(
                   LIBFXR_NAME, (unsigned int)search);
 
     pal_char_t* host_path = pal_get_own_executable_path();
-    pal_char_t* location = pal_strdup(_X("Not found"));
-    pal_char_t* searched_locations = pal_strdup(_X("The following locations were searched:"));
     pal_char_t* self_registered_dir = NULL;
     pal_char_t* registered_config_location = NULL;
     pal_char_t* default_install_location = NULL;
     pal_char_t* download_url = NULL;
 
+    // Build the message as an array of string fragments, then concatenate once
+    // at the end. Current upper bound is ~24 message_parts; 32 is comfortable.
+    const pal_char_t* message_parts[32];
+    size_t index = 0;
+
+    message_parts[index++] = _X("Not found");
     if (search != FXR_SEARCH_LOCATION_DEFAULT_SET)
     {
-        append_str(&location, _X(" - search options: ["));
-        if (search_app_local)    append_str(&location, _X(" app_local"));
-        if (search_app_relative) append_str(&location, _X(" app_relative"));
-        if (search_env)          append_str(&location, _X(" environment_variable"));
-        if (search_global)       append_str(&location, _X(" global"));
-        append_str(&location, _X(" ]"));
+        message_parts[index++] = _X(" - search options: [");
+
+        if (search_app_local)
+            message_parts[index++] = _X(" app_local");
+
+        if (search_app_relative)
+            message_parts[index++] = _X(" app_relative");
+
+        if (search_env)
+            message_parts[index++] = _X(" environment_variable");
+
+        if (search_global)
+            message_parts[index++] = _X(" global");
+
+        message_parts[index++] = _X(" ]");
 
         if (search_app_relative)
         {
-            append_str(&location, _X(", app-relative path: "));
-            append_str(&location, app_relative_dotnet_root);
+            message_parts[index++] = _X(", app-relative path: ");
+            message_parts[index++] = app_relative_dotnet_root;
         }
     }
 
+    message_parts[index++] = _X("\n\nThe following locations were searched:");
+
     if (search_app_local && root_path != NULL && root_path[0] != _X('\0'))
     {
-        append_str(&searched_locations, _X("\n  Application directory:\n    "));
-        append_str(&searched_locations, root_path);
+        message_parts[index++] = _X("\n  Application directory:\n    ");
+        message_parts[index++] = root_path;
     }
 
     if (search_app_relative)
     {
-        append_str(&searched_locations, _X("\n  App-relative location:\n    "));
-        append_str(&searched_locations, app_relative_dotnet_root);
+        message_parts[index++] = _X("\n  App-relative location:\n    ");
+        message_parts[index++] = app_relative_dotnet_root;
     }
 
     if (search_env)
     {
-        append_str(&searched_locations, _X("\n  Environment variable:\n    "));
+        message_parts[index++] = _X("\n  Environment variable:\n    ");
         if (env_var_name == NULL)
         {
-            append_str(&searched_locations, DOTNET_ROOT_ARCH_ENV_VAR);
-            append_str(&searched_locations, _X(" = <not set>\n    "));
-            append_str(&searched_locations, DOTNET_ROOT_ENV_VAR _X(" = <not set>"));
+            message_parts[index++] = DOTNET_ROOT_ARCH_ENV_VAR _X(" = <not set>\n    ")
+                                     DOTNET_ROOT_ENV_VAR      _X(" = <not set>");
         }
         else
         {
-            append_str(&searched_locations, env_var_name);
-            append_str(&searched_locations, _X(" = "));
-            append_str(&searched_locations, dotnet_root);
+            message_parts[index++] = env_var_name;
+            message_parts[index++] = _X(" = ");
+            message_parts[index++] = dotnet_root;
         }
     }
 
     // Global locations are only listed if environment variables are not set.
     if (search_global && env_var_name == NULL)
     {
-        append_str(&searched_locations, _X("\n  Registered location:\n    "));
         registered_config_location = pal_get_dotnet_self_registered_config_location();
-        append_str(&searched_locations, registered_config_location);
-
         self_registered_dir = pal_get_dotnet_self_registered_dir();
         bool self_registered_empty = self_registered_dir == NULL || self_registered_dir[0] == _X('\0');
-        if (!self_registered_empty)
-        {
-            append_str(&searched_locations, _X(" = "));
-            append_str(&searched_locations, self_registered_dir);
-        }
-        else
-        {
-            append_str(&searched_locations, _X(" = <not set>"));
-        }
+
+        message_parts[index++] = _X("\n  Registered location:\n    ");
+        message_parts[index++] = registered_config_location;
+        message_parts[index++] = _X(" = ");
+        message_parts[index++] = self_registered_empty ? _X("<not set>") : self_registered_dir;
 
         // Default install location is only searched if self-registered location is not set.
         if (self_registered_empty)
         {
             default_install_location = pal_get_default_installation_dir();
-            append_str(&searched_locations, _X("\n  Default location:\n    "));
-            append_str(&searched_locations, default_install_location);
+            if (default_install_location != NULL)
+            {
+                message_parts[index++] = _X("\n  Default location:\n    ");
+                message_parts[index++] = default_install_location;
+            }
         }
     }
 
-    append_str(&location, _X("\n\n"));
-    append_str(&location, searched_locations);
+    assert(index <= ARRAY_SIZE(message_parts));
+
+    size_t total = 0;
+    for (size_t i = 0; i < index; ++i)
+    {
+        total += pal_strlen(message_parts[i]);
+    }
+
+    pal_char_t* location = (pal_char_t*)malloc((total + 1) * sizeof(pal_char_t));
+    pal_char_t* dst = location;
+    for (size_t i = 0; i < index; ++i)
+    {
+        size_t len = pal_strlen(message_parts[i]);
+        memcpy(dst, message_parts[i], len * sizeof(pal_char_t));
+        dst += len;
+    }
+    *dst = _X('\0');
 
     download_url = utils_get_download_url(NULL, NULL);
 
@@ -228,7 +237,6 @@ static void emit_missing_runtime_error(
 
     free(host_path);
     free(location);
-    free(searched_locations);
     free(self_registered_dir);
     free(registered_config_location);
     free(default_install_location);
