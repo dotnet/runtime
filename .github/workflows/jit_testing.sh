@@ -140,6 +140,10 @@ echo "=========================================="
 echo "Building Runtime"
 echo "=========================================="
 
+# Set environment variable to disable NuGet warnings as errors
+export NUGET_RESTORE_MSBUILD_ARGS="/p:TreatWarningsAsErrors=false"
+export MSBuildTreatWarningsAsErrors=false
+
 ./build.sh \
     clr+clr.hosts \
     /p:PrimaryRuntimeFlavor=CoreCLR \
@@ -150,6 +154,7 @@ echo "=========================================="
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
     /p:WarningsAsErrors="" \
+    /p:WarningsNotAsErrors="NU1603;NU1101" \
     | tee build.log
 
 BUILD_EXIT_CODE=${PIPESTATUS[0]}
@@ -171,7 +176,8 @@ echo "=========================================="
     /p:RestoreAdditionalProjectSources="" \
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
-    /p:WarningsAsErrors=""
+    /p:WarningsAsErrors="" \
+    /p:WarningsNotAsErrors="NU1603;NU1101"
 
 LIBS_EXIT_CODE=$?
 
@@ -192,7 +198,8 @@ echo "=========================================="
     /p:RestoreAdditionalProjectSources="" \
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
-    /p:WarningsAsErrors=""
+    /p:WarningsAsErrors="" \
+    /p:WarningsNotAsErrors="NU1603;NU1101"
 
 TESTS_EXIT_CODE=$?
 
