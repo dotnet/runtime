@@ -23,10 +23,6 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
             helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-            # Don't fail scheduled builds on Helix work item failures. Otherwise a perpetually
-            # failing scheduled build (flaky outerloop tests) causes AzDO to re-queue the same
-            # commit every day, wasting Helix resources. See always:false on the schedule above.
-            shouldContinueOnError: ${{ eq(variables['Build.Reason'], 'Schedule') }}
             buildConfig: Release
             platforms:
             - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
@@ -56,14 +52,17 @@ extends:
                     testScope: outerloop
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                    # On scheduled runs (always:false) don't fail the build on Helix work item or
+                    # test failures, so flaky outerloop tests don't keep AzDO re-queueing the same
+                    # commit. The Send to Helix step fully succeeds (not partiallySucceeded).
+                    ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                      failOnTestFailures: false
 
         - ${{ if eq(variables['isRollingBuild'], false) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
             parameters:
               jobTemplate: /eng/pipelines/common/global-build-job.yml
               helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-              # Don't fail scheduled builds on Helix work item failures (see comment above).
-              shouldContinueOnError: ${{ eq(variables['Build.Reason'], 'Schedule') }}
               buildConfig: Debug
               platforms:
               - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
@@ -87,14 +86,15 @@ extends:
                       testScope: outerloop
                       creator: dotnet-bot
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                      # Don't fail scheduled builds on Helix work item/test failures (see above).
+                      ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                        failOnTestFailures: false
 
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
             parameters:
               jobTemplate: /eng/pipelines/common/global-build-job.yml
               helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-              # Don't fail scheduled builds on Helix work item failures (see comment above).
-              shouldContinueOnError: ${{ eq(variables['Build.Reason'], 'Schedule') }}
               buildConfig: Release
               platforms:
               - windows_x86
@@ -114,3 +114,6 @@ extends:
                       testScope: outerloop
                       creator: dotnet-bot
                       extraHelixArguments: /p:BuildTargetFramework=net48
+                      # Don't fail scheduled builds on Helix work item/test failures (see above).
+                      ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+                        failOnTestFailures: false
