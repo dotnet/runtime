@@ -32,59 +32,34 @@
         <target state="translated">Logging method パラメーター名は「 _ 」で始まることはできません</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="translated">引数 '{0}' はサポートされていない 'out' パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="translated">引数がサポートされていない 'out' パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">ログ メソッドは本文を含めることができません</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
-        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="translated">ログ メソッドには 'ref 構造体の許容' 制約を持つ型パラメーターを指定できません</target>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="new">Logging methods cannot be generic</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be 'partial'</source>
-        <target state="translated">ログ メソッドは 'partial' である必要があります</target>
+        <source>Logging methods must be partial</source>
+        <target state="new">Logging methods must be partial</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return 'void'</source>
-        <target state="translated">ログ メソッドは 'void' を返す必要があります</target>
+        <source>Logging methods must return void</source>
+        <target state="new">Logging methods must return void</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be 'static'</source>
-        <target state="translated">ログ メソッドは 'static' である必要があります</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">ログ ソース ジェネレーターは、C# {0} では使用できません。言語バージョン {1} 以降を使用してください。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
+        <source>Logging methods must be static</source>
+        <target state="new">Logging methods must be static</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">ログ メソッド '{0}' に、形式の正しくない文字列が含まれています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">ログ メソッドに形式の正しくない文字列が含まれています</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -132,19 +107,9 @@
         <target state="translated">Microsoft.Extensions.Logging.ILogger という種類の複数のフィールドが見つかりました</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
-        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="translated">クラス '{0}' には、クラスまたは基本クラスのフィールドによって非表示になっている型 Microsoft.Extensions.Logging.ILogger のプライマリ コンストラクター パラメーターがあるため、使用できません</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
-        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="translated">型 Microsoft.Extensions.Logging.ILogger のプライマリ コンストラクター パラメーターはフィールドによって非表示になっています</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="translated">指定されたログ レベルに暗黙的に含まれているため、ログ メッセージから冗長な修飾子 ('Info:'、'Warning:'、'Error:' など) を削除してください。</target>
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="new">Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -182,16 +147,6 @@
         <target state="translated">複数のログ記録方法では、クラス内で同じイベント ID を使用できません</target>
         <note />
       </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">複数のログ記録方法でクラス {1} 内のイベント名 {0} を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">複数のログ記録方法では、クラス内で同じイベント名を使用しないようにする必要があります</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
         <target state="translated">テンプレート '{0}' は、ログ メソッドの引数として提供されません</target>
@@ -200,26 +155,6 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">ログ テンプレートに対応するメソッド引数がありません</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
-        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="translated">引数 '{0}' は、サポートされていない 'params' または 'scoped' パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
-        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="translated">引数がサポートされていない 'params' または 'scoped' パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
-        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
-        <target state="translated">パラメーター '{0}' は 'ref struct' であり、ログ ソース ジェネレーターではサポートされていません</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
-        <source>Logging method parameter is a 'ref struct'</source>
-        <target state="translated">ログ メソッド パラメーターは 'ref struct' です</target>
         <note />
       </trans-unit>
     </body>
