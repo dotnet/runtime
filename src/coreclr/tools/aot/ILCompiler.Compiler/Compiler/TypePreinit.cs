@@ -3596,7 +3596,26 @@ namespace ILCompiler
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
 
-            public bool IsKnownImmutable => false;
+            public bool IsKnownImmutable
+            {
+                get
+                {
+                    // Are there any instance fields?
+                    if (Type.IsValueType)
+                    {
+                        // For value types, look at the actual fields.
+                        foreach (FieldDesc f in Type.GetFields())
+                            if (!f.IsStatic)
+                                return false;
+
+                        return true;
+                    }
+
+                    // For reference types, check if the unaligned size == MethodTable pointer
+                    // since we always have at least that field in the hierarchy.
+                    return ((DefType)Type).InstanceByteCountUnaligned == Type.Context.Target.LayoutPointerSize;
+                }
+            }
 
             public int ArrayLength => throw new NotSupportedException();
         }
