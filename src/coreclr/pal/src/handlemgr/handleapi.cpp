@@ -107,9 +107,6 @@ CorUnix::InternalDuplicateHandle(
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjSource = NULL;
 
-    DWORD cur_process_id;
-
-    cur_process_id = GetCurrentProcessId();
     /* We do not support other process in PAL */
     _ASSERTE(hSourceProcess == hPseudoCurrentProcess);
     _ASSERTE(hTargetProcess == hPseudoCurrentProcess);
