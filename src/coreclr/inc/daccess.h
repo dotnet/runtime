@@ -2372,6 +2372,10 @@ typedef DPTR(TADDR)        PTR_TADDR;
 
 #ifndef NATIVEAOT
 typedef ArrayDPTR(BYTE)    PTR_BYTE;
+typedef DPTR(WORD)         PTR_WORD;
+typedef DPTR(DWORD)        PTR_DWORD;
+typedef DPTR(ULONG64)      PTR_ULONG64;
+typedef DPTR(UINT64)       PTR_UINT64;
 typedef DPTR(PTR_BYTE) PTR_PTR_BYTE;
 typedef DPTR(PTR_PTR_BYTE) PTR_PTR_PTR_BYTE;
 typedef ArrayDPTR(signed char) PTR_SBYTE;
@@ -2379,16 +2383,12 @@ typedef ArrayDPTR(const BYTE) PTR_CBYTE;
 typedef DPTR(INT8)    PTR_INT8;
 typedef DPTR(INT16)   PTR_INT16;
 typedef DPTR(UINT16)  PTR_UINT16;
-typedef DPTR(WORD)    PTR_WORD;
 typedef DPTR(USHORT)  PTR_USHORT;
-typedef DPTR(DWORD)   PTR_DWORD;
 typedef DPTR(LONG)    PTR_LONG;
 typedef DPTR(ULONG)   PTR_ULONG;
 typedef DPTR(INT32)   PTR_INT32;
 typedef DPTR(UINT32)  PTR_UINT32;
-typedef DPTR(ULONG64) PTR_ULONG64;
 typedef DPTR(INT64)   PTR_INT64;
-typedef DPTR(UINT64)  PTR_UINT64;
 typedef DPTR(SIZE_T)  PTR_SIZE_T;
 typedef DPTR(int)     PTR_int;
 typedef DPTR(BOOL)    PTR_BOOL;

@@ -105,7 +105,7 @@
 //  x9: thread pointer
 //  x0-x7, q0-q7 preserved, x10 trashed
 //
-.macro FixupHijackedCallstack
+.macro FixupHijackedCallstack clearHijackState
 
     // x9 <- GetThread()
 
@@ -156,10 +156,10 @@
     //
     ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
     ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
-    cbz         x16, 0f
+    cbz         x16, \clearHijackState
     autia       lr, x16
-0:
 
+\clearHijackState:
     //
     // Clear hijack state
     //
@@ -172,7 +172,7 @@
 // GC Probe Hijack target
 //
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
-    FixupHijackedCallstack
+    FixupHijackedCallstack LOCAL_LABEL(RhpGcProbeClearHijackState)
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 10
     tbnz        x10, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)
