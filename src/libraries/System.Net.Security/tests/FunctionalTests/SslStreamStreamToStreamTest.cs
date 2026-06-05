@@ -729,5 +729,37 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
+
+        [ConditionalFact(typeof(TestConfiguration), nameof(TestConfiguration.SupportsRenegotiation))]
+        public async Task MalformedPacketsDuringHandshake_ThrowsAuthenticationException()
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedStreams();
+
+            using (client)
+            using (server)
+            using (var clientSslStream = new SslStream(client, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(server))
+            using (X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
+            {
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+                {
+                    TargetHost = serverCert.GetNameInfo(X509NameType.SimpleName, false),
+                    ClientCertificates = new X509CertificateCollection() { clientCert }
+                }, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCert
+                }, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                // Write malformed data to the server stream to cause the handshake to fail.
+                byte[] payload = [21, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+                await client.WriteAsync(payload);
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverSslStream.NegotiateClientCertificateAsync());
+            }
+        }
     }
 }
