@@ -115,27 +115,15 @@ cat ~/.nuget/NuGet/NuGet.Config
 echo "=========================================="
 echo "Building Runtime"
 echo "=========================================="
-
-./build.sh \
-    clr+clr.hosts \
-    /p:PrimaryRuntimeFlavor=CoreCLR \
-    /p:PublishAot=false \
-    /p:SupportsNativeAotComponents=false \
-    | tee build.log
-
+./build.sh clr+clr.hosts /p:PrimaryRuntimeFlavor=CoreCLR /p:PublishAot=false /p:SupportsNativeAotComponents=false /p:RestoreSources="$RESTORE_SOURCES" /p:RestoreAdditionalProjectSources="" /p:RestoreFallbackFolders="" | tee build.log
 echo "=========================================="
 echo "Building Libraries"
 echo "=========================================="
-
-./build.sh libs
-
+./build.sh libs /p:RestoreSources="$RESTORE_SOURCES" /p:RestoreAdditionalProjectSources="" /p:RestoreFallbackFolders=""
 echo "=========================================="
 echo "Building Tests"
 echo "=========================================="
-
-./src/tests/build.sh \
-    /p:LibrariesConfiguration=Debug
-
+./src/tests/build.sh /p:LibrariesConfiguration=Debug /p:RestoreSources="$RESTORE_SOURCES" /p:RestoreAdditionalProjectSources="" /p:RestoreFallbackFolders=""
 echo "=========================================="
 echo "Copying System.Private.CoreLib.dll"
 echo "=========================================="
