@@ -35,6 +35,7 @@ namespace System.Threading
                 waiter = new Waiter();
             }
 
+            Debug.Assert(waiter.next is null && waiter.prev is null);
             return waiter;
         }
 
@@ -55,6 +56,7 @@ namespace System.Threading
 
         internal Lock AssociatedLock => _lock;
 
+        [Conditional("DEBUG")]
         private void AssertIsInList(Waiter waiter)
         {
             Debug.Assert(_waitersHead != null && _waitersTail != null);
@@ -67,6 +69,7 @@ namespace System.Threading
             Debug.Fail("Waiter is not in the waiter list");
         }
 
+        [Conditional("DEBUG")]
         private void AssertIsNotInList(Waiter waiter)
         {
             Debug.Assert(waiter.next == null && waiter.prev == null);
