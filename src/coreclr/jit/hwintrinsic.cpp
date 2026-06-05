@@ -1204,17 +1204,18 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa,
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
-//    comp                -- The compiler
-//    sig                 -- The signature of the intrinsic
-//    className           -- The name of the class associated with the HWIntrinsic to lookup
-//    methodName          -- The name of the method associated with the HWIntrinsic to lookup
-//    enclosingClassName  -- The name of the enclosing class of X64 classes
-//    isXplatIntrinsic    -- True if the intrinsic lives directly under the cross-platform
-//                           System.Runtime.Intrinsics (or System.Numerics) namespace and
-//                           therefore has a managed fallback when the underlying ISA isn't
-//                           available; false if it is platform-specific (under
-//                           System.Runtime.Intrinsics.<Arch>) and must throw a
-//                           PlatformNotSupportedException when the ISA isn't available.
+//    comp                    -- The compiler
+//    sig                     -- The signature of the intrinsic
+//    className               -- The name of the class associated with the HWIntrinsic to lookup
+//    methodName              -- The name of the method associated with the HWIntrinsic to lookup
+//    innerEnclosingClassName -- The name of the inner enclosing class of nested 64-bit classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of nested 64-bit classes
+//    isXplatIntrinsic        -- True if the intrinsic lives directly under the cross-platform
+//                               System.Runtime.Intrinsics (or System.Numerics) namespace and
+//                               therefore has a managed fallback when the underlying ISA isn't
+//                               available; false if it is platform-specific (under
+//                               System.Runtime.Intrinsics.<Arch>) and must throw a
+//                               PlatformNotSupportedException when the ISA isn't available.
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and isa

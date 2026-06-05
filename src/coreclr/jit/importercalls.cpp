@@ -11570,9 +11570,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-    if ((result == NI_Illegal) || (result == NI_System_Runtime_Intrinsics_Intrinsic))
+    if (result == NI_Illegal)
     {
         JITDUMP("Not recognized\n");
+    }
+    else if ((result == NI_System_Numerics_Intrinsic) || (result == NI_System_Runtime_Intrinsics_Intrinsic))
+    {
+        // These are special markers used just to ensure we still get the inlining profitability
+        // boost. We actually have the implementation in managed, however, to keep the JIT simpler.
+        JITDUMP("Not recognized - inlining boost\n");
     }
     else if (result == NI_IsSupported_False)
     {
