@@ -1,37 +1,17 @@
 #!/bin/bash
+
 set -ex
+
 export DEBIAN_FRONTEND=noninteractive
+
 echo "=========================================="
 echo "Installing dependencies"
 echo "=========================================="
 
 apt-get update
-
-apt-get install -y \
-    bc \
-    automake \
-    clang \
-    curl \
-    findutils \
-    git \
-    hostname \
-    libtool \
-    libkrb5-dev \
-    ninja-build \
-    llvm \
-    make \
-    python3 \
-    liblttng-ust-dev \
-    tar \
-    wget \
-    jq \
-    lld \
-    build-essential \
-    zlib1g-dev \
-    libssl-dev \
-    libbrotli-dev \
-    ca-certificates
-
+apt-get install -y bc automake clang curl findutils git hostname libtool libkrb5-dev ninja-build llvm make python3 liblttng-ust-dev tar wget jq lld \
+build-essential zlib1g-dev libssl-dev libbrotli-dev ca-certificates
+``
 echo "=========================================="
 echo "Environment Information"
 echo "=========================================="
@@ -47,27 +27,8 @@ echo "Cloning Runtime Repository"
 echo "=========================================="
 
 git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
-
 cd runtime
-
 git checkout ppc64le_coreclr_jit
-
-echo "=========================================="
-echo "Fixing NuGet.config"
-echo "=========================================="
-cat > NuGet.config <<EOF
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <!-- Keep official .NET feed -->
-    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
-
-    <!-- Keep nuget.org -->
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-  </packageSources>
-</configuration>
-EOF
-cat NuGet.config
 
 echo "=========================================="
 echo "Reading SDK Version"
@@ -93,7 +54,6 @@ ARCH=$(uname -m)
 DOTNET_DIR="/dotnet-sdk-${ARCH}"
 
 mkdir -p "$DOTNET_DIR"
-
 pushd "$DOTNET_DIR"
 
 SDK_URL="https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz"
@@ -120,6 +80,12 @@ echo "=========================================="
 which dotnet
 dotnet --info
 
+#  IMPORTANT: Clean NuGet cache (prevents bad feeds sticking)
+rm -rf ~/.nuget/packages
+
+#  COMMON restore sources (VALID feeds only)
+RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json"
+
 echo "=========================================="
 echo "Building Runtime"
 echo "=========================================="
@@ -129,20 +95,23 @@ echo "=========================================="
     /p:PrimaryRuntimeFlavor=CoreCLR \
     /p:PublishAot=false \
     /p:SupportsNativeAotComponents=false \
+    /p:RestoreSources="$RESTORE_SOURCES" \
     | tee build.log
 
 echo "=========================================="
 echo "Building Libraries"
 echo "=========================================="
 
-./build.sh libs
+./build.sh libs \
+    /p:RestoreSources="$RESTORE_SOURCES"
 
 echo "=========================================="
 echo "Building Tests"
 echo "=========================================="
 
 ./src/tests/build.sh \
-    /p:LibrariesConfiguration=Debug
+    /p:LibrariesConfiguration=Debug \
+    /p:RestoreSources="$RESTORE_SOURCES"
 
 echo "=========================================="
 echo "Copying System.Private.CoreLib.dll"
@@ -166,9 +135,7 @@ echo "=========================================="
 cd "$WORKSPACE"
 
 git clone https://github.com/alhad-deshpande/JIT_Testing.git
-
 cd JIT_Testing
-
 git checkout ppc64le_coreclr_jit_testing
 
 DOTNET_PATH="$DOTNET_ROOT/dotnet"
