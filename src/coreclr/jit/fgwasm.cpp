@@ -1671,6 +1671,112 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+PhaseStatus Compiler::WasmSpillRefs()
+{
+    bool anyChanges = false;
+
+    size_t highWaterMark = 0;
+    jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // LIR edges cannot span blocks, so we can safely clear the list of live values per-block
+        defs.clear();
+
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (tree->IsCall())
+            {
+                highWaterMark = std::max(highWaterMark, defs.size());
+
+                if (defs.size())
+                {
+                    JITDUMP("Spilling %d live ref(s) for call\n", defs.size());
+                    DISPNODE(tree);
+                    for (GenTree* def : defs)
+                    {
+                        JITDUMP("    ");
+                        DISPNODE(def);
+                        GenTreeUnOp* spill = gtNewOperNode(GT_WASM_SPILL_REF, def->TypeGet(), def);
+                        LIR::Use use;
+                        noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
+                        use.ReplaceWith(spill);
+                        LIR::AsRange(block).InsertAfter(def, spill);
+                        anyChanges = true;
+                    }
+
+                    defs.clear();
+                }
+            }
+
+            // FIXME: Should this happen before the spilling of the live defs list?
+            // I think the answer is no, because live defs being passed as arguments to the current call
+            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
+            //  them. If we can somehow guarantee that all callees will spill their ref parameters
+            //  immediately, we could do this before the block above.
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
+            tree->VisitOperands([&defs](GenTree* op) {
+                if (!op->IsValue())
+                    return GenTree::VisitResult::Continue;
+                if (!op->TypeIs(TYP_REF, TYP_BYREF))
+                    return GenTree::VisitResult::Continue;
+
+                for (size_t i = defs.size(); i > 0; i--)
+                {
+                    if (op == defs[i - 1])
+                    {
+                        defs[i - 1] = defs[defs.size() - 1];
+                        defs.erase(defs.begin() + (defs.size() - 1), defs.end());
+                        break;
+                    }
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            if (tree->IsValue() && tree->TypeIs(TYP_REF, TYP_BYREF) && !tree->OperIs(GT_WASM_SPILL_REF))
+            {
+                // TODO: Can we skip this for GT_LCL_VAR when it lives in memory? Or is it possible
+                //  that the LCL_VAR has been modified since it was loaded onto the Wasm stack?
+                defs.push_back(tree);
+            }
+        }
+    }
+
+    JITDUMP("High water mark for refs was %d\n", highWaterMark);
+    if (highWaterMark == 0)
+        return PhaseStatus::MODIFIED_NOTHING;
+
+    m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(highWaterMark + 1, 0, getAllocator(CMK_WasmSpillRefs));
+
+    // Allocate a temporary wasm local to use as a scratch slot during spills
+    {
+        const unsigned varNum = lvaGrabTemp(false DEBUGARG("WasmSpillRefs splash zone"));
+        LclVarDsc* const varDsc = lvaGetDesc(varNum);
+        // HACK: Make this TYP_I_IMPL because if we make it a REF or BYREF that may block enregistration
+        varDsc->lvType = TYP_I_IMPL;
+        varDsc->lvHasExplicitInit = true;
+        varDsc->lvImplicitlyReferenced = true;
+        // If we don't make this var tracked, regalloc will crash when allocating a register for it
+        varDsc->lvTracked = true;
+        m_wasmSpillSlots->at(0) = varNum;
+    }
+
+    // Allocate N temporary refs to act as GC-visible storage for all spills that occur during execution
+    for (size_t i = 0; i < highWaterMark; i++)
+    {
+        const unsigned varNum = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+        LclVarDsc* const varDsc = lvaGetDesc(varNum);
+        varDsc->lvType = TYP_BYREF;
+        varDsc->lvPinned = true;
+        varDsc->lvImplicitlyReferenced = true;
+        lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason::WasmGCVisibility);
+        m_wasmSpillSlots->at(i + 1) = varNum;
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------

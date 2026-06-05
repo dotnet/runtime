@@ -11767,6 +11767,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
+#ifdef TARGET_WASM
+        case GT_WASM_SPILL_REF:
+#endif
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;

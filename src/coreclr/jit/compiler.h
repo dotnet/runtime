@@ -4244,6 +4244,7 @@ public:
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
+    jitstd::vector<unsigned>* m_wasmSpillSlots = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -6755,6 +6756,7 @@ public:
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus WasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();

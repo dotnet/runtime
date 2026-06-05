@@ -217,6 +217,7 @@ protected:
     ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
     unsigned                   wasmCursor                = 0;
     unsigned                   wasmExtraControlFlowDepth = 0;
+    unsigned                   wasmSpillRefIndex = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);

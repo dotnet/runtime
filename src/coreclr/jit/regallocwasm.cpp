@@ -190,6 +190,12 @@ void WasmRegAlloc::IdentifyCandidates()
             varIsRegCandidate = false;
         }
 
+        // HACK: Ensure that we always enregister the splash zone, even if we are not enregistering other locals
+        if (m_compiler->m_wasmSpillSlots && m_compiler->m_wasmSpillSlots->size() && m_compiler->m_wasmSpillSlots->at(0) == lclNum)
+        {
+            varIsRegCandidate = true;
+        }
+
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);

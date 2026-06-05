@@ -858,6 +858,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CALL:
+            wasmSpillRefIndex = 0;
             genCall(treeNode->AsCall());
             break;
 
@@ -910,6 +911,36 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // GetEmitter()->emitIns(INS_throw_ref);
             GetEmitter()->emitIns(INS_unreachable);
             break;
+
+        case GT_WASM_SPILL_REF:
+        {
+            const unsigned splashZoneVar = m_compiler->m_wasmSpillSlots->at(0);
+            noway_assert(wasmSpillRefIndex + 1 < m_compiler->m_wasmSpillSlots->size());
+            const unsigned spillTargetVar = m_compiler->m_wasmSpillSlots->at(wasmSpillRefIndex + 1);
+            unsigned       splashZoneLclIndex;
+            bool           FPBased;
+
+            {
+                LclVarDsc* varDsc = m_compiler->lvaGetDesc(splashZoneVar);
+                assert(genIsValidReg(varDsc->GetRegNum()));
+                splashZoneLclIndex = WasmRegToIndex(varDsc->GetRegNum());
+
+                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, splashZoneLclIndex);
+            }
+
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            m_compiler->lvaFrameAddress(spillTargetVar, &FPBased);
+            GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, spillTargetVar, 0);
+            GetEmitter()->emitIns(INS_I_add);
+
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, splashZoneLclIndex);
+
+            instruction ins = ins_Store(TYP_BYREF);
+            GetEmitter()->emitIns_I(ins, EA_PTRSIZE, 0);
+
+            wasmSpillRefIndex++;
+            break;
+        }
 
         case GT_CATCH_ARG:
             genCatchArg(treeNode);
