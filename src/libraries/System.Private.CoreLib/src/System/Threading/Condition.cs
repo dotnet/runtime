@@ -57,7 +57,7 @@ namespace System.Threading
 
         internal Lock AssociatedLock => _lock;
 
-        private unsafe void AssertIsInList(Waiter waiter)
+        private void AssertIsInList(Waiter waiter)
         {
             Debug.Assert(_waitersHead != null && _waitersTail != null);
             Debug.Assert((_waitersHead == waiter) == (waiter.prev == null));
@@ -69,7 +69,7 @@ namespace System.Threading
             Debug.Fail("Waiter is not in the waiter list");
         }
 
-        private unsafe void AssertIsNotInList(Waiter waiter)
+        private void AssertIsNotInList(Waiter waiter)
         {
             Debug.Assert(waiter.next == null && waiter.prev == null);
             Debug.Assert((_waitersHead == null) == (_waitersTail == null));
@@ -79,7 +79,7 @@ namespace System.Threading
                     Debug.Fail("Waiter is in the waiter list, but should not be");
         }
 
-        private unsafe void AddWaiter(Waiter waiter)
+        private void AddWaiter(Waiter waiter)
         {
             Debug.Assert(_lock.IsHeldByCurrentThread);
             AssertIsNotInList(waiter);
@@ -92,7 +92,7 @@ namespace System.Threading
             _waitersHead ??= waiter;
         }
 
-        private unsafe void RemoveWaiter(Waiter waiter)
+        private void RemoveWaiter(Waiter waiter)
         {
             Debug.Assert(_lock.IsHeldByCurrentThread);
             AssertIsInList(waiter);
@@ -119,7 +119,7 @@ namespace System.Threading
             _lock = @lock;
         }
 
-        public unsafe bool Wait(int millisecondsTimeout, object associatedObjectForMonitorWait)
+        public bool Wait(int millisecondsTimeout, object associatedObjectForMonitorWait)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -154,7 +154,7 @@ namespace System.Threading
                 else if (!success)
                 {
                     //
-                    // The wait timed out, but we were signalled before we could reacquire the lock.
+                    // The wait timed out, but we were signaled before we could reacquire the lock.
                     // Since WaitOne timed out, it didn't trigger the auto-reset of the AutoResetEvent.
                     // So, we need to manually reset the event.
                     //
@@ -168,7 +168,7 @@ namespace System.Threading
             return waiter.signalled;
         }
 
-        public unsafe void SignalAll()
+        public void SignalAll()
         {
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
@@ -177,7 +177,7 @@ namespace System.Threading
                 SignalOne();
         }
 
-        public unsafe void SignalOne()
+        public void SignalOne()
         {
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
