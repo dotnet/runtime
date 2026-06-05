@@ -3248,8 +3248,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 #if DEBUG
-        if (_legacy is not null)
-        {
+        if (_legacy is not null && fpCallback != 0)
             List<ulong> dacThreads = new();
             GCHandle dacHandle = GCHandle.Alloc(dacThreads);
             int hrLocal = _legacy.EnumerateMonitorEventWaitList(vmObject, (nint)(delegate* unmanaged<ulong, nint, void>)&CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
