@@ -321,6 +321,45 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void CompositeManifestAssemblyMvidsAreAligned()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "MvidCompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestAssemblyMvidsAreAligned),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestAssemblyMvidsAreAligned),
+            [
+                new(nameof(CompositeManifestAssemblyMvidsAreAligned),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        // The manifest assembly MVID table is read by the runtime as an array of GUIDs by value,
+        // which requires 4-byte alignment. Lock that contract so future node ordering/size changes
+        // cannot reintroduce a misaligned table (an ARM32 alignment fault / SIGBUS).
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, alignment: 4, out diag), diag);
+        }
+    }
+
+    [Fact]
     public void RuntimeAsyncMethodEmission()
     {
         var runtimeAsyncMethodEmission = new CompiledAssembly
