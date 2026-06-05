@@ -718,9 +718,9 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 {
     CONTRACT(MethodDesc*)
     {
-        MODE_PREEMPTIVE;
         THROWS;
         if (allowCreate) { MODE_PREEMPTIVE; } else { MODE_ANY; }
+        if (allowCreate) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         if (!allowCreate) { SUPPORTS_DAC; }
         INJECT_FAULT(COMPlusThrowOM(););
 
