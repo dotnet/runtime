@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using Microsoft.Extensions.Options;
@@ -49,9 +50,25 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                         UpdateRules(opts);
                     }
                 });
+
+                // Reconcile: a configuration reload could have fired between the CurrentValue read
+                // used to bootstrap the registrations above and the OnChange subscription. Such a
+                // reload would not be delivered via the callback (we had no subscription yet) and
+                // would be permanently lost without this re-read. Re-applying the latest snapshot
+                // covers that window; if no reload happened, OptionsMonitor returns the same
+                // instance and the ReferenceEquals guard skips the redundant work. The standard
+                // sibling MetricsSubscriptionManager achieves the same property by subscribing
+                // first and then calling UpdateRules(CurrentValue) unconditionally.
+                TracingOptions current = options.CurrentValue;
+                if (!ReferenceEquals(current, initial))
+                {
+                    UpdateRules(current);
+                }
             }
             catch
             {
+                _changeTokenRegistration?.Dispose();
+
                 foreach (ActivityListenerRegistration registration in registrations)
                 {
                     try
@@ -75,6 +92,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             Debug.Assert(options.Name is not null);
             Debug.Assert(ReferenceEquals(options.Scope, this));
 
+            // Phase 1: lookup under the cache lock. No user code runs here.
             lock (_cachedSources)
             {
                 if (_disposed)
@@ -82,28 +100,69 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     throw new ObjectDisposedException(nameof(DefaultActivitySourceFactory));
                 }
 
-                if (_cachedSources.TryGetValue(options.Name, out List<FactoryActivitySource>? sourceList))
+                if (TryGetCachedMatch(options, out ActivitySource? cached))
                 {
-                    foreach (ActivitySource source in sourceList)
-                    {
-                        if (source.Version == options.Version
-                            && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
-                            && DiagnosticsHelper.CompareTags(source.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
-                        {
-                            return source;
-                        }
-                    }
+                    return cached;
                 }
-                else
+            }
+
+            // Phase 2: construct outside the cache lock. The base ActivitySource constructor
+            // walks ActivitySource.s_allListeners and synchronously invokes each listener's
+            // ShouldListenTo predicate, which forwards to user-supplied delegates. Holding
+            // _cachedSources across user code would create a lock-order inversion against any
+            // user lock taken before calling Create.
+            FactoryActivitySource newSource = new FactoryActivitySource(options);
+
+            // Phase 3: re-acquire the cache lock and commit, handling the rare race where a
+            // concurrent Create with the same identity won, and a concurrent factory dispose.
+            lock (_cachedSources)
+            {
+                if (_disposed)
+                {
+                    newSource.Release();
+                    throw new ObjectDisposedException(nameof(DefaultActivitySourceFactory));
+                }
+
+                if (TryGetCachedMatch(options, out ActivitySource? winner))
+                {
+                    // Lost the race to another concurrent Create call. Discard our redundant
+                    // instance; it was never published to any caller and Release tears down its
+                    // BCL bookkeeping (s_activeSources entry, attached listeners).
+                    newSource.Release();
+                    return winner;
+                }
+
+                if (!_cachedSources.TryGetValue(options.Name, out List<FactoryActivitySource>? sourceList))
                 {
                     sourceList = new List<FactoryActivitySource>();
                     _cachedSources.Add(options.Name, sourceList);
                 }
 
-                FactoryActivitySource activitySource = new FactoryActivitySource(options);
-                sourceList.Add(activitySource);
-                return activitySource;
+                sourceList.Add(newSource);
+                return newSource;
             }
+        }
+
+        private bool TryGetCachedMatch(ActivitySourceOptions options, [NotNullWhen(true)] out ActivitySource? match)
+        {
+            Debug.Assert(Monitor.IsEntered(_cachedSources));
+
+            if (_cachedSources.TryGetValue(options.Name, out List<FactoryActivitySource>? sourceList))
+            {
+                foreach (FactoryActivitySource source in sourceList)
+                {
+                    if (source.Version == options.Version
+                        && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
+                        && DiagnosticsHelper.CompareTags(source.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                    {
+                        match = source;
+                        return true;
+                    }
+                }
+            }
+
+            match = null;
+            return false;
         }
 
         private void UpdateRules(TracingOptions options)
@@ -171,6 +230,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                     source.Release();
                 }
             }
+
+            _cachedSources.Clear();
         }
 
         internal sealed class FactoryActivitySource : ActivitySource
@@ -250,11 +311,20 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                         return;
                     }
 
-                    // Single atomic publication of rules + flag + fresh per-source cache.
-                    // Readers either see the old snapshot in full or the new one in full.
+                    // Single atomic publication of rules + fresh per-source cache. Readers either
+                    // see the old snapshot in full or the new one in full.
                     Volatile.Write(ref _state, ListenerState.Create(rules));
-                    _activityListener.RefreshSources();
                 }
+
+                // RefreshSources walks ActivitySource.s_activeSources and synchronously invokes the
+                // wrapper's ShouldListenTo (which forwards to the user-supplied predicate) for every
+                // active source. Calling it under _lock would expose us to the same lock-order
+                // inversion that CreateCore avoids: a caller whose ShouldListenTo grabs a user lock
+                // could deadlock against another thread that holds that lock and triggers a reload.
+                // The call is safe to make without _lock: RefreshSources short-circuits once the
+                // listener is disposed, and concurrent UpdateRules calls converge because every
+                // wrapper reads _state via Volatile.Read on each invocation.
+                _activityListener.RefreshSources();
             }
 
             private ActivitySamplingResult WrappedSample(ref ActivityCreationOptions<ActivityContext> options)

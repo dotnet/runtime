@@ -442,6 +442,167 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 "Sibling listener did not receive the rule update; reload aborted at the throwing registrations.");
         }
 
+        [Fact]
+        public void FactoryDispose_ThrowsOnSubsequentCreate_AndDetachesWrapperListener()
+        {
+            const string SourcePrefix = "Demo.FactoryDispose.";
+
+            int notifications = 0;
+            ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = src => src.Name.StartsWith(SourcePrefix, StringComparison.Ordinal),
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = _ => Interlocked.Increment(ref notifications),
+            };
+
+            ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder
+                    .AddListener(_ => listener)
+                    .EnableTracing(SourcePrefix + "*"))
+                .Services
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+            ActivitySourceFactory factory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
+
+            using (ActivitySource before = new ActivitySource(SourcePrefix + "Before"))
+            using (before.StartActivity("op"))
+            {
+            }
+            Assert.Equal(1, Volatile.Read(ref notifications));
+
+            serviceProvider.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => factory.Create(SourcePrefix + "AfterFactoryDispose"));
+
+            int countAfterDispose = Volatile.Read(ref notifications);
+            using (ActivitySource after = new ActivitySource(SourcePrefix + "After"))
+            using (after.StartActivity("op"))
+            {
+            }
+            Assert.Equal(countAfterDispose, Volatile.Read(ref notifications));
+        }
+
+        [Fact]
+        public async Task FactoryAndOptionsReload_DoNotDeadlock_UnderConcurrentCreateAndReload()
+        {
+            const int Iterations = 200;
+            const string SourcePrefix = "Demo.ConcurrentReload.";
+
+            ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = src => src.Name.StartsWith(SourcePrefix, StringComparison.Ordinal),
+            };
+
+            TracingRule enabled = new TracingRule(SourcePrefix + "*", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true);
+            TracingRule disabled = new TracingRule(SourcePrefix + "*", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false);
+
+            TestActivityOptionsMonitor optionsMonitor = new TestActivityOptionsMonitor(CreateOptions(enabled));
+
+            using ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(_ => listener))
+                .Services
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+            ActivitySourceFactory factory = serviceProvider.GetRequiredService<ActivitySourceFactory>();
+
+            Task createTask = Task.Run(() =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    ActivitySource source = factory.Create(new ActivitySourceOptions(SourcePrefix + (i % 8)));
+                    source.StartActivity("op")?.Dispose();
+                }
+            });
+
+            Task reloadTask = Task.Run(() =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    optionsMonitor.Set(CreateOptions((i & 1) == 0 ? enabled : disabled));
+                }
+            });
+
+            // Bounded wait: if either task deadlocks, Task.WhenAny lets us fail cleanly with a
+            // diagnostic instead of letting xunit's outer infrastructure timeout swallow the cause.
+            // Cancellation tokens would not help here because a deadlocked thread would not poll
+            // them; the timeout has to fire on a separate scheduler.
+            Task work = Task.WhenAll(createTask, reloadTask);
+            Task completed = await Task.WhenAny(work, Task.Delay(TimeSpan.FromSeconds(30)));
+
+            Assert.True(completed == work, "Concurrent Create/reload did not complete within 30s; likely deadlock.");
+
+            // Surface any exception thrown by either task. Safe to await because WhenAny only
+            // returned `work` when both inner tasks were complete.
+            await work;
+        }
+
+        [Fact]
+        public void OptionsChange_AfterFactoryDispose_IsNoOp()
+        {
+            const string SourcePrefix = "Demo.ReloadAfterDispose.";
+
+            int siblingShouldListenCalls = 0;
+            ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = src =>
+                {
+                    if (src.Name.StartsWith(SourcePrefix, StringComparison.Ordinal))
+                    {
+                        Interlocked.Increment(ref siblingShouldListenCalls);
+                    }
+                    return false;
+                },
+            };
+
+            TestActivityOptionsMonitor optionsMonitor = new TestActivityOptionsMonitor(
+                CreateOptions(new TracingRule(SourcePrefix + "*", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: false)));
+
+            ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(_ => listener))
+                .Services
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            serviceProvider.Dispose();
+
+            int baseline = Volatile.Read(ref siblingShouldListenCalls);
+
+            optionsMonitor.Set(CreateOptions(new TracingRule(SourcePrefix + "*", operationName: null, listenerName: null, scopes: ActivitySourceScopes.Global | ActivitySourceScopes.Local, enable: true)));
+
+            Assert.Equal(baseline, Volatile.Read(ref siblingShouldListenCalls));
+        }
+
+        [Fact]
+        public void FactoryCtor_OptionsReloadDuringBootstrap_AppliesLatestSnapshot()
+        {
+            const string SourceName = "Demo.ReloadDuringBootstrap";
+
+            TracingOptions initial = CreateOptions(SourceName, enable: false);
+            TracingOptions afterSubscribe = CreateOptions(SourceName, enable: true);
+
+            ReloadOnSubscribeMonitor optionsMonitor = new ReloadOnSubscribeMonitor(initial, afterSubscribe);
+
+            using ServiceProvider serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(_ => SampleActivityListener.Create()))
+                .Services
+                .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            using ActivitySource source = new ActivitySource(SourceName);
+            // The monitor silently advances CurrentValue from `initial` (source disabled) to
+            // `afterSubscribe` (source enabled) when OnChange is invoked. Without the ctor's
+            // post-subscribe reconciliation read, the factory would be stuck on the disabled
+            // initial snapshot and the activity would not be created.
+            AssertActivityCreation(source, "Op", expectedCreated: true);
+        }
+
         private static TracingOptions CreateOptions(string sourceName, bool enable)
         {
             return CreateOptions(
@@ -603,6 +764,43 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 }
 
                 public void Reset() => throw new NotSupportedException();
+            }
+        }
+
+        private sealed class ReloadOnSubscribeMonitor : IOptionsMonitor<TracingOptions>
+        {
+            private readonly TracingOptions _afterSubscribe;
+            private TracingOptions _current;
+            private bool _flipped;
+
+            public ReloadOnSubscribeMonitor(TracingOptions initial, TracingOptions afterSubscribe)
+            {
+                _current = initial;
+                _afterSubscribe = afterSubscribe;
+            }
+
+            public TracingOptions CurrentValue => Volatile.Read(ref _current);
+
+            public TracingOptions Get(string? name) => CurrentValue;
+
+            public IDisposable OnChange(Action<TracingOptions, string?> listener)
+            {
+                // Simulate a configuration reload that committed silently between the consumer's
+                // initial CurrentValue read and this subscription. The new snapshot is NOT pushed
+                // through the listener (that's the whole point of the race we are exercising —
+                // the change was committed before the listener was attached).
+                if (!_flipped)
+                {
+                    _flipped = true;
+                    Volatile.Write(ref _current, _afterSubscribe);
+                }
+
+                return new NoopDisposable();
+            }
+
+            private sealed class NoopDisposable : IDisposable
+            {
+                public void Dispose() { }
             }
         }
 

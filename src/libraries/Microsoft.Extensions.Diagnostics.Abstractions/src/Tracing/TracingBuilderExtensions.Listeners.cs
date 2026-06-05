@@ -22,11 +22,11 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// <remarks>
         /// The tracing builder takes ownership of the listener returned by <paramref name="factory"/>
         /// and wraps it to apply the rules described by the bound <see cref="TracingOptions"/>. Callers
-        /// should not retain a reference to the returned instance, mutate its properties
-        /// (such as <see cref="ActivityListener.Sample"/> or <see cref="ActivityListener.ActivityStarted"/>)
-        /// after the factory has run, or call <see cref="ActivityListener.RefreshSources"/> on it. Such
-        /// out-of-band changes are not observed by the tracing builder. The builder re-evaluates the
-        /// listener automatically when <see cref="TracingOptions"/> change.
+        /// should not retain a reference to the returned instance, dispose it directly, or call
+        /// <see cref="ActivityListener.RefreshSources"/> on it: only the wrapper is registered with
+        /// <see cref="ActivitySource"/>, so calling <see cref="ActivityListener.RefreshSources"/> on
+        /// the user-supplied instance has no effect. The builder re-evaluates the listener
+        /// automatically when <see cref="TracingOptions"/> change.
         /// </remarks>
         public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, ActivityListener> factory)
         {
