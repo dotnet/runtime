@@ -118,14 +118,14 @@ internal static class R2RAssert
 
     /// <summary>
     /// Returns true if the manifest assembly MVID table in a composite image is present, holds a
-    /// whole number of 16-byte GUID entries, and starts on an RVA aligned to <paramref name="alignment"/>.
-    /// The runtime reads each entry as a GUID by value, so the table must be at least 4-byte aligned
-    /// to avoid alignment faults (SIGBUS) on architectures such as 32-bit ARM that do not permit
-    /// unaligned multi-word loads.
+    /// whole number of 16-byte GUID entries, and starts on a 4-byte aligned RVA. The runtime reads
+    /// each entry as a GUID by value, so the table must be 4-byte aligned to avoid alignment faults
+    /// (SIGBUS) on architectures such as 32-bit ARM that do not permit unaligned multi-word loads.
     /// </summary>
-    public static bool ManifestAssemblyMvidsTableIsAligned(ReadyToRunReader reader, int alignment, out string diagnostic)
+    public static bool ManifestAssemblyMvidsTableIsAligned(ReadyToRunReader reader, out string diagnostic)
     {
         const int GuidByteSize = 16;
+        const int RequiredAlignment = 4;
 
         if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection section))
         {
@@ -141,11 +141,11 @@ internal static class R2RAssert
         if (section.Size % GuidByteSize != 0)
             failures.Add($"ManifestAssemblyMvids section size {section.Size} should be a multiple of {GuidByteSize} (a table of GUIDs).");
 
-        if ((section.RelativeVirtualAddress % alignment) != 0)
-            failures.Add($"ManifestAssemblyMvids section RVA 0x{section.RelativeVirtualAddress:X8} should be aligned to {alignment} bytes.");
+        if ((section.RelativeVirtualAddress % RequiredAlignment) != 0)
+            failures.Add($"ManifestAssemblyMvids section RVA 0x{section.RelativeVirtualAddress:X8} should be aligned to {RequiredAlignment} bytes.");
 
         diagnostic = failures.Count == 0
-            ? $"ManifestAssemblyMvids table is {alignment}-byte aligned ({section.Size / GuidByteSize} entries)."
+            ? $"ManifestAssemblyMvids table is {RequiredAlignment}-byte aligned ({section.Size / GuidByteSize} entries)."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
     }

@@ -349,13 +349,10 @@ public class R2RTestSuites
                 },
             ]));
 
-        // The manifest assembly MVID table is read by the runtime as an array of GUIDs by value,
-        // which requires 4-byte alignment. Lock that contract so future node ordering/size changes
-        // cannot reintroduce a misaligned table (an ARM32 alignment fault / SIGBUS).
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, alignment: 4, out diag), diag);
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, out diag), diag);
         }
     }
 
@@ -385,23 +382,18 @@ public class R2RTestSuites
                     new CrossgenAssembly(compositeMain),
                 ])
                 {
-                    // --pdb injects an odd-sized NativeDebugDirectoryEntryNode immediately before the
-                    // MVID table, which is the layout that originally exposed the misalignment bug:
-                    // without the alignment fix the table starts on a non-4-aligned RVA. (--pdb writes
-                    // the NI PDB via Microsoft.DiaSymReader.Native, which only exists on Windows, hence
-                    // the Windows gate above.)
+                    // --pdb creates an odd-sized debug directory section that exposes the MVID table
+                    // misalignment bug.
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
                     AdditionalArgs = ["--pdb"],
                     Validate = Validate,
                 },
             ]));
 
-        // Even with the odd-sized debug directory entry pushing the table, the MVID GUIDs must stay
-        // 4-byte aligned so the runtime can read them by value without faulting on 32-bit ARM.
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, alignment: 4, out diag), diag);
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, out diag), diag);
         }
     }
 
