@@ -171,8 +171,9 @@ CorUnix::InternalDuplicateHandle(
     }
     else if (hPseudoCurrentProcess == hSource)
     {
-        /* NOP - the only pseudo handle is invariant */
+        /* The only pseudo handle is invariant */
         TRACE("Duplicating process pseudo handle(%p)\n", hSource);
+        *phDuplicate = hPseudoCurrentProcess;
         goto InternalDuplicateHandleExit;
     }
     else if (hPseudoCurrentThread == hSource)
