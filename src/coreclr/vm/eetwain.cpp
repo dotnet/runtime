@@ -1644,7 +1644,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
     CONTRACTL{
         NOTHROW;
@@ -1664,6 +1664,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(R
     }
 
     *returnKind = info.returnKind;
+    *hasAsyncRet = info.isAsync;
     return true;
 #else // !USE_GC_INFO_DECODER
 

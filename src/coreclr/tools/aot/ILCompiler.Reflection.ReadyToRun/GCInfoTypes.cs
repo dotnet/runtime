@@ -19,7 +19,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         SET_EPILOGSIZE_MAX = 10,
         SET_EPILOGCNT_MAX = 4,
         SET_UNTRACKED_MAX = 3,
-        SET_RET_KIND_MAX = 3,
+        SET_RET_KIND_MAX_V4 = 3,
+        SET_RET_KIND_MAX_V5 = 7,
         SET_NOGCREGIONS_MAX = 4,
         ADJ_ENCODING_MAX = 0x7f,
         MORE_BYTES_TO_FOLLOW = 0x80
@@ -74,8 +75,10 @@ namespace ILCompiler.Reflection.ReadyToRun
     enum InfoHdrAdjust2
     {
         SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
-        SET_NOGCREGIONS_CNT = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX + 1,        // 0x04
-        FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+        SET_NOGCREGIONS_CNT_V4 = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX_V4 + 1,        // 0x04
+        FFFF_NOGCREGION_CNT_V4 = SET_NOGCREGIONS_CNT_V4 + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1, // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+        SET_NOGCREGIONS_CNT_V5 = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX_V5 + 1,        // 0x08
+        FFFF_NOGCREGION_CNT_V5 = SET_NOGCREGIONS_CNT_V5 + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1 // 0x0D There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
     };
 
     /// <summary>
@@ -116,6 +119,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
         internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
         internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
+        internal bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; } = true;
 
         internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
         {
@@ -175,6 +179,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     POINTER_SIZE_ENCBASE = 3;
                     LIVESTATE_RLE_RUN_ENCBASE = 2;
                     LIVESTATE_RLE_SKIP_ENCBASE = 4;
+                    HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
                     break;
 
                 case Machine.I386:

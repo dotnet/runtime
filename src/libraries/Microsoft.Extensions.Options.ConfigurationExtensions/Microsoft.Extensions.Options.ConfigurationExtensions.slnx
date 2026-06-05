@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/gen/">
+    <Project Path="../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj" />
     <Project Path="../Microsoft.Extensions.Configuration.Binder/gen/Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" />
     <Project Path="../Microsoft.Extensions.Options/gen/Microsoft.Extensions.Options.SourceGeneration.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
