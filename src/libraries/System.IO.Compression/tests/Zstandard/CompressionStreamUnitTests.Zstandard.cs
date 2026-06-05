@@ -472,6 +472,45 @@ namespace System.IO.Compression
             Assert.Equal(trailing, remainder);
         }
 
+        // Same as above, but with trailing data shorter than a frame magic number (1-3 bytes). This is
+        // the boundary case where the decoder cannot immediately tell a split next-frame magic from
+        // trailing data; the stream must still end cleanly and leave the trailing bytes on the (seekable)
+        // base stream, consistent with the >= 4 byte case.
+        [Theory]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(false, 2)]
+        [InlineData(true, 2)]
+        [InlineData(false, 3)]
+        [InlineData(true, 3)]
+        public async Task ZstandardStream_FrameFollowedByShortTrailingData_StopsAtEndOfFrame(bool async, int trailingLength)
+        {
+            byte[] payload = ZstandardTestUtils.CreateTestData(10_000);
+            byte[] frame = CompressToSingleFrame(payload);
+            byte[] trailing = Enumerable.Range(1, trailingLength).Select(i => (byte)i).ToArray();
+
+            using MemoryStream input = new([.. frame, .. trailing]);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(payload, output.ToArray());
+
+            byte[] remainder = new byte[trailing.Length];
+            int read = input.Read(remainder, 0, remainder.Length);
+            Assert.Equal(trailing.Length, read);
+            Assert.Equal(trailing, remainder);
+        }
+
         // A non-seekable, read-only stream that returns at most one byte per read.
         private sealed class SingleByteReadStream : Stream
         {
@@ -499,11 +538,25 @@ namespace System.IO.Compression
                 return 1;
             }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-                Task.FromResult(Read(buffer.AsSpan(offset, count)));
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<int>(cancellationToken);
+                }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-                new ValueTask<int>(Read(buffer.Span));
+                return Task.FromResult(Read(buffer.AsSpan(offset, count)));
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled<int>(cancellationToken);
+                }
+
+                return new ValueTask<int>(Read(buffer.Span));
+            }
 
             public override void Flush() { }
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();

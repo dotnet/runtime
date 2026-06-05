@@ -231,9 +231,12 @@ namespace System.IO.Compression
                     {
                         // Only treat end-of-input as truncation if we're in the middle of a frame.
                         // If we're at a frame boundary (_atFrameBoundary), the stream ended cleanly
-                        // after the last of one or more concatenated frames.
+                        // after the last of one or more concatenated frames; report Done so that any
+                        // unconsumed trailing bytes are rewound on a seekable base stream.
                         if (_nonEmptyInput && !buffer.IsEmpty && !_atFrameBoundary)
                             ThrowTruncatedInvalidData();
+                        if (_atFrameBoundary)
+                            lastResult = OperationStatus.Done;
                         break;
                     }
 
@@ -311,9 +314,12 @@ namespace System.IO.Compression
                     {
                         // Only treat end-of-input as truncation if we're in the middle of a frame.
                         // If we're at a frame boundary (_atFrameBoundary), the stream ended cleanly
-                        // after the last of one or more concatenated frames.
+                        // after the last of one or more concatenated frames; report Done so that any
+                        // unconsumed trailing bytes are rewound on a seekable base stream.
                         if (_nonEmptyInput && !buffer.IsEmpty && !_atFrameBoundary)
                             ThrowTruncatedInvalidData();
+                        if (_atFrameBoundary)
+                            lastResult = OperationStatus.Done;
                         break;
                     }
 
