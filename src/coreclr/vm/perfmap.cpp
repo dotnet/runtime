@@ -85,7 +85,7 @@ void PerfMap::InitializeConfiguration()
     DWORD granularity = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapStubGranularity);
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
-    s_LogStubs = (granularity & 4) != 0;
+    s_LogStubs = (granularity & 4) == 0;
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
