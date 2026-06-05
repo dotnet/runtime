@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSATestHelpers.AssertKeyEquals(diminishedDPParameters, exported);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void LargeKeyImportExport()
         {
             RSAParameters imported = TestData.RSA16384Params;
@@ -367,6 +367,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private static bool TestRsa16384()
         {
+            if (PlatformDetection.IsAndroid)
+            {
+                return false;
+            }
+
             try
             {
                 using (RSA rsa = RSAFactory.Create())

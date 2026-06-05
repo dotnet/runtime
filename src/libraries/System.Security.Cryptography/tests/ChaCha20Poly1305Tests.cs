@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Tests
             int failures = 0;
             failures += RunAndroidDiagnosticCase(diagnostics, "baseline-valid-empty", dataLength: 0, additionalDataLength: 0, tamperAAD: false, expectAuthenticationFailure: false);
 
-            foreach (int additionalDataLength in new[] { 1, 2, 15, 16, 17, 30, 31, 32, 33 })
+            foreach (int additionalDataLength in Enumerable.Range(1, 33))
             {
                 failures += RunAndroidDiagnosticCase(diagnostics, $"empty-ciphertext-aad-{additionalDataLength}", dataLength: 0, additionalDataLength: additionalDataLength, tamperAAD: true, expectAuthenticationFailure: true);
             }
@@ -76,6 +76,10 @@ namespace System.Security.Cryptography.Tests
             failures += RunAndroidDiagnosticCase(diagnostics, "nonempty-ciphertext-aad-1", dataLength: 1, additionalDataLength: 1, tamperAAD: true, expectAuthenticationFailure: true);
             failures += RunAndroidDiagnosticPrimedCase(diagnostics, "target-after-aad30-auth-failure", primerDataLength: 0, primerAdditionalDataLength: 30);
             failures += RunAndroidDiagnosticPrimedCase(diagnostics, "target-after-nonempty-auth-failure", primerDataLength: 1, primerAdditionalDataLength: 1);
+            failures += RunAndroidDiagnosticOversizedRsaPrimedCase(diagnostics, "target-aad1-after-oversized-rsa-import", targetAdditionalDataLength: 1);
+            failures += RunAndroidDiagnosticOversizedRsaPrimedCase(diagnostics, "target-aad2-after-oversized-rsa-import", targetAdditionalDataLength: 2);
+            failures += RunAndroidDiagnosticOversizedRsaPrimedCase(diagnostics, "target-aad15-after-oversized-rsa-import", targetAdditionalDataLength: 15);
+            failures += RunAndroidDiagnosticOversizedRsaPrimedCase(diagnostics, "target-aad30-after-oversized-rsa-import", targetAdditionalDataLength: 30);
 
             if (failures != 0)
             {
@@ -158,6 +162,39 @@ namespace System.Security.Cryptography.Tests
                 expectAuthenticationFailure: true);
 
             return failures;
+        }
+
+        private static int RunAndroidDiagnosticOversizedRsaPrimedCase(
+            StringBuilder diagnostics,
+            string caseName,
+            int targetAdditionalDataLength)
+        {
+            Exception rsaException = Record.Exception(() =>
+            {
+                using RSA rsa = RSA.Create();
+                byte[] modulus = new byte[2048];
+                modulus[0] = 0x80;
+                modulus[^1] = 0x01;
+
+                rsa.ImportParameters(new RSAParameters
+                {
+                    Modulus = modulus,
+                    Exponent = new byte[] { 0x01, 0x00, 0x01 },
+                });
+            });
+
+            diagnostics.AppendLine(
+                $"Android AEAD primer diagnostics: case={caseName}, operation=RSA.ImportParameters, " +
+                $"modulusBytes=2048, exceptionType={rsaException?.GetType().FullName ?? "<none>"}, " +
+                $"exceptionMessage={rsaException?.Message ?? "<none>"}");
+
+            return RunAndroidDiagnosticCase(
+                diagnostics,
+                $"{caseName}-target",
+                dataLength: 0,
+                additionalDataLength: targetAdditionalDataLength,
+                tamperAAD: true,
+                expectAuthenticationFailure: true);
         }
 
         private static bool ShouldLogAndroidAeadDiagnostics(int dataLength, int additionalDataLength)
