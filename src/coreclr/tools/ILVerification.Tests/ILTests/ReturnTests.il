@@ -171,7 +171,6 @@
         ret
     }
 
-    // Returning a byref to a local ref struct field is invalid.
     .method public hidebysig instance int32& 'Return.LocalRefStructFieldByRef_Invalid_ReturnPtrToStack'(valuetype RefStruct rs) cil managed
     {
         ldarg.1
