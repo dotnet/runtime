@@ -83,9 +83,28 @@ namespace Microsoft.Extensions.Internal
         {
             try
             {
+                // Use kill -TERM for graceful termination instead of SIGKILL
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "kill",
+                    Arguments = $"-TERM {processId}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+
+                using (var killProcess = Process.Start(psi))
+                {
+                    if (killProcess == null)
+                    {
+                        throw new InvalidOperationException("Failed to start kill process.");
+                    }
+                    killProcess.WaitForExit();
+                }
+
+                // Wait for the target process to exit after SIGTERM
                 using (Process process = Process.GetProcessById(processId))
                 {
-                    process.Kill();
                     if (!process.WaitForExit((int)timeout.TotalMilliseconds))
                     {
                         throw new TimeoutException($"Process {processId} did not exit within the allotted timeout of {timeout}.");
@@ -102,7 +121,7 @@ namespace Microsoft.Extensions.Internal
             }
             catch (Win32Exception)
             {
-                // Ignore permission or process-not-found errors.
+                // Ignore permission or process-not-found errors (e.g., kill not available).
             }
         }
 
