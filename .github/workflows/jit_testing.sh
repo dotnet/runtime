@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -ex
-
 export DEBIAN_FRONTEND=noninteractive
 
 echo "=========================================="
@@ -13,25 +12,22 @@ apt-get install -y bc automake clang curl findutils git hostname libtool libkrb5
 build-essential zlib1g-dev libssl-dev libbrotli-dev ca-certificates
 
 echo "=========================================="
-echo "Environment Information"
+echo "Environment Info"
 echo "=========================================="
-
 uname -a
-whoami
 pwd
 
 WORKSPACE=$(pwd)
 
-echo "=========================================="
-echo "Cloning Runtime Repository"
-echo "=========================================="
-
+# =========================================================
+# ✅ Clone runtime
+# =========================================================
 git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
 cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-# ✅ FIX 1: Use valid Arcade version
+# ✅ Fix Arcade SDK version
 # =========================================================
 sed -i 's/9.0.0-beta.25208.6/9.0.0-beta.23503.3/g' global.json || true
 
@@ -39,124 +35,112 @@ SDK_VERSION=$(jq -r '.sdk.version' global.json)
 echo "SDK_VERSION=$SDK_VERSION"
 
 # =========================================================
-# ✅ Install .NET SDK
+# ✅ Install SDK
 # =========================================================
 ARCH=$(uname -m)
 
-DOTNET_DIR="/dotnet-sdk-${ARCH}"
-mkdir -p "$DOTNET_DIR"
-pushd "$DOTNET_DIR"
+mkdir -p /dotnet
+cd /dotnet
 
-SDK_URL="https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz"
+wget https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz
 
-wget "$SDK_URL"
+mkdir sdk
+tar -xvf dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz -C sdk
 
-mkdir -p .dotnet
-tar -xvf dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz -C .dotnet
-
-export DOTNET_ROOT=$(pwd)/.dotnet
+export DOTNET_ROOT=/dotnet/sdk
 export PATH=$DOTNET_ROOT:$PATH
 
-popd
-
+cd -
 dotnet --info
 
 # =========================================================
-# ✅ Clean NuGet cache
+# ✅ Clean NuGet
 # =========================================================
 rm -rf ~/.nuget/packages
-
-# =========================================================
-# ✅ Restore sources
-# =========================================================
-RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json"
-
-# =========================================================
-# ✅ Force clean NuGet config
-# =========================================================
 mkdir -p ~/.nuget/NuGet
 
+# ✅ Minimal working feeds ONLY
 cat > ~/.nuget/NuGet/NuGet.Config <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="nuget" value="https://api.nuget.org/v3/index.json" />
     <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
-    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
-    <add key="dotnet-eng" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json" />
   </packageSources>
 </configuration>
 EOF
 
-export NUGET_CONFIG_FILE=$HOME/.nuget/NuGet/NuGet.Config
+export RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json"
 
 # =========================================================
-# ✅ First restore (download Arcade)
+# ✅ REMOVE PRIVATE / BROKEN DEPENDENCIES
 # =========================================================
-./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
+
+echo "Removing Microsoft.Private.Intellisense refs..."
+find . -name "*.csproj" -exec sed -i '/Microsoft\.Private\.Intellisense/d' {} +
+
+echo "Removing darc feed refs..."
+find ~/.nuget -type f -name "*.proj" -exec sed -i 's#darc-pub-dotnet-emsdk[^"]*##g' {} + || true
 
 # =========================================================
-# ✅ PATCH Arcade SDK (remove broken feed)
-# =========================================================
-echo "Patching Arcade SDK..."
-
-find ~/.nuget/packages/microsoft.dotnet.arcade.sdk -type f -name "Tools.proj" \
-  -exec sed -i 's#https://pkgs.dev.azure.com/dnceng/public/_packaging/darc-pub-dotnet-emsdk[^"]*##g' {} +
-
-# =========================================================
-# ✅ FIX 4: Dummy task file (fix MSB4022)
+# ✅ Dummy file (MSB4022 fix)
 # =========================================================
 mkdir -p /tmp/fake
 touch /tmp/fake/dummy.dll
 
 # =========================================================
-# ✅ COMMON BUILD FLAGS (clean + stable)
+# ✅ COMMON FLAGS (IMPORTANT)
 # =========================================================
-COMMON_FLAGS="/p:RestoreSources=$RESTORE_SOURCES \
-/p:RestoreAdditionalProjectSources= \
-/p:RestoreFallbackFolders= \
+COMMON="/p:RestoreSources=$RESTORE_SOURCES \
+/p:SkipPackage=true \
+/p:DotNetBuildFromSource=true \
+/p:BuildAllConfigurations=false \
 /p:SkipCrossgen=true \
 /p:EnableOptimizationData=false \
 /p:PGOInstrument=false \
 /p:TreatWarningsAsErrors=false \
 /p:DisablePackageBaselineValidation=true \
-/p:SkipPackage=true \
 /p:DotNetSharedFrameworkTaskFile=/tmp/fake/dummy.dll"
 
 # =========================================================
-# ✅ Build Runtime
+# ✅ Initial restore (ignore failure)
+# =========================================================
+./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
+
+# =========================================================
+# ✅ Build runtime
 # =========================================================
 echo "=========================================="
-echo "Building Runtime"
+echo "Build Runtime"
 echo "=========================================="
 
 ./build.sh clr+clr.hosts \
 /p:PrimaryRuntimeFlavor=CoreCLR \
 /p:PublishAot=false \
 /p:SupportsNativeAotComponents=false \
-$COMMON_FLAGS \
+$COMMON \
 | tee build.log
 
 # =========================================================
-# ✅ Build Libraries
+# ✅ Build libs
 # =========================================================
 echo "=========================================="
-echo "Building Libraries"
+echo "Build Libraries"
 echo "=========================================="
 
-./build.sh libs $COMMON_FLAGS
+./build.sh libs $COMMON
 
 # =========================================================
-# ✅ Build Tests
+# ✅ Build tests
 # =========================================================
 echo "=========================================="
-echo "Building Tests"
+echo "Build Tests"
 echo "=========================================="
 
 ./src/tests/build.sh \
 /p:LibrariesConfiguration=Debug \
-$COMMON_FLAGS
+$COMMON
 
 # =========================================================
 # ✅ Fix CoreLib
@@ -164,10 +148,8 @@ $COMMON_FLAGS
 CORE_ROOT=./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root
 cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll ${CORE_ROOT}/System.Private.CoreLib.dll
 
-RUNTIME_PATH=$(pwd)
-
 # =========================================================
-# ✅ Clone JIT_Testing
+# ✅ JIT Testing
 # =========================================================
 cd "$WORKSPACE"
 
@@ -175,19 +157,10 @@ git clone https://github.com/alhad-deshpande/JIT_Testing.git
 cd JIT_Testing
 git checkout ppc64le_coreclr_jit_testing
 
-DOTNET_PATH="$DOTNET_ROOT/dotnet"
-
 chmod +x run_test.sh
 
-# =========================================================
-# ✅ Run Tests
-# =========================================================
-echo "=========================================="
-echo "Running JIT Tests"
-echo "=========================================="
-
-./run_test.sh "$DOTNET_PATH" "$RUNTIME_PATH"
+./run_test.sh "$DOTNET_ROOT/dotnet" "$WORKSPACE/runtime"
 
 echo "=========================================="
-echo "✅ JIT TESTING COMPLETED"
+echo "✅ ALL DONE"
 echo "=========================================="
