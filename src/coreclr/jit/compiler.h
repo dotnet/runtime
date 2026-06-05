@@ -4647,6 +4647,7 @@ public:
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
+        assert(trackedIndex < lvaTrackedToVarNumSize);
         unsigned lclNum = lvaTrackedToVarNum[trackedIndex];
         assert(lclNum < lvaCount);
         return lclNum;
