@@ -383,7 +383,10 @@ public class R2RTestSuites
                 ])
                 {
                     // --pdb creates an odd-sized debug directory section that exposes the MVID table
-                    // misalignment bug.
+                    // misalignment bug. The odd size derives from the composite output name length, so
+                    // renaming this test can shift the table back onto a 4-byte boundary and silently
+                    // neutralize the regression coverage; verify it still misaligns without the fix if
+                    // the name changes.
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
                     AdditionalArgs = ["--pdb"],
                     Validate = Validate,
