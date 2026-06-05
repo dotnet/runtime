@@ -57,7 +57,7 @@ public:
         CONTRACTL
         {
             GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
+            MODE_ANY;
         }
         CONTRACTL_END;
     }
@@ -82,6 +82,7 @@ private:
     // Indicate current stub granularity rules
     static bool s_GroupStubsOfSameType;
     static bool s_IndividualAllocationStubReporting;
+    static bool s_LogStubs; // If false, do not log stubs at all
 
     // Set to true if an error is encountered when writing to the file.
     static unsigned s_StubsMapped;
