@@ -178,7 +178,7 @@
     <value>The assembly '{0}' has already loaded been loaded into this MetadataLoadContext.</value>
   </data>
   <data name="FileNotFoundAssembly" xml:space="preserve">
-    <value>Could not find assembly '{0}'. Either explicitly load this assembly using a method such as LoadFromAssemblyPath() or use a MetadataAssemblyResolver that returns a valid assembly.</value>
+    <value>Could not find assembly '{0}'. Use a MetadataAssemblyResolver that returns a valid assembly for this assembly name.</value>
   </data>
   <data name="FileNotFoundModule" xml:space="preserve">
     <value>Could not find the module file for '{0}'.</value>
