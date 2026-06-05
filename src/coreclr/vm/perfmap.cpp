@@ -53,8 +53,8 @@ void PerfMap::Initialize()
     // and the post-acquire DisablePreemptiveGC can block on a pending GC suspension,
     // forming a deadlock cycle with threads waiting on the outer UNSAFE_ANYMODE lock.
     // All data accessed under this lock is native (FILE*, fd, SString) so holding it
-    // in cooperative mode does not introduce new GC-safety issues -- the I/O was already
-    // performed in cooperative mode with the previous default Crst.
+    // in cooperative mode does not introduce new GC-safety issues. Doing I/O
+    // in cooperative mode is still less than ideal.
     s_csPerfMap.Init(CrstPerfMap, CrstFlags(CRST_UNSAFE_ANYMODE));
 
     PerfMapType perfMapType = (PerfMapType)CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled);
@@ -89,7 +89,11 @@ void PerfMap::InitializeConfiguration()
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     if (type == PerfMapType::DISABLED)
     {
@@ -357,7 +361,11 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 // Log a pre-compiled method to the perfmap.
 void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     if (!s_enabled)
     {
