@@ -308,14 +308,26 @@ namespace ILLink.CodeFix.UnsafeEvolution
 
         private static bool AnyReferenceAfter(StatementSyntax statement, HashSet<ISymbol> symbols, SemanticModel semanticModel)
         {
-            // Embedded statement (if/while/etc.) - locals don't escape the embedded scope.
-            if (statement.Parent is not BlockSyntax block)
-                return false;
-
-            int idx = block.Statements.IndexOf(statement);
-            for (int i = idx + 1; i < block.Statements.Count; i++)
+            // Look at the containing statement list. Both BlockSyntax and SwitchSectionSyntax
+            // hold sibling statements in which the declared local is in scope; embedded
+            // statements (if/while/etc.) have neither parent kind and locals don't escape.
+            SyntaxList<StatementSyntax> siblings;
+            switch (statement.Parent)
             {
-                foreach (var id in block.Statements[i].DescendantNodes().OfType<IdentifierNameSyntax>())
+                case BlockSyntax block:
+                    siblings = block.Statements;
+                    break;
+                case SwitchSectionSyntax section:
+                    siblings = section.Statements;
+                    break;
+                default:
+                    return false;
+            }
+
+            int idx = siblings.IndexOf(statement);
+            for (int i = idx + 1; i < siblings.Count; i++)
+            {
+                foreach (var id in siblings[i].DescendantNodes().OfType<IdentifierNameSyntax>())
                 {
                     if (semanticModel.GetSymbolInfo(id).Symbol is { } sym && symbols.Contains(sym))
                         return true;
@@ -354,6 +366,12 @@ namespace ILLink.CodeFix.UnsafeEvolution
                 return document;
 
             SyntaxNode newRoot;
+            // Only attach the original statement's outer trivia to the inner pieces when we
+            // are going to splice them into an existing statement list. For embedded
+            // statements (parent is not Block/SwitchSection) ReplaceStatementWithStatements
+            // wraps the result in a fresh block and applies the trivia there - applying it
+            // here too would duplicate comments, blank lines, and indentation.
+            bool willSplice = statement.Parent is BlockSyntax or SwitchSectionSyntax;
             if (strategy is FixStrategy.ForwardDeclare)
             {
                 var semanticModel = await document.GetSemanticModelAsync(ct).ConfigureAwait(false);
@@ -365,10 +383,14 @@ namespace ILLink.CodeFix.UnsafeEvolution
                     return document;
                 }
 
-                var forwardDecl = rewrite.Value.ForwardDeclaration.WithLeadingTrivia(statement.GetLeadingTrivia());
+                var forwardDecl = rewrite.Value.ForwardDeclaration;
                 var unsafeBlock = BuildUnsafeBlock([rewrite.Value.AssignmentStatement])
-                    .WithTrailingTrivia(statement.GetTrailingTrivia())
                     .WithAdditionalAnnotations(Formatter.Annotation);
+                if (willSplice)
+                {
+                    forwardDecl = forwardDecl.WithLeadingTrivia(statement.GetLeadingTrivia());
+                    unsafeBlock = unsafeBlock.WithTrailingTrivia(statement.GetTrailingTrivia());
+                }
 
                 newRoot = ReplaceStatementWithStatements(root, statement, [forwardDecl, unsafeBlock]);
             }
@@ -376,9 +398,13 @@ namespace ILLink.CodeFix.UnsafeEvolution
             {
                 var inner = statement.WithoutLeadingTrivia().WithoutTrailingTrivia();
                 var unsafeBlock = BuildUnsafeBlock([inner])
-                    .WithLeadingTrivia(statement.GetLeadingTrivia())
-                    .WithTrailingTrivia(statement.GetTrailingTrivia())
                     .WithAdditionalAnnotations(Formatter.Annotation);
+                if (willSplice)
+                {
+                    unsafeBlock = unsafeBlock
+                        .WithLeadingTrivia(statement.GetLeadingTrivia())
+                        .WithTrailingTrivia(statement.GetTrailingTrivia());
+                }
 
                 newRoot = ReplaceStatementWithStatements(root, statement, [unsafeBlock]);
             }
