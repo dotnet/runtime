@@ -249,6 +249,12 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    BOOL IsStrippedILBodies()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pCompositeInfo->m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES;
+    }
+
     void DisableAllR2RCode()
     {
         LIMITED_METHOD_CONTRACT;
