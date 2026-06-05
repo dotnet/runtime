@@ -67,12 +67,12 @@ dotnet --info
 rm -rf ~/.nuget/packages
 
 # =========================================================
-# ✅ Restore sources (ALL required feeds)
+# ✅ Restore sources
 # =========================================================
 RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json"
 
 # =========================================================
-# ✅ Global NuGet Config (remove broken feeds)
+# ✅ Force clean NuGet config
 # =========================================================
 mkdir -p ~/.nuget/NuGet
 
@@ -92,7 +92,7 @@ EOF
 export NUGET_CONFIG_FILE=$HOME/.nuget/NuGet/NuGet.Config
 
 # =========================================================
-# ✅ First restore (ignore failure to fetch Arcade SDK)
+# ✅ First restore (download Arcade)
 # =========================================================
 ./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
 
@@ -105,9 +105,28 @@ find ~/.nuget/packages/microsoft.dotnet.arcade.sdk -type f -name "Tools.proj" \
   -exec sed -i 's#https://pkgs.dev.azure.com/dnceng/public/_packaging/darc-pub-dotnet-emsdk[^"]*##g' {} +
 
 # =========================================================
-# ✅ FINAL BUILD (with all required flags)
+# ✅ FIX 4: Dummy task file (fix MSB4022)
 # =========================================================
+mkdir -p /tmp/fake
+touch /tmp/fake/dummy.dll
 
+# =========================================================
+# ✅ COMMON BUILD FLAGS (clean + stable)
+# =========================================================
+COMMON_FLAGS="/p:RestoreSources=$RESTORE_SOURCES \
+/p:RestoreAdditionalProjectSources= \
+/p:RestoreFallbackFolders= \
+/p:SkipCrossgen=true \
+/p:EnableOptimizationData=false \
+/p:PGOInstrument=false \
+/p:TreatWarningsAsErrors=false \
+/p:DisablePackageBaselineValidation=true \
+/p:SkipPackage=true \
+/p:DotNetSharedFrameworkTaskFile=/tmp/fake/dummy.dll"
+
+# =========================================================
+# ✅ Build Runtime
+# =========================================================
 echo "=========================================="
 echo "Building Runtime"
 echo "=========================================="
@@ -116,44 +135,28 @@ echo "=========================================="
 /p:PrimaryRuntimeFlavor=CoreCLR \
 /p:PublishAot=false \
 /p:SupportsNativeAotComponents=false \
-/p:RestoreSources="$RESTORE_SOURCES" \
-/p:RestoreAdditionalProjectSources="" \
-/p:RestoreFallbackFolders="" \
-/p:SkipCrossgen=true \
-/p:EnableOptimizationData=false \
-/p:PGOInstrument=false \
-/p:TreatWarningsAsErrors=false \
-/p:DisablePackageBaselineValidation=true \
+$COMMON_FLAGS \
 | tee build.log
 
+# =========================================================
+# ✅ Build Libraries
+# =========================================================
 echo "=========================================="
 echo "Building Libraries"
 echo "=========================================="
 
-./build.sh libs \
-/p:RestoreSources="$RESTORE_SOURCES" \
-/p:RestoreAdditionalProjectSources="" \
-/p:RestoreFallbackFolders="" \
-/p:SkipCrossgen=true \
-/p:EnableOptimizationData=false \
-/p:PGOInstrument=false \
-/p:TreatWarningsAsErrors=false \
-/p:DisablePackageBaselineValidation=true
+./build.sh libs $COMMON_FLAGS
 
+# =========================================================
+# ✅ Build Tests
+# =========================================================
 echo "=========================================="
 echo "Building Tests"
 echo "=========================================="
 
 ./src/tests/build.sh \
 /p:LibrariesConfiguration=Debug \
-/p:RestoreSources="$RESTORE_SOURCES" \
-/p:RestoreAdditionalProjectSources="" \
-/p:RestoreFallbackFolders="" \
-/p:SkipCrossgen=true \
-/p:EnableOptimizationData=false \
-/p:PGOInstrument=false \
-/p:TreatWarningsAsErrors=false \
-/p:DisablePackageBaselineValidation=true
+$COMMON_FLAGS
 
 # =========================================================
 # ✅ Fix CoreLib
@@ -164,7 +167,7 @@ cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll ${CORE_ROOT}/System.Private.CoreLi
 RUNTIME_PATH=$(pwd)
 
 # =========================================================
-# ✅ Clone JIT testing
+# ✅ Clone JIT_Testing
 # =========================================================
 cd "$WORKSPACE"
 
@@ -175,6 +178,13 @@ git checkout ppc64le_coreclr_jit_testing
 DOTNET_PATH="$DOTNET_ROOT/dotnet"
 
 chmod +x run_test.sh
+
+# =========================================================
+# ✅ Run Tests
+# =========================================================
+echo "=========================================="
+echo "Running JIT Tests"
+echo "=========================================="
 
 ./run_test.sh "$DOTNET_PATH" "$RUNTIME_PATH"
 
