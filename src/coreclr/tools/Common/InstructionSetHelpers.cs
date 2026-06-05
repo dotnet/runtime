@@ -32,8 +32,7 @@ namespace System.CommandLine
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
                 bool isAppleOS = targetOS is TargetOS.OSX or TargetOS.MacCatalyst
-                    or TargetOS.iOS or TargetOS.iOSSimulator
-                    or TargetOS.tvOS or TargetOS.tvOSSimulator;
+                    or TargetOS.iOSSimulator or TargetOS.tvOSSimulator;
 
                 if (isReadyToRun && !isAppleOS)
                 {
