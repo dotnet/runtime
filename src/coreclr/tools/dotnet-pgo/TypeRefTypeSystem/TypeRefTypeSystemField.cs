@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             _embeddedSignatureData = embeddedSigData;
         }
 
-        public override Utf8StringRef Name => _name;
+        public override Utf8Span Name => _name;
         public override MetadataType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;

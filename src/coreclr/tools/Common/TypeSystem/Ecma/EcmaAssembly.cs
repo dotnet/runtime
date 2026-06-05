@@ -64,7 +64,7 @@ namespace Internal.TypeSystem.Ecma
             return _assemblyName;
         }
 
-        public Utf8StringRef Name
+        public Utf8Span Name
         {
             get
             {

@@ -92,7 +92,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

@@ -22,7 +22,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                Utf8StringRef prefix = RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling"u8 : "Calli"u8;
+                Utf8Span prefix = RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling"u8 : "Calli"u8;
 
                 // The target signature is expected to be normalized as MethodSignatureFlags.UnmanagedCallingConvention
                 Debug.Assert((_targetSignature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.UnmanagedCallingConvention);

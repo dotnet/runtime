@@ -622,7 +622,7 @@ namespace ILCompiler.IBC
         {
             private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
-                public Utf8StringRef Name => "System.Private.Canon"u8;
+                public Utf8Span Name => "System.Private.Canon"u8;
 
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
@@ -638,7 +638,7 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override object GetType(Utf8StringRef nameSpace, Utf8StringRef name, NotFoundBehavior notFoundBehavior)
+                public override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 

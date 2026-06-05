@@ -48,6 +48,6 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public abstract MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef name);
+        public abstract MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name);
     }
 }

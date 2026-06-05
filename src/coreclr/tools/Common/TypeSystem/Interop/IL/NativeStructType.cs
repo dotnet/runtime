@@ -25,7 +25,7 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -41,7 +41,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override Utf8StringRef Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -259,7 +259,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(Utf8StringRef name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }
@@ -269,7 +269,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return Array.Empty<MethodImplRecord>();
         }
@@ -398,7 +398,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override Utf8StringRef Name
+            public override Utf8Span Name
             {
                 get
                 {

@@ -26,7 +26,7 @@ namespace ILCompiler
             _owningType = owningType;
         }
 
-        public override Utf8StringRef Name => _targetMethod.Name;
+        public override Utf8Span Name => _targetMethod.Name;
         public override string DiagnosticName => "RESUME_" + _targetMethod.DiagnosticName;
 
         public override TypeDesc OwningType => _owningType;

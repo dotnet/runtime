@@ -218,7 +218,7 @@ namespace Internal.IL.Stubs
 
         internal static ReadOnlySpan<byte> MetadataName => "__GetFieldHelper"u8;
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

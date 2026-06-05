@@ -15,9 +15,9 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public abstract override Utf8StringRef Name { get; }
+        public abstract override Utf8Span Name { get; }
 
-        public abstract override Utf8StringRef Namespace { get; }
+        public abstract override Utf8Span Namespace { get; }
 
         /// <summary>
         /// Gets metadata that controls instance layout of this type.
@@ -100,7 +100,7 @@ namespace Internal.TypeSystem
         /// Get a specific type nested in this type. Returns null if the type
         /// doesn't exist.
         /// </summary>
-        public abstract MetadataType GetNestedType(Utf8StringRef name);
+        public abstract MetadataType GetNestedType(Utf8Span name);
 
         /// <summary>
         /// Gets a value indicating whether this is an inline array type

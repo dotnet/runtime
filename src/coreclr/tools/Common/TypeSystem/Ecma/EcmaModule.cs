@@ -317,7 +317,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private TypeDefinitionHandle FindDefinedType(int hashCode, Utf8StringRef nameSpace, Utf8StringRef name)
+        private TypeDefinitionHandle FindDefinedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -368,7 +368,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private ExportedTypeHandle FindExportedType(int hashCode, Utf8StringRef nameSpace, Utf8StringRef name)
+        private ExportedTypeHandle FindExportedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -389,7 +389,7 @@ namespace Internal.TypeSystem.Ecma
             return default;
         }
 
-        public sealed override object GetType(Utf8StringRef nameSpace, Utf8StringRef name, NotFoundBehavior notFoundBehavior)
+        public sealed override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior)
         {
             int hashCode = VersionResilientHashCode.NameHashCode(nameSpace, name);
 

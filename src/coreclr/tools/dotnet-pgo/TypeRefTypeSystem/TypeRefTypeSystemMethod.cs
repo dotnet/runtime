@@ -39,7 +39,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             }
         }
 
-        public override Utf8StringRef Name => _name;
+        public override Utf8Span Name => _name;
 
         public override Instantiation Instantiation => _instantiation;
 

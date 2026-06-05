@@ -197,7 +197,7 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override Utf8StringRef Name
+            public override Utf8Span Name
             {
                 get
                 {

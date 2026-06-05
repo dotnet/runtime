@@ -36,7 +36,7 @@ namespace Internal.TypeSystem
 
         public override bool IsModuleType => false;
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return null;
         }
@@ -46,7 +46,7 @@ namespace Internal.TypeSystem
             return default(ClassLayoutMetadata);
         }
 
-        public override MetadataType GetNestedType(Utf8StringRef name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }

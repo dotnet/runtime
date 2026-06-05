@@ -16,7 +16,7 @@ namespace Internal.TypeSystem.Ecma
     public sealed partial class EcmaType : MetadataType
     {
         // Virtual function related functionality
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef declName)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span declName)
         {
             MetadataReader metadataReader = _module.MetadataReader;
             ArrayBuilder<MethodImplRecord> foundRecords = default(ArrayBuilder<MethodImplRecord>);

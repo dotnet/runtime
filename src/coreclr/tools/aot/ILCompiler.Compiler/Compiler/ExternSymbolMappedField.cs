@@ -21,7 +21,7 @@ namespace ILCompiler
             _symbolName = symbolName;
         }
 
-        public override Utf8StringRef Name => System.Text.Encoding.UTF8.GetBytes(_symbolName);
+        public override Utf8Span Name => System.Text.Encoding.UTF8.GetBytes(_symbolName);
 
         public string SymbolName => _symbolName;
 

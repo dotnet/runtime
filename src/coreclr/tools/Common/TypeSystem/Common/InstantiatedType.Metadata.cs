@@ -95,7 +95,7 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override MetadataType GetNestedType(Utf8StringRef name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             // Return the result from the typical type definition.
             return _typeDef.GetNestedType(name);

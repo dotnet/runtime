@@ -145,7 +145,7 @@ namespace ILCompiler
                 && md.Module == method.Context.SystemModule
                 && md.Namespace == "System.Threading.Tasks"u8)
             {
-                Utf8StringRef name = md.Name;
+                Utf8Span name = md.Name;
                 if (name == "Task"u8 || name == "Task`1"u8
                     || name == "ValueTask"u8 || name == "ValueTask`1"u8)
                 {

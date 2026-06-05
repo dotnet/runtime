@@ -142,9 +142,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override PInvokeStringFormat PInvokeStringFormat => throw new NotImplementedException();
 
-        public override Utf8StringRef Name => _name;
+        public override Utf8Span Name => _name;
 
-        public override Utf8StringRef Namespace => _namespace;
+        public override Utf8Span Namespace => _namespace;
 
         public override bool IsExplicitLayout => throw new NotImplementedException();
 
@@ -186,7 +186,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         protected override int ClassCode => throw new NotImplementedException();
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef name) => throw new NotImplementedException();
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name) => throw new NotImplementedException();
         public override ClassLayoutMetadata GetClassLayout() => throw new NotImplementedException();
         public override int GetHashCode()
         {
@@ -197,7 +197,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return hash.ToHashCode();
         }
 
-        public override MetadataType GetNestedType(Utf8StringRef name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             TypeRefTypeSystemType type = null;
             if (_nestedType != null)

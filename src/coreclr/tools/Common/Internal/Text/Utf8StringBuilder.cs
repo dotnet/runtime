@@ -43,7 +43,7 @@ namespace Internal.Text
             return Append(value.AsSpan());
         }
 
-        public Utf8StringBuilder Append(Utf8StringRef value)
+        public Utf8StringBuilder Append(Utf8Span value)
         {
             return Append(value.AsSpan());
         }

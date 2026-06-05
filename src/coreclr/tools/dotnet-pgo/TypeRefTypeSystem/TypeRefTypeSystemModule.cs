@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override IAssemblyDesc Assembly => this;
 
-        public Utf8StringRef Name => System.Text.Encoding.UTF8.GetBytes(_name.Name);
+        public Utf8Span Name => System.Text.Encoding.UTF8.GetBytes(_name.Name);
 
         public override IEnumerable<MetadataType> GetAllTypes() => _types;
         public override MetadataType GetGlobalModuleType() => throw new NotImplementedException();
@@ -75,7 +75,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return type;
         }
 
-        public override object GetType(Utf8StringRef nameSpace, Utf8StringRef name, NotFoundBehavior notFoundBehavior)
+        public override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior)
         {
             string strns = Encoding.UTF8.GetString(nameSpace.AsSpan());
             string strname = Encoding.UTF8.GetString(name.AsSpan());

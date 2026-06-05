@@ -1736,7 +1736,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    Utf8StringRef typeName = owningType.Name;
+                    Utf8Span typeName = owningType.Name;
                     return owningType.Module == method.Context.SystemModule
                         && owningType.Namespace == "System.Threading.Tasks"u8
                         && (typeName == "Task"u8

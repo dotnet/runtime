@@ -21,6 +21,6 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the simple assembly name
         /// </summary>
-        Utf8StringRef Name { get; }
+        Utf8Span Name { get; }
     }
 }

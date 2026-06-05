@@ -320,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(blobReader.CurrentPointer, blobReader.Length);
         }
 
-        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, Utf8StringRef otherString)
+        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, Utf8Span otherString)
         {
             int stringOffset = reader.GetHeapOffset(handle);
 

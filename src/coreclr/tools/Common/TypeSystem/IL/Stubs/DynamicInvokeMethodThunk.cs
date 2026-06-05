@@ -122,7 +122,7 @@ namespace Internal.IL.Stubs
             return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
         }
 
-        public override Utf8StringRef Name => "DynamicInvoke"u8;
+        public override Utf8Span Name => "DynamicInvoke"u8;
 
         public override string DiagnosticName => "DynamicInvoke";
 

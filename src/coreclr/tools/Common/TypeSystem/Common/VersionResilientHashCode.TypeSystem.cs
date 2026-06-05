@@ -13,10 +13,10 @@ namespace Internal
 {
     internal static partial class VersionResilientHashCode
     {
-        public static int NameHashCode(Utf8StringRef src)
+        public static int NameHashCode(Utf8Span src)
             => NameHashCode(src.AsSpan());
 
-        public static int NameHashCode(Utf8StringRef namespacePart, Utf8StringRef namePart)
+        public static int NameHashCode(Utf8Span namespacePart, Utf8Span namePart)
             => NameHashCode(namespacePart.AsSpan(), namePart.AsSpan());
 
         /// <summary>

@@ -588,7 +588,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the method as specified in the metadata.
         /// </summary>
-        public virtual Utf8StringRef Name
+        public virtual Utf8Span Name
         {
             get
             {

@@ -31,7 +31,7 @@ namespace Internal.TypeSystem
             return ReferenceEquals(this, o);
         }
 
-        public virtual Utf8StringRef Name
+        public virtual Utf8Span Name
         {
             get
             {

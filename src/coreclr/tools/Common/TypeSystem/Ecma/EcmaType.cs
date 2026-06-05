@@ -247,7 +247,7 @@ namespace Internal.TypeSystem.Ecma
             return flags;
         }
 
-        private unsafe Utf8StringRef InitializeName()
+        private unsafe Utf8Span InitializeName()
         {
             StringHandle handle = _typeDefinition.Name;
             _nameLength = MetadataReader.GetStringBytes(handle).Length;
@@ -255,7 +255,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe Utf8StringRef Name
+        public override unsafe Utf8Span Name
         {
             get
             {
@@ -268,7 +268,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private unsafe Utf8StringRef InitializeNamespace()
+        private unsafe Utf8Span InitializeNamespace()
         {
             StringHandle handle = _typeDefinition.Namespace;
             _namespaceLength = MetadataReader.GetStringBytes(handle).Length;
@@ -276,7 +276,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
         }
 
-        public override unsafe Utf8StringRef Namespace
+        public override unsafe Utf8Span Namespace
         {
             get
             {
@@ -314,12 +314,12 @@ namespace Internal.TypeSystem.Ecma
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        public new EcmaMethod GetMethod(Utf8StringRef name, MethodSignature signature)
+        public new EcmaMethod GetMethod(Utf8Span name, MethodSignature signature)
         {
             return GetMethod(name, signature, default(Instantiation));
         }
 
-        public override EcmaMethod GetMethod(Utf8StringRef name, MethodSignature signature, Instantiation substitution)
+        public override EcmaMethod GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -336,7 +336,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override EcmaMethod GetMethodWithEquivalentSignature(Utf8StringRef name, MethodSignature signature, Instantiation substitution)
+        public override EcmaMethod GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -462,7 +462,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override EcmaField GetField(Utf8StringRef name)
+        public override EcmaField GetField(Utf8Span name)
         {
             var metadataReader = this.MetadataReader;
 
@@ -486,7 +486,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override EcmaType GetNestedType(Utf8StringRef name)
+        public override EcmaType GetNestedType(Utf8Span name)
         {
             var metadataReader = this.MetadataReader;
 

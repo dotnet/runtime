@@ -40,7 +40,7 @@ namespace ILCompiler
         public override Utf8String SanitizeName(Utf8String s)
             => SanitizeName(s.AsSpan());
 
-        private static Utf8String SanitizeName(Utf8StringRef n)
+        private static Utf8String SanitizeName(Utf8Span n)
         {
             ReadOnlySpan<byte> s = n.AsSpan();
 
@@ -244,7 +244,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    Utf8StringRef ns = t.Namespace;
+                                    Utf8Span ns = t.Namespace;
                                     if (ns.Length > 0)
                                         sb.Append(SanitizeName(ns)).Append('_');
                                 }

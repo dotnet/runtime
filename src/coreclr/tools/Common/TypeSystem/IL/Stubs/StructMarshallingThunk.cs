@@ -106,7 +106,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private Utf8StringRef NamePrefix
+        private Utf8Span NamePrefix
         {
             get
             {
@@ -125,7 +125,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

@@ -126,7 +126,7 @@ namespace Internal.IL.Stubs
             return false;
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

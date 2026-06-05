@@ -49,7 +49,7 @@ namespace Internal.TypeSystem
             return InstantiateMethodImpls(uninstMethodImpls);
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8StringRef name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             MethodImplRecord[] uninstMethodImpls = _typeDef.FindMethodsImplWithMatchingDeclName(name);
             return InstantiateMethodImpls(uninstMethodImpls);

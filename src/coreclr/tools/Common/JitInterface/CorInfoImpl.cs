@@ -2095,8 +2095,8 @@ namespace Internal.JitInterface
             else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(Utf8StringRefToPinnableBytes(mdType.Namespace));
-                return (byte*)GetPin(Utf8StringRefToPinnableBytes(mdType.Name));
+                    *namespaceName = (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Namespace));
+                return (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -2585,7 +2585,7 @@ namespace Internal.JitInterface
             // not care about since they are considered primitives by the JIT.
             if (type.IsIntrinsic)
             {
-                Utf8StringRef ns = type.Namespace;
+                Utf8Span ns = type.Namespace;
                 if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
                 {
                     parNode->simdTypeHnd = ObjectToHandle(type);
@@ -3067,7 +3067,7 @@ namespace Internal.JitInterface
             // non-candidates before we compare names.
             if (type.IsIntrinsic && type is MetadataType mdType)
             {
-                Utf8StringRef name = mdType.Name;
+                Utf8Span name = mdType.Name;
                 if ((name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
                     mdType.Namespace == "System"u8)
                 {
@@ -3538,7 +3538,7 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private static byte[] Utf8StringRefToPinnableBytes(Utf8StringRef s)
+        private static byte[] Utf8SpanToPinnableBytes(Utf8Span s)
         {
             byte[] bytes = new byte[s.Length + 1];
             s.AsSpan().CopyTo(bytes);

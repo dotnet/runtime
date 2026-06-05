@@ -66,7 +66,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override Utf8StringRef Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -74,7 +74,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -150,7 +150,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override Utf8StringRef Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -158,7 +158,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

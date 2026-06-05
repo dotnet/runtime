@@ -130,7 +130,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -223,7 +223,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -283,7 +283,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -418,7 +418,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -466,7 +466,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -643,7 +643,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {
@@ -760,7 +760,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override Utf8StringRef Name
+        public override Utf8Span Name
         {
             get
             {

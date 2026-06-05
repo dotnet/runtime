@@ -8,11 +8,11 @@ using System.Text;
 
 namespace Internal.Text
 {
-    public readonly ref struct Utf8StringRef
+    public readonly ref struct Utf8Span
     {
         private readonly ReadOnlySpan<byte> _value;
 
-        public Utf8StringRef(ReadOnlySpan<byte> value) => _value = value;
+        public Utf8Span(ReadOnlySpan<byte> value) => _value = value;
 
         public int Length => _value.Length;
 
@@ -22,9 +22,9 @@ namespace Internal.Text
 
         public byte[] ToArray() => _value.ToArray();
 
-        public bool StartsWith(Utf8StringRef value) => _value.StartsWith(value.AsSpan());
+        public bool StartsWith(Utf8Span value) => _value.StartsWith(value.AsSpan());
 
-        public bool EndsWith(Utf8StringRef value) => _value.EndsWith(value.AsSpan());
+        public bool EndsWith(Utf8Span value) => _value.EndsWith(value.AsSpan());
 
         // This is deliberately not a == operator because we don't want to make it easy
         // to accidentally do UTF-8 vs UTF-16 string comparisons.
@@ -58,12 +58,12 @@ namespace Internal.Text
 
         public override string ToString() => Encoding.UTF8.GetString(_value);
 
-        public static implicit operator Utf8StringRef(ReadOnlySpan<byte> s) => new Utf8StringRef(s);
+        public static implicit operator Utf8Span(ReadOnlySpan<byte> s) => new Utf8Span(s);
 
-        public static bool operator ==(Utf8StringRef left, Utf8StringRef right)
+        public static bool operator ==(Utf8Span left, Utf8Span right)
             => left._value.SequenceEqual(right._value);
 
-        public static bool operator !=(Utf8StringRef left, Utf8StringRef right)
+        public static bool operator !=(Utf8Span left, Utf8Span right)
             => !left._value.SequenceEqual(right._value);
     }
 }

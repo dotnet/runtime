@@ -522,7 +522,7 @@ namespace Internal.TypeSystem
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        public MethodDesc GetMethod(Utf8StringRef name, MethodSignature signature)
+        public MethodDesc GetMethod(Utf8Span name, MethodSignature signature)
         {
             return GetMethod(name, signature, default(Instantiation));
         }
@@ -534,7 +534,7 @@ namespace Internal.TypeSystem
         /// is returned. If substitution is not null, then substitution will be applied to
         /// possible target methods before signature comparison. Returns null if method not found.
         /// </summary>
-        public virtual MethodDesc GetMethod(Utf8StringRef name, MethodSignature signature, Instantiation substitution)
+        public virtual MethodDesc GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
@@ -547,7 +547,7 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        public virtual MethodDesc GetMethodWithEquivalentSignature(Utf8StringRef name, MethodSignature signature, Instantiation substitution)
+        public virtual MethodDesc GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
@@ -591,7 +591,7 @@ namespace Internal.TypeSystem
         /// </summary>
         // TODO: Substitutions, generics, modopts, ...
         // TODO: field signature
-        public virtual FieldDesc GetField(Utf8StringRef name)
+        public virtual FieldDesc GetField(Utf8Span name)
         {
             foreach (var field in GetFields())
             {

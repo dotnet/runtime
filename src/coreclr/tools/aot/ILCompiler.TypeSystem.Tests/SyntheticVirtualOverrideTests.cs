@@ -213,7 +213,7 @@ namespace TypeSystemTests
                 }
             }
 
-            public override Utf8StringRef Name
+            public override Utf8Span Name
             {
                 get
                 {

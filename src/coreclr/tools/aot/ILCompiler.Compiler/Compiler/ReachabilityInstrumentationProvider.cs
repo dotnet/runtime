@@ -240,7 +240,7 @@ namespace ILCompiler
 
             public override TypeSystemContext Context => _context;
             public override TypeDesc OwningType => _context.GeneratedAssembly.GetGlobalModuleType();
-            public override Utf8StringRef Name => "InitializeReachabilityInfo"u8;
+            public override Utf8Span Name => "InitializeReachabilityInfo"u8;
             public override string DiagnosticName => "InitializeReachabilityInfo";
 
             public override MethodIL EmitIL()

@@ -407,7 +407,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe Utf8StringRef Name
+        public override unsafe Utf8Span Name
         {
             get
             {

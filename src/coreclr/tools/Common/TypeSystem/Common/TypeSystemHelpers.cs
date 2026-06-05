@@ -433,7 +433,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        public static ReadOnlySpan<byte> Append(this Utf8StringRef s1, Utf8StringRef s2)
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2)
         {
             Span<byte> buffer = new byte[s1.Length + s2.Length];
 
@@ -443,7 +443,7 @@ namespace Internal.TypeSystem
             return buffer;
         }
 
-        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, Utf8StringRef s2)
+        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, Utf8Span s2)
         {
             Span<byte> buffer = new byte[s1.Length + s2.Length];
 
@@ -464,7 +464,7 @@ namespace Internal.TypeSystem
             return buffer;
         }
 
-        public static ReadOnlySpan<byte> Append(this Utf8StringRef s1, Utf8StringRef s2, Utf8StringRef s3)
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3)
         {
             ReadOnlySpan<byte> s1Span = s1.AsSpan();
             ReadOnlySpan<byte> s2Span = s2.AsSpan();
@@ -478,7 +478,7 @@ namespace Internal.TypeSystem
             return buffer;
         }
 
-        public static ReadOnlySpan<byte> Append(this Utf8StringRef s1, Utf8StringRef s2, Utf8StringRef s3, uint i)
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3, uint i)
         {
             Span<byte> s4 = stackalloc byte[16];
             System.Buffers.Text.Utf8Formatter.TryFormat(i, s4, out int s4length);

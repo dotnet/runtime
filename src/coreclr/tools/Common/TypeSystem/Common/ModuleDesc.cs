@@ -36,7 +36,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a type in this module or null.
         /// </summary>
-        public MetadataType GetType(Utf8StringRef nameSpace, Utf8StringRef name, bool throwIfNotFound = true)
+        public MetadataType GetType(Utf8Span nameSpace, Utf8Span name, bool throwIfNotFound = true)
         {
             return (MetadataType)GetType(nameSpace, name, throwIfNotFound ? NotFoundBehavior.Throw : NotFoundBehavior.ReturnNull);
         }
@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a type in this module with the specified name, a resolution failure object, or null.
         /// </summary>
-        public abstract object GetType(Utf8StringRef nameSpace, Utf8StringRef name, NotFoundBehavior notFoundBehavior);
+        public abstract object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior);
 
         /// <summary>
         /// Gets the global &lt;Module&gt; type.

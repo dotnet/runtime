@@ -379,7 +379,7 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            Utf8StringRef name = targetMethod.Name;
+            Utf8Span name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
