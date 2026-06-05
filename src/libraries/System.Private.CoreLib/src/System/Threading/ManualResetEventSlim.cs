@@ -37,8 +37,10 @@ namespace System.Threading
         // These are the default spin counts we use on single-proc and MP machines.
         private const int DEFAULT_SPIN_SP = 1;
 
-        private object? m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
+        // We are not using thin/object lock here since our use pattern makes it nearly certain that
+        // a thin lock would be inflated.
+        private Lock? m_lock;
 
         private ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
 
@@ -219,7 +221,7 @@ namespace System.Threading
         {
             if (m_lock is null)
             {
-                Interlocked.CompareExchange(ref m_lock, new object(), null); // failure is benign. Someone else set the value.
+                Interlocked.CompareExchange(ref m_lock, new Lock(), null); // failure is benign. Someone else set the value.
             }
         }
 
@@ -292,9 +294,9 @@ namespace System.Threading
             if ((origState & NumWaitersState_BitMask) != 0)
             {
                 Debug.Assert(m_lock != null); // if waiters>0, then m_lock has already been created.
-                lock (m_lock)
+                using (m_lock.EnterScope())
                 {
-                    Monitor.PulseAll(m_lock);
+                    m_lock.PulseAll();
                 }
             }
 
@@ -564,7 +566,7 @@ namespace System.Threading
                                 return false;
                         }
 
-                        lock (m_lock)
+                        using (m_lock.EnterScope())
                         {
                             // There is a race condition that Set will fail to see that there are waiters as Set does not take the lock,
                             // so after updating waiters, we must check IsSet again.
@@ -585,7 +587,7 @@ namespace System.Threading
                             try
                             {
                                 // ** the actual wait **
-                                if (!Monitor.Wait(m_lock, realMillisecondsTimeout))
+                                if (!m_lock.Wait(realMillisecondsTimeout))
                                     return false; // return immediately if the timeout has expired.
                             }
                             finally
@@ -660,9 +662,9 @@ namespace System.Threading
             Debug.Assert(obj is ManualResetEventSlim, "Expected a ManualResetEventSlim");
             ManualResetEventSlim mre = (ManualResetEventSlim)obj;
             Debug.Assert(mre.m_lock != null); // the lock should have been created before this callback is registered for use.
-            lock (mre.m_lock)
+            using (mre.m_lock.EnterScope())
             {
-                Monitor.PulseAll(mre.m_lock); // awaken all waiters
+                mre.m_lock.PulseAll(); // awaken all waiters
             }
         }
 
