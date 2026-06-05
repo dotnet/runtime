@@ -1,16 +1,6 @@
 <Project>
   <PropertyGroup>
-    <!-- crossgen2/ilc run as the build host architecture when cross-building (CrossHostArch),
-         otherwise as TargetArchitecture. This is the architecture of the compiler process itself. -->
-    <_AotCompilerHostArch Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</_AotCompilerHostArch>
-    <_AotCompilerHostArch Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</_AotCompilerHostArch>
-
-    <!-- Server GC reserves per-heap address-space segments up front. On a 32-bit host the ~2 GB
-         user-mode address space is largely consumed by those reservations, so compiling a very
-         large method can fail to allocate the contiguous output image buffer and crash with
-         OutOfMemory. Use Workstation GC on 32-bit hosts. See https://github.com/dotnet/runtime/issues/128531. -->
-    <ServerGarbageCollection Condition="'$(ServerGarbageCollection)' == '' and '$(_AotCompilerHostArch)' != 'x86' and '$(_AotCompilerHostArch)' != 'arm' and '$(_AotCompilerHostArch)' != 'armel'">true</ServerGarbageCollection>
-    <ServerGarbageCollection Condition="'$(ServerGarbageCollection)' == ''">false</ServerGarbageCollection>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
     <TieredCompilation>false</TieredCompilation>
     <EventSourceSupport>true</EventSourceSupport>
     <OptimizationPreference>Speed</OptimizationPreference>
