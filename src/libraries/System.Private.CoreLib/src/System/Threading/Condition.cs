@@ -15,7 +15,6 @@ namespace System.Threading
             public Waiter? next;
             public Waiter? prev;
             public AutoResetEvent ev = new AutoResetEvent(false);
-            public bool signalled;
         }
 
         [ThreadStatic]
@@ -36,7 +35,6 @@ namespace System.Threading
                 waiter = new Waiter();
             }
 
-            waiter.signalled = false;
             return waiter;
         }
 
@@ -49,7 +47,7 @@ namespace System.Threading
         private readonly Lock _lock;
 
         // When condition is installed in a Lock it takes the same field as waitEvent would.
-        // If waitEvent is also needed it is available through here.
+        // If waitEvent is also needed, it is available through here.
         internal AutoResetEvent? _waitEvent;
 
         private Waiter? _waitersHead;
@@ -77,6 +75,13 @@ namespace System.Threading
             for (Waiter? current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
                     Debug.Fail("Waiter is in the waiter list, but should not be");
+        }
+
+        // Returns true if the waiter cannot be possibly in the list.
+        // (i.e. not reachable via _waitersHead)
+        internal bool NotInList(Waiter waiter)
+        {
+            return _waitersHead != waiter && waiter.prev == null;
         }
 
         private void AddWaiter(Waiter waiter)
@@ -133,6 +138,7 @@ namespace System.Threading
 
             uint recursionCount = _lock.ExitAll();
             bool success = false;
+            bool wasSignaled;
             try
             {
                 success =
@@ -147,7 +153,9 @@ namespace System.Threading
                 _lock.Reenter(recursionCount);
                 Debug.Assert(_lock.IsHeldByCurrentThread);
 
-                if (!waiter.signalled)
+                // If the waiter is still in the list, it was not signaled.
+                wasSignaled = NotInList(waiter);
+                if (!wasSignaled)
                 {
                     RemoveWaiter(waiter);
                 }
@@ -165,7 +173,7 @@ namespace System.Threading
                 ReleaseWaiterForCurrentThread(waiter);
             }
 
-            return waiter.signalled;
+            return wasSignaled;
         }
 
         public void SignalAll()
@@ -186,7 +194,6 @@ namespace System.Threading
             if (waiter != null)
             {
                 RemoveWaiter(waiter);
-                waiter.signalled = true;
                 waiter.ev.Set();
             }
         }
