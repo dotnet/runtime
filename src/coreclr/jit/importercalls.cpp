@@ -3247,7 +3247,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                         default:
                         {
-                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig,
                                                                 mustExpand);
                         }
                     }
@@ -5206,9 +5206,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef TARGET_WASM
         NYI_WASM("Unhandled must expand intrinsic");
 #else
-        assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+        assert(!"Unhandled must expand intrinsic, throwing NotImplementedException");
 #endif
-        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
     }
 
     // Optionally report if this intrinsic is special
@@ -12021,10 +12021,24 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     // When `mustExpand=false`, we are attempting to expand the intrinsic directly at the call site (either at the
     // root method or while importing an inlinee body). When optimizations are enabled it is preferable to surface
     // a hard throw at the unsupported call site rather than fall back to a managed call into the (unsupported)
-    // intrinsic body, since the body itself will only end up throwing as well. We therefore also return the
+    // intrinsic body, since the body itself will only end up throwing as well. We therefore try to also return the
     // `MustThrowException` node when `opts.OptimizationEnabled()` is true. When optimizations are disabled (Tier0
     // / MinOpts / debug code) we keep the legacy behavior of returning `nullptr` and emitting a GT_CALL so as not
     // to perturb debugging or tier-up scenarios.
+
+    if ((helper == CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED) && IsAot())
+    {
+        // However, if we're AOT and must expand, we need to throw a PlatformNotSupportedException since there is
+        // no NAOT/R2R helper for the regular NotSupportedException with the relevant type message. PNSE derives
+        // from NSE and so it is still accurate for most considerations. We can fix this the next time we bump
+        // MINIMUM_READYTORUN_MAJOR_VERSION
+
+        if (!mustExpand)
+        {
+            return nullptr;
+        }
+        helper = CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED;
+    }
 
     if (mustExpand || opts.OptimizationEnabled())
     {
