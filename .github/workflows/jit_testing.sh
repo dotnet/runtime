@@ -53,11 +53,14 @@ cd -
 dotnet --info
 
 # =========================================================
-# ✅ Clean NuGet + add REQUIRED feeds
+# ✅ Clean NuGet
 # =========================================================
 rm -rf ~/.nuget/packages
 mkdir -p ~/.nuget/NuGet
 
+# =========================================================
+# ✅ REQUIRED FEEDS (FIXES YOUR ERROR)
+# =========================================================
 cat > ~/.nuget/NuGet/NuGet.Config <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
@@ -73,32 +76,33 @@ EOF
 export RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
 
 # =========================================================
-# ✅ First restore (fetch Arcade)
+# ✅ First restore (fetch Arcade SDK)
 # =========================================================
 ./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
 
 # =========================================================
-# ✅ PATCH Arcade: remove ONLY broken darc feed
+# ✅ Patch ONLY broken darc feed
 # =========================================================
 echo "Patching Arcade SDK..."
 
 find ~/.nuget/packages/microsoft.dotnet.arcade.sdk -name "Tools.proj" \
--exec sed -i 's#https://pkgs.dev.azure.com/dnceng/public/_packaging/darc-pub-dotnet-emsdk[^"]*##g' {} +
+-exec sed -i 's#darc-pub-dotnet-emsdk[^"]*##g' {} +
 
 # =========================================================
-# ✅ REMOVE problematic private dependency
+# ✅ Remove problematic private dependency
 # =========================================================
-echo "Removing Microsoft.Private.Intellisense refs..."
+echo "Removing Microsoft.Private.Intellisense..."
+
 find . -name "*.csproj" -exec sed -i '/Microsoft\.Private\.Intellisense/d' {} +
 
 # =========================================================
-# ✅ Dummy task file (MSB4022 fix)
+# ✅ Dummy file (MSB4022 fix)
 # =========================================================
 mkdir -p /tmp/fake
 touch /tmp/fake/dummy.dll
 
 # =========================================================
-# ✅ COMMON BUILD FLAGS
+# ✅ COMMON FLAGS
 # =========================================================
 COMMON="/p:RestoreSources=$RESTORE_SOURCES \
 /p:SkipPackage=true \
@@ -146,7 +150,7 @@ echo "=========================================="
 $COMMON
 
 # =========================================================
-# ✅ Fix CoreLib for tests
+# ✅ Fix CoreLib
 # =========================================================
 CORE_ROOT=./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root
 cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll ${CORE_ROOT}/System.Private.CoreLib.dll
@@ -165,5 +169,6 @@ chmod +x run_test.sh
 ./run_test.sh "$DOTNET_ROOT/dotnet" "$WORKSPACE/runtime"
 
 echo "=========================================="
-echo "✅ BUILD + JIT TEST SUCCESS"
+echo "✅ BUILD + TEST COMPLETE"
 echo "=========================================="
+``
