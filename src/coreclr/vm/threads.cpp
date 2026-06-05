@@ -1026,11 +1026,13 @@ void InitThreadManagerPerfMapData()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+#ifndef FEATURE_PORTABLE_HELPERS
     if (IsWriteBarrierCopyEnabled())
     {
         size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
         PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
     }
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------
