@@ -91,8 +91,14 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
-            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            // Exercises the wasm base-global (image-base/table-base) relocation path: this method
+            // reads static data, so the JIT emits WASM_GLOBAL_INDEX_LEB relocations that the R2R
+            // object writer self-resolves. Its presence confirms crossgen2 emitted it successfully.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
         }
     }
 
