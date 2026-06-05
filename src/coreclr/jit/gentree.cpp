@@ -7260,7 +7260,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         level++;
                         break;
                     }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");

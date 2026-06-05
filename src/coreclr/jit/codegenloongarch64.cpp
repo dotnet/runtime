@@ -4491,8 +4491,10 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             regNumber tmpReg = internalRegisters.GetSingle(treeNode);
             emitter*  emit   = GetEmitter();
 
-            // Copy src to dst (no-op when dst == src).
-            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, src);
+            // Copy src to dst, normalizing to a sign-extended 32-bit value so the
+            // subsequent full-register bge compares against the (signed) clamp bounds
+            // are well-defined. `slli.w rd, rs, 0` sign-extends bits[31:0] into rd[63:0].
+            emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, dst, src, 0);
 
             // Clamp lower bound: if dst < minVal, dst = minVal.
             BasicBlock* skipLo = genCreateTempLabel();

@@ -3381,6 +3381,9 @@ void emitter::emitIns_R_R_I_I(instruction ins,
         case INS_ssat:
             // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (1-32)
             // Encoding: sat_imm field = N-1 stored in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
             assert(insDoesNotSetFlags(flags));
             assert((imm1 == 0) && (imm2 >= 1) && (imm2 <= 32)); // required for encoding
             imm = (lsb << 5) | (width - 1);                     // lsb=shift=0, width=N -> sat_imm = N-1
@@ -3392,6 +3395,9 @@ void emitter::emitIns_R_R_I_I(instruction ins,
         case INS_usat:
             // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (0-31)
             // Encoding: sat_imm field = N stored directly in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
             assert(insDoesNotSetFlags(flags));
             assert((imm1 == 0) && (imm2 >= 0) && (imm2 <= 31)); // required for encoding
             imm = (lsb << 5) | width;                           // lsb=shift=0, width=N -> sat_imm = N
