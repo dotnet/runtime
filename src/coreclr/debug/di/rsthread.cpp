@@ -8812,10 +8812,10 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     pCode->LoadNativeInfo();
 
     ULONG32 count = 0;
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, 0, &count, NULL));
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, 0, &count, NULL));
 
     NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos(new const ICorDebugInfo::NativeVarInfo *[count]);
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, count, &count, varInfos));
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, count, &count, varInfos));
 
     const ICorDebugInfo::NativeVarInfo *pReturnVarInfo = NULL;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();

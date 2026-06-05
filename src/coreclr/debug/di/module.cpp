@@ -4245,7 +4245,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
             pVarInfosBuffer = varInfos;
         }
 
-        hr = GetReturnValueLiveOffsetImpl(NULL, ILoffset, bufferSize, pFetched, pVarInfosBuffer);
+        hr = GetReturnValueVariableHomes(NULL, ILoffset, bufferSize, pFetched, pVarInfosBuffer);
         if ((SUCCEEDED(hr) || hr == S_FALSE) && pVarInfosBuffer != NULL)
         {
             for (ULONG32 i = 0; i < *pFetched; ++i)
@@ -4626,7 +4626,7 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     return GetSigParserFromFunction(mdFunction, pClass, parser, generics);
 }
 
-HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
+HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
