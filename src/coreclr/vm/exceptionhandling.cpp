@@ -1574,13 +1574,16 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
     REGDISPLAY rd = {};
     T_CONTEXT context = {};
 #if (defined(HOST_WINDOWS) && defined(HOST_AMD64)) || defined(TARGET_ARM64)
+    constexpr BOOL updateFloats = TRUE;
     context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    RtlCaptureContext(&context);
 #else
+    constexpr BOOL updateFloats = FALSE;
     context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 #endif
 
     FillRegDisplay(&rd, &context);
-    pFrame->UpdateRegDisplay(&rd, FALSE /* updateFloats */);
+    pFrame->UpdateRegDisplay(&rd, updateFloats);
 
 #if defined(HOST_WINDOWS) && defined(HOST_AMD64)
     // Initialize FP control/status so that the context can be used for resuming execution
