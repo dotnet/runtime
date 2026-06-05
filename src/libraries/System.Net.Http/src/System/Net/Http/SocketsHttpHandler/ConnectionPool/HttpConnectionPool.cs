@@ -52,6 +52,9 @@ namespace System.Net.Http
         internal uint _lastSeenHttp2MaxHeaderListSize;
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
+        // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
+        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
