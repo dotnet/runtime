@@ -84,10 +84,25 @@ namespace ILLink.CodeFix.UnsafeEvolution
 
             // Lambdas / anonymous functions do not inherit unsafe context from an enclosing
             // member, so we cannot fix a diagnostic that lives in one by wrapping an outer
-            // statement. Bail out if we cross such a boundary before finding any statement.
+            // statement.
             var containingStatement = FindContainingStatement(node);
             if (containingStatement is null)
+            {
+                // Expression-bodied members (e.g. 'int M() => Helper();') have no enclosing
+                // statement. If we can rewrite the arrow body into a block body, offer that fix.
+                var arrow = FindContainingArrowBody(node);
+                if (arrow is null)
+                    return;
+
+                var semanticModelForArrow = await document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        title: WrapStatementTitle,
+                        createChangedDocument: ct => WrapArrowBodyAsync(document, arrow, semanticModelForArrow, ct),
+                        equivalenceKey: WrapStatementTitle),
+                    diagnostic);
                 return;
+            }
 
             // Skip statements whose tokens enclose a preprocessor directive (e.g. an argument
             // list with #if/#else/#endif between commas). Wrapping such a statement would
@@ -143,6 +158,24 @@ namespace ILLink.CodeFix.UnsafeEvolution
             {
                 if (n is StatementSyntax statement)
                     return statement;
+                if (n is AnonymousFunctionExpressionSyntax)
+                    return null;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the smallest enclosing <see cref="ArrowExpressionClauseSyntax"/> (the body
+        /// of an expression-bodied member or accessor), stopping at lambda / anonymous
+        /// function boundaries: an expression-bodied lambda is not a member body we can
+        /// rewrite.
+        /// </summary>
+        private static ArrowExpressionClauseSyntax? FindContainingArrowBody(SyntaxNode node)
+        {
+            for (var n = node; n is not null; n = n.Parent)
+            {
+                if (n is ArrowExpressionClauseSyntax arrow)
+                    return arrow;
                 if (n is AnonymousFunctionExpressionSyntax)
                     return null;
             }
@@ -356,6 +389,107 @@ namespace ILLink.CodeFix.UnsafeEvolution
             return document.WithSyntaxRoot(root.ReplaceNode(body, newBody));
         }
 
+        // ---- Wrapping an expression-bodied member ----
+
+        private static async Task<Document> WrapArrowBodyAsync(
+            Document document, ArrowExpressionClauseSyntax arrow, SemanticModel? semanticModel, CancellationToken ct)
+        {
+            var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
+            if (root is null || arrow.Parent is not { } member)
+                return document;
+
+            bool requiresReturn = ArrowBodyRequiresReturn(member, semanticModel);
+
+            // Build 'return <expr>;' or '<expr>;' depending on the member's effective return type.
+            // Preserve the original expression's trivia inside the new statement so any inline
+            // comments authored on the arrow expression survive.
+            StatementSyntax inner = requiresReturn
+                ? SyntaxFactory.ReturnStatement(arrow.Expression.WithoutTrivia())
+                : SyntaxFactory.ExpressionStatement(arrow.Expression.WithoutTrivia());
+            var unsafeBlock = BuildUnsafeBlock([inner]);
+            var newBody = SyntaxFactory.Block(unsafeBlock).WithAdditionalAnnotations(Formatter.Annotation);
+
+            // Replace the member's '=> expr;' with '{ unsafe { ... } }'.
+            var newMember = ReplaceArrowWithBlock(member, newBody);
+            if (newMember is null)
+                return document;
+
+            return document.WithSyntaxRoot(root.ReplaceNode(member, newMember));
+        }
+
+        /// <summary>
+        /// True if rewriting <paramref name="memberWithArrowBody"/>'s arrow body into a block
+        /// body requires a <c>return</c> statement around the original expression. False when
+        /// the member produces no value (void method/local-function, set/init/add/remove
+        /// accessor, constructor/destructor, or an async method whose only result is the Task).
+        /// </summary>
+        private static bool ArrowBodyRequiresReturn(SyntaxNode memberWithArrowBody, SemanticModel? semanticModel)
+        {
+            switch (memberWithArrowBody)
+            {
+                case MethodDeclarationSyntax m:
+                    return !IsVoidLikeMethod(m.ReturnType, m.Modifiers, semanticModel, m);
+                case LocalFunctionStatementSyntax lf:
+                    return !IsVoidLikeMethod(lf.ReturnType, lf.Modifiers, semanticModel, lf);
+                case OperatorDeclarationSyntax:
+                case ConversionOperatorDeclarationSyntax:
+                case PropertyDeclarationSyntax:
+                case IndexerDeclarationSyntax:
+                    return true;
+                case AccessorDeclarationSyntax a:
+                    return a.Keyword.IsKind(SyntaxKind.GetKeyword);
+                case ConstructorDeclarationSyntax:
+                case DestructorDeclarationSyntax:
+                    return false;
+                default:
+                    // Unknown member kind - rewriting could produce broken syntax; assume no return.
+                    return false;
+            }
+        }
+
+        private static bool IsVoidLikeMethod(TypeSyntax returnType, SyntaxTokenList modifiers, SemanticModel? semanticModel, SyntaxNode declaration)
+        {
+            if (returnType is PredefinedTypeSyntax p && p.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                return true;
+
+            // 'async Task' / 'async ValueTask' bodies do not return a value; the await/return
+            // expression is just an expression statement when in block form.
+            if (modifiers.Any(SyntaxKind.AsyncKeyword) && semanticModel is not null
+                && semanticModel.GetDeclaredSymbol(declaration) is IMethodSymbol m
+                && m.ReturnType is INamedTypeSymbol rt
+                && rt.TypeArguments.Length == 0
+                && rt.Name is "Task" or "ValueTask")
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static SyntaxNode? ReplaceArrowWithBlock(SyntaxNode member, BlockSyntax newBody) => member switch
+        {
+            MethodDeclarationSyntax m => m.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            LocalFunctionStatementSyntax lf => lf.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            OperatorDeclarationSyntax op => op.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            ConversionOperatorDeclarationSyntax co => co.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            ConstructorDeclarationSyntax c => c.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            DestructorDeclarationSyntax d => d.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            AccessorDeclarationSyntax a => a.WithExpressionBody(null).WithBody(newBody).WithSemicolonToken(default),
+            // For arrow-bodied property/indexer ('int P => expr;'), turn it into a block with a
+            // single get accessor whose body is the new unsafe block.
+            PropertyDeclarationSyntax prop => prop
+                .WithExpressionBody(null)
+                .WithSemicolonToken(default)
+                .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.SingletonList(
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithBody(newBody)))),
+            IndexerDeclarationSyntax idx => idx
+                .WithExpressionBody(null)
+                .WithSemicolonToken(default)
+                .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.SingletonList(
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithBody(newBody)))),
+            _ => null,
+        };
+
         // ---- Wrapping a single statement ----
 
         private static async Task<Document> WrapSingleStatementAsync(
@@ -378,8 +512,12 @@ namespace ILLink.CodeFix.UnsafeEvolution
                 var rewrite = TryRewriteAsForwardDeclaration((LocalDeclarationStatementSyntax)statement, semanticModel);
                 if (rewrite is null)
                 {
-                    // Should not happen - ChooseFixStrategy already verified the rewrite is possible.
-                    // Fall back to wrap-as-is to avoid producing an empty fix.
+                    // Defensive: ChooseFixStrategy already verified the rewrite is possible by
+                    // calling TryRewriteAsForwardDeclaration, so this branch should be unreachable.
+                    // If it is reached (e.g. a future semantic-model change makes the rewrite fail
+                    // here but not at strategy-decision time), bail out unchanged rather than
+                    // producing a broken fix; wrap-as-is would not be safe because the local is
+                    // referenced after the wrap point (that is why we picked ForwardDeclare).
                     return document;
                 }
 

@@ -637,6 +637,116 @@ namespace ILLink.RoslynAnalyzer.Tests.UnsafeEvolution
                     .WithArguments("C.M1()"),
             ]);
         }
+
+        // ---- Expression-bodied members: arrow body -> block body with unsafe wrap ----
+
+        [Fact]
+        public async Task ExpressionBodiedMethod_NonVoid_IsRewrittenToBlockWithReturn()
+        {
+            string source = """
+                public class C
+                {
+                    public static unsafe int M1() => 0;
+
+                    public int M2() => M1();
+                }
+                """;
+
+            string fixedSource = """
+                public class C
+                {
+                    public static unsafe int M1() => 0;
+
+                    public int M2()
+                    {
+                        unsafe
+                        {
+                            // SAFETY-TODO: Audit
+                            return M1();
+                        }
+                    }
+                }
+                """;
+
+            await RunAsync(source, fixedSource, [
+                DiagnosticResult.CompilerError(UnsafeEvolutionDescriptors.UnsafeMemberOperation)
+                    .WithSpan(5, 24, 5, 28)
+                    .WithArguments("C.M1()"),
+            ]);
+        }
+
+        [Fact]
+        public async Task ExpressionBodiedMethod_Void_IsRewrittenToBlockWithExpressionStatement()
+        {
+            string source = """
+                public class C
+                {
+                    public static unsafe void M1() { }
+
+                    public void M2() => M1();
+                }
+                """;
+
+            string fixedSource = """
+                public class C
+                {
+                    public static unsafe void M1() { }
+
+                    public void M2()
+                    {
+                        unsafe
+                        {
+                            // SAFETY-TODO: Audit
+                            M1();
+                        }
+                    }
+                }
+                """;
+
+            await RunAsync(source, fixedSource, [
+                DiagnosticResult.CompilerError(UnsafeEvolutionDescriptors.UnsafeMemberOperation)
+                    .WithSpan(5, 25, 5, 29)
+                    .WithArguments("C.M1()"),
+            ]);
+        }
+
+        [Fact]
+        public async Task ExpressionBodiedProperty_IsRewrittenToGetAccessorWithUnsafeBlock()
+        {
+            string source = """
+                public class C
+                {
+                    public static unsafe int M1() => 0;
+
+                    public int P => M1();
+                }
+                """;
+
+            string fixedSource = """
+                public class C
+                {
+                    public static unsafe int M1() => 0;
+
+                    public int P
+                    {
+                        get
+                        {
+                            unsafe
+                            {
+                                // SAFETY-TODO: Audit
+                                return M1();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            await RunAsync(source, fixedSource, [
+                DiagnosticResult.CompilerError(UnsafeEvolutionDescriptors.UnsafeMemberOperation)
+                    .WithSpan(5, 21, 5, 25)
+                    .WithArguments("C.M1()"),
+            ]);
+        }
     }
 }
 #endif

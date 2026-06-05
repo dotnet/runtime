@@ -301,6 +301,41 @@ namespace ILLink.RoslynAnalyzer.Tests.UnsafeEvolution
                     .WithSpan(5, 9, 5, 15)
                     .WithArguments("Local"));
         }
+
+        [Fact]
+        public async Task IL5006_FiresOn_EventFieldWithoutPointer()
+        {
+            string source = """
+                using System;
+                public class C
+                {
+                    public unsafe event Action E;
+                }
+                """;
+
+            await RunAsync(source,
+                VerifyCS.Diagnostic(UnsafeEvolutionDescriptors.UnnecessaryUnsafeModifier)
+                    .WithSpan(4, 12, 4, 18)
+                    .WithArguments("E"),
+                DiagnosticResult.CompilerWarning("CS0067").WithSpan(4, 32, 4, 33).WithArguments("C.E"));
+        }
+
+        [Fact]
+        public async Task IL5006_FiresOn_EventWithExplicitAccessorsWithoutPointer()
+        {
+            string source = """
+                using System;
+                public class C
+                {
+                    public unsafe event Action E { add { } remove { } }
+                }
+                """;
+
+            await RunAsync(source,
+                VerifyCS.Diagnostic(UnsafeEvolutionDescriptors.UnnecessaryUnsafeModifier)
+                    .WithSpan(4, 12, 4, 18)
+                    .WithArguments("E"));
+        }
     }
 }
 #endif
