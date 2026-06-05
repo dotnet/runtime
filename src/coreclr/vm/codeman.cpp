@@ -1331,9 +1331,10 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
 #if defined(FEATURE_INTERPRETER)
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
     bool interpreterOnly = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
-#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-    interpreterOnly = true;
+#else
+    bool interpreterOnly = true;
 #endif
     if (maxVectorTBitWidth != 128 && interpreterOnly)
     {
