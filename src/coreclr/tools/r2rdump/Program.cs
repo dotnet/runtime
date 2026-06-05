@@ -196,6 +196,26 @@ namespace R2RDump
                 QueryMethod(r2r, "R2R Methods by Keyword", keyword, false);
             }
 
+            string[] dumpRva = Get(_command.DumpRva);
+            if (dumpRva != null && dumpRva.Length > 0)
+            {
+                haveQuery = true;
+                foreach (string rvaSpec in dumpRva)
+                {
+                    string[] parts = rvaSpec.Split(':');
+                    if (parts.Length != 2)
+                    {
+                        throw new ArgumentException($"Invalid --dump-rva format '{rvaSpec}'. Expected RVA:Size (e.g. 0x1234:0x20)");
+                    }
+
+                    int rva = Convert.ToInt32(parts[0].Trim(), 16);
+                    uint size = Convert.ToUInt32(parts[1].Trim(), 16);
+
+                    _dumper.WriteDivider($"Raw bytes at RVA 0x{rva:X8}, size 0x{size:X}");
+                    _dumper.DumpBytes(rva, size);
+                }
+            }
+
             if (!haveQuery)
             {
                 // Dump all sections and methods if no queries specified
