@@ -254,6 +254,17 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // own MT for a non-generic type.
     private TypeHandle InstantiationApprox(IRuntimeTypeSystem rts, TypeHandle canonTh, TypeHandle th)
     {
+        // Mirror DacDbiImpl.FillClassTypeInfo: upcast continuation-without-metadata types to
+        // their parent before resolving module / typeDef token. Otherwise the synthesized token
+        // won't appear in the module's TypeDefToMethodTable lookup map and the typeDef lookup
+        // below would fail.
+        if (rts.IsContinuationWithoutMetadata(th))
+        {
+            TargetPointer parentMT = rts.GetParentMethodTable(th);
+            if (parentMT != TargetPointer.Null)
+                th = rts.GetTypeHandle(parentMT);
+        }
+
         ReadOnlySpan<TypeHandle> inst = rts.GetInstantiation(th);
         if (inst.Length == 0)
             return th;
