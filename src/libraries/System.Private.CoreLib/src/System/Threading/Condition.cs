@@ -14,7 +14,7 @@ namespace System.Threading
         {
             public Waiter? next;
             public Waiter? prev;
-            public AutoResetEvent ev = new AutoResetEvent(false);
+            public readonly AutoResetEvent ev = new AutoResetEvent(false);
         }
 
         [ThreadStatic]
@@ -92,12 +92,17 @@ namespace System.Threading
             Debug.Assert(_lock.IsHeldByCurrentThread);
             AssertIsNotInList(waiter);
 
-            waiter.prev = _waitersTail;
-            waiter.prev?.next = waiter;
-
+            Waiter? tail = _waitersTail;
+            waiter.prev = tail;
+            if (tail is null)
+            {
+                _waitersHead = waiter;
+            }
+            else
+            {
+                tail.next = waiter;
+            }
             _waitersTail = waiter;
-
-            _waitersHead ??= waiter;
         }
 
         private void RemoveWaiter(Waiter waiter)
@@ -184,8 +189,29 @@ namespace System.Threading
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
 
-            while (_waitersHead != null)
-                SignalOne();
+            Waiter? waiter = _waitersHead;
+            if (waiter is null)
+            {
+                return;
+            }
+
+            // Detach the entire waiter list in one operation, then walk it and signal each waiter.
+            // Per-waiter prev/next must be cleared BEFORE calling ev.Set() so that the woken thread
+            // observes the waiter as not in the list (see NotInList) and the cached Waiter is clean.
+            // Woken threads cannot make progress until the caller releases _lock, so it is safe to
+            // continue walking the detached list after signaling each waiter.
+            _waitersHead = null;
+            _waitersTail = null;
+
+            do
+            {
+                Waiter? next = waiter.next;
+                waiter.next = null;
+                waiter.prev = null;
+                AutoResetEvent ev = waiter.ev;
+                waiter = next;
+                ev.Set();
+            } while (waiter is not null);
         }
 
         public void SignalOne()
