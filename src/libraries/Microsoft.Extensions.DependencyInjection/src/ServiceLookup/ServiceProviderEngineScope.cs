@@ -93,20 +93,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 else
                 {
                     _disposables ??= new List<object>();
-                    bool alreadyCaptured = false;
-                    for (int i = 0; i < _disposables.Count; i++)
-                    {
-                        if (ReferenceEquals(_disposables[i], service))
-                        {
-                            alreadyCaptured = true;
-                            break;
-                        }
-                    }
-
-                    if (!alreadyCaptured)
-                    {
-                        _disposables.Add(service);
-                    }
+                    _disposables.Add(service);
                 }
             }
 
@@ -141,15 +128,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             object? exceptionsCache = null;
             for (var i = toDispose.Count - 1; i >= 0; i--)
             {
+                object? disposableEntry = toDispose[i];
+                if (disposableEntry is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    if (toDispose[i] is IDisposable disposable)
+                    if (disposableEntry is IDisposable disposable)
                     {
                         disposable.Dispose();
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
+                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(disposableEntry)));
                     }
                 }
                 catch (Exception exception)
@@ -172,9 +165,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             object? exceptionsCache = null;
             for (var i = toDispose.Count - 1; i >= 0; i--)
             {
+                object? disposableEntry = toDispose[i];
+                if (disposableEntry is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    object disposable = toDispose[i];
+                    object disposable = disposableEntry;
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
                         ValueTask vt = asyncDisposable.DisposeAsync();
@@ -221,7 +220,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     try
                     {
-                        object disposable = toDispose[i];
+                        object? disposableEntry = toDispose[i];
+                        if (disposableEntry is null)
+                        {
+                            continue;
+                        }
+
+                        object disposable = disposableEntry;
                         if (disposable is IAsyncDisposable asyncDisposable)
                         {
                             await asyncDisposable.DisposeAsync().ConfigureAwait(false);
@@ -302,6 +307,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // ResolvedServices is never cleared for singletons because there might be a compilation running in background
             // trying to get a cached singleton service. If it doesn't find it
             // it will try to create a new one which will result in an ObjectDisposedException.
+            if (_disposables is { Count: > 0 } disposables)
+            {
+                var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+                for (int i = 0; i < disposables.Count; i++)
+                {
+                    if (!seen.Add(disposables[i]))
+                    {
+                        disposables[i] = null!;
+                    }
+                }
+            }
+
             return _disposables;
         }
 
