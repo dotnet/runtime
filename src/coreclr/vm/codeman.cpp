@@ -1705,18 +1705,6 @@ void EEJitManager::SetCpuInfo()
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
 
-#ifdef FEATURE_INTERPRETER
-    bool interpreterOnlyPreferred = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
-#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-    interpreterOnlyPreferred = true;
-#endif
-    if (interpreterOnlyPreferred)
-    {
-        // Disable larger Vector<T> sizes when only the interpreter runs code
-        preferredVectorBitWidth = 128;
-    }
-#endif
-
     if ((preferredVectorBitWidth == 0) && throttleVector512)
     {
         preferredVectorBitWidth = 256;
