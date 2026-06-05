@@ -475,10 +475,6 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
     impAppendStmt(stmt);
 
-#ifdef FEATURE_SIMD
-    impMarkContiguousSIMDFieldStores(stmt);
-#endif
-
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
     // offsets here instead of debug info, since we do not set the "is call"
