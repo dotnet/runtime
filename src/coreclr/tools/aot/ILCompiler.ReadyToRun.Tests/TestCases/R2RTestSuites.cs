@@ -359,6 +359,52 @@ public class R2RTestSuites
         }
     }
 
+    public static bool IsWindows => System.OperatingSystem.IsWindows();
+
+    [ConditionalFact(nameof(IsWindows))]
+    public void CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "MvidCompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+            [
+                new(nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    // --pdb injects an odd-sized NativeDebugDirectoryEntryNode immediately before the
+                    // MVID table, which is the layout that originally exposed the misalignment bug:
+                    // without the alignment fix the table starts on a non-4-aligned RVA. (--pdb writes
+                    // the NI PDB via Microsoft.DiaSymReader.Native, which only exists on Windows, hence
+                    // the Windows gate above.)
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--pdb"],
+                    Validate = Validate,
+                },
+            ]));
+
+        // Even with the odd-sized debug directory entry pushing the table, the MVID GUIDs must stay
+        // 4-byte aligned so the runtime can read them by value without faulting on 32-bit ARM.
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, alignment: 4, out diag), diag);
+        }
+    }
+
     [Fact]
     public void RuntimeAsyncMethodEmission()
     {
