@@ -214,8 +214,9 @@ protected:
     void genCodeForBlock(BasicBlock* block);
 
 #if defined(TARGET_WASM)
-    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
-    unsigned                   wasmCursor           = 0;
+    ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
+    unsigned                   wasmCursor                = 0;
+    unsigned                   wasmExtraControlFlowDepth = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
@@ -223,6 +224,8 @@ protected:
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
+    void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
+    void                       genEmitEndIf();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -436,6 +439,10 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
+#if defined(TARGET_ARM64)
+    void genUnknownSizeFrame();
+#endif
+
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
@@ -633,6 +640,12 @@ protected:
     void genAmd64EmitterUnitTestsApx();
     void genAmd64EmitterUnitTestsAvx10v2();
     void genAmd64EmitterUnitTestsCCMP();
+    void genAmd64EmitterUnitTestsCFCMOV();
+    void genAmd64EmitterUnitTestsCTEST();
+#endif
+
+#if defined(TARGET_WASM)
+    void genWasmEmitterUnitTestsSimd();
 #endif
 
 #endif // defined(DEBUG)
@@ -1162,8 +1175,6 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpObj(GenTreeBlk* cpObjNode);
-    void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef SWIFT_SUPPORT
@@ -1240,7 +1251,6 @@ protected:
 
     void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void                 genJumpTable(GenTree* tree);
@@ -1648,9 +1658,11 @@ public:
     static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
+#ifdef TARGET_AMD64
     static instruction JumpKindToCcmp(emitJumpKind condition);
     static insOpts     OptsFromCFlags(insCflags flags);
-#endif
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 

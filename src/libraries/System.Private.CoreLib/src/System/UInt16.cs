@@ -359,22 +359,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ushort))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = sourceRef;
+                    result = source[0];
                 }
             }
 

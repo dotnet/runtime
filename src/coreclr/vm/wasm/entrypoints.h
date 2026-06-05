@@ -13,6 +13,7 @@ extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 extern "C" void SystemJS_RejectMainPromise(const char16_t *message, int messageLength, const char16_t *stackTrace, int stackTraceLength);
 extern "C" void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 extern "C" void SystemJS_ScheduleBackgroundJob();
+extern "C" void SystemJS_DiagnosticServerQueueJob(size_t (*cb)(void *data), void *data);
 
 #endif
 

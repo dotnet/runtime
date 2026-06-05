@@ -68,7 +68,7 @@ PALTEST(threading_YieldProcessor_test1_paltest_yieldprocessor_test1, "threading/
     } 
 
 
-    returnCode = WaitForMultipleObjects(THREAD_COUNT, hThread, TRUE, TIMEOUT);
+    returnCode = WaitForMultipleObjectsEx(THREAD_COUNT, hThread, TRUE, TIMEOUT, FALSE);
     if( WAIT_OBJECT_0 != returnCode )
     {
         Trace("Wait for Object(s) returned %d, expected value is  %d, and GetLastError value is %d\n", returnCode, WAIT_OBJECT_0, GetLastError());

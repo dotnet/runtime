@@ -1255,6 +1255,12 @@ void interceptor_ICJI::recordCallSite(
     original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void interceptor_ICJI::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+}
+
 void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,

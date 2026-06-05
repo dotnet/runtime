@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -34,6 +35,7 @@ namespace System.Diagnostics.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingProcess();
@@ -287,6 +289,7 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.IsSupported;
 
         [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126936", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
@@ -379,6 +382,23 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -2499,7 +2519,13 @@ namespace System.Diagnostics.Tests
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
             File.Copy(sleepPath, sleepCommandPathFileName);
 
-            using (Process px = Process.Start(sleepCommandPathFileName, "600"))
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(sleepCommandPathFileName, "600")
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
+            using (Process px = Process.Start(psi))
             {
                 // Reading of long process names is flaky during process startup and shutdown.
                 // Wait a bit to skip over the period where the ProcessName is not reliable.
@@ -2512,7 +2538,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    px.Kill();
+                    px.Kill(entireProcessTree: true);
                     px.WaitForExit();
                 }
             }

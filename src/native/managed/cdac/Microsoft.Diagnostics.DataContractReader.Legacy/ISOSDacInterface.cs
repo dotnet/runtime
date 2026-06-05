@@ -635,6 +635,16 @@ public struct DacpRCWData
     public Interop.BOOL isDisconnected;
 }
 
+public enum VCSHeapType : int
+{
+    IndcellHeap = 0,
+    LookupHeap = 1,
+    ResolveHeap = 2,
+    DispatchHeap = 3,
+    CacheEntryHeap = 4,
+    VtableHeap = 5
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 public unsafe partial interface ISOSDacInterface
@@ -818,7 +828,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded);
     [PreserveSig]
-    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
+    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, VCSHeapType heaptype, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback);
 
     // Other
     [PreserveSig]

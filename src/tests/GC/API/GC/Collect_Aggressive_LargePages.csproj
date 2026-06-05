@@ -5,6 +5,8 @@
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <!-- Large pages and GCHeapHardLimit=0xC0000000 are not supported on 32-bit -->
     <CLRTestTargetUnsupported Condition="'$(TargetBits)' == '32'">true</CLRTestTargetUnsupported>
+    <!-- CrossGen2 reserves 6 GiB for regions which exceeds the 3 GiB hard limit - https://github.com/dotnet/runtime/issues/127541 -->
+    <CrossGenTest>false</CrossGenTest>
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

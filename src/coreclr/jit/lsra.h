@@ -694,6 +694,8 @@ public:
                                   RefPosition* refPosition,
                                   Interval*    upperVectorInterval,
                                   BasicBlock*  block);
+    // Check for an unnecessary UpperVectorSave ref position around profiler hooks
+    bool CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclVarInterval);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     // resolve along one block-block edge
@@ -986,6 +988,8 @@ public:
     bool isRegCandidate(LclVarDsc* varDsc);
 
     bool isContainableMemoryOp(GenTree* node);
+
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
 private:
     // Determine which locals are candidates for allocation

@@ -331,7 +331,7 @@ public:
 #ifdef FEATURE_OBJCMARSHAL
 public:
 #ifndef DACCESS_COMPILE
-    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+    PTR_VOID EnsureTaggedMemoryAllocated(_Out_ size_t* memoryInSizeT)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(memoryInSizeT != NULL);
@@ -383,6 +383,9 @@ struct cdac_data<InteropSyncBlockInfo>
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
     static constexpr size_t CCF = offsetof(InteropSyncBlockInfo, m_pCCF);
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+    static constexpr size_t TaggedMemory = offsetof(InteropSyncBlockInfo, m_taggedMemory);
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;

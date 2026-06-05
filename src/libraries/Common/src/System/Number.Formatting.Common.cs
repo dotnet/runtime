@@ -464,7 +464,7 @@ namespace System
             // Adjust represents the number of characters over the formatting e.g. format string is "0000" and you are trying to
             // format 100000 (6 digits). Means adjust will be 2. On the other hand if you are trying to format 10 adjust will be
             // -2 and we'll need to fixup these digits with 0 padding if we have 0 formatting as in this example.
-            Span<int> thousandsSepPos = stackalloc int[4];
+            Span<int> thousandsSepPos = [0, 0, 0, 0];
             int thousandsSepCtr = -1;
 
             if (thousandSeps)
