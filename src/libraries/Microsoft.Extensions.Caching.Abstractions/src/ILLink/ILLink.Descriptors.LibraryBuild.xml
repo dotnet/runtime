@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="Microsoft.Extensions.Caching.Abstractions">
+    <type fullname="Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions">
+      <!-- Called via UnsafeAccessor from DefaultHybridCache (Microsoft.Extensions.Caching.Hybrid). -->
+      <method name="ToDistributedCacheEntryOptions" />
+      <method name="Clone" />
+    </type>
+  </assembly>
+</linker>
