@@ -84,7 +84,9 @@ dotnet --info
 rm -rf ~/.nuget/packages
 
 #  COMMON restore sources (VALID feeds only)
-RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json"
+RESTORE_SOURCES="https://api.nuget.org/v3/index.json;\
+https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;\
+https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
 
 echo "=========================================="
 echo "Building Runtime"
