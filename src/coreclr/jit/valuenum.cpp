@@ -13730,6 +13730,36 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
     }
+    else if ((intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt16))
+    {
+        // Unary integer-domain saturating conversions used by morph for non-FEATURE_HW_INTRINSICS
+        // float/double -> small integral cast lowering. Model as an opaque unary VN function so
+        // CSE/PRE work correctly without attempting constant folding here.
+        assert(intrinsic->AsOp()->gtOp2 == nullptr);
+        VNFunc vnf = VNF_Boundary;
+        switch (intrinsic->gtIntrinsicName)
+        {
+            case NI_PRIMITIVE_SaturateToInt8:
+                vnf = VNF_SaturateToInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToInt16:
+                vnf = VNF_SaturateToInt16;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt8:
+                vnf = VNF_SaturateToUInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt16:
+                vnf = VNF_SaturateToUInt16;
+                break;
+            default:
+                unreached();
+        }
+        intrinsic->gtVNPair =
+            vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), vnf, arg0VNP), arg0VNPx);
+    }
     else
     {
         assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);

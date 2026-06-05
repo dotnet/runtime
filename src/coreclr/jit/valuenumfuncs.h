@@ -114,6 +114,11 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
+ValueNumFuncDef(SaturateToInt8, 1, false, false)
+ValueNumFuncDef(SaturateToInt16, 1, false, false)
+ValueNumFuncDef(SaturateToUInt8, 1, false, false)
+ValueNumFuncDef(SaturateToUInt16, 1, false, false)
+
 ValueNumFuncDef(ManagedThreadId, 0, false, false)
 
 ValueNumFuncDef(ObjGetType, 1, false, true)

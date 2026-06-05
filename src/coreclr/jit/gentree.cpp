@@ -6785,6 +6785,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif
                         }
 
+                        case NI_PRIMITIVE_SaturateToInt8:
+                        case NI_PRIMITIVE_SaturateToInt16:
+                        case NI_PRIMITIVE_SaturateToUInt8:
+                        case NI_PRIMITIVE_SaturateToUInt16:
+                        {
+                            // Single instruction (e.g. SSAT/USAT on Arm32) or a short
+                            // compare/select sequence on other targets without saturating
+                            // ALU ops.
+                            costEx = 1;
+                            costSz = 4;
+                            break;
+                        }
+
                         case NI_System_Math_Acos:
                         case NI_System_Math_Acosh:
                         case NI_System_Math_Asin:
@@ -7232,6 +7245,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     case NI_System_Math_MaxNative:
                     case NI_System_Math_Min:
                     case NI_System_Math_MinUnsigned:
+                    case NI_System_Math_MinNative:
+                    {
+                        level++;
+                        break;
+                    }
+#elif defined(TARGET_WASM)
+                    // WASM lowers MaxNative/MinNative to native min/max instructions. Used
+                    // both by user calls and by morph's float -> small int saturating clamp.
+                    case NI_System_Math_MaxNative:
                     case NI_System_Math_MinNative:
                     {
                         level++;
@@ -14171,6 +14193,18 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     printf(" popCount");
                     break;
 #endif // TARGET_RISCV64
+                case NI_PRIMITIVE_SaturateToInt8:
+                    printf(" saturateToInt8");
+                    break;
+                case NI_PRIMITIVE_SaturateToInt16:
+                    printf(" saturateToInt16");
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt8:
+                    printf(" saturateToUInt8");
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    printf(" saturateToUInt16");
+                    break;
                 case NI_System_Math_Pow:
                     printf(" pow");
                     break;
