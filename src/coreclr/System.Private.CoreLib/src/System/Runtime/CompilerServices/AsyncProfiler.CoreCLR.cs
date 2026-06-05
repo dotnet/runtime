@@ -148,12 +148,6 @@ namespace System.Runtime.CompilerServices
             /// </summary>
             public const string NameTemplate = "Continuation_Wrapper_{0}";
 
-            /// <summary>
-            /// Number of distinct wrapper methods. The wrapper index rotates modulo this value.
-            /// </summary>
-            public const byte COUNT = 32;
-            public const byte COUNT_MASK = COUNT - 1;
-
             public static void InitInfo(ref Info info)
             {
                 info.ContinuationTable = ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers);
