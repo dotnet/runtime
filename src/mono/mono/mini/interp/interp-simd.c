@@ -2,7 +2,7 @@
 #include "interp-internals.h"
 #include "interp-simd.h"
 
-#if HOST_BROWSER
+#if HOST_BROWSER || HOST_WASI
 #include <wasm_simd128.h>
 #endif
 
@@ -611,6 +611,12 @@ interp_v128_i8_shuffle (gpointer res, gpointer v1, gpointer v2)
 // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/wasm_simd128.h
 // In this context V means Vector128 and P means void* pointer.
 #ifdef HOST_BROWSER
+#define HOST_WASM_SIMD 1
+#elif defined(HOST_WASI)
+#define HOST_WASM_SIMD 1
+#endif
+
+#if HOST_WASM_SIMD
 
 static v128_t
 _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
@@ -931,7 +937,7 @@ int interp_simd_p_ppp_wasm_opcode_table [] = {
 #undef INTERP_SIMD_INTRINSIC_P_PPP
 #define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
-#endif // HOST_BROWSER
+#endif // HOST_WASM_SIMD
 
 #undef INTERP_SIMD_INTRINSIC_P_P
 #define INTERP_SIMD_INTRINSIC_P_P(a,b,c) b,
