@@ -797,7 +797,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
                 {
-                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.DiagnosticContinuationObject, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
+                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.GetContinuationForDiagnostics, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
                 }
             }
 

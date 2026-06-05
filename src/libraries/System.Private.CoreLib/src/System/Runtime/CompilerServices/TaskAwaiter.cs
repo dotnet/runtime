@@ -194,23 +194,19 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(stateMachineBox != null);
 
-            if (AsyncTaskDispatcherInfo.InstrumentCheckPoint)
+            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                if (task is not IAsyncStateMachineBox)
                 {
-                    if (task is not IAsyncStateMachineBox)
+                    stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                }
+                else if (continueOnCapturedContext)
+                {
+                    bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
+                    bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
+                    if (customSyncContext || customTaskScheduler)
                     {
                         stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
-                    }
-                    else if (continueOnCapturedContext)
-                    {
-                        bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
-                        bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
-                        if (customSyncContext || customTaskScheduler)
-                        {
-                            stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
-                        }
                     }
                 }
             }

@@ -354,13 +354,9 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint)
+                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
-                    {
-                        AsyncTaskDispatcherInfo.TryFireResumeAsyncMethod(this, flags);
-                    }
+                    AsyncTaskDispatcherInfo.TryFireResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
                 }
 
                 bool loggingOn = TplEventSource.Log.IsEnabled();
@@ -438,7 +434,7 @@ namespace System.Runtime.CompilerServices
                 {
                     methodId = TStateMachineDiagnosticData.MethodId;
                     state = TStateMachineDiagnosticData.GetState(ref StateMachine);
-                    nextContinuation = this.DiagnosticContinuationObject;
+                    nextContinuation = this.GetContinuationForDiagnostics;
                     return true;
                 }
                 else
@@ -587,10 +583,9 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-            if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(flags))
+                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags))
                 {
                     AsyncTaskDispatcherInfo.CompleteAsyncMethod();
                 }
@@ -626,10 +621,12 @@ namespace System.Runtime.CompilerServices
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
 
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-            if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags) && AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
+            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                AsyncTaskDispatcherInfo.UnwindAsyncFrame();
+                if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(AsyncInstrumentation.ActiveFlags))
+                {
+                    AsyncTaskDispatcherInfo.UnwindAsyncFrame();
+                }
             }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.

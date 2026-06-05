@@ -399,10 +399,6 @@ namespace System.Runtime.CompilerServices
             void IThreadPoolWorkItem.Execute() => MoveNext();
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            // TODO-AsyncProfiler: This MoveNext lacks profiler instrumentation (Resume/Complete events).
-            // The pooling builder is opt-in and uses ManualResetValueTaskSourceCore for completion instead of
-            // Task.TrySetResult, so SetExistingTaskResult events don't fire here either. Needs dedicated
-            // instrumentation similar to AsyncTaskMethodBuilder's AsyncStateMachineBox.MoveNext.
             public void MoveNext()
             {
                 ExecutionContext? context = Context;
