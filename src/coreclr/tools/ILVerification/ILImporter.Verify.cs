@@ -1909,7 +1909,7 @@ namespace Internal.IL
                     var actualReturnType = Pop();
                     CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.Kind != StackValueKind.ByRef || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
         }
