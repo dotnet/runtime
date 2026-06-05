@@ -143,6 +143,11 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
             if (!process.HasExited)
             {
                 process.Kill();
+                // Wait for the process to actually exit after Kill() before accessing ExitCode
+                if (!process.WaitForExit(5000))
+                {
+                    throw new InvalidOperationException($"Process {process.Id} did not exit within timeout after Kill()");
+                }
             }
 
             Assert.Equal(0, process.ExitCode);
