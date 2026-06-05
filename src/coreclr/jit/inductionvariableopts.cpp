@@ -433,8 +433,8 @@ void PerLoopInfo::Invalidate(FlowGraphNaturalLoop* loop)
 //   sense that all their predecessors must come from inside the loop. Loop
 //   exit canonicalization guarantees this for regular exit blocks. It is not
 //   guaranteed for exceptional exits, but we do not expect to widen IVs that
-//   are live into exceptional exits since those are marked DNER which makes it
-//   unprofitable anyway.
+//   are live into exceptional exits since those are not register candidates
+//   (see optWidenPrimaryIV) which makes it unprofitable anyway.
 //
 //   Note that there may be natural loops that have not had their regular exits
 //   canonicalized at the time when IV opts run, in particular if RBO/assertion
@@ -1330,13 +1330,24 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
 
     if (varDsc->lvDoNotEnregister)
     {
-        // This filters out locals that may be live into exceptional exits.
+        // We cannot reason precisely about uses of locals that are not
+        // enregisterable, so be conservative.
         return true;
     }
 
     if (!varDsc->lvTracked && !varDsc->lvInSsa)
     {
         // We do not have liveness we can use for this untracked local.
+        return true;
+    }
+
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+    {
+        // The local is live into an EH handler (an exceptional exit). The
+        // regular exit blocks visited below do not include handlers, and
+        // EH-live locals are no longer necessarily marked DNER at this point
+        // (that now happens during LSRA/lowering), so we must check for
+        // handler liveness explicitly here.
         return true;
     }
 
