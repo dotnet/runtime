@@ -64,7 +64,6 @@ namespace System.IO.Compression
             Debug.Assert(_decoder != null);
 
             bytesWritten = 0;
-            lastResult = OperationStatus.Done;
 
             while (true)
             {
@@ -115,7 +114,7 @@ namespace System.IO.Compression
                     // how DeflateStream handles data after the last gzip member.
                     if (_buffer.ActiveLength >= ZstdFrameMagicLength)
                     {
-                        lastResult = OperationStatus.Done;
+                        // lastResult is already Done; the stream is complete.
                         return true;
                     }
 
