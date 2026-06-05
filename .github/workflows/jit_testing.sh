@@ -1,9 +1,6 @@
 #!/bin/bash
-
 set -ex
-
 export DEBIAN_FRONTEND=noninteractive
-
 echo "=========================================="
 echo "Installing dependencies"
 echo "=========================================="
