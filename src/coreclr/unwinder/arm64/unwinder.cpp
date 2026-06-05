@@ -5,12 +5,33 @@
 
 #if defined(NATIVEAOT)
 #include "common.h"
+#include <windows.h>
+#include "rhassert.h"
+
+#ifndef T_CONTEXT
+#define T_CONTEXT CONTEXT
+#endif
+#ifndef PT_CONTEXT
+#define PT_CONTEXT PCONTEXT
+#endif
+#ifndef T_KNONVOLATILE_CONTEXT_POINTERS
+#define T_KNONVOLATILE_CONTEXT_POINTERS KNONVOLATILE_CONTEXT_POINTERS
+#endif
+#ifndef PT_KNONVOLATILE_CONTEXT_POINTERS
+#define PT_KNONVOLATILE_CONTEXT_POINTERS PKNONVOLATILE_CONTEXT_POINTERS
+#endif
+#ifndef T_RUNTIME_FUNCTION
+#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
+#endif
+#ifndef PT_RUNTIME_FUNCTION
+#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
+#endif
 #else
 #include "stdafx.h"
 #include "utilcode.h"
+#include "crosscomp.h"
 #endif
 
-#include "crosscomp.h"
 #include "clrnt.h"
 #include "unwinder.h"
 
