@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <IsShipping>false</IsShipping>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);NETSDK1023</NoWarn>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\xunit\xunit.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />
+
+    <ProjectReference Include="..\HelixTestTasks\HelixTestTasks.csproj" />
+  </ItemGroup>
+
+</Project>
