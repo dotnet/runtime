@@ -451,9 +451,9 @@ namespace System.Text.RegularExpressions
         ///
         /// ## The `startat` parameter
         ///
-        /// You can optionally specify a starting position in the string by using the `startat` parameter. Any matches starting before `startat` in the string are ignored.
-        /// If you don't specify a starting position, the search begins at the default position, which is the left end of `input` in a left-to-right search, and the right end
-        /// of `input` in a right-to-left search. Despite starting at `startat`, the index of any returned match is relative to the start of the string.
+        /// You can optionally specify a starting position in the string by using the `startat` parameter. In a left-to-right search, any matches that begin before `startat` in the string are ignored.
+        /// If you don't specify a starting position, the search begins at the default position, which is the left end of `input` in a left-to-right search, and the right end of `input` in a right-to-left search.
+        /// Despite starting the search at `startat`, the index of any returned match is relative to the start of the string.
         ///
         /// Although the regular expression engine doesn't return any match starting before `startat`, it doesn't ignore the string before `startat`. This means that assertions
         /// such as [anchors](https://learn.microsoft.com/dotnet/standard/base-types/anchors-in-regular-expressions) or [lookbehind assertions](https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions#lookbehind-assertions)
@@ -489,7 +489,7 @@ namespace System.Text.RegularExpressions
         ///
         /// ## First or multiple matches
         ///
-        /// This method returns the first substring found at or after the `startat` character position in `input` that matches the regular expression pattern.
+        /// This method returns the first substring found by scanning `input` starting at the `startat` position (or, for right-to-left searches, at `startat` - 1) that matches the regular expression pattern.
         /// You can retrieve subsequent matches by repeatedly calling the returned <xref:System.Text.RegularExpressions.Match> object's
         /// <xref:System.Text.RegularExpressions.Match.NextMatch*?displayProperty=nameWithType> method. You can also retrieve all matches in a single method call by calling the
         /// <xref:System.Text.RegularExpressions.Regex.Matches(System.String,System.Int32)?displayProperty=nameWithType> method.
