@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             }
 
             _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
-            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(pkeyHandle));
+            ForceSetKeySize(Interop.Crypto.EvpPKeyGetEcKeySize(pkeyHandle));
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
             }
 
-            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(_key.Value));
+            ForceSetKeySize(Interop.Crypto.EvpPKeyGetEcKeySize(_key.Value));
         }
 
         /// <summary>

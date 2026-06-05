@@ -62,21 +62,14 @@ namespace System.Security.Cryptography
             {
                 ThrowIfDisposed();
 
-                int keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(_key);
+                int keySize = Interop.Crypto.EvpPKeyGetEcKeySize(_key);
 
-                if (keySize != 0)
+                if (keySize == 0)
                 {
-                    return keySize;
+                    throw new CryptographicException(SR.Cryptography_InvalidHandle);
                 }
 
-                // Fallback for EC_KEY-backed handles: get size via EC_KEY.
-                using (SafeEcKeyHandle? ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
-                {
-                    if (ecKey is not null && !ecKey.IsInvalid)
-                        return Interop.Crypto.EcKeyGetSize(ecKey);
-                }
-
-                throw new CryptographicException(SR.Cryptography_InvalidHandle);
+                return keySize;
             }
         }
 

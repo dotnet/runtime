@@ -207,11 +207,11 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_EvpPKeyGetEcFieldDegree(SafeEvpPKeyHandle pkey);
+        private static partial int CryptoNative_EvpPKeyGetEcKeySize(SafeEvpPKeyHandle pkey);
 
-        internal static int EvpPKeyGetEcFieldDegree(SafeEvpPKeyHandle pkey)
+        internal static int EvpPKeyGetEcKeySize(SafeEvpPKeyHandle pkey)
         {
-            return CryptoNative_EvpPKeyGetEcFieldDegree(pkey);
+            return CryptoNative_EvpPKeyGetEcKeySize(pkey);
         }
 
         [LibraryImport(Libraries.CryptoNative)]

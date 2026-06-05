@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -390,6 +391,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         [InlineData(ECDSA_P256_OID_VALUE, 256)]
         [InlineData(ECDSA_P384_OID_VALUE, 384)]
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        [InlineData("2.23.43.1.4.7", 160)] // wap-wsg-idm-ecid-wtls7: field=160 bits, order=161 bits
         public void CtorEcKeyNamedCurveExportIsCorrect(string oid, int expectedKeySize)
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
@@ -459,7 +461,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public void CtorEcKeyExplicitPrimeCurveExportIsCorrect()
         {
-            ECParameters testData = EccTestData.GetNistP256ExplicitTestData();
+            ECParameters testData = EccTestData.GetNistP256ReferenceKeyExplicit();
             ECCurve curve = testData.Curve;
 
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByExplicitParameters(
@@ -680,6 +682,32 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
                     byte[] sig2 = key2.SignData(data, HashAlgorithmName.SHA256);
                     Assert.True(key1.VerifyData(data, sig2, HashAlgorithmName.SHA256));
                 }
+            }
+        }
+
+        [Fact]
+        public void GenerateKeyImplicitCurveThrows()
+        {
+            ECCurve implicitCurve = default;
+
+            using (ECDsa ecdsa = new ECDsaOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdsa.GenerateKey(implicitCurve));
+            }
+        }
+
+        [Fact]
+        public void ImportParametersImplicitCurveThrows()
+        {
+            ECParameters parameters = new ECParameters
+            {
+                Curve = default,
+                D = new byte[32],
+            };
+
+            using (ECDsa ecdsa = new ECDsaOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdsa.ImportParameters(parameters));
             }
         }
     }

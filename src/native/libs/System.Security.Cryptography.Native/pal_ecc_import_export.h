@@ -109,11 +109,15 @@ or the encoding could not be read (named curve is the default), or -1 if the API
 PALEXPORT int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey);
 
 /*
-Returns the field degree (number of bits) of the EC group for the given EVP_PKEY.
-For prime fields this is BN_num_bits(p), for binary fields it is BN_num_bits(polynomial) - 1.
+Returns the EC field degree (bits in the underlying field) for the specified EVP_PKEY.
+This is the value used as KeySize for EC keys in .NET, matching Windows CNG's
+BCRYPT_PUBLIC_KEY_LENGTH semantics for EC keys (field modulus bit-size, e.g. 256
+for P-256). Note that for some uncommon curves this differs from the subgroup
+order's bit length (e.g. wap-wsg-idm-ecid-wtls7 has field=160, order=161).
+Works for both provider-backed and legacy EC_KEY-backed EVP_PKEYs.
 Returns 0 on failure.
 */
-PALEXPORT int32_t CryptoNative_EvpPKeyGetEcFieldDegree(EVP_PKEY* pkey);
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeySize(EVP_PKEY* pkey);
 
 /*
 Creates a new EVP_PKEY for a named EC curve using the provided key parameters.

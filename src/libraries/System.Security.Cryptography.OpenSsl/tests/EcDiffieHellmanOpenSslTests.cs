@@ -489,5 +489,31 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
                 }
             }
         }
+
+        [Fact]
+        public void GenerateKeyImplicitCurveThrows()
+        {
+            ECCurve implicitCurve = default;
+
+            using (ECDiffieHellman ecdh = new ECDiffieHellmanOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdh.GenerateKey(implicitCurve));
+            }
+        }
+
+        [Fact]
+        public void ImportParametersImplicitCurveThrows()
+        {
+            ECParameters parameters = new ECParameters
+            {
+                Curve = default,
+                D = new byte[32],
+            };
+
+            using (ECDiffieHellman ecdh = new ECDiffieHellmanOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdh.ImportParameters(parameters));
+            }
+        }
     }
 }

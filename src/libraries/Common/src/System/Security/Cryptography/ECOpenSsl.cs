@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
 
                 return Interop.Crypto.EvpPKeyGenerateByEcCurveOid(oid, out keySize);
             }
-            else
+            else if (curve.IsExplicit)
             {
                 // Pass null Q and null D to trigger key generation instead of import.
                 return Interop.Crypto.EvpPKeyCreateByEcExplicitParameters(
@@ -42,6 +42,11 @@ namespace System.Security.Cryptography
                     null,
                     null,
                     out keySize);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException(
+                    SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
         }
 
@@ -61,7 +66,7 @@ namespace System.Security.Cryptography
                     parameters.D,
                     out keySize);
             }
-            else
+            else if (parameters.Curve.IsExplicit)
             {
                 return Interop.Crypto.EvpPKeyCreateByEcExplicitParameters(
                     parameters.Curve,
@@ -69,6 +74,11 @@ namespace System.Security.Cryptography
                     parameters.Q.Y,
                     parameters.D,
                     out keySize);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException(
+                    SR.Format(SR.Cryptography_CurveNotSupported, parameters.Curve.CurveType.ToString()));
             }
         }
     }

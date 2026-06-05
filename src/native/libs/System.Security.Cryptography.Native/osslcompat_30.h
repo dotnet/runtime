@@ -39,6 +39,9 @@
 #define OSSL_PKEY_PARAM_EC_ENCODING   "encoding"
 #define OSSL_PKEY_PARAM_EC_FIELD_TYPE "field-type"
 
+#define OSSL_PKEY_EC_ENCODING_EXPLICIT "explicit"
+#define OSSL_PKEY_EC_ENCODING_GROUP    "named_curve"
+
 #define EVP_PKEY_KEY_PARAMETERS 4
 
 #define OSSL_PKEY_PARAM_RSA_N            "n"
