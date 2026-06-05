@@ -185,7 +185,7 @@ public abstract class HybridCache
             if ((factoryOptions.Flags & BothWritesDisabled) != BothWritesDisabled)
             {
                 // Cancellation of the caller should not abort the write: the factory has already
-                // produced a value that we are about to return; aborting SetAsync here would
+                // produced a value that we are about to return; canceling SetAsync here would
                 // discard a completed result and force the next caller to re-run the factory.
                 await SetAsync(key, value, factoryOptions, tags, CancellationToken.None).ConfigureAwait(false);
             }

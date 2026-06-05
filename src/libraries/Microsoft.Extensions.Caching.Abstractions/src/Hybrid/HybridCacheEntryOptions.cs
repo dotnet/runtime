@@ -81,8 +81,8 @@ public sealed class HybridCacheEntryOptions
     /// </summary>
     /// <remarks>
     /// The units are determined by the underlying local cache implementation. When the local cache
-    /// is a <c>MemoryCache</c> configured with a size limit, this value corresponds to
-    /// <see cref="Microsoft.Extensions.Caching.Memory.ICacheEntry.Size"/>.
+    /// is an <see cref="Memory.IMemoryCache"/> configured with a size limit, this value corresponds to
+    /// <see cref="Memory.ICacheEntry.Size"/>.
     /// <para>
     /// When <see langword="null"/>, the implementation may compute a default size (for example, from
     /// the serialized payload length).
@@ -120,9 +120,9 @@ public sealed class HybridCacheEntryOptions
         }
     }
 
-    // DefaultHybridCache (in MS.E.Caching.Hybrid) uses this through UnsafeAccessor.
+    // DefaultHybridCache (in MS.E.Caching.Hybrid) uses these through UnsafeAccessor.
     // Since this assembly (ME.E.Caching.Abstractions) is now part of the shared framework,
-    // it is effectively automatically updated when TFM is udpated, so we shouldn't remove this method.
+    // it is effectively automatically updated when TFM is updated, so we shouldn't remove these methods.
     internal DistributedCacheEntryOptions? ToDistributedCacheEntryOptions()
         => Expiration is null ? null : (_dc ??= new() { AbsoluteExpirationRelativeToNow = Expiration });
 
