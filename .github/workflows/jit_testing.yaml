@@ -2,8 +2,17 @@ name: JIT Testing Pipeline
 
 on:
   push:
+    branches:
+      - ppc64le_coreclr_jit
   pull_request:
+    branches:
+      - ppc64le_coreclr_jit
   workflow_dispatch:
+
+# Prevent multiple workflow runs from executing simultaneously
+concurrency:
+  group: jit-testing-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   jit-testing:
@@ -13,12 +22,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Start Container
+      - name: Stop and Remove Existing Container
         run: |
           docker rm -f gha 2>/dev/null || true
+        continue-on-error: true
 
+      - name: Start Container
+        run: |
           docker run -dit \
             --privileged \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
             --network host \
             --name gha \
             ubuntu:22.04
@@ -32,14 +45,27 @@ jobs:
         run: |
           docker exec gha bash -c "/jit_testing.sh | tee /tmp/jit.log"
 
-      - name: Copy Logs (optional)
+      - name: Copy Logs
         if: always()
         run: |
-          docker cp gha:/tmp/jit.log ./jit.log || true
+          docker cp gha:/tmp/jit.log ./jit.log 2>/dev/null || echo "No log file found"
+        continue-on-error: true
 
       - name: Upload Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jit-log
-          path: jit.log
+          name: jit-log-${{ github.run_number }}
+          path: |
+            jit.log
+            **/build.log
+          retention-days: 7
+
+      - name: Cleanup Container
+        if: always()
+        run: |
+          docker stop gha 2>/dev/null || true
+          docker rm gha 2>/dev/null || true
+        continue-on-error: true
+
+# Made with Bob
