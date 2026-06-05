@@ -4,7 +4,7 @@ set -ex
 export DEBIAN_FRONTEND=noninteractive
 
 echo "=========================================="
-echo "Installing dependencies"
+echo "Install dependencies"
 echo "=========================================="
 
 apt-get update
@@ -12,8 +12,9 @@ apt-get install -y bc automake clang curl findutils git hostname libtool libkrb5
 build-essential zlib1g-dev libssl-dev libbrotli-dev ca-certificates
 
 echo "=========================================="
-echo "Environment Info"
+echo "System Info"
 echo "=========================================="
+
 uname -a
 pwd
 
@@ -27,15 +28,13 @@ cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-# ✅ Fix Arcade SDK version
+# ✅ Fix SDK version
 # =========================================================
 sed -i 's/9.0.0-beta.25208.6/9.0.0-beta.23503.3/g' global.json || true
-
 SDK_VERSION=$(jq -r '.sdk.version' global.json)
-echo "SDK_VERSION=$SDK_VERSION"
 
 # =========================================================
-# ✅ Install SDK
+# ✅ Install .NET SDK
 # =========================================================
 ARCH=$(uname -m)
 
@@ -54,12 +53,11 @@ cd -
 dotnet --info
 
 # =========================================================
-# ✅ Clean NuGet
+# ✅ Clean NuGet + add REQUIRED feeds
 # =========================================================
 rm -rf ~/.nuget/packages
 mkdir -p ~/.nuget/NuGet
 
-# ✅ Minimal working feeds ONLY
 cat > ~/.nuget/NuGet/NuGet.Config <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
@@ -67,30 +65,40 @@ cat > ~/.nuget/NuGet/NuGet.Config <<EOF
     <clear />
     <add key="nuget" value="https://api.nuget.org/v3/index.json" />
     <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
   </packageSources>
 </configuration>
 EOF
 
-export RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json"
+export RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
 
 # =========================================================
-# ✅ REMOVE PRIVATE / BROKEN DEPENDENCIES
+# ✅ First restore (fetch Arcade)
 # =========================================================
+./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
 
+# =========================================================
+# ✅ PATCH Arcade: remove ONLY broken darc feed
+# =========================================================
+echo "Patching Arcade SDK..."
+
+find ~/.nuget/packages/microsoft.dotnet.arcade.sdk -name "Tools.proj" \
+-exec sed -i 's#https://pkgs.dev.azure.com/dnceng/public/_packaging/darc-pub-dotnet-emsdk[^"]*##g' {} +
+
+# =========================================================
+# ✅ REMOVE problematic private dependency
+# =========================================================
 echo "Removing Microsoft.Private.Intellisense refs..."
 find . -name "*.csproj" -exec sed -i '/Microsoft\.Private\.Intellisense/d' {} +
 
-echo "Removing darc feed refs..."
-find ~/.nuget -type f -name "*.proj" -exec sed -i 's#darc-pub-dotnet-emsdk[^"]*##g' {} + || true
-
 # =========================================================
-# ✅ Dummy file (MSB4022 fix)
+# ✅ Dummy task file (MSB4022 fix)
 # =========================================================
 mkdir -p /tmp/fake
 touch /tmp/fake/dummy.dll
 
 # =========================================================
-# ✅ COMMON FLAGS (IMPORTANT)
+# ✅ COMMON BUILD FLAGS
 # =========================================================
 COMMON="/p:RestoreSources=$RESTORE_SOURCES \
 /p:SkipPackage=true \
@@ -104,12 +112,7 @@ COMMON="/p:RestoreSources=$RESTORE_SOURCES \
 /p:DotNetSharedFrameworkTaskFile=/tmp/fake/dummy.dll"
 
 # =========================================================
-# ✅ Initial restore (ignore failure)
-# =========================================================
-./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
-
-# =========================================================
-# ✅ Build runtime
+# ✅ Build Runtime
 # =========================================================
 echo "=========================================="
 echo "Build Runtime"
@@ -123,7 +126,7 @@ $COMMON \
 | tee build.log
 
 # =========================================================
-# ✅ Build libs
+# ✅ Build Libraries
 # =========================================================
 echo "=========================================="
 echo "Build Libraries"
@@ -132,7 +135,7 @@ echo "=========================================="
 ./build.sh libs $COMMON
 
 # =========================================================
-# ✅ Build tests
+# ✅ Build Tests
 # =========================================================
 echo "=========================================="
 echo "Build Tests"
@@ -143,13 +146,13 @@ echo "=========================================="
 $COMMON
 
 # =========================================================
-# ✅ Fix CoreLib
+# ✅ Fix CoreLib for tests
 # =========================================================
 CORE_ROOT=./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root
 cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll ${CORE_ROOT}/System.Private.CoreLib.dll
 
 # =========================================================
-# ✅ JIT Testing
+# ✅ Run JIT tests
 # =========================================================
 cd "$WORKSPACE"
 
@@ -162,5 +165,5 @@ chmod +x run_test.sh
 ./run_test.sh "$DOTNET_ROOT/dotnet" "$WORKSPACE/runtime"
 
 echo "=========================================="
-echo "✅ ALL DONE"
+echo "✅ BUILD + JIT TEST SUCCESS"
 echo "=========================================="
