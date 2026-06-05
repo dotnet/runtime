@@ -41,7 +41,6 @@ namespace Internal.IL
 
         public void SetIsPermanentHome()
         {
-            Debug.Assert(Kind == StackValueKind.ByRef);
             Flags |= StackValueFlags.PermanentHome;
         }
 

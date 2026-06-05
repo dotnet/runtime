@@ -160,8 +160,6 @@
         ldarg.0
     }
 
-    // Returning a ref struct by value (IsByRefLike) should be valid.
-    // This was a false positive: ILVerify incorrectly reported ReturnPtrToStack.
     .method public hidebysig static valuetype RefStruct 'Return.RefStructByValue_Valid'(valuetype RefStruct rs) cil managed
     {
         .locals init (
@@ -173,7 +171,7 @@
         ret
     }
 
-    // Returning a byref to a local ref struct field is still invalid.
+    // Returning a byref to a local ref struct field is invalid.
     .method public hidebysig instance int32& 'Return.LocalRefStructFieldByRef_Invalid_ReturnPtrToStack'(valuetype RefStruct rs) cil managed
     {
         ldarg.1

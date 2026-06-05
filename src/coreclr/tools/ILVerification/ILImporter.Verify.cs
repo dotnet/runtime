@@ -1459,6 +1459,7 @@ namespace Internal.IL
             CheckIsNotPointer(varType);
 
             var stackValue = StackValue.CreateFromType(varType);
+            stackValue.SetIsPermanentHome();
             if (index == 0 && argument && _thisType != null)
             {
                 Debug.Assert(varType == _thisType);
@@ -1909,7 +1910,7 @@ namespace Internal.IL
                     var actualReturnType = Pop();
                     CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.Kind != StackValueKind.ByRef || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
         }
