@@ -110,6 +110,33 @@ export NUGET_CONFIG_FILE=$HOME/.nuget/NuGet/NuGet.Config
 cat ~/.nuget/NuGet/NuGet.Config
 
 echo "=========================================="
+echo "Removing problematic NuGet.config files"
+echo "=========================================="
+
+# ✅ FIX: Remove all NuGet.config files in the repository that reference unavailable feeds
+find . -name "NuGet.config" -o -name "NuGet.Config" | while read config_file; do
+    echo "Removing: $config_file"
+    rm -f "$config_file"
+done
+
+# ✅ Create a local NuGet.config in the runtime directory
+cat > NuGet.Config <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
+    <add key="dotnet-eng" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json" />
+  </packageSources>
+</configuration>
+EOF
+
+echo "Created new NuGet.Config in runtime directory"
+cat NuGet.Config
+
+echo "=========================================="
 echo "Building Runtime"
 echo "=========================================="
 
@@ -231,3 +258,5 @@ fi
 echo "=========================================="
 echo "✅ JIT TESTING COMPLETED SUCCESSFULLY"
 echo "=========================================="
+
+# Made with Bob
