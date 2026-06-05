@@ -611,8 +611,7 @@ Function:
   PAL_InitializeCoreCLR
 
 Abstract:
-  A replacement for PAL_Initialize when loading CoreCLR. Instead of taking a command line (which CoreCLR
-  instances aren't given anyway) the path into which the CoreCLR is installed is supplied instead.
+  A replacement for PAL_Initialize when loading CoreCLR.
 
   This routine also makes sure the psuedo dynamic libraries PALRT and mscorwks have their initialization
   methods called.
