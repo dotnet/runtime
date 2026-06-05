@@ -355,10 +355,20 @@
         <TimeoutClass Condition="'$(Scenario)' != '' and '$(Scenario)' != 'normal'">Stress</TimeoutClass>
         <PayloadShape>DesktopRuntime</PayloadShape>
       </_DefaultWorkItems>
+
+      <_BatchCandidateWorkItems Include="@(_DefaultWorkItems)" Condition="'%(_DefaultWorkItems.BatchCompatible)' == 'true'" />
+      <_NonBatchWorkItems Include="@(_DefaultWorkItems)" Condition="'%(_DefaultWorkItems.BatchCompatible)' != 'true'" />
+
+      <HelixWorkItem Include="@(_NonBatchWorkItems -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(_NonBatchWorkItems.Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
     </ItemGroup>
 
-    <GroupWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
-                    Items="@(_DefaultWorkItems)"
+    <GroupWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+                    Items="@(_BatchCandidateWorkItems)"
                     BatchSize="$(MaxTestsPerWorkItem)"
                     LargeThreshold="$(_LibraryHelixBatchLargeThreshold)"
                     CompatibilityMetadataKeys="RunnerType;PlatformFamily;RuntimeFlavor;TargetOS;TargetArchitecture;Scenario;TimeoutClass;PayloadShape"
@@ -366,26 +376,26 @@
       <Output TaskParameter="GroupedItems" ItemName="_BatchGroupedItem" />
     </GroupWorkItems>
 
-    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'">
+    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''">
       <_BatchId Include="@(_BatchGroupedItem -> '%(BatchId)')" />
       <_UniqueBatchId Include="@(_BatchId->Distinct())" />
     </ItemGroup>
 
-    <RemoveDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
+    <RemoveDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
                Directories="$(IntermediateOutputPath)helix-batches/" />
-    <MakeDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
+    <MakeDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
              Directories="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
-    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
           SourceFiles="@(_BatchGroupedItem)"
-          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(BatchId)/" />
-    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '$(WindowsShell)' == 'true'"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_BatchGroupedItem.BatchId)/" />
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(WindowsShell)' == 'true'"
           SourceFiles="$(RepositoryEngineeringDir)testing\DesktopBatchRunner.cmd"
           DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
-    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '$(WindowsShell)' != 'true'"
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(WindowsShell)' != 'true'"
           SourceFiles="$(RepositoryEngineeringDir)testing\DesktopBatchRunner.sh"
           DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
 
-    <ComputeBatchTimeout Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
+    <ComputeBatchTimeout Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
                          GroupedItems="@(_BatchGroupedItem)"
                          BatchIds="@(_UniqueBatchId)"
                          ItemPrefix="$(WorkItemPrefix)Desktop-"
@@ -393,15 +403,15 @@
       <Output TaskParameter="TimedItems" ItemName="_BatchTimedItem" />
     </ComputeBatchTimeout>
 
-    <ZipDirectory Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
+    <ZipDirectory Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
                   SourceDirectory="%(_BatchTimedItem.BatchDir)"
                   DestinationFile="$(IntermediateOutputPath)helix-batches/%(_BatchTimedItem.Identity).zip"
                   Overwrite="true" />
 
-    <Error Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '$(_BatchHelixCommand)' == ''"
+    <Error Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(_BatchHelixCommand)' == ''"
            Text="BatchLibraryHelixWorkItems requires the structured desktop batch command to be available. A custom HelixCommand cannot be batched by this target." />
 
-    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'">
+    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''">
       <HelixWorkItem Include="@(_BatchTimedItem)">
         <PayloadArchive>$(IntermediateOutputPath)helix-batches/%(Identity).zip</PayloadArchive>
         <Command>$(_BatchHelixCommand)</Command>
