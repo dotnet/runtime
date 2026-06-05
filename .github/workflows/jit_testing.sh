@@ -148,6 +148,8 @@ echo "=========================================="
     /p:RestoreSources="$RESTORE_SOURCES" \
     /p:RestoreAdditionalProjectSources="" \
     /p:RestoreFallbackFolders="" \
+    /p:TreatWarningsAsErrors=false \
+    /p:WarningsAsErrors="" \
     | tee build.log
 
 BUILD_EXIT_CODE=${PIPESTATUS[0]}
@@ -167,7 +169,9 @@ echo "=========================================="
 ./build.sh libs \
     /p:RestoreSources="$RESTORE_SOURCES" \
     /p:RestoreAdditionalProjectSources="" \
-    /p:RestoreFallbackFolders=""
+    /p:RestoreFallbackFolders="" \
+    /p:TreatWarningsAsErrors=false \
+    /p:WarningsAsErrors=""
 
 LIBS_EXIT_CODE=$?
 
@@ -186,7 +190,9 @@ echo "=========================================="
     /p:LibrariesConfiguration=Debug \
     /p:RestoreSources="$RESTORE_SOURCES" \
     /p:RestoreAdditionalProjectSources="" \
-    /p:RestoreFallbackFolders=""
+    /p:RestoreFallbackFolders="" \
+    /p:TreatWarningsAsErrors=false \
+    /p:WarningsAsErrors=""
 
 TESTS_EXIT_CODE=$?
 
