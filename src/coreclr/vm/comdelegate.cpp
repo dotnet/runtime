@@ -967,7 +967,7 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
     }
     CONTRACTL_END;
@@ -1243,7 +1243,11 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             // Since this is an open delegate over a virtual method we cannot virtualize the call target now. So the shuffle thunk
             // needs to jump to another stub (this time provided by the VirtualStubManager) that will virtualize the call at
             // runtime.
-            PCODE pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
+            PCODE pTargetCall;
+            {
+                GCX_PREEMP();
+                pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
+            }
             refRealDelegate->SetMethodPtrAux(pTargetCall);
             refRealDelegate->SetInvocationCount((INT_PTR)(void *)pTargetMethod);
         }
@@ -1605,13 +1609,13 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
     MethodDesc *pMeth = NonVirtualEntry2MethodDesc((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
 
+    GCX_COOP();
+    
     DELEGATEREF refThis = (DELEGATEREF)d.Get();
     refThis->SetMethodPtrAux(target);
     refThis->SetInvocationCount((INT_PTR)(void*)pMeth);
@@ -1755,7 +1759,11 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
         {
-            PCODE pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+            PCODE pTargetCall;
+            {
+                GCX_PREEMP();
+                pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+            }
             refThis->SetMethodPtrAux(pTargetCall);
             refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
         }

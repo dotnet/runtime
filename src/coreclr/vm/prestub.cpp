@@ -2865,14 +2865,12 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         if (fVirtual)
         {
-            GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-
             // Get the stub manager for this module
             VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
 
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
-            if (*protectedObj == NULL) {
+            if (!*protectedObj) {
                 COMPlusThrow(kNullReferenceException);
             }
 
@@ -2911,6 +2909,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
                 }
 
+                GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 DispatchToken token;
                 if (pMT->IsInterface())
@@ -2936,6 +2936,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
 
                     StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
                     pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
                 }
                 else
