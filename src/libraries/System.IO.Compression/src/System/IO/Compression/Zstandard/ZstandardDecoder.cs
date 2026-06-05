@@ -355,6 +355,22 @@ namespace System.IO.Compression
             _finished = false;
         }
 
+        /// <summary>
+        /// Clears the end-of-frame state so the decoder can continue decoding the next frame
+        /// in a stream that contains multiple concatenated Zstandard frames (valid per RFC 8878 §3).
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Interop.Zstd.ZSTD_decompressStream"/> returns 0 at the end of each frame, not at the
+        /// end of the stream, and the native context is automatically ready to begin the next frame on the
+        /// following call. Only the managed end-of-frame latch is cleared here; the native context is left
+        /// intact so window-size and dictionary settings carry over to the next frame. Must only be called
+        /// after <see cref="Decompress"/> reported <see cref="OperationStatus.Done"/>.
+        /// </remarks>
+        internal void PrepareForNextFrame()
+        {
+            _finished = false;
+        }
+
         /// <summary>References a prefix for the next decompression operation.</summary>
         /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
