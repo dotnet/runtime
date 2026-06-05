@@ -55,7 +55,6 @@ namespace System.Runtime.CompilerServices
         internal static void InitInfo(ref Info info)
         {
             info.Context = null;
-            info.ContinuationIndex = 0;
             ContinuationWrapper.InitInfo(ref info);
         }
 
@@ -1008,6 +1007,20 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ContinuationWrapper
         {
+            /// <summary>
+            /// Number of distinct wrapper methods. The wrapper index rotates modulo this value.
+            /// </summary>
+            public const byte COUNT = 32;
+            public const byte COUNT_MASK = COUNT - 1;
+
+#if MONO
+            public static void InitInfo(ref Info info)
+            {
+                info.ContinuationTable = 0;
+                info.ContinuationIndex = 0;
+            }
+#endif
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void IncrementIndex(ref Info info)
             {
@@ -1073,8 +1086,9 @@ namespace System.Runtime.CompilerServices
                     Config.EmitAsyncProfilerMetadataIfNeeded(context);
                     EmitEvent(context);
                 }
-
+#if !MONO
                 ResumeAsyncCallstacks(context);
+#endif
             }
 
             private static void EmitEvent(AsyncThreadContext context)

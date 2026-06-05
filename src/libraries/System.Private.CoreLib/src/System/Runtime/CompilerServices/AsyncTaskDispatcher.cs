@@ -33,13 +33,16 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         internal static unsafe AsyncTaskDispatcherInfo* t_current;
 
+        public static bool InstrumentCheckPoint
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
+        }
+
         public static bool AsyncProfilerInstrumentCheckPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get =>
-                AsyncInstrumentation.IsSupported &&
-                AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled &&
-                AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags());
+            get => InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags());
         }
 
         internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()

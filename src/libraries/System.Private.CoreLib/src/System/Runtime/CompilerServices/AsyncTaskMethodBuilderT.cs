@@ -429,20 +429,18 @@ namespace System.Runtime.CompilerServices
 
             bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                if (AsyncInstrumentation.IsSupported)
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint)
                 {
                     methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
                     state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
                     nextContinuation = this.ContinuationForDiagnostics;
                     return true;
                 }
-                else
-                {
-                    methodId = 0;
-                    state = -1;
-                    nextContinuation = null;
-                    return false;
-                }
+
+                methodId = 0;
+                state = -1;
+                nextContinuation = null;
+                return false;
             }
 
         }
