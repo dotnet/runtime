@@ -1735,7 +1735,7 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// This value is approximation of the command line for diagnostic purposes, and it may not match
+	// This value is an approximation of the command line for diagnostic purposes, and it may not match
 	// the actual command line used to launch the process.
 	// This value can change over time, specifically before vs after suspension in diagnostics server.
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
