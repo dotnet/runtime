@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_ssl.h"
+#include "pal_bio.h"
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
@@ -455,10 +456,8 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
         if(ret != 1)
         {
             *error = CryptoNative_SslGetError(ssl, ret);
-            return ret;
         }
-
-        return CryptoNative_SslDoHandshake(ssl, error);
+        return ret;
     }
 
     *error = SSL_ERROR_NONE;
@@ -469,7 +468,6 @@ int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
     ERR_clear_error();
 
-    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -485,17 +483,151 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
+int32_t CryptoNative_SslHandshake(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
 {
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+    if (consumed != NULL) *consumed = 0;
+
     ERR_clear_error();
-    int32_t result = SSL_do_handshake(ssl);
-    if (result == 1)
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    BIO* outputBio = SSL_get_wbio(ssl);
+
+    if (inputBio != NULL)
     {
-        *error = SSL_ERROR_NONE;
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
     }
-    else
+    if (outputBio != NULL)
     {
-        *error = CryptoNative_SslGetError(ssl, result);
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    // this peek ensures that the SSL handshake state machine starts processing
+    // renegotiation and post-handshake client cert requests
+    SSL_peek(ssl, NULL, 0);
+
+    int32_t result = SSL_do_handshake(ssl);
+    *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+    if (inputBio != NULL)
+    {
+        int32_t leftover = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &leftover);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - leftover;
+        }
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslEncrypt(
+    SSL* ssl,
+    const uint8_t* plaintextPtr,
+    int32_t plaintextLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
+{
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+
+    ERR_clear_error();
+
+    BIO* outputBio = SSL_get_wbio(ssl);
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    int32_t result = SSL_write(ssl, plaintextPtr, plaintextLen);
+    *errorCode = (result > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslDecrypt(
+    SSL* ssl,
+    uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* leftoverOffset,
+    int32_t* leftoverLength,
+    int32_t* errorCode)
+{
+    if (leftoverOffset != NULL) *leftoverOffset = 0;
+    if (leftoverLength != NULL) *leftoverLength = 0;
+    if (consumed != NULL) *consumed = 0;
+
+    ERR_clear_error();
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
+    }
+
+    int32_t result = 0;
+    int32_t leftover = 0;
+
+    if (outputCap > 0)
+    {
+        result = SSL_read(ssl, outputPtr, outputCap);
+    }
+
+    // If the caller-provided destination is empty or full, look for additional plaintext that
+    // SSL would otherwise buffer internally and stash it in-place in the input buffer so the
+    // caller can pick it up on the next call. Skip the probe when the first SSL_read already
+    // failed - that error/state should be reported as-is.
+    if (result > 0 ? SSL_pending(ssl) > 0 : outputCap == 0)
+    {
+        leftover = SSL_read(ssl, inputPtr, inputLen);
+    }
+
+    // The first SSL_read determines the outcome when it produced bytes; otherwise the second
+    // SSL_read (the one that was actually attempted) does. Only report leftoverLength when it
+    // is positive - a negative value from a failed second read is not user-visible plaintext.
+    int32_t outcome = result > 0 ? result : leftover;
+    *errorCode = (outcome > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, outcome);
+    if (leftover > 0)
+    {
+        *leftoverLength = leftover;
+    }
+
+    if (inputBio != NULL)
+    {
+        int32_t unread = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &unread);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - unread;
+        }
     }
 
     return result;

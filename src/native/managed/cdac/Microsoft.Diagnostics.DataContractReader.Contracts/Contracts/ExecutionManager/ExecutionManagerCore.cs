@@ -17,16 +17,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
     private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
-    private readonly Data.RangeSectionMap _topRangeSectionMap;
+    private readonly TargetPointer _topRangeSectionMapAddress;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
 
-    public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
+    private Data.RangeSectionMap _topRangeSectionMap
+        => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
+
+    public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
         _target = target;
-        _topRangeSectionMap = topRangeSectionMap;
+        _topRangeSectionMapAddress = topRangeSectionMapAddress;
         _rangeSectionMapLookup = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
@@ -34,7 +37,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _codeInfos.Clear();
     }
@@ -260,7 +263,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
         // non-fragment RuntimeFunction
 
-        return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+        return CodePointerUtils.AddressFromCodePointer(
+            new TargetCodePointer(range.Data.RangeBegin + runtimeFunction.BeginAddress), _target);
     }
 
     void IExecutionManager.GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
@@ -400,6 +404,24 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
         return info.RelativeOffset;
+    }
+
+    uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
+    {
+        IExecutionManager eman = this;
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
+            return 0;
+
+        if (eman.IsFunclet(codeInfoHandle))
+            return 0;
+
+        eman.GetGCInfo(codeInfoHandle, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
+        if (gcInfoAddress == TargetPointer.Null)
+            throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
+
+        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
+        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
+        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)

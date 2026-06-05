@@ -21,7 +21,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 {
     int IXCLRDataProcess.Flush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
@@ -255,7 +255,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         private readonly IRuntimeTypeSystem _rts;
         private readonly ICodeVersions _cv;
         public IEnumerator<MethodDescHandle> Enumerator { get; set; } = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
-        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+        public nuint LegacyHandle { get; set; } = 0;
 
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
         {
@@ -469,7 +469,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
             {
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
-                emi.LegacyHandle = handleLocal;
+                emi.LegacyHandle = (nuint)handleLocal;
 
                 hr = emi.Start();
                 if (hr == HResults.S_OK)
@@ -523,7 +523,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = legacyHandle;
+            emi.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -582,7 +582,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
-        if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
+        if (_legacyProcess != null && emi.LegacyHandle != 0)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)

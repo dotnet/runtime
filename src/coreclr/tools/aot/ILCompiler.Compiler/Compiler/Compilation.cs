@@ -656,6 +656,11 @@ namespace ILCompiler
             }
         }
 
+        public bool IsMethodBodyCompiled(MethodDesc method)
+        {
+            return _factory.MethodEntrypoint(method).Marked;
+        }
+
         public IEnumerable<TypeDesc> ConstructedEETypes
         {
             get
