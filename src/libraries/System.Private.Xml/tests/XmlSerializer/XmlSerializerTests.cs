@@ -2645,6 +2645,9 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    // Mono doesn't support collectible assemblies: RuntimeType.IsCollectible always returns false,
+    // so the serializer never engages its collectible weak-caching path. See dotnet/runtime#34072.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void Xml_RunAndCollectType_DoesNotRemainCached()
     {
         ExecuteRunAndCollectAndRelease(out WeakReference weakRef);
