@@ -855,7 +855,7 @@ namespace System.Threading.Tasks.Tests
             // V1 (task-based) async: the dispatcher's finally block emits CompleteAsyncContext
             // after inner.MoveNext() returns, but MoveNext() already set the task result which
             // unblocks this thread. Brief sleep ensures the pool thread's finally completes.
-            // V2 (runtime-async) does not have this issue — Complete fires inside the dispatch
+            // V2 (runtime-async) does not have this issue -- Complete fires inside the dispatch
             // loop before the task is signaled.
             //
             // Clear SynchronizationContext so RuntimeAsync continuations don't capture
@@ -1021,6 +1021,55 @@ namespace System.Threading.Tasks.Tests
             }
 
             Assert.Equal(0, stackDepth);
+        }
+
+        private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong taskId, string chainName)
+        {
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            int creates = ids.Count(id => id == AsyncEventID.CreateAsyncContext);
+            int completes = ids.Count(id => id == AsyncEventID.CompleteAsyncContext);
+            Assert.True(creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
+            Assert.True(completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (TaskId {taskId}), got {completes}");
+        }
+
+        // V1-friendly variant: V1's per-MoveNext dispatcher model emits one Create per await
+        // suspension, so a method with N awaits produces N dispatchers / N Creates on the same
+        // TaskId. The invariant we can still assert is creates == completes (both >= 1).
+        private static void AssertCreateEqualsCompleteForTask(ParsedEventStream stream, ulong taskId, string chainName)
+        {
+            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            int creates = ids.Count(id => id == AsyncEventID.CreateAsyncContext);
+            int completes = ids.Count(id => id == AsyncEventID.CompleteAsyncContext);
+            Assert.True(creates >= 1, $"Expected at least 1 CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
+            Assert.True(creates == completes, $"Expected CreateAsyncContext count == CompleteAsyncContext count for {chainName} (TaskId {taskId}), got {creates} creates and {completes} completes");
+        }
+
+        private sealed class InlinePostSynchronizationContext : SynchronizationContext
+        {
+            private int _postCount;
+            public int PostCount => _postCount;
+
+            public override void Post(SendOrPostCallback d, object? state)
+            {
+                Interlocked.Increment(ref _postCount);
+                d(state);
+            }
+        }
+
+        private sealed class InlineRunTaskScheduler : TaskScheduler
+        {
+            private int _queuedCount;
+            public int QueuedCount => _queuedCount;
+
+            protected override void QueueTask(Task task)
+            {
+                Interlocked.Increment(ref _queuedCount);
+                TryExecuteTask(task);
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+
+            protected override IEnumerable<Task>? GetScheduledTasks() => null;
         }
 
         private static class Deserializer
