@@ -33,10 +33,13 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         internal static unsafe AsyncTaskDispatcherInfo* t_current;
 
-        public static bool InstrumentCheckPoint
+        public static bool AsyncProfilerInstrumentCheckPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
+            get =>
+                AsyncInstrumentation.IsSupported &&
+                AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled &&
+                AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags());
         }
 
         internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()
@@ -146,26 +149,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal bool ContinuationChainChanged => LastContinuation?.DiagnosticContinuationObject != null;
+        internal bool ContinuationChainChanged => LastContinuation?.GetContinuationForDiagnostics != null;
 
-        /// <summary>
-        /// Creates a new dispatcher for the given box. If a dispatcher is already active on the
-        /// current thread (mid-chain yield), the new dispatcher becomes a child wrapping the box
-        /// and inherits the active dispatcher's contextId so subsequent events fold into the
-        /// same logical context. Every dispatcher (root or child) emits a CreateAsyncContext
-        /// event with its contextId — children share their parent's contextId, so multiple Create
-        /// events appear for the same logical context. Parsers can reconstruct Suspend semantics
-        /// via per-contextId refcounting: Complete events while refcount > 0 indicate a dispatcher
-        /// MoveNext ended but the chain continues; the final Complete (refcount → 0) marks the
-        /// logical context fully drained. Balance invariant: Create count == Complete count per
-        /// contextId.
-        ///
-        /// When created as a child (parent is mid-MoveNext, about to suspend), the parent
-        /// dispatcher emits an Append event here — this is the last synchronization point where
-        /// the chain state is known stable. Once we return and the new child dispatcher is
-        /// scheduled, other threads may race ahead and walk/mutate state before the parent's
-        /// Complete-time Append fires.
-        /// </summary>
         internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
             AsyncTaskDispatcherInfo* activeInfo = AsyncTaskDispatcherInfo.t_current;
@@ -174,7 +159,7 @@ namespace System.Runtime.CompilerServices
                 ? new AsyncTaskDispatcher(box, activeDispatcher)
                 : new AsyncTaskDispatcher(box);
 
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
                 if (activeDispatcher is not null)
@@ -222,17 +207,11 @@ namespace System.Runtime.CompilerServices
             }
             finally
             {
-                // Always emit Complete in V1 — each dispatcher MoveNext is a discrete unit
-                // emitting one Resume + one Complete. The logical context (shared contextId)
-                // spans multiple dispatchers; Resume count == Complete count per context.
                 if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
                     AsyncProfiler.CompleteAsyncContext.Complete(this, ref dispatcherInfo.AsyncProfilerInfo);
                 }
 
-                // Pop t_current inside finally so the TLS pointer is restored even if
-                // inner.MoveNext() throws. Otherwise t_current would dangle at a destroyed
-                // stack frame and pollute subsequent code on this thread.
                 refCurrent = dispatcherInfo.Next;
             }
         }
