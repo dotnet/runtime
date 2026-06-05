@@ -1,0 +1,45 @@
+name: JIT Testing Pipeline
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  jit-testing:
+    runs-on: ubuntu-24.04-ppc64le-p10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Start Container
+        run: |
+          docker rm -f gha 2>/dev/null || true
+
+          docker run -dit \
+            --privileged \
+            --network host \
+            --name gha \
+            ubuntu:22.04
+
+      - name: Copy Script
+        run: |
+          docker cp .github/workflows/jit_testing.sh gha:/jit_testing.sh
+          docker exec gha chmod +x /jit_testing.sh
+
+      - name: Run Build + Test
+        run: |
+          docker exec gha bash -c "/jit_testing.sh | tee /tmp/jit.log"
+
+      - name: Copy Logs (optional)
+        if: always()
+        run: |
+          docker cp gha:/tmp/jit.log ./jit.log || true
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jit-log
+          path: jit.log
