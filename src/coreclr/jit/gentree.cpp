@@ -33966,11 +33966,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         if (oper != GT_NONE)
         {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             if (varTypeIsMask(retType))
             {
                 cnsNode->AsMskCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType, simdSize);
             }
             else
+#endif
             {
                 cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
             }
@@ -34007,6 +34009,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif
                 case NI_Vector128_ExtractMostSignificantBits:
                 {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                     simdmask_t simdMaskVal;
 
                     switch (simdSize)
@@ -34045,6 +34048,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     resultNode = gtNewIconNode(static_cast<int32_t>(mask));
                     break;
+
+#else
+                    NYI_WASM_SIMD("gtNewSimdExtractMSBNode");
+                    resultNode = nullptr;
+                    break;
+#endif
                 }
 
 #ifdef TARGET_XARCH
@@ -34069,9 +34078,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif // TARGET_XARCH
 
+#ifndef TARGET_WASM
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
-#else
+#elif defined(TARGET_XARCH)
                 case NI_AVX2_LeadingZeroCount:
 #endif
                 {
@@ -34084,6 +34094,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     resultNode = cnsNode;
                     break;
                 }
+#endif
 
 #ifdef TARGET_ARM64
                 case NI_ArmBase_Arm64_LeadingZeroCount:
@@ -34099,7 +34110,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     resultNode = cnsNode;
                     break;
                 }
-#else
+#elif defined(TARGET_XARCH)
                 case NI_AVX2_X64_LeadingZeroCount:
                 {
                     assert(varTypeIsLong(retType));
@@ -34118,8 +34129,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #ifdef TARGET_ARM64
                 case NI_Vector64_ToVector128Unsafe:
                 case NI_Vector128_GetLower:
-#else
+#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
                 case NI_Vector128_AsVector2:
+#endif
+#ifdef TARGET_XARCH
                 case NI_Vector128_ToVector256Unsafe:
                 case NI_Vector256_GetLower:
                 case NI_Vector256_ToVector512Unsafe:
@@ -34147,7 +34160,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     resultNode      = cnsNode;
                     break;
                 }
-#else
+#elif defined(TARGET_XARCH)
                 case NI_Vector128_ToVector256:
                 {
                     assert(retType == TYP_SIMD32);
@@ -34194,7 +34207,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     resultNode      = cnsNode;
                     break;
                 }
-#else
+#elif defined(TARGET_XARCH)
                 case NI_Vector256_GetUpper:
                 {
                     assert(retType == TYP_SIMD16);
@@ -34221,7 +34234,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 case NI_Vector128_ToScalar:
 #ifdef TARGET_ARM64
                 case NI_Vector64_ToScalar:
-#else
+#elif defined(TARGET_XARCH)
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
 #endif
@@ -34412,6 +34425,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             if (oper != GT_NONE)
             {
+#if FEATURE_MASKED_HW_INTRINSICS
                 if (varTypeIsMask(retType))
                 {
                     if (varTypeIsMask(cnsNode))
@@ -34425,6 +34439,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     }
                 }
                 else
+#endif
                 {
                     if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
                     {
@@ -34467,6 +34482,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                                                                  otherNode->AsVecCon()->gtSimd16Val);
                             otherNode->AsVecCon()->gtSimd16Val = result;
                         }
+#elif defined(TARGET_WASM)
+                        NYI_WASM_SIMD("gtFoldExprHWIntrinsic: LSH/RSH/RSZ");
 #endif // TARGET_XARCH
                     }
 
@@ -34489,7 +34506,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case NI_Vector128_GetElement:
 #ifdef TARGET_ARM64
                     case NI_Vector64_GetElement:
-#else
+#elif defined(TARGET_XARCH)
                     case NI_Vector256_GetElement:
                     case NI_Vector512_GetElement:
 #endif
@@ -34567,7 +34584,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         resultNode = cnsNode;
                         break;
                     }
-#else
+#elif defined(TARGET_XARCH)
                     case NI_Vector256_WithLower:
                     {
                         assert(retType == TYP_SIMD32);
@@ -34589,6 +34606,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         resultNode = cnsNode;
                         break;
                     }
+#elif defined(TARGET_WASM)
+                    case NI_Vector128_WithLower:
+                    {
+                        NYI_WASM_SIMD("gtFoldExprHWIntrinsic: WithLower");
+                        break;
+                    }
 #endif
 
 #ifdef TARGET_ARM64
@@ -34602,7 +34625,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         resultNode = cnsNode;
                         break;
                     }
-#else
+#elif defined(TARGET_XARCH)
                     case NI_Vector256_WithUpper:
                     {
                         assert(retType == TYP_SIMD32);
@@ -34623,6 +34646,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                         resultNode = cnsNode;
                         break;
+                    }
+#elif defined(TARGET_WASM)
+                    case NI_Vector128_WithUpper:
+                    {
+                        NYI_WASM_SIMD("gtFoldExprHWIntrinsic: WithUpper");
                     }
 #endif
 
@@ -35447,7 +35475,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_Vector128_WithElement:
 #ifdef TARGET_ARM64
             case NI_Vector64_WithElement:
-#else
+#elif defined(TARGET_XARCH)
             case NI_Vector256_WithElement:
             case NI_Vector512_WithElement:
 #endif
@@ -35600,11 +35628,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+#if FEATURE_MASKED_HW_INTRINSICS
     if (varTypeIsMask(retType) && !varTypeIsMask(resultNode))
     {
         resultNode = gtNewSimdCvtVectorToMaskNode(retType, resultNode, simdBaseType, simdSize);
         return gtFoldExprHWIntrinsic(resultNode->AsHWIntrinsic());
     }
+#endif
 
     if (resultNode != tree)
     {

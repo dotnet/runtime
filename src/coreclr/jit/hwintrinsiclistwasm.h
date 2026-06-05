@@ -59,6 +59,12 @@ HARDWARE_INTRINSIC(Vector128,      op_UnaryPlus,                                
 HARDWARE_INTRINSIC(Vector128,      op_Equality,                                                      16,      2,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
 HARDWARE_INTRINSIC(Vector128,      op_Inequality,                                                    16,      2,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
 HARDWARE_INTRINSIC(Vector128,      WithElement,                                                      16,      2,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
+HARDWARE_INTRINSIC(Vector128,      WithLower,                                                        16,      2,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
+HARDWARE_INTRINSIC(Vector128,      WithUpper,                                                        16,      2,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
 
 #define LAST_NI_Vector128         NI_Vector128_op_UnaryPlus
 #endif // FEATURE_HW_INTRINSICS
+
+#undef HARDWARE_INTRINSIC
+
+// clang-format on

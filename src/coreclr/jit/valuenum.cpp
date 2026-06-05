@@ -8194,12 +8194,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
         }
         else if (tree->OperIsConvertMaskToVector())
         {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             return EvaluateSimdCvtMaskToVector(this, type, baseType, arg0VN);
+#else
+            unreached();
+#endif // !defined(FEATURE_MASKED_HW_INTRINSICS)
         }
         else if (tree->OperIsConvertVectorToMask())
         {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
             return EvaluateSimdCvtVectorToMask(this, simdType, baseType, arg0VN);
+#else
+            unreached();
+#endif // !defined(FEATURE_MASKED_HW_INTRINSICS)
         }
 
         switch (ni)
@@ -8304,7 +8312,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForIntCon(static_cast<int32_t>(result));
             }
-#else
+#elif defined(TARGET_XARCH)
             case NI_AVX2_X64_LeadingZeroCount:
             {
                 assert(varTypeIsLong(type));
@@ -8314,7 +8322,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForLongCon(static_cast<int64_t>(result));
             }
-#endif
+#elif defined(TARGET_WASM)
+
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_ReverseElementBits:
