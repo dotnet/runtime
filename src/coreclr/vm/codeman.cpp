@@ -1712,7 +1712,7 @@ void EEJitManager::SetCpuInfo()
 #endif
     if (interpreterOnlyPreferred)
     {
-        // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
+        // Disable larger Vector<T> sizes when only the interpreter runs code
         preferredVectorBitWidth = 128;
     }
 #endif
