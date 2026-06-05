@@ -143,6 +143,7 @@ echo "=========================================="
 # Set environment variable to disable NuGet warnings as errors
 export NUGET_RESTORE_MSBUILD_ARGS="/p:TreatWarningsAsErrors=false"
 export MSBuildTreatWarningsAsErrors=false
+export MSBuildWarningsAsMessages="NU1603;NU1101"
 
 ./build.sh \
     clr+clr.hosts \
@@ -154,7 +155,6 @@ export MSBuildTreatWarningsAsErrors=false
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
     /p:WarningsAsErrors="" \
-    /p:WarningsNotAsErrors="NU1603;NU1101" \
     | tee build.log
 
 BUILD_EXIT_CODE=${PIPESTATUS[0]}
@@ -176,8 +176,7 @@ echo "=========================================="
     /p:RestoreAdditionalProjectSources="" \
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
-    /p:WarningsAsErrors="" \
-    /p:WarningsNotAsErrors="NU1603;NU1101"
+    /p:WarningsAsErrors=""
 
 LIBS_EXIT_CODE=$?
 
@@ -198,8 +197,7 @@ echo "=========================================="
     /p:RestoreAdditionalProjectSources="" \
     /p:RestoreFallbackFolders="" \
     /p:TreatWarningsAsErrors=false \
-    /p:WarningsAsErrors="" \
-    /p:WarningsNotAsErrors="NU1603;NU1101"
+    /p:WarningsAsErrors=""
 
 TESTS_EXIT_CODE=$?
 
@@ -272,4 +270,4 @@ echo "=========================================="
 echo "✅ JIT TESTING COMPLETED SUCCESSFULLY"
 echo "=========================================="
 
-# Made with Bob
+
