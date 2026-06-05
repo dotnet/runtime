@@ -26,6 +26,7 @@ internal sealed partial class Thread : IData<Thread>
     [Field] public TargetPointer? UEWatsonBucketTrackerBuckets { get; }
     [Field] public TargetPointer ThreadLocalDataPtr { get; }
     [Field] public TargetPointer DebuggerFilterContext { get; }
+    [Field] public uint InteropDebuggingHijacked { get; }
     [Field] public ObjectHandle CurrentCustomDebuggerNotification { get; }
 
     public RuntimeThreadLocals? RuntimeThreadLocals { get; private set; }

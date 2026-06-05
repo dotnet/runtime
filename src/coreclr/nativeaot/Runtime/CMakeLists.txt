@@ -149,12 +149,8 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
-  # Guard out the public unw_* C API, C++ exception dispatch entry points,
-  # and the LocalAddressSpace singleton from llvm-libunwind. NativeAOT does
-  # not use these - it uses the internal C++ classes directly. Omitting them
-  # avoids exporting symbols that conflict with platform libunwind (e.g.
-  # Android NDK r29).
-  add_definitions(-D_LIBUNWIND_NATIVEAOT=1)
+  # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
+  add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
 
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
