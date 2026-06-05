@@ -32,6 +32,7 @@ PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
+bool PerfMap::s_LogStubs = false;
 
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
@@ -84,6 +85,7 @@ void PerfMap::InitializeConfiguration()
     DWORD granularity = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapStubGranularity);
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
+    s_LogStubs = (granularity & 4) != 0;
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
@@ -434,7 +436,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!s_enabled)
+    if (!s_enabled || !s_LogStubs)
     {
         return;
     }
