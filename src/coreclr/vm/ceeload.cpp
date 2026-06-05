@@ -3677,8 +3677,7 @@ LPCWSTR GetCommandLineForDiagnostics()
         pCmdLine = GetCommandLineW();
 #else
         pCmdLine = GetExePath();
-#endif // HOST_WINDOWS
-    }
+#endif // TARGET_WINDOWS
 
     return pCmdLine;
 }
