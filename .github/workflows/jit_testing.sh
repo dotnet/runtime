@@ -31,7 +31,7 @@ cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-# ✅ FINAL FIX: Use valid Arcade version (present in dotnet-eng)
+# ✅ FIX 1: Use valid Arcade version (publicly available)
 # =========================================================
 echo "=========================================="
 echo "Fixing Arcade SDK version"
@@ -82,17 +82,35 @@ which dotnet
 dotnet --info
 
 # =========================================================
-# ✅ Clean NuGet cache
+# ✅ FIX 2: Clean NuGet cache
 # =========================================================
 rm -rf ~/.nuget/packages
 
 # =========================================================
-# ✅ FINAL CORRECT FEEDS
+# ✅ FIX 3: FORCE GLOBAL NuGet CONFIG (MOST IMPORTANT ✅)
 # =========================================================
-RESTORE_SOURCES="https://api.nuget.org/v3/index.json;\
-https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;\
-https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;\
-https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json"
+echo "=========================================="
+echo "Setting global NuGet config (REMOVE broken feeds)"
+echo "=========================================="
+
+mkdir -p ~/.nuget/NuGet
+
+cat > ~/.nuget/NuGet/NuGet.Config <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
+    <add key="dotnet-eng" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json" />
+  </packageSources>
+</configuration>
+EOF
+
+export NUGET_CONFIG_FILE=$HOME/.nuget/NuGet/NuGet.Config
+
+cat ~/.nuget/NuGet/NuGet.Config
 
 echo "=========================================="
 echo "Building Runtime"
@@ -103,23 +121,20 @@ echo "=========================================="
     /p:PrimaryRuntimeFlavor=CoreCLR \
     /p:PublishAot=false \
     /p:SupportsNativeAotComponents=false \
-    /p:RestoreSources="$RESTORE_SOURCES" \
     | tee build.log
 
 echo "=========================================="
 echo "Building Libraries"
 echo "=========================================="
 
-./build.sh libs \
-    /p:RestoreSources="$RESTORE_SOURCES"
+./build.sh libs
 
 echo "=========================================="
 echo "Building Tests"
 echo "=========================================="
 
 ./src/tests/build.sh \
-    /p:LibrariesConfiguration=Debug \
-    /p:RestoreSources="$RESTORE_SOURCES"
+    /p:LibrariesConfiguration=Debug
 
 echo "=========================================="
 echo "Copying System.Private.CoreLib.dll"
