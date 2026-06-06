@@ -5146,7 +5146,12 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         // Note we check this rather than countOfInEdges because we don't care
         // about dups, just the number of unique pred blocks.
         //
-        if (predInfo.Height() > mergeLimit)
+        // This cap only applies to common-successor tail merging. The terminal
+        // block (return/throw) merging below subsumes the old fgTailMergeThrows
+        // phase, which merged all throw blocks without a cap, so we do not limit
+        // it here (throw-heavy methods routinely exceed the cap).
+        //
+        if ((commSucc != nullptr) && (predInfo.Height() > mergeLimit))
         {
             // Too many preds to consider
             return false;
@@ -5492,13 +5497,27 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+    // tailMergePreds merges at most one group of matching blocks per call, so
+    // keep rebuilding the candidate list and retrying until no more merges are
+    // found. This ensures distinct groups (e.g. multiple throw helpers, or a
+    // mix of return and throw blocks) all get merged. Blocks that were merged
+    // become BBJ_ALWAYS and are skipped on subsequent passes.
+    //
+    bool retryRetOrThrowMerge = true;
+    while (retryRetOrThrowMerge)
     {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+        {
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW) || block->isEmpty())
+            {
+                continue;
+            }
+            predInfo.Push(PredInfo(block, block->lastStmt()));
+        }
 
-    tailMergePreds(nullptr);
+        retryRetOrThrowMerge = tailMergePreds(nullptr);
+    }
 
     // Work through any retries
     //

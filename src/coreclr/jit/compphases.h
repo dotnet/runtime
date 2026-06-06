@@ -65,7 +65,6 @@ CompPhaseNameMacro(PHASE_COMPUTE_BLOCK_WEIGHTS,      "Compute block weights",   
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,            "Create EH funclets",             false, -1, false)
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE,            "Head and tail merge",            false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_QMARK_EXPANSION,      "Early QMARK expansion",          false, -1, false)
-CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",             false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE2,           "Post-morph head and tail merge", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",          false, -1, false)
