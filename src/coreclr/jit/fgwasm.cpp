@@ -1757,7 +1757,7 @@ PhaseStatus Compiler::WasmSpillRefs()
         varDsc->lvType = TYP_I_IMPL;
         varDsc->lvHasExplicitInit = true;
         varDsc->lvImplicitlyReferenced = true;
-        // If we don't make this var tracked, regalloc will crash when allocating a register for it
+        // HACK: If we don't make this var tracked, regalloc will crash when allocating a register for it
         varDsc->lvTracked = true;
         m_wasmSpillSlots->at(0) = varNum;
     }
@@ -1770,6 +1770,7 @@ PhaseStatus Compiler::WasmSpillRefs()
         varDsc->lvType = TYP_BYREF;
         varDsc->lvPinned = true;
         varDsc->lvImplicitlyReferenced = true;
+        varDsc->lvMustInit = true;
         lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason::WasmGCVisibility);
         m_wasmSpillSlots->at(i + 1) = varNum;
     }
