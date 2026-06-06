@@ -5497,27 +5497,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    // tailMergePreds merges at most one group of matching blocks per call, so
-    // keep rebuilding the candidate list and retrying until no more merges are
-    // found. This ensures distinct groups (e.g. multiple throw helpers, or a
-    // mix of return and throw blocks) all get merged. Blocks that were merged
-    // become BBJ_ALWAYS and are skipped on subsequent passes.
-    //
-    bool retryRetOrThrowMerge = true;
-    while (retryRetOrThrowMerge)
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
         predInfo.Reset();
         for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
         {
-            if (!block->KindIs(BBJ_RETURN, BBJ_THROW) || block->isEmpty())
+            // If this block was already merged, skip it
+            //
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 continue;
             }
             predInfo.Push(PredInfo(block, block->lastStmt()));
         }
-
-        retryRetOrThrowMerge = tailMergePreds(nullptr);
-    }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //
