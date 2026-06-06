@@ -1040,6 +1040,54 @@ public class R2RTestSuites
     }
 
     /// <summary>
+    /// Composite + runtime-async caller awaiting a NON-runtime-async virtual callee that the JIT
+    /// devirtualizes to a sealed receiver. Resolving the callee's async-variant thunk must unwrap it
+    /// to the underlying EcmaMethod.
+    /// </summary>
+    [Fact]
+    public void CompositeAsyncDevirtNonAsyncCallee()
+    {
+        // Compiled WITHOUT runtime-async so the awaited virtuals get synthesized async-variant thunks.
+        var nonAsyncCalleeLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncDevirtNonAsyncCalleeLib",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncDevirtNonAsyncCalleeLib.cs"],
+        };
+        var main = new CompiledAssembly
+        {
+            AssemblyName = "CompositeAsyncDevirtNonAsyncCalleeMain",
+            SourceResourceNames = ["RuntimeAsync/CompositeAsyncDevirtNonAsyncCalleeMain.cs"],
+            Features = { RuntimeAsyncFeature },
+            References = [nonAsyncCalleeLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeAsyncDevirtNonAsyncCallee),
+            [
+                new(nameof(CompositeAsyncDevirtNonAsyncCallee),
+                [
+                    new CrossgenAssembly(nonAsyncCalleeLib),
+                    new CrossgenAssembly(main),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDevirtNonAsyncCalleeLib", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "WriterBase.CompleteValueTaskAsync(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "WriterBase.CompleteTaskAsync(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AwaitInheritedValueTask(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AwaitInheritedTask(", out diag), diag);
+        }
+    }
+
+    /// <summary>
     /// Composite with 3 assemblies in A→B→C transitive chain.
     /// Validates manifest refs for all three and transitive inlining.
     /// </summary>
