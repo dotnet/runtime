@@ -14,11 +14,12 @@
             field OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
             field 10 * 8 ; x19..x28
 m_CallersSP field 8      ; SP at routine entry
-            field 3  * 8 ; x0..x2
-            field 4  * 16; q0..q3
+            field 8  * 8 ; x0..x7
+            field 8      ; padding for 16-byte alignment of q regs
+            field 8  * 16; q0..q7
 PROBE_FRAME_SIZE    field 0
 
-    ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
+    ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return/argument registers
     ;; and accepts the register bitmask
     ;; Call this macro first in the method (no further prolog instructions can be added after this).
     ;;
@@ -46,13 +47,17 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Slot at [sp, #0x70] is reserved for caller sp
 
-        ;; Save the integer return registers, x2 might contain an objectref (async continuation)
+        ;; Save the integer return/argument registers
         PROLOG_NOP stp         x0, x1,   [sp, #0x78]
-        PROLOG_NOP str         x2,       [sp, #0x88]
+        PROLOG_NOP stp         x2, x3,   [sp, #0x88]
+        PROLOG_NOP stp         x4, x5,   [sp, #0x98]
+        PROLOG_NOP stp         x6, x7,   [sp, #0xA8]
 
-        ;; Save the FP/HFA/HVA return registers
-        PROLOG_NOP stp         q0, q1,   [sp, #0x90]
-        PROLOG_NOP stp         q2, q3,   [sp, #0xB0]
+        ;; Save the FP argument registers
+        PROLOG_NOP stp         q0, q1,   [sp, #0xC0]
+        PROLOG_NOP stp         q2, q3,   [sp, #0xE0]
+        PROLOG_NOP stp         q4, q5,   [sp, #0x100]
+        PROLOG_NOP stp         q6, q7,   [sp, #0x120]
 
         ;; Perform the rest of the PInvokeTransitionFrame initialization.
         ;;   str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
@@ -76,13 +81,17 @@ PROBE_FRAME_SIZE    field 0
     MACRO
         POP_PROBE_FRAME
 
-        ;; Restore the integer return registers
+        ;; Restore the integer return/argument registers
         PROLOG_NOP ldp          x0, x1,   [sp, #0x78]
-        PROLOG_NOP ldr          x2,       [sp, #0x88]
+        PROLOG_NOP ldp          x2, x3,   [sp, #0x88]
+        PROLOG_NOP ldp          x4, x5,   [sp, #0x98]
+        PROLOG_NOP ldp          x6, x7,   [sp, #0xA8]
 
-        ; Restore the FP/HFA/HVA return registers
-        EPILOG_NOP ldp          q0, q1,   [sp, #0x90]
-        EPILOG_NOP ldp          q2, q3,   [sp, #0xB0]
+        ; Restore the FP argument registers
+        EPILOG_NOP ldp          q0, q1,   [sp, #0xC0]
+        EPILOG_NOP ldp          q2, q3,   [sp, #0xE0]
+        EPILOG_NOP ldp          q4, q5,   [sp, #0x100]
+        EPILOG_NOP ldp          q6, q7,   [sp, #0x120]
 
         ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20
@@ -102,26 +111,26 @@ PROBE_FRAME_SIZE    field 0
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  x4: thread pointer
-;;  x3: trashed
+;;  x9: thread pointer
+;;  x0-x7 preserved, x10 trashed
 ;;
     MACRO
         FixupHijackedCallstack
 
-        ;; x4 <- GetThread(), TRASHES x3
-        INLINE_GETTHREAD x4, x3
+        ;; x9 <- GetThread(), TRASHES x10
+        INLINE_GETTHREAD x9, x10
 
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ldr         lr, [x4, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ;;
         ;; Clear hijack state
         ;;
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-        stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
     MEND
 
     MACRO
@@ -147,13 +156,13 @@ PROBE_FRAME_SIZE    field 0
     LABELED_RETURN_ADDRESS RhpGcProbeHijack
         FixupHijackedCallstack
 
-        ldr         x3, =RhpTrapThreads
-        ldr         w3, [x3]
-        tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, WaitForGC
+        ldr         x10, =RhpTrapThreads
+        ldr         w10, [x10]
+        tbnz        x10, #TrapThreadsFlags_TrapThreads_Bit, WaitForGC
         ret
 
 WaitForGC
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7)
         movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
         b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
@@ -161,9 +170,9 @@ WaitForGC
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpWaitForGC
-        PUSH_PROBE_FRAME x4, x3, x12
+        PUSH_PROBE_FRAME x9, x10, x12
 
-        ldr         x0, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        ldr         x0, [x9, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
 
         POP_PROBE_FRAME
@@ -193,7 +202,7 @@ WaitForGC
 ;;
     LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
 ;;
@@ -202,18 +211,16 @@ WaitForGC
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
-;;  x0: hijacked function return value
-;;  x1: hijacked function return value
-;;  x2: hijacked function async continuation value
-;;  x4: thread pointer
+;;  x0-x7: hijacked function return/argument values
+;;  x9: thread pointer
 ;;  w12: register bitmask
 ;;
 ;; Register state on exit:
-;;  Scratch registers, except for x0, x1, x2, have been trashed
+;;  Scratch registers, except for x0-x7, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
     NESTED_ENTRY RhpGcStressProbe
-        PUSH_PROBE_FRAME x4, x3, x12
+        PUSH_PROBE_FRAME x9, x10, x12
 
         bl          RhpStressGc
 

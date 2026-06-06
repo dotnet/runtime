@@ -44,7 +44,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD);
    in suspended state in order to resume it. */
 CONST BYTE WAKEUPCODE=0x2A;
 
-#ifndef FEATURE_SINGLE_THREADED
+#ifdef FEATURE_MULTITHREADING
 /*++
 Function:
   InternalSuspendNewThreadFromData
@@ -119,7 +119,7 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
 
     return palError;
 }
-#endif // !FEATURE_SINGLE_THREADED
+#endif // FEATURE_MULTITHREADING
 
 /*++
 Function:
@@ -134,10 +134,10 @@ ResumeThread(
          IN HANDLE hThread
          )
 {
-#ifdef FEATURE_SINGLE_THREADED
+#ifndef FEATURE_MULTITHREADING
     ERROR("Threads are not supported in single-threaded mode.\n");
     return ERROR_NOT_SUPPORTED;
-#else // FEATURE_SINGLE_THREADED
+#else // !FEATURE_MULTITHREADING
     PAL_ERROR palError;
     CPalThread *pthrResumer;
     DWORD dwSuspendCount = (DWORD)-1;
@@ -165,7 +165,7 @@ ResumeThread(
     LOGEXIT("ResumeThread returns DWORD %u\n", dwSuspendCount);
     PERF_EXIT(ResumeThread);
     return dwSuspendCount;
-#endif // FEATURE_SINGLE_THREADED
+#endif // !FEATURE_MULTITHREADING
 }
 
 /*++
@@ -238,13 +238,6 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     PAL_ERROR palError = NO_ERROR;
 
     int nWrittenBytes = -1;
-
-    if (SignalHandlerThread == pthrTarget->GetThreadType())
-    {
-        ASSERT("Attempting to resume the signal handling thread, which can never be suspended.\n");
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalResumeThreadFromDataExit;
-    }
 
     // Acquire suspension mutex
     AcquireSuspensionLocks(pthrResumer, pthrTarget);

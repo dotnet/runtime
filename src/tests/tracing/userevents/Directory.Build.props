@@ -4,5 +4,8 @@
 
   <PropertyGroup>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'Mono'">true</CLRTestTargetUnsupported>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
 </Project>

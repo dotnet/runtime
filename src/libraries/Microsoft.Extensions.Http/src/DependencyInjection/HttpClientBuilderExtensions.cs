@@ -394,11 +394,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TImplementation"/>.
         /// </summary>
         /// <typeparam name="TClient">
-        /// The declared type of the typed client. They type specified will be registered in the service collection as
+        /// The declared type of the typed client. The type specified will be registered in the service collection as
         /// a transient service. See <see cref="ITypedHttpClientFactory{TImplementation}" /> for more details about authoring typed clients.
         /// </typeparam>
         /// <typeparam name="TImplementation">
-        /// The implementation type of the typed client. The type specified by will be instantiated by the
+        /// The implementation type of the typed client. The type specified will be instantiated by the
         /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>

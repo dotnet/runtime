@@ -225,6 +225,12 @@ namespace ILCompiler
             var stackTraceLineNumbersNode = new StackTraceLineNumbersNode(commonFixupsTableNode, stackTraceDocumentsNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceLineNumbers), stackTraceLineNumbersNode);
 
+            var interfaceDispatchCellInfoNode = new InterfaceDispatchCellInfoSectionNode();
+            header.Add(ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, interfaceDispatchCellInfoNode);
+
+            var interfaceDispatchCellNode = new InterfaceDispatchCellSectionNode();
+            header.Add(ReadyToRunSectionType.InterfaceDispatchCellRegion, interfaceDispatchCellNode);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode);
@@ -423,10 +429,6 @@ namespace ILCompiler
                 if (owningType.IsString)
                     return false;
             }
-
-            // TODO: Reflection invoking static virtual methods
-            if (method.IsVirtual && method.Signature.IsStatic)
-                return false;
 
             // Everything else can go in the mapping table.
             return true;

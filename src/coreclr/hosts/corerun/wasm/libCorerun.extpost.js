@@ -3,9 +3,10 @@
 
 /* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
-export function selfRun() {
-    const Module = {};
+var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
+var _isNode = typeof process !== 'undefined' && typeof process.versions?.node !== 'undefined';
+export function selfRun(moduleConfig) {
+    const Module = moduleConfig || {};
     const runtimeApi = {
         Module,
         INTERNAL: {},
@@ -23,7 +24,9 @@ export function selfRun() {
             if (error && typeof error.status !== "number") {
                 console.error(error);
             }
-            process.exit(exitCode);
+            if (_isNode) {
+                process.exit(exitCode);
+            }
         },
     };
     dotnetInternals = [
@@ -36,4 +39,7 @@ export function selfRun() {
     createDotnetRuntime(runtimeApi.Module);
 }
 
-selfRun();
+// Auto-run only in Node.js; in browser, selfRun is called from corerun.html.
+if (_isNode) {
+    selfRun();
+}

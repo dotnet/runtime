@@ -79,6 +79,12 @@ public:
 #endif // !HAS_FIXED_REGISTER_SET
 };
 
+struct EHClauseInfo
+{
+    CORINFO_EH_CLAUSE clause;
+    EHblkDsc*         HBtab;
+};
+
 class CodeGenInterface
 {
     friend class emitter;
@@ -206,6 +212,12 @@ public:
 
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
+#if defined(TARGET_WASM)
+    // On wasm, we store the simd element size in the upper 7 bits of the instruction info.
+    // The lower bit is reserved as an FP flag.
+    static constexpr unsigned InstInfoElemSizeShift = 1;
+    static uint8_t            instSimdElemSize(instruction ins);
+#endif
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:
@@ -271,40 +283,14 @@ public:
     }
 
 #if !HAS_FIXED_REGISTER_SET
-private:
-    // For targets without a fixed SP/FP, these are the registers with which they are associated.
-    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
-    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
 
-public:
-    void SetStackPointerReg(regNumber reg)
-    {
-        assert(reg != REG_NA);
-        m_cgStackPointerReg = reg;
-    }
-    void SetFramePointerReg(regNumber reg)
-    {
-        assert(reg != REG_NA);
-        m_cgFramePointerReg = reg;
-    }
-    regNumber GetStackPointerReg() const
-    {
-        return m_cgStackPointerReg;
-    }
-    regNumber GetFramePointerReg() const
-    {
-        return m_cgFramePointerReg;
-    }
-#else  // HAS_FIXED_REGISTER_SET
-    regNumber GetStackPointerReg() const
-    {
-        return REG_SPBASE;
-    }
-    regNumber GetFramePointerReg() const
-    {
-        return REG_FPBASE;
-    }
-#endif // HAS_FIXED_REGISTER_SET
+    void SetStackPointerReg(unsigned funcletIndex, regNumber reg);
+    void SetFramePointerReg(unsigned funcletIndex, regNumber reg);
+
+#endif // !HAS_FIXED_REGISTER_SET
+
+    regNumber GetStackPointerReg(unsigned funcletIndex) const;
+    regNumber GetFramePointerReg(unsigned funcletIndex) const;
 
 public:
     int genCallerSPtoFPdelta() const;
@@ -399,16 +385,6 @@ public:
     }
 
 #endif // !DOUBLE_ALIGN
-
-#ifdef TARGET_WASM
-    struct WasmLocalsDecl
-    {
-        WasmValueType Type;
-        unsigned      Count;
-    };
-
-    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
-#endif
 
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't

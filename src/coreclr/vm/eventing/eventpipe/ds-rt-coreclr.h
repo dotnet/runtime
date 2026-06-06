@@ -71,78 +71,6 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 
 /*
-* AutoTrace.
-*/
-
-#ifdef FEATURE_AUTO_TRACE
-#include "autotrace.h"
-#endif
-
-static
-void
-ds_rt_auto_trace_init (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_init ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_launch (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_launch ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_signal (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_signal ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-static
-void
-ds_rt_auto_trace_wait (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-#ifdef FEATURE_AUTO_TRACE
-	EX_TRY
-	{
-		auto_trace_wait ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH
-#endif
-}
-
-/*
  * DiagnosticsConfiguration.
  */
 
@@ -167,7 +95,7 @@ ds_rt_config_value_get_ports (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static

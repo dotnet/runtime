@@ -34,6 +34,46 @@ public readonly struct OffsetMapping
     public SourceTypes SourceType { get; init; }
 }
 
+/// <summary>
+/// Describes the kind of location where a variable is stored.
+/// This is a stable public enum that abstracts over runtime-internal VarLocType values.
+/// </summary>
+public enum DebugVarLocKind
+{
+    Register,
+    Stack,
+    RegisterRegister,
+    RegisterStack,
+    StackRegister,
+    DoubleStack,
+}
+
+/// <summary>
+/// Describes the location of a native variable at a particular native offset range.
+/// This is a stable public type exposed by the DebugInfo contract.
+/// </summary>
+public readonly struct DebugVarInfo
+{
+    public uint StartOffset { get; init; }
+    public uint EndOffset { get; init; }
+    public uint VarNumber { get; init; }
+    public DebugVarLocKind Kind { get; init; }
+    public bool IsByRef { get; init; }
+
+    /// <summary>Primary register number (Register, RegisterRegister, RegisterStack, StackRegister).</summary>
+    public uint Register { get; init; }
+    /// <summary>Second register number (RegisterRegister).</summary>
+    public uint Register2 { get; init; }
+    /// <summary>Stack base register number (Stack, DoubleStack, StackRegister, RegisterStack).</summary>
+    public uint BaseRegister { get; init; }
+    /// <summary>Stack offset from base register (Stack, DoubleStack, StackRegister).</summary>
+    public int StackOffset { get; init; }
+    /// <summary>Second stack base register (RegisterStack).</summary>
+    public uint BaseRegister2 { get; init; }
+    /// <summary>Second stack offset (RegisterStack).</summary>
+    public int StackOffset2 { get; init; }
+}
+
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
@@ -46,6 +86,11 @@ public interface IDebugInfo : IContract
     /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
     /// </summary>
     IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the variable location info for the method.
+    /// Each entry describes where a variable is stored at a particular native offset range.
+    /// </summary>
+    IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct DebugInfo : IDebugInfo

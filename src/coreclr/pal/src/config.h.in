@@ -48,7 +48,6 @@
 #cmakedefine01 HAVE_SIGALTSTACK
 #cmakedefine01 HAVE_VM_ALLOCATE
 #cmakedefine01 HAVE_VM_READ
-#cmakedefine01 HAVE_DIRECTIO
 #cmakedefine01 HAVE_SEMAPHORE_H
 #cmakedefine01 HAS_SYSV_SEMAPHORES
 #cmakedefine01 HAS_PTHREAD_MUTEXES
@@ -56,7 +55,6 @@
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
-#cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
 #cmakedefine HAVE_UNW_AARCH64_X19
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT

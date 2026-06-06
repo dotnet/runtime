@@ -53,7 +53,6 @@ export async function initPolyfillsAsync(): Promise<void> {
             globalThis.performance = (await import(/*! webpackIgnore: true */"perf_hooks")).performance;
         }
     }
-    // WASM-TODO: performance polyfill for V8
 }
 
 let _nodeFs: any | undefined = undefined;

@@ -78,7 +78,7 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
 
                 // hostname
                 case 'h': {
-                    ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
+                    AStringHolder buffer = new char[MAX_LONGPATH + 1];
                     if (gethostname(buffer, MAX_LONGPATH) != 0)
                     {
                         printf_error("Could not get the host name for dump name: %d\n",
@@ -109,7 +109,7 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                 // the numeric real UID of dumped process
                 case 'u':
                 // thread id that triggered the dump
-                case 'i': 
+                case 'i':
                 case 'I':
                 // pid of dumped process
                 case 'P':

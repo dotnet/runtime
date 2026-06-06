@@ -11,6 +11,7 @@ parameters:
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
+  largeVersionBubble: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
@@ -129,6 +130,9 @@ jobs:
       - ${{ if eq(parameters.hotColdSplitting, true) }}:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_HotColdSplitting
+      - ${{ if eq(parameters.largeVersionBubble, true) }}:
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_LargeVersionBubble
 
     - name: testFilterArg
       value: ''
@@ -316,6 +320,7 @@ jobs:
         runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}
         hotColdSplitting: ${{ parameters.hotColdSplitting }}
+        largeVersionBubble: ${{ parameters.largeVersionBubble }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the

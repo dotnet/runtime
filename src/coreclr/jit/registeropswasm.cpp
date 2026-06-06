@@ -141,6 +141,8 @@ const char* WasmValueTypeName(WasmValueType type)
         "i64",
         "f32",
         "f64",
+        "v128",
+        "exnref",
     };
     static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
     // clang-format on

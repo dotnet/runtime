@@ -237,17 +237,10 @@ namespace System.Text.Json
                 byte[] toReturn = _data;
 
                 // Allow the data to grow up to maximum possible capacity (~2G bytes) before encountering overflow.
-                // Note: Array.MaxLength exists only on .NET 6 or greater,
-                // so for the other versions value is hardcoded
-                const int MaxArrayLength = 0x7FFFFFC7;
-#if NET
-                Debug.Assert(MaxArrayLength == Array.MaxLength);
-#endif
-
                 int newCapacity = toReturn.Length * 2;
 
                 // Note that this check works even when newCapacity overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+                if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
 
                 // If the maximum capacity has already been reached,
                 // then set the new capacity to be larger than what is possible

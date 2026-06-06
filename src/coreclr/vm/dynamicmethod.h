@@ -92,7 +92,7 @@ public:
 
     //
     // jit interface api
-    virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
+    virtual STRINGREF* ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
     virtual STRINGREF GetStringLiteral(mdToken metaTok) = 0;
     virtual void ResolveToken(mdToken token, ResolvedToken* resolvedToken) = 0;
@@ -142,6 +142,8 @@ public:
     LCGMethodResolver(DynamicMethodDesc* pDynamicMethod, DynamicMethodTable* pDynamicMethodTable)
         : m_pDynamicMethod{ pDynamicMethod }
         , m_pDynamicMethodTable{ pDynamicMethodTable }
+        , m_initialCodePointer{}
+        , m_DynamicCodePointers{ &m_initialCodePointer }
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -156,7 +158,7 @@ public:
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
 
-    OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
+    STRINGREF* ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
@@ -227,6 +229,10 @@ private:
     DynamicMethodDesc* m_next;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
+    // m_DynamicCodePointers has its entries allocated in chunks (via m_jitTempData).
+    // Having a field for the initial code pointer avoids the chunk allocation in the common
+    // case of a single code pointer. We want to avoid allocations while taking m_CodeHeapLock to reduce contention.
+    DynamicCodePointer m_initialCodePointer;
     DynamicCodePointer* m_DynamicCodePointers;
     DynamicStringLiteral* m_DynamicStringLiterals;
     IndCellList* m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
@@ -312,6 +318,8 @@ class HostCodeHeap final : public CodeHeap
 
     VPTR_VTABLE_CLASS(HostCodeHeap, CodeHeap)
 
+    friend struct ::cdac_data<HostCodeHeap>;
+
 private:
     // pointer back to jit manager info
     PTR_HeapList m_pHeapList;
@@ -372,6 +380,13 @@ public:
 
     PTR_EECodeGenManager GetJitManager() { return m_pJitManager; }
 }; // class HostCodeHeap
+
+template<>
+struct cdac_data<HostCodeHeap>
+{
+    static constexpr size_t BaseAddress    = offsetof(HostCodeHeap, m_pBaseAddr);
+    static constexpr size_t CurrentAddress = offsetof(HostCodeHeap, m_pLastAvailableCommittedAddr);
+};
 
 //---------------------------------------------------------------------------------------
 //

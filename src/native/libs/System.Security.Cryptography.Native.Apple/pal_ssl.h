@@ -177,7 +177,7 @@ Returns 1 on success, 0 on failure, other values for invalid state.
 Output:
 pOSStatus: Receives the value from SSLSetALPNData()
 */
-PALEXPORT int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus);
+PALEXPORT int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, const void* protocol, int length, int32_t* pOSStatus);
 
 /*
 Get negotiated protocol value from ServerHello.

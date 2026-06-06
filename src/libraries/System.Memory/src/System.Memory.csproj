@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <!-- ArrayBufferWriter is publicly exposed from the System.Memory ref and only it should define this constant as true.  -->

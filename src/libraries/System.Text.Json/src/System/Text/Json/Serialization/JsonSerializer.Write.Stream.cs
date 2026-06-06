@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
@@ -305,6 +307,140 @@ namespace System.Text.Json
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
             jsonTypeInfo.SerializeAsObject(utf8Json, value);
+        }
+
+        /// <summary>
+        /// Serializes each element of an <see cref="IAsyncEnumerable{TValue}"/> to the <see cref="System.IO.Stream"/>
+        /// in a streaming manner.
+        /// </summary>
+        /// <typeparam name="TValue">The type of elements in the sequence to serialize.</typeparam>
+        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
+        /// <param name="value">The <see cref="IAsyncEnumerable{T}"/> sequence to serialize.</param>
+        /// <param name="topLevelValues"><see langword="true"/> to serialize the elements as a sequence of newline-separated top-level JSON values
+        /// (a <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> document); <see langword="false"/> to serialize them as a single root-level JSON array.</param>
+        /// <param name="options">Options to control the serialization behavior.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/> or <paramref name="value"/> is <see langword="null"/>.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="topLevelValues"/> is <see langword="true"/>, the output conforms to the
+        /// <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> specification: each element is serialized as a
+        /// single-line JSON value followed by a line-feed (<c>\n</c>) terminator. The line terminator is always <c>\n</c>
+        /// regardless of <see cref="JsonSerializerOptions.NewLine"/>, and <see cref="JsonSerializerOptions.WriteIndented"/>
+        /// is ignored so that each value is emitted on a single line.
+        /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static Task SerializeAsyncEnumerable<TValue>(
+            Stream utf8Json,
+            IAsyncEnumerable<TValue> value,
+            bool topLevelValues = false,
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(value);
+
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            if (topLevelValues)
+            {
+                return SerializeAsyncEnumerableAsJsonLines(utf8Json, value, jsonTypeInfo, cancellationToken);
+            }
+
+            JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
+            return collectionTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// Serializes each element of an <see cref="IAsyncEnumerable{TValue}"/> to the <see cref="System.IO.Stream"/>
+        /// in a streaming manner.
+        /// </summary>
+        /// <typeparam name="TValue">The type of elements in the sequence to serialize.</typeparam>
+        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
+        /// <param name="value">The <see cref="IAsyncEnumerable{T}"/> sequence to serialize.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type of elements to serialize.</param>
+        /// <param name="topLevelValues"><see langword="true"/> to serialize the elements as a sequence of newline-separated top-level JSON values
+        /// (a <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> document); <see langword="false"/> to serialize them as a single root-level JSON array.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/>, <paramref name="value"/>, or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="topLevelValues"/> is <see langword="true"/>, the output conforms to the
+        /// <see href="https://jsonlines.org/">JSON Lines (JSONL)</see> specification: each element is serialized as a
+        /// single-line JSON value followed by a line-feed (<c>\n</c>) terminator. The line terminator is always <c>\n</c>
+        /// regardless of <see cref="JsonSerializerOptions.NewLine"/>, and <see cref="JsonSerializerOptions.WriteIndented"/>
+        /// is ignored so that each value is emitted on a single line.
+        /// </remarks>
+        public static Task SerializeAsyncEnumerable<TValue>(
+            Stream utf8Json,
+            IAsyncEnumerable<TValue> value,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            bool topLevelValues = false,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+
+            jsonTypeInfo.EnsureConfigured();
+            if (topLevelValues)
+            {
+                return SerializeAsyncEnumerableAsJsonLines(utf8Json, value, jsonTypeInfo, cancellationToken);
+            }
+
+            JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
+            return collectionTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
+        }
+
+        private static async Task SerializeAsyncEnumerableAsJsonLines<TValue>(
+            Stream utf8Json,
+            IAsyncEnumerable<TValue> value,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            JsonWriterOptions writerOptions = jsonTypeInfo.Options.GetWriterOptionsForJsonLines();
+
+            var bufferWriter = new PooledByteBufferWriter(jsonTypeInfo.Options.DefaultBufferSize, utf8Json);
+            var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
+
+            try
+            {
+                bool first = true;
+                await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    if (!first)
+                    {
+                        writer.Reset();
+                    }
+
+                    first = false;
+                    jsonTypeInfo.Serialize(writer, item);
+
+                    // The JSON Lines spec mandates a single line-feed character as the line separator,
+                    // independently of any platform-specific or user-configured newline preference.
+                    Span<byte> dest = bufferWriter.GetSpan(1);
+                    dest[0] = (byte)'\n';
+                    bufferWriter.Advance(1);
+                    await bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // Reset the writer in exception cases so writer.Dispose() doesn't flush a partially-written value.
+                writer.Reset();
+                throw;
+            }
+            finally
+            {
+                writer.Dispose();
+                bufferWriter.Dispose();
+            }
         }
     }
 }

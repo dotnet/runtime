@@ -11,17 +11,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
 #include <ifaddrs.h>
-#endif
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-#if HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
-#include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
 #if HAVE_NET_IF_H
 #include <net/if.h>
@@ -44,6 +35,13 @@
 #include <net/if_media.h>
 #elif HAVE_IOS_NET_IFMEDIA_H
 #include "ios/net/if_media.h"
+#endif
+
+// SunOS defines both AF_LINK and AF_PACKET but AF_LINK is preferred.
+// Using AF_PACKET on SunOS requires access to system-private headers.
+// Use undef to keep all the changes here.
+#if defined(TARGET_SUNOS)
+#undef AF_PACKET
 #endif
 
 #if defined(AF_PACKET)
@@ -111,56 +109,12 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 }
 #endif /* TARGET_WASI */
 
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-// This workaround is necessary as long as we support Android API 21-23 and it can be removed once
-// we drop support for these old Android versions.
-static int (*getifaddrs)(struct ifaddrs**) = NULL;
-static void (*freeifaddrs)(struct ifaddrs*) = NULL;
-
-static void try_loading_getifaddrs(void)
-{
-    if (android_get_device_api_level() >= 24)
-    {
-        // Bionic on API 24+ contains the getifaddrs/freeifaddrs functions but the NDK doesn't expose those functions
-        // in ifaddrs.h when the minimum supported SDK is lower than 24 and therefore we need to load them manually
-        void *libc = dlopen("libc.so", RTLD_NOW);
-        if (libc)
-        {
-            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
-        }
-    }
-    else
-    {
-        // Bionic on API 21-23 doesn't contain the implementation of getifaddrs/freeifaddrs at all
-        // and we need to reimplement it using netlink (see pal_ifaddrs)
-        getifaddrs = _netlink_getifaddrs;
-        freeifaddrs = _netlink_freeifaddrs;
-    }
-}
-
-static bool ensure_getifaddrs_is_loaded(void)
-{
-    static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
-    pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
-    return getifaddrs != NULL && freeifaddrs != NULL;
-}
-#endif
-
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-    if (!ensure_getifaddrs_is_loaded())
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -304,17 +258,12 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 #endif
 }
 
+// See entriesCount, calloc() below.
+c_static_assert(sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo));
+
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-    if (!ensure_getifaddrs_is_loaded())
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -352,16 +301,13 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // Allocate estimated space. It can be little bit more than we need.
     // To save allocation need for separate free() we will allocate one memory chunk
     // where we first write out NetworkInterfaceInfo entries immediately followed by
-    // IpAddressInfo list.
-#ifdef TARGET_ANDROID
-    // Since Android API 30, getifaddrs returns only AF_INET and AF_INET6 addresses and we do not
-    // get any AF_PACKET addresses and so count == ip4count + ip6count. We need to make sure that
-    // the memoryBlock is large enough to hold all interfaces (up to `count` entries) and all
-    // addresses (ip4count + ip6count) without any overlap between interfaceList and addressList.
+    // IpAddressInfo list.   Make sure we get enough space for both the list of
+    // NetworkInterfaceInfo[count] and IpAddressInfo[ip4count + ip6count]
+    // Make no assumptions about how many ip4count + ip6count there may be.
+    // This does assume sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo)
+    // which is checked in an assert above this function.
+
     int entriesCount = count + ip4count + ip6count;
-#else
-    int entriesCount = count;
-#endif
     void * memoryBlock = calloc((size_t)entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
@@ -373,7 +319,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + (entriesCount - ip4count - ip6count));
+    *addressList = ai = (IpAddressInfo*)(nii + count);
 
     while (ifaddrsEntry != NULL)
     {
@@ -448,6 +394,24 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             nii->HardwareType = MapHardwareType(sadl->sdl_type);
             nii->NumAddressBytes =  sadl->sdl_alen;
             memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
+
+#if defined(SIOCGIFMTU)
+            struct ifreq ifr;
+            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name));
+            ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+            if (socketfd == -1)
+            {
+                socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+            }
+
+            if (socketfd > -1)
+            {
+                if (ioctl(socketfd, SIOCGIFMTU, &ifr) == 0)
+                {
+                    nii->Mtu = ifr.ifr_mtu;
+                }
+            }
+#endif // SIOCGIFMTU
         }
 #endif
 #if defined(AF_PACKET)

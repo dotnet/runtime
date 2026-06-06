@@ -12,9 +12,10 @@ import {
     localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     zeroRegion,
     isSharedArrayBuffer,
+    viewOrCopy,
 } from "./memory";
-import { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "./strings";
-import { abortPosix, getExitStatus, setEnvironmentVariable } from "./host";
+import { stringsInit, stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString, utf8ToStringRelaxed } from "./strings";
+import { abortPosix, getExitStatus } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
 import { registerRuntime } from "./runtime-list";
@@ -31,12 +32,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     initPolyfills();
+    stringsInit();
     registerRuntime(runtimeApi);
     registerCDAC(runtimeApi);
 
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApiLocal: Partial<RuntimeAPI> = {
-        setEnvironmentVariable,
         setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
         getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
         localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
@@ -49,8 +50,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         stringToUTF16Ptr,
         stringToUTF8Ptr,
         stringToUTF8,
+        utf8ToStringRelaxed,
         zeroRegion,
         isSharedArrayBuffer,
+        viewOrCopy,
         abortBackgroundTimers,
         abortPosix,
         getExitStatus,
@@ -65,8 +68,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.stringToUTF16Ptr,
             map.stringToUTF8Ptr,
             map.stringToUTF8,
+            map.utf8ToStringRelaxed,
             map.zeroRegion,
             map.isSharedArrayBuffer,
+            map.viewOrCopy,
             map.abortBackgroundTimers,
             map.abortPosix,
             map.getExitStatus,

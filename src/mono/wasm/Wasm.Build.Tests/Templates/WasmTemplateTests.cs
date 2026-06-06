@@ -300,10 +300,12 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Theory]
-        // [InlineData(false)] https://github.com/dotnet/runtime/issues/123477
-        [InlineData(true)]
-        public async Task LibraryModeBuild(bool useWasmSdk)
+        [Theory, TestCategory("no-workload")]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
@@ -313,13 +315,22 @@ namespace Wasm.Build.Tests
                     { "Microsoft.NET.Sdk.WebAssembly", "Microsoft.NET.Sdk" }
                 });
             }
-            BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+
+            // Without WASM SDK, the project is a plain library with browser-wasm RID.
+            // It should build and publish successfully but won't produce a wasm app bundle.
+            if (isPublish)
+                PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk));
+            else
+                BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+
             if (useWasmSdk)
             {
-                var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                var result = isPublish
+                    ? await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100))
+                    : await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
             }
-            
         }
 
         [Theory]
@@ -348,6 +359,10 @@ namespace Wasm.Build.Tests
             if (emitTypeScriptDts)
             {
                 Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+
+                // Rebuild with -question to verify the build stays incremental after
+                // dotnet.d.ts is copied to wwwroot (see https://github.com/dotnet/runtime/issues/124729).
+                BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
             }
             else
             {

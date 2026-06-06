@@ -22,8 +22,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lower.h"
 
-static void SetMultiplyUsed(GenTree* node)
+void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
+    JITDUMP("Setting [%06u] as multiply-used: %s\n", Compiler::dspTreeID(node), reason);
     assert(varTypeIsEnregisterable(node));
     assert(!node->isContained());
     node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
@@ -38,6 +39,79 @@ static void SetMultiplyUsed(GenTree* node)
 bool Lowering::IsCallTargetInRange(void* addr)
 {
     return true;
+}
+
+//---------------------------------------------------------------------------------------------
+// LowerPEPCall: Lower a call node dispatched through a PortableEntryPoint (PEP)
+//
+// Given a call node with gtControlExpr representing a call target which is the address of a portable entrypoint,
+// this function lowers the call to appropriately dispatch through the portable entrypoint using the Portable
+// entrypoint calling convention.
+// To do this, it:
+//      1. Introduces a new local variable to hold the PEP address
+//      2. Adds a new well-known argument to the call passing this local
+//      3. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
+//         must be loaded from the portable entry point address.
+//
+// Arguments:
+//    call         -  The call node to lower. It is expected that the call node has gtControlExpr set to the original
+//                      call target and that the call does not have a PEP arg already.
+//
+// Return Value:
+//    None. The call node is modified in place.
+//
+void Lowering::LowerPEPCall(GenTreeCall* call)
+{
+    JITDUMP("Begin lowering PEP call\n");
+    DISPTREERANGE(BlockRange(), call);
+
+    // PEP call must always have a control expression
+    assert(call->gtControlExpr != nullptr);
+    LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
+
+    JITDUMP("Creating new local variable for PEP");
+    unsigned int   callTargetLclNum    = callTargetUse.ReplaceWithLclVar(m_compiler);
+    GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
+    DISPTREE(call);
+
+    JITDUMP("Add new arg to call arg list corresponding to PEP target");
+    NewCallArg pepTargetArg =
+        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
+
+    pepArg->SetEarlyNode(nullptr);
+    pepArg->SetLateNode(callTargetLclForArg);
+    call->gtArgs.PushLateBack(pepArg);
+
+    // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
+    unsigned  pepIndex = call->gtArgs.CountArgs() - 1;
+    regNumber pepReg   = MakeWasmReg(pepIndex, WasmValueType::I);
+    pepArg->AbiInfo =
+        ABIPassingInformation::FromSegmentByValue(m_compiler,
+                                                  ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
+    BlockRange().InsertBefore(call, callTargetLclForArg);
+
+    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
+    LowerArg(call, pepArg);
+    DISPTREE(call);
+
+    JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
+
+    // Rewrite the call's control expression to have an additional load from the PEP local
+    // This must happen just before the call.
+    //
+    GenTree* controlExpr = call->gtControlExpr;
+    assert(controlExpr->OperIs(GT_LCL_VAR));
+
+    BlockRange().Remove(controlExpr);
+    BlockRange().InsertBefore(call, controlExpr);
+    GenTree* target = Ind(controlExpr);
+    BlockRange().InsertBefore(call, target);
+
+    call->gtControlExpr = target;
+
+    JITDUMP("Finished lowering PEP call\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 //------------------------------------------------------------------------
@@ -91,7 +165,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr());
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
     }
 
     ContainCheckStoreIndir(node);
@@ -182,8 +256,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflowEx())
     {
-        SetMultiplyUsed(binOp->gtGetOp1());
-        SetMultiplyUsed(binOp->gtGetOp2());
+        SetMultiplyUsed(binOp->gtGetOp1() DEBUGARG("LowerBinaryArithmetic op1 (overflow exception)"));
+        SetMultiplyUsed(binOp->gtGetOp2() DEBUGARG("LowerBinaryArithmetic op2 (overflow exception)"));
     }
 
     return binOp->gtNext;
@@ -202,91 +276,52 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp1());
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp1() DEBUGARG("LowerDivOrMod op1 (arithmetic exception)"));
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (arithmetic exception)"));
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (divide by zero exception)"));
     }
 
     ContainCheckDivOrMod(divMod);
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStore: Lower a block store node
+// LowerInitBlockStore: Lower a block init node (memset / loop zeroing) for WASM.
+//   The copy variant (non-InitBlkOp) is handled by the shared
+//   Lowering::LowerCopyBlockStore.
 //
 // Arguments:
 //    blkNode - The block store node to lower
 //
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
 {
+    assert(blkNode->OperIsInitBlkOp());
+
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
 
-    if (blkNode->OperIsInitBlkOp())
+    if (src->OperIs(GT_INIT_VAL))
     {
-        if (src->OperIs(GT_INIT_VAL))
-        {
-            src->SetContained();
-            src = src->AsUnOp()->gtGetOp1();
-        }
+        src->SetContained();
+        src = src->AsUnOp()->gtGetOp1();
+    }
 
-        if (blkNode->IsZeroingGcPointersOnHeap())
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-            src->SetContained();
-        }
-        else
-        {
-            // memory.fill
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-        }
+    if (blkNode->IsZeroingGcPointersOnHeap())
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+        src->SetContained();
     }
     else
     {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
+        // Use the wasm `memory.fill` instruction.
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+    }
 
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
-        }
-
-        ClassLayout* layout  = blkNode->GetLayout();
-        bool         doCpObj = layout->HasGCPtr();
-
-        // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
-        //  smaller generated code and potentially better performance.
-        if (blkNode->IsAddressNotOnHeap(m_compiler))
-        {
-            doCpObj = false;
-        }
-
-        // CopyObj or CopyBlk
-        if (doCpObj)
-        {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            SetMultiplyUsed(dstAddr);
-            if (src->OperIs(GT_IND))
-            {
-                SetMultiplyUsed(src->gtGetOp1());
-            }
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-            // memory.copy
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-        }
+    if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerInitBlockStore destination address"));
     }
 }
 
@@ -316,7 +351,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        SetMultiplyUsed(tree->gtGetOp1());
+        SetMultiplyUsed(tree->gtGetOp1() DEBUGARG("LowerCast op1 (overflow exception)"));
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -336,6 +371,23 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// LowerIndexAddr: Lowers a GT_INDEX_ADDR node
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    indexAddr - the node to be lowered
+//
+void Lowering::LowerIndexAddr(GenTreeIndexAddr* indexAddr)
+{
+    if (indexAddr->IsBoundsChecked())
+    {
+        SetMultiplyUsed(indexAddr->Arr() DEBUGARG("LowerIndexAddr Arr"));
+        SetMultiplyUsed(indexAddr->Index() DEBUGARG("LowerIndexAddr Index"));
+    }
+}
+
+//------------------------------------------------------------------------
 // ContainCheckCallOperands: Determine whether operands of a call should be contained.
 //
 // Arguments:
@@ -345,6 +397,17 @@ void Lowering::LowerRotate(GenTree* tree)
 //    None.
 //
 void Lowering::ContainCheckCallOperands(GenTreeCall* call)
+{
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for wasm.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
 {
 }
 
@@ -490,9 +553,9 @@ void Lowering::AfterLowerBlocks()
         Compiler*             m_compiler;
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
-        Temporary*            m_availableTemps[static_cast<unsigned>(WasmValueType::Count)] = {};
-        Temporary*            m_unusedTempNodes                                             = nullptr;
-        bool                  m_anyChanges                                                  = false;
+        Temporary*            m_availableTemps[TYP_COUNT] = {};
+        Temporary*            m_inUseTemps[TYP_COUNT]     = {};
+        bool                  m_anyChanges                = false;
 
     public:
         Stackifier(Lowering* lower)
@@ -512,12 +575,14 @@ void Lowering::AfterLowerBlocks()
             {
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
+                // We don't track liveness of temporaries more precisely since introducing earlier uses
+                // may interfere with later (by that point already inserted and stackified) stores.
+                ReleaseTemporaries();
             }
             m_lower->m_block = nullptr;
 
             JITDUMP(FMT_BB ": %s\n", block->bbNum,
                     m_anyChanges ? "stackified with some changes" : "already in WASM value stack order");
-            assert((m_unusedTempNodes == nullptr) && "Some temporaries were not released");
         }
 
         GenTree* StackifyTree(GenTree* root)
@@ -527,7 +592,6 @@ void Lowering::AfterLowerBlocks()
             // Simple greedy algorithm working backwards. The invariant is that the stack top must be placed right next
             // to (in normal linear order - before) the node we last stackified.
             m_stack.Push(&root);
-            ReleaseTemporariesDefinedBy(root);
 
             GenTree* lastStackified = root->gtNext;
             while (m_stack.Height() != initialDepth)
@@ -630,6 +694,14 @@ void Lowering::AfterLowerBlocks()
             JITDUMP("Replaced [%06u] with a temporary:\n", Compiler::dspTreeID(node));
             DISPNODE(node);
             DISPNODE(lclNode);
+
+            if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::MultiplyUsed)
+            {
+                JITDUMP("Transferring multiply-used flag from old node to new temporary.\n");
+                node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                SetMultiplyUsed(lclNode DEBUGARG("Transferred flag during stackification"));
+            }
+
             return lclNode;
         }
 
@@ -638,51 +710,50 @@ void Lowering::AfterLowerBlocks()
             assert(varTypeIsEnregisterable(type));
 
             unsigned   lclNum;
-            Temporary* local = Remove(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(type))]);
+            Temporary* local = Remove(&m_availableTemps[genActualType(type)]);
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
-                Append(&m_unusedTempNodes, local); // Free the node for later recycling.
                 assert(m_compiler->lvaGetDesc(lclNum)->TypeGet() == genActualType(type));
             }
             else
             {
-                lclNum            = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                assert(lclNum >= m_minimumTempLclNum);
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 varDsc->lvType    = genActualType(type);
-                assert(lclNum >= m_minimumTempLclNum);
+
+                // Allocate a new temporary to describe this local
+                local         = new (m_compiler, CMK_Lower) Temporary();
+                local->LclNum = lclNum;
             }
+            Append(&m_inUseTemps[genActualType(type)], local);
+
             JITDUMP("Temporary V%02u is now in use\n", lclNum);
             return lclNum;
         }
 
-        void ReleaseTemporariesDefinedBy(GenTree* node)
+        void ReleaseTemporaries()
         {
-            // We rely in this function on the lifetime of temporaries beginning (recall this is backwards traversal)
-            // at exactly "node"'s position, and not shrinking or extending after this call. This is currently true
-            // because we never move dataflow roots, and we only begin processing them after all subsequent nodes
-            // have already been stackified and thus won't move either.
-            assert(IsDataFlowRoot(node));
-            if (!node->OperIs(GT_STORE_LCL_VAR))
+            if (m_minimumTempLclNum == m_compiler->lvaCount)
             {
+                // No temporaries were created
                 return;
             }
+            assert(m_minimumTempLclNum < m_compiler->lvaCount);
 
-            unsigned lclNum = node->AsLclVar()->GetLclNum();
-            if (lclNum < m_minimumTempLclNum)
+            JITDUMP("Releasing stackifier temporaries:\n");
+            // Reclaim all in-use temporaries
+            for (int i = 0; i < TYP_COUNT; i++)
             {
-                return;
+                while (m_inUseTemps[i] != nullptr)
+                {
+                    Temporary* temp = Remove(&m_inUseTemps[i]);
+                    assert(temp->LclNum >= m_minimumTempLclNum);
+                    Append(&m_availableTemps[i], temp);
+                    JITDUMP("Temporary V%02u is now available\n", temp->LclNum);
+                }
             }
-
-            Temporary* local = Remove(&m_unusedTempNodes); // See if we have any free nodes in the pool.
-            if (local == nullptr)
-            {
-                local = new (m_compiler, CMK_Lower) Temporary();
-            }
-            local->LclNum = lclNum;
-
-            JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-            Append(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(node->TypeGet()))], local);
         }
 
         Temporary* Remove(Temporary** pTemps)
@@ -721,6 +792,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        SetMultiplyUsed(thisArg->GetNode());
+        SetMultiplyUsed(thisArg->GetNode() DEBUGARG("AfterLowerArgsForCall thisArg (null check)"));
     }
 }

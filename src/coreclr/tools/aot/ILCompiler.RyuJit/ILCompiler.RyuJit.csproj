@@ -51,7 +51,10 @@
       <Link>Compiler\JitHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs">
-      <Link>ObjectWriter\WasmNative</Link>
+      <Link>ObjectWriter\WasmNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs">
+      <Link>ObjectWriter\WasmInstructions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>

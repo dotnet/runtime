@@ -27,8 +27,6 @@ struct CodeBlockHandle
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the method region info (hot and cold code size, and cold code start address)
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
-    // Get the JIT type
-    uint GetJITType(CodeBlockHandle codeInfoHandle);
     // Attempt to get the method desc of an entrypoint
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
 
@@ -45,9 +43,107 @@ struct CodeBlockHandle
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
+    // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
+    // and returns information about each code heap.
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos();
+
+    // Get the exception clause info for the code block
+    List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
+
+    // Get the size (in bytes) of stack-passed parameters at the call to the method
+    uint GetStackParameterSize(CodeBlockHandle codeInfoHandle);
 
     // Extension Methods (implemented in terms of other APIs)
+    // Returns true if the code block is a funclet (exception handler, filter, or finally)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
+    // Returns true if the code block is specifically a filter funclet
+    bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
+
+    // Classify a code address as a known code kind (jitted, ReadyToRun, stub, etc.).
+    // Returns Unknown if the address is not recognized.
+    CodeKind GetCodeKind(TargetCodePointer codeAddress);
+    // Finds the ReadyToRun module that contains the given address.
+    TargetPointer FindReadyToRunModule(TargetPointer address);
+```
+
+```csharp
+public struct JitManagerInfo
+{
+    public TargetPointer ManagerAddress;
+    public uint CodeType;
+    public TargetPointer HeapListAddress;
+}
+```
+
+```csharp
+public interface ICodeHeapInfo { }
+
+public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer LoaderHeapAddress { get; }
+}
+
+public sealed class HostCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer BaseAddress { get; }
+    public TargetPointer CurrentAddress { get; }
+}
+
+public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
+
+// mirrors native enum that distinguishes code heap types
+private enum CodeHeapType : byte
+{
+    LoaderCodeHeap = 0,
+    HostCodeHeap = 1,
+    UnknownCodeHeap = 0xff
+}
+```
+
+```csharp
+public struct ExceptionClauseInfo
+{
+    public enum ExceptionClauseFlags : uint
+    {
+        Unknown = 0,
+        Fault = 0x1,
+        Finally = 0x2,
+        Filter = 0x3,
+        Typed = 0x4
+    }
+    // NOTE: This clause type is set based on the JIT lowering of the code. This may not match the original IL flag.
+    // For example, it is possible for the JIT to transform a finally into a fault clause.
+    public ExceptionClauseFlags ClauseType;
+    public bool? IsCatchAllHandler;
+    public uint TryStartPC;
+    public uint TryEndPC;
+    public uint HandlerStartPC;
+    public uint HandlerEndPC;
+    public uint? FilterOffset;
+    public uint? ClassToken;
+    public TargetNUInt? TypeHandle;
+    public TargetPointer? ModuleAddr;
+}
+
+public enum CodeKind : uint
+{
+    Unknown = 0,
+    JumpStub = 1,
+    DynamicHelper = 2,
+    StubPrecode = 3,
+    FixupPrecode = 4,
+    VSD_DispatchStub = 5,
+    VSD_ResolveStub = 6,
+    VSD_LookupStub = 7,
+    VSD_VTableStub = 8,
+    CallCountingStub = 9,
+    MethodCallThunk = 10,
+    Jitted = 11,
+    ReadyToRun = 12,
+    Interpreter = 13
+}
 ```
 
 ## Version 1
@@ -72,11 +168,18 @@ Data descriptors used:
 | `RangeSection` | `Flags` | Flags for the range section |
 | `RangeSection` | `HeapList` | Pointer to the heap list |
 | `RangeSection` | `R2RModule` | ReadyToRun module |
+| `RangeSection` | `RangeList` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
+| `CodeRangeMapRangeList` | `RangeListType` | Integer identifying the stub code block kind for this range list |
 | `CodeHeapListNode` | `Next` | Next node |
 | `CodeHeapListNode` | `StartAddress` | Start address of the used portion of the code heap |
 | `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
+| `CodeHeapListNode` | `Heap` | Pointer to the `CodeHeap` object managed by this node |
+| `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type |
+| `LoaderCodeHeap` | `LoaderHeap` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
+| `HostCodeHeap` | `BaseAddress` | Pointer to the base of the committed memory region |
+| `HostCodeHeap` | `CurrentAddress` | Pointer to the last available committed byte in the region |
 | `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
 | `EEJitManager` | `AllCodeHeaps` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
@@ -84,6 +187,11 @@ Data descriptors used:
 | `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
 | `RealCodeHeader` | `DebugInfo` | Pointer to the DebugInfo |
 | `RealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding |
+| `RealCodeHeader` | `EHInfo` | Pointer to the `EE_ILEXCEPTION` containing exception clauses |
+| `InterpreterRealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` for interpreter code |
+| `InterpreterRealCodeHeader` | `DebugInfo` | Pointer to the DebugInfo for interpreter code |
+| `InterpreterRealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding for interpreter code |
+| `InterpreterRealCodeHeader` | `JitEHInfo` | Pointer to the `EE_ILEXCEPTION` containing exception clauses for interpreter code |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
@@ -92,13 +200,16 @@ Data descriptors used:
 | `ReadyToRunInfo` | `NumHotColdMap` | Number of entries in the `HotColdMap` |
 | `ReadyToRunInfo` | `HotColdMap` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
-| `ReadyToRunInf` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
+| `ReadyToRunInfo` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ReadyToRunInfo` | `LoadedImageBase` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `Composite` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
+| `ReadyToRunInfo` | `ExceptionInfoSection` | Pointer to the `ImageDataDirectory` for R2R exception info section |
 | `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
 | `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
-| `RuntimeFunction` | `BeginAddress` | Begin address of the function |
+| `RuntimeFunction` | `BeginAddress` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
 | `RuntimeFunction` | `EndAddress` | End address of the function. Only exists on some platforms |
 | `RuntimeFunction` | `UnwindData` | Pointer to the unwind info for the function |
 | `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
@@ -106,6 +217,26 @@ Data descriptors used:
 | `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
 | `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
 | `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
+| `EEILException` | `Clauses` | Start address of the inline array of `EE_ILEXCEPTION_CLAUSE` entries |
+| `EEExceptionClause` | `Flags` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
+| `EEExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
+| `EEExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
+| `EEExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
+| `EEExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
+| `EEExceptionClause` | `TypeHandle` | Union field: TypeHandle (cached), ClassToken, or FilterOffset |
+| `R2RExceptionClause` | `Flags` | Exception clause flags |
+| `R2RExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
+| `R2RExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
+| `R2RExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
+| `R2RExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
+| `R2RExceptionClause` | `ClassToken` | Union field: ClassToken or FilterOffset |
+| `ReadyToRunCoreInfo` | `Header` | Pointer to the `READYTORUN_CORE_HEADER` |
+| `ReadyToRunCoreHeader` | `Flags` | ReadyToRun flags |
+| `ReadyToRunCoreHeader` | `NumberOfSections` | Number of sections following the header |
+| `ReadyToRunSection` | `Type` | Section type (`ReadyToRunSectionType`) |
+| `ReadyToRunSection` | `Section` | `IMAGE_DATA_DIRECTORY` for the section data |
+| `ExceptionLookupTableEntry` | `MethodStartRVA` | RVA of the method start |
+| `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | RVA of the exception clause data |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -119,14 +250,22 @@ Global variables used:
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
+| `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
+
+Contract constants used:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `CachedClass` | `uint` | Bit flag to indicate exception clause contains a cached TypeHandle | `0x10000000` |
 
 Contracts used:
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
 | `GCInfo` |
+| `Loader` |
 | `PrecodeStubs` |
 | `RuntimeInfo` |
+| `RuntimeTypeSystem` |
 
 The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method. This relies the [range section lookup](#rangesectionmap).
 
@@ -151,9 +290,11 @@ The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code po
     }
 ```
 
-There are two JIT managers: the "EE JitManager" for jitted code and "R2R JitManager" for ReadyToRun code.
+There are three JIT managers: the "EE JitManager" for jitted code, the "Interpreter JitManager" for interpreted code, and the "R2R JitManager" for ReadyToRun code.
 
-The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized below, followed by returning the `RealCodeHeader` data:
+The EE JitManager and Interpreter JitManager both use the same nibble map lookup to find method code.
+The only difference is which code header type is read: the EE JitManager reads a `RealCodeHeader` while the Interpreter JitManager reads an `InterpreterRealCodeHeader`.
+Their shared `GetMethodInfo` is summarized below:
 
 ```csharp
 bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -172,8 +313,10 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
         return false;
 
     TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-    TargetPointer methodDesc = Target.ReadPointer(codeHeaderAddress + /* RealCodeHeader::MethodDesc offset */);
-    info = new CodeBlock(jittedCodeAddress, realCodeHeader.MethodDesc, relativeOffset);
+    // EE JitManager: read RealCodeHeader at codeHeaderAddress
+    // Interpreter JitManager: read InterpreterRealCodeHeader at codeHeaderAddress
+    TargetPointer methodDesc = // read MethodDesc field from the appropriate code header
+    info = new CodeBlock(jittedCodeAddress, methodDesc, relativeOffset);
     return true;
 }
 ```
@@ -276,16 +419,6 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return TYPE_JIT for the EEJitManager, TYPE_R2R for the R2RJitManager, and TYPE_UNKNOWN for any other value.
-```csharp
-private enum JITTypes
-{
-    TYPE_UNKNOWN = 0,
-    TYPE_JIT = 1,
-    TYPE_R2R = 2,
-    TYPE_INTERPRETER = 3
-};
-```
 `NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
 ```csharp
 TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
@@ -359,6 +492,8 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
 
 * For R2R code (`ReadyToRunJitManager`), a list of sorted `RUNTIME_FUNCTION` are stored on the module's `ReadyToRunInfo`. This is accessed as described above for `GetMethodInfo`. Again, the relevant `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
+* For interpreted code (`InterpreterJitManager`), there is no native unwind info. `GetUnwindInfo` returns null.
+
 Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, these values are relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
 `GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
 
@@ -369,6 +504,8 @@ Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, thes
 * For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. Read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
 For R2R images, `hasFlagByte` is always `false`.
 
+* For interpreted code (`InterpreterJitManager`), a pointer to the `DebugInfo` is stored on the `InterpreterRealCodeHeader` which is accessed in the same way as the EE JitManager's `GetMethodInfo` (nibble map lookup followed by code header read). `hasFlagByte` is always `false`.
+
 `IExecutionManager.GetGCInfo` gets a pointer to the relevant GCInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the GCInfo is stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. This can simply be returned as is. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`.
@@ -377,10 +514,91 @@ For R2R images, `hasFlagByte` is always `false`.
     * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
         * MajorVersion >= 11 and MajorVersion < 15 => 4
 
+* For interpreted code (`InterpreterJitManager`), a pointer to the `GCInfo` is stored on the `InterpreterRealCodeHeader`, accessed via nibble map lookup as with the EE JitManager. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`. The GC info is decoded using interpreter-specific decoding (`DecodeInterpreterGCInfo`).
+
 
 `IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
 
 `IsFunclet` is implemented in terms of `IExecutionManager.GetStartAddress` and `IExecutionManager.GetFuncletStartAddress`. If the values are the same, the code block handle is not a funclet. If they are different, it is a funclet.
+
+`IExecutionManager.GetExceptionClauses` enumerates the exception handling clauses for a given code block. The ExecutionManager delegates to the JitManager implementations to obtain the start and end addresses of the clause array, since JIT-compiled and ReadyToRun code store exception clauses in different formats and locations.
+
+There are two distinct clause data types. JIT-compiled code uses `EEExceptionClause` (corresponding to `EE_ILEXCEPTION_CLAUSE`), which has a pointer-sized union field that can hold a `TypeHandle`, `ClassToken`, or `FilterOffset`. ReadyToRun code uses `R2RExceptionClause` (corresponding to `CORCOMPILE_EXCEPTION_CLAUSE`), which has a 4-byte union field containing only `ClassToken` or `FilterOffset`. Both types share the same common fields: `Flags`, `TryStartPC`, `TryEndPC`, `HandlerStartPC`, and `HandlerEndPC`.
+
+* For jitted code (`EEJitManager`), the exception clauses are stored in an `EE_ILEXCEPTION` structure pointed to by the `EHInfo` field of the `RealCodeHeader`. The `EEILException` data type wraps this structure: its `Clauses` field gives the address of the first clause (at `offsetof(EE_ILEXCEPTION, Clauses)`, skipping the 4-byte `COR_ILMETHOD_SECT_FAT` header). The number of clauses is stored as a pointer-sized integer immediately before the `EE_ILEXCEPTION` structure (at `EHInfo.Address - sizeof(pointer)`). The clause array is strided using the size of `EEExceptionClause`.
+
+* For R2R code (`ReadyToRunJitManager`), exception clause data is found via the `ExceptionInfo` section (section type 104) of the R2R image. The section is located by traversing `ReadyToRunInfo::Composite` to reach the `ReadyToRunCoreInfo`, then reading its `Header` pointer to the `ReadyToRunCoreHeader`, and iterating through the inline `ReadyToRunSection` array that immediately follows the header. The `ExceptionInfo` section contains an `ExceptionLookupTableEntry` array, where each entry maps a `MethodStartRVA` to an `ExceptionInfoRVA`. A binary search (falling back to linear scan for small ranges) finds the entry matching the method's RVA. The exception clauses span from that entry's `ExceptionInfoRVA` to the next entry's `ExceptionInfoRVA`, both offset from the image base. The clause array is strided using the size of `R2RExceptionClause`.
+
+After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` -> `MethodDesc` -> `MethodTable` -> `TypeHandle` -> `Module` via the `RuntimeTypeSystem` contract.
+
+`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+
+`IExecutionManager.GetStackParameterSize` returns the size (in bytes) of stack-passed parameters at the call to the method described by the code block handle. It mirrors the native `EECodeManager::GetStackParameterSize`: it returns 0 for funclets and for non-x86 targets. On x86, it returns 0 for methods using the varargs calling convention (which are caller-popped), otherwise it returns the argument size encoded in the GC info header.
+
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
+### FindReadyToRunModule
+
+`FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
+
+```csharp
+TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
+{
+    // Use the RangeSectionMap to find the RangeSection containing the address.
+    // ReadyToRun range sections cover the entire PE image (code + data),
+    // so this works for import section addresses used by GCRefMap lookup.
+    RangeSection range = RangeSection.Find(target, topRangeSectionMap, address);
+    if (range.Data is null)
+        return TargetPointer.Null;
+
+    return range.Data.R2RModule;
+}
+```
+
+### EE JIT Manager and Code Heap Info
+
+```csharp
+JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+{
+    TargetPointer eeJitManagerPtr = Target.ReadGlobalPointer("EEJitManagerAddress");
+    TargetPointer eeJitManagerAddr = Target.ReadPointer(eeJitManagerPtr);
+    TargetPointer allCodeHeaps = Target.ReadPointer(eeJitManagerAddr + /* EEJitManager::AllCodeHeaps offset */);
+
+    return new JitManagerInfo
+    {
+        ManagerAddress = eeJitManagerAddr,
+        CodeType = 0, // miManaged | miIL
+        HeapListAddress = allCodeHeaps,
+    };
+}
+
+private ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress)
+{
+    byte heapType = Target.Read<byte>(codeHeapAddress + /* CodeHeap::HeapType offset */);
+    return heapType switch
+    {
+        0 /* CodeHeapType.LoaderCodeHeap */ => new LoaderCodeHeapInfo(
+            codeHeapAddress,
+            codeHeapAddress + /* LoaderCodeHeap::LoaderHeap offset */),
+        1 /* CodeHeapType.HostCodeHeap */ => new HostCodeHeapInfo(
+            codeHeapAddress,
+            Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::BaseAddress offset */),
+            Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::CurrentAddress offset */)),
+        _ => new UnknownCodeHeapInfo(),
+    };
+}
+
+IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
+{
+    TargetPointer heapListHead = GetEEJitManagerInfo().HeapListAddress;
+    TargetPointer nodeAddr = heapListHead;
+    while (nodeAddr != TargetPointer.Null)
+    {
+        TargetPointer heapAddr = Target.ReadPointer(nodeAddr + /* CodeHeapListNode::Heap offset */);
+        yield return GetCodeHeapInfo(heapAddr);
+        nodeAddr = Target.ReadPointer(nodeAddr + /* CodeHeapListNode::Next offset */);
+    }
+}
+```
 
 ### RangeSectionMap
 

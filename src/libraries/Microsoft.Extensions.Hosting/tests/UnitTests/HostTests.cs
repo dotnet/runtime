@@ -429,6 +429,20 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
         }
 
+        [Fact]
+        public async Task Host_Restart_ThrowsException()
+        {
+            using var host = new HostBuilder().Build();
+
+            await host.StartAsync();
+            await host.StopAsync();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            {
+                await host.StartAsync();
+            });
+        }
+
         internal class ServiceA { }
 
         internal class ServiceB

@@ -11,6 +11,10 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
+  <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
+    <UseBootstrapLayout>true</UseBootstrapLayout>
+  </PropertyGroup>
+
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
@@ -40,14 +44,20 @@
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
     <!-- Disable analyzers for tests and unsupported projects -->
     <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">false</RunAnalyzers>
+    <!-- Enable the PlatformDocAnalyzer by default for src projects. -->
+    <EnablePlatformDocAnalyzer Condition="'$(EnablePlatformDocAnalyzer)' == '' and '$(IsSourceProject)' == 'true' and '$(RunAnalyzers)' != 'false'">true</EnablePlatformDocAnalyzer>
     <!-- Enable documentation file generation by the compiler for all libraries except for vbproj. -->
     <GenerateDocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.vbproj'">true</GenerateDocumentationFile>
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</CLSCompliant>
     <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
+
     <!-- AOT compatibility is enabled by default for src/ref projects. -->
     <IsAotCompatible Condition="'$(IsAotCompatible)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true')">true</IsAotCompatible>
+    <!-- AOT/trim compatibility is enabled by default for test projects, but we don't mark the tests as trimmable -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableAotAnalyzer>
   </PropertyGroup>
 
   <!-- Set up common paths -->

@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct ECDomainParameters
-    {
-        internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
-        internal string? Named;
-
 #if DEBUG
-        static ECDomainParameters()
+    file static class ValidateECDomainParameters
+    {
+        static ValidateECDomainParameters()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,18 +27,48 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.Sequence, "Specified");
             ensureUniqueTag(Asn1Tag.ObjectIdentifier, "Named");
         }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueECDomainParameters
+    {
+
+        internal System.Security.Cryptography.Asn1.ValueSpecifiedECDomain Specified
+        {
+            get;
+            set
+            {
+                HasSpecified = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSpecified { get; private set; }
+        internal string? Named;
+
+#if DEBUG
+        static ValueECDomainParameters()
+        {
+            ValidateECDomainParameters.Validate();
+        }
 #endif
 
         internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 
-            if (Specified.HasValue)
+            if (HasSpecified)
             {
                 if (wroteValue)
                     throw new CryptographicException();
 
-                Specified.Value.Encode(writer);
+                Specified.Encode(writer);
                 wroteValue = true;
             }
 
@@ -68,15 +94,14 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static ECDomainParameters Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueECDomainParameters decoded)
         {
             try
             {
-                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, encoded, out ECDomainParameters decoded);
+                DecodeCore(ref reader, out decoded);
                 reader.ThrowIfNotEmpty();
-                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -84,11 +109,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
         {
             try
             {
-                DecodeCore(ref reader, rebind, out decoded);
+                DecodeCore(ref reader, out decoded);
             }
             catch (AsnContentException e)
             {
@@ -96,17 +121,18 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
 
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.SpecifiedECDomain tmpSpecified;
-                System.Security.Cryptography.Asn1.SpecifiedECDomain.Decode(ref reader, rebind, out tmpSpecified);
+                System.Security.Cryptography.Asn1.ValueSpecifiedECDomain tmpSpecified;
+                System.Security.Cryptography.Asn1.ValueSpecifiedECDomain.Decode(ref reader, out tmpSpecified);
                 decoded.Specified = tmpSpecified;
 
+                decoded.HasSpecified = true;
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.ObjectIdentifier))
             {

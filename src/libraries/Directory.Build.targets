@@ -127,6 +127,24 @@
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
+  <!-- Define a shared predicate for platforms that support runtime async. -->
+  <PropertyGroup Condition="'$(RuntimeAsyncSupported)' == ''">
+    <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
+      and '$(TargetOS)' != 'wasi'
+      and '$(TargetOS)' != 'android'
+      and '$(TargetsAppleMobile)' != 'true'
+      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+  </PropertyGroup>
+
+  <!-- Enable runtime async for netcoreapp source projects, excluding unsupported platforms and OOB packages. -->
+  <PropertyGroup Condition="'$(IsNETCoreAppSrc)' == 'true'
+    and '$(IsPackable)' != 'true'
+    and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
+    and '$(UseRuntimeAsync)' != 'false'
+    and '$(RuntimeAsyncSupported)' == 'true'">
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
@@ -190,7 +208,7 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="System\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" Link="System\Buffers\SearchValuesPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\AsciiPolyfills.cs" Link="System\Text\AsciiPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\EncodingPolyfills.cs" Link="System\Text\EncodingPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\EncodingPolyfills.cs" Link="Common\Polyfills\EncodingPolyfills.cs" />
   </ItemGroup>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the

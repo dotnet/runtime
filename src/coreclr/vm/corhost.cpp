@@ -244,13 +244,11 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
 
     PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 
-    PTRARRAYREF result;
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(exePath);
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(argc);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(argv);
-    CALL_MANAGED_METHOD_RETREF(result, PTRARRAYREF, args);
+    PTRARRAYREF result = NULL;
+    GCPROTECT_BEGIN(result);
+    UnmanagedCallersOnlyCaller initializeCommandLineArgs(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
+    initializeCommandLineArgs.InvokeThrowing(exePath, argc, argv, &result);
+    GCPROTECT_END();
 
     return result;
 }
@@ -337,7 +335,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, true /* captureException */);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -346,7 +344,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, false /* captureException */);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
@@ -430,25 +428,18 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         {
             GCX_COOP();
 
-            MethodDescCallSite method(pMethodMD);
+            UnmanagedCallersOnlyCaller executeInDefaultAppDomain(METHOD__ENVIRONMENT__EXECUTE_IN_DEFAULT_APP_DOMAIN);
+            pMethodMD->EnsureActive();
+            PCODE entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
 
-            STRINGREF sref = NULL;
-            GCPROTECT_BEGIN(sref);
+            INT32 retval = executeInDefaultAppDomain.InvokeThrowing_Ret<INT32>(
+                static_cast<INT_PTR>(entryPoint),
+                pwzArgument);
 
-            if (pwzArgument)
-                sref = StringObject::NewString(pwzArgument);
-
-            ARG_SLOT MethodArgs[] =
-            {
-                ObjToArgSlot(sref)
-            };
-            DWORD retval = method.Call_RetI4(MethodArgs);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
             }
-
-            GCPROTECT_END();
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -600,12 +591,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
         {
             pwzAppPaths = pPropertyValues[i];
-        }
-        else
-        if (u16_strcmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
-        {
-            extern void ParseDefaultStackSize(LPCWSTR value);
-            ParseDefaultStackSize(pPropertyValues[i]);
         }
         else
         if (u16_strcmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)

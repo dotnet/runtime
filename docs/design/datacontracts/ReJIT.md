@@ -17,6 +17,8 @@ bool IsEnabled();
 
 RejitState GetRejitState(ILCodeVersionHandle codeVersionHandle);
 
+bool IsDeoptimized(ILCodeVersionHandle codeVersionHandle);
+
 TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle);
 
 IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
@@ -29,8 +31,11 @@ Data descriptors used:
 | --- | --- | --- |
 | ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
 | ProfControlBlock | RejitOnAttachEnabled | cached value of the `ProfAPI_RejitOnAttach` configuration knob |
+| ProfControlBlock | MainProfilerProfInterface | pointer to the main profiler's `ICorProfilerCallback` interface, non-null means a main profiler is attached |
+| ProfControlBlock | NotificationProfilerCount | number of notification-only profilers currently attached |
 | ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
 | ILCodeVersionNode | RejitState | a `RejitFlags` value |
+| ILCodeVersionNode | Deoptimized | whether this IL code version has been deoptimized |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -88,6 +93,21 @@ RejitState GetRejitState(ILCodeVersionHandle codeVersion)
             RejitFlags.kStateActive => RejitState.Active,
             _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
         };
+    }
+}
+
+bool IsDeoptimized(ILCodeVersionHandle codeVersion)
+{
+    // ILCodeVersion::IsDeoptimized
+    if (codeVersion is not explicit)
+    {
+        return false;
+    }
+    else
+    {
+        // ILCodeVersionNode::IsDeoptimized
+        ILCodeVersionNode codeVersionNode = AsNode(codeVersion);
+        return codeVersionNode.Deoptimized;
     }
 }
 

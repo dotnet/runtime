@@ -135,7 +135,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_IntArray_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_IntArray(int[] value, decimal expected)
         {
             Assert.Equal(expected, new decimal(value));
@@ -143,7 +142,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_IntArray_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_IntSpan(int[] value, decimal expected)
         {
             Assert.Equal(expected, new decimal(value.AsSpan()));
@@ -249,7 +247,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Int_Int_Int_Bool_Byte_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_Int_Int_Int_Bool_Byte(int lo, int mid, int hi, bool isNegative, byte scale, decimal expected)
         {
             Assert.Equal(expected, new decimal(lo, mid, hi, isNegative, scale));
@@ -333,7 +330,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Add_Overflows_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Add_Overflows_ThrowsOverflowException(decimal d1, decimal d2)
         {
             Assert.Throws<OverflowException>(() => d1 + d2);
@@ -1121,7 +1117,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Remainder_Valid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Remainder(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 % d2);
@@ -1203,7 +1198,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Digit_Valid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_Digits_ReturnsExpected(decimal d, int digits, decimal expected)
         {
             Assert.Equal(expected, decimal.Round(d, digits));
@@ -1237,7 +1231,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Digit_Mid_Valid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_DigitsMode_ReturnsExpected(decimal d, int digits, MidpointRounding mode, decimal expected)
         {
             Assert.Equal(expected, decimal.Round(d, digits, mode));
@@ -1308,7 +1301,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_Valid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Subtract(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 - d2);
@@ -1327,7 +1319,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_Invalid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Subtract_Invalid(decimal d1, decimal d2)
         {
             Assert.Throws<OverflowException>(() => decimal.Subtract(d1, d2));
@@ -1714,7 +1705,6 @@ namespace System.Tests
             Assert.Equal(expected, --d);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // too slow
         public static class BigIntegerCompare
         {
             [Fact]
@@ -1731,7 +1721,7 @@ namespace System.Tests
                         int expected = b1.CompareTo(bigDecimals[j]);
                         int actual = d1.CompareTo(d2);
                         if (expected != actual)
-                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " CMP " + d2);
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " CMP " + d2);
                     }
                 }
             }
@@ -1759,7 +1749,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 + d2;
-                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " + " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException).ToString(), actual.ToString(), d1 + " + " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1768,7 +1758,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 + d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " + " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " + " + d2);
                             }
                     }
                 }
@@ -1797,7 +1787,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 * d2;
-                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " * " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException).ToString(), actual.ToString(), d1 + " * " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1806,7 +1796,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 * d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " * " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " * " + d2);
                             }
                     }
                 }
@@ -1837,7 +1827,7 @@ namespace System.Tests
                             try
                             {
                                 decimal actual = d1 / d2;
-                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " / " + d2);
+                                throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException).ToString(), actual.ToString(), d1 + " / " + d2);
                             }
                             catch (OverflowException) { }
                         }
@@ -1846,7 +1836,7 @@ namespace System.Tests
                             {
                                 decimal actual = d1 / d2;
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " / " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " / " + d2);
                             }
                     }
                 }
@@ -1875,12 +1865,12 @@ namespace System.Tests
                             unsafe
                             {
                                 if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " % " + d2);
+                                    throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " % " + d2);
                             }
                         }
                         catch (OverflowException actual)
                         {
-                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " % " + d2);
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " % " + d2);
                         }
                     }
                 }
@@ -1899,7 +1889,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Floor");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " Floor");
                 }
             }
         }
@@ -1916,7 +1906,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Ceiling");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " Ceiling");
                 }
             }
         }
@@ -1933,7 +1923,7 @@ namespace System.Tests
                 unsafe
                 {
                     if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Truncate");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " Truncate");
                 }
             }
         }
@@ -1951,7 +1941,7 @@ namespace System.Tests
                     try
                     {
                         int actual = decimal.ToInt32(d1);
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " ToInt32");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException).ToString(), actual.ToString(), d1 + " ToInt32");
                     }
                     catch (OverflowException) { }
                 }
@@ -1959,7 +1949,7 @@ namespace System.Tests
                 {
                     int actual = decimal.ToInt32(d1);
                     if (expected != actual)
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " ToInt32");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " ToInt32");
                 }
             }
         }
@@ -1977,7 +1967,7 @@ namespace System.Tests
                     try
                     {
                         long actual = decimal.ToOACurrency(d1);
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException), actual, d1 + " ToOACurrency");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(typeof(OverflowException).ToString(), actual.ToString(), d1 + " ToOACurrency");
                     }
                     catch (OverflowException) { }
                 }
@@ -1985,7 +1975,7 @@ namespace System.Tests
                 {
                     long actual = decimal.ToOACurrency(d1);
                     if (expected != actual)
-                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " ToOACurrency");
+                        throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " ToOACurrency");
                 }
             }
         }
@@ -2006,7 +1996,7 @@ namespace System.Tests
                     unsafe
                     {
                         if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " Round(" + j + ")");
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " Round(" + j + ")");
                     }
                 }
             }
@@ -2028,7 +2018,7 @@ namespace System.Tests
                     unsafe
                     {
                         if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, d1 + " RoundAwayFromZero(" + j + ")");
+                            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), d1 + " RoundAwayFromZero(" + j + ")");
                     }
                 }
             }

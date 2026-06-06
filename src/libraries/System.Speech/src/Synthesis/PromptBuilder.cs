@@ -75,7 +75,7 @@ namespace System.Speech.Synthesis
 
             Element prosodyElement = new(ElementType.Prosody, textToSpeak);
             _elements.Add(prosodyElement);
-            string sPromptRate = null;
+            string? sPromptRate = null;
             switch (rate)
             {
                 case PromptRate.NotSet:
@@ -114,7 +114,7 @@ namespace System.Speech.Synthesis
             Element prosodyElement = new(ElementType.Prosody, textToSpeak);
             _elements.Add(prosodyElement);
 
-            string sVolumeLevel = null;
+            string? sVolumeLevel = null;
             switch (volume)
             {
                 // No volume do not set the attribute
@@ -353,7 +353,7 @@ namespace System.Speech.Synthesis
         {
             StartParagraph(null);
         }
-        public void StartParagraph(CultureInfo culture)
+        public void StartParagraph(CultureInfo? culture)
         {
             // check for well formed document
             StackElement stackElement = _elementStack.Peek();
@@ -389,7 +389,7 @@ namespace System.Speech.Synthesis
         {
             StartSentence(null);
         }
-        public void StartSentence(CultureInfo culture)
+        public void StartSentence(CultureInfo? culture)
         {
             // check for well formed document
             StackElement stackElement = _elementStack.Peek();
@@ -440,8 +440,8 @@ namespace System.Speech.Synthesis
                 _elements.Add(sayAsElement);
 
                 sayAsElement._attributes = new Collection<AttributeItem>();
-                string sInterpretAs = null;
-                string sFormat = null;
+                string? sInterpretAs = null;
+                string? sFormat = null;
 
                 switch (sayAs)
                 {
@@ -601,7 +601,7 @@ namespace System.Speech.Synthesis
             Element breakElement = new(ElementType.Break);
             _elements.Add(breakElement);
 
-            string sBreak = null;
+            string? sBreak = null;
 
             switch (strength)
             {
@@ -735,8 +735,8 @@ namespace System.Speech.Synthesis
         {
             ArgumentNullException.ThrowIfNull(ssmlFile);
 
-            string localFile;
-            Uri redirectUri;
+            string? localFile;
+            Uri? redirectUri;
             using (Stream stream = s_resourceLoader.LoadFile(ssmlFile, out localFile, out redirectUri))
             {
                 try
@@ -881,6 +881,7 @@ namespace System.Speech.Synthesis
                         break;
 
                     case ElementType.SsmlMarkup:
+                        System.Diagnostics.Debug.Assert(element._text != null, "All SsmlMarkup elements should have a text value");
                         writer.WriteRaw(element._text);
                         break;
 
@@ -968,7 +969,7 @@ namespace System.Speech.Synthesis
                 using (XmlTextWriter writer = new(sw))
                 {
                     TextWriterEngine engine = new(writer, stackElement._culture);
-                    SsmlParser.Parse(ssmlFile, engine, null);
+                    SsmlParser.Parse(ssmlFile, engine, voice: null!); // TextWriterEngine ignores the voice
                 }
                 _elements.Add(new Element(ElementType.SsmlMarkup, sw.ToString()));
             }
@@ -1052,10 +1053,10 @@ namespace System.Speech.Synthesis
         private struct AttributeItem
         {
             internal string _key;
-            internal string _value;
-            internal string _namespace;
+            internal string? _value;
+            internal string? _namespace;
 
-            internal AttributeItem(string key, string value)
+            internal AttributeItem(string key, string? value)
             {
                 _key = key;
                 _value = value;
@@ -1073,8 +1074,8 @@ namespace System.Speech.Synthesis
         private sealed class Element
         {
             internal ElementType _type;
-            internal string _text;
-            internal Collection<AttributeItem> _attributes;
+            internal string? _text;
+            internal Collection<AttributeItem>? _attributes;
 
             internal Element(ElementType type)
             {

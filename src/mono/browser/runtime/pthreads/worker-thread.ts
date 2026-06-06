@@ -152,7 +152,7 @@ export function mono_wasm_pthread_on_pthread_attached (pthread_id: PThreadPtr, t
         // FIXME: this is a hack to get constant length thread names
         monoThreadInfo.threadName = name;
         monoThreadInfo.isTimer = name == ".NET Timer";
-        monoThreadInfo.isLongRunning = name == ".NET Long Running Task";
+        monoThreadInfo.isLongRunning = name == ".NET Long Task";
         monoThreadInfo.isThreadPoolGate = name == ".NET TP Gate";
         update_thread_info();
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));

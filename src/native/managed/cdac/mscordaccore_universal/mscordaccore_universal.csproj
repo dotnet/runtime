@@ -6,6 +6,10 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
+    <!-- LibPrefix is baked into AssemblyName because Source-Build uses the NuGet SDK,
+         which doesn't set NativeBinaryPrefix. Disable UseNativeLibPrefix to prevent
+         double-prefix when building with local NativeAOT targets (bootstrap). -->
+    <UseNativeLibPrefix>false</UseNativeLibPrefix>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
@@ -22,9 +26,6 @@
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
   </ItemGroup>
   <ItemGroup>
     <InstallRuntimeComponentDestination Include="." />

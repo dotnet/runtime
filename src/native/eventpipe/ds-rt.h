@@ -28,26 +28,6 @@
 extern const ep_char8_t *_ds_portable_rid_info;
 
 /*
-* AutoTrace.
-*/
-
-static
-void
-ds_rt_auto_trace_init (void);
-
-static
-void
-ds_rt_auto_trace_launch (void);
-
-static
-void
-ds_rt_auto_trace_signal (void);
-
-static
-void
-ds_rt_auto_trace_wait (void);
-
-/*
  * DiagnosticsConfiguration.
  */
 

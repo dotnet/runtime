@@ -1,4 +1,4 @@
-# This contains only iOS/tvOS-simulator-specific jobs
+# This contains only iOS-simulator-specific jobs
 # These are run as part of runtime-extra-platforms by default.
 # But can also be triggered manually via `runtime-ioslikesimulator` name
 #   /azp run runtime-ioslikesimulator
@@ -11,7 +11,7 @@ parameters:
 jobs:
 
 #
-# iOS/tvOS interp - requires AOT Compilation and Interp flags
+# iOSSimulator interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -25,7 +25,6 @@ jobs:
     platforms:
     - iossimulator_x64
     - iossimulator_arm64
-    - tvossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -46,7 +45,8 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
-# Build the whole product using Mono for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
+# iOSSimulator
+# Build the whole product using Mono and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -57,9 +57,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - iossimulator_x64
       - iossimulator_arm64
-      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -90,12 +88,13 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# Build the whole product using Native AOT for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
+# iOSSimulator
+# Build the whole product using Native AOT and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -103,39 +102,64 @@ jobs:
     platforms:
       - iossimulator_x64
       - iossimulator_arm64
-      - tvossimulator_arm64
     variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+      nameSuffix: AllSubsets_NativeAOT_Smoke
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       # extra steps, run tests
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          parameters:
-            testGroup: innerloop
-            useNativeAOTRuntime: true
       postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+        - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            buildAllTestsAsStandalone: true
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# Build the whole product using CoreCLR R2R and run runtime tests
+# iOSSimulator
+# Build the whole product using CoreCLR and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
+    platforms:
+      - iossimulator_x64
+      - iossimulator_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+      - name: illinkContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_CoreCLR
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:EnableAggressiveTrimming=true
+      timeoutInMinutes: 240
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+
+#
+# iOSSimulator
+# Build the whole product using CoreCLR and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -146,9 +170,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - iossimulator_x64
       - iossimulator_arm64
-      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -164,7 +186,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR_RuntimeTests
       buildArgs: -s clr+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 360
       # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -179,37 +201,37 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# Build the whole product using CoreCLR R2R and run libraries tests
+# iOSSimulator
+# Build the whole product using CoreCLR and run libraries smoke tests (Debug)
+# Tracked in https://github.com/dotnet/runtime/issues/124344
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: coreclr
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
-    platforms:
-      - iossimulator_x64
-      - iossimulator_arm64
-      - tvossimulator_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: coreclrContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
-      - name: illinkContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_CoreCLR
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     buildConfig: Debug
+#     runtimeFlavor: coreclr
+#     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
+#     platforms:
+#       - iossimulator_arm64
+#     variables:
+#       # map dependencies variables to local variables
+#       - name: librariesContainsChange
+#         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+#       - name: coreclrContainsChange
+#         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+#       - name: illinkContainsChange
+#         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_CoreCLR_Smoke
+#       buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:EnableAggressiveTrimming=true
+#       timeoutInMinutes: 240
+#       # extra steps, run tests
+#       postBuildSteps:
+#         - template: /eng/pipelines/libraries/helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+#             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true

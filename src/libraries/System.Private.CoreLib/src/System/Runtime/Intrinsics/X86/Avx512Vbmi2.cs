@@ -78,16 +78,19 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPCOMPRESSB m128 {k1}{z}, xmm2</para>
             /// </summary>
             public static unsafe void CompressStore(byte* address, Vector128<byte> mask, Vector128<byte> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi16 (void * s, __mmask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSW m128 {k1}{z}, xmm2</para>
             /// </summary>
             public static unsafe void CompressStore(short* address, Vector128<short> mask, Vector128<short> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi8 (void * s, __mmask16 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSB m128 {k1}{z}, xmm2</para>
             /// </summary>
             public static unsafe void CompressStore(sbyte* address, Vector128<sbyte> mask, Vector128<sbyte> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi16 (void * s, __mmask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSW m128 {k1}{z}, xmm2</para>
@@ -99,16 +102,19 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPCOMPRESSB m256 {k1}{z}, ymm2</para>
             /// </summary>
             public static unsafe void CompressStore(byte* address, Vector256<byte> mask, Vector256<byte> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi16 (void * s, __mmask16 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSW m256 {k1}{z}, ymm2</para>
             /// </summary>
             public static unsafe void CompressStore(short* address, Vector256<short> mask, Vector256<short> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi8 (void * s, __mmask32 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSB m256 {k1}{z}, ymm2</para>
             /// </summary>
             public static unsafe void CompressStore(sbyte* address, Vector256<sbyte> mask, Vector256<sbyte> source) => CompressStore(address, mask, source);
+
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi16 (void * s, __mmask16 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSW m256 {k1}{z}, ymm2</para>
@@ -163,18 +169,21 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector128<byte> ExpandLoad(byte* address, Vector128<byte> mask, Vector128<byte> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_expandloadu_epi16 (__m128i s, __mmask8 k, void const * a)</para>
             ///   <para>  VPEXPANDW xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector128<short> ExpandLoad(short* address, Vector128<short> mask, Vector128<short> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_expandloadu_epi8 (__m128i s, __mmask16 k, void const * a)</para>
             ///   <para>  VPEXPANDB xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector128<sbyte> ExpandLoad(sbyte* address, Vector128<sbyte> mask, Vector128<sbyte> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m128i _mm_mask_expandloadu_epi16 (__m128i s, __mmask8 k, void const * a)</para>
             ///   <para>  VPEXPANDW xmm1 {k1}{z}, m128</para>
@@ -188,18 +197,21 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector256<byte> ExpandLoad(byte* address, Vector256<byte> mask, Vector256<byte> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m256i _mm256_mask_expandloadu_epi16 (__m256i s, __mmask16 k, void const * a)</para>
             ///   <para>  VPEXPANDW ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector256<short> ExpandLoad(short* address, Vector256<short> mask, Vector256<short> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m256i _mm256_mask_expandloadu_epi8 (__m256i s, __mmask32 k, void const * a)</para>
             ///   <para>  VPEXPANDB ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static unsafe Vector256<sbyte> ExpandLoad(sbyte* address, Vector256<sbyte> mask, Vector256<sbyte> merge) => ExpandLoad(address, mask, merge);
+
             /// <summary>
             ///   <para>__m256i _mm256_mask_expandloadu_epi16 (__m256i s, __mmask16 k, void const * a)</para>
             ///   <para>  VPEXPANDW ymm1 {k1}{z}, m256</para>
@@ -246,16 +258,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPCOMPRESSB m512 {k1}{z}, zmm2</para>
         /// </summary>
         public static unsafe void CompressStore(byte* address, Vector512<byte> mask, Vector512<byte> source) => CompressStore(address, mask, source);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_compresstoreu_epi16 (void * s, __mmask32 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSW m512 {k1}{z}, zmm2</para>
         /// </summary>
         public static unsafe void CompressStore(short* address, Vector512<short> mask, Vector512<short> source) => CompressStore(address, mask, source);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_compresstoreu_epi8 (void * s, __mmask64 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSB m512 {k1}{z}, zmm2</para>
         /// </summary>
         public static unsafe void CompressStore(sbyte* address, Vector512<sbyte> mask, Vector512<sbyte> source) => CompressStore(address, mask, source);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_compresstoreu_epi16 (void * s, __mmask32 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSW m512 {k1}{z}, zmm2</para>
@@ -289,18 +304,21 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static unsafe Vector512<byte> ExpandLoad(byte* address, Vector512<byte> mask, Vector512<byte> merge) => ExpandLoad(address, mask, merge);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_expandloadu_epi16 (__m512i s, __mmask32 k, void * const a)</para>
         ///   <para>  VPEXPANDW zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static unsafe Vector512<short> ExpandLoad(short* address, Vector512<short> mask, Vector512<short> merge) => ExpandLoad(address, mask, merge);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_expandloadu_epi8 (__m512i s, __mmask64 k, void * const a)</para>
         ///   <para>  VPEXPANDB zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static unsafe Vector512<sbyte> ExpandLoad(sbyte* address, Vector512<sbyte> mask, Vector512<sbyte> merge) => ExpandLoad(address, mask, merge);
+
         /// <summary>
         ///   <para>__m512i _mm512_mask_expandloadu_epi16 (__m512i s, __mmask32 k, void * const a)</para>
         ///   <para>  VPEXPANDW zmm1 {k1}{z}, m512</para>

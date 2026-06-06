@@ -26,10 +26,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs" Link="Common\Interop\Windows\Interop.GetConsoleMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs" Link="Common\System\Console\ConsoleUtils.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs" Link="Common\System\NullableBool.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
@@ -38,6 +40,8 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\TextWriterPolyfills.cs" Link="Common\Polyfills\TextWriterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EncodingPolyfills.cs" Link="Common\Polyfills\EncodingPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,14 +49,14 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Configuration\src\Microsoft.Extensions.Logging.Configuration.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\src\Microsoft.Extensions.Logging.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 

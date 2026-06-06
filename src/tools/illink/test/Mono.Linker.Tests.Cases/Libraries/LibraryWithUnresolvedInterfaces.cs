@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
     [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
     [SetupCompileBefore("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
     [SkipUnresolved(true)]
-    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
     [VerifyMetadataNames]
     public class LibraryWithUnresolvedInterfaces

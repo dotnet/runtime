@@ -5,6 +5,18 @@ This contract is for getting information about well-known managed objects
 ## APIs of contract
 
 ``` csharp
+public enum DelegateType
+{
+    Unknown,
+    Closed,
+    Open,
+}
+
+public readonly record struct DelegateInfo(
+    TargetPointer TargetObject,
+    TargetCodePointer TargetMethodPtr,
+    DelegateType DelegateType);
+
 // Get the method table address for the object
 TargetPointer GetMethodTableAddress(TargetPointer address);
 
@@ -16,6 +28,15 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 
 // Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+
+// Try to get the runtime-assigned hash code for the object. Returns 0 if the runtime has not
+// assigned a default hash code. This will never be 0 for objects that have been hashed.
+int TryGetHashCode(TargetPointer address);
+
+// Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
+TargetPointer GetSyncBlockAddress(TargetPointer address);
+
+DelegateInfo GetDelegateInfo(TargetPointer address);
 ```
 
 ## Version 1
@@ -28,6 +49,12 @@ Data descriptors used:
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
+| `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
+| `SyncBlock` | `HashCode` | Hash code stored in the sync block |
+| `Delegate` | `Target` | Bound `this` reference for closed delegates |
+| `Delegate` | `MethodPtr` | Primary method pointer |
+| `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
+| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -40,6 +67,7 @@ Global variables used:
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
 | `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
 | `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
+| `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
 | `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
 Contracts used:
@@ -112,22 +140,74 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     ccw = TargetPointer.Null;
     ccf = TargetPointer.Null;
 
-    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
-
-    // Check if the sync block value represents a sync block index
-    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
-            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
-        return false;
-
-    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
-    ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
-
-    TargetPointer syncBlockPtr = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
+    TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
     if (syncBlockPtr == TargetPointer.Null)
         return false;
 
     // Delegate to the SyncBlock contract so that the interop data can also be read directly
     // from a sync block address without going through the object (e.g. during cleanup).
     return target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
+}
+
+int TryGetHashCode(TargetPointer address)
+{
+    // Read the sync block value from the ObjectHeader preceding the object
+    uint syncBlockValue = target.Read<uint>(address - /* ObjectHeader size */ + /* ObjectHeader::SyncBlockValue offset */);
+
+    if ((syncBlockValue & target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")) == 0)
+        return 0;
+
+    if ((syncBlockValue & target.ReadGlobal<uint>("SyncBlockIsHashCode")) != 0)
+    {
+        // Hash code is stored inline in the sync block value
+        return (int)(syncBlockValue & target.ReadGlobal<uint>("SyncBlockHashCodeMask"));
+    }
+
+    // Hash code is stored in the sync block
+    TargetPointer syncBlock = GetSyncBlockAddress(address);
+    if (syncBlock == TargetPointer.Null)
+        return 0;
+
+    return (int)target.Read<uint>(syncBlock + /* SyncBlock::HashCode offset */);
+}
+
+TargetPointer GetSyncBlockAddress(TargetPointer address)
+{
+    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+
+    // Check if the sync block value represents a sync block index (not a hash code)
+    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
+            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
+        return TargetPointer.Null;
+
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
+    return target.Contracts.SyncBlock.GetSyncBlock(index);
+}
+
+DelegateInfo GetDelegateInfo(TargetPointer address)
+{
+    Data.Delegate del = new Data.Delegate(target, address);
+
+    // Classify the delegate from its invocation count and auxiliary pointer.
+    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
+    {
+        0  => del.MethodPtrAux == TargetCodePointer.Null
+                ? DelegateType.Closed
+                : DelegateType.Open,
+        _  => DelegateType.Unknown,
+    };
+
+    // Pick the bound object and primary entry point based on the classification.
+    // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.
+    // For Open delegates MethodPtrAux is the unbound entry point; the bound object is not meaningful.
+    // For Unknown do not provide any info.
+    (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
+    {
+        DelegateType.Closed => (target.ReadPointer(address + /* Delegate::Target offset */), target.ReadPointer(address + /* Delegate::MethodPtr offset */)),
+        DelegateType.Open   => (TargetPointer.Null, target.ReadPointer(address + /* Delegate::MethodPtrAux offset */)),
+        _                   => (TargetPointer.Null, TargetCodePointer.Null),
+    };
+
+    return new DelegateInfo(targetObject, targetMethodPtr, delegateType);
 }
 ```

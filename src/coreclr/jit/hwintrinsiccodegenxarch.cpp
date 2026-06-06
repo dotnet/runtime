@@ -1571,6 +1571,44 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 #endif // DEBUG
         }
     }
+    else if (node->GetHWIntrinsicId() == NI_AVX512_TernaryLogic)
+    {
+        // These are the control bytes used for TernaryLogic
+
+        const uint8_t A = 0xF0;
+        const uint8_t B = 0xCC;
+        const uint8_t C = 0xAA;
+
+        uint8_t                 control  = static_cast<uint8_t>(ival);
+        const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+        TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+        if (useFlags == TernaryLogicUseFlags::ABC)
+        {
+            // We're using all the operands and can potentially have any
+            // operand overlap with the target register. So we need to
+            // detect those cases and adjust the control byte accordingly.
+
+            if (targetReg == op2Reg)
+            {
+                std::swap(op1, op2);
+                std::swap(op1Reg, op2Reg);
+
+                control = TernaryLogicInfo::GetTernaryControlByte(info, B, A, C);
+                ival    = static_cast<int8_t>(control);
+            }
+            else if ((targetReg == op3->GetRegNum()) && !op3->isUsedFromSpillTemp())
+            {
+                assert(!op3->isContained());
+
+                std::swap(op1, op3);
+                op1Reg = op1->GetRegNum();
+
+                control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
+                ival    = static_cast<int8_t>(control);
+            }
+        }
+    }
 
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
@@ -1811,20 +1849,20 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
         {
-            // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
-            // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
+            // For FMA intrinsics, embedded rounding is limited to the register-to-register
+            // form, so none of op1/op2/op3 can be contained here. However, we still need
+            // to route through genFmaIntrinsic so that the operand swapping and target
+            // register preferencing (selecting the 132/213/231 form) is performed; emitting
+            // the 213 form blindly can otherwise overwrite a source register that aliases
+            // targetReg and trip the assertions in genHWIntrinsic_R_R_R_RM.
             assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
-
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-            GenTree* op3 = node->Op(3);
-
-            regNumber op1Reg = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
+            assert(!node->Op(1)->isContained());
+            assert(!node->Op(2)->isContained());
+            assert(!node->Op(3)->isContained());
 
             auto emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, newInstOptions);
+                genFmaIntrinsic(node, newInstOptions);
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
@@ -2491,6 +2529,38 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     switch (intrinsicId)
     {
+        case NI_X86Base_X64_BigMul:
+        {
+            assert(node->GetOperandCount() == 2);
+            assert(instOptions == INS_OPTS_NONE);
+            assert(!node->Op(1)->isContained());
+
+            // SIMD base type is from signature and can distinguish signed and unsigned
+            GenTree*    regOp = node->Op(1);
+            GenTree*    rmOp  = node->Op(2);
+            instruction ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
+
+            emitAttr attr = emitTypeSize(baseType);
+
+            // If rmOp is already in EAX, use that as implicit operand
+            if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
+            {
+                std::swap(rmOp, regOp);
+            }
+
+            // op1: EAX, op2: reg/mem
+            emit->emitIns_Mov(INS_mov, attr, REG_EAX, regOp->GetRegNum(), /* canSkip */ true);
+
+            // emit the MUL/IMUL instruction
+            emit->emitInsBinary(ins, attr, node, rmOp);
+
+            // verify target registers are as expected
+            assert(node->GetRegByIndex(0) == REG_EAX);
+            assert(node->GetRegByIndex(1) == REG_EDX);
+
+            break;
+        }
+
         case NI_X86Base_BitScanForward:
         case NI_X86Base_BitScanReverse:
         case NI_X86Base_X64_BitScanForward:
@@ -2545,6 +2615,9 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             // emit the DIV/IDIV instruction
             emit->emitInsBinary(ins, attr, node, op3);
+
+            assert(node->GetRegNumByIdx(0) == REG_EAX);
+            assert(node->GetRegNumByIdx(1) == REG_EDX);
 
             break;
         }
@@ -2769,7 +2842,9 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId))
     {
+        genConsumeMultiOpOperands(node);
         genFmaIntrinsic(node, instOptions);
+        genProduceReg(node);
         return;
     }
 
@@ -3755,7 +3830,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 // genFmaIntrinsic: Generates the code for an FMA hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used when generating the instruction.
+//
+// Notes:
+//    Callers are responsible for calling genConsumeMultiOpOperands and
+//    genProduceReg around this function. This allows the operand swapping
+//    and target-register preferencing to be reused from the embedded
+//    rounding non-immediate fallback path, which emits the instruction
+//    multiple times via a jump table.
 //
 void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
@@ -3772,8 +3855,6 @@ void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     GenTree*    op3      = node->Op(3);
 
     regNumber targetReg = node->GetRegNum();
-
-    genConsumeMultiOpOperands(node);
 
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
@@ -3860,7 +3941,6 @@ void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);
-    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------
