@@ -44,7 +44,11 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 
 #include <stdlib.h>
 #include <unistd.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#else
 #include <pwd.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/param.h>
