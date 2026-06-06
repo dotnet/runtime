@@ -128,6 +128,14 @@ if (CLR_CMAKE_HOST_ARCH_WASM)
   set(PLATFORM_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/stubs.cpp
   )
+  if(CLR_CMAKE_TARGET_WASI)
+    # Override wasi-emulated-mman's mmap/munmap/mprotect. The bundled WASI
+    # implementation has limited support (PROT_NONE consumes linear memory,
+    # malloc-based anonymous mappings reuse addresses, and file-backed
+    # mappings collide with the GC arena). Use a dedicated bump allocator
+    # for anonymous mappings and malloc+read for file-backed.
+    list(APPEND PLATFORM_SOURCES arch/${PAL_ARCH_SOURCES_DIR}/mmap-wasi.c)
+  endif()
 endif()
 
 if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_HOST_ARCH_WASM)
