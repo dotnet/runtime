@@ -922,8 +922,18 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // but the thread is blocked.
     // We do not consider blocked finalizer thread to be something to be robust against in general.
     // Blocking on a finalizer thread is a bug in the user code that can cause all sorts of problems.
+#ifndef TARGET_WASI
+    // On WASI there is no dedicated finalizer thread; EnableFinalization defers
+    // to a managed ScheduleFinalization callback that posts to the ThreadPool.
+    // DetachThread runs from the C++ TLS destructor at process exit (after the
+    // EBR thread record for this thread has already been marked detached), so
+    // scheduling more managed work here is unsafe: any subsequent JIT of a
+    // method with a string literal would re-enter EBR and fail. Skipping the
+    // call is safe — the process is exiting and there is no other thread that
+    // could observe leftover detached-thread state.
     if (g_fEEStarted)
         FinalizerThread::EnableFinalization();
+#endif // !TARGET_WASI
 
     return S_OK;
 }
