@@ -385,7 +385,33 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         genProduceReg(tree);
     }
 }
+void CodeGen::genCodeForNegNot(GenTree* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
 
+    regNumber targetReg  = tree->GetRegNum();
+    GenTree*  operand    = tree->gtGetOp1();
+
+    assert(operand->isUsedFromReg());
+    regNumber operandReg = genConsumeReg(operand);
+
+    var_types type = tree->TypeGet();
+    emitAttr  attr = emitActualTypeSize(type);
+
+    instruction ins = genGetInsForOper(tree);
+
+    if (tree->OperIs(GT_NEG))
+    {
+        GetEmitter()->emitIns_R_R(ins, attr, targetReg, operandReg);
+    }
+    else
+    {
+        assert(!varTypeIsFloating(type));
+        GetEmitter()->emitIns_R_R_R(ins, attr, targetReg, operandReg, operandReg);
+    }
+
+    genProduceReg(tree);
+}
 //------------------------------------------------------------------------
 // genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
 //
@@ -530,10 +556,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-//        case GT_NOT:
-//        case GT_NEG:
-//            genCodeForNegNot(treeNode);
-//            break;
+        case GT_NOT:
+        case GT_NEG:
+            genCodeForNegNot(treeNode);
+            break;
 
 #if defined(TARGET_ARM64)
         case GT_BSWAP:
@@ -579,20 +605,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LSH:
         case GT_RSH:
-//        case GT_RSZ:
-//        // case GT_ROL: // No ROL instruction on ARM; it has been lowered to ROR.
-//        case GT_ROR:
+        case GT_RSZ:
+        case GT_ROL:
+        //case GT_ROR: only ROL on s390x
             genCodeForShift(treeNode);
             break;
-
-#if !defined(TARGET_64BIT)
-
-        case GT_LSH_HI:
-        case GT_RSH_LO:
-            genCodeForShiftLong(treeNode);
-            break;
-
-#endif // !defined(TARGET_64BIT)
 
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
@@ -4701,22 +4718,31 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 }
             }
             break;
-/*
+
         case GT_NEG:
-            if (attr == EA_8BYTE)
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
             {
-                ins = INS_dneg;
+                ins = INS_lcgr;
             }
             else
             {
                 assert(attr == EA_4BYTE);
-                ins = INS_neg;
+                ins = INS_lcr;
             }
             break;
+
         case GT_NOT:
-            ins = INS_not;
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+            {
+                ins = INS_nogrk;
+            }
+            else
+            {
+                assert(attr == EA_4BYTE);
+                ins = INS_nork;
+            }
             break;
-*/
+
         case GT_AND:
             isImm = isImmed(treeNode);
             if (isImm)
@@ -4780,68 +4806,50 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
             break;
 
         case GT_LSH:
-            ins = INS_sllg;
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+            {
+                ins = INS_sllg;
+            }
+            else
+            {
+                ins = INS_sllk;
+            }
             break;
 
         case GT_RSH:
-            ins = INS_srag;
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+            {
+                ins = INS_srag;
+            }
+            else
+            {
+                ins = INS_srak;
+            }
             break;
-/*
+
         case GT_RSZ:
-            isImm = isImmed(treeNode);
-            if (isImm)
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
             {
-                // it's better to check sa.
-                if (attr == EA_4BYTE)
-                {
-                    ins = INS_srli_w;
-                }
-                else
-                {
-                    ins = INS_srli_d;
-                }
+                ins = INS_srlg;
             }
             else
             {
-                if (attr == EA_4BYTE)
-                {
-                    ins = INS_srl_w;
-                }
-                else
-                {
-                    ins = INS_srl_d;
-                }
+                ins = INS_srlk;
             }
             break;
 
+        case GT_ROL:
         case GT_ROR:
-            isImm = isImmed(treeNode);
-            if (isImm)
+            if ((attr == EA_8BYTE) || (attr == EA_BYREF))
             {
-                // it's better to check sa.
-                if (attr == EA_4BYTE)
-                {
-                    ins = INS_rotri_w;
-                }
-                else
-                {
-                    ins = INS_rotri_d;
-                }
+                ins = INS_rllg;
             }
             else
             {
-                if (attr == EA_4BYTE)
-                {
-                    ins = INS_rotr_w;
-                }
-                else
-                {
-                    ins = INS_rotr_d;
-                }
+                ins = INS_rll;
             }
             break;
 
-*/
         default:
             NYI("Unhandled oper in genGetInsForOper() - integer");
             unreached();

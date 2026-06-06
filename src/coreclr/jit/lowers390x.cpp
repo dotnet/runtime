@@ -911,27 +911,28 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTree* tree)
 {
-    _ASSERTE(!"NYI");
-    if (tree->OperGet() == GT_ROL)
+    if (tree->OperGet() == GT_ROR)
     {
         // There is no ROL instruction on ARM. Convert ROL into ROR.
         GenTree* rotatedValue        = tree->AsOp()->gtOp1;
         unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
-        GenTree* rotateLeftIndexNode = tree->AsOp()->gtOp2;
+        GenTree* rotateRightIndexNode = tree->AsOp()->gtOp2;
 
-        if (rotateLeftIndexNode->IsCnsIntOrI())
+        if (rotateRightIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+            ssize_t rotateRightIndex                    = rotateRightIndexNode->AsIntCon()->gtIconVal;
+            ssize_t rotateLeftIndex                     = rotatedValueBitSize - rotateRightIndex;
+            rotateRightIndexNode->AsIntCon()->gtIconVal = rotateLeftIndex;
         }
         else
         {
-            GenTree* tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
-            BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
+            GenTree* bitSizeNode = comp->gtNewIconNode(rotatedValueBitSize, rotateRightIndexNode->TypeGet());
+            GenTree* tmp = comp->gtNewOperNode(GT_SUB, rotateRightIndexNode->TypeGet(), bitSizeNode, rotateRightIndexNode);
+            BlockRange().InsertAfter(rotateRightIndexNode, bitSizeNode);
+            BlockRange().InsertAfter(bitSizeNode, tmp);
             tree->AsOp()->gtOp2 = tmp;
         }
-        tree->ChangeOper(GT_ROR);
+        tree->ChangeOper(GT_ROL);
     }
     ContainCheckShiftRotate(tree->AsOp());
 }

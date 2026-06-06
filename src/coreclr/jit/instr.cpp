@@ -2701,6 +2701,8 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
             return type == TYP_DOUBLE ? INS_mdbr : INS_meebr;
         case GT_DIV:
             return type == TYP_DOUBLE ? INS_ddbr : INS_debr;
+        case GT_NEG:
+            return type == TYP_DOUBLE ? INS_lcdbr : INS_lcebr;
         default:
             unreached();
     }

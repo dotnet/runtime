@@ -5683,6 +5683,13 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_xrk:
         case INS_xgrk:
         case INS_ncrk:
+        case INS_nork:
+        case INS_nogrk:
+        case INS_rll:
+        case INS_rllg:
+        case INS_srlk:
+        case INS_srlg:
+
 #if 0
         case INS_bic:
         case INS_eor:
@@ -10317,6 +10324,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
 
+        case INS_xgrk:
         case INS_xrk:
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
@@ -10502,16 +10510,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RI(dst, op, id->idReg1(), 0x80);
             break;
 
+        case INS_srak:
         case INS_srag:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm & 0x3f);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
             break;
 
+        case INS_sllk:
         case INS_sllg:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm & 0x3f);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
             break;
 
         case INS_nihf:
@@ -10557,6 +10567,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_lgfr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_nork:
+        case INS_nogrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lcr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_lcdbr:
+        case INS_lcebr:
+        case INS_lcgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_rll:
+        case INS_rllg:
+        case INS_srlk:
+        case INS_srlg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id) & 0x3f;
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
             break;
 
         default:

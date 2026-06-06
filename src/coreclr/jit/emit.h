@@ -1191,6 +1191,7 @@ protected:
                 case INS_cr:
                 case INS_clr:
                 case INS_dr:
+                case INS_lcr:
                     size = 2;
                     break;
                 case INS_lgfi:
@@ -1223,7 +1224,13 @@ protected:
                 case INS_blt:
                 case INS_bge:
                 case INS_sllg:
+                case INS_rll:
+                case INS_rllg:
+                case INS_srlk:
+                case INS_srlg:
                 case INS_srag:
+                case INS_srak:
+                case INS_sllk:
                     size = 6;
                     break;
                 default:
