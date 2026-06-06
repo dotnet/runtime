@@ -128,11 +128,16 @@ else()
             # accepts well-known linker names (lld/bfd/gold/etc.) otherwise.
             # Target-local so the cmake feature-detection test executables
             # keep using lld.
+            #
+            # Memory: 128 MiB initial / 4 GiB max with growth, matching
+            # browser-CoreCLR. CoreCLR PAL VirtualAlloc and the GC need
+            # significant linear memory headroom even before managed code runs.
             get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
             target_link_options(corerun PRIVATE
                 "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
                 -Wl,-z,stack-size=8388608
-                -Wl,--initial-memory=52428800)
+                -Wl,--initial-memory=134217728
+                -Wl,--max-memory=4294967296)
         endif()
 
         if (CORERUN_IN_BROWSER)

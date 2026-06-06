@@ -2357,7 +2357,15 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // WASI is single-threaded; pthread_getattr_np is unavailable.
+    // The linker places the stack first (--stack-first by default) with
+    // -Wl,-z,stack-size=8388608 in the corerun CMakeLists.txt. So the stack
+    // lives in [0, 8 MiB) growing down from 8 MiB. We return the upper bound.
+    (void)thread; (void)stackAddr; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    stackBase = (void*)(8 * 1024 * 1024);
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2409,7 +2417,14 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // See TARGET_WASI note in GetStackBase. The stack base address is 0 with
+    // --stack-first, but CoreCLR rejects NULL stack limits, so bump by one
+    // page (4 KiB) to give a usable lower bound.
+    (void)thread; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    stackLimit = (void*)4096;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
