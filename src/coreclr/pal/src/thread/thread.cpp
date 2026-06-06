@@ -2316,7 +2316,7 @@ CPalThread::GetStackBase()
 #ifdef TARGET_APPLE
     // This is a Mac specific method
     stackBase = pthread_get_stackaddr_np(pthread_self());
-#elif TARGET_OPENBSD
+#elif defined(TARGET_OPENBSD)
     stack_t stack;
     int status = pthread_stackseg_np(pthread_self(), &stack);
     _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
