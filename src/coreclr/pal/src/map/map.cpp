@@ -466,7 +466,14 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
 
+#ifdef TARGET_WASI
+            // WASI has no dup() and rejects F_DUPFD_CLOEXEC. Re-open the file
+            // by its path so the mapping owns a separate fd that survives the
+            // caller closing the handle.
+            UnixFd = open(pFileLocalData->unix_filename, O_RDONLY);
+#else
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );
