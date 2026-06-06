@@ -10217,13 +10217,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_ley:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
             break;
 
         case INS_ldy:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
             break;
 
         case INS_lgr:
@@ -10388,6 +10388,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
             break;
 
+        case INS_ldgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2());
+            break;
+
         case INS_sebr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
@@ -10421,13 +10426,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_stey:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
             break;
 
         case INS_stdy:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
             break;
 
         case INS_cfebr:

@@ -170,7 +170,21 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             regSet.verifyRegUsed(targetReg);
         }
         break;
-	default:
+	
+        case GT_CNS_DBL:
+        {
+            emitter*  emit       = GetEmitter();
+            double    constValue = tree->AsDblCon()->DconValue();
+            regNumber tmpReg     = internalRegisters.GetSingle(tree);
+        
+            int64_t bits = *reinterpret_cast<int64_t*>(&constValue);
+            instGen_Set_Reg_To_Imm(EA_8BYTE, tmpReg, bits);
+            emit->emitIns_R_R(INS_ldgr, EA_8BYTE, targetReg, tmpReg);
+        
+            regSet.verifyRegUsed(targetReg);
+        }
+        break;
+        default:
 		unreached();
     }
 }
@@ -549,7 +563,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //            break;
 
         case GT_CNS_INT:
-//        case GT_CNS_DBL:
+        case GT_CNS_DBL:
 //        case GT_CNS_VEC:
 //        case GT_CNS_MSK:
             genSetRegToConst(targetReg, targetType, treeNode);

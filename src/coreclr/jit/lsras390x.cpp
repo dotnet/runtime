@@ -1481,19 +1481,9 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CNS_DBL:
         {
-            GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->AsDblCon()->DconValue();
-
-            if (emitter::emitIns_valid_imm_for_fmov(constValue))
-            {
-                // Directly encode constant to instructions.
-            }
-            else
-            {
-                // Reserve int to load constant from memory (IF_LARGELDC)
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
-            }
+            // Reserve int to load constant from memory (IF_LARGELDC)
+            buildInternalIntRegisterDefForNode(tree);
+            buildInternalRegisterUses();
         }
             FALLTHROUGH;
 
