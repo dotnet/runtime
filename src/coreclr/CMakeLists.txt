@@ -45,6 +45,14 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(O_CLOEXEC=0)
   # WASI stub headers for missing POSIX headers
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
+  # Cross-compile try_run() answers — wasm32 binaries cannot execute on the
+  # build host, so pre-seed the cache. WASI realpath rejects nonexistent
+  # paths; gettimeofday/clock_gettime are provided via emulated clocks;
+  # /proc/self/statm does not exist.
+  set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
+  set(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0 CACHE STRING "" FORCE)
+  set(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0 CACHE STRING "" FORCE)
+  set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
