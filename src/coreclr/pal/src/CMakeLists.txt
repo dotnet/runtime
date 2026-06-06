@@ -201,7 +201,6 @@ set(SOURCES
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
-  thread/context.cpp
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
@@ -211,6 +210,7 @@ if (NOT CLR_CMAKE_TARGET_WASI)
   list(APPEND SOURCES
     debug/debug.cpp
     exception/signal.cpp
+    thread/context.cpp
   )
 endif()
 

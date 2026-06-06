@@ -658,10 +658,17 @@ ExitThread(
     pThread->SetExitCode(dwExitCode);
 
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
+#if defined(TARGET_WASI)
+    // wasi-libc declares pthread_exit as a _Static_assert stub under
+    // _WASI_STRICT_PTHREAD (single-threaded). Abort instead — PAL only invokes
+    // ThreadExit on the orderly-shutdown path which doesn't run on WASI.
+    abort();
+#else
     pthread_exit(NULL);
 
     ASSERT("pthread_exit should not return!\n");
     while (true);
+#endif
 }
 
 /*++
@@ -922,6 +929,14 @@ CorUnix::InternalSetThreadPriority(
 
     /* get the previous thread schedule parameters.  We need to know the
        scheduling policy to determine the priority range */
+#if defined(TARGET_WASI)
+    // WASI is single-threaded and wasi-libc replaces pthread scheduling
+    // functions with _Static_assert stubs under _WASI_STRICT_PTHREAD. Record
+    // the requested priority value but skip the actual pthread plumbing.
+    pTargetThread->m_iThreadPriority = iNewPriority;
+    palError = NO_ERROR;
+    goto InternalSetThreadPriorityExit;
+#else
     if (pthread_getschedparam(
             pTargetThread->GetPThreadSelf(),
             &policy,
@@ -1017,6 +1032,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     pTargetThread->m_iThreadPriority = iNewPriority;
+#endif // !TARGET_WASI
 
 InternalSetThreadPriorityExit:
 
@@ -1265,6 +1281,14 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
+#elif defined(TARGET_WASI)
+    // WASI 0.2.8 has no per-thread CPU time API. wasi-libc's clock_gettime
+    // supports CLOCK_MONOTONIC/CLOCK_REALTIME via emulated process clocks but
+    // not CLOCK_THREAD_CPUTIME_ID. Report zero user-time on WASI rather than
+    // failing the build. REPLACE-WHEN: WASI gains a thread-cpu-time clock.
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
 #else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
 #endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
