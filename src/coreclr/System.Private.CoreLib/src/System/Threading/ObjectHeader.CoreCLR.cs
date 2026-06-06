@@ -59,8 +59,50 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern HeaderLockResult AcquireInternal(object obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern HeaderLockResult Release(object obj);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe HeaderLockResult Release(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            // transform uninitialized ID into -1, so it will not match any possible lock owner
+            currentThreadID |= (currentThreadID - 1) >> 31;
+
+            fixed (byte* pObjectData = &obj.GetRawData())
+            {
+                int* pHeader = GetHeaderPtr(pObjectData);
+                int oldBits = *pHeader;
+
+                // if the lock is still thin
+                if ((oldBits & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
+                {
+                    // if we own the lock
+                    if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
+                    {
+                        // decrement count or release entirely.
+                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
+                            oldBits - SBLK_LOCK_RECLEVEL_INC :
+                            oldBits & ~SBLK_MASK_LOCK_THREADID;
+
+                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                        {
+                            return HeaderLockResult.Success;
+                        }
+
+                        // Someone else touched the bits. Most likely syncblock was installed.
+                        // GC should not set their bits while we are here, but finalization might.
+                        // It would be extremely rare case though, so it would be ok to inflate the lock.
+                        // Just let the slow/fat path handle this case.
+                    }
+                    else
+                    {
+                        return HeaderLockResult.Failure;
+                    }
+                }
+
+                return HeaderLockResult.UseSlowPath;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
