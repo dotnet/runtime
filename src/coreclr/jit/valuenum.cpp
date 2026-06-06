@@ -12874,32 +12874,36 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
     // "static readonly string": [cns +] InvariantNonNullLoad(fieldSeq). The referenced object may be
     // movable, so we read its handle with ignoreMovableObjects=false and then read the (immutable)
     // content it points to. Only that content is baked in - the movable handle is never embedded.
-    ValueNum       addrVN = vnStore->VNLiberalNormalValue(address->gtVNPair);
-    target_ssize_t offset = 0;
-    vnStore->PeelOffsets(&addrVN, &offset);
-
-    VNFuncApp funcApp;
-    if ((offset >= 0) && (vnStore->TypeOfVN(addrVN) == TYP_REF) && vnStore->GetVNFunc(addrVN, &funcApp) &&
-        funcApp.FuncIs(VNF_InvariantNonNullLoad))
+    ValueNum        addrVN     = vnStore->VNLiberalNormalValue(address->gtVNPair);
+    const var_types addrVNType = vnStore->TypeOfVN(addrVN);
+    if ((addrVNType == TYP_BYREF) || (addrVNType == TYP_I_IMPL) || (addrVNType == TYP_REF))
     {
-        ValueNum fieldSeqVN = vnStore->VNNormalValue(funcApp.GetArg(0));
-        if (vnStore->IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
+        target_ssize_t offset = 0;
+        vnStore->PeelOffsets(&addrVN, &offset);
+
+        VNFuncApp funcApp;
+        if ((offset >= 0) && (vnStore->TypeOfVN(addrVN) == TYP_REF) && vnStore->GetVNFunc(addrVN, &funcApp) &&
+            funcApp.FuncIs(VNF_InvariantNonNullLoad))
         {
-            FieldSeq*            fseq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
-            CORINFO_FIELD_HANDLE fld  = (fseq != nullptr) ? fseq->GetFieldHandle() : nullptr;
-            if (fld != nullptr)
+            ValueNum fieldSeqVN = vnStore->VNNormalValue(funcApp.GetArg(0));
+            if (vnStore->IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
             {
-                // Read the (possibly movable) object reference stored in the static field.
-                uint8_t handleBuf[TARGET_POINTER_SIZE] = {0};
-                if (info.compCompHnd->getStaticFieldContent(fld, handleBuf, TARGET_POINTER_SIZE, 0,
-                                                            /* ignoreMovableObjects */ false))
+                FieldSeq*            fseq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
+                CORINFO_FIELD_HANDLE fld  = (fseq != nullptr) ? fseq->GetFieldHandle() : nullptr;
+                if (fld != nullptr)
                 {
-                    CORINFO_OBJECT_HANDLE objHnd = NO_OBJECT_HANDLE;
-                    memcpy(&objHnd, handleBuf, TARGET_POINTER_SIZE);
-                    if ((objHnd != NO_OBJECT_HANDLE) && info.compCompHnd->isObjectImmutable(objHnd))
+                    // Read the (possibly movable) object reference stored in the static field.
+                    uint8_t handleBuf[TARGET_POINTER_SIZE] = {0};
+                    if (info.compCompHnd->getStaticFieldContent(fld, handleBuf, TARGET_POINTER_SIZE, 0,
+                                                                /* ignoreMovableObjects */ false))
                     {
-                        *ppValue = new (alloc) uint8_t[(size_t)size];
-                        return info.compCompHnd->getObjectContent(objHnd, *ppValue, size, (int)offset);
+                        CORINFO_OBJECT_HANDLE objHnd = NO_OBJECT_HANDLE;
+                        memcpy(&objHnd, handleBuf, TARGET_POINTER_SIZE);
+                        if ((objHnd != NO_OBJECT_HANDLE) && info.compCompHnd->isObjectImmutable(objHnd))
+                        {
+                            *ppValue = new (alloc) uint8_t[(size_t)size];
+                            return info.compCompHnd->getObjectContent(objHnd, *ppValue, size, (int)offset);
+                        }
                     }
                 }
             }
