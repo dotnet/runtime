@@ -2561,8 +2561,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         // Assertion propagation can substitute a constant into the length expression without
         // re-folding its parents (e.g. leaving "(long)(5 << 1)"), so its value number is no
         // longer recognized as a constant. Fold a throwaway clone to recover the value.
-        GenTree* foldedLen = gtFoldExprConstChain(gtCloneExpr(lenArg->GetNode()));
-        if (!foldedLen->IsIntegralConst())
+        GenTree* lenClone  = gtCloneExpr(lenArg->GetNode());
+        GenTree* foldedLen = (lenClone != nullptr) ? gtFoldExprConstChain(lenClone) : nullptr;
+        if ((foldedLen == nullptr) || !foldedLen->IsIntegralConst())
         {
             // Identical VN on both sides => true regardless of length.
             ValueNum a1VN = optConservativeNormalVN(arg1->GetNode());

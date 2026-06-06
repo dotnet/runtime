@@ -12882,27 +12882,30 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
         vnStore->PeelOffsets(&addrVN, &offset);
 
         VNFuncApp funcApp;
-        if ((offset >= 0) && (vnStore->TypeOfVN(addrVN) == TYP_REF) && vnStore->GetVNFunc(addrVN, &funcApp) &&
-            funcApp.FuncIs(VNF_InvariantNonNullLoad))
+        if ((offset >= 0) && ((size_t)offset <= INT32_MAX) && (vnStore->TypeOfVN(addrVN) == TYP_REF) &&
+            vnStore->GetVNFunc(addrVN, &funcApp) && funcApp.FuncIs(VNF_InvariantNonNullLoad))
         {
             ValueNum fieldSeqVN = vnStore->VNNormalValue(funcApp.GetArg(0));
             if (vnStore->IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
             {
-                FieldSeq*            fseq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
-                CORINFO_FIELD_HANDLE fld  = (fseq != nullptr) ? fseq->GetFieldHandle() : nullptr;
-                if (fld != nullptr)
+                FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
+                if ((fseq != nullptr) && fseq->IsStaticField())
                 {
-                    // Read the (possibly movable) object reference stored in the static field.
-                    uint8_t handleBuf[TARGET_POINTER_SIZE] = {0};
-                    if (info.compCompHnd->getStaticFieldContent(fld, handleBuf, TARGET_POINTER_SIZE, 0,
-                                                                /* ignoreMovableObjects */ false))
+                    CORINFO_FIELD_HANDLE fld = fseq->GetFieldHandle();
+                    if (fld != nullptr)
                     {
-                        CORINFO_OBJECT_HANDLE objHnd = NO_OBJECT_HANDLE;
-                        memcpy(&objHnd, handleBuf, TARGET_POINTER_SIZE);
-                        if ((objHnd != NO_OBJECT_HANDLE) && info.compCompHnd->isObjectImmutable(objHnd))
+                        // Read the (possibly movable) object reference stored in the static field.
+                        uint8_t handleBuf[TARGET_POINTER_SIZE] = {0};
+                        if (info.compCompHnd->getStaticFieldContent(fld, handleBuf, TARGET_POINTER_SIZE, 0,
+                                                                    /* ignoreMovableObjects */ false))
                         {
-                            *ppValue = new (alloc) uint8_t[(size_t)size];
-                            return info.compCompHnd->getObjectContent(objHnd, *ppValue, size, (int)offset);
+                            CORINFO_OBJECT_HANDLE objHnd = NO_OBJECT_HANDLE;
+                            memcpy(&objHnd, handleBuf, TARGET_POINTER_SIZE);
+                            if ((objHnd != NO_OBJECT_HANDLE) && info.compCompHnd->isObjectImmutable(objHnd))
+                            {
+                                *ppValue = new (alloc) uint8_t[(size_t)size];
+                                return info.compCompHnd->getObjectContent(objHnd, *ppValue, size, (int)offset);
+                            }
                         }
                     }
                 }
