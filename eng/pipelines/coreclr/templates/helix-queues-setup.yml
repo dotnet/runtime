@@ -113,7 +113,7 @@ jobs:
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.14.Amd64.Open
+        - OSX.15.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.14.Amd64
 
