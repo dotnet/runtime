@@ -485,14 +485,19 @@ namespace System.Xml.Serialization
                 }
             }
 
-            using (AssemblyLoadContext.EnterContextualReflection(collectibleAssembly ?? mainAssembly))
+            // Validate collectible types against the same assembly whose ALC we enter below, so
+            // that a collectible type combined with a non-collectible mainAssembly is checked
+            // against the collectible context rather than the default one.
+            Assembly? contextAssembly = collectibleAssembly ?? mainAssembly;
+
+            using (AssemblyLoadContext.EnterContextualReflection(contextAssembly))
             {
                 // Before generating any IL, check each mapping and supported type to make sure
                 // they are compatible with the current ALC
                 for (int i = 0; i < types.Length; i++)
-                    VerifyLoadContext(types[i], mainAssembly);
+                    VerifyLoadContext(types[i], contextAssembly);
                 foreach (var mapping in xmlMappings)
-                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
+                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, contextAssembly);
 
                 string assemblyName = "Microsoft.GeneratedCode";
                 AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(
