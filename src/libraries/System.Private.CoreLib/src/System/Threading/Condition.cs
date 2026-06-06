@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable 0420 //passing volatile fields by ref
-
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 
@@ -203,15 +201,14 @@ namespace System.Threading
             _waitersHead = null;
             _waitersTail = null;
 
-            do
+            while (waiter is not null)
             {
                 Waiter? next = waiter.next;
                 waiter.next = null;
                 waiter.prev = null;
-                AutoResetEvent ev = waiter.ev;
+                waiter.ev.Set();
                 waiter = next;
-                ev.Set();
-            } while (waiter is not null);
+            }
         }
 
         public void SignalOne()

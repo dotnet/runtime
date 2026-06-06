@@ -39,7 +39,7 @@ namespace System.Threading
 
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
         // We are not using thin/object lock here since our use pattern makes it nearly certain that
-        // a thin lock would be inflated.
+        // a thin lock would be inflated even if we use m_lock only once.
         private Lock? m_lock;
 
         private ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
@@ -202,7 +202,7 @@ namespace System.Threading
 #pragma warning disable IDE0060 // Remove unused parameter spinCount, on single-threaded systems, the spin count is not used.
         private void Initialize(bool initialState, int spinCount)
         {
-            IsSet = initialState;
+            m_combinedState = initialState ? SignalledState_BitMask : 0;
 
             // the spinCount argument has been validated by the ctors.
             // but we now sanity check our predefined constants.
