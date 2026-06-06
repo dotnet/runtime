@@ -421,6 +421,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         EECodeInfo * pCodeInfo /*= NULL*/
                                         ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
+#ifdef TARGET_WASM
+    // Interpreter-only WASM has no R2R unwind info to walk and no
+    // RtlVirtualUnwind equivalent. EH stack-walking on WASM proceeds through
+    // the explicit Frame chain (Thread::GetFrame()), so this overload should
+    // never be reached on the interpreter-only path. PR #128423 (Use Virtual
+    // IPs in R2R format) removed the original short-circuit assuming all WASM
+    // use-cases now have R2R unwind info, which is not true for the
+    // interpreter-only WASI build.
+    _ASSERTE(!"VirtualUnwindCallFrame is not supported on WebAssembly");
+    return 0;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -568,6 +579,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
+#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
