@@ -190,7 +190,7 @@ namespace System.Net.Http.Functional.Tests
         public void VersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
         {
             var rm = new HttpRequestMessage();
-            AssertExtensions.Throws<ArgumentException>("value", () => { rm.VersionPolicy = invalidValue; });
+            AssertExtensions.Throws<ArgumentException>("value", () => rm.VersionPolicy = invalidValue);
         }
 
         [Fact]
