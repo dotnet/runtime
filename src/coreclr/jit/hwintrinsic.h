@@ -532,7 +532,8 @@ struct HWIntrinsicInfo
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName);
+                                   const char*       outerEnclosingClassName,
+                                   bool              isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
