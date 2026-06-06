@@ -5113,9 +5113,8 @@ void CodeGen::genFnProlog()
     regMaskTP initDblRegs = RBM_NONE;
 
 #ifdef TARGET_WASM
-    // On WASM, only memory-resident lvMustInit locals contribute to the prolog
-    // zero-init range. Wasm-local-resident scalars are auto-zeroed by the wasm
-    // runtime, and the register-init bookkeeping below has no analogue on wasm.
+    // For Wasm we only need to zero locals on the shadow stack; wasm locals are
+    // automatically zeroed.
     for (unsigned varNum = 0; varNum < m_compiler->lvaCount; ++varNum)
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
