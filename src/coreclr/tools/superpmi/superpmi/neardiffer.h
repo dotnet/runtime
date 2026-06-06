@@ -71,6 +71,9 @@ private:
     static bool compareOffsets(
         const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2);
 
+    static bool compareOffsetsWasm(
+        const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2);
+
     static bool mungeOffsets(
         const void* payload, size_t blockOffset, size_t instrLen, uint64_t* offset1, uint64_t* offset2, uint32_t* skip1, uint32_t* skip2);
 

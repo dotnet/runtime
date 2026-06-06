@@ -3024,6 +3024,95 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task Http2_ServerAdvertisesLowMaxConcurrentStreams_PoolMemorizesValueAcrossConnections()
+        {
+            // The server advertises a stream limit of 1 and serves a single request per connection.
+            // Without memoization, every newly created connection would optimistically allow up to
+            // InitialMaxConcurrentStreams (100) streams before observing the SETTINGS frame, the
+            // server would mark the extras as not-processed, and the per-request retry
+            // budget would be exhausted long before all 10 requests completed.
+            const int MaxConcurrentStreams = 1;
+            const int RequestCount = 10;
+
+            Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            Task<HttpResponseMessage>[] sendTasks = new Task<HttpResponseMessage>[RequestCount];
+            for (int i = 0; i < RequestCount; i++)
+            {
+                sendTasks[i] = client.GetAsync(server.Address);
+            }
+
+            List<(Http2LoopbackConnection conn, int streamId)> firstStreams = new();
+            using SemaphoreSlim firstStreamReady = new(0);
+            List<Task> connectionTasks = new();
+
+            async Task ServeConnectionAsync(Http2LoopbackConnection conn)
+            {
+                bool gotFirst = false;
+                try
+                {
+                    while (true)
+                    {
+                        (int streamId, _) = await conn.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                        if (!gotFirst)
+                        {
+                            gotFirst = true;
+                            lock (firstStreams) firstStreams.Add((conn, streamId));
+                            firstStreamReady.Release();
+                        }
+                        else
+                        {
+                            await conn.WriteFrameAsync(
+                                new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.REFUSED_STREAM, streamId)).ConfigureAwait(false);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Connection closed/aborted; nothing more to do.
+                }
+            }
+
+            Task acceptTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        Http2LoopbackConnection conn = await server.EstablishConnectionAsync(
+                            new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).ConfigureAwait(false);
+                        lock (connectionTasks) connectionTasks.Add(Task.Run(() => ServeConnectionAsync(conn)));
+                    }
+                }
+                catch
+                {
+                    // Server disposed; stop accepting.
+                }
+            });
+
+            // Expect RequestCount fresh connections (one per request) and a first stream on each.
+            for (int i = 0; i < RequestCount; i++)
+            {
+                await firstStreamReady.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+            }
+
+            foreach ((Http2LoopbackConnection conn, int streamId) in firstStreams)
+            {
+                await conn.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+            }
+
+            await VerifySendTasks(sendTasks).ConfigureAwait(false);
+
+            server.Dispose();
+            await acceptTask.ConfigureAwait(false);
+            await Task.WhenAll(connectionTasks).ConfigureAwait(false);
+        }
+
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
             await TestHelper.WhenAllCompletedOrAnyFailed(sendTasks.ToArray()).ConfigureAwait(false);

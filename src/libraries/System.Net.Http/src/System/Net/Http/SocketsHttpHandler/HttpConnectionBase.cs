@@ -75,8 +75,7 @@ namespace System.Net.Http
                         protocol,
                         _pool.IsSecure ? "https" : "http",
                         _pool.TelemetryServerAddress,
-                        _pool.OriginAuthority.Port,
-                        remoteEndPoint?.Address?.ToString());
+                        _pool.OriginAuthority.Port);
 
                     _connectionMetrics.ConnectionEstablished();
                 }

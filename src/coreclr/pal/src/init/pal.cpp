@@ -326,9 +326,8 @@ Initialize(
 
     if (init_count == 0)
     {
-        // Set our pid and sid.
+        // Set our pid.
         gPID = getpid();
-        gSID = getsid(gPID);
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())

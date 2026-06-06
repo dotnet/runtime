@@ -37,9 +37,8 @@ extern "C"
 */
 extern Volatile<LONG> terminator;
 
-// The process and session ID of this process, so we can avoid excessive calls to getpid() and getsid().
+// The process ID of this process, so we can avoid excessive calls to getpid().
 extern DWORD gPID;
-extern DWORD gSID;
 
 extern LPWSTR pAppDir;
 
@@ -49,15 +48,6 @@ extern LPCSTR gApplicationGroupId;
 extern int gApplicationGroupIdLength;
 #endif // __APPLE__
 extern PathCharString *gSharedFilesPath;
-
-/*++
-Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
---*/
-DWORD PROCGetProcessIDFromHandle(HANDLE hProcess);
 
 /*++
 Function:
