@@ -136,9 +136,16 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                Span<byte> pkcs8 = stackalloc byte[48];
-                bool encoded = TryEncodePrivateKey(source, pkcs8, out int written);
+                Span<byte> pkcs8 = stackalloc byte[Pkcs8SizeInBytes];
+
+                bool encoded = TryWritePkcs8PrivateKey(
+                    pkcs8,
+                    source,
+                    static (source, buffer) => source.CopyTo(buffer),
+                    out int written);
+
                 Debug.Assert(encoded);
+                Debug.Assert(written == Pkcs8SizeInBytes);
 
                 SafeX25519PrivateKeyHandle privateKey = Interop.AndroidCrypto.X25519ImportPkcs8PrivateKey(pkcs8.Slice(0, written));
 
@@ -238,56 +245,5 @@ namespace System.Security.Cryptography
             return spki.Slice(spkiPreamble.Length);
         }
 
-        private static bool TryEncodePrivateKey(ReadOnlySpan<byte> privateKey, Span<byte> destination, out int bytesWritten)
-        {
-            Debug.Assert(privateKey.Length == PrivateKeySizeInBytes);
-
-            ReadOnlySpan<byte> pkcs8Preamble =
-            [
-                0x30, 0x2e,                         // SEQUENCE (46 bytes)
-                0x02, 0x01, 0x00,                   // INTEGER 0
-                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
-                0x04, 0x22,                         // OCTET STRING (34 bytes)
-                0x04, 0x20,                         // OCTET STRING (32 bytes)
-            ];
-
-            int pkcs8Size = pkcs8Preamble.Length + privateKey.Length;
-
-            if (destination.Length < pkcs8Size)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            pkcs8Preamble.CopyTo(destination);
-            privateKey.CopyTo(destination.Slice(pkcs8Preamble.Length));
-            bytesWritten = pkcs8Size;
-            return true;
-        }
-
-        private static bool TryEncodePublicKey(ReadOnlySpan<byte> publicKey, Span<byte> destination, out int bytesWritten)
-        {
-            Debug.Assert(publicKey.Length == PublicKeySizeInBytes);
-
-            ReadOnlySpan<byte> spkiPreamble =
-            [
-                0x30, 0x2a, // SEQUENCE (42 bytes)
-                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
-                0x03, 0x21, 0x00, // BIT STRING (33 bytes, 0 unused bits)
-            ];
-
-            int spkiSize = spkiPreamble.Length + publicKey.Length;
-
-            if (destination.Length < spkiSize)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            spkiPreamble.CopyTo(destination);
-            publicKey.CopyTo(destination.Slice(spkiPreamble.Length));
-            bytesWritten = spkiSize;
-            return true;
-        }
     }
 }
