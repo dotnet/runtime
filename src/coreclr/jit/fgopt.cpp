@@ -5149,10 +5149,10 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         // This cap only applies to common-successor tail merging. The terminal
         // block (return/throw) merging below subsumes the old fgTailMergeThrows
         // phase and routinely sees throw-heavy methods that exceed the per-block
-        // cap, so it uses a larger limit. 2x was empirically the smallest
+        // cap, so it uses a larger limit. 3x was empirically the smallest
         // multiple that avoids code-size regressions (measured via SPMI asmdiffs).
         //
-        const int effectiveLimit = (commSucc != nullptr) ? mergeLimit : (2 * mergeLimit);
+        const int effectiveLimit = (commSucc != nullptr) ? mergeLimit : (3 * mergeLimit);
         if (predInfo.Height() > effectiveLimit)
         {
             // Too many preds to consider
