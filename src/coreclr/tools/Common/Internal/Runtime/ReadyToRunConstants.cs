@@ -247,7 +247,7 @@ namespace Internal.ReadyToRunConstants
         // Write barriers
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,
-        ByRefWriteBarrier           = 0x32,
+        ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
 
         // Array helpers

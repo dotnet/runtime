@@ -52,12 +52,20 @@ safe-outputs:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   push-to-pull-request-branch:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
   update-pull-request:
     max: 1
   create-issue:
@@ -65,6 +73,7 @@ safe-outputs:
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   update-issue:
+    target: "*"
     max: 1
   noop:
     report-as-issue: false
@@ -160,71 +169,100 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    The `/runs` endpoint does NOT accept `order=asc`; you MUST paginate and pick `min(created_at)`. Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the tracker exists, the cached marker is authoritative.
 
-   Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`.
+   Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`. Cache the list to `/tmp/gh-aw/agent/artifacts.json` so later sections do not re-query.
 
-   For metrics that require body content (`top_pipelines`), fetch the bodies of the discovered items through the `github` MCP `issue_read get` / `pull_request_read get` tool, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
+   `gh search issues --json` and `gh search prs --json` already return `state`, `stateReason`, `labels`, `mergedAt`, `closedAt`, and `author` for each result; that metadata is sufficient for the activity and quality counts below. Only fetch through the integrity-gated `github` MCP when you actually need body or comment text.
 
-   Compute these KPIs:
+   For metrics that need MEMBER/OWNER comment content (rejection-keyword detection, re-file outage signal), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
-   - `issues_total`, `issues_open`, `issues_closed`
-   - `closed_last_7d`, `closed_last_30d`
-   - `median_time_to_close_30d` (hours; from `createdAt` to `closedAt` for issues closed in last 30d)
-   - `p90_time_to_close_30d`
-   - `pct_closed_as_not_planned` (state_reason `not_planned` / total closed) — proxy for false positives flagged by maintainers
-   - `prs_total`, `prs_merged`, `prs_closed_unmerged`
-   - `top_pipelines` (top 3 `definition_id` values appearing in issue bodies fetched via the `github` MCP tool per the step above; if a fetched body is `[Filtered]`, count it under `integrity_filtered_pipelines` and exclude from the top 3)
+   Compute these KPIs. The shape below is deliberately small: raw counts, one quality ratio, a fixed set of outage signals. Do not re-introduce Wilson scoring, time-to-KBE, coverage ratios, or tally-extraction; they were dropped because they came back `n/a` most ticks and added noise.
+
+   ### A) Activity (last 7d)
+
+   For each artifact type (issues, PRs), count:
+
+   - `opened` — artifacts created in the last 7d.
+   - `closed_good` — issues closed in the last 7d with `state_reason: completed`; PRs merged in the last 7d.
+   - `closed_wrong` — issues closed in the last 7d with `state_reason` in `{not_planned, duplicate}`; PRs closed without merge in the last 7d.
+
+   ### B) Quality (closure cohort, last 30d)
+
+   The quality rate is closure-based, not creation-based: a wrong closure of an old item still counts against this period's quality. This avoids the cross-cohort denominator bug where rate could exceed 100% if computed against opens.
+
+   - `closed_good_30d = i_good_30d + p_merged_30d`.
+   - `closed_wrong_30d = i_wrong_30d + p_unmerged_30d`.
+   - `closed_30d = closed_good_30d + closed_wrong_30d`.
+   - `wrong_rate_30d = closed_wrong_30d / closed_30d`. Emit as `n/a` when `closed_30d < 10`.
+   - `complaints_30d` — count of MEMBER/OWNER comments on in-scope artifacts (open or closed) matching (case-insensitive): `don't disable`, `do not disable`, `do not mute`, `please don't`, `false positive`, `fix forward`, `fix-forward`, `investigation in progress`, `will investigate`, `stop filing`, `noise`, `not a real failure`, `flaky test`.
+   - `duplicates_30d` — issues closed in the last 30d with `state_reason: duplicate` OR carrying a `duplicate` label.
+
+   ### C) Outage signals
+
+   These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped, otherwise 🟢.
+
+   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. For each KBE issue, fetch the body via the `github` MCP and grep for the line `Build error leg or test failing: <value>` (this is the only place the KBE template carries leg information; older `Impact on platforms` lines are not present in templates emitted after #128440). The value is `<AzDO leg name>-<assembly or test name>` where the separator is the LAST `-` in the value: split on the last hyphen and treat the left side as the leg. Cache `(issue_number, leg)` rows to `/tmp/gh-aw/agent/artifact_legs.tsv`. The pipeline-outage signal counts distinct legs because the KBE body does not capture the AzDO pipeline definition id reliably; treat distinct legs as a conservative proxy for distinct pipelines.
+
+   | signal | source | threshold |
+   |---|---|---|
+   | New-KBE burst | count of `[ci-scan]` KBE issues created per day in the last 7d | any day > 2x trailing 30d daily median (min absolute count 3 to avoid noise) |
+   | Build-break spike | count of `[ci-scan] Build break:` issues created per 24h | >= 2 in any 24h window in the last 7d |
+   | Multi-pipeline outage (distinct legs proxy) | distinct leg names (parsed per above) across KBEs created in the last 24h | >= 3 distinct legs |
+   | KBE re-filed after maintainer close | for each `[ci-scan]` KBE issue opened in the last 7d, search `is:issue is:closed -is:open in:title "<test-name-stem>" closed:>=<14d-ago>` and check whether any closed predecessor exists with a MEMBER/OWNER comment matching the keyword set in section B | any in the last 7d |
+   | Wrong-closure rate | section B's `wrong_rate_30d` | >= 30% with `closed_30d >= 10` |
 
    Emit a body with this exact shape (regenerate every tick):
 
    ````markdown
    <!-- ci-scan-feedback:kpi-tracker -->
+   <!-- ci-scan-feedback:window-start=<window_start> -->
    Tracking quality of `[ci-scan]` issues and PRs since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
 
    ## Snapshot — <UTC timestamp>
 
-   | metric | value |
-   |---|---|
-   | Window | <window_start> -> now (<N> days) |
-   | Issues filed | <issues_total> (open <issues_open>, closed <issues_closed>) |
-   | Closed last 7d / 30d | <closed_last_7d> / <closed_last_30d> |
-   | Median time-to-close (30d) | <h>h |
-   | P90 time-to-close (30d) | <h>h |
-   | Closed as `not planned` | <pct>% (proxy for false-positive rate) |
-   | PRs filed | <prs_total> (merged <prs_merged>, closed-unmerged <prs_closed_unmerged>) |
-   | Top pipelines | <name1> (<n1>), <name2> (<n2>), <name3> (<n3>) |
+   ### Activity (last 7d)
 
-   ## Weekly volume (last 12 weeks)
-
-   ```mermaid
-   xychart-beta
-       title "[ci-scan] issues filed vs closed per ISO week"
-       x-axis [<w1>, <w2>, ..., <w12>]
-       y-axis "count" 0 --> <max>
-       bar [<filed_w1>, ..., <filed_w12>]
-       line [<closed_w1>, ..., <closed_w12>]
-   ```
-
-   ## Median time-to-close (last 12 weeks)
-
-   ```mermaid
-   xychart-beta
-       title "median hours from created to closed, per ISO week"
-       x-axis [<w1>, ..., <w12>]
-       y-axis "hours" 0 --> <max>
-       line [<med_w1>, ..., <med_w12>]
-   ```
-
-   <details>
-   <summary>Raw weekly buckets (last 12 weeks)</summary>
-
-   | iso-week | filed | closed | median-hrs |
+   | artifact | opened | closed (good) | closed (wrong) |
    |---|---|---|---|
-   | <w1> | <n> | <n> | <h> |
-   ...
-   </details>
+   | Issues | <i_op_7> | <i_good_7> | <i_wrong_7> |
+   | PRs | <p_op_7> | <p_merged_7> | <p_unmerged_7> |
 
-   The raw weekly buckets table MUST be windowed to the same 12 weeks the mermaid charts use — emit at most 12 rows. Older buckets are dropped on each regeneration; this is intentional (the tracker body is a current snapshot, not a permanent ledger).
+   "closed (good)" = issues closed `completed`, PRs merged. "closed (wrong)" = issues closed `not_planned`/`duplicate`, PRs closed without merge.
+
+   ### Quality (last 30d)
+
+   | metric | count | rate |
+   |---|---|---|
+   | Total closures | <closed_30d> | — |
+   | Wrong closures | <closed_wrong_30d> | <wrong_rate_30d_pct or `n/a (<closed_30d><10)`> |
+   | Maintainer rejection comments | <complaints_30d> | — |
+   | Duplicate KBEs | <duplicates_30d> | — |
+
+   ### Outage signals (analyzed CI)
+
+   | signal | threshold | 24h | 7d | status |
+   |---|---|---|---|---|
+   | New-KBE burst | day > 2x trailing 30d median (min 3) | <new_kbe_24h> / median <median_daily_kbe_30d> | peak day <peak_kbe_7d> | <🔴 or 🟢> |
+   | Build-break spike | >= 2 in any 24h | <bb_24h> | <bb_7d> | <icon> |
+   | Multi-pipeline outage (distinct legs proxy) | >= 3 distinct legs in 24h | <legs_24h> distinct | <legs_peak_7d> distinct (peak day) | <icon> |
+   | KBE re-filed after maintainer close | any in 7d | <refile_24h> | <refile_7d> | <icon> |
+   | Wrong-closure rate (30d) | >= 30% with `closed_30d >= 10` | — | <wrong_rate_30d_pct> | <icon> |
+
+   For each signal at 🔴, emit one `details:` line **after** the Outage signals table (not inside it; markdown tables cannot carry sub-rows). Prefix each line with the signal name so it is unambiguous which row it explains. Example:
+
+   ```
+   details: Multi-pipeline outage — runtime-coreclr outerloop linux x64 checked, runtime-extra-platforms windows x86 release, runtime-interpreter linux x64 checked all red on 2026-06-01
+   details: KBE re-filed after maintainer close — #128793 re-filed #128737
+   ```
+
+   Omit the details block entirely when no signal is 🔴.
    ````
+
+   Suppression rules:
+
+   - If `closed_30d < 10`, the Quality table's `rate` column reads `n/a (<n><10)` for `wrong_rate_30d`; all other rows still render with raw counts.
+   - Outage signals always render. An explicit 🟢 with no data still carries information.
+   - Do NOT emit charts (mermaid or otherwise).
+   - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
    If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
 
