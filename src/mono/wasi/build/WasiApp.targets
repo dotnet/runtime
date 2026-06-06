@@ -49,6 +49,15 @@
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
+    <!-- The packaged WASI SDK ships the substitution XMLs next to this targets file
+         (see Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj). For in-tree builds
+         the files only exist under $(BrowserProjectRoot)build\, so fall back to that. -->
+    <_WasiIntrinsicsSubstitutionsDir Condition="Exists('$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml')">$(MSBuildThisFileDirectory)</_WasiIntrinsicsSubstitutionsDir>
+    <_WasiIntrinsicsSubstitutionsDir Condition="'$(_WasiIntrinsicsSubstitutionsDir)' == '' and '$(BrowserProjectRoot)' != ''">$(BrowserProjectRoot)build\</_WasiIntrinsicsSubstitutionsDir>
+
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
     <!--<WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>-->
@@ -248,7 +257,7 @@
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
-      <!--<_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />-->
+      <_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(_WasmShouldAOT)' == 'true'"         Include="-DENABLE_AOT=1" />
