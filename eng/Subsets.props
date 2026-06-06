@@ -33,6 +33,7 @@
 
     <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsBrowser)' == 'true'">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedOS Condition="'$(TargetsWasi)' == 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsAppleMobile)' == 'true'">true</_CoreCLRSupportedOS>
 
     <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' != 's390x'">true</_CoreCLRSupportedArch>
@@ -61,6 +62,7 @@
     <DefaultPrimaryRuntimeFlavor>CoreCLR</DefaultPrimaryRuntimeFlavor>
     <DefaultPrimaryRuntimeFlavor Condition="'$(CoreCLRSupported)' != 'true'">Mono</DefaultPrimaryRuntimeFlavor>
     <DefaultPrimaryRuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and !$(Subset.ToLowerInvariant().Contains('clr'))">Mono</DefaultPrimaryRuntimeFlavor>
+    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetsWasi)' == 'true' and !$(Subset.ToLowerInvariant().Contains('clr'))">Mono</DefaultPrimaryRuntimeFlavor>
     <PrimaryRuntimeFlavor Condition="'$(PrimaryRuntimeFlavor)' == ''">$(DefaultPrimaryRuntimeFlavor)</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
@@ -98,6 +100,7 @@
     <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAppleMobile)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsWasi)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and '$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">$(PrimaryRuntimeFlavor)</RuntimeFlavor>
@@ -109,6 +112,7 @@
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">provision.emsdk+clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native+host.native</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsWasi)' == 'true'">clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
