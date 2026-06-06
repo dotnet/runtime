@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         public const int PublicKeySizeInBytes = 32;
 
         // Pre-encoded SPKI for X25519 is 44 bytes: 12 byte preamble + 32 byte public key.
-        private const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
+        private protected const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -1427,7 +1427,12 @@ namespace System.Security.Cryptography
         {
         }
 
-        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        private protected static bool TryWriteSubjectPublicKeyInfo<TState>(
+            Span<byte> destination,
+            TState state,
+            Action<TState, Span<byte>> writer,
+            out int bytesWritten)
+            where TState : allows ref struct
         {
             // Pre-encoded SubjectPublicKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> spkiPreamble =
@@ -1446,9 +1451,18 @@ namespace System.Security.Cryptography
             }
 
             spkiPreamble.CopyTo(destination);
-            ExportPublicKeyCore(destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
+            writer(state, destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
             bytesWritten = SpkiSizeInBytes;
             return true;
+        }
+
+        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        {
+            return TryWriteSubjectPublicKeyInfo(
+                destination,
+                this,
+                static (self, buffer) => self.ExportPublicKeyCore(buffer),
+                out bytesWritten);
         }
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)

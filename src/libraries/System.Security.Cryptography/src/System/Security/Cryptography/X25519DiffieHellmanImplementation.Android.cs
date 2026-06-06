@@ -89,11 +89,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override void ExportPublicKeyCore(Span<byte> destination)
+        protected override unsafe void ExportPublicKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == PublicKeySizeInBytes);
 
-            byte[] spkiBuffer = new byte[64];
+            Span<byte> spkiBuffer = stackalloc byte[SpkiSizeInBytes];
 
             if (!Interop.AndroidCrypto.X25519TryExportSubjectPublicKeyInfo(_publicKey, spkiBuffer, out int written))
             {
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Argument_DestinationTooShort);
             }
 
-            ExtractPublicKeyFromSubjectPublicKeyInfo(spkiBuffer.AsSpan(0, written)).CopyTo(destination);
+            ExtractPublicKeyFromSubjectPublicKeyInfo(spkiBuffer.Slice(0, written)).CopyTo(destination);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
@@ -185,16 +185,19 @@ namespace System.Security.Cryptography
             Interop.AndroidCrypto.X25519DeriveSecret(currentParty, otherParty, destination);
         }
 
-        private static SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
+        private static unsafe SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
         {
-            unsafe
-            {
-                Span<byte> spki = stackalloc byte[44];
-                bool encoded = TryEncodePublicKey(source, spki, out int written);
-                Debug.Assert(encoded);
+            Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
 
-                return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki.Slice(0, written));
-            }
+            bool encoded = TryWriteSubjectPublicKeyInfo(
+                spki,
+                source,
+                static (source, buffer) => source.CopyTo(buffer),
+                out int written);
+
+            Debug.Assert(encoded);
+            Debug.Assert(written == SpkiSizeInBytes);
+            return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki.Slice(0, written));
         }
 
         private static ReadOnlySpan<byte> ExtractPrivateKeyFromPkcs8(ReadOnlySpan<byte> pkcs8)
