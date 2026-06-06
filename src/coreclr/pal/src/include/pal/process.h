@@ -70,22 +70,6 @@ Notes :
 BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
 
 /*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID PROCCleanupInitialProcess(VOID);
-
-/*++
 Function
   PROCAbortInitialize()
 

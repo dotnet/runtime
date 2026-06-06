@@ -120,12 +120,6 @@ extern bool g_running_in_exe;
 
 using namespace CorUnix;
 
-//
-// The command line and app name for the process
-//
-LPWSTR g_lpwstrCmdLine = NULL;
-LPWSTR g_lpwstrAppDir = NULL;
-
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
@@ -1239,30 +1233,6 @@ PAL_GetTransportPipeName(
 }
 
 /*++
-Function:
-  GetCommandLineW
-
-See MSDN doc.
---*/
-LPWSTR
-PALAPI
-GetCommandLineW(
-    VOID)
-{
-    PERF_ENTRY(GetCommandLineW);
-    ENTRY("GetCommandLineW()\n");
-
-    LPWSTR lpwstr = g_lpwstrCmdLine ? g_lpwstrCmdLine : (LPWSTR)W("");
-
-    LOGEXIT("GetCommandLineW returns LPWSTR %p (%S)\n",
-          g_lpwstrCmdLine,
-          lpwstr);
-    PERF_EXIT(GetCommandLineW);
-
-    return lpwstr;
-}
-
-/*++
 Function
   PROCNotifyProcessShutdown
 
@@ -1979,80 +1949,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     while(0)
 
 /*++
-Function
-    InitializeProcessCommandLine
-
-Abstract
-    Initializes (or re-initializes) the saved command line and exe path.
-
-Parameter
-    lpwstrCmdLine
-    lpwstrFullPath
-
-Return
-    PAL_ERROR
-
-Notes
-    This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
---*/
-
-PAL_ERROR
-CorUnix::InitializeProcessCommandLine(
-    LPWSTR lpwstrCmdLine,
-    LPWSTR lpwstrFullPath
-)
-{
-    PAL_ERROR palError = NO_ERROR;
-    LPWSTR initial_dir = NULL;
-
-    //
-    // Save the command line and initial directory
-    //
-
-    if (lpwstrFullPath)
-    {
-        LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
-        if (!lpwstr)
-        {
-            ERROR("Invalid full path\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-        lpwstr[0] = '\0';
-        size_t n = PAL_wcslen(lpwstrFullPath) + 1;
-
-        size_t iLen = n;
-        initial_dir = reinterpret_cast<LPWSTR>(malloc(iLen*sizeof(WCHAR)));
-        if (NULL == initial_dir)
-        {
-            ERROR("malloc() failed! (initial_dir) \n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto exit;
-        }
-
-        if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
-        {
-            ERROR("wcscpy_s failed!\n");
-            free(initial_dir);
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-
-        lpwstr[0] = '/';
-
-        free(g_lpwstrAppDir);
-        g_lpwstrAppDir = initial_dir;
-    }
-
-    free(g_lpwstrCmdLine);
-    g_lpwstrCmdLine = lpwstrCmdLine;
-
-exit:
-    return palError;
-}
-
-
-/*++
 Function:
   CreateInitialProcessAndThreadObjects
 
@@ -2097,35 +1993,6 @@ CreateInitialProcessAndThreadObjectsExit:
     return palError;
 }
 
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID
-PROCCleanupInitialProcess(VOID)
-{
-    /* Free the application directory */
-    free(g_lpwstrAppDir);
-
-    /* Free the stored command line */
-    free(g_lpwstrCmdLine);
-
-    //
-    // Object manager shutdown will handle freeing the underlying
-    // thread and process data
-    //
-}
 
 /*++
 Function:

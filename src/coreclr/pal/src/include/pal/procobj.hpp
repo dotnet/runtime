@@ -24,12 +24,6 @@ Abstract:
 namespace CorUnix
 {
     PAL_ERROR
-    InitializeProcessCommandLine(
-        LPWSTR lpwstrCmdLine,
-        LPWSTR lpwstrFullPath
-        );
-
-    PAL_ERROR
     CreateInitialProcessAndThreadObjects(
         CPalThread *pThread
         );
