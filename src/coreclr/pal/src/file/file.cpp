@@ -2397,7 +2397,14 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
+#if defined(TARGET_WASI)
+    // WASI has neither F_DUPFD_CLOEXEC nor dup(). With no fork/exec there's
+    // no concurrent risk; use the original fd directly. FILECloseHandle on
+    // WASI handles standard streams by not actually fclosing.
+    new_fd = fileno(stream);
+#else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));
