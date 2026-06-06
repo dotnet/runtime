@@ -2531,69 +2531,213 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual via VN.
+//
+//   * When both buffers are immutable data and length is constant, fold to a constant.
+//   * When length is constant and exactly one buffer is immutable data of suitable
+//     size, unroll the comparison into a chain of "(load ^ cns) | ..." == 0
 //
 // Arguments:
-//    call - NI_System_SpanHelpers_SequenceEqual call to fold
+//    call - the special-intrinsic call to fold
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
 {
-    JITDUMP("See if we can optimize NI_System_SpanHelpers_SequenceEqual with help of VN...\n");
     assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+
+    JITDUMP("See if we can optimize SpanHelpers.SequenceEqual via VN...\n");
 
     CallArg* arg1   = call->gtArgs.GetUserArgByIndex(0);
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
+    // Length is in bytes.
     ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
     size_t   len;
     if (!vnStore->IsVNIntegralConstant(lenVN, &len))
     {
-        // See if arguments are the same - in that case we can optimize to constant true
-        ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
-        ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
-        if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
+        // Assertion propagation can substitute a constant into the length expression without
+        // re-folding its parents (e.g. leaving "(long)(5 << 1)"), so its value number is no
+        // longer recognized as a constant. Fold a throwaway clone to recover the value.
+        GenTree* foldedLen = gtFoldExprConstChain(gtCloneExpr(lenArg->GetNode()));
+        if (!foldedLen->IsIntegralConst())
         {
-            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
-            return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+            // Identical VN on both sides => true regardless of length.
+            ValueNum a1VN = optConservativeNormalVN(arg1->GetNode());
+            ValueNum a2VN = optConservativeNormalVN(arg2->GetNode());
+            if ((a1VN != ValueNumStore::NoVN) && (a1VN == a2VN))
+            {
+                JITDUMP("...both arguments have the same VN -> fold to true.\n");
+                return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+            }
+
+            JITDUMP("...length is not a constant - bail out.\n");
+            return nullptr;
         }
 
-        JITDUMP("...length is not a constant - bail out.\n");
-        return nullptr;
+        len = (size_t)foldedLen->AsIntConCommon()->IntegralValue();
+        JITDUMP("...recovered an almost-constant length of %u.\n", (unsigned)len);
     }
 
-    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    // Length 0 => true; neither buffer is dereferenced.
     if (len == 0)
     {
-        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        JITDUMP("...length is 0 -> fold to true.\n");
         return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
     }
 
-    constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
-    if (len > maxLen)
+    // Try to fold to a constant when both buffers are known immutable data.
+    constexpr size_t maxFoldLen = 65536; // arbitrary cap to avoid large allocations
+    if (len <= maxFoldLen)
     {
-        JITDUMP("...length is too big (%u bytes) - bail out.\n", (unsigned)len);
+        CompAllocator alloc = getAllocator(CMK_AssertionProp);
+        uint8_t*      buf1  = nullptr;
+        uint8_t*      buf2  = nullptr;
+        if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, alloc, &buf1) &&
+            GetImmutableDataFromAddress(arg2->GetNode(), (int)len, alloc, &buf2))
+        {
+            const bool equal = (memcmp(buf1, buf2, len) == 0);
+            JITDUMP("...both buffers known at compile time -> fold to %s.\n", equal ? "true" : "false");
+            return gtWrapWithSideEffects(gtNewIconNode(equal ? 1 : 0), call, GTF_ALL_EFFECT, true);
+        }
+    }
+
+    // Unroll path: requires exactly one buffer to be immutable data within the unroll threshold.
+    if (len > getUnrollThreshold(MemcmpU16))
+    {
+        JITDUMP("...length is too big to unroll (%u bytes) - bail out.\n", (unsigned)len);
         return nullptr;
     }
 
-    uint8_t* buffer1 = nullptr;
-    uint8_t* buffer2 = nullptr;
-    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer1) &&
-        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer2))
+    if (compCurBB->isRunRarely())
     {
-        assert(buffer1 != nullptr && buffer2 != nullptr);
-        // If both memory regions are known at compile time, we can fold to a constant.
-        bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
-        JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
-                areEqual ? "true" : "false");
-        return gtWrapWithSideEffects(gtNewIconNode(areEqual ? 1 : 0), call, GTF_ALL_EFFECT, true);
+        JITDUMP("...block is cold - not profitable to expand.\n");
+        return nullptr;
     }
 
-    JITDUMP("...data is not known at compile time - bail out.\n");
-    return nullptr;
+    CompAllocator alloc   = getAllocator(CMK_AssertionProp);
+    uint8_t*      cnsData = nullptr;
+    CallArg*      dataArg = nullptr;
+    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, alloc, &cnsData))
+    {
+        dataArg = arg2;
+    }
+    else if (GetImmutableDataFromAddress(arg2->GetNode(), (int)len, alloc, &cnsData))
+    {
+        dataArg = arg1;
+    }
+    else
+    {
+        JITDUMP("...neither buffer is constant - bail out.\n");
+        return nullptr;
+    }
+
+    // Peel any leading constant offset off the non-constant side (e.g. the "+12" that addresses a
+    // string's first char) so it can be folded into each chunk's displacement below instead of
+    // being computed once and buried inside the multi-use temp. When the remaining base is a local
+    // this also lets fgMakeMultiUse clone it directly, avoiding a temp altogether.
+    target_ssize_t baseOffset = 0;
+    gtPeelOffsets(&dataArg->NodeRef(), &baseOffset);
+
+    // We're going to read the unknown side multiple times - spill to a temp if needed.
+    GenTree* data = fgMakeMultiUse(&dataArg->NodeRef());
+
+    // Extract side effects from the original call (e.g., evaluation of address args).
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(call, &sideEffects, GTF_ALL_EFFECT, true);
+
+    // SIMD-aware bitwise/compare helper.
+    auto binOp = [this](genTreeOps op, var_types type, GenTree* op1, GenTree* op2) -> GenTree* {
+#ifdef FEATURE_HW_INTRINSICS
+        if (varTypeIsSIMD(type))
+        {
+            return gtNewSimdBinOpNode(op, type, op1, op2, TYP_U_IMPL, genTypeSize(type));
+        }
+        if (varTypeIsSIMD(op1))
+        {
+            assert(varTypeIsSIMD(op2));
+            return gtNewSimdCmpOpAllNode(op, type, op1, op2, TYP_U_IMPL, genTypeSize(op1));
+        }
+#endif
+        return gtNewOperNode(op, type, op1, op2);
+    };
+
+    // Pick the widest type we can use and walk the buffer chunk-by-chunk. When the trailing
+    // chunk is smaller than the current type, switch to a narrower scalar (or, for SIMD,
+    // overlap with previously processed data).
+    var_types readType  = roundDownMaxType((unsigned)len, /* conservative */ true);
+    unsigned  remaining = (unsigned)len;
+    GenTree*  result    = nullptr;
+
+    while (remaining > 0)
+    {
+        if (remaining < genTypeSize(readType))
+        {
+            if (varTypeIsIntegral(readType))
+            {
+                readType = roundUpGPRType(remaining);
+            }
+            // For SIMD, keep the same type and let the load overlap with previous data.
+            remaining = genTypeSize(readType);
+        }
+
+        const unsigned chunkSize = genTypeSize(readType);
+        const ssize_t  offset    = (ssize_t)len - (ssize_t)remaining;
+
+        // Loaded chunk: IND<readType>(data + baseOffset + offset). The peeled-off baseOffset is
+        // folded into the displacement here rather than materialized as a separate add.
+        GenTree* loadOffset = gtNewIconNode((ssize_t)baseOffset + offset, TYP_I_IMPL);
+        GenTree* loadAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(data), loadOffset);
+        GenTree* loaded     = gtNewIndir(readType, loadAddr, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+
+        constexpr unsigned maxChunkBytes = 64; // largest possible chunk = TYP_SIMD64
+        assert(chunkSize <= maxChunkBytes);
+        uint8_t cnsChunk[maxChunkBytes] = {};
+        memcpy(cnsChunk, cnsData + offset, chunkSize);
+
+        GenTree* cnsTree = gtNewGenericCon(readType, cnsChunk);
+
+        // A single-chunk integral compare can skip the XOR/OR scaffolding.
+        if ((chunkSize == len) && varTypeIsIntegral(readType))
+        {
+            assert(result == nullptr);
+            result = binOp(GT_EQ, TYP_INT, loaded, cnsTree);
+            break;
+        }
+
+        GenTree* xorNode = binOp(GT_XOR, genActualType(readType), loaded, cnsTree);
+
+        if (result == nullptr)
+        {
+            result = xorNode;
+        }
+        else
+        {
+            // Merge into the running OR. When the new chunk is a narrower integral type
+            // (sliding to a smaller scalar at the tail), zero-extend it to the running type.
+            if (!result->TypeIs(readType))
+            {
+                assert(varTypeIsIntegral(result) && varTypeIsIntegral(readType));
+                xorNode = gtNewCastNode(result->TypeGet(), xorNode, true, result->TypeGet());
+            }
+            result = binOp(GT_OR, genActualType(result->TypeGet()), result, xorNode);
+        }
+
+        remaining -= chunkSize;
+    }
+
+    // For the multi-chunk case we still need a final compare-with-zero.
+    if (!result->OperIs(GT_EQ))
+    {
+        result = binOp(GT_EQ, TYP_INT, result, gtNewZeroConNode(result->TypeGet()));
+    }
+
+    GenTree* fold = (sideEffects == nullptr) ? result : gtNewOperNode(GT_COMMA, TYP_INT, sideEffects, result);
+    JITDUMP("...unrolled to:\n");
+    DISPTREE(fold);
+    return fold;
 }
 
 //------------------------------------------------------------------------------
@@ -2774,14 +2918,12 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
 // Arguments:
-//    block  -  The block containing the tree.
-//    parent -  The parent node of the tree.
-//    call   -  The call to fold
+//    call - The call to fold
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
 //
-GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
+GenTree* Compiler::optVNBasedFoldExpr_Call(GenTreeCall* call)
 {
     switch (call->GetHelperNum())
     {
@@ -2878,7 +3020,7 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
     switch (tree->OperGet())
     {
         case GT_CALL:
-            return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+            return optVNBasedFoldExpr_Call(tree->AsCall());
 
             // We can add more VN-based foldings here.
 
@@ -5444,6 +5586,15 @@ bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions
 
 GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt)
 {
+    if (!optLocalAssertionProp)
+    {
+        GenTree* folded = optVNBasedFoldExpr_Call(call);
+        if (folded != nullptr)
+        {
+            return optAssertionProp_Update(folded, call, stmt);
+        }
+    }
+
     if (optNonNullAssertionProp_Call(assertions, call))
     {
         return optAssertionProp_Update(call, call, stmt);

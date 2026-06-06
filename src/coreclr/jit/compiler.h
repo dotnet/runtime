@@ -3960,6 +3960,7 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
+    GenTree* gtFoldExprConstChain(GenTree* tree, int maxDepth = 10);
     GenTree* gtFoldExprConst(GenTree* tree);
 
     GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
@@ -9055,7 +9056,7 @@ public:
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
-    GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);

@@ -15000,6 +15000,46 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// gtFoldExprConstChain: fold a tree into a constant when possible, recursing
+//    into operands first.
+//
+// Arguments:
+//    tree     - the tree to fold (mutated in place)
+//    maxDepth - remaining recursion budget; folding stops (and the subtree is
+//               returned unfolded) once it is exhausted
+//
+// Returns:
+//    The folded tree; a constant node if the whole chain folded to a constant.
+//
+GenTree* Compiler::gtFoldExprConstChain(GenTree* tree, int maxDepth)
+{
+    if (maxDepth <= 0)
+    {
+        return tree;
+    }
+
+    if (tree->OperIsUnary())
+    {
+        if (tree->AsOp()->gtOp1 != nullptr)
+        {
+            tree->AsOp()->gtOp1 = gtFoldExprConstChain(tree->AsOp()->gtOp1, maxDepth - 1);
+        }
+    }
+    else if (tree->OperIsBinary())
+    {
+        if (tree->AsOp()->gtOp1 != nullptr)
+        {
+            tree->AsOp()->gtOp1 = gtFoldExprConstChain(tree->AsOp()->gtOp1, maxDepth - 1);
+        }
+        if (tree->AsOp()->gtOp2 != nullptr)
+        {
+            tree->AsOp()->gtOp2 = gtFoldExprConstChain(tree->AsOp()->gtOp2, maxDepth - 1);
+        }
+    }
+    return gtFoldExpr(tree);
+}
+
+//------------------------------------------------------------------------
 // gtFoldExprUnary: see if a unary operation is foldable
 //
 // Arguments:
