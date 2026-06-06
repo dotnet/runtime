@@ -7,6 +7,9 @@ set(CORERUN_IN_BROWSER 0)
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
 else()
+    # WASI: getauxval and (sometimes) dirent.d_type are absent. The
+    # check_symbol_exists / check_struct_has_member helpers report FALSE
+    # without failing the build, so this is safe to include unconditionally.
     include(configure.cmake)
 endif()
 
@@ -36,9 +39,11 @@ if(CLR_CMAKE_HOST_WIN32)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
-    # Required to expose symbols for global symbol discovery
-    target_link_libraries(corerun PRIVATE -rdynamic)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
+        # Required to expose symbols for global symbol discovery
+        target_link_libraries(corerun PRIVATE -rdynamic)
+    endif()
 
     # Android implements pthread natively.
     # WASM, linking against pthreads indicates Node.js workers are
@@ -114,6 +119,20 @@ else()
                 -Wl,--export=__stack_pointer
                 -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
                 -Wl,--error-limit=0)
+        elseif (CLR_CMAKE_TARGET_WASI)
+            # Use wasm-component-ld to produce a WASI Component (wraps the
+            # wasi:io@0.2.x imports into the component model). The default
+            # -fuse-ld=lld set by init-compiler.sh produces a plain core
+            # module which wasmtime/nesm/etc. can't instantiate against
+            # a component-host. Pass the absolute path because clang only
+            # accepts well-known linker names (lld/bfd/gold/etc.) otherwise.
+            # Target-local so the cmake feature-detection test executables
+            # keep using lld.
+            get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            target_link_options(corerun PRIVATE
+                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+                -Wl,-z,stack-size=8388608
+                -Wl,--initial-memory=52428800)
         endif()
 
         if (CORERUN_IN_BROWSER)

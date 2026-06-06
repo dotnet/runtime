@@ -24,7 +24,12 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
-    set(DEBUG_PAL_REFEREENCE_DIAGNOSTICSERVER ON)
+    if (NOT CLR_CMAKE_TARGET_WASI)
+        # Diagnostic-server PAL pulls in ds-ipc-pal-socket.c (UNIX-domain /
+        # TCP sockets). Initial WASI bring-up disables EventPipe entirely via
+        # FEATURE_PERFTRACING=0; re-enable once PERFTRACING is wired.
+        set(DEBUG_PAL_REFEREENCE_DIAGNOSTICSERVER ON)
+    endif()
 
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
