@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_TCP=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
   </ItemGroup>
