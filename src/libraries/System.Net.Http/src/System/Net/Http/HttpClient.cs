@@ -73,6 +73,10 @@ namespace System.Net.Http
             get => _defaultVersionPolicy;
             set
             {
+                if ((uint)value > (uint)HttpVersionPolicy.RequestVersionExact)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(HttpVersionPolicy)), nameof(value));
+                }
                 CheckDisposedOrStarted();
                 _defaultVersionPolicy = value;
             }
