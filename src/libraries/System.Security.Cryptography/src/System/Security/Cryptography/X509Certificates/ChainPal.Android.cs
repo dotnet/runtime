@@ -141,8 +141,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     _chainContext = Interop.AndroidCrypto.X509ChainCreateContext(
                         ((AndroidCertificatePal)cert).SafeHandle,
-                        extraCerts,
-                        extraCerts.Length);
+                        extraCerts);
 
                     if (useCustomRootTrust)
                     {

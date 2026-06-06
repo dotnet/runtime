@@ -1745,6 +1745,7 @@ class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
     friend class CoreLibBinder;
+    friend struct ::cdac_data<DelegateObject>;
 
 public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
@@ -1788,6 +1789,15 @@ private:
 #define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
 #define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+
+template<>
+struct cdac_data<DelegateObject>
+{
+    static constexpr size_t Target = offsetof(DelegateObject, _target);
+    static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
+    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
+    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+};
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;

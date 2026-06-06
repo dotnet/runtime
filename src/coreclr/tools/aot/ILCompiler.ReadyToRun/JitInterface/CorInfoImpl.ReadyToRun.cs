@@ -1041,9 +1041,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -1430,8 +1427,12 @@ namespace Internal.JitInterface
                     || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
                     || methodDesc.IsPInvoke))
                 {
+                    // Unwrap synthetic MethodDesc wrappers (e.g. async-variant thunks) to the
+                    // underlying metadata method before resolving its token. For a devirtualized
+                    // callee, resolveVirtualMethod guarantees a real methoddef token in that
+                    // method's own EcmaModule, so token and module are sourced consistently here.
                     if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
-                        methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        methodDesc?.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                     {
                         mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
 
