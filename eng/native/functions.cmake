@@ -565,8 +565,8 @@ function(install_clr)
 
     foreach(destination ${destinations})
       # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
-      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
-        # Use install FILES since these are WASM assets that aren't executable.
+      if (CLR_CMAKE_TARGET_BROWSER AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Emscripten produces a .js + .wasm pair; install both as data files.
         install(FILES
           "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
           "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
@@ -580,6 +580,13 @@ function(install_clr)
           endif()
         "
         COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      elseif (CLR_CMAKE_TARGET_WASI AND "${targetType}" STREQUAL "EXECUTABLE")
+        # wasi-sdk produces a single .wasm binary (the executable itself, no
+        # extension). Install it as a data file — making it PROGRAMS would
+        # require execute permission on a wasm file which the host runtime
+        # (wasmtime) doesn't need.
+        install(FILES $<TARGET_FILE:${targetName}>
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
       else()
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.

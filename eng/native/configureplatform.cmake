@@ -524,7 +524,43 @@ else()
             add_compile_options(-msimd128)
         endif()
         if(CLR_CMAKE_TARGET_WASI)
-            add_compile_options(-fexceptions)
+            # Follow the browser-CoreCLR linking pattern (project-wide
+            # add_link_options + add_compile_options for the EH model).
+            # Native wasm exceptions are required (sjlj cannot handle the
+            # interpreter's ResumeAfterCatch throw-from-catch pattern). The
+            # wasi-sdk 33 sysroot ships eh-flavored libc++/libc++abi/libunwind
+            # which clang picks automatically when -fwasm-exceptions is set.
+            # -wasm-use-legacy-eh=false selects the new try_table/throw_ref
+            # proposal which wasmtime 45+ supports natively. Legacy try would
+            # require wasmtime --legacy-exceptions.
+            add_compile_options(-fwasm-exceptions)
+            add_compile_options(-mllvm -wasm-use-legacy-eh=false)
+
+            # Suppress the default CMake C++ stdlib (-lstdc++); wasi-sdk has
+            # libc++ only and we link the eh-flavored variant explicitly below.
+            set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+
+            add_link_options(-fwasm-exceptions)
+            add_link_options(-mllvm -wasm-use-legacy-eh=false)
+            add_link_options(-Wno-unused-command-line-argument)
+            add_link_options(-Wl,--error-limit=0)
+
+            # Supply the wasi-sdk libc++ stack explicitly so the eh-flavored
+            # variants are picked.
+            add_link_options(-lc)
+            add_link_options(-lc++)
+            add_link_options(-lc++abi)
+            add_link_options(-lunwind)
+            add_link_options(-ldl)
+
+            # WASI emulated libc helpers the CoreCLR PAL pulls in.
+            add_link_options(-lwasi-emulated-process-clocks)
+            add_link_options(-lwasi-emulated-signal)
+            add_link_options(-lwasi-emulated-mman)
+            add_link_options(-lwasi-emulated-getpid)
         endif()
     endif()
 endif()

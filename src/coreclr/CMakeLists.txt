@@ -39,7 +39,17 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
-  add_compile_options(-mllvm -wasm-enable-sjlj)
+  # Exception model: -fwasm-exceptions (set via configureplatform.cmake's
+  # -fwasm-exceptions compile/link options). sjlj is intentionally NOT used —
+  # it cannot handle throw-from-catch which the interpreter's ResumeAfterCatch
+  # requires. WASI SDK 33 ships an eh-flavored libc++abi/libunwind which
+  # clang picks automatically when -fwasm-exceptions is set.
+  # Disable EventPipe / diagnostic-server PAL for the initial WASI bring-up.
+  # eventpipe pulls in ds-ipc-pal-socket.c which requires UNIX-domain or TCP
+  # sockets we have not validated end-to-end yet. Revisit once corerun.wasm
+  # actually runs; for now keep the surface area small.
+  set(FEATURE_EVENT_TRACE 0)
+  set(FEATURE_PERFTRACING 0)
   # WASI doesn't define these fcntl constants — provide them as no-ops
   add_compile_definitions(F_DUPFD_CLOEXEC=1030)
   add_compile_definitions(O_CLOEXEC=0)

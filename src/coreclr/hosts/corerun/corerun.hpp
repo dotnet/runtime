@@ -723,6 +723,12 @@ namespace pal
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
     {
+#ifdef TARGET_WASM
+        // WASM hosts statically link all symbols; there is no dlopen.
+        // Callers handle the false return as "library not available".
+        (void)path; hMod = nullptr;
+        return false;
+#else
         hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (hMod == nullptr)
         {
@@ -730,6 +736,7 @@ namespace pal
             return false;
         }
         return true;
+#endif
     }
 
 
