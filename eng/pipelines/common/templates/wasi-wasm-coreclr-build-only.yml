@@ -1,0 +1,38 @@
+parameters:
+  condition: false
+  extraBuildArgs: ''
+  isExtraPlatformsBuild: false
+  nameSuffix: ''
+  platforms: []
+  publishArtifactsForWorkload: false
+
+jobs:
+
+#
+# Build CoreCLR + libraries for WASI (wasm32-wasi).
+#
+# This is the minimum viable CoreCLR-WASI CI: it produces a runtime
+# pack + corerun.wasm artifact under wasi.wasm.Release. Tests are not
+# run in CI yet — wasmtime is not yet distributed in our helix images,
+# and src/tests for wasi-coreclr is still being validated. Once both
+# pieces land we will add a wasi-wasm-coreclr-runtime-tests.yml that
+# consumes BuildArtifacts_wasi_wasm_*_Release_CoreCLR.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: CoreCLR
+    platforms: ${{ parameters.platforms }}
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: CoreCLR${{ parameters.nameSuffix }}_BuildOnly
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false
+      timeoutInMinutes: 120
+      condition: ${{ parameters.condition }}
+      postBuildSteps:
+        - template: /eng/pipelines/common/wasm-post-build-steps.yml
+          parameters:
+            publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
+            publishWBT: false

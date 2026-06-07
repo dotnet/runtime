@@ -142,7 +142,19 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      - template: /eng/pipelines/common/platform-matrix.yml
+      # Release build of wasi wasm for CoreCLR (build-only — wasmtime
+      # is not yet in our helix queues, so no test run for now).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-build-only.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          publishArtifactsForWorkload: true
+          condition: >-
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
