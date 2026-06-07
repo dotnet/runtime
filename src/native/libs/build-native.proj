@@ -27,8 +27,6 @@
     <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" Condition="'$(TargetOS)' == 'android'" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" Condition="'$(TargetsWasi)' != 'true'" />
-
   <Target Name="BuildNativeCommon"
           DependsOnTargets="$(BuildNativeCommonDependsOnTargets)">
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
