@@ -16,7 +16,7 @@ apt-get install -y \
   ca-certificates
 
 # =========================================================
-# ✅ Clone runtime
+#  Clone runtime
 # =========================================================
 echo "=================================="
 echo "Clone runtime"
@@ -27,7 +27,7 @@ cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-# ✅ Install .NET SDK
+#  Install .NET SDK
 # =========================================================
 echo "=================================="
 echo "Install .NET SDK"
@@ -50,10 +50,21 @@ export PATH=$DOTNET_ROOT:$PATH
 
 popd
 
-dotnet --info
+#  Verify installation
+echo "=================================="
+echo "Verify .NET Installation"
+echo "=================================="
 
+if command -v dotnet &> /dev/null
+then
+    echo " .NET installed successfully"
+    dotnet --version
+else
+    echo " .NET installation failed"
+    exit 1
+fi
 # =========================================================
-# ✅ Build Runtime
+#  Build Runtime
 # =========================================================
 echo "=================================="
 echo "Build Runtime"
@@ -66,7 +77,7 @@ echo "=================================="
   | tee build.log
 
 # =========================================================
-# ✅ Build Libraries
+#  Build Libraries
 # =========================================================
 echo "=================================="
 echo "Build Libraries"
@@ -75,7 +86,7 @@ echo "=================================="
 ./build.sh libs
 
 # =========================================================
-# ✅ Build Tests
+#  Build Tests
 # =========================================================
 echo "=================================="
 echo "Build Tests"
@@ -84,7 +95,7 @@ echo "=================================="
 ./src/tests/build.sh /p:LibrariesConfiguration=Debug
 
 # =========================================================
-# ✅ Fix CoreLib
+#  Fix CoreLib
 # =========================================================
 echo "=================================="
 echo "Fix CoreLib"
@@ -96,7 +107,7 @@ cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll \
    ${CORE_ROOT}/System.Private.CoreLib.dll
 
 # =========================================================
-# ✅ Run JIT Tests
+#  Run JIT Tests
 # =========================================================
 echo "=================================="
 echo "Run JIT Tests"
