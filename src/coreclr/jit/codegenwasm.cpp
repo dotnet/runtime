@@ -1884,11 +1884,9 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
             ins = INS_f64_reinterpret_i64;
             break;
 
-        // Bitcasts between same-sized wasm integer/pointer types are no-ops: on the wasm value
-        // stack both sides are represented by the same primitive type (i32 on wasm32, i64 on
-        // wasm64), so no reinterpret instruction is needed. PackTypes normalizes TYP_REF and
-        // TYP_BYREF to TYP_I_IMPL, so this single case covers all combinations of INT/REF/BYREF
-        // on wasm32 and LONG/REF/BYREF on wasm64.
+        // Same-size bitcasts are no-ops on the wasm value stack. PackTypes normalizes
+        // TYP_REF/TYP_BYREF to TYP_I_IMPL, so this covers all INT/REF/BYREF combos on wasm32
+        // and LONG/REF/BYREF on wasm64.
         case PackTypes(TYP_INT, TYP_INT):
         case PackTypes(TYP_LONG, TYP_LONG):
             break;
