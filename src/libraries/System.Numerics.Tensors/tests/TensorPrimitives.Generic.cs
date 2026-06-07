@@ -569,6 +569,7 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129045", typeof(PlatformDetection), nameof(PlatformDetection.IsiOS))]
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
