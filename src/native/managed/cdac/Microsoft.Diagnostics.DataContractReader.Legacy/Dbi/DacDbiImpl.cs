@@ -1557,9 +1557,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // apply the saved stack-parameter-size adjustment on x86.
                     if (!atEndOfStack
                         && handleData.Current!.State == StackWalkState.NativeMarker
-                        && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86
+                        && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
+                    {
                         handleData.PendingStackPointerDelta = -(long)cbStackParameterSize;
-
+                    }
                     *pResult = atEndOfStack ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
                 }
             }
