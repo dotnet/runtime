@@ -1064,28 +1064,6 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     MergeEdgeAssertionsWorker(comp, num, ValueNumStore::NoVN, assertions, &result, /* canUseCheckedBounds */ false,
                               edgeAssertionsBudget, visited);
 
-    // Refine using known bits: when the interval analysis above left a side of the range wide open
-    // (e.g. for VN funcs it does not model, like UDIV), KnownBits may still prove the sign or upper
-    // bits are zero, yielding a tighter signed [lo, hi].
-    if (result.IsConstantRange() &&
-        ((result.LowerLimit().GetConstant() == INT32_MIN) || (result.UpperLimit().GetConstant() == INT32_MAX)) &&
-        (budget > 0))
-    {
-        const KnownBits kb = KnownBits::Compute(comp, num, assertions, budget);
-        int64_t         kbLo;
-        int64_t         kbHi;
-        if (kb.TryGetSignedRange(32, &kbLo, &kbHi))
-        {
-            const int newLo = max(result.LowerLimit().GetConstant(), (int)kbLo);
-            const int newHi = min(result.UpperLimit().GetConstant(), (int)kbHi);
-            if (newLo <= newHi)
-            {
-                result.lLimit = Limit(Limit::keConstant, newLo);
-                result.uLimit = Limit(Limit::keConstant, newHi);
-            }
-        }
-    }
-
     assert(result.IsConstantRange());
     return result;
 }
