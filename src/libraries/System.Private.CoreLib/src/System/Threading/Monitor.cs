@@ -86,7 +86,7 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(obj);
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
-            return GetLockObject(obj).Wait(millisecondsTimeout);
+            return GetLockObject(obj).Wait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)

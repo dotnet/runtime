@@ -153,10 +153,10 @@ namespace System.Threading
 
         private void InterlockedDecrementWaiters()
         {
-            int newWaiters = Interlocked.Decrement(ref m_combinedState) & NumWaitersState_BitMask;
-
             // setting to <0 would indicate an internal flaw, hence Assert is appropriate.
-            Debug.Assert(newWaiters >= 0, "NumWaiters should never be less than zero. This indicates an internal error.");
+            Debug.Assert((m_combinedState & NumWaitersState_BitMask) != 0, "NumWaiters should never be less than zero. This indicates an internal error.");
+
+            Interlocked.Decrement(ref m_combinedState);
         }
 
         //-----------------------------------------------------------------------------------

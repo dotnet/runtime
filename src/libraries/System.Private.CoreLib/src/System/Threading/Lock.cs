@@ -968,8 +968,13 @@ namespace System.Threading
         internal bool Wait(int millisecondsTimeout)
         {
 #pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
-            return GetOrCreateCondition().Wait(millisecondsTimeout, this);
+            return Wait(millisecondsTimeout, this);
 #pragma warning restore CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+        }
+
+        internal bool Wait(int millisecondsTimeout, object associatedObject)
+        {
+            return GetOrCreateCondition().Wait(millisecondsTimeout, associatedObject);
         }
 
         internal void Pulse()
