@@ -408,11 +408,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
 
-    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
+    public override int TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
         int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
-        return hr == 0;
+        return hr;
     }
 
     /// <summary>

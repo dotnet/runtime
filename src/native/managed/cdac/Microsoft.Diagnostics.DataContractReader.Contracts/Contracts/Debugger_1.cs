@@ -10,6 +10,7 @@ internal readonly struct Debugger_1 : IDebugger
         PendingAttach = 0x0100,
         Attached = 0x0200,
     }
+    private const uint UnhandledExceptionHijackIndex = 0;
 
     private readonly Target _target;
 
@@ -116,5 +117,39 @@ internal readonly struct Debugger_1 : IDebugger
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
         debugger.WriteGCNotificationEventsEnabled(fEnable ? 1 : 0);
+    }
+
+    bool IDebugger.IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException)
+    {
+        isUnhandledException = false;
+
+        if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+            return false;
+
+        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
+        if (debugger.RgHijackFunction == TargetPointer.Null)
+            return false;
+
+        uint maxHijackFunctions = _target.ReadGlobal<uint>(Constants.Globals.MaxHijackFunctions);
+        if (maxHijackFunctions == 0)
+            return false;
+
+        Target.TypeInfo memoryRangeTypeInfo = _target.GetTypeInfo(DataType.MemoryRange);
+        uint stride = memoryRangeTypeInfo.Size!.Value;
+
+        for (uint i = 0; i < maxHijackFunctions; i++)
+        {
+            TargetPointer entryAddress = debugger.RgHijackFunction + (ulong)(i * stride);
+            Data.MemoryRange entry = _target.ProcessedData.GetOrAdd<Data.MemoryRange>(entryAddress);
+
+            ulong start = entry.StartAddress.Value;
+            ulong end = start + entry.Size.Value;
+            if (controlPC.Value >= start && controlPC.Value < end)
+            {
+                isUnhandledException = i == UnhandledExceptionHijackIndex;
+                return true;
+            }
+        }
+        return false;
     }
 }

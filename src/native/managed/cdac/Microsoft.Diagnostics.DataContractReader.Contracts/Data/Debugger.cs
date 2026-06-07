@@ -14,4 +14,5 @@ internal sealed partial class Debugger : IData<Debugger>
     [Field(Writable = true)] public int RSRequestedSync { get; private set; }
     [Field(Writable = true)] public int SendExceptionsOutsideOfJMC { get; private set; }
     [Field(Writable = true)] public int GCNotificationEventsEnabled { get; private set; }
+    [Field] public TargetPointer RgHijackFunction { get; }
 }

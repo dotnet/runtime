@@ -36,8 +36,24 @@ public enum StackWalkState
 // Creates a stack walk and returns a handle
 IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 
+// Creates a stack walk and returns a handle, using a caller-provided seed CONTEXT.
+// `contextBuffer` must be at least `IPlatformAgnosticContext.Size` bytes.
+// `isFirst` indicates whether the seed frame should be treated as the active leaf.
+// `skipFrames` controls whether explicit Frames below the seed SP are yielded as
+//   `SkippedFrame` entries before the containing managed frame.
+IEnumerable<IStackDataFrameHandle> CreateStackWalk(
+    ThreadData threadData,
+    byte[] contextBuffer,
+    bool isFirst = true,
+    bool skipFrames = false);
+
 // Gets the thread context at the given stack dataframe.
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+
+// Recovers the pre-hijack thread CONTEXT saved by a runtime redirection stub when
+// the walker is currently stopped inside one of those stubs.
+byte[] RetrieveHijackedContext(IStackDataFrameHandle stackDataFrameHandle, bool isUnhandledException);
+
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
@@ -69,8 +85,10 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 
 // Returns a context for the thread, trying (in order): the debugger filter context,
-// the OS thread context, or a context derived from the explicit Frame chain.
-byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags);
+// the OS thread context, or a context derived from the explicit Frame chain. The caller
+// owns the buffer and must ensure it is at least sizeof(CONTEXT) bytes and aligned to
+// IPlatformAgnosticContext.ContextAlignment (16).
+int GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
@@ -160,6 +178,7 @@ Constants used:
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
 | `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| `Debugger::s_hijackFunction` (`debugger.h`) | `UnhandledExceptionHijackIndex` | `0` | Index of the unhandled-exception hijack entry in the runtime's hijack-function table. Used by `RetrieveHijackedContext` to choose between the SP-based and FP/SP-offset-based CONTEXT recovery paths, and by `IDebugger.IsRuntimeUnwindableStub` to set its `isUnhandledException` out parameter. |
 
 Contracts used:
 | Contract Name |
@@ -584,13 +603,41 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
 
-`GetContext` returns a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from walking the explicit Frame chain (`Thread::Frame` linked list), returning the first frame that yields a usable context:
-* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
+`GetContext` fills the caller-provided buffer with a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from walking the explicit Frame chain (`Thread::Frame` linked list), returning the first frame that yields a usable context:
+* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Write the resulting bytes to the destination.
 * Otherwise, clear the context and update it from the current Frame; accept the context when both the stack pointer and instruction pointer are non-zero (e.g. `RedirectedThreadFrame`, `InlinedCallFrame`, `DynamicHelperFrame`). Mark `RawContextFlags = FullContextFlags` so callers know SP/PC/FP are valid.
 
-If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
+If no Frame in the chain produces a usable context (thread is not running managed code), the destination is left zero-initialized (it is cleared by `GetContext` before any source writes into it).
+
+The caller owns the buffer and must ensure it is at least `IPlatformAgnosticContext.Size` bytes and aligned to `IPlatformAgnosticContext.ContextAlignment`.
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
+
+#### CreateStackWalk with a caller-provided CONTEXT
+
+`CreateStackWalk(ThreadData, byte[], bool isFirst, bool skipFrames)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT, and exposes two extra knobs:
+
+* `isFirst` (default `true`) is propagated to the first yielded `StackWalkData` as its `IsFirst` value.
+* `skipFrames` (default `false`) controls whether the initial `CheckForSkippedFrames` step runs.
+When the seed sits at a managed-to-unmanaged (M2U) boundary, the overload runs a pre-loop that mirrors native `StackFrameIterator::ResetRegDisp` (`stackwalk.cpp:1261-1308`):
+
+1. Compute the caller SP by cloning the seed context and unwinding the clone.
+2. Iterate the explicit Frame chain; stop at the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check (on x86, where an external OS unwind can produce a slightly wrong SP — see `stackwalk.cpp:1240-1241`).
+3. For every Frame whose `GetCurrentReturnAddress() == seedIP`, rewrite the seed context via `UpdateContextFromCurrentFrame` and record the matched Frame type.
+4. After the loop, if a match was found, override the first yielded frame's `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+
+The frame iterator is left positioned at the first Frame `>= callerSP`, so the rest of the walk picks up from the same logical position as the native iterator.
+
+#### RetrieveHijackedContext
+
+`RetrieveHijackedContext(handle, isUnhandledException)` returned byte buffer is the pre-hijack thread CONTEXT that the stub stashed on the stack at entry, and is used to re-seed the walker.
+
+The location of the saved `PT_CONTEXT*` differs by stub kind and by architecture:
+
+* `isUnhandledException == true` (the `ExceptionHijack` stub): the pointer is at `*SP` — the stub pushes it directly. The implementation reads `*context.StackPointer`.
+* `isUnhandledException == false` (the `RedirectedHandledJITCaseFor*` stubs): the pointer is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_{SP,EBP,RBP}_OFFSET_CONTEXT` constants in `src/coreclr/vm/{arch}/asmconstants.h`:
+
+The implementation reads the pointer from that slot via `Target.ReadPointer`, then materializes a fresh `IPlatformAgnosticContext` from the target memory at the resulting address and returns its raw bytes.
 
 ### GC Stack Reference Scanning
 

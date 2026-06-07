@@ -20,6 +20,7 @@ public interface IDebugger : IContract
     void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC) => throw new NotImplementedException();
     TargetPointer GetDebuggerControlBlockAddress() => throw new NotImplementedException();
     void EnableGCNotificationEvents(bool fEnable) => throw new NotImplementedException();
+    bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException) => throw new NotImplementedException();
 }
 
 public readonly struct Debugger : IDebugger

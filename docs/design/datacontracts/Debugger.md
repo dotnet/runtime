@@ -18,6 +18,7 @@ void RequestSyncAtEvent();
 void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
+bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException);
 ```
 
 ## Version 1
@@ -30,6 +31,7 @@ The contract depends on the following globals
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
 | `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
+| `MaxHijackFunctions` | uint32 | Number of entries in the hijack function array. Zero on platforms/configurations where the hijack-function table is not present. |
 
 The contract additionally depends on these data descriptors
 
@@ -42,7 +44,15 @@ The contract additionally depends on these data descriptors
 | `Debugger` | `RSRequestedSync` | Sync-at-event request flag |
 | `Debugger` | `SendExceptionsOutsideOfJMC` | Exception delivery policy flag |
 | `Debugger` | `GCNotificationEventsEnabled` | Whether GC notification events are enabled |
+| `Debugger` | `RgHijackFunction` | Pointer to the runtime's array of hijack-stub address ranges. |
 | `DebuggerRCThread` | `DCB` | Pointer to `DebuggerIPCControlBlock` |
+| `MemoryRange` | `StartAddress` | Inclusive start address of the range |
+| `MemoryRange` | `Size` | Size of the range in bytes; the range covers `[StartAddress, StartAddress + Size)` |
+
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `UnhandledExceptionHijackIndex` | uint | Index of unhandled exception hijack memory range. | `0` |
 
 ```csharp
 
@@ -133,5 +143,41 @@ void EnableGCNotificationEvents(bool fEnable)
     target.Write<int>(
         debuggerAddress + /* Debugger::GCNotificationEventsEnabled offset */,
         fEnable ? 1 : 0);
+}
+
+bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException)
+{
+    isUnhandledException = false;
+
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return false;
+
+    TargetPointer rgHijack = target.ReadPointer(
+        debuggerAddress + /* Debugger::RgHijackFunction offset */);
+    if (rgHijack == TargetPointer.Null)
+        return false;
+
+    uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
+    if (maxHijackFunctions == 0)
+        return false;
+
+    uint stride = // Size of one MemoryRange entry
+
+    for (uint i = 0; i < maxHijackFunctions; i++)
+    {
+        TargetPointer entryAddress = rgHijack + (ulong)(i * stride);
+        TargetPointer start = target.ReadPointer(
+            entryAddress + /* MemoryRange::StartAddress offset */);
+        TargetNUInt size = target.Read<TargetNUInt>(
+            entryAddress + /* MemoryRange::Size offset */);
+
+        ulong end = start.Value + size.Value;
+        if (controlPC.Value >= start.Value && controlPC.Value < end)
+        {
+            isUnhandledException = (i == UnhandledExceptionHijackIndex);
+            return true;
+        }
+    }
+    return false;
 }
 ```

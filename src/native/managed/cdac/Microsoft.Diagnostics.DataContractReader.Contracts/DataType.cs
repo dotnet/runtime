@@ -45,6 +45,7 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    MemoryRange,
     SystemDomain,
     Assembly,
     LoaderAllocator,
