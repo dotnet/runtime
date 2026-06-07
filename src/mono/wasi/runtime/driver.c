@@ -41,6 +41,9 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 char *mono_method_get_full_name (MonoMethod *method);
+
+// Exported by libmono (MONO_API_DATA gboolean, see options-def.h). gboolean is int.
+extern int mono_opt_aot_lazy_assembly_load;
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
 extern void mono_register_runtimeconfig_bin (void);
@@ -242,6 +245,16 @@ void
 mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
+
+	// Load assemblies referenced by AOT images lazily instead of eagerly.
+	// On WASI assemblies are resolved through filesystem probing, which is not yet
+	// available while corlib itself is being set up. Eagerly loading the assemblies
+	// referenced by corlib's AOT image (e.g. System.Security.Claims) during that early
+	// phase falls back to the managed AssemblyLoadContext resolving event, which needs
+	// the corlib metadata that isn't initialized yet, aborting with a "Runtime critical
+	// type System.Runtime.Loader.AssemblyLoadContext not found" error. Deferring the
+	// load until the referenced assembly is actually needed avoids this reentrancy.
+	mono_opt_aot_lazy_assembly_load = 1;
 
 #ifndef INVARIANT_GLOBALIZATION
 	char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
