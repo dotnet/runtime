@@ -67,7 +67,3 @@ jobs:
           docker stop gha 2>/dev/null || true
           docker rm gha 2>/dev/null || true
         continue-on-error: true
-
-# Made with Bob
-
-provide me correct yaml
