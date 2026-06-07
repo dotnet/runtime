@@ -219,7 +219,12 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    // Android requires reconsistuting the public key from the private key.
+                    // Android's native implementation gives us two handles, one for the private key and one for the
+                    // public key when generating a key pair. When importing a private key, it only gives us a handle
+                    // representing the private key back. This makes it difficult to export the public key out of a private
+                    // key handle since the export on the handle doesn't specify whether you want the public or private key.
+                    // To recover the public key from the private key, we do X25519(9, key). This is how the public key
+                    // is computed per RFC7748, section 6.1.
                     Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
                     DeriveRawSecretAgreementCore(privateKey, s_basePointHandle.Value, publicKeyBytes);
                     SafeX25519PublicKeyHandle publicKey = ImportPublicKeyAsHandle(publicKeyBytes);
