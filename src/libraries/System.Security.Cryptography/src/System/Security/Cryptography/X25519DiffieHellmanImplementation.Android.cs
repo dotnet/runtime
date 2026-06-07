@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -90,14 +91,49 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8(
+                ReadOnlySpan<byte> privateKeyContents = KeyFormatHelper.ReadPkcs8(
                     s_knownOids,
                     pkcs8Buffer.Slice(0, written),
                     out int bytesRead,
                     permitParameters: false);
 
                 Debug.Assert(bytesRead == written);
-                privateKey.CopyTo(destination);
+
+                ValueAsnReader reader = new(privateKeyContents, AsnEncodingRules.BER);
+
+                if (reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> privateKey))
+                {
+                    if (privateKey.Length != PrivateKeySizeInBytes)
+                    {
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
+
+                    privateKey.CopyTo(destination);
+                }
+                else
+                {
+                    byte[] privateKey = reader.ReadOctetString();
+
+                    try
+                    {
+                        if (privateKey.Length != PrivateKeySizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                        }
+
+                        privateKey.CopyTo(destination);
+                    }
+                    finally
+                    {
+                        CryptographicOperations.ZeroMemory(privateKey);
+                    }
+                }
+
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
             finally
             {
