@@ -7,6 +7,8 @@
 // so downstream uses comparing the value arithmetically (here `~v3 >= -1`)
 // folded the wrong way.
 
+namespace Runtime_129076;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
