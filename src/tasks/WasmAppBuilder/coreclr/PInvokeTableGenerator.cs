@@ -26,11 +26,11 @@ internal sealed class PInvokeTableGenerator
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false, string targetOS = "browser")
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _pinvokeCollector = new(log);
+        _pinvokeCollector = new(log, targetOS);
         _isLibraryMode = isLibraryMode;
     }
 

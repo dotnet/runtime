@@ -61,12 +61,14 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-    private readonly Dictionary<Type, bool> _typeUnsupportedOnBrowserCache = new();
+    private readonly Dictionary<Type, bool> _typeUnsupportedOnPlatformCache = new();
+    private readonly string _targetOS;
     private LogAdapter Log { get; init; }
 
-    public PInvokeCollector(LogAdapter log)
+    public PInvokeCollector(LogAdapter log, string targetOS = "browser")
     {
         Log = log;
+        _targetOS = targetOS;
     }
 
     public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
@@ -104,6 +106,9 @@ internal sealed class PInvokeCollector {
         {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
+                if (IsUnsupportedOnPlatform(method.DeclaringType))
+                    return;
+
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
                 var wasmLinkage = method.CustomAttributes.Any(attr => attr.AttributeType.Name == "WasmImportLinkageAttribute");
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
@@ -126,7 +131,7 @@ internal sealed class PInvokeCollector {
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
-            if (IsUnsupportedOnBrowser(method.DeclaringType))
+            if (IsUnsupportedOnPlatform(method.DeclaringType))
                 return false;
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
@@ -213,23 +218,23 @@ internal sealed class PInvokeCollector {
         return value;
     }
 
-    private bool IsUnsupportedOnBrowser(Type? type)
+    private bool IsUnsupportedOnPlatform(Type? type)
     {
         if (type is null)
             return false;
 
-        if (!_typeUnsupportedOnBrowserCache.TryGetValue(type, out bool value))
+        if (!_typeUnsupportedOnPlatformCache.TryGetValue(type, out bool value))
         {
             value = false;
             bool hasSupportedOSPlatform = false;
-            bool hasSupportedBrowser = false;
+            bool hasSupportedTarget = false;
             foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
             {
                 try
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
                         cattr.ConstructorArguments.Count > 0 &&
-                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
+                        cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
                     {
                         value = true;
                         break;
@@ -238,8 +243,8 @@ internal sealed class PInvokeCollector {
                         cattr.ConstructorArguments.Count > 0)
                     {
                         hasSupportedOSPlatform = true;
-                        if (cattr.ConstructorArguments[0].Value?.ToString() == "browser")
-                            hasSupportedBrowser = true;
+                        if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                            hasSupportedTarget = true;
                     }
                 }
                 catch
@@ -248,10 +253,10 @@ internal sealed class PInvokeCollector {
                 }
             }
 
-            if (!value && hasSupportedOSPlatform && !hasSupportedBrowser)
+            if (!value && hasSupportedOSPlatform && !hasSupportedTarget)
                 value = true;
 
-            _typeUnsupportedOnBrowserCache[type] = value;
+            _typeUnsupportedOnPlatformCache[type] = value;
         }
 
         return value;

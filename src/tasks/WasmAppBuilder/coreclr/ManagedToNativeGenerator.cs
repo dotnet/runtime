@@ -35,6 +35,8 @@ public class ManagedToNativeGenerator : Task
 
     public bool IsLibraryMode { get; set; }
 
+    public string TargetOS { get; set; } = "browser";
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -69,7 +71,7 @@ public class ManagedToNativeGenerator : Task
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
-        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS);
         var internalCallCollector = new InternalCallSignatureCollector(log);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);
