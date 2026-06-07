@@ -12,7 +12,7 @@ int32_t AndroidCryptoNative_X25519IsSupported(void)
 {
     JNIEnv* env = GetJNIEnv();
 
-    jstring algorithmName = make_java_string(env, "X25519");
+    jstring algorithmName = make_java_string(env, "XDH");
     jobject keyPairGenerator = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, algorithmName);
     ReleaseLRef(env, algorithmName);
 
@@ -57,9 +57,7 @@ int32_t AndroidCryptoNative_X25519GenerateKey(jobject* publicKey, jobject* priva
 
     JNIEnv* env = GetJNIEnv();
 
-    // Conscrypt's XDH KeyPairGenerator does not support initialize(AlgorithmParameterSpec),
-    // so use "X25519" directly as the algorithm name instead of "XDH" + NamedParameterSpec.
-    jstring algorithmName = make_java_string(env, "X25519");
+    jstring algorithmName = make_java_string(env, "XDH");
     jobject keyPairGenerator = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, algorithmName);
     ReleaseLRef(env, algorithmName);
 
@@ -119,7 +117,7 @@ jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buff
 
     JNIEnv* env = GetJNIEnv();
 
-    jstring algorithmName = make_java_string(env, "X25519");
+    jstring algorithmName = make_java_string(env, "XDH");
     jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
     ReleaseLRef(env, algorithmName);
 
@@ -162,7 +160,7 @@ jobject AndroidCryptoNative_X25519ImportPkcs8PrivateKey(const uint8_t* buffer, i
 
     JNIEnv* env = GetJNIEnv();
 
-    jstring algorithmName = make_java_string(env, "X25519");
+    jstring algorithmName = make_java_string(env, "XDH");
     jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
     ReleaseLRef(env, algorithmName);
 
