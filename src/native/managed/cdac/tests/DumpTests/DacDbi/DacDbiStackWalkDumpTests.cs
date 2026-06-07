@@ -75,7 +75,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         try
         {
             Span<byte> contractContext = new(pContract, (int)contextSize);
-            _ = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.Debugger, allFlags, contractContext);
+            int hr = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.Debugger, allFlags, contractContext);
+            Assert.Equal(System.HResults.S_OK, hr);
             contractCtx.FillFromBuffer(contractContext);
         }
         finally
@@ -105,8 +106,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         try
         {
             Span<byte> leafContext = new(pContext, (int)contextSize);
-            _ = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
-
+            int hrContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
+            Assert.Equal(System.HResults.S_OK, hrContext);
             Interop.BOOL result;
             int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, pContext, &result);
             Assert.Equal(System.HResults.S_OK, hr);
@@ -137,7 +138,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         try
         {
             Span<byte> leafContext = new(pLeaf, (int)contextSize);
-            _ = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
+            int hrContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
+            Assert.Equal(System.HResults.S_OK, hrContext);
             leafCtx.FillFromBuffer(leafContext);
         }
         finally

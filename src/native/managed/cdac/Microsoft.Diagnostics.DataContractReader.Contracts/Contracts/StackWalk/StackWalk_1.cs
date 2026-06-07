@@ -1153,11 +1153,13 @@ internal partial class StackWalk_1 : IStackWalk
         try
         {
             Span<byte> buffer = new(scratch, (int)context.Size);
-            _ = ((IStackWalk)this).GetContext(
+            int hr = ((IStackWalk)this).GetContext(
                 threadData,
                 ThreadContextSource.Debugger,
                 flags,
                 buffer);
+            if (hr < 0)
+                throw Marshal.GetExceptionForHR(hr)!;
             context.FillFromBuffer(buffer);
         }
         finally

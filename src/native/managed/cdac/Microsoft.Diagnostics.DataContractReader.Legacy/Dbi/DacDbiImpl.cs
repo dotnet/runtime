@@ -1286,6 +1286,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         if (ppSFIHandle is null)
             return HResults.E_POINTER;
+        if (pInternalContextBuffer == null)
+            return HResults.E_POINTER;
         *ppSFIHandle = 0;
 
         int hr = HResults.S_OK;
