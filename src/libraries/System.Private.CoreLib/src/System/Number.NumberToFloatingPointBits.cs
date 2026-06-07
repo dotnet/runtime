@@ -891,7 +891,6 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        [RequiresUnsafe]
         internal static uint DigitsToUInt32(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 9));
@@ -916,7 +915,6 @@ namespace System
         }
 
         // get 64-bit integer from at most 19 digits
-        [RequiresUnsafe]
         internal static ulong DigitsToUInt64(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 19));
