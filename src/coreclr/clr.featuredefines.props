@@ -25,6 +25,18 @@
         <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+        <!-- Match the WASI native build (src/coreclr/CMakeLists.txt sets
+             FEATURE_PERFTRACING=0 for CLR_CMAKE_TARGET_WASI). Keeping
+             FEATURE_PERFTRACING on in managed CoreLib while the native
+             side has it off causes EventPipeInternal QCalls (e.g.
+             EventPipeInternal_CreateProvider) to resolve to NULL at
+             runtime; any EventSource activation (e.g. ArrayPoolEventSource
+             via DefaultInterpolatedStringHandler) then traps on a NULL
+             function pointer. -->
+        <FeaturePerfTracing>false</FeaturePerfTracing>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
         <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
