@@ -5171,7 +5171,11 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 second = (int)(s1 * 10 + s2);
             }
 
-            double fraction;
+            // The "O" format always has exactly 7 fractional-second digits, which is the same precision
+            // as DateTime's ticks (TimeSpan.TicksPerSecond == 10_000_000), so the integer value formed
+            // by the seven digits is exactly the sub-second tick count. Compute it directly instead of
+            // going through a double divide/multiply/Math.Round round-trip.
+            int fractionTicks;
             {
                 uint f1 = (uint)(source[20] - '0');
                 uint f2 = (uint)(source[21] - '0');
@@ -5187,12 +5191,12 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     return false;
                 }
 
-                fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
+                fractionTicks = (int)(f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7);
             }
 
             // Per ISO 8601, 24:00:00 represents the end of a calendar day
             // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero
-            if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
+            if (hour == 24 && (minute != 0 || second != 0 || fractionTicks != 0))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -5204,7 +5208,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
-            if (!dateTime.TryAddTicks((long)Math.Round(fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
+            if (!dateTime.TryAddTicks(fractionTicks, out result.parsedDate))
             {
                 result.SetBadDateTimeFailure();
                 return false;
