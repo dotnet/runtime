@@ -22,7 +22,6 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
@@ -41,7 +40,7 @@
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and $(PublishReadyToRun)">
+  <PropertyGroup Condition="'$(TargetsWasm)' == 'true' and $(PublishReadyToRun)">
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <CrossgenTargetName>CopyILCoreLib;$(CrossgenTargetName)</CrossgenTargetName>
   </PropertyGroup>
