@@ -2729,6 +2729,9 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                                         runtimeMethodHandle);
     }
 
+    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
+    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
 #if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
     else if (IsAot())
     {
@@ -2747,9 +2750,6 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         }
     }
 #endif // FEATURE_READYTORUN && !TARGET_WASM
-    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
-    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
-    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
 
     if (call == nullptr)
     {
