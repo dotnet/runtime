@@ -56,7 +56,7 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local' and '$(TargetOS)' != 'wasi'">
     <!--
       When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
       they get instead used by the AOT proxy project on helix.
