@@ -112,20 +112,20 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    byte[] privateKey = reader.ReadOctetString();
+                    byte[] allocatedPrivateKey = reader.ReadOctetString();
 
                     try
                     {
-                        if (privateKey.Length != PrivateKeySizeInBytes)
+                        if (allocatedPrivateKey.Length != PrivateKeySizeInBytes)
                         {
                             throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                         }
 
-                        privateKey.CopyTo(destination);
+                        allocatedPrivateKey.CopyTo(destination);
                     }
                     finally
                     {
-                        CryptographicOperations.ZeroMemory(privateKey);
+                        CryptographicOperations.ZeroMemory(allocatedPrivateKey);
                     }
                 }
 
