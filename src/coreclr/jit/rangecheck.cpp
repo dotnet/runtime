@@ -5,7 +5,6 @@
 
 #include "jitpch.h"
 #include "rangecheck.h"
-#include "knownbits.h"
 
 //------------------------------------------------------------------------
 // rangeCheckPhase: optimize bounds checks via range analysis

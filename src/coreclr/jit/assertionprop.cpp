@@ -5572,10 +5572,15 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     };
 
     // Known-bits elimination: redundant if (uint)index is provably < (uint)length. Catches masked
-    // indices and bit patterns the range-based paths cannot express.
+    // indices and bit patterns the range-based paths cannot express. On 64-bit targets the index
+    // and length can both be TYP_I_IMPL (see fgMorphIndexAddr), so derive the width from the actual
+    // operand type instead of hardcoding 32 -- otherwise we'd discard the high 32 bits of a native-int
+    // index and could prove a (uint)idx < (uint)len fact that doesn't hold for the full value.
+    assert(genActualType(arrBndsChk->GetIndex()) == genActualType(arrBndsChk->GetArrayLength()));
+    const unsigned  width = genTypeSize(genActualType(arrBndsChk->GetIndex())) * BITS_PER_BYTE;
     const KnownBits kbIdx = KnownBits::Compute(this, vnCurIdx, assertions);
     const KnownBits kbLen = KnownBits::Compute(this, vnCurLen, assertions);
-    if (KnownBitsOps::EvalRelop(GT_LT, /* isUnsigned */ true, kbIdx, kbLen, 32) == 1)
+    if (KnownBitsOps::EvalRelop(GT_LT, /* isUnsigned */ true, kbIdx, kbLen, width) == 1)
     {
         return dropBoundsCheck(INDEBUG("known bits prove (uint)index < (uint)length"));
     }
