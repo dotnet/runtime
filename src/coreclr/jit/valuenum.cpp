@@ -44,13 +44,13 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // For WASM, the WebAssembly spec defines a positive canonical NaN (sign 0, exponent all
+        // ones, payload MSB = 1, remaining payload bits 0) as the result of NaN-producing
+        // operations on non-NaN inputs. V8, SpiderMonkey, and Wasmtime all produce this value
+        // (matching the ARM convention), so we use it for constant folding to keep AOT and
+        // runtime results consistent.
         unsigned bits = 0x7FC00000u;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("FloatTraits::NaN");
-        unsigned bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -75,13 +75,9 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // See FloatTraits::NaN for the rationale behind picking the ARM bit pattern on WASM.
         unsigned long long bits = 0x7FF8000000000000ull;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("DoubleTraits::NaN");
-        unsigned long long bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
