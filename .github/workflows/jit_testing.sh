@@ -3,176 +3,106 @@
 set -ex
 export DEBIAN_FRONTEND=noninteractive
 
-echo "=========================================="
+echo "=================================="
 echo "Install dependencies"
-echo "=========================================="
+echo "=================================="
 
 apt-get update
 apt-get install -y \
-  bc automake clang curl findutils git hostname libtool libkrb5-dev \
-  ninja-build llvm make python3 liblttng-ust-dev tar wget jq lld \
-  build-essential zlib1g-dev libssl-dev libbrotli-dev ca-certificates
-
-echo "=========================================="
-echo "System Info"
-echo "=========================================="
-
-uname -a
-pwd
-
-WORKSPACE=$(pwd)
+  bc automake clang curl findutils git hostname libtool \
+  libkrb5-dev ninja-build llvm make python3 \
+  liblttng-ust-dev tar wget jq lld \
+  build-essential zlib1g-dev libssl-dev libbrotli-dev \
+  ca-certificates
 
 # =========================================================
 # ✅ Clone runtime
 # =========================================================
+echo "=================================="
+echo "Clone runtime"
+echo "=================================="
+
 git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
 cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-# ✅ Force safe SDK version
-# =========================================================
-sed -i 's/9.0.0-beta.25208.6/9.0.0-beta.23503.3/g' global.json || true
-SDK_VERSION=$(jq -r '.sdk.version' global.json)
-
-# =========================================================
 # ✅ Install .NET SDK
 # =========================================================
-ARCH=$(uname -m)
+echo "=================================="
+echo "Install .NET SDK"
+echo "=================================="
 
-mkdir -p /dotnet
-cd /dotnet
+SDK_VERSION=$(jq -r '.sdk.version' global.json)
 
-wget https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz
+export DOTNET_DIR=/dotnet-sdk-$(uname -m)
+mkdir -p $DOTNET_DIR
 
-mkdir -p sdk
-tar -xvf dotnet-sdk-${SDK_VERSION}-linux-${ARCH}.tar.gz -C sdk
+pushd $DOTNET_DIR
 
-export DOTNET_ROOT=/dotnet/sdk
+wget https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-$(uname -m).tar.gz
+
+mkdir -p .dotnet
+tar xvf dotnet-sdk-*linux-$(uname -m).tar.gz -C .dotnet > /dev/null
+
+export DOTNET_ROOT=$(pwd)/.dotnet
 export PATH=$DOTNET_ROOT:$PATH
 
-cd -
+popd
+
 dotnet --info
-
-# =========================================================
-# ✅ Clean NuGet cache
-# =========================================================
-rm -rf ~/.nuget/packages
-mkdir -p ~/.nuget/NuGet
-
-# =========================================================
-# ✅ Configure public feeds
-# =========================================================
-cat > ~/.nuget/NuGet/NuGet.Config <<EOF
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="nuget" value="https://api.nuget.org/v3/index.json" />
-    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
-    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
-  </packageSources>
-</configuration>
-EOF
-
-export RESTORE_SOURCES="https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
-
-# =========================================================
-# ✅ 🚨 CRITICAL FIXES (Arcade issues)
-# =========================================================
-export ARCADE_SKIP_TOOL_RESTORE=true
-export UseBuiltSdk=true
-
-# =========================================================
-# ✅ Initial restore (safe fail)
-# =========================================================
-./build.sh clr+clr.hosts /p:RestoreSources="$RESTORE_SOURCES" || true
-
-# =========================================================
-# ✅ Patch Arcade SDK (fix impossible version)
-# =========================================================
-echo "Patching Arcade SDK..."
-
-find ~/.nuget/packages/microsoft.dotnet.arcade.sdk -name "Tools.proj" \
--exec sed -i 's/9.0.0-beta.25208.6/5.0.0-beta.19557.10/g' {} + || true
-
-# =========================================================
-# ✅ Remove private packages (breaks public builds)
-# =========================================================
-echo "Removing private dependencies..."
-
-find . -name "*.csproj" \
--exec sed -i '/Microsoft\.Private\.Intellisense/d' {} +
-
-# =========================================================
-# ✅ Dummy task file (prevents MSBuild crash)
-# =========================================================
-mkdir -p /tmp/fake
-touch /tmp/fake/dummy.dll
-
-# =========================================================
-# ✅ Common MSBuild flags
-# =========================================================
-COMMON="/p:RestoreSources=$RESTORE_SOURCES \
-/p:SkipPackage=true \
-/p:DotNetBuildFromSource=true \
-/p:BuildAllConfigurations=false \
-/p:SkipCrossgen=true \
-/p:EnableOptimizationData=false \
-/p:PGOInstrument=false \
-/p:TreatWarningsAsErrors=false \
-/p:DisablePackageBaselineValidation=true \
-/p:DotNetSharedFrameworkTaskFile=/tmp/fake/dummy.dll \
-/p:SkipArcadeToolRestore=true \
-/p:UseBuiltSdk=true"
 
 # =========================================================
 # ✅ Build Runtime
 # =========================================================
-echo "=========================================="
+echo "=================================="
 echo "Build Runtime"
-echo "=========================================="
+echo "=================================="
 
 ./build.sh clr+clr.hosts \
-/p:PrimaryRuntimeFlavor=CoreCLR \
-/p:PublishAot=false \
-/p:SupportsNativeAotComponents=false \
-$COMMON \
-| tee build.log
+  /p:PrimaryRuntimeFlavor=CoreCLR \
+  /p:PublishAot=false \
+  /p:SupportsNativeAotComponents=false \
+  | tee build.log
 
 # =========================================================
 # ✅ Build Libraries
 # =========================================================
-echo "=========================================="
+echo "=================================="
 echo "Build Libraries"
-echo "=========================================="
+echo "=================================="
 
-./build.sh libs $COMMON
+./build.sh libs
 
 # =========================================================
-# ✅ Build Tests (optional)
+# ✅ Build Tests
 # =========================================================
-echo "=========================================="
+echo "=================================="
 echo "Build Tests"
-echo "=========================================="
+echo "=================================="
 
-./src/tests/build.sh \
-/p:LibrariesConfiguration=Debug \
-$COMMON || true
+./src/tests/build.sh /p:LibrariesConfiguration=Debug
 
 # =========================================================
-# ✅ Fix CoreLib (needed for tests sometimes)
+# ✅ Fix CoreLib
 # =========================================================
+echo "=================================="
+echo "Fix CoreLib"
+echo "=================================="
+
 CORE_ROOT=./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root
 
-if [ -f "${CORE_ROOT}/IL/System.Private.CoreLib.dll" ]; then
-  cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll ${CORE_ROOT}/System.Private.CoreLib.dll
-fi
+cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll \
+   ${CORE_ROOT}/System.Private.CoreLib.dll
 
 # =========================================================
-# ✅ Run JIT tests
+# ✅ Run JIT Tests
 # =========================================================
-cd "$WORKSPACE"
+echo "=================================="
+echo "Run JIT Tests"
+echo "=================================="
+
+cd ..
 
 git clone https://github.com/alhad-deshpande/JIT_Testing.git
 cd JIT_Testing
@@ -180,8 +110,8 @@ git checkout ppc64le_coreclr_jit_testing
 
 chmod +x run_test.sh
 
-./run_test.sh "$DOTNET_ROOT/dotnet" "$WORKSPACE/runtime" || true
+./run_test.sh "$DOTNET_ROOT/dotnet" "$(pwd)/../runtime"
 
-echo "=========================================="
-echo "✅ BUILD + TEST COMPLETE"
-echo "=========================================="
+echo "=================================="
+echo "✅ DONE"
+echo "=================================="
