@@ -633,7 +633,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - JulieLeeMSFT
+            - anicka-net
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}

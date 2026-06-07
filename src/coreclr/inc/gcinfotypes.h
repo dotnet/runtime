@@ -305,7 +305,8 @@ enum infoHdrAdjustConstants {
     SET_EPILOGSIZE_MAX = 10,  // Change to 6
     SET_EPILOGCNT_MAX = 4,
     SET_UNTRACKED_MAX = 3,
-    SET_RET_KIND_MAX = 3,   // 2 bits for ReturnKind
+    SET_RET_KIND_MAX_V4 = 3,   // 2 bits for ReturnKind
+    SET_RET_KIND_MAX_V5 = 7,   // 3 bits for ReturnKind + isAsync
     SET_NOGCREGIONS_MAX = 4,
     ADJ_ENCODING_MAX = 0x7f, // Maximum valid encoding in a byte
                              // Also used to mask off next bit from each encoding byte.
@@ -358,8 +359,10 @@ enum infoHdrAdjust {
 // Second set of opcodes, when first code is 0x4F
 enum infoHdrAdjust2 {
     SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
-    SET_NOGCREGIONS_CNT = SET_RETURNKIND + SET_RET_KIND_MAX + 1,        // 0x04
-    FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    SET_NOGCREGIONS_CNT_V4 = SET_RETURNKIND + SET_RET_KIND_MAX_V4 + 1,        // 0x04
+    FFFF_NOGCREGION_CNT_V4 = SET_NOGCREGIONS_CNT_V4 + SET_NOGCREGIONS_MAX + 1, // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    SET_NOGCREGIONS_CNT_V5 = SET_RETURNKIND + SET_RET_KIND_MAX_V5 + 1,        // 0x08
+    FFFF_NOGCREGION_CNT_V5 = SET_NOGCREGIONS_CNT_V5 + SET_NOGCREGIONS_MAX + 1, // 0x0D There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
 };
 
 #define HAS_UNTRACKED               ((unsigned int) -1)
@@ -410,6 +413,7 @@ struct InfoHdrSmall {
     unsigned char  genericsContext : 1;//4 [1]      function reports a generics context parameter is present
     unsigned char  genericsContextIsMethodDesc : 1;//4[2]
     unsigned char  returnKind : 2; // 4 [4]  Available GcInfo v2 onwards, previously undefined
+    unsigned char  isAsync : 1;    // 4 [5]
     unsigned short argCount;          // 5,6        in bytes
     unsigned int   frameSize;         // 7,8,9,10   in bytes
     unsigned int   untrackedCnt;      // 11,12,13,14

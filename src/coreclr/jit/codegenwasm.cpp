@@ -200,6 +200,53 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 }
 
 //------------------------------------------------------------------------
+// genZeroInitFrame: zero the lvMustInit untracked range of the frame using
+// a single memory.fill.
+//
+// Arguments:
+//    untrLclHi      - High offset (exclusive) of the untracked range relative to FP.
+//    untrLclLo      - Low offset of the untracked range relative to FP.
+//    initReg        - Unused on WASM (no scratch register concept).
+//    pInitRegZeroed - Unused on WASM.
+//
+void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(m_compiler->compGeneratingProlog);
+    if (!genUseBlockInit)
+    {
+        // Nothing to zero (genCheckUseBlockInit forces block-init for any non-empty range on wasm).
+        assert(genInitStkLclCnt == 0);
+        return;
+    }
+    assert(untrLclHi > untrLclLo);
+    assert(untrLclLo >= 0); // Wasm locals are at non-negative offsets from FP.
+
+    emitter* emit = GetEmitter();
+
+    // Push destination address: FP (+ untrLclLo if non-zero).
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    if (untrLclLo != 0)
+    {
+        emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
+        emit->emitIns(INS_I_add);
+    }
+    // Push fill value (zero, always i32 per memory.fill spec).
+    emit->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    // Push length (pointer-sized: i32 on wasm32, i64 on wasm64).
+    emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
+    // memory.fill 0
+    emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+}
+
+//------------------------------------------------------------------------
+// genZeroInitFrameUsingBlockInit: Unused on WASM (genZeroInitFrame handles block init inline).
+//
+void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genOSRHandleTier0CalleeSavedRegistersAndFrame:
 //   Not called for WASM without OSR support.
 //
@@ -2667,7 +2714,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // RhpByRefAssignRef: Not implemented on Wasm, omitted
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
@@ -3223,8 +3269,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
-            // Do an I_load here instead of I_const + I_add because we're using the (Object **, Object *) write barrier,
-            //  not the (Object **, Object **) BYREF write barrier used on other architectures.
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
             // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
@@ -3684,6 +3728,20 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     GcInfoEncoder* gcInfoEncoder  = new (m_compiler, CMK_GC)
         GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder != nullptr);
+
+    // Find the max Virtual IP.
+    //
+    unsigned maxVirtualIP = 0;
+    for (FuncInfoDsc* const func : m_compiler->Funcs())
+    {
+        maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
+    }
+
+    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // Use 1 as the prolog size.
+    //
+    codeSize   = 2 * maxVirtualIP;
+    prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
     gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);

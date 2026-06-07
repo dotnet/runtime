@@ -105,6 +105,14 @@ struct CallbackAccumulator
     {
         return reinterpret_cast<CallbackAccumulator*>(pUserData);
     }
+
+    // Adapter for FP_*_CALLBACK signatures that deliver an item by pointer
+    // (e.g. FP_TYPEPARAM_CALLBACK). Pass as the callback with &acc as pUserData:
+    //   pDAC->EnumX(args, &CallbackAccumulator<T>::PushCallback, &acc);
+    static void PushCallback(T * pItem, CALLBACK_DATA pUserData)
+    {
+        From(pUserData)->Push(*pItem);
+    }
 };
 
 
@@ -2496,9 +2504,6 @@ public:
     // Lookup a module from the cache.  Create and to the cache if needed.
     CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken, VMPTR_Module vmModuleToken = VMPTR_Module::NullPtr());
 
-    // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
-
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
 
@@ -2823,15 +2828,6 @@ public:
     // out-of-process that the debugger doesn't need the helper thread when stopped at an event.
     virtual void HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEvent) = 0;
 #endif // FEATURE_INTEROP_DEBUGGING
-
-    // Get the modules in the order that they were loaded. This is needed to send the fake-attach events
-    // for module load in the right order.
-    //
-    // This can be removed once ICorDebug's enumerations are ordered.
-    virtual void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules) = 0;
 
     // Get the assemblies in the order that they were loaded. This is needed to send the fake-attach events
     // for assembly load in the right order.
@@ -3323,12 +3319,6 @@ public:
         ICorDebugAppDomain * pAppDomain,
         RSExtSmartPtr<ICorDebugAssembly>* pAssemblies,
         ULONG countAssemblies);
-
-    // Callback for Shim to get the modules in load order
-    void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules);
 
     // Functions to queue fake Connection events on attach.
     static void CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData);
@@ -8193,7 +8183,7 @@ public:
     //               ReadProcessMemory.
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue) = 0;
@@ -8257,7 +8247,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                                SIZE_T            offset,
+                                CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
                                 ICorDebugValue ** ppValue);
@@ -8310,7 +8300,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);
@@ -8377,7 +8367,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);

@@ -77,6 +77,23 @@ namespace ILCompiler
             return null;
         }
 
+        public static TypeDesc GetUnmanagedCallersOnlyAssociatedSourceType(this EcmaMethod This)
+        {
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute");
+            if (decoded == null)
+                return null;
+
+            var decodedValue = decoded.Value;
+
+            foreach (var argument in decodedValue.NamedArguments)
+            {
+                if (argument.Name == "AssociatedSourceType")
+                    return (TypeDesc)argument.Value;
+            }
+
+            return null;
+        }
+
 #if !READYTORUN
         /// <summary>
         /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual

@@ -284,7 +284,7 @@ const EVP_CIPHER* EVP_rc2_cbc(void);
 
 #define API_EXISTS(fn) (fn != NULL)
 
-#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 extern bool g_libSslUses32BitTime;
 #endif
 
@@ -311,13 +311,27 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ASN1_TIME_set) \
     REQUIRED_FUNCTION(ASN1_TIME_to_tm) \
     REQUIRED_FUNCTION(ASN1_TIME_free) \
+    REQUIRED_FUNCTION(BIO_clear_flags) \
     REQUIRED_FUNCTION(BIO_ctrl) \
     REQUIRED_FUNCTION(BIO_ctrl_pending) \
     REQUIRED_FUNCTION(BIO_free) \
+    REQUIRED_FUNCTION(BIO_get_data) \
+    REQUIRED_FUNCTION(BIO_get_new_index) \
     REQUIRED_FUNCTION(BIO_gets) \
+    REQUIRED_FUNCTION(BIO_meth_free) \
+    REQUIRED_FUNCTION(BIO_meth_new) \
+    REQUIRED_FUNCTION(BIO_meth_set_create) \
+    REQUIRED_FUNCTION(BIO_meth_set_ctrl) \
+    REQUIRED_FUNCTION(BIO_meth_set_destroy) \
+    REQUIRED_FUNCTION(BIO_meth_set_read) \
+    REQUIRED_FUNCTION(BIO_meth_set_write) \
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
     REQUIRED_FUNCTION(BIO_read) \
+    REQUIRED_FUNCTION(BIO_set_data) \
+    REQUIRED_FUNCTION(BIO_set_flags) \
+    REQUIRED_FUNCTION(BIO_set_init) \
+    REQUIRED_FUNCTION(BIO_test_flags) \
     REQUIRED_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
     REQUIRED_FUNCTION(BIO_write) \
@@ -721,6 +735,9 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_certificate) \
     REQUIRED_FUNCTION(SSL_new) \
     REQUIRED_FUNCTION(SSL_peek) \
+    REQUIRED_FUNCTION(SSL_pending) \
+    REQUIRED_FUNCTION(SSL_get_rbio) \
+    REQUIRED_FUNCTION(SSL_get_wbio) \
     REQUIRED_FUNCTION(SSL_read) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
@@ -851,7 +868,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #endif
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
@@ -874,13 +891,27 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ASN1_TIME_new ASN1_TIME_new_ptr
 #define ASN1_TIME_set ASN1_TIME_set_ptr
 #define ASN1_TIME_to_tm ASN1_TIME_to_tm_ptr
+#define BIO_clear_flags BIO_clear_flags_ptr
 #define BIO_ctrl BIO_ctrl_ptr
 #define BIO_ctrl_pending BIO_ctrl_pending_ptr
 #define BIO_free BIO_free_ptr
+#define BIO_get_data BIO_get_data_ptr
+#define BIO_get_new_index BIO_get_new_index_ptr
 #define BIO_gets BIO_gets_ptr
+#define BIO_meth_free BIO_meth_free_ptr
+#define BIO_meth_new BIO_meth_new_ptr
+#define BIO_meth_set_create BIO_meth_set_create_ptr
+#define BIO_meth_set_ctrl BIO_meth_set_ctrl_ptr
+#define BIO_meth_set_destroy BIO_meth_set_destroy_ptr
+#define BIO_meth_set_read BIO_meth_set_read_ptr
+#define BIO_meth_set_write BIO_meth_set_write_ptr
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
 #define BIO_read BIO_read_ptr
+#define BIO_set_data BIO_set_data_ptr
+#define BIO_set_flags BIO_set_flags_ptr
+#define BIO_set_init BIO_set_init_ptr
+#define BIO_test_flags BIO_test_flags_ptr
 #define BIO_up_ref BIO_up_ref_ptr
 #define BIO_s_mem BIO_s_mem_ptr
 #define BIO_write BIO_write_ptr
@@ -1289,6 +1320,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_is_init_finished SSL_is_init_finished_ptr
 #define SSL_new SSL_new_ptr
 #define SSL_peek SSL_peek_ptr
+#define SSL_pending SSL_pending_ptr
+#define SSL_get_rbio SSL_get_rbio_ptr
+#define SSL_get_wbio SSL_get_wbio_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
