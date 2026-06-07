@@ -770,6 +770,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_RSH:
             case VNF_RSZ:
             case VNF_UMOD:
+            case VNF_UDIV:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
                 Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
@@ -803,6 +804,9 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         break;
                     case VNF_UMOD:
                         binOpResult = RangeOps::UnsignedMod(r1, r2);
+                        break;
+                    case VNF_UDIV:
+                        binOpResult = RangeOps::UnsignedDivide(r1, r2);
                         break;
                     default:
                         unreached();
@@ -1272,7 +1276,13 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         //  Example: "(uint)normalLclVN < span.Length"   means normalLclVN's range is [0..INT32_MAX-1]
         //  Example: "(uint)normalLclVN <= array.Length" means normalLclVN's range is [0..Array.MaxLength]
         //
-        else if (!canUseCheckedBounds && curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+        // This is restricted to upper-bound (LT/LE) relops: we substitute op2 with its upper bound
+        // (maxValue), which is only valid when op2 bounds normalLclVN from above. GT/GE relops (where
+        // op2 is a lower bound) would need op2's lower bound instead, so they fall through to the
+        // general "X <relop> Y" branch below.
+        else if (!canUseCheckedBounds &&
+                 curAssertion.KindIs(Compiler::OAK_LT, Compiler::OAK_LE, Compiler::OAK_LT_UN, Compiler::OAK_LE_UN) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  (curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS)) &&
                  (curAssertion.GetOp2().IsVNNeverNegative()) && (curAssertion.GetOp2().GetCns() == 0))
         {
