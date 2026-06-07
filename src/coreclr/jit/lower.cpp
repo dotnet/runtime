@@ -5861,10 +5861,11 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 assert(varTypeUsesIntReg(nativeReturnType));
 #ifdef TARGET_WASM
                 // Wasm has a typed value stack, so the constant's type must match the
-                // type the function returns. Retype an INT constant (e.g. a zero from a
-                // promoted/zero-initialized struct field) to the wider native return
-                // type so codegen emits an i64.const rather than an i32.const.
-                if (genActualType(retVal) != genActualType(nativeReturnType))
+                // type the function returns. ZeroObj assertion propagation can create an
+                // INT zero for a wider (e.g. LONG) struct return; retype it so codegen
+                // emits an i64.const rather than an i32.const. Only the zero constant can
+                // be widened unambiguously here (matching the float/double case above).
+                if (retVal->IsIntegralConst(0) && (genActualType(retVal) != genActualType(nativeReturnType)))
                 {
                     retVal->ChangeType(genActualType(nativeReturnType));
                 }
