@@ -50,9 +50,13 @@ if(CLR_CMAKE_TARGET_WASI)
   # actually runs; for now keep the surface area small.
   set(FEATURE_EVENT_TRACE 0)
   set(FEATURE_PERFTRACING 0)
-  # WASI doesn't define these fcntl constants — provide them as no-ops
-  add_compile_definitions(F_DUPFD_CLOEXEC=1030)
-  add_compile_definitions(O_CLOEXEC=0)
+  # NOTE: F_DUPFD_CLOEXEC=1030 and O_CLOEXEC=0 used to be defined here
+  # as compile-only fallbacks because WASI's fcntl.h omits them. They
+  # were removed once map.cpp and file.cpp grew explicit TARGET_WASI
+  # branches that avoid those constants entirely. If you re-introduce
+  # code that references F_DUPFD_CLOEXEC / O_CLOEXEC on WASI, prefer
+  # a #ifdef TARGET_WASI branch in the caller over redefining the
+  # constants here.
   # WASI stub headers for missing POSIX headers
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
   # Cross-compile try_run() answers — wasm32 binaries cannot execute on the
