@@ -19,7 +19,8 @@ namespace Microsoft.Extensions.Options
         /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// Multiple validators return failed <see cref="ValidateOptionsResult"/> results when validating.
+        /// Multiple option instances fail async validation, each producing an
+        /// <see cref="OptionsValidationException"/>.
         /// </exception>
         Task ValidateAsync(CancellationToken cancellationToken = default);
     }

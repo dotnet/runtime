@@ -240,6 +240,37 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        [Fact]
+        public async Task StartupValidator_ValidateAsync_MultipleFailures_ThrowsAggregateException()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<FakeOptions>("instance1")
+                .Configure(o => o.Message = "")
+                .Validate(async (FakeOptions o, CancellationToken ct) =>
+                {
+                    await Task.CompletedTask;
+                    return o.Message.Length > 0;
+                }, "Message required for instance1")
+                .ValidateOnStart();
+
+            services.AddOptions<FakeOptions>("instance2")
+                .Configure(o => o.Message = "")
+                .Validate(async (FakeOptions o, CancellationToken ct) =>
+                {
+                    await Task.CompletedTask;
+                    return o.Message.Length > 0;
+                }, "Message required for instance2")
+                .ValidateOnStart();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+
+            AggregateException ex = await Assert.ThrowsAsync<AggregateException>(() => validator.ValidateAsync());
+            Assert.Equal(2, ex.InnerExceptions.Count);
+            Assert.All(ex.InnerExceptions, e => Assert.IsType<OptionsValidationException>(e));
+        }
+
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
