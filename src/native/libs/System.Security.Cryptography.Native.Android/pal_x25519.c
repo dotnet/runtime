@@ -11,24 +11,35 @@ static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLeng
 int32_t AndroidCryptoNative_X25519IsSupported(void)
 {
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
-    jstring algorithmName = make_java_string(env, "XDH");
-    jobject keyPairGenerator = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, algorithmName);
-    ReleaseLRef(env, algorithmName);
+    INIT_LOCALS(loc, algorithmName, keyPairGenerator, keyPair);
+
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyPairGenerator] = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, loc[algorithmName]);
 
     if (TryClearJNIExceptions(env))
     {
-        ReleaseLRef(env, keyPairGenerator);
-        return FAIL;
+        goto cleanup;
     }
 
     // Generating a key pair exercises the full provider path, which catches cases where
     // getInstance succeeds on a stub provider but actual key generation is not implemented.
-    jobject keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
-    ReleaseLRef(env, keyPairGenerator);
-    ReleaseLRef(env, keyPair);
+    loc[keyPair] = (*env)->CallObjectMethod(env, loc[keyPairGenerator], g_keyPairGenGenKeyPairMethod);
 
-    return TryClearJNIExceptions(env) ? FAIL : SUCCESS;
+    if (TryClearJNIExceptions(env))
+    {
+        goto cleanup;
+    }
+
+    if (loc[keyPair] != NULL)
+    {
+        ret = SUCCESS;
+    }
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 void AndroidCryptoNative_X25519DestroyKey(jobject key)
@@ -56,40 +67,42 @@ int32_t AndroidCryptoNative_X25519GenerateKey(jobject* publicKey, jobject* priva
     *privateKey = NULL;
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
-    jstring algorithmName = make_java_string(env, "XDH");
-    jobject keyPairGenerator = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, algorithmName);
-    ReleaseLRef(env, algorithmName);
+    INIT_LOCALS(loc, algorithmName, keyPairGenerator, keyPair, pubKey, privKey);
 
-    if (CheckJNIExceptions(env))
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyPairGenerator] = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[keyPair] = (*env)->CallObjectMethod(env, loc[keyPairGenerator], g_keyPairGenGenKeyPairMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[keyPair] == NULL)
     {
-        ReleaseLRef(env, keyPairGenerator);
-        return FAIL;
+        goto cleanup;
     }
 
-    jobject keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
-    ReleaseLRef(env, keyPairGenerator);
+    loc[pubKey] = (*env)->CallObjectMethod(env, loc[keyPair], g_keyPairGetPublicMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (CheckJNIExceptions(env) || !keyPair)
+    loc[privKey] = (*env)->CallObjectMethod(env, loc[keyPair], g_keyPairGetPrivateMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[pubKey] == NULL || loc[privKey] == NULL)
     {
-        ReleaseLRef(env, keyPair);
-        return FAIL;
+        goto cleanup;
     }
 
-    jobject pubKey = (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod);
-    jobject privKey = (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPrivateMethod);
-    ReleaseLRef(env, keyPair);
+    *publicKey = ToGRef(env, loc[pubKey]);
+    loc[pubKey] = NULL;
+    *privateKey = ToGRef(env, loc[privKey]);
+    loc[privKey] = NULL;
+    ret = SUCCESS;
 
-    if (CheckJNIExceptions(env) || !pubKey || !privKey)
-    {
-        ReleaseLRef(env, pubKey);
-        ReleaseLRef(env, privKey);
-        return FAIL;
-    }
-
-    *publicKey = ToGRef(env, pubKey);
-    *privateKey = ToGRef(env, privKey);
-    return SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(
@@ -116,41 +129,35 @@ jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buff
     abort_if_negative_integer_argument(bufferLength);
 
     JNIEnv* env = GetJNIEnv();
+    jobject ret = NULL;
 
-    jstring algorithmName = make_java_string(env, "XDH");
-    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
-    ReleaseLRef(env, algorithmName);
+    INIT_LOCALS(loc, algorithmName, keyFactory, spkiBytes, keySpec, publicKey);
 
-    if (CheckJNIExceptions(env))
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[spkiBytes] = make_java_byte_array(env, bufferLength);
+    (*env)->SetByteArrayRegion(env, loc[spkiBytes], 0, bufferLength, (const jbyte*)buffer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[keySpec] = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, loc[spkiBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[keySpec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[publicKey] == NULL)
     {
-        ReleaseLRef(env, keyFactory);
-        return NULL;
+        goto cleanup;
     }
 
-    jbyteArray spkiBytes = make_java_byte_array(env, bufferLength);
-    (*env)->SetByteArrayRegion(env, spkiBytes, 0, bufferLength, (const jbyte*)buffer);
+    ret = ToGRef(env, loc[publicKey]);
+    loc[publicKey] = NULL;
 
-    jobject keySpec = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, spkiBytes);
-    ReleaseLRef(env, spkiBytes);
-
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyFactory);
-        ReleaseLRef(env, keySpec);
-        return NULL;
-    }
-
-    jobject publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, keySpec);
-    ReleaseLRef(env, keyFactory);
-    ReleaseLRef(env, keySpec);
-
-    if (CheckJNIExceptions(env) || !publicKey)
-    {
-        ReleaseLRef(env, publicKey);
-        return NULL;
-    }
-
-    return ToGRef(env, publicKey);
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 jobject AndroidCryptoNative_X25519ImportPkcs8PrivateKey(const uint8_t* buffer, int32_t bufferLength)
@@ -159,49 +166,45 @@ jobject AndroidCryptoNative_X25519ImportPkcs8PrivateKey(const uint8_t* buffer, i
     abort_if_negative_integer_argument(bufferLength);
 
     JNIEnv* env = GetJNIEnv();
+    jobject ret = NULL;
 
-    jstring algorithmName = make_java_string(env, "XDH");
-    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
-    ReleaseLRef(env, algorithmName);
+    INIT_LOCALS(loc, algorithmName, keyFactory, pkcs8Bytes, keySpec, privateKey);
 
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyFactory);
-        return NULL;
-    }
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jbyteArray pkcs8Bytes = make_java_byte_array(env, bufferLength);
-    (*env)->SetByteArrayRegion(env, pkcs8Bytes, 0, bufferLength, (const jbyte*)buffer);
+    loc[pkcs8Bytes] = make_java_byte_array(env, bufferLength);
+    (*env)->SetByteArrayRegion(env, loc[pkcs8Bytes], 0, bufferLength, (const jbyte*)buffer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject keySpec = (*env)->NewObject(env, g_PKCS8EncodedKeySpec, g_PKCS8EncodedKeySpecCtor, pkcs8Bytes);
+    loc[keySpec] = (*env)->NewObject(env, g_PKCS8EncodedKeySpec, g_PKCS8EncodedKeySpecCtor, loc[pkcs8Bytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jbyte* pkcs8Elements = (*env)->GetByteArrayElements(env, pkcs8Bytes, NULL);
+    jbyte* pkcs8Elements = (*env)->GetByteArrayElements(env, loc[pkcs8Bytes], NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
     if (pkcs8Elements != NULL)
     {
         memset(pkcs8Elements, 0, (size_t)bufferLength);
-        (*env)->ReleaseByteArrayElements(env, pkcs8Bytes, pkcs8Elements, 0);
+        (*env)->ReleaseByteArrayElements(env, loc[pkcs8Bytes], pkcs8Elements, 0);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
-    ReleaseLRef(env, pkcs8Bytes);
+    loc[privateKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[keySpec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (CheckJNIExceptions(env))
+    if (loc[privateKey] == NULL)
     {
-        ReleaseLRef(env, keyFactory);
-        ReleaseLRef(env, keySpec);
-        return NULL;
+        goto cleanup;
     }
 
-    jobject privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, keySpec);
-    ReleaseLRef(env, keyFactory);
-    ReleaseLRef(env, keySpec);
+    ret = ToGRef(env, loc[privateKey]);
+    loc[privateKey] = NULL;
 
-    if (CheckJNIExceptions(env) || !privateKey)
-    {
-        ReleaseLRef(env, privateKey);
-        return NULL;
-    }
-
-    return ToGRef(env, privateKey);
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_X25519DeriveSecret(
@@ -218,54 +221,41 @@ int32_t AndroidCryptoNative_X25519DeriveSecret(
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
 
-    jstring algorithmName = make_java_string(env, "XDH");
-    jobject keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
-    ReleaseLRef(env, algorithmName);
+    INIT_LOCALS(loc, algorithmName, keyAgreement, phaseResult, secret);
 
-    if (CheckJNIExceptions(env))
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyAgreement] = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    (*env)->CallVoidMethod(env, loc[keyAgreement], g_KeyAgreementInit, privateKey);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[phaseResult] = (*env)->CallObjectMethod(env, loc[keyAgreement], g_KeyAgreementDoPhase, publicKey, JNI_TRUE);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[secret] = (jbyteArray)(*env)->CallObjectMethod(env, loc[keyAgreement], g_KeyAgreementGenerateSecret);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[secret] == NULL)
     {
-        ReleaseLRef(env, keyAgreement);
-        return FAIL;
+        goto cleanup;
     }
 
-    (*env)->CallVoidMethod(env, keyAgreement, g_KeyAgreementInit, privateKey);
-
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyAgreement);
-        return FAIL;
-    }
-
-    jobject phaseResult = (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementDoPhase, publicKey, JNI_TRUE);
-    ReleaseLRef(env, phaseResult);
-
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyAgreement);
-        return FAIL;
-    }
-
-    jbyteArray secret = (jbyteArray)(*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementGenerateSecret);
-    ReleaseLRef(env, keyAgreement);
-
-    if (CheckJNIExceptions(env) || !secret)
-    {
-        ReleaseLRef(env, secret);
-        return FAIL;
-    }
-
-    jsize secretLen = (*env)->GetArrayLength(env, secret);
+    jsize secretLen = (*env)->GetArrayLength(env, loc[secret]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     if (secretLen != destinationLength)
     {
-        ReleaseLRef(env, secret);
-        return FAIL;
+        goto cleanup;
     }
 
-    (*env)->GetByteArrayRegion(env, secret, 0, secretLen, (jbyte*)destination);
-    ReleaseLRef(env, secret);
+    (*env)->GetByteArrayRegion(env, loc[secret], 0, secretLen, (jbyte*)destination);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -279,32 +269,35 @@ static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLeng
     *bytesWritten = 0;
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
-    jbyteArray encoded = (jbyteArray)(*env)->CallObjectMethod(env, key, g_KeyGetEncoded);
+    INIT_LOCALS(loc, encoded);
 
-    if (CheckJNIExceptions(env) || !encoded)
+    loc[encoded] = (jbyteArray)(*env)->CallObjectMethod(env, key, g_KeyGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[encoded] == NULL)
     {
-        ReleaseLRef(env, encoded);
-        return FAIL;
+        goto cleanup;
     }
 
-    jsize encodedLen = (*env)->GetArrayLength(env, encoded);
+    jsize encodedLen = (*env)->GetArrayLength(env, loc[encoded]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     if (encodedLen > bufferLength)
     {
         *bytesWritten = (int32_t)encodedLen;
-        ReleaseLRef(env, encoded);
-        return INSUFFICIENT_BUFFER;
+        ret = INSUFFICIENT_BUFFER;
+        goto cleanup;
     }
 
-    (*env)->GetByteArrayRegion(env, encoded, 0, encodedLen, (jbyte*)buffer);
-    ReleaseLRef(env, encoded);
-
-    if (CheckJNIExceptions(env))
-    {
-        return FAIL;
-    }
+    (*env)->GetByteArrayRegion(env, loc[encoded], 0, encodedLen, (jbyte*)buffer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     *bytesWritten = (int32_t)encodedLen;
-    return SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
