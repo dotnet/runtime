@@ -736,9 +736,12 @@ namespace System.Text.Json.SourceGeneration
 
                         if (unionCaseTypes.Count > 0 && HasCompatibleUnionValueProperty(namedUnionType))
                         {
+                            bool[] switchArmRoles = ComputeUnionSwitchArmRoles(unionCaseTypes);
+
                             var resolvedUnionCaseSpecs = new List<UnionCaseSpec>(unionCaseTypes.Count);
-                            foreach ((ITypeSymbol caseType, bool acceptsNull) in unionCaseTypes)
+                            for (int i = 0; i < unionCaseTypes.Count; i++)
                             {
+                                (ITypeSymbol caseType, bool acceptsNull) = unionCaseTypes[i];
                                 if (!IsSymbolAccessibleWithin(caseType, within: contextType))
                                 {
                                     classType = ClassType.UnsupportedType;
@@ -746,10 +749,23 @@ namespace System.Text.Json.SourceGeneration
                                     break;
                                 }
 
+                                TypeRef caseTypeRef = EnqueueType(caseType, typeToGenerate.Mode);
+
+                                // C# rejects Nullable<T> in `value switch` patterns (CS8116). The CLR layer
+                                // boxes a Nullable<T> with HasValue=true bit-identically to a boxed T, so the
+                                // generated pattern arm uses the underlying T symbol — never the source
+                                // Nullable<T> string spelling. Compute this from the symbol here so the
+                                // emitter never has to manipulate FQN strings.
+                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
+                                    : caseTypeRef;
+
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
-                                    CaseType = EnqueueType(caseType, typeToGenerate.Mode),
+                                    CaseType = caseTypeRef,
+                                    PatternType = patternTypeRef,
                                     IsNullable = acceptsNull,
+                                    IsSwitchArm = switchArmRoles[i],
                                 });
                             }
 
@@ -1116,24 +1132,26 @@ namespace System.Text.Json.SourceGeneration
                     }
 
                     IParameterSymbol parameter = member.Parameters[0];
-                    bool acceptsNull = parameter.IsNullable();
                     ITypeSymbol caseType = parameter.Type;
 
-                    // Unwrap Nullable<T>.
-                    if (caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableType)
+                    // Value-type Nullable<T> ctor accepts null by virtue of the type itself.
+                    // Reference-type nullability comes from the parameter's nullable annotation.
+                    bool acceptsNull = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                        || parameter.IsNullable();
+
+                    // One JsonUnionCaseInfo per discoverable ctor overload. Foo(T) and
+                    // Foo(Nullable<T>) coexist as distinct cases (typeof(T) vs typeof(T?));
+                    // token-level ambiguity is surfaced via EmitUnionAmbiguityDiagnostics at
+                    // compile time and JsonTypeInfo.UnionAmbiguousValueTypes at run time.
+                    if (acceptsNullByCase.ContainsKey(caseType))
                     {
-                        caseType = nullableType.TypeArguments[0];
+                        // C# overload resolution rejects duplicate single-parameter ctors;
+                        // defensive skip protects against hand-emitted IL with duplicates.
+                        continue;
                     }
 
-                    if (acceptsNullByCase.TryGetValue(caseType, out bool existing))
-                    {
-                        acceptsNullByCase[caseType] = existing || acceptsNull;
-                    }
-                    else
-                    {
-                        acceptsNullByCase[caseType] = acceptsNull;
-                        caseTypes.Add(caseType);
-                    }
+                    acceptsNullByCase[caseType] = acceptsNull;
+                    caseTypes.Add(caseType);
                 }
 
                 List<ITypeSymbol> sorted = SortCaseTypesTopologically(caseTypes);
@@ -1143,6 +1161,55 @@ namespace System.Text.Json.SourceGeneration
                     result.Add((caseType, acceptsNullByCase[caseType]));
                 }
                 return result;
+            }
+
+            /// <summary>
+            /// Computes which declared cases should contribute a <c>value switch</c>
+            /// arm in the generated union constructor/deconstructor. Two cases
+            /// collide when they share the same C# pattern key: the underlying type
+            /// after stripping <see cref="Nullable{T}"/>. CS8116 rejects
+            /// <c>Nullable&lt;T&gt;</c> in patterns and a boxed <c>Nullable&lt;T&gt;</c>
+            /// with HasValue=true is bit-identical to a boxed <c>T</c> at the CLR
+            /// layer, so the only valid arm shape covering both is <c>T pat =&gt; …</c>.
+            /// Within each collision group only one case can be canonical; we prefer
+            /// the non-<c>Nullable&lt;T&gt;</c> sibling so most-derived dispatch reports
+            /// <c>typeof(T)</c> rather than <c>typeof(Nullable&lt;T&gt;)</c>.
+            /// </summary>
+            private static bool[] ComputeUnionSwitchArmRoles(List<(ITypeSymbol CaseType, bool IsNullable)> caseTypes)
+            {
+                bool[] isSwitchArm = new bool[caseTypes.Count];
+                var canonicalIndexByPatternKey = new Dictionary<ITypeSymbol, int>(SymbolEqualityComparer.Default);
+
+                for (int i = 0; i < caseTypes.Count; i++)
+                {
+                    ITypeSymbol caseType = caseTypes[i].CaseType;
+                    ITypeSymbol patternKey = UnwrapNullable(caseType);
+
+                    if (!canonicalIndexByPatternKey.TryGetValue(patternKey, out int existingIndex))
+                    {
+                        canonicalIndexByPatternKey[patternKey] = i;
+                        isSwitchArm[i] = true;
+                        continue;
+                    }
+
+                    ITypeSymbol existingCaseType = caseTypes[existingIndex].CaseType;
+                    if (IsNullableValueType(existingCaseType) && !IsNullableValueType(caseType))
+                    {
+                        isSwitchArm[existingIndex] = false;
+                        canonicalIndexByPatternKey[patternKey] = i;
+                        isSwitchArm[i] = true;
+                    }
+                }
+
+                return isSwitchArm;
+
+                static ITypeSymbol UnwrapNullable(ITypeSymbol type)
+                    => type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } named
+                        ? named.TypeArguments[0]
+                        : type;
+
+                static bool IsNullableValueType(ITypeSymbol type)
+                    => type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
             }
 
             private List<ITypeSymbol> SortCaseTypesTopologically(List<ITypeSymbol> caseTypes)
