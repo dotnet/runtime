@@ -27,6 +27,18 @@ cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
+#  Fix disabled NuGet feed
+# =========================================================
+echo "=================================="
+echo "Fix NuGet feed"
+echo "=================================="
+
+if grep -q "darc-pub-dotnet-emsdk-78f6f07" NuGet.config; then
+    sed -i '/darc-pub-dotnet-emsdk-78f6f07/d' NuGet.config
+    echo "Removed disabled emsdk feed from NuGet.config"
+fi
+
+# =========================================================
 #  Install .NET SDK
 # =========================================================
 echo "=================================="
@@ -63,6 +75,7 @@ else
     echo " .NET installation failed"
     exit 1
 fi
+
 # =========================================================
 #  Build Runtime
 # =========================================================
@@ -124,5 +137,5 @@ chmod +x run_test.sh
 ./run_test.sh "$DOTNET_ROOT/dotnet" "$(pwd)/../runtime"
 
 echo "=================================="
-echo "✅ DONE"
+echo " DONE"
 echo "=================================="
