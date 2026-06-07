@@ -8,7 +8,7 @@
 
 #include "diagnostic_server_jobs.h"
 
-extern void SystemJS_ScheduleDiagnosticServer(void);
+extern void SystemJS_ScheduleDiagnosticServer(int delayMs);
 
 typedef struct DsJobNode {
     ds_job_cb cb;
@@ -32,7 +32,7 @@ SystemJS_DiagnosticServerQueueJob (ds_job_cb cb, void *data)
     node->next = jobs;
     jobs = node;
     if (wasEmpty) {
-        SystemJS_ScheduleDiagnosticServer ();
+        SystemJS_ScheduleDiagnosticServer (0);
     }
 }
 
@@ -56,6 +56,6 @@ SystemJS_ExecuteDiagnosticServerCallback (void)
     }
 
     if (jobs) {
-        SystemJS_ScheduleDiagnosticServer ();
+        SystemJS_ScheduleDiagnosticServer (100);
     }
 }

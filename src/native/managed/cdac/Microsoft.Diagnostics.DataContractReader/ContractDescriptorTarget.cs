@@ -143,9 +143,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         BuildDescriptors(forceBuild: true);
     }
 
-    public override void Flush()
+    public override void Flush(FlushScope scope)
     {
-        base.Flush();
+        base.Flush(scope);
 
         BuildDescriptors();
     }

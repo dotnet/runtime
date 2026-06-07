@@ -5935,6 +5935,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgPostInlineNoReturnCleanup();
+
     PhaseStatus fgResolveGDVs();
 
     PhaseStatus fgRemoveEmptyTry();
@@ -7097,19 +7099,6 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
-#ifdef FEATURE_SIMD
-    GenTree* getSIMDStructFromField(GenTree*  tree,
-                                    unsigned* indexOut,
-                                    unsigned* simdSizeOut,
-                                    bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldStores(Statement* stmt);
-
-    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field store
-    // in function: Compiler::impMarkContiguousSIMDFieldStores.
-    Statement* fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-
-#endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -7568,6 +7557,7 @@ public:
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
+    PhaseStatus optBoundsCheckCoalesce();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
@@ -8546,11 +8536,6 @@ public:
             return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
-        bool CanPropBndsCheck() const
-        {
-            return GetOp1().KindIs(O1K_VN);
-        }
-
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
@@ -9060,10 +9045,6 @@ protected:
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
-    bool           optCanPropEqual;
-    bool           optCanPropNonNull;
-    bool           optCanPropBndsChk;
-    bool           optCanPropSubRange;
 
     RangeCheck* optRangeCheck = nullptr;
     RangeCheck* GetRangeCheck();
@@ -10163,12 +10144,7 @@ private:
 
     GenTree* impSIMDPopStack();
 
-    void     setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool     areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
-    bool     areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
-    bool     areArrayElementsContiguous(GenTree* op1, GenTree* op2);
-    bool     areArgumentsContiguous(GenTree* op1, GenTree* op2);
-    GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
+    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)

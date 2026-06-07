@@ -181,11 +181,30 @@
 #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
 #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED | RBM_MSK_CALLEE_SAVED)
 
-// AMD64 write barrier ABI (see vm\amd64\JitHelpers_Fast.asm, vm\amd64\JitHelpers_Fast.S):
-// CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
-//     The usual amd64 calling convention is observed.
-//     TODO-CQ: could this be optimized?
+// AMD64 write barrier ABI (see vm\amd64\JitHelpers_FastWriteBarriers.{asm,S},
+// vm\amd64\patchedcode.{asm,S}, vm\amd64\JitHelpers_Slow.asm,
+// runtime\amd64\WriteBarriers.{asm,S}):
 //
+// CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
+//     The usual amd64 calling convention is observed: dst in REG_ARG_0, src in REG_ARG_1.
+//     On exit:
+//       Dst register (RCX on Windows, RDI on SysV): clobbered (the helper shifts it in
+//           place to index the card table). Cannot be assumed to retain its value.
+//       Src register (RDX on Windows, RSI on SysV): clobbered in the Region variants of
+//           the patched slot, preserved in the others. Since the patched slot may change
+//           at runtime, callers must assume it is clobbered.
+//       All integer callee-trash registers: must be considered clobbered. RAX, R8 and R9
+//           are unconditionally used by some variant. R10/R11 are touched by the _DEBUG
+//           variant (JIT_WriteBarrier_Debug) and by the RhpAssignRef path that runs when
+//           DOTNET_UseGCWriteBarrierCopy=0.
+//       Flags: clobbered.
+//       XMM/YMM/ZMM/mask registers: PRESERVED. The write barrier helpers never execute
+//           any SSE/AVX/AVX-512/EVEX-mask instruction, so no FP/SIMD/mask register is
+//           touched. This is identical on both Windows and SysV ABIs.
+//
+// Because of the FP/SIMD/mask preservation, RBM_CALLEE_TRASH_WRITEBARRIER is reduced to
+// RBM_INT_CALLEE_TRASH_INIT (the standard int callee-trash set, excluding APX high regs
+// R16-R31 which are also never touched by the helpers).
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
 #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
@@ -196,10 +215,12 @@
 #define RBM_CALLEE_TRASH_NOGC        RBM_CALLEE_TRASH
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
+// Only integer callee-trash registers are killed; the helpers never touch any FP/SIMD
+// or mask register, so those can stay live across the call.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_INT_CALLEE_TRASH_INIT
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+#define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_INT_CALLEE_TRASH_INIT
 
 // We have two register classifications
 // * callee trash: aka     volatile or caller saved
