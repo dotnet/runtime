@@ -296,12 +296,11 @@ namespace System.Threading
         /// <exception cref="OperationCanceledException">The object has been canceled.</exception>
         private void Set(bool duringCancellation)
         {
-            // We need to ensure that IsSet=true does not get reordered past the read of m_eventObj
-            // This would be a legal movement according to the .NET memory model.
-            // The code is safe as IsSet involves an Interlocked.CompareExchange which provides a full memory barrier.
+            // We need to ensure that the state change happens before we read the m_eventObj.
+            // Interlocked guarantees that.
             long origState = Interlocked.Or(ref m_combinedState, SignalledState_BitMask);
 
-            // If there were waiting threads at Set time, we need to pulse them.
+            // If there were waiting threads when we flipped the state, we need to pulse them.
             if ((origState & NumWaitersState_BitMask) != 0)
             {
                 Debug.Assert(m_lock != null); // if waiters>0, then m_lock has already been created.
