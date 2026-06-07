@@ -4,15 +4,21 @@
 #include "pal/dbgmsg.h"
 #include "pal/signal.hpp"
 #include "pal/context.h"
+#include "pal/seh.hpp"
 
 #if defined(TARGET_BROWSER)
 #include <emscripten/emscripten.h>
 #elif defined(TARGET_WASI)
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include "pal/wasi/pal_wasi_missing.h"
+// RESERVED_SEH_BIT lives in seh.cpp on Unix; redefine locally for WASI's
+// RaiseException since we don't compile seh.cpp's matching anonymous-namespace
+// constant into this TU.
+namespace { const UINT WASI_RESERVED_SEH_BIT = 0x800000; }
 #endif
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do this first
@@ -169,10 +175,16 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 }
 
 // RaiseException is the WIN32-style SEH entry — normally provided by
-// seh-unwind.cpp, which we exclude on WASI. The managed exception path on the
-// WASI interpreter throws PAL_SEHException via C++ throw instead, so this
-// surface is never reached. Stub kept only to satisfy linker references in
-// SString / NamespaceUtil / CLRConfig.
+// seh-unwind.cpp, which we exclude on WASI. WASI uses -fwasm-exceptions,
+// so C++ throw lowers to wasm-native exception dispatch and the EH personality
+// in libc++abi handles the catch. Match seh-unwind.cpp's RaiseException
+// implementation: allocate an EXCEPTION_RECORD + CONTEXT pair, fill the
+// record from the SEH args, and throw PAL_SEHException — which is what
+// RtlpRaiseException does on Unix. The CONTEXT capture / PAL_VirtualUnwind
+// step that the Unix path performs is skipped (it's already guarded by
+// #ifndef TARGET_WASM in seh-unwind.cpp); WASI has no libunwind and the
+// managed unwind doesn't read the EXCEPTION_RECORD->ExceptionAddress on
+// the interpreter path.
 extern "C" VOID PALAPI
 RaiseException(
     IN DWORD dwExceptionCode,
@@ -180,9 +192,32 @@ RaiseException(
     IN DWORD nNumberOfArguments,
     IN CONST ULONG_PTR *lpArguments)
 {
-    (void)dwExceptionFlags; (void)nNumberOfArguments; (void)lpArguments;
-    _ASSERT(!"RaiseException not implemented on wasi");
-    abort();
+    if (dwExceptionCode & WASI_RESERVED_SEH_BIT)
+    {
+        dwExceptionCode ^= WASI_RESERVED_SEH_BIT;
+    }
+
+    if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS)
+    {
+        nNumberOfArguments = EXCEPTION_MAXIMUM_PARAMETERS;
+    }
+
+    EXCEPTION_RECORD *exceptionRecord;
+    CONTEXT *contextRecord;
+    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
+
+    exceptionRecord->ExceptionCode = dwExceptionCode;
+    exceptionRecord->ExceptionFlags = dwExceptionFlags;
+    exceptionRecord->ExceptionRecord = NULL;
+    exceptionRecord->ExceptionAddress = NULL;
+    exceptionRecord->NumberParameters = nNumberOfArguments;
+    if (nNumberOfArguments)
+    {
+        memcpy(exceptionRecord->ExceptionInformation, lpArguments,
+               nNumberOfArguments * sizeof(ULONG_PTR));
+    }
+
+    throw PAL_SEHException(exceptionRecord, contextRecord);
 }
 
 // WIN32 debug-output APIs. WASI build excludes pal/src/debug/debug.cpp; route
@@ -219,7 +254,7 @@ PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *conte
     free(contextRecord);
 }
 
-extern "C" VOID
+VOID
 AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRecord)
 {
     *exceptionRecord = (EXCEPTION_RECORD*)calloc(1, sizeof(EXCEPTION_RECORD));
