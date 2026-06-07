@@ -1055,7 +1055,7 @@ internal partial class StackWalk_1 : IStackWalk
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         if (contextBuffer.Length < context.Size)
-            return HResults.E_INVALIDARG;
+            return unchecked((int)0x80070057); // E_INVALIDARG
         Span<byte> buffer = contextBuffer.Slice(0, (int)context.Size);
 
         buffer.Clear();
@@ -1078,7 +1078,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
-        else if (hr == HResults.E_NOTIMPL)
+        else if ((uint)hr == 0x80004001 /* E_NOTIMPL */)
         {
             WriteContextFromFrames(threadData, buffer);
             return 0;
@@ -1149,9 +1149,7 @@ internal partial class StackWalk_1 : IStackWalk
     private unsafe void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
     {
         // CONTEXT requires 16-byte alignment for the OS GetThreadContext path
-        nuint alignment = IPlatformAgnosticContext.ContextAlignment;
-        nuint scratchSize = ((nuint)context.Size + (alignment - 1)) & ~(alignment - 1);
-        void* scratch = NativeMemory.AlignedAlloc(scratchSize, alignment);
+        void* scratch = NativeMemory.AlignedAlloc(context.Size, IPlatformAgnosticContext.ContextAlignment);
         try
         {
             Span<byte> buffer = new(scratch, (int)context.Size);
