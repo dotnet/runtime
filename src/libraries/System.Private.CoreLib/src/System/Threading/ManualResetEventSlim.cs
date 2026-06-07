@@ -99,9 +99,10 @@ namespace System.Threading
         {
             get
             {
-                return m_combinedState < 0;
+                // Volatile to make sure checking IsSet is not optimized away or reordered
+                // when called as a public API.
+                return Volatile.Read(ref m_combinedState) < 0;
             }
-
             private set
             {
                 if (value)
