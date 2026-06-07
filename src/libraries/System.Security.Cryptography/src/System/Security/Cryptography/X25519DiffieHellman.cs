@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public abstract class X25519DiffieHellman : IDisposable
     {
-        private static readonly string[] s_knownOids = [Oids.X25519];
+        private protected static readonly string[] s_knownOids = [Oids.X25519];
 
         private bool _disposed;
 

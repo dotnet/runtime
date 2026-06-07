@@ -71,7 +71,16 @@ namespace System.Security.Cryptography
             Debug.Assert(destination.Length == PrivateKeySizeInBytes);
             ThrowIfPrivateNeeded();
 
-            byte[] pkcs8Buffer = new byte[128];
+
+            // PKCS#8 keys are not strictly deterministic in size because they could have attributes as "metadata"
+            // attached. A minimally encoded PKCS#8 private key is going to be 48 bytes. 512 bytes is 10x more space
+            // than needed, but anything larger than that we won't attempt to process.
+            scoped Span<byte> pkcs8Buffer;
+
+            unsafe
+            {
+                pkcs8Buffer = stackalloc byte[512];
+            }
 
             if (!Interop.AndroidCrypto.X25519TryExportPkcs8PrivateKey(_privateKey, pkcs8Buffer, out int written))
             {
@@ -81,27 +90,50 @@ namespace System.Security.Cryptography
 
             try
             {
-                ExtractPrivateKeyFromPkcs8(pkcs8Buffer.AsSpan(0, written)).CopyTo(destination);
+                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8(
+                    s_knownOids,
+                    pkcs8Buffer.Slice(0, written),
+                    out int bytesRead,
+                    permitParameters: false);
+
+                Debug.Assert(bytesRead == written);
+                privateKey.CopyTo(destination);
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(pkcs8Buffer);
+                CryptographicOperations.ZeroMemory(pkcs8Buffer.Slice(0, written));
             }
         }
 
-        protected override unsafe void ExportPublicKeyCore(Span<byte> destination)
+        protected override void ExportPublicKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == PublicKeySizeInBytes);
 
-            Span<byte> spkiBuffer = stackalloc byte[SpkiSizeInBytes];
 
-            if (!Interop.AndroidCrypto.X25519TryExportSubjectPublicKeyInfo(_publicKey, spkiBuffer, out int written))
+            scoped Span<byte> spkiBuffer;
+
+            unsafe
             {
-                Debug.Fail($"X25519 SubjectPublicKeyInfo did not fit in {spkiBuffer.Length} bytes.");
-                throw new CryptographicException(SR.Argument_DestinationTooShort);
+                spkiBuffer = stackalloc byte[SpkiSizeInBytes];
             }
 
-            ExtractPublicKeyFromSubjectPublicKeyInfo(spkiBuffer.Slice(0, written)).CopyTo(destination);
+            // A SPKI has no wiggle room - they are DER, we expect no algorithm parameters, etc. Either it is exactly
+            // the right size, or it's wrong.
+            if (!Interop.AndroidCrypto.X25519TryExportSubjectPublicKeyInfo(_publicKey, spkiBuffer, out int written)
+                || written != SpkiSizeInBytes)
+            {
+                Debug.Fail($"X25519 SubjectPublicKeyInfo did not fit in {spkiBuffer.Length} bytes or wrote the incorrect amount.");
+                throw new CryptographicException();
+            }
+
+            ReadOnlySpan<byte> key = KeyFormatHelper.ReadSubjectPublicKeyInfo(
+                s_knownOids,
+                spkiBuffer,
+                out int read,
+                permitParameters: false);
+
+            Debug.Assert(read == SpkiSizeInBytes);
+            key.CopyTo(destination);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
@@ -151,6 +183,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
+                    // Android requires reconsistuting the public key from the private key.
                     Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
                     DeriveRawSecretAgreementCore(privateKey, s_basePointHandle.Value, publicKeyBytes);
                     SafeX25519PublicKeyHandle publicKey = ImportPublicKeyAsHandle(publicKeyBytes);
@@ -192,9 +225,14 @@ namespace System.Security.Cryptography
             Interop.AndroidCrypto.X25519DeriveSecret(currentParty, otherParty, destination);
         }
 
-        private static unsafe SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
+        private static SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
         {
-            Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
+            scoped Span<byte> spki;
+
+            unsafe
+            {
+                 spki = stackalloc byte[SpkiSizeInBytes];
+            }
 
             bool encoded = TryWriteSubjectPublicKeyInfo(
                 spki,
@@ -202,48 +240,14 @@ namespace System.Security.Cryptography
                 static (source, buffer) => source.CopyTo(buffer),
                 out int written);
 
-            Debug.Assert(encoded);
-            Debug.Assert(written == SpkiSizeInBytes);
-            return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki.Slice(0, written));
-        }
-
-        private static ReadOnlySpan<byte> ExtractPrivateKeyFromPkcs8(ReadOnlySpan<byte> pkcs8)
-        {
-            ReadOnlySpan<byte> pkcs8Preamble =
-            [
-                0x30, 0x2e,                         // SEQUENCE (46 bytes)
-                0x02, 0x01, 0x00,                   // INTEGER 0
-                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
-                0x04, 0x22,                         // OCTET STRING (34 bytes)
-                0x04, 0x20,                         // OCTET STRING (32 bytes)
-            ];
-
-            if (pkcs8.Length != pkcs8Preamble.Length + PrivateKeySizeInBytes ||
-                !pkcs8.StartsWith(pkcs8Preamble))
+            // SPKI encoding is either right or wrong, there isn't "optional" things that can be written down. So it
+            // should be precisely sized.
+            if (!encoded || written != SpkiSizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new CryptographicException();
             }
 
-            return pkcs8.Slice(pkcs8Preamble.Length);
+            return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki);
         }
-
-        private static ReadOnlySpan<byte> ExtractPublicKeyFromSubjectPublicKeyInfo(ReadOnlySpan<byte> spki)
-        {
-            ReadOnlySpan<byte> spkiPreamble =
-            [
-                0x30, 0x2a, // SEQUENCE (42 bytes)
-                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
-                0x03, 0x21, 0x00, // BIT STRING (33 bytes, 0 unused bits)
-            ];
-
-            if (spki.Length != spkiPreamble.Length + PublicKeySizeInBytes ||
-                !spki.StartsWith(spkiPreamble))
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            return spki.Slice(spkiPreamble.Length);
-        }
-
     }
 }
