@@ -39,7 +39,77 @@ namespace Internal.TypeVerifier
 
         public void Verify()
         {
+            VerifyBaseType();
             VerifyInterfaces();
+        }
+
+        private void VerifyBaseType()
+        {
+            TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
+            EcmaType type = _module.GetType(_typeDefinitionHandle);
+            EntityHandle baseType = typeDefinition.BaseType;
+            if (baseType.IsNil)
+            {
+                if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                }
+            }
+            else if (baseType.Kind == HandleKind.TypeSpecification)
+            {
+                if (!IsValidBaseTypeSpecification((TypeSpecificationHandle)baseType))
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                }
+
+            }
+            else if (IsValueType(baseType))
+            {
+                VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+            }
+        }
+
+        private bool IsValueType(EntityHandle typeHandle)
+        {
+            return _module.GetType(typeHandle).IsValueType;
+        }
+
+        private bool IsValidBaseTypeSpecification(TypeSpecificationHandle typeSpecificationHandle)
+        {
+            try
+            {
+                TypeSpecification typeSpecification = _module.MetadataReader.GetTypeSpecification(typeSpecificationHandle);
+                BlobReader signatureReader = _module.MetadataReader.GetBlobReader(typeSpecification.Signature);
+
+                if (signatureReader.ReadSignatureTypeCode() != SignatureTypeCode.GenericTypeInstance)
+                {
+                    return false;
+                }
+
+                int genericTypeKind = signatureReader.ReadCompressedInteger();
+                if (genericTypeKind != (int)SignatureTypeKind.Class)
+                {
+                    return false;
+                }
+
+                EntityHandle genericTypeHandle = signatureReader.ReadTypeHandle();
+                if (genericTypeHandle.Kind != HandleKind.TypeDefinition &&
+                    genericTypeHandle.Kind != HandleKind.TypeReference)
+                {
+                    return false;
+                }
+
+                if (IsValueType(genericTypeHandle))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (BadImageFormatException)
+            {
+                return false;
+            }
         }
 
         public void VerifyInterfaces()
@@ -117,14 +187,39 @@ namespace Internal.TypeVerifier
         {
             if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
             {
+                // type can be an InstantiatedType, so use the TypeDef to get the metadata token.
                 TypeDesc typeDesc = type.GetTypeDefinition();
                 EcmaModule module = (EcmaModule)((MetadataType)typeDesc).Module;
 
-                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(((EcmaType)type).Handle));
+                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(((EcmaType)typeDesc).Handle));
             }
             else
             {
                 return type.ToString();
+            }
+        }
+
+        private string Format(EntityHandle handle)
+        {
+            if (handle.IsNil)
+            {
+                return "nil";
+            }
+
+            if (handle.Kind == HandleKind.TypeDefinition ||
+                handle.Kind == HandleKind.TypeReference ||
+                handle.Kind == HandleKind.TypeSpecification)
+            {
+                return Format(_module.GetType(handle));
+            }
+
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            {
+                return string.Format("{0}([{1}]0x{2:X8})", handle.Kind, _module, _module.MetadataReader.GetToken(handle));
+            }
+            else
+            {
+                return handle.Kind.ToString();
             }
         }
 
