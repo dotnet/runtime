@@ -1152,6 +1152,7 @@ internal partial class StackWalk_1 : IStackWalk
         nuint alignment = IPlatformAgnosticContext.ContextAlignment;
         nuint scratchSize = ((nuint)context.Size + (alignment - 1)) & ~(alignment - 1);
         void* scratch = NativeMemory.AlignedAlloc(scratchSize, alignment);
+        try
         {
             Span<byte> buffer = new(scratch, (int)context.Size);
             int hr = ((IStackWalk)this).GetContext(
