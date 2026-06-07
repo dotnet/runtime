@@ -13,42 +13,30 @@ namespace System.Threading
     // from within the GC, so it cannot run FinalizerThreadWorkerIteration inline
     // (the worker iteration declares GC_TRIGGERS + MODE_COOPERATIVE and switches
     // thread mode via EnablePreemptiveGC, which is unsafe to do mid-collection).
+    // It also cannot cross back into managed code to queue work — even a
+    // ThreadPool enqueue allocates and acquires locks, which would re-enter the
+    // GC currently in progress.
     //
-    // Instead, native EnableFinalization calls SystemJS_ScheduleFinalization,
-    // which dispatches to the function pointer registered here at startup.
-    // That callback queues SystemJS_ExecuteFinalizationCallback through the
-    // ThreadPool, where it is picked up by WasiEventLoop's pump at a safe point.
-    //
-    // This is the WASI analog of the browser's setTimeout(..., 0) pattern in
-    // src/native/libs/System.Native.Browser/native/scheduling.ts.
+    // The native side instead sets an atomic flag in SystemJS_ScheduleFinalization
+    // (just a volatile store, safe inside the GC). WasiEventLoop polls
+    // SystemJS_TryClearPendingFinalization between work-queue iterations from
+    // PollWasiEventLoopUntilResolved and, when the flag is set, calls
+    // SystemJS_ExecuteFinalizationCallback at a safe point.
     internal static unsafe partial class WasiFinalizerScheduler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizerScheduler_Register")]
-        private static partial void Register(delegate* unmanaged<void> callback);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_TryClearPendingFinalization")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool TryClearPendingFinalization();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ExecuteFinalizationCallback")]
-        private static partial void ExecuteFinalizationCallback();
+        internal static partial void ExecuteFinalizationCallback();
 
-#pragma warning disable CA2255 // ModuleInitializer is used here to register the
-                               // scheduler before any GC-driven EnableFinalization
-                               // call. In CoreCLR coreclr_initialize triggers the
-                               // module initializer of CoreLib early enough that
-                               // the function pointer is installed before the GC
-                               // begins requesting finalization.
-
-        [ModuleInitializer]
-#pragma warning restore CA2255
-        internal static void Initialize()
+        internal static void DrainIfPending()
         {
-            Register(&ScheduleFinalization);
-        }
-
-        [UnmanagedCallersOnly]
-        private static void ScheduleFinalization()
-        {
-            // UnsafeQueueUserWorkItem doesn't flow ExecutionContext; finalization
-            // semantically owns its own context anyway.
-            ThreadPool.UnsafeQueueUserWorkItem(static _ => ExecuteFinalizationCallback(), state: (object?)null, preferLocal: false);
+            if (TryClearPendingFinalization())
+            {
+                ExecuteFinalizationCallback();
+            }
         }
     }
 }

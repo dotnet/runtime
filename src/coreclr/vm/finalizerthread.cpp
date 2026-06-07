@@ -69,37 +69,37 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
 
 #ifdef TARGET_WASI
 
-// Managed code (System.Threading.WasiFinalizerScheduler) registers a callback
-// here at startup. The callback uses ThreadPool.UnsafeQueueUserWorkItem to
-// defer SystemJS_ExecuteFinalizationCallback to the WasiEventLoop pump, so
-// finalization never runs inline from EnableFinalization (which is called
-// from inside the GC). Mirrors the browser pattern where the JS event loop
-// supplies the deferred-execution mechanism.
-typedef void (*WasiScheduleFinalizationFn)();
-static WasiScheduleFinalizationFn s_wasiScheduleFinalization = nullptr;
-
-extern "C" void QCALLTYPE WasiFinalizerScheduler_Register(WasiScheduleFinalizationFn callback)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    s_wasiScheduleFinalization = callback;
-    END_QCALL;
-}
+// On WASI there is no separate finalizer thread and no JS event loop to defer
+// work to. EnableFinalization runs inside the GC, so it cannot safely cross
+// back into managed code (queueing into ThreadPool itself is a managed
+// allocation/lock-protected operation that re-enters the GC).
+//
+// Pure-native flag: SystemJS_ScheduleFinalization sets it from inside the GC,
+// and WasiEventLoop's polling loop drains it via SystemJS_TryClearPendingFinalization
+// at a safe point and then calls SystemJS_ExecuteFinalizationCallback (which
+// is already a QCall exposing the real FinalizerThreadWorkerIteration).
+static Volatile<bool> s_finalizationPending = false;
 
 extern "C" void SystemJS_ScheduleFinalization()
 {
-    if (s_wasiScheduleFinalization != nullptr)
+    // Called from inside the GC. Setting an atomic flag is the only thing
+    // we can safely do here — no allocation, no managed callback, no locks.
+    s_finalizationPending = true;
+}
+
+extern "C" CLR_BOOL QCALLTYPE SystemJS_TryClearPendingFinalization()
+{
+    QCALL_CONTRACT;
+    CLR_BOOL pending = FALSE;
+    BEGIN_QCALL;
+    // Volatile load + clear. Single-threaded WASI: no atomic swap needed.
+    pending = s_finalizationPending ? TRUE : FALSE;
+    if (pending)
     {
-        s_wasiScheduleFinalization();
+        s_finalizationPending = false;
     }
-    else
-    {
-        // Startup race window before WasiFinalizerScheduler.Register runs.
-        // Falling back to a no-op is safe: the GC will request finalization
-        // again on the next collection. The first such collection on WASI
-        // typically happens after CoreLib is initialized, so this branch
-        // should never fire in practice.
-    }
+    END_QCALL;
+    return pending;
 }
 
 #endif // TARGET_WASI

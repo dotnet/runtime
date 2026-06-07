@@ -19,13 +19,13 @@ extern "C" void SystemJS_DiagnosticServerQueueJob(size_t (*cb)(void *data), void
 
 #ifdef TARGET_WASI
 // Native callback that runs the finalizer worker; called by managed code from
-// the WasiEventLoop pump after EnableFinalization schedules it via
-// WasiFinalizerScheduler. See src/coreclr/vm/finalizerthread.cpp.
+// the WasiEventLoop pump when SystemJS_TryClearPendingFinalization returns true.
+// See src/coreclr/vm/finalizerthread.cpp.
 extern "C" void SystemJS_ExecuteFinalizationCallback();
-// Registration entry point used by managed System.Threading.WasiFinalizerScheduler
-// to install its ThreadPool-based scheduling callback at startup.
-typedef void (*WasiScheduleFinalizationFn)();
-extern "C" void QCALLTYPE WasiFinalizerScheduler_Register(WasiScheduleFinalizationFn callback);
+// Atomic-flag drain used by managed WasiEventLoop to learn whether a GC has
+// requested finalization since the last poll. Returns TRUE once per scheduled
+// finalization, FALSE otherwise.
+extern "C" CLR_BOOL QCALLTYPE SystemJS_TryClearPendingFinalization();
 #endif // TARGET_WASI
 
 #endif // HAVE_WASM_ENTRYPOINTS_H
