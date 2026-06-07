@@ -1149,8 +1149,9 @@ internal partial class StackWalk_1 : IStackWalk
     private unsafe void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
     {
         // CONTEXT requires 16-byte alignment for the OS GetThreadContext path
-        void* scratch = NativeMemory.AlignedAlloc(context.Size, IPlatformAgnosticContext.ContextAlignment);
-        try
+        nuint alignment = IPlatformAgnosticContext.ContextAlignment;
+        nuint scratchSize = ((nuint)context.Size + (alignment - 1)) & ~(alignment - 1);
+        void* scratch = NativeMemory.AlignedAlloc(scratchSize, alignment);
         {
             Span<byte> buffer = new(scratch, (int)context.Size);
             int hr = ((IStackWalk)this).GetContext(
