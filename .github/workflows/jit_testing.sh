@@ -10,7 +10,7 @@ echo "=================================="
 apt-get update
 apt-get install -y \
   bc automake clang curl findutils git hostname libtool \
-  libkrb5-dev ninja-build llvm make python3 \
+  libkrb5-dev ninja-build llvm make python3 cmake \
   liblttng-ust-dev tar wget jq lld \
   build-essential zlib1g-dev libssl-dev libbrotli-dev \
   ca-certificates
