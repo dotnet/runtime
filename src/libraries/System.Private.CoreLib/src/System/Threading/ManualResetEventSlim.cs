@@ -132,11 +132,22 @@ namespace System.Threading
 
         private void InterlockedIncrementWaiters()
         {
-            int newWaiters = Interlocked.Increment(ref m_combinedState) & NumWaitersState_BitMask;
+            int currentState = m_combinedState;
+            while (true)
+            {
+                // it is possible for the max number of waiters to be exceeded via user-code, hence we use a real exception here.
+                if ((currentState & NumWaitersState_BitMask) >= NumWaitersState_MaxValue)
+                    throw new InvalidOperationException(SR.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
 
-            // it is possible for the max number of waiters to be exceeded via user-code, hence we use a real exception here.
-            if (newWaiters >= NumWaitersState_MaxValue)
-                throw new InvalidOperationException(SR.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
+                // The waiters count has room for one more, so adding 1 to the full state
+                // cannot carry out of NumWaitersState_BitMask.
+                int oldState = Interlocked.CompareExchange(ref m_combinedState, currentState + 1, currentState);
+                if (oldState == currentState)
+                    return;
+
+                // Highly unlikely contention, since we increment/decrement while holding a lock, just try again.
+                currentState = oldState;
+            }
         }
 
         private void InterlockedDecrementWaiters()
