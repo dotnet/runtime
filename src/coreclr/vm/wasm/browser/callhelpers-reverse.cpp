@@ -1182,21 +1182,6 @@ extern "C" void SystemJS_ExecuteTimerCallback()
     Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid();
 }
 
-// MANUAL ADDITION: matches WasiFinalizerScheduler.cs (deferred-finalization
-// support added in this branch). Regenerating the file from an updated CoreLib
-// scan should produce the same entry; until that pipeline is wired up, keep
-// this in sync with the C# class.
-static MethodDesc* MD_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid()
-{
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.Threading.WasiFinalizerScheduler, System.Private.CoreLib", "ScheduleFinalization", &MD_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid);
-    }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid);
-}
-
 const ReverseThunkMapEntry g_ReverseThunks[] =
 {
     { 3863938719, "<RegisterNoGCRegionCallback>g__Callback|72_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid } },
@@ -1278,8 +1263,6 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 3929107505, "RhThrowEx#2:System.Private.CoreLib:System.Runtime:EH", { &MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid } },
     { 504238190, "RhThrowHwEx#2:System.Private.CoreLib:System.Runtime:EH", { &MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid } },
     { 4273572779, "RunFinalizers#0:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, (void*)&Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32 } },
-    // MANUAL ADDITION: see Call_/MD_ definitions above for context.
-    { 1007743593, "ScheduleFinalization#0:System.Private.CoreLib:System.Threading:WasiFinalizerScheduler", { &MD_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_WasiFinalizerScheduler_ScheduleFinalization_Void_RetVoid } },
     { 1963568864, "Setup#4:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid } },
     { 1343309100, "StartAssemblyLoad#3:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid } },
     { 3372184251, "StartCallback#1:System.Private.CoreLib:System.Threading:Thread", { &MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid } },
