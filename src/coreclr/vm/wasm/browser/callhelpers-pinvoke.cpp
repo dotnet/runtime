@@ -11,7 +11,6 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
-    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -53,26 +52,24 @@ extern "C" {
     int32_t GlobalizationNative_StartsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *);
     int32_t GlobalizationNative_ToAscii (uint32_t, void *, int32_t, void *, int32_t);
     int32_t GlobalizationNative_ToUnicode (uint32_t, void *, int32_t, void *, int32_t);
-    void * SystemInteropJS_BindJSImportST (void *);
-    void SystemInteropJS_CancelPromise (void *);
-    void SystemInteropJS_InvokeJSFunction (void *, void *);
-    void SystemInteropJS_InvokeJSImportST (int32_t, void *);
-    void SystemInteropJS_ReleaseCSOwnedObject (void *);
-    void SystemInteropJS_ResolveOrRejectPromise (void *);
-    void * SystemJS_GetLocaleInfo (void *, int32_t, void *, int32_t, void *, int32_t, void *);
+    int32_t SystemNative_Accept (void *, void *, void *, void *);
     int32_t SystemNative_Access (void *, int32_t);
     void * SystemNative_AlignedAlloc (void *, void *);
     void SystemNative_AlignedFree (void *);
     void * SystemNative_AlignedRealloc (void *, void *, void *);
+    int32_t SystemNative_Bind (void *, int32_t, void *, int32_t);
     void * SystemNative_Calloc (void *, void *);
     int32_t SystemNative_CanGetHiddenFlag ();
     int32_t SystemNative_ChDir (void *);
     int32_t SystemNative_ChMod (void *, int32_t);
     int32_t SystemNative_Close (void *);
     int32_t SystemNative_CloseDir (void *);
+    int32_t SystemNative_Connect (void *, void *, int32_t);
+    int32_t SystemNative_Connectx (void *, void *, int32_t, void *, int32_t, int32_t, void *);
     int32_t SystemNative_ConvertErrorPalToPlatform (int32_t);
     int32_t SystemNative_ConvertErrorPlatformToPal (int32_t);
     int32_t SystemNative_CopyFile (void *, void *, int64_t);
+    int32_t SystemNative_Disconnect (void *);
     int32_t SystemNative_FAllocate (void *, int64_t, int64_t);
     int32_t SystemNative_FChMod (void *, int32_t);
     int32_t SystemNative_FChflags (void *, uint32_t);
@@ -81,29 +78,54 @@ extern "C" {
     int32_t SystemNative_FSync (void *);
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
+    int32_t SystemNative_FcntlGetFD (void *);
     int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
+    int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
+    void SystemNative_FreeHostEntry (void *);
     void SystemNative_FreeLibrary (void *);
+    int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
+    int32_t SystemNative_GetAtOutOfBandMark (void *, void *);
+    int32_t SystemNative_GetBytesAvailable (void *, void *);
+    int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
-    int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
+    int32_t SystemNative_GetHostEntryForName (void *, int32_t, void *);
+    int32_t SystemNative_GetHostName (void *, int32_t);
+    int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
+    int32_t SystemNative_GetIPv4MulticastOption (void *, int32_t, void *);
+    int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
+    int32_t SystemNative_GetIPv6MulticastOption (void *, int32_t, void *);
+    int32_t SystemNative_GetLingerOption (void *, void *);
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
+    int32_t SystemNative_GetMaximumAddressSize ();
+    int32_t SystemNative_GetNameInfo (void *, uint32_t, uint32_t, void *, uint32_t, void *, uint32_t, int32_t);
     void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
+    int32_t SystemNative_GetPeerName (void *, void *, void *);
+    int32_t SystemNative_GetPort (void *, int32_t, void *);
     void * SystemNative_GetProcAddress (void *, void *);
+    int32_t SystemNative_GetRawSockOpt (void *, int32_t, int32_t, void *, void *);
+    int32_t SystemNative_GetSockName (void *, void *, void *);
+    int32_t SystemNative_GetSockOpt (void *, int32_t, int32_t, void *, void *);
+    int32_t SystemNative_GetSocketAddressSizes (void *, void *, void *, void *);
+    int32_t SystemNative_GetSocketErrorOption (void *, void *);
+    int32_t SystemNative_GetSocketType (void *, void *, void *, void *, void *);
     int64_t SystemNative_GetSystemTimeAsTicks ();
     void * SystemNative_GetTimeZoneData (void *, void *);
     int64_t SystemNative_GetTimestamp ();
+    int32_t SystemNative_GetWasiSocketDescriptor (void *, void *);
     int32_t SystemNative_IsMemfdSupported ();
     int32_t SystemNative_LChflags (void *, uint32_t);
     int32_t SystemNative_LChflagsCanSetHiddenFlag ();
     int64_t SystemNative_LSeek (void *, int64_t, int32_t);
     int32_t SystemNative_LStat (void *, void *);
     int32_t SystemNative_Link (void *, void *);
+    int32_t SystemNative_Listen (void *, int32_t);
     void * SystemNative_LoadLibrary (void *);
     int32_t SystemNative_LockFileRegion (void *, int64_t, int64_t, int32_t);
     void SystemNative_Log (void *, int32_t);
@@ -131,6 +153,8 @@ extern "C" {
     int32_t SystemNative_PWrite (void *, void *, int32_t, int64_t);
     int64_t SystemNative_PWriteV (void *, void *, int32_t, int64_t);
     int32_t SystemNative_Pipe (void *, int32_t);
+    int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo ();
+    int32_t SystemNative_Poll (void *, uint32_t, int32_t, void *);
     int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
     int32_t SystemNative_Read (void *, void *, int32_t);
     int32_t SystemNative_ReadDir (void *, void *);
@@ -138,22 +162,48 @@ extern "C" {
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
     int64_t SystemNative_ReadV (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
+    int32_t SystemNative_Receive (void *, void *, int32_t, int32_t, void *);
+    int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
     int32_t SystemNative_SchedGetCpu ();
+    int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
+    int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
+    int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
+    int32_t SystemNative_SendMessage (void *, void *, int32_t, void *);
+    int32_t SystemNative_SetAddressFamily (void *, int32_t, int32_t);
     void SystemNative_SetErrNo (int32_t);
+    int32_t SystemNative_SetIPv4Address (void *, int32_t, uint32_t);
+    int32_t SystemNative_SetIPv4MulticastOption (void *, int32_t, void *);
+    int32_t SystemNative_SetIPv6Address (void *, int32_t, void *, int32_t, uint32_t);
+    int32_t SystemNative_SetIPv6MulticastOption (void *, int32_t, void *);
+    int32_t SystemNative_SetLingerOption (void *, void *);
+    int32_t SystemNative_SetPort (void *, int32_t, uint32_t);
+    int32_t SystemNative_SetRawSockOpt (void *, int32_t, int32_t, void *, int32_t);
+    int32_t SystemNative_SetReceiveTimeout (void *, int32_t);
+    int32_t SystemNative_SetSendTimeout (void *, int32_t);
+    int32_t SystemNative_SetSockOpt (void *, int32_t, int32_t, void *, int32_t);
     void * SystemNative_ShmOpen (void *, int32_t, int32_t);
     int32_t SystemNative_ShmUnlink (void *);
+    int32_t SystemNative_Shutdown (void *, int32_t);
+    int32_t SystemNative_Socket (int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Stat (void *, void *);
     void * SystemNative_StrErrorR (int32_t, void *, int32_t);
     int32_t SystemNative_SymLink (void *, void *);
     int64_t SystemNative_SysConf (int32_t);
     void SystemNative_SysLog (int32_t, void *, void *);
+    int32_t SystemNative_TryGetIPPacketInformation (void *, int32_t, void *);
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_Write (void *, void *, int32_t);
     int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
+    __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("[resource-drop]pollable"))) extern void WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable (int32_t);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("now"))) extern int64_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now ();
+    __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("poll"))) extern void WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll (void *, int32_t, void *);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("resolution"))) extern int64_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution ();
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-duration"))) extern int32_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration (int64_t);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-instant"))) extern int32_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant (int64_t);
 } // extern "C"
 
 static const Entry s_libSystem_Globalization_Native [] = {
@@ -193,62 +243,91 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
-    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
-    DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_Inflate) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression, System.Net.WebSockets
-    DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
+    DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
+    DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression
+    DllImportEntry(CompressionNative_Inflate) // System.IO.Compression
+    DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression
+    DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression
     DllImportEntry(CompressionNative_InflateReset2_) // System.IO.Compression
 };
 
 static const Entry s_libSystem_Native [] = {
+    DllImportEntry(SystemNative_Accept) // System.Net.Sockets
     DllImportEntry(SystemNative_Access) // System.Private.CoreLib
     DllImportEntry(SystemNative_AlignedAlloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_AlignedFree) // System.Private.CoreLib
     DllImportEntry(SystemNative_AlignedRealloc) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Bind) // System.Net.Sockets
     DllImportEntry(SystemNative_Calloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_CanGetHiddenFlag) // System.Private.CoreLib
     DllImportEntry(SystemNative_ChDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_ChMod) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Close) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Close) // System.Net.NameResolution, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_CloseDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
-    DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
+    DllImportEntry(SystemNative_Connect) // System.Net.Sockets
+    DllImportEntry(SystemNative_Connectx) // System.Net.Sockets
+    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Disconnect) // System.Net.Sockets
     DllImportEntry(SystemNative_FAllocate) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_FLock) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Private.CoreLib
+    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FcntlGetFD) // System.Net.Sockets
+    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_GetAtOutOfBandMark) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetBytesAvailable) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
+    DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
+    DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_GetIPv4MulticastOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_GetIPv6MulticastOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetLingerOption) // System.Net.Sockets
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetMaximumAddressSize) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetNameInfo) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetPeerName) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetPort) // System.Net.Primitives, System.Net.Sockets
     DllImportEntry(SystemNative_GetProcAddress) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetRawSockOpt) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetSockName) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetSockOpt) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetSocketAddressSizes) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_GetSocketErrorOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetSocketType) // System.Net.Sockets
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Net.Sockets
     DllImportEntry(SystemNative_IsMemfdSupported) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_LChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag) // System.Private.CoreLib
     DllImportEntry(SystemNative_LSeek) // System.Private.CoreLib
     DllImportEntry(SystemNative_LStat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Link) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Listen) // System.Net.Sockets
     DllImportEntry(SystemNative_LoadLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_LockFileRegion) // System.Private.CoreLib
     DllImportEntry(SystemNative_Log) // System.Private.CoreLib
@@ -276,42 +355,63 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_PWrite) // System.Private.CoreLib
     DllImportEntry(SystemNative_PWriteV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Pipe) // System.Private.CoreLib
+    DllImportEntry(SystemNative_PlatformSupportsDualModeIPv4PacketInfo) // System.Net.Sockets
+    DllImportEntry(SystemNative_Poll) // System.Console, System.Net.Sockets
     DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Read) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Read) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Receive) // System.Net.Sockets
+    DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Select) // System.Net.Sockets
+    DllImportEntry(SystemNative_Send) // System.Net.Sockets
+    DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
+    DllImportEntry(SystemNative_SendMessage) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetAddressFamily) // System.Net.Primitives, System.Net.Sockets
     DllImportEntry(SystemNative_SetErrNo) // System.Private.CoreLib
+    DllImportEntry(SystemNative_SetIPv4Address) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_SetIPv4MulticastOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetIPv6Address) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_SetIPv6MulticastOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetLingerOption) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetPort) // System.Net.Primitives, System.Net.Sockets
+    DllImportEntry(SystemNative_SetRawSockOpt) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetReceiveTimeout) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetSendTimeout) // System.Net.Sockets
+    DllImportEntry(SystemNative_SetSockOpt) // System.Net.Sockets
     DllImportEntry(SystemNative_ShmOpen) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_ShmUnlink) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_Shutdown) // System.Net.Sockets
+    DllImportEntry(SystemNative_Socket) // System.Net.NameResolution, System.Net.Sockets
     DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
-    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
+    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
+    DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
+    DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
-static const Entry s_libSystem_Native_Browser [] = {
-    DllImportEntry(SystemJS_GetLocaleInfo) // System.Private.CoreLib
+static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now) // System.Private.CoreLib
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution) // System.Private.CoreLib
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration) // System.Private.CoreLib
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant) // System.Private.CoreLib
 };
 
-static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
-    DllImportEntry(SystemInteropJS_BindJSImportST) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_CancelPromise) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_InvokeJSFunction) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_InvokeJSImportST) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_ReleaseCSOwnedObject) // System.Runtime.InteropServices.JavaScript
-    DllImportEntry(SystemInteropJS_ResolveOrRejectPromise) // System.Runtime.InteropServices.JavaScript
+static const Entry s_wasi_3A_io_2F_poll_40_0_2_8 [] = {
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable) // System.Private.CoreLib
+    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll) // System.Private.CoreLib
 };
 
 typedef struct PInvokeTable {
@@ -322,10 +422,10 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 94},
-    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
-    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
+    {"libSystem.Native", s_libSystem_Native, 146},
+    {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
+    {"wasi:io/poll@0.2.8", s_wasi_3A_io_2F_poll_40_0_2_8, 2}
 };
 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 
