@@ -3799,6 +3799,14 @@ void CodeGen::genCheckUseBlockInit()
                     JITDUMP("must init a tracked V%02u because it a struct with a GC ref\n", varNum);
                     mustInitThisVar = true;
                 }
+#ifdef TARGET_WASM
+                else if (hasGCPtr)
+                {
+                    // On wasm all GC vars are reported as untracked, so the slot must be zero-inited.
+                    JITDUMP("must init V%02u because wasm reports tracked GC vars as untracked\n", varNum);
+                    mustInitThisVar = true;
+                }
+#endif
                 else
                 {
                     // We are done with tracked or GC vars, now look at untracked vars without GC refs.
