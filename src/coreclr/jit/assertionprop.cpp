@@ -12,6 +12,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitpch.h"
 #include "rangecheck.h"
+#include "knownbits.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -4083,6 +4084,23 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             *isKnownNonZero = true;
         }
     }
+
+    // Known bits can also establish non-negativity (sign bit known 0) and non-zeroness (some bit
+    // known 1). Covers TYP_LONG and bit patterns an interval cannot express (e.g. "x & 7").
+    if (!*isKnownNonZero || !*isKnownNonNegative)
+    {
+        const unsigned  width   = (genActualType(tree) == TYP_LONG) ? 64 : 32;
+        const uint64_t  signBit = 1ull << (width - 1);
+        const KnownBits kb      = KnownBits::Compute(this, treeVN, assertions);
+        if ((kb.knownZero & signBit) != 0)
+        {
+            *isKnownNonNegative = true;
+        }
+        if (kb.knownOne != 0)
+        {
+            *isKnownNonZero = true;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4509,6 +4527,23 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         if (relopRange.IsSingleValueConstant(&relopResult))
         {
             assert((relopResult == 0) || (relopResult == 1));
+            newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
+    // See if we can fold the relop based on known bits. This complements the range-based folding
+    // above (which is limited to TYP_INT) by reasoning about individual bits and TYP_LONG values.
+    if (varTypeIsIntegral(op1) && !varTypeIsGC(op1) && (op1VN != ValueNumStore::NoVN) && (op2VN != ValueNumStore::NoVN))
+    {
+        const unsigned  width = (genActualType(op1) == TYP_LONG) ? 64 : 32;
+        const KnownBits kb1   = KnownBits::Compute(this, op1VN, assertions);
+        const KnownBits kb2   = KnownBits::Compute(this, op2VN, assertions);
+
+        const int relopResult = KnownBitsOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), kb1, kb2, width);
+        if (relopResult >= 0)
+        {
+            JITDUMP("Folding relop [%06u] based on known bits.\n", dspTreeID(tree));
             newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
         }
@@ -5536,6 +5571,17 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
         return optAssertionProp_Update(newTree, arrBndsChk, stmt);
     };
+
+    // Known-bits elimination: redundant if (uint)index is provably < (uint)length. Catches masked
+    // indices and bit patterns the range-based paths cannot express.
+    {
+        const KnownBits kbIdx = KnownBits::Compute(this, vnCurIdx, assertions);
+        const KnownBits kbLen = KnownBits::Compute(this, vnCurLen, assertions);
+        if (KnownBitsOps::EvalRelop(GT_LT, /* isUnsigned */ true, kbIdx, kbLen, 32) == 1)
+        {
+            return dropBoundsCheck(INDEBUG("known bits prove (uint)index < (uint)length"));
+        }
+    }
 
     // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
     ValueNum add0, add1;
