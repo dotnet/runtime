@@ -2401,6 +2401,110 @@ PhaseStatus Compiler::fgLocalMorph()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+//------------------------------------------------------------------------
+// fgUnpinNonMovableLocals: unpin pinned locals whose value is provably
+//   non-movable.
+//
+// Notes:
+//   For each STORE V = x, V is a "no-gc value" candidate if x is direct
+//   no-gc (constant, LCL_ADDR, frozen object handle, static handle) or
+//   if x is a LCL_VAR V' that is itself a no-gc value candidate. The
+//   per-local property is the AND over all stores, so the lattice only
+//   ever flips from true to false; iteration terminates in at most one
+//   round per chain depth. Walks the per-statement local thread that
+//   was established by LocalSequencer in local morph rather than the
+//   full IR.
+//
+//   Params, implicitly-referenced locals, and address-exposed locals
+//   have defs we cannot see (call-site initialization, runtime writes,
+//   or aliased writes via the local's address) and so are excluded.
+//
+PhaseStatus Compiler::fgUnpinNonMovableLocals()
+{
+    if (opts.OptimizationDisabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Single scan to detect pinned locals and initialize the lattice.
+    //
+    BitVecTraits traits(lvaCount, this);
+    BitVec       hasNoGcValue = BitVecOps::MakeEmpty(&traits);
+    bool         anyPinned    = false;
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        anyPinned |= varDsc->lvPinned;
+        if (!varDsc->lvImplicitlyReferenced && !varDsc->lvIsParam && !varDsc->IsAddressExposed())
+        {
+            BitVecOps::AddElemD(&traits, hasNoGcValue, lclNum);
+        }
+    }
+
+    if (!anyPinned)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    unsigned iterations = 0;
+    bool     changed    = true;
+    while (changed)
+    {
+        changed = false;
+        iterations++;
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* const lcl : stmt->LocalsTreeList())
+                {
+                    if (!lcl->OperIs(GT_STORE_LCL_VAR))
+                    {
+                        continue;
+                    }
+
+                    unsigned const dstLclNum = lcl->GetLclNum();
+                    if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                    {
+                        continue;
+                    }
+
+                    GenTree* const value  = lcl->Data();
+                    bool           isNoGc = value->IsNotGcDef();
+
+                    if (!isNoGc && value->OperIs(GT_LCL_VAR))
+                    {
+                        isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, value->AsLclVar()->GetLclNum());
+                    }
+
+                    if (!isNoGc)
+                    {
+                        BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+
+    unsigned unpinned = 0;
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        if (varDsc->lvPinned && BitVecOps::IsMember(&traits, hasNoGcValue, lclNum))
+        {
+            varDsc->lvPinned = 0;
+            unpinned++;
+            JITDUMP("V%02u unpinned: all defs are no-gc\n", lclNum);
+        }
+    }
+
+    JITDUMP("fgUnpinNonMovableLocals: %u local%s unpinned after %u iteration%s\n", unpinned, unpinned == 1 ? "" : "s",
+            iterations, iterations == 1 ? "" : "s");
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
 //-----------------------------------------------------------------------------------
 // fgExposeUnpropagatedLocals:
 //   Expose the final set of locals that were computed to have their address
