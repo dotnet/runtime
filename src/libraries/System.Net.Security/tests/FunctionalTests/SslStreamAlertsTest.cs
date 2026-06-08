@@ -380,16 +380,14 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> SupportedSslProtocolsExcludingMacOSSsl3()
         {
-            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols())
-            {
 #pragma warning disable 0618 // SSL2/3 are deprecated
-                if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
-                {
-                    // SecureTransport on modern macOS no longer negotiates SSL 3.0; skip rather
-                    // than silently pass so the xunit runner reports the data point as filtered.
-                    continue;
-                }
+            // SecureTransport on modern macOS won't negotiate SSL 3.0, so handshakes hang
+            // until they time out. Mask Ssl3 out on macOS so xunit reports the data point
+            // as filtered rather than silently passing.
+            SslProtocols mask = PlatformDetection.IsOSX ? ~SslProtocols.Ssl3 : (SslProtocols)~0;
 #pragma warning restore 0618
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(mask))
+            {
                 yield return new object[] { protocol };
             }
         }
