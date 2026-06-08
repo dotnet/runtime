@@ -22,7 +22,6 @@ namespace
     ObjCMarshalNative::BeginEndCallback g_BeginEndCallback;
     ObjCMarshalNative::IsReferencedCallback g_IsReferencedCallback;
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
-    OBJECTHANDLE g_ObjectiveCTrackingInfoTable;
 }
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(

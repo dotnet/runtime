@@ -56,7 +56,8 @@ class ObjcTrackingInformationObject final : public Object
 {
     friend class CoreLibBinder;
 public:
-    INTPTR _memory;
+    INT_PTR _memory;
+    INT_PTR _longWeakHandle;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -77,6 +78,7 @@ extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCal
 extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr);
+
 #endif // FEATURE_OBJCMARSHAL
 
 #ifdef FEATURE_JAVAMARSHAL

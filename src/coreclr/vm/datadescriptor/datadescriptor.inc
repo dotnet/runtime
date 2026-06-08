@@ -220,9 +220,6 @@ CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCW, cdac_data<InteropSyncBlock
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_OBJCMARSHAL
-CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, TaggedMemory, cdac_data<InteropSyncBlockInfo>::TaggedMemory)
-#endif // FEATURE_OBJCMARSHAL
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)

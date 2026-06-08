@@ -13,9 +13,10 @@ bool ConditionalWeakTableContainerObject::TryGetValue(OBJECTREF key, OBJECTREF* 
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(key != nullptr && value != nullptr);
     }
     CONTRACTL_END;
+    SUPPORTS_DAC;
+    _ASSERTE(key != nullptr && value != nullptr);
 
     INT32 hashCode = key->TryGetHashCode();
 
@@ -29,11 +30,19 @@ bool ConditionalWeakTableContainerObject::TryGetValue(OBJECTREF key, OBJECTREF* 
     int bucket = hashCode & (_buckets->GetNumComponents() - 1);
     PTR_int32_t buckets = _buckets->GetDirectPointerToNonObjectElements();
     DPTR(Entry) entries = _entries->GetDirectPointerToNonObjectElements();
+
     for (int entriesIndex = buckets[bucket]; entriesIndex != -1; entriesIndex = entries[entriesIndex].Next)
     {
-        if (entries[entriesIndex].HashCode == hashCode && ObjectFromHandle(entries[entriesIndex].depHnd) == key)
+        const Entry& entry = entries[entriesIndex];
+        if (entry.HashCode == hashCode && ObjectFromHandle(entry.depHnd) == key)
         {
-            *value = HndGetHandleExtraInfo(entries[entriesIndex].depHnd);
+#ifdef DACCESS_COMPILE
+            // In the DACCESS_COMPILE, the handle helper is directly accessible.
+            *value = GetDependentHandleSecondary(entry.depHnd);
+#else
+            IGCHandleManager* mgr = GCHandleUtilities::GetGCHandleManager();
+            *value = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(entry.depHnd));
+#endif // !DACCESS_COMPILE
             return true;
         }
     }

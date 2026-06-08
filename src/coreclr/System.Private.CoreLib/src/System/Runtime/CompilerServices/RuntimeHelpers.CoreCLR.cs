@@ -844,6 +844,9 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
 #endif // FEATURE_TYPEEQUIVALENCE
+#if FEATURE_OBJCMARSHAL
+        private const uint enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000;
+#endif // FEATURE_OBJCMARSHAL
         private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Collectible = 0x00200000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
@@ -903,6 +906,10 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_TYPEEQUIVALENCE
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 #endif // FEATURE_TYPEEQUIVALENCE
+
+#if FEATURE_OBJCMARSHAL
+        public bool IsTrackedReferenceWithFinalizer => (Flags & enum_flag_IsTrackedReferenceWithFinalizer) != 0;
+#endif // FEATURE_OBJCMARSHAL
 
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 

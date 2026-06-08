@@ -46,7 +46,7 @@ class ConditionalWeakTableObject final : public Object
 {
     friend class CoreLibBinder;
     OBJECTREF _lock;
-    VolatilePtr<ConditionalWeakTableContainerObject, CONDITIONAL_WEAK_TABLE_CONTAINER_REF> _container;
+    VolatilePtr<ConditionalWeakTableContainerObject> _container;
 public:
     // This helper can be used when the runtime is suspended (for example, DAC access
     // or Objective-C interop callbacks that run under GC suspension). During suspension

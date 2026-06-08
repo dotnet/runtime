@@ -214,6 +214,10 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_knownQueryInterfaceImplementations, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_ObjectiveCTrackingInfoTable, ::g_ObjectiveCTrackingInfoTable)
+#endif // FEATURE_OBJCMARSHAL
+
 #ifndef TARGET_UNIX
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeLoadedBaseAddress, ::g_runtimeLoadedBaseAddress)
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeVirtualSize, ::g_runtimeVirtualSize)

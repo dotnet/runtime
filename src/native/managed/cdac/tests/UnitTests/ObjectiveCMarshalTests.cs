@@ -60,13 +60,12 @@ public class ObjectiveCMarshalTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_NoSyncBlockIndex_ReturnsNull(MockTarget.Architecture arch)
+    public void GetTaggedMemory_NoTrackingTable_ReturnsNull(MockTarget.Architecture arch)
     {
         ulong testObjectAddress = 0;
         TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
             objectBuilder =>
             {
-                // AddObject with only the ObjectHeader prefix but no sync block index
                 testObjectAddress = objectBuilder.AddObject(0, prefixSize: (uint)objectBuilder.ObjectHeaderLayout.Size);
             });
 
@@ -75,54 +74,5 @@ public class ObjectiveCMarshalTests
 
         Assert.Equal(TargetPointer.Null, result);
         Assert.Equal(default, size);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_NullTaggedMemory_ReturnsNull(MockTarget.Architecture arch)
-    {
-        ulong testObjectAddress = 0;
-        TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
-            objectBuilder =>
-            {
-                testObjectAddress = objectBuilder.AddObjectWithSyncBlock(
-                    methodTable: 0,
-                    syncBlockIndex: 1,
-                    rcw: 0,
-                    ccw: 0,
-                    ccf: 0,
-                    taggedMemory: 0);
-            });
-
-        IObjectiveCMarshal contract = target.Contracts.ObjectiveCMarshal;
-        TargetPointer result = contract.GetTaggedMemory(testObjectAddress, out TargetNUInt size);
-
-        Assert.Equal(TargetPointer.Null, result);
-        Assert.Equal(default, size);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_HasTaggedMemory_ReturnsPointerAndSize(MockTarget.Architecture arch)
-    {
-        ulong testObjectAddress = 0;
-        const ulong expectedTaggedMemory = 0x5000;
-        TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
-            objectBuilder =>
-            {
-                testObjectAddress = objectBuilder.AddObjectWithSyncBlock(
-                    methodTable: 0,
-                    syncBlockIndex: 1,
-                    rcw: 0,
-                    ccw: 0,
-                    ccf: 0,
-                    taggedMemory: expectedTaggedMemory);
-            });
-
-        IObjectiveCMarshal contract = target.Contracts.ObjectiveCMarshal;
-        TargetPointer result = contract.GetTaggedMemory(testObjectAddress, out TargetNUInt size);
-
-        Assert.Equal(expectedTaggedMemory, result.Value);
-        Assert.Equal(2ul * (ulong)target.PointerSize, size.Value);
     }
 }
