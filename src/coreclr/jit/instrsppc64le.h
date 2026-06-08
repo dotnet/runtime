@@ -75,6 +75,20 @@ INST(sth,	  "sth",	  0,	  D_FORM,	0xB0000000)
 INST(stw,	  "stw",	  0,	  D_FORM,	0x90000000)
 INST(std,	  "std",	  0,	  DS_FORM,	0xF8000000)
 INST(stdu,	  "stdu",	  0,	  DS_FORM,	0xF8000001)
+INST(lbzx,        "lbzx",         0,      X_FORM,       0x7C0000AE)
+INST(lhzx,        "lhzx",         0,      X_FORM,       0x7C00022E) 
+INST(lhax,        "lhax",         0,      X_FORM,       0x7C0002AE)  
+INST(lwzx,        "lwzx",         0,      X_FORM,       0x7C00002E)  // Load Word and Zero Indexed
+INST(lwax,        "lwax",         0,      X_FORM,       0x7C0002AA)  // Load Word Algebraic Indexed
+INST(ldx,         "ldx",          0,      X_FORM,       0x7C00002A)  // Load Doubleword Indexed
+INST(lfsx,        "lfsx",         0,      X_FORM,       0x7C00042E)  // Load Floating Single Indexed
+INST(lfdx,        "lfdx",         0,      X_FORM,       0x7C0004AE)  // Load Floating Double Indexed
+INST(stbx,        "stbx",         0,      X_FORM,       0x7C0001AE)  // Store Byte Indexed
+INST(sthx,        "sthx",         0,      X_FORM,       0x7C00032E)  // Store Halfword Indexed
+INST(stwx,        "stwx",         0,      X_FORM,       0x7C00012E)  // Store Word Indexed
+INST(stdx,        "stdx",         0,      X_FORM,       0x7C00012A)  // Store Doubleword Indexed
+INST(stfsx,       "stfsx",        0,      X_FORM,       0x7C00052E)  // Store Floating Single Indexed
+INST(stfdx,       "stfdx",        0,      X_FORM,       0x7C0005AE)  // Store Floating Double Indexed
 INST(b,		  "b",		  0,	  I_FORM,	0x48000000)
 INST(beq,	  "beq",	  0,	  B_FORM,	0x41820000)
 INST(bne,	  "bne",	  0,	  B_FORM,	0x40820000)
