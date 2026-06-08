@@ -22,6 +22,7 @@ namespace Internal.TypeSystem
         tvOSSimulator,
         FreeBSD,
         NetBSD,
+        OpenBSD,
         SunOS,
         Browser,
         Wasi

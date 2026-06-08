@@ -731,12 +731,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)std::abs((int64_t)x));
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/
