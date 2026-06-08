@@ -189,24 +189,24 @@ namespace Internal.TypeSystem
 
         private static UnmanagedCallingConventions AccumulateCallingConventions(UnmanagedCallingConventions existing, MetadataType newConvention)
         {
-            if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (newConvention.Namespace != "System.Runtime.CompilerServices"u8)
                 return existing;
 
             UnmanagedCallingConventions? addedCallConv = null;
 
-            if (newConvention.Name.SequenceEqual("CallConvCdecl"u8))
+            if (newConvention.Name == "CallConvCdecl"u8)
                 addedCallConv = UnmanagedCallingConventions.Cdecl;
-            else if (newConvention.Name.SequenceEqual("CallConvStdcall"u8))
+            else if (newConvention.Name == "CallConvStdcall"u8)
                 addedCallConv = UnmanagedCallingConventions.Stdcall;
-            else if (newConvention.Name.SequenceEqual("CallConvFastcall"u8))
+            else if (newConvention.Name == "CallConvFastcall"u8)
                 addedCallConv = UnmanagedCallingConventions.Fastcall;
-            else if (newConvention.Name.SequenceEqual("CallConvThiscall"u8))
+            else if (newConvention.Name == "CallConvThiscall"u8)
                 addedCallConv = UnmanagedCallingConventions.Thiscall;
-            else if (newConvention.Name.SequenceEqual("CallConvSuppressGCTransition"u8))
+            else if (newConvention.Name == "CallConvSuppressGCTransition"u8)
                 addedCallConv = UnmanagedCallingConventions.IsSuppressGcTransition;
-            else if (newConvention.Name.SequenceEqual("CallConvMemberFunction"u8))
+            else if (newConvention.Name == "CallConvMemberFunction"u8)
                 addedCallConv = UnmanagedCallingConventions.IsMemberFunction;
-            else if (newConvention.Name.SequenceEqual("CallConvSwift"u8))
+            else if (newConvention.Name == "CallConvSwift"u8)
                 addedCallConv = UnmanagedCallingConventions.Swift;
 
             if (addedCallConv == null)
