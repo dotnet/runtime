@@ -249,7 +249,7 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
-    BOOL IsStrippedILBodies()
+    BOOL HasStrippedILBodies()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES;
