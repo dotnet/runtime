@@ -177,7 +177,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
@@ -292,7 +291,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp

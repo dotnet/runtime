@@ -24,6 +24,26 @@ public struct COR_TYPEID
     public ulong token2;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct FieldData
+{
+    public uint m_fldMetadataToken;
+    public Interop.BOOL m_fFldStorageAvailable;
+
+    public byte m_fFldIsStatic;
+    public byte m_fFldIsRVA;
+    public byte m_fFldIsTLS;
+    public byte m_fFldIsPrimitive;
+    public byte m_fFldIsCollectibleStatic;
+
+    public ulong m_fldInstanceOffset;
+    public ulong m_pFldStaticAddress;
+    public nuint m_fldSignatureCache;
+    public uint m_fldSignatureCacheSize;
+
+    public ulong m_vmFieldDesc;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -536,10 +556,10 @@ public unsafe partial interface IDacDbiInterface
     int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetClassInfo(ulong thExact, nint pData);
+    int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
+    int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);

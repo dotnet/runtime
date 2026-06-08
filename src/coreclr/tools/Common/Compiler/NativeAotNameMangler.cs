@@ -40,8 +40,10 @@ namespace ILCompiler
         public override Utf8String SanitizeName(Utf8String s)
             => SanitizeName(s.AsSpan());
 
-        private static Utf8String SanitizeName(ReadOnlySpan<byte> s)
+        private static Utf8String SanitizeName(Utf8Span n)
         {
+            ReadOnlySpan<byte> s = n.AsSpan();
+
             Utf8StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)
             {
@@ -98,7 +100,7 @@ namespace ILCompiler
             return bytes.IndexOf(replacementCharacter) >= 0;
         }
 
-        private Utf8String SanitizeNameWithHash(Utf8String literal, byte[] hash = null)
+        private static Utf8String SanitizeNameWithHash(Utf8String literal, byte[] hash = null)
         {
             Utf8String mangledName = SanitizeName(literal);
 
@@ -242,7 +244,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    ReadOnlySpan<byte> ns = t.Namespace;
+                                    Utf8Span ns = t.Namespace;
                                     if (ns.Length > 0)
                                         sb.Append(SanitizeName(ns)).Append('_');
                                 }
@@ -581,7 +583,7 @@ namespace ILCompiler
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         foreach (var f in field.OwningType.GetFields())
                         {
-                            sb.Clear().Append(prependTypeName).Append("__"u8);
+                            sb.Clear().Append(prependTypeName).Append("__f_"u8);
                             Utf8String name = SanitizeName(f.Name);
 
                             name = DisambiguateName(name, deduplicator);
@@ -598,7 +600,7 @@ namespace ILCompiler
 
 
             Utf8String mangledName = SanitizeName(field.Name);
-            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__"u8).Append(mangledName).ToUtf8String();
+            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__f_"u8).Append(mangledName).ToUtf8String();
 
             lock (this)
             {
