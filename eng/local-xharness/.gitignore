@@ -1,0 +1,3 @@
+# Override the repo-wide *.nupkg ignore for this folder so the local feed
+# nupkgs for the dotnet/xharness PR #1597 validation can be committed.
+!*.nupkg
