@@ -29,7 +29,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
-#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
+#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
 
 #define MaxICUVersionStringLength 33
 
@@ -230,7 +230,35 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
     return false;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
+#elif defined(TARGET_OPENBSD)
+
+// OpenBSD uses ABI versioning in SONAME, not ICU version. Use unversioned dlopen.
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+    if (libicuuc == NULL)
+        return false;
+
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+    if (libicui18n == NULL)
+    {
+        dlclose(libicuuc);
+        libicuuc = NULL;
+        return false;
+    }
+
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+    if (FindSymbolVersion(-1, -1, -1, symbolName, symbolVersion, MaxICUVersionStringLength, symbolSuffix))
+        return true;
+
+    dlclose(libicuuc);
+    dlclose(libicui18n);
+    libicuuc = NULL;
+    libicui18n = NULL;
+    return false;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID && !TARGET_OPENBSD
 
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
@@ -458,7 +486,7 @@ int32_t GlobalizationNative_LoadICU(void)
         return false;
     }
 
-#elif defined(TARGET_ANDROID)
+#elif defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
     if (!FindICULibs(symbolName, symbolVersion))
     {
         return false;

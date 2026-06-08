@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     // TODO-Wasm: Some instances of AssemblyStubNode will need to implement INodeWithTypeSignature
     // if they need to be callable from Wasm, though it may not make sense for the base
     // class to implement INodeWithTypeSignature.
-    public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode, IPCodeSymbolNode
     {
         public AssemblyStubNode()
         {

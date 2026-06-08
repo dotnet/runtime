@@ -687,12 +687,11 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    bool                            isInstantiatingStub;
-    bool                            needsMethodContext;
-    DWORDLONG                       exactContext;
+    DWORDLONG                       tokenLookupContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+    Agnostic_CORINFO_LOOKUP         instParamLookup;
 };
 
 struct Agnostic_GetInstantiatedEntryResult

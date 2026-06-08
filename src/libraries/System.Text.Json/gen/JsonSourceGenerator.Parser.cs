@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -736,9 +737,12 @@ namespace System.Text.Json.SourceGeneration
 
                         if (unionCaseTypes.Count > 0 && HasCompatibleUnionValueProperty(namedUnionType))
                         {
+                            bool[] switchArmRoles = ComputeUnionSwitchArmRoles(unionCaseTypes);
+
                             var resolvedUnionCaseSpecs = new List<UnionCaseSpec>(unionCaseTypes.Count);
-                            foreach ((ITypeSymbol caseType, bool acceptsNull) in unionCaseTypes)
+                            for (int i = 0; i < unionCaseTypes.Count; i++)
                             {
+                                (ITypeSymbol caseType, bool acceptsNull) = unionCaseTypes[i];
                                 if (!IsSymbolAccessibleWithin(caseType, within: contextType))
                                 {
                                     classType = ClassType.UnsupportedType;
@@ -746,10 +750,23 @@ namespace System.Text.Json.SourceGeneration
                                     break;
                                 }
 
+                                TypeRef caseTypeRef = EnqueueType(caseType, typeToGenerate.Mode);
+
+                                // C# rejects Nullable<T> in `value switch` patterns (CS8116). The CLR layer
+                                // boxes a Nullable<T> with HasValue=true bit-identically to a boxed T, so the
+                                // generated pattern arm uses the underlying T symbol — never the source
+                                // Nullable<T> string spelling. Compute this from the symbol here so the
+                                // emitter never has to manipulate FQN strings.
+                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
+                                    : caseTypeRef;
+
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
-                                    CaseType = EnqueueType(caseType, typeToGenerate.Mode),
+                                    CaseType = caseTypeRef,
+                                    PatternType = patternTypeRef,
                                     IsNullable = acceptsNull,
+                                    IsSwitchArm = switchArmRoles[i],
                                 });
                             }
 
@@ -922,6 +939,20 @@ namespace System.Text.Json.SourceGeneration
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
+
+                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                        {
+                            if (!TryResolveOpenGenericDerivedType(
+                                    unboundDerived, typeToGenerate.Type,
+                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
+                            {
+                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
+                                continue;
+                            }
+
+                            derivedType = resolvedType!;
+                        }
+
                         TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
 
                         object? typeDiscriminator = null;
@@ -1002,6 +1033,211 @@ namespace System.Text.Json.SourceGeneration
                 if (isUnionType)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified);
+                }
+            }
+
+            /// <summary>
+            /// Source-gen-side resolver: closes <paramref name="unboundDerived"/> against
+            /// <paramref name="baseType"/> via structural unification at compile time.
+            /// Returns <c>true</c> when the registration can be closed to a unique concrete
+            /// type. Returns <c>false</c> with a localized <paramref name="failureReason"/>
+            /// suitable for inclusion in a diagnostic when the derived type cannot be
+            /// resolved against this particular base.
+            ///
+            /// IMPORTANT: This implementation MIRRORS the reflection resolver
+            /// <c>DefaultJsonTypeInfoResolver.Helpers.TryResolveOpenGenericDerivedType</c>
+            /// in src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs.
+            /// Both implementations -- the structural unbound pre-check, the per-ancestor
+            /// unification, and the ambiguity detection -- must be kept in lockstep so that
+            /// source-gen and reflection produce the same closed type for the same registration.
+            /// Any algorithmic change here must be applied in the reflection mirror as well.
+            /// </summary>
+            private bool TryResolveOpenGenericDerivedType(
+                INamedTypeSymbol unboundDerived,
+                ITypeSymbol baseType,
+                out INamedTypeSymbol? resolvedType,
+                out string? failureReason)
+            {
+                resolvedType = null;
+                failureReason = null;
+
+                if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                {
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                    return false;
+                }
+
+                INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
+                INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
+
+                // Collect every ancestor of the derived type definition whose original
+                // definition matches the base type definition. For classes there is at
+                // most one ancestor; for interfaces a derived type can implement the same
+                // interface definition multiple times with different type arguments.
+                List<INamedTypeSymbol> matchingBases = derivedDefinition
+                    .GetCompatibleGenericBaseTypes(baseDefinition)
+                    .ToList();
+
+                if (matchingBases.Count == 0)
+                {
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                    return false;
+                }
+
+                // The full set of generic parameters we must bind includes the parameters
+                // of the derived type definition AS WELL AS those declared by enclosing
+                // generic types (Outer<T>.Derived needs T bound from Outer).
+                List<ITypeParameterSymbol> requiredParams = derivedDefinition.GetAllTypeParameters();
+                ImmutableArray<ITypeSymbol> constructedBaseArgs = constructedBase.TypeArguments;
+
+                // Structural unbound pre-check: every required parameter must appear at least
+                // once somewhere in some matching ancestor's type arguments. If a parameter
+                // never appears at all, no closed base could ever bind it -- the derived
+                // definition is malformed regardless of which closed base it is registered
+                // against.
+                HashSet<ITypeParameterSymbol> referencedParams = new(SymbolEqualityComparer.Default);
+                foreach (INamedTypeSymbol mb in matchingBases)
+                {
+                    foreach (ITypeSymbol arg in mb.TypeArguments)
+                    {
+                        CollectReferencedParameters(arg, referencedParams);
+                    }
+                }
+                foreach (ITypeParameterSymbol required in requiredParams)
+                {
+                    if (!referencedParams.Contains(required))
+                    {
+                        failureReason = string.Format(
+                            CultureInfo.InvariantCulture,
+                            SR.Polymorphism_OpenGeneric_Reason_UnboundParameter,
+                            required.Name);
+                        return false;
+                    }
+                }
+
+                Dictionary<ITypeParameterSymbol, ITypeSymbol>? successfulSubstitution = null;
+                int successCount = 0;
+
+                foreach (INamedTypeSymbol matchingBase in matchingBases)
+                {
+                    ImmutableArray<ITypeSymbol> matchingBaseArgs = matchingBase.TypeArguments;
+                    Debug.Assert(matchingBaseArgs.Length == constructedBaseArgs.Length,
+                        "matchingBase and constructedBase share the same generic definition, so arity must match.");
+
+                    var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(requiredParams.Count, SymbolEqualityComparer.Default);
+                    bool unified = true;
+                    for (int i = 0; i < matchingBaseArgs.Length; i++)
+                    {
+                        if (!matchingBaseArgs[i].TryUnifyWith(constructedBaseArgs[i], substitution))
+                        {
+                            unified = false;
+                            break;
+                        }
+                    }
+
+                    if (!unified)
+                    {
+                        continue;
+                    }
+
+                    // Unification succeeded for every position. Every required parameter must be
+                    // bound; otherwise the resulting closed type would have unbound type arguments
+                    // (an unspeakable type). A sibling ancestor may still bind this parameter, so
+                    // failure here is not fatal -- just move on to the next matching ancestor.
+                    bool allBound = true;
+                    foreach (ITypeParameterSymbol p in requiredParams)
+                    {
+                        if (!substitution.ContainsKey(p))
+                        {
+                            allBound = false;
+                            break;
+                        }
+                    }
+
+                    if (!allBound)
+                    {
+                        continue;
+                    }
+
+                    successCount++;
+                    if (successCount == 1)
+                    {
+                        successfulSubstitution = substitution;
+                    }
+                    else
+                    {
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_AmbiguousMatch;
+                        return false;
+                    }
+                }
+
+                if (successCount == 0 || successfulSubstitution is null)
+                {
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_UnificationFailed;
+                    return false;
+                }
+
+                // Validate constraints up front so the generated code will compile.
+                // Note: HasNotNullConstraint is not enforced because `notnull` is not a
+                // runtime-enforced constraint. Reflection MakeGenericType accepts e.g.
+                // string? for `where T : notnull`; source-gen must match that behavior.
+                if (!_knownSymbols.Compilation.TryValidateGenericConstraints(requiredParams, successfulSubstitution, out ITypeParameterSymbol? failedParam, out ITypeSymbol? failedArg))
+                {
+                    failureReason = string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.Polymorphism_OpenGeneric_Reason_ConstraintViolation,
+                        failedParam.Name,
+                        failedArg?.ToDisplayString() ?? string.Empty);
+                    return false;
+                }
+
+                // Build closedArgs in declaration order using the merged substitution.
+                ITypeSymbol[] closedArgs = new ITypeSymbol[requiredParams.Count];
+                for (int i = 0; i < requiredParams.Count; i++)
+                {
+                    closedArgs[i] = successfulSubstitution[requiredParams[i]];
+                }
+
+                // Note: ConstructWithEnclosingTypeArguments takes the parameters in the order
+                // they appear when listed as TypeParameters on the type and on its enclosing types.
+                // GetAllTypeParameters preserves that order (outer-to-inner, declaration order).
+                resolvedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
+                return true;
+            }
+
+            private static void CollectReferencedParameters(ITypeSymbol pattern, HashSet<ITypeParameterSymbol> set)
+            {
+                switch (pattern)
+                {
+                    case ITypeParameterSymbol tp:
+                        set.Add(tp);
+                        return;
+
+                    case IArrayTypeSymbol array:
+                        CollectReferencedParameters(array.ElementType, set);
+                        return;
+
+                    case IPointerTypeSymbol pointer:
+                        CollectReferencedParameters(pointer.PointedAtType, set);
+                        return;
+
+                    case INamedTypeSymbol { IsGenericType: true } named:
+                        // Walk ContainingType to collect type parameters declared on enclosing
+                        // generic types (e.g. T in Outer<T>.Box<U>). Roslyn's TypeArguments is
+                        // leaf-only, while the reflection mirror uses Type.GetGenericArguments()
+                        // which flattens enclosing + leaf. Without this recursion, the unbound
+                        // pre-check would spuriously reject patterns whose only reference to a
+                        // type parameter lives in the enclosing type.
+                        if (named.ContainingType is { IsGenericType: true } containing)
+                        {
+                            CollectReferencedParameters(containing, set);
+                        }
+
+                        foreach (ITypeSymbol arg in named.TypeArguments)
+                        {
+                            CollectReferencedParameters(arg, set);
+                        }
+                        return;
                 }
             }
 
@@ -1116,24 +1352,26 @@ namespace System.Text.Json.SourceGeneration
                     }
 
                     IParameterSymbol parameter = member.Parameters[0];
-                    bool acceptsNull = parameter.IsNullable();
                     ITypeSymbol caseType = parameter.Type;
 
-                    // Unwrap Nullable<T>.
-                    if (caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableType)
+                    // Value-type Nullable<T> ctor accepts null by virtue of the type itself.
+                    // Reference-type nullability comes from the parameter's nullable annotation.
+                    bool acceptsNull = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                        || parameter.IsNullable();
+
+                    // One JsonUnionCaseInfo per discoverable ctor overload. Foo(T) and
+                    // Foo(Nullable<T>) coexist as distinct cases (typeof(T) vs typeof(T?));
+                    // token-level ambiguity is surfaced via EmitUnionAmbiguityDiagnostics at
+                    // compile time and JsonTypeInfo.UnionAmbiguousValueTypes at run time.
+                    if (acceptsNullByCase.ContainsKey(caseType))
                     {
-                        caseType = nullableType.TypeArguments[0];
+                        // C# overload resolution rejects duplicate single-parameter ctors;
+                        // defensive skip protects against hand-emitted IL with duplicates.
+                        continue;
                     }
 
-                    if (acceptsNullByCase.TryGetValue(caseType, out bool existing))
-                    {
-                        acceptsNullByCase[caseType] = existing || acceptsNull;
-                    }
-                    else
-                    {
-                        acceptsNullByCase[caseType] = acceptsNull;
-                        caseTypes.Add(caseType);
-                    }
+                    acceptsNullByCase[caseType] = acceptsNull;
+                    caseTypes.Add(caseType);
                 }
 
                 List<ITypeSymbol> sorted = SortCaseTypesTopologically(caseTypes);
@@ -1143,6 +1381,55 @@ namespace System.Text.Json.SourceGeneration
                     result.Add((caseType, acceptsNullByCase[caseType]));
                 }
                 return result;
+            }
+
+            /// <summary>
+            /// Computes which declared cases should contribute a <c>value switch</c>
+            /// arm in the generated union constructor/deconstructor. Two cases
+            /// collide when they share the same C# pattern key: the underlying type
+            /// after stripping <see cref="Nullable{T}"/>. CS8116 rejects
+            /// <c>Nullable&lt;T&gt;</c> in patterns and a boxed <c>Nullable&lt;T&gt;</c>
+            /// with HasValue=true is bit-identical to a boxed <c>T</c> at the CLR
+            /// layer, so the only valid arm shape covering both is <c>T pat =&gt; …</c>.
+            /// Within each collision group only one case can be canonical; we prefer
+            /// the non-<c>Nullable&lt;T&gt;</c> sibling so most-derived dispatch reports
+            /// <c>typeof(T)</c> rather than <c>typeof(Nullable&lt;T&gt;)</c>.
+            /// </summary>
+            private static bool[] ComputeUnionSwitchArmRoles(List<(ITypeSymbol CaseType, bool IsNullable)> caseTypes)
+            {
+                bool[] isSwitchArm = new bool[caseTypes.Count];
+                var canonicalIndexByPatternKey = new Dictionary<ITypeSymbol, int>(SymbolEqualityComparer.Default);
+
+                for (int i = 0; i < caseTypes.Count; i++)
+                {
+                    ITypeSymbol caseType = caseTypes[i].CaseType;
+                    ITypeSymbol patternKey = UnwrapNullable(caseType);
+
+                    if (!canonicalIndexByPatternKey.TryGetValue(patternKey, out int existingIndex))
+                    {
+                        canonicalIndexByPatternKey[patternKey] = i;
+                        isSwitchArm[i] = true;
+                        continue;
+                    }
+
+                    ITypeSymbol existingCaseType = caseTypes[existingIndex].CaseType;
+                    if (IsNullableValueType(existingCaseType) && !IsNullableValueType(caseType))
+                    {
+                        isSwitchArm[existingIndex] = false;
+                        canonicalIndexByPatternKey[patternKey] = i;
+                        isSwitchArm[i] = true;
+                    }
+                }
+
+                return isSwitchArm;
+
+                static ITypeSymbol UnwrapNullable(ITypeSymbol type)
+                    => type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } named
+                        ? named.TypeArguments[0]
+                        : type;
+
+                static bool IsNullableValueType(ITypeSymbol type)
+                    => type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
             }
 
             private List<ITypeSymbol> SortCaseTypesTopologically(List<ITypeSymbol> caseTypes)

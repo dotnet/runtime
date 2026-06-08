@@ -18,6 +18,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public async Task SendAsync_HostHeader_First()
         {
             // RFC 7230  3.2.2.  Field Order
