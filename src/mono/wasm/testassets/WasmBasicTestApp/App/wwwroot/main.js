@@ -227,7 +227,7 @@ switch (testCase) {
                     ...config.resources.wasmSymbols,
                 ];
                 for (const asset of bufferedAssets) {
-                    const url = new URL(`./_framework/${asset.name}`, location.href);
+                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
                     asset.buffer = originalFetch4(url).then(r => {
                         if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
                         return r.arrayBuffer();
