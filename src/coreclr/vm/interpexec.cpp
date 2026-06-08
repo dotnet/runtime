@@ -1325,8 +1325,8 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
-    TADDR resumeSP;
-    TADDR resumeIP;
+    TADDR resumeSP = 0;
+    TADDR resumeIP = 0;
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
