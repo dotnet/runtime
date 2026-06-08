@@ -603,14 +603,28 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, parameterCallSites, serviceIdentifier.ServiceKey);
                 }
 
-                Array.Sort(constructors,
-                    (a, b) => b.GetParameters().Length.CompareTo(a.GetParameters().Length));
-
                 ConstructorInfo? bestConstructor = null;
+                ParameterInfo[]? bestConstructorParameters = null;
                 HashSet<Type>? bestConstructorParameterTypes = null;
+                int bestConstructorParameterLength = -1;
+                ConstructorInfo? ambiguousConstructor = null;
+                ConstructorInfo? bestConstructorForAmbiguousConstructor = null;
+                List<KeyValuePair<ConstructorInfo, ParameterInfo[]>>? resolvedConstructors = null;
+
+                ParameterInfo[][] parametersByConstructor = new ParameterInfo[constructors.Length][];
                 for (int i = 0; i < constructors.Length; i++)
                 {
-                    ParameterInfo[] parameters = constructors[i].GetParameters();
+                    parametersByConstructor[i] = constructors[i].GetParameters();
+                }
+
+                for (int i = 0; i < constructors.Length; i++)
+                {
+                    ParameterInfo[] parameters = parametersByConstructor[i];
+
+                    if (bestConstructor is not null && parameters.Length < bestConstructorParameterLength)
+                    {
+                        continue;
+                    }
 
                     ServiceCallSite[]? currentParameterCallSites = CreateArgumentCallSites(
                         serviceIdentifier,
@@ -621,20 +635,57 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     if (currentParameterCallSites != null)
                     {
-                        if (bestConstructor == null)
+                        resolvedConstructors ??= new List<KeyValuePair<ConstructorInfo, ParameterInfo[]>>();
+                        resolvedConstructors.Add(new KeyValuePair<ConstructorInfo, ParameterInfo[]>(constructors[i], parameters));
+
+                        if (bestConstructor is null || parameters.Length > bestConstructorParameterLength)
                         {
                             bestConstructor = constructors[i];
+                            bestConstructorParameters = parameters;
+                            bestConstructorParameterLength = parameters.Length;
                             parameterCallSites = currentParameterCallSites;
+                            bestConstructorParameterTypes = null;
+                            ambiguousConstructor = null;
+                            bestConstructorForAmbiguousConstructor = null;
+
+                            if (resolvedConstructors.Count > 1)
+                            {
+                                bestConstructorParameterTypes = new HashSet<Type>();
+                                foreach (ParameterInfo p in bestConstructorParameters)
+                                {
+                                    bestConstructorParameterTypes.Add(p.ParameterType);
+                                }
+
+                                foreach (KeyValuePair<ConstructorInfo, ParameterInfo[]> resolvedConstructor in resolvedConstructors)
+                                {
+                                    if (resolvedConstructor.Key == bestConstructor)
+                                    {
+                                        continue;
+                                    }
+
+                                    foreach (ParameterInfo p in resolvedConstructor.Value)
+                                    {
+                                        if (!bestConstructorParameterTypes.Contains(p.ParameterType))
+                                        {
+                                            ambiguousConstructor = resolvedConstructor.Key;
+                                            bestConstructorForAmbiguousConstructor = bestConstructor;
+                                            break;
+                                        }
+                                    }
+
+                                    if (ambiguousConstructor is not null)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
                         }
                         else
                         {
-                            // Since we're visiting constructors in decreasing order of number of parameters,
-                            // we'll only see ambiguities or supersets once we've seen a 'bestConstructor'.
-
                             if (bestConstructorParameterTypes == null)
                             {
                                 bestConstructorParameterTypes = new HashSet<Type>();
-                                foreach (ParameterInfo p in bestConstructor.GetParameters())
+                                foreach (ParameterInfo p in bestConstructorParameters!)
                                 {
                                     bestConstructorParameterTypes.Add(p.ParameterType);
                                 }
@@ -644,12 +695,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             {
                                 if (!bestConstructorParameterTypes.Contains(p.ParameterType))
                                 {
-                                    // Ambiguous match exception
-                                    throw new InvalidOperationException(string.Join(
-                                        Environment.NewLine,
-                                        SR.Format(SR.AmbiguousConstructorException, implementationType),
-                                        bestConstructor,
-                                        constructors[i]));
+                                    ambiguousConstructor ??= constructors[i];
+                                    bestConstructorForAmbiguousConstructor ??= bestConstructor;
+                                    break;
                                 }
                             }
                         }
@@ -660,6 +708,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     throw new InvalidOperationException(
                         SR.Format(SR.UnableToActivateTypeException, implementationType));
+                }
+                else if (ambiguousConstructor != null)
+                {
+                    throw new InvalidOperationException(string.Join(
+                        Environment.NewLine,
+                        SR.Format(SR.AmbiguousConstructorException, implementationType),
+                        bestConstructorForAmbiguousConstructor,
+                        ambiguousConstructor));
                 }
                 else
                 {
