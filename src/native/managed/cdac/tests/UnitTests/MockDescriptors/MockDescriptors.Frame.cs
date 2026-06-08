@@ -76,6 +76,22 @@ internal sealed class MockFramedMethodFrame : MockFrame
     }
 }
 
+internal sealed class MockResolveHelperFrame : MockFrame
+{
+    private const string TransitionBlockPtrFieldName = "TransitionBlockPtr";
+
+    public static Layout<MockResolveHelperFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("ResolveHelperFrame", baseLayout.Architecture, baseLayout)
+            .AddPointerField(TransitionBlockPtrFieldName)
+            .Build<MockResolveHelperFrame>();
+
+    public ulong TransitionBlockPtr
+    {
+        get => ReadPointerField(TransitionBlockPtrFieldName);
+        set => WritePointerField(TransitionBlockPtrFieldName, value);
+    }
+}
+
 internal sealed class MockFuncEvalFrame : MockFrame
 {
     // Mirrors the cDAC FuncEvalFrame data class which only reads DebuggerEvalPtr.
@@ -142,6 +158,64 @@ internal sealed class MockResumableFrame : MockFrame
     }
 }
 
+internal sealed class MockTransitionBlock : TypedView
+{
+    private const string ReturnAddressFieldName = "ReturnAddress";
+    private const string CalleeSavedRegistersFieldName = "CalleeSavedRegisters";
+    private const string ArgumentRegistersFieldName = "ArgumentRegisters";
+    private const string FirstGCRefMapSlotFieldName = "FirstGCRefMapSlot";
+
+    public static Layout<MockTransitionBlock> CreateLayout(MockTarget.Architecture architecture, Layout<MockRegisterSet> calleeSavedRegistersLayout, Layout<MockRegisterSet> argumentRegistersLayout)
+        => new SequentialLayoutBuilder("TransitionBlock", architecture)
+            .AddPointerField(ReturnAddressFieldName)
+            .AddField(CalleeSavedRegistersFieldName, calleeSavedRegistersLayout.Size)
+            .AddField(ArgumentRegistersFieldName, argumentRegistersLayout.Size)
+            .AddPointerField(FirstGCRefMapSlotFieldName)
+            .Build<MockTransitionBlock>();
+
+    public ulong ReturnAddress
+    {
+        get => ReadPointerField(ReturnAddressFieldName);
+        set => WritePointerField(ReturnAddressFieldName, value);
+    }
+
+    public ulong CalleeSavedRegister
+    {
+        get => ReadPointerField(CalleeSavedRegistersFieldName);
+        set => WritePointerField(CalleeSavedRegistersFieldName, value);
+    }
+
+    public ulong ArgumentRegister
+    {
+        get => ReadPointerField(ArgumentRegistersFieldName);
+        set => WritePointerField(ArgumentRegistersFieldName, value);
+    }
+}
+
+internal sealed class MockRegisterSet : TypedView
+{
+    public const string CalleeSavedRegisterName = "rbx";
+    public const string ArgumentRegisterName = "rcx";
+
+    private readonly string _fieldName;
+
+    private MockRegisterSet(string fieldName)
+    {
+        _fieldName = fieldName;
+    }
+
+    public static Layout<MockRegisterSet> CreateLayout(MockTarget.Architecture architecture, string name)
+        => new SequentialLayoutBuilder(name, architecture)
+            .AddPointerField(name)
+            .Build<MockRegisterSet>(() => new MockRegisterSet(name));
+
+    public ulong Register
+    {
+        get => ReadPointerField(_fieldName);
+        set => WritePointerField(_fieldName, value);
+    }
+}
+
 /// <summary>
 /// Helper for building a Frame chain in the mock target memory. The Frame chain is
 /// terminated with the FRAME_TOP sentinel (~0 sized to the target pointer width).
@@ -168,6 +242,7 @@ internal sealed class MockFrameBuilder
     public const ulong InterpreterFrameIdentifierValue = 0x0001_F009;
     public const ulong HijackFrameIdentifierValue = 0x0001_F00A;
     public const ulong RedirectedThreadFrameIdentifierValue = 0x0001_F00B;
+    public const ulong ResolveHelperFrameIdentifierValue = 0x0001_F00C;
 
     private readonly MockMemorySpace.Builder _builder;
     private readonly MockMemorySpace.BumpAllocator _allocator;
@@ -177,9 +252,13 @@ internal sealed class MockFrameBuilder
     public Layout<MockFrame> FrameLayout { get; }
     public Layout<MockInlinedCallFrame> InlinedCallFrameLayout { get; }
     public Layout<MockFramedMethodFrame> FramedMethodFrameLayout { get; }
+    public Layout<MockResolveHelperFrame> ResolveHelperFrameLayout { get; }
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
     public Layout<MockResumableFrame> ResumableFrameLayout { get; }
+    public Layout<MockTransitionBlock> TransitionBlockLayout { get; }
+    public Layout<MockRegisterSet> CalleeSavedRegistersLayout { get; }
+    public Layout<MockRegisterSet> ArgumentRegistersLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -196,9 +275,13 @@ internal sealed class MockFrameBuilder
         FrameLayout = MockFrame.CreateLayout(_helpers.Arch);
         InlinedCallFrameLayout = MockInlinedCallFrame.CreateLayout(FrameLayout);
         FramedMethodFrameLayout = MockFramedMethodFrame.CreateLayout(FrameLayout);
+        ResolveHelperFrameLayout = MockResolveHelperFrame.CreateLayout(FrameLayout);
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
+        CalleeSavedRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, MockRegisterSet.CalleeSavedRegisterName);
+        ArgumentRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, MockRegisterSet.ArgumentRegisterName);
+        TransitionBlockLayout = MockTransitionBlock.CreateLayout(_helpers.Arch, CalleeSavedRegistersLayout, ArgumentRegistersLayout);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -237,6 +320,24 @@ internal sealed class MockFrameBuilder
         frame.Next = _terminator;
         frame.MethodDescPtr = methodDescPtr;
         return frame;
+    }
+
+    public MockResolveHelperFrame AddResolveHelperFrame(ulong transitionBlockPtr)
+    {
+        MockResolveHelperFrame frame = ResolveHelperFrameLayout.Create(_allocator.Allocate((ulong)ResolveHelperFrameLayout.Size, "ResolveHelperFrame"));
+        frame.Identifier = ResolveHelperFrameIdentifierValue;
+        frame.Next = _terminator;
+        frame.TransitionBlockPtr = transitionBlockPtr;
+        return frame;
+    }
+
+    public MockTransitionBlock AddTransitionBlock(ulong returnAddress, ulong calleeSavedRegister, ulong argumentRegister)
+    {
+        MockTransitionBlock transitionBlock = TransitionBlockLayout.Create(_allocator.Allocate((ulong)TransitionBlockLayout.Size, "TransitionBlock"));
+        transitionBlock.ReturnAddress = returnAddress;
+        transitionBlock.CalleeSavedRegister = calleeSavedRegister;
+        transitionBlock.ArgumentRegister = argumentRegister;
+        return transitionBlock;
     }
 
     public MockResumableFrame AddRedirectedThreadFrame(ulong targetContextPtr)

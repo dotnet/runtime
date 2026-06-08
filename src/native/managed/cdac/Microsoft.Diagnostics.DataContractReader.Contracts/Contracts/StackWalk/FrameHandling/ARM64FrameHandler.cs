@@ -48,4 +48,10 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         // that does not support holding any extended state.
         _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
+
+    public override void HandleResolveHelperFrame(ResolveHelperFrame frame)
+    {
+        base.HandleResolveHelperFrame(frame);
+        UpdateArgumentRegisters(frame.TransitionBlockPtr);
+    }
 }

@@ -14,6 +14,8 @@ internal interface IPlatformFrameHandler
     void HandleInlinedCallFrame(Data.InlinedCallFrame frame);
     void HandleSoftwareExceptionFrame(Data.SoftwareExceptionFrame frame);
     void HandleTransitionFrame(Data.FramedMethodFrame frame);
+    void HandleTransitionBlock(TargetPointer transitionBlockPtr);
+    void HandleResolveHelperFrame(Data.ResolveHelperFrame frame);
     void HandleFuncEvalFrame(Data.FuncEvalFrame frame);
     void HandleResumableFrame(Data.ResumableFrame frame);
     void HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);

@@ -24,6 +24,7 @@ internal enum FrameType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    ResolveHelperFrame,
 
     FuncEvalFrame,
 
@@ -141,7 +142,8 @@ internal sealed class FrameHelpers
     /// </summary>
     public void UpdateContextFromFrame(Data.Frame frame, IPlatformAgnosticContext context)
     {
-        switch (GetFrameType(frame.Identifier))
+        FrameType frameType = GetFrameType(frame.Identifier);
+        switch (frameType)
         {
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
@@ -164,6 +166,11 @@ internal sealed class FrameHelpers
                 // FrameMethodFrame is the base type for all transition Frames
                 Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
+                return;
+
+            case FrameType.ResolveHelperFrame:
+                Data.ResolveHelperFrame resolveHelperFrame = _target.ProcessedData.GetOrAdd<Data.ResolveHelperFrame>(frame.Address);
+                GetFrameHandler(context).HandleResolveHelperFrame(resolveHelperFrame);
                 return;
 
             case FrameType.InterpreterFrame:
@@ -232,8 +239,11 @@ internal sealed class FrameHelpers
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
             case FrameType.DynamicHelperFrame:
-                Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
-                Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+            case FrameType.ResolveHelperFrame:
+                TargetPointer transitionBlock = frameType == FrameType.ResolveHelperFrame
+                    ? _target.ProcessedData.GetOrAdd<Data.ResolveHelperFrame>(frame.Address).TransitionBlockPtr
+                    : _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address).TransitionBlockPtr;
+                Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
                 return tb.ReturnAddress;
 
             // SoftwareExceptionFrame: stored m_ReturnAddress
@@ -322,6 +332,7 @@ internal sealed class FrameHelpers
             case FrameType.PInvokeCalliFrame:
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
+            case FrameType.ResolveHelperFrame:
             case FrameType.InterpreterFrame:
                 return InternalFrameType.M2U;
 

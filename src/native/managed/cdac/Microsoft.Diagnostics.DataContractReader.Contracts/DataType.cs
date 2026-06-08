@@ -166,6 +166,7 @@ public enum DataType
     InlinedCallFrame,
     SoftwareExceptionFrame,
     FramedMethodFrame,
+    ResolveHelperFrame,
     FuncEvalFrame,
     ResumableFrame,
     FaultingExceptionFrame,
