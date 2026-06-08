@@ -443,19 +443,39 @@ struct RangeOps
 
     static Range Or(const Range& r1, const Range& r2)
     {
-        // For OR we require both operands to be constant to produce a constant result.
-        // No useful information can be derived if only one operand is constant.
+        // For OR we require both operands to be non-negative constant ranges.
         //
         // Example: [0..3] | [1..255] = [1..255]
         //          [X..Y] | [1..255] = [unknown..unknown]
         //
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());
-            }
-            return Limit(Limit::keUnknown);
-        });
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        const int r1lo = r1.LowerLimit().GetConstant();
+        const int r1hi = r1.UpperLimit().GetConstant();
+        const int r2lo = r2.LowerLimit().GetConstant();
+        const int r2hi = r2.UpperLimit().GetConstant();
+
+        if ((r1lo < 0) || (r2lo < 0))
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        // a | b >= max(a, b), so max(r1lo, r2lo) is a sound lower bound.
+        const int lo = max(r1lo, r2lo);
+
+        // a | b cannot set any bit above the most-significant set bit of max(r1hi, r2hi), so it is
+        // bounded above by that value with all lower bits filled in (smallest 2^k - 1 >= the max).
+        int hi = max(r1hi, r2hi);
+        hi |= hi >> 1;
+        hi |= hi >> 2;
+        hi |= hi >> 4;
+        hi |= hi >> 8;
+        hi |= hi >> 16;
+
+        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
     static Range And(const Range& r1, const Range& r2)
@@ -499,6 +519,31 @@ struct RangeOps
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
         return Range(Limit(Limit::keUnknown));
+    }
+
+    static Range UnsignedDivide(const Range& r1, const Range& r2)
+    {
+        // We only handle constant ranges for both operands.
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        const int numLo = r1.LowerLimit().GetConstant();
+        const int numHi = r1.UpperLimit().GetConstant();
+        const int divLo = r2.LowerLimit().GetConstant();
+        const int divHi = r2.UpperLimit().GetConstant();
+
+        // Require a non-negative dividend and a strictly-positive divisor so that the signed
+        // [lo..hi] bounds coincide with their unsigned interpretation (and no division by zero).
+        if ((numLo < 0) || (divLo <= 0))
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        // (uint)x / (uint)y is maximized by the largest dividend over the smallest divisor and
+        // minimized by the smallest dividend over the largest divisor.
+        return Range(Limit(Limit::keConstant, numLo / divHi), Limit(Limit::keConstant, numHi / divLo));
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
