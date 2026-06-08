@@ -25,7 +25,8 @@ in the structured log.
 
 `GcScanner.PromoteCallerStack` (in
 `src/native/managed/cdac/.../Contracts/StackWalk/GC/GcScanner.cs`)
-throws `NotImplementedException` deliberately. Producing correct
+is deliberately stubbed: instead of enumerating the caller's argument
+refs it records the frame as deferred and returns. Producing correct
 caller-argument layouts requires porting `ArgIterator` behind the
 `ICallingConvention` contract, which is a separate deferred work item.
 
@@ -53,11 +54,11 @@ Every JIT frame's count matches exactly; the only discrepancy is on
 the explicit transition Frame that `PromoteCallerStack` would scan.
 
 To re-enable: implement `ICallingConvention.PortableArgumentIterator`,
-then replace the `throw` in `PromoteCallerStack` with a call into the
-new contract. Once that lands, the previously-tracked
+then replace the `RecordDeferredFrame` stub in `PromoteCallerStack` with
+a call into the new contract. Once that lands, the previously-tracked
 `ELEMENT_TYPE_INTERNAL` (0x21) case in signature decoding will also
 need to be handled — that case currently isn't reachable because
-`PromoteCallerStack` short-circuits with `NotImplementedException`.
+`PromoteCallerStack` short-circuits without iterating the signature.
 
 ## Future work
 
