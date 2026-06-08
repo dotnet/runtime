@@ -127,23 +127,30 @@ namespace System.IO.Compression
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
 
-                byte[] dictionaryBuffer = new byte[maxDictionarySize];
-
-                nuint dictSize;
-
-                unsafe
+                byte[] dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
+                try
                 {
-                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                    fixed (byte* dictPtr = dictionaryBuffer)
-                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
-                    {
-                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                                dictPtr, (nuint)maxDictionarySize,
-                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
-                    }
+                    nuint dictSize;
 
-                    ZstandardUtils.ThrowIfError(dictSize);
-                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                    unsafe
+                    {
+                        fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                        fixed (byte* dictPtr = dictionaryBuffer)
+                        fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
+                        {
+                            dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                                    dictPtr, (nuint)maxDictionarySize,
+                                    samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                        }
+
+                        ZstandardUtils.ThrowIfError(dictSize);
+                        return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                    }
+                }
+                finally
+                {
+                    // Clear before returning: the trained dictionary is derived from caller-supplied samples.
+                    ArrayPool<byte>.Shared.Return(dictionaryBuffer, clearArray: true);
                 }
             }
             finally
