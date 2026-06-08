@@ -259,24 +259,24 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(resolvedPathBytesWritten == resolvedPathByteCount);
                 resolvedPathBuffer[resolvedPathBytesWritten] = (byte)0;
 
-                int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+                nint stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
 
                 if (stdinFd is not null)
                 {
                     stdinFd.DangerousAddRef(ref stdinRefAdded);
-                    stdinRawFd = stdinFd.DangerousGetHandle().ToInt32();
+                    stdinRawFd = stdinFd.DangerousGetHandle();
                 }
 
                 if (stdoutHandle is not null)
                 {
                     stdoutHandle.DangerousAddRef(ref stdoutRefAdded);
-                    stdoutRawFd = stdoutHandle.DangerousGetHandle().ToInt32();
+                    stdoutRawFd = stdoutHandle.DangerousGetHandle();
                 }
 
                 if (stderrHandle is not null)
                 {
                     stderrHandle.DangerousAddRef(ref stderrRefAdded);
-                    stderrRawFd = stderrHandle.DangerousGetHandle().ToInt32();
+                    stderrRawFd = stderrHandle.DangerousGetHandle();
                 }
 
                 fixed (byte* resolvedPathPtr = resolvedPathBuffer)
