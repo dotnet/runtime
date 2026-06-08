@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+static jobject ImportSubjectPublicKeyInfo(JNIEnv* env, const uint8_t* buffer, int32_t bufferLength);
 static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten);
 
 int32_t AndroidCryptoNative_X25519IsSupported(void)
@@ -129,34 +130,9 @@ jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buff
     abort_if_negative_integer_argument(bufferLength);
 
     JNIEnv* env = GetJNIEnv();
-    jobject ret = NULL;
+    jobject publicKey = ImportSubjectPublicKeyInfo(env, buffer, bufferLength);
+    jobject ret = ToGRef(env, publicKey);
 
-    INIT_LOCALS(loc, algorithmName, keyFactory, spkiBytes, keySpec, publicKey);
-
-    loc[algorithmName] = make_java_string(env, "XDH");
-    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    loc[spkiBytes] = make_java_byte_array(env, bufferLength);
-    (*env)->SetByteArrayRegion(env, loc[spkiBytes], 0, bufferLength, (const jbyte*)buffer);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    loc[keySpec] = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, loc[spkiBytes]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[keySpec]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    if (loc[publicKey] == NULL)
-    {
-        goto cleanup;
-    }
-
-    ret = ToGRef(env, loc[publicKey]);
-    loc[publicKey] = NULL;
-
-cleanup:
-    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -259,6 +235,38 @@ cleanup:
     return ret;
 }
 
+int32_t AndroidCryptoNative_X25519DeriveSecretWithSubjectPublicKeyInfo(
+    jobject privateKey,
+    const uint8_t* buffer,
+    int32_t bufferLength,
+    uint8_t* destination,
+    int32_t destinationLength)
+{
+    abort_if_invalid_pointer_argument(privateKey);
+    abort_if_invalid_pointer_argument(buffer);
+    abort_if_invalid_pointer_argument(destination);
+    abort_if_negative_integer_argument(bufferLength);
+    abort_if_negative_integer_argument(destinationLength);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+
+    INIT_LOCALS(loc, publicKey);
+
+    loc[publicKey] = ImportSubjectPublicKeyInfo(env, buffer, bufferLength);
+
+    if (loc[publicKey] == NULL)
+    {
+        goto cleanup;
+    }
+
+    ret = AndroidCryptoNative_X25519DeriveSecret(privateKey, loc[publicKey], destination, destinationLength);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
 static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten)
 {
     abort_if_invalid_pointer_argument(key);
@@ -296,6 +304,39 @@ static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLeng
 
     *bytesWritten = (int32_t)encodedLen;
     ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+static jobject ImportSubjectPublicKeyInfo(JNIEnv* env, const uint8_t* buffer, int32_t bufferLength)
+{
+    jobject ret = NULL;
+
+    INIT_LOCALS(loc, algorithmName, keyFactory, spkiBytes, keySpec, publicKey);
+
+    loc[algorithmName] = make_java_string(env, "XDH");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[spkiBytes] = make_java_byte_array(env, bufferLength);
+    (*env)->SetByteArrayRegion(env, loc[spkiBytes], 0, bufferLength, (const jbyte*)buffer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[keySpec] = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, loc[spkiBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[keySpec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[publicKey] == NULL)
+    {
+        goto cleanup;
+    }
+
+    ret = loc[publicKey];
+    loc[publicKey] = NULL;
 
 cleanup:
     RELEASE_LOCALS(loc, env);

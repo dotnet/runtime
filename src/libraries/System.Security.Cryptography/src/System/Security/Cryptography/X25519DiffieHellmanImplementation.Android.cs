@@ -61,9 +61,24 @@ namespace System.Security.Cryptography
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
 
-            using (SafeX25519PublicKeyHandle importedPublicKey = ImportPublicKeyAsHandle(otherPartyPublicKey))
+            unsafe
             {
-                DeriveRawSecretAgreementCore(_privateKey, importedPublicKey, destination);
+                Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
+
+                bool encoded = TryWriteSubjectPublicKeyInfo(
+                    spki,
+                    otherPartyPublicKey,
+                    static (source, buffer) => source.CopyTo(buffer),
+                    out int written);
+
+                // SPKI encoding is either right or wrong, there isn't "optional" things that can be written down. So it
+                // should be precisely sized.
+                if (!encoded || written != SpkiSizeInBytes)
+                {
+                    throw new CryptographicException();
+                }
+
+                Interop.AndroidCrypto.X25519DeriveSecretWithSubjectPublicKeyInfo(_privateKey, spki, destination);
             }
         }
 

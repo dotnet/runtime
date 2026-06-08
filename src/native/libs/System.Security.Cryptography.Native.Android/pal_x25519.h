@@ -33,3 +33,10 @@ PALEXPORT int32_t AndroidCryptoNative_X25519DeriveSecret(
     jobject publicKey,
     uint8_t* destination,
     int32_t destinationLength);
+
+PALEXPORT int32_t AndroidCryptoNative_X25519DeriveSecretWithSubjectPublicKeyInfo(
+    jobject privateKey,
+    const uint8_t* buffer,
+    int32_t bufferLength,
+    uint8_t* destination,
+    int32_t destinationLength);
