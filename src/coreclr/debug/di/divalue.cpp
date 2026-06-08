@@ -2052,7 +2052,7 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
     EX_TRY
     {
         BOOL fSyncBlockField = FALSE;
-        SIZE_T fldOffset;
+        CORDB_ADDRESS fldOffset;
 
         //
         // <TODO>@todo: need to ensure that pType is really on the class
@@ -3113,7 +3113,7 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
 
         _ASSERTE(pFieldData->OkToGetOrSetInstanceOffset());
         // Compute the address of the field contents in our local object cache
-        SIZE_T fieldOffset = pFieldData->GetInstanceOffset();
+        CORDB_ADDRESS fieldOffset = pFieldData->GetInstanceOffset();
         ULONG32 size = GetSizeForType(pFieldType, kUnboxed);
 
         // verify that the field starts before the end of m_pObjectCopy
