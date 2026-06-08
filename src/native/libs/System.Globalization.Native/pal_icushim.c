@@ -230,7 +230,35 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
     return false;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
+#elif defined(TARGET_OPENBSD)
+
+// OpenBSD uses ABI versioning in SONAME, not ICU version. Use unversioned dlopen.
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+    if (libicuuc == NULL)
+        return false;
+
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+    if (libicui18n == NULL)
+    {
+        dlclose(libicuuc);
+        libicuuc = NULL;
+        return false;
+    }
+
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+    if (FindSymbolVersion(-1, -1, -1, symbolName, symbolVersion, MaxICUVersionStringLength, symbolSuffix))
+        return true;
+
+    dlclose(libicuuc);
+    dlclose(libicui18n);
+    libicuuc = NULL;
+    libicui18n = NULL;
+    return false;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID && !TARGET_OPENBSD
 
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
@@ -442,6 +470,35 @@ static void InitializeUColClonePointers(char* symbolVersion)
     }
 }
 
+static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
+{
+    if (ucol_setMaxVariable_ptr != NULL)
+    {
+        return;
+    }
+
+#if defined(TARGET_OSX) || defined(TARGET_ANDROID)
+    // OSX and Android always run against ICU version which has ucol_setMaxVariable.
+    // We shouldn't come here.
+    (void)symbolVersion;
+    assert(false);
+#elif defined(TARGET_WINDOWS)
+    char symbolName[SYMBOL_NAME_SIZE];
+    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
+    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
+#else
+    char symbolName[SYMBOL_NAME_SIZE];
+    snprintf(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
+    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
+#endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
+
+    if (ucol_setVariableTop_ptr == NULL)
+    {
+        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_setMaxVariable or ucol_setVariableTop.\n");
+        abort();
+    }
+}
+
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -458,7 +515,7 @@ int32_t GlobalizationNative_LoadICU(void)
         return false;
     }
 
-#elif defined(TARGET_ANDROID)
+#elif defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
     if (!FindICULibs(symbolName, symbolVersion))
     {
         return false;
@@ -479,6 +536,7 @@ int32_t GlobalizationNative_LoadICU(void)
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
+    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 
     return true;
@@ -535,6 +593,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
+    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 }
 
