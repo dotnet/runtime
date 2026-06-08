@@ -134,7 +134,7 @@ git checkout ppc64le_coreclr_jit_testing
 
 chmod +x run_test.sh
 
-./run_test.sh "$DOTNET_ROOT/dotnet" "$(pwd)/../runtime"
+./run_test.sh "$DOTNET_ROOT" "$(pwd)/../runtime"
 
 echo "=================================="
 echo " DONE"
