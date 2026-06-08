@@ -21,19 +21,21 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 
 #### 3 — Implementation steps (must be completed in order)
 
+NOTE: When inserting new entries/methods into any of the files below, their position and ordering does not matter. Any suggested placement (e.g. "at the end" or "near similar signatures") is just a convenient default, not a requirement.
+
 1. Update the `ThunkInput.txt` file with the new API definition. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
 
-Insert the new API definition without removing any existing entries. The position and ordering of the new entry does not matter, so place it wherever is convenient (e.g. near similar signatures).
+Insert the new API definition without removing any existing entries, placing it near similar signatures.
 
 2. Invoke `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script
 (or `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat` on Windows) to update auto-generated files.
 Use the correct directory for the script to run.
 
-3. Open `<repo_root>/src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class. The position and ordering of the new method does not matter; adding it as the last member is fine. Example:
+3. Open `<repo_root>/src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class as the last member. Example:
 
 ```diff
 +   virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
@@ -42,7 +44,7 @@ Use the correct directory for the script to run.
 +       ) = 0;
 ```
 
-4. Open `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API to `class CorInfoImpl` class declaration. The position and ordering of the new method does not matter; adding it at the end is fine. Use `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
+4. Open `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API in the end of `class CorInfoImpl` class declaration. Use `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
 
 ```diff
 +    private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
@@ -55,7 +57,7 @@ Use the correct directory for the script to run.
 
 Implement the API if asked, leave the NotImplementedException() otherwise.
 
-5. Open `<repo_root>/src/coreclr/vm/jitinterface.cpp` and add a dummy implementation. The position and ordering of the new method does not matter; adding it at the file's end is fine. Example:
+5. Open `<repo_root>/src/coreclr/vm/jitinterface.cpp` and add a dummy implementation at the file's end. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
@@ -106,10 +108,10 @@ Add a new entry to the `LWM` list. Example:
 ```
 
 NOTE: Use upper-case for the first letter of the API name here.
-The position and ordering of the new record does not matter; adding it after the last LWM one is fine.
+Add the new record after the very last LWM one.
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-Define 3 methods in this header file inside `class MethodContext` class. The position and ordering of the new methods does not matter; adding them at the end of its definition is fine.
+Define 3 methods in this header file inside `class MethodContext` class (at the end of its definition).
 
 The methods are prefixed with `rec*` (record), `dmp*` (dump to console) and `rep*` (replay). Example
 
@@ -125,7 +127,7 @@ Now add a new element to `enum mcPackets` enum in the same file. Example:
 ```
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
-Add the implementation of the 3 methods to `methodcontext.cpp`. The position and ordering of the new methods does not matter; adding them at the end of it is fine.
+Add the implementation of the 3 methods to `methodcontext.cpp` at the end of it.
 Consider other similar methods in the file for reference. Do not change implementations of other methods in the file. Example:
 
 ```diff
