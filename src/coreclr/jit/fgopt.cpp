@@ -5492,13 +5492,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
-
-    tailMergePreds(nullptr);
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+        {
+            // If this block was already merged, skip it
+            //
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
+            {
+                continue;
+            }
+            predInfo.Push(PredInfo(block, block->lastStmt()));
+        }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //

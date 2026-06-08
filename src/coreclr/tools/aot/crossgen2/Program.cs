@@ -818,7 +818,7 @@ namespace ILCompiler
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (!searchMethod.Name.SequenceEqual(method.Name))
+                    if (searchMethod.Name != method.Name)
                         continue;
 
                     curIndex++;
