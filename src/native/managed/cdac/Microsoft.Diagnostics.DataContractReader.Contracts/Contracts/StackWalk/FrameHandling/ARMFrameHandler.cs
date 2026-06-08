@@ -46,11 +46,14 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
     }
 
     public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+        => HandleTransitionBlock(framedMethodFrame.TransitionBlockPtr);
+
+    public override void HandleTransitionBlock(TargetPointer transitionBlockPtr)
     {
         // Call the base method to handle common logic
-        base.HandleTransitionFrame(framedMethodFrame);
+        base.HandleTransitionBlock(transitionBlockPtr);
 
-        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlockPtr);
 
         // On ARM, TransitionFrames update the argument registers
         Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(transitionBlock.ArgumentRegisters);

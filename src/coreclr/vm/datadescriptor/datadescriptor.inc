@@ -1089,6 +1089,13 @@ CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, TransitionBlockPtr, cdac_data<Fram
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_END(FramedMethodFrame)
 
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+CDAC_TYPE_BEGIN(ResolveHelperFrame)
+CDAC_TYPE_SIZE(sizeof(ResolveHelperFrame))
+CDAC_TYPE_FIELD(ResolveHelperFrame, T_POINTER, TransitionBlockPtr, cdac_data<ResolveHelperFrame>::TransitionBlockPtr)
+CDAC_TYPE_END(ResolveHelperFrame)
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
 #ifdef FEATURE_INTERPRETER
 CDAC_TYPE_BEGIN(InterpreterFrame)
 CDAC_TYPE_INDETERMINATE(InterpreterFrame)
