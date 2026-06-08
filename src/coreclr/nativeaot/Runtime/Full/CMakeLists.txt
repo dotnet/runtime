@@ -27,6 +27,21 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
     message(FATAL_ERROR "CMAKE_OBJCOPY is required to privatize NativeAOT libunwind symbols")
   endif()
 
+  find_program(NATIVEAOT_PRIVATE_LIBUNWIND_SH NAMES sh)
+  if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_SH)
+    message(FATAL_ERROR "sh is required to privatize NativeAOT libunwind symbols")
+  endif()
+
+  find_program(NATIVEAOT_PRIVATE_LIBUNWIND_AWK NAMES awk)
+  if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_AWK)
+    message(FATAL_ERROR "awk is required to privatize NativeAOT libunwind symbols")
+  endif()
+
+  find_program(NATIVEAOT_PRIVATE_LIBUNWIND_SORT NAMES sort)
+  if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_SORT)
+    message(FATAL_ERROR "sort is required to privatize NativeAOT libunwind symbols")
+  endif()
+
   add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
@@ -60,15 +75,15 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
             "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     # Generate the objcopy symbol list from libunwind-owned object files only.
-    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only \"$@\" > \"$0\""
+    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_SH}" -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only \"$@\" > \"$0\""
             "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
             "${CMAKE_NM}"
             ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
     COMMAND "${CMAKE_COMMAND}" -E touch "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
-    COMMAND awk -v "out=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_AWK}" -v "out=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
             "/^[0-9A-Fa-f]+[ \t]+[A-Za-z][ \t]+[^ \t]+$/ { print \$3 > out }"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
-    COMMAND sort -u -o
+    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_SORT}" -u -o
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f
