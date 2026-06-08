@@ -1204,11 +1204,18 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa,
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
-//    comp       -- The compiler
-//    sig        -- The signature of the intrinsic
-//    className  -- The name of the class associated with the HWIntrinsic to lookup
-//    methodName -- The name of the method associated with the HWIntrinsic to lookup
-//    enclosingClassName -- The name of the enclosing class of X64 classes
+//    comp                    -- The compiler
+//    sig                     -- The signature of the intrinsic
+//    className               -- The name of the class associated with the HWIntrinsic to lookup
+//    methodName              -- The name of the method associated with the HWIntrinsic to lookup
+//    innerEnclosingClassName -- The name of the inner enclosing class of nested 64-bit classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of nested 64-bit classes
+//    isXplatIntrinsic        -- True if the intrinsic lives directly under the cross-platform
+//                               System.Runtime.Intrinsics (or System.Numerics) namespace and
+//                               therefore has a managed fallback when the underlying ISA isn't
+//                               available; false if it is platform-specific (under
+//                               System.Runtime.Intrinsics.<Arch>) and must throw a
+//                               PlatformNotSupportedException when the ISA isn't available.
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and isa
@@ -1217,7 +1224,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          const char*       className,
                                          const char*       methodName,
                                          const char*       innerEnclosingClassName,
-                                         const char*       outerEnclosingClassName)
+                                         const char*       outerEnclosingClassName,
+                                         bool              isXplatIntrinsic)
 {
 #if defined(DEBUG)
     static bool validationCompleted = false;
@@ -1335,7 +1343,24 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (!isIsaSupported)
     {
-        return NI_Throw_PlatformNotSupportedException;
+        // We only want to surface a hard PlatformNotSupportedException when the ISA is
+        // unsupported AND there is no viable managed fallback. That is only the case for
+        // the platform-specific APIs under System.Runtime.Intrinsics.<Arch> (e.g.,
+        // Avx512.LoadVector512). The cross-platform APIs in System.Runtime.Intrinsics
+        // (e.g., Vector512.Load, Vector128<T>.AsByte) and System.Numerics (e.g.,
+        // Vector<T>) all have a managed fallback that should be used when the underlying
+        // ISA isn't available. For those, we fall through to the per-ISA handling below
+        // which returns NI_Illegal, allowing the call to be treated as a normal managed
+        // method (so the body can be inlined / executed normally).
+
+        if (!isXplatIntrinsic)
+        {
+            return NI_Throw_PlatformNotSupportedException;
+        }
+        else
+        {
+            return NI_Illegal;
+        }
     }
 
     // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when

@@ -1345,7 +1345,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (methodDesc.IsStatic)
             return true;
 
-        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        MethodTable mt = GetOrCreateMethodTable(methodDesc);
         if (mt.Flags.IsValueType)
             return true;
 
@@ -1385,7 +1385,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // Check class-level sharing: canonical MethodTable with generic instantiation
-        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        MethodTable mt = GetOrCreateMethodTable(methodDesc);
         return mt.IsCanonMT && mt.Flags.HasInstantiation;
     }
 
@@ -1397,7 +1397,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (EcmaMetadataUtils.GetRowId(token) == 0)
             return false;
 
-        TargetPointer modulePtr = _methodTables[methodDesc.MethodTable].Module;
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
         MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
         if (mdReader is null)

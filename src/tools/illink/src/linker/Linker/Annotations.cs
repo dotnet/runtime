@@ -71,6 +71,9 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
+        readonly List<(MethodDefinition Method, MessageOrigin Origin)> pending_reflection_visible_methods = new();
+        readonly List<(FieldDefinition Field, MessageOrigin Origin)> pending_reflection_visible_fields = new();
+        readonly List<(TypeDefinition Type, MessageOrigin Origin)> pending_reflection_visible_types = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -241,6 +244,45 @@ namespace Mono.Linker
         public bool IsRelevantToVariantCasting(TypeDefinition type)
         {
             return types_relevant_to_variant_casting.Contains(type);
+        }
+
+        /// <summary>
+        /// Schedules a method for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleMethod(MethodDefinition method, in MessageOrigin origin)
+            => pending_reflection_visible_methods.Add((method, origin));
+
+        /// <summary>
+        /// Schedules a field for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleField(FieldDefinition field, in MessageOrigin origin)
+            => pending_reflection_visible_fields.Add((field, origin));
+
+        /// <summary>
+        /// Schedules a type for reflection-visible marking by MarkStep.
+        /// </summary>
+        internal void MarkPendingReflectionVisibleType(TypeDefinition type, in MessageOrigin origin)
+            => pending_reflection_visible_types.Add((type, origin));
+
+        internal (MethodDefinition Method, MessageOrigin Origin)[] DrainPendingReflectionVisibleMethods()
+        {
+            var result = pending_reflection_visible_methods.ToArray();
+            pending_reflection_visible_methods.Clear();
+            return result;
+        }
+
+        internal (FieldDefinition Field, MessageOrigin Origin)[] DrainPendingReflectionVisibleFields()
+        {
+            var result = pending_reflection_visible_fields.ToArray();
+            pending_reflection_visible_fields.Clear();
+            return result;
+        }
+
+        internal (TypeDefinition Type, MessageOrigin Origin)[] DrainPendingReflectionVisibleTypes()
+        {
+            var result = pending_reflection_visible_types.ToArray();
+            pending_reflection_visible_types.Clear();
+            return result;
         }
 
         public bool SetProcessed(IMetadataTokenProvider provider)
