@@ -93,8 +93,7 @@ namespace System.Text.Json.Serialization.Converters
                     state.PendingTask = null;
                     return true;
 
-                default:
-                    Debug.Assert(state.Current.AsyncEnumeratorState == AsyncEnumeratorState.Enumerating);
+                case AsyncEnumeratorState.Enumerating:
                     Debug.Assert(state.Current.AsyncEnumerator is IAsyncEnumerator<TElement>);
                     enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncEnumerator;
 
@@ -102,6 +101,9 @@ namespace System.Text.Json.Serialization.Converters
                     // the last MoveNextAsync() call can only have completed with 'true'.
                     moveNextTask = new ValueTask<bool>(true);
                     break;
+
+                default:
+                    throw new UnreachableException();
             }
 
             Debug.Assert(moveNextTask.IsCompleted);

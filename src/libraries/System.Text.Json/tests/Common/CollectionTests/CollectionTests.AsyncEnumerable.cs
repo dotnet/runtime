@@ -511,12 +511,19 @@ namespace System.Text.Json.Serialization.Tests
                 public ValueTask DisposeAsync()
                 {
                     inner.Dispose();
-                    events.Add($"{id}:Disposed");
                     if (asyncDisposal)
                     {
-                        return new ValueTask(Task.Delay(1));
+                        return CompleteAsyncDispose();
                     }
+
+                    events.Add($"{id}:Disposed");
                     return default;
+
+                    async ValueTask CompleteAsyncDispose()
+                    {
+                        await Task.Yield();
+                        events.Add($"{id}:Disposed");
+                    }
                 }
             }
         }
