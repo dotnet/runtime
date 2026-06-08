@@ -60,12 +60,13 @@ namespace
 #elif defined(HOST_S390X)
         ELF_MACHINE = EM_S390,
 #elif defined(HOST_POWERPC64)
-	ELF_MACHINE = EM_PPC64,
+        ELF_MACHINE = EM_PPC64,
 #else
 #error ELF_MACHINE unsupported for target
 #endif
 
         JIT_CODE_LOAD = 0,
+        JIT_CODE_DEBUG_INFO = 2,
     };
 
     static bool UseArchTimeStamp()
@@ -145,6 +146,17 @@ namespace
         uint64_t code_index;
         // Null terminated name
         // Optional native code
+    };
+
+    struct JitCodeDebugInfoRecord
+    {
+        JitCodeDebugInfoRecord()
+        {
+            header.id = JIT_CODE_DEBUG_INFO;
+            header.timestamp = GetTimeStampNS();
+        }
+
+        RecordHeader header;
     };
 };
 
@@ -247,33 +259,52 @@ exit:
         return 0;
     }
 
-    int LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+    int LogMethod(void* pCode, size_t codeSize, const char* symbol, const void* debugInfo, size_t debugInfoSize, const void* unwindInfo, size_t unwindInfoSize, bool reportCodeBlock)
     {
         int result = 0;
+
+        (void)unwindInfo;
+        (void)unwindInfoSize;
 
         if (enabled)
         {
             size_t symbolLen = strlen(symbol);
 
             JitCodeLoadRecord record;
+            JitCodeDebugInfoRecord debugRecord;
 
             size_t reportedCodeSize = reportCodeBlock ? codeSize : 0;
 
-            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + reportedCodeSize;
+            size_t bytesRemaining =
+                (debugInfo != nullptr ? sizeof(JitCodeDebugInfoRecord) + debugInfoSize : 0) +
+                sizeof(JitCodeLoadRecord) +
+                symbolLen +
+                1 +
+                reportedCodeSize;
 
             record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
             record.code_addr = (uint64_t) pCode;
-            record.code_size = codeSize;
-            record.header.total_size = bytesRemaining;
+            record.code_size = reportedCodeSize;
+            record.header.total_size = sizeof(JitCodeLoadRecord) + symbolLen + 1 + reportedCodeSize;
 
-            iovec items[] = {
-                // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
-                { &record, sizeof(JitCodeLoadRecord) },
-                { (void *)symbol, symbolLen + 1 },
-                { pCode, reportedCodeSize },
-            };
-            size_t itemsCount = sizeof(items) / sizeof(items[0]);
+            debugRecord.header.timestamp = record.header.timestamp;
+            debugRecord.header.total_size = sizeof(JitCodeDebugInfoRecord) + debugInfoSize;
+
+            iovec items[5];
+            size_t itemsCount = 0;
+
+            if (debugInfo != nullptr)
+            {
+                items[itemsCount++] = { &debugRecord, sizeof(JitCodeDebugInfoRecord) };
+                items[itemsCount++] = { const_cast<void*>(debugInfo), debugInfoSize };
+            }
+
+            // TODO: insert unwindInfo record items here.
+
+            items[itemsCount++] = { &record, sizeof(JitCodeLoadRecord) };
+            items[itemsCount++] = { (void *)symbol, symbolLen + 1 };
+            items[itemsCount++] = { pCode, reportedCodeSize };
 
             size_t itemsWritten = 0;
 
@@ -389,9 +420,9 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, const void* debugInfo, size_t debugInfoSize, const void* unwindInfo, size_t unwindInfoSize, bool reportCodeBlock)
 {
-    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo, reportCodeBlock);
+    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, debugInfoSize, unwindInfo, unwindInfoSize, reportCodeBlock);
 }
 
 int
@@ -419,7 +450,7 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, const void* debugInfo, size_t debugInfoSize, const void* unwindInfo, size_t unwindInfoSize, bool reportCodeBlock)
 {
     return 0;
 }
