@@ -46,6 +46,9 @@ public class Runtime_116823
     private static char FloatToChar(float v) => (char)v;
 
     [Fact]
+    // Mono has not yet been updated to saturate float/double -> small integral conversions;
+    // tracked by https://github.com/dotnet/runtime/issues/116823.
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/116823", TestPlatforms.Any)]
     public static void TestEntryPoint()
     {
         // ---------------- double -> short ----------------
