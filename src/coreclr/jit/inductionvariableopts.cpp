@@ -470,10 +470,9 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 
 #ifdef DEBUG
     // We currently do not expect to ever widen IVs that are live into
-    // exceptional exits. Such IVs are expected to have been marked DNER
-    // previously (EH write-thru is only for single def locals) which makes it
-    // unprofitable. If this ever changes we need some more expansive handling
-    // here.
+    // exceptional exits. Such IVs are not currently register candidates (EH
+    // write-thru is only for single def locals) which makes it unprofitable.
+    // If this ever changes we need some more expansive handling here.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
@@ -895,12 +894,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
         return false;
     }
 
-    // If the IV is not enregisterable then uses/defs are going to go
-    // to stack regardless. This check also filters out IVs that may be
-    // live into exceptional exits since those are always marked DNER.
-    if (lclDsc->lvDoNotEnregister)
+    // If the IV is not enregisterable, or if it lives into a handler, then
+    // uses/defs are going to go to stack regardless.
+    if (lclDsc->lvDoNotEnregister || lclDsc->IsLiveInOutOfHandler())
     {
-        JITDUMP("  V%02u is marked DNER\n", lclNum);
+        JITDUMP("  V%02u is marked DNER or lives into a handler\n", lclNum);
         return false;
     }
 

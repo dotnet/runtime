@@ -96,7 +96,8 @@ public:
 
 #ifdef TARGET_X86
     GCRefKind GetReturnValueKind(MethodInfo *   pMethodInfo,
-                                    REGDISPLAY *   pRegisterSet);
+                                 REGDISPLAY *   pRegisterSet,
+                                 bool* isAsync);
 #endif
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);

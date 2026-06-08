@@ -119,8 +119,6 @@ extern bool g_arm64_atomics_present;
 /******************* Compiler-specific glue *******************************/
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#define EMPTY_BASES_DECL
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #if __has_builtin(__builtin_assume)
 #define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
@@ -203,7 +201,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -418,7 +416,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -3305,15 +3302,6 @@ VOID
 PALAPI
 SetLastError(
          IN DWORD dwErrCode);
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
 
 PALIMPORT
 VOID

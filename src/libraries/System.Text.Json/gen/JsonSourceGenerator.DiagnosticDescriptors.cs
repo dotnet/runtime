@@ -131,6 +131,30 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor UnionCaseTypesNotClassifiable { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1227",
+                title: new LocalizableResourceString(nameof(SR.UnionCaseTypesNotClassifiableTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.UnionCaseTypesNotClassifiableMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor UnionTypeShapeNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1228",
+                title: new LocalizableResourceString(nameof(SR.UnionTypeShapeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.UnionTypeShapeNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor OpenGenericDerivedTypeCouldNotBeResolved { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1229",
+                title: new LocalizableResourceString(nameof(SR.OpenGenericDerivedTypeCouldNotBeResolvedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }

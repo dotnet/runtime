@@ -27,6 +27,10 @@ namespace System.Text.Json
         /// </summary>
         Value = 0x2,
         /// <summary>
+        /// Union types — types that wrap one of a finite set of declared case types.
+        /// </summary>
+        Union = 0x4,
+        /// <summary>
         /// Enumerable collections except dictionaries.
         /// </summary>
         Enumerable = 0x8,

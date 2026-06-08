@@ -34,10 +34,9 @@
     <Compile Include="System\Formats\Tar\TarHardLinkMode.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
     <Compile Include="System\Formats\Tar\TarWriterOptions.cs" />
-    <Compile Include="System\Formats\Tar\SubReadStream.cs" />
-    <Compile Include="System\Formats\Tar\SeekableSubReadStream.cs" />
     <Compile Include="System\Formats\Tar\GnuSparseStream.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\IO\SubReadStream.cs" Link="Common\System\IO\SubReadStream.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs" Link="Common\System\IO\Archiving.Utils.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.cs" Link="Common\System\IO\PathInternal.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
@@ -57,6 +56,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" Link="Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs" />

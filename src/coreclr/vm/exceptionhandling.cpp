@@ -2568,7 +2568,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid || pCF->GetRegisterSet()->IsCallerSPValid );
+        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
@@ -4033,6 +4033,15 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
                 }
+            }
+
+            // Advance past the native marker frame to the explicit frame (e.g. FuncEvalFrame),
+            // but only when there is one. For example, with foreign-thread and reverse
+            // PInvoke with no further managed frames, there is no explicit frame to advance to.
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+            {
+                pThis->Next();
+                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION || (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE));
             }
 
             *pfIsExceptionIntercepted = FALSE;
