@@ -98,20 +98,21 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void SpecifiedInConfigAndDevConfig_ConfigWins()
+        public void SpecifiedInConfigAndDevConfig_DevConfigWins()
         {
             var app = sharedState.App.Copy();
 
+            const string devConfigValue = "VALUE_FROM_DEV_CONFIG";
             RuntimeConfig.FromFile(app.RuntimeDevConfigJson)
-                .WithProperty(SharedTestState.AppTestPropertyName, "VALUE_FROM_DEV_CONFIG")
+                .WithProperty(SharedTestState.AppTestPropertyName, devConfigValue)
                 .Save();
 
             sharedState.DotNet.Exec(app.AppDll, PrintProperties, SharedTestState.AppTestPropertyName)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {devConfigValue}")
+                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {devConfigValue}");
         }
 
         public class SharedTestState : IDisposable

@@ -576,9 +576,9 @@ namespace Internal.JitInterface
             }
             if (methodNeedingCode.OwningType.IsDelegate && (
                 methodNeedingCode.IsConstructor ||
-                methodNeedingCode.Name.SequenceEqual("BeginInvoke"u8) ||
-                methodNeedingCode.Name.SequenceEqual("Invoke"u8) ||
-                methodNeedingCode.Name.SequenceEqual("EndInvoke"u8)))
+                methodNeedingCode.Name == "BeginInvoke"u8 ||
+                methodNeedingCode.Name == "Invoke"u8 ||
+                methodNeedingCode.Name == "EndInvoke"u8))
             {
                 // Special methods on delegate types
                 return true;
@@ -1041,9 +1041,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -1430,8 +1427,12 @@ namespace Internal.JitInterface
                     || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
                     || methodDesc.IsPInvoke))
                 {
+                    // Unwrap synthetic MethodDesc wrappers (e.g. async-variant thunks) to the
+                    // underlying metadata method before resolving its token. For a devirtualized
+                    // callee, resolveVirtualMethod guarantees a real methoddef token in that
+                    // method's own EcmaModule, so token and module are sourced consistently here.
                     if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
-                        methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        methodDesc?.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                     {
                         mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
 
@@ -2044,7 +2045,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                if (constrainedType.IsEnum && originalMethod.Name.SequenceEqual("GetHashCode"u8))
+                if (constrainedType.IsEnum && originalMethod.Name == "GetHashCode"u8)
                 {
                     MethodDesc methodOnUnderlyingType = constrainedType.UnderlyingType.FindVirtualFunctionTargetMethodOnObjectType(originalMethod);
                     Debug.Assert(methodOnUnderlyingType != null);
@@ -2212,8 +2213,8 @@ namespace Internal.JitInterface
                     //  2) Delegate.Invoke() - since a Delegate is a sealed class as per ECMA spec
                     //  3) JIT intrinsics - since they have pre-defined behavior
                     devirt = targetMethod.OwningType.IsValueType ||
-                        (targetMethod.OwningType.IsDelegate && targetMethod.Name.SequenceEqual("Invoke"u8)) ||
-                        (targetMethod.OwningType.IsObject && targetMethod.Name.SequenceEqual("GetType"u8));
+                        (targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8) ||
+                        (targetMethod.OwningType.IsObject && targetMethod.Name == "GetType"u8);
 
                     callVirtCrossingVersionBubble = true;
                 }
@@ -2673,7 +2674,10 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        Debug.Assert(!pResult->sig.hasTypeArg());
+                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
+                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
+                        // is set up by the post-switch block below.
+                        Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;
 

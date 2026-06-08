@@ -679,12 +679,9 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.EnableGenericCycleDetection))
-                    {
-                        builder.UseGenericCycleDetection(
-                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-                    }
+                    builder.UseGenericCycleDetection(
+                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
@@ -818,7 +815,7 @@ namespace ILCompiler
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (!searchMethod.Name.SequenceEqual(method.Name))
+                    if (searchMethod.Name != method.Name)
                         continue;
 
                     curIndex++;
