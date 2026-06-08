@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         private static UnhandledExceptionPropagationHandler? s_unhandledExceptionPropagationHandler;
         private static bool s_initialized;
-        private static ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
+        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
 
         /// <summary>
         /// Initialize the Objective-C marshalling API.

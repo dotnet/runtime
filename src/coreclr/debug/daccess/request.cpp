@@ -5415,7 +5415,7 @@ namespace
 
                             constexpr int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
                             if (taggedMemorySizeInBytes)
-                                *taggedMemorySizeInBytes = TAGGED_MEMORY_SIZE_IN_POINTERS * sizeof(void*);
+                                *taggedMemorySizeInBytes = TAGGED_MEMORY_SIZE_IN_POINTERS * sizeof(TADDR);
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -38,11 +39,19 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
-             => TryInitializeReferenceTracker(
+        {
+            // Make a local of the readonly field because it needs to be passed by ref to a QCall
+            // and it is marked as readonly to prevent accidental reassignment.
+            ConditionalWeakTable<object, ObjcTrackingInformation> objects = s_objects;
+            bool result = TryInitializeReferenceTracker(
                 beginEndCallback,
                 isReferencedCallback,
                 trackedObjectEnteredFinalization,
-                ObjectHandleOnStack.Create(ref s_objects));
+                ObjectHandleOnStack.Create(ref objects));
+            Debug.Assert(object.ReferenceEquals(objects, s_objects));
+
+            return result;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
         private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj);

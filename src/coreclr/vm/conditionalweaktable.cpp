@@ -4,7 +4,10 @@
 
 #include "conditionalweaktable.h"
 #include "gchandleutilities.h"
+
+#ifdef DACCESS_COMPILE
 #include "../debug/daccess/gcinterface.dac.h"
+#endif // DACCESS_COMPILE
 
 bool ConditionalWeakTableContainerObject::TryGetValue(OBJECTREF key, OBJECTREF* value)
 {
