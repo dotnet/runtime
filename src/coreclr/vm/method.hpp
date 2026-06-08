@@ -1546,7 +1546,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         // methods with transient IL bodies do not have IL headers
-        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || IsAsyncVariantMethod()) && !IsReturnDroppingThunk();
+        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen());
     }
 
     ULONG GetRVA();
@@ -2073,6 +2073,12 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
+    }
+
+    inline bool SupportsAsyncVersionCodegen() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
     }
 
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const

@@ -190,14 +190,10 @@ inline bool MethodDesc::IsDiagnosticsHidden()
             return true;
         }
 
-        if (!IsAsyncVariantMethod())
+        if (!SupportsAsyncVersionCodegen())
         {
-            // Task-wrapping thunk for user async method
             return true;
         }
-
-        // This is an async version of a user sync method. These have user's
-        // IL, so they should not be hidden.
     }
 
     if (IsWrapperStub())
