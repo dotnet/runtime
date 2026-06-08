@@ -51,33 +51,33 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            if (owningType.Name.SequenceEqual("Unsafe"u8))
+            if (owningType.Name == "Unsafe"u8)
             {
-                if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+                if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
                     return UnsafeIntrinsics.EmitIL(method);
             }
-            else if (owningType.Name.SequenceEqual("Debug"u8))
+            else if (owningType.Name == "Debug"u8)
             {
-                if (owningType.Namespace.SequenceEqual("System.Diagnostics"u8) && method.Name.SequenceEqual("DebugBreak"u8))
+                if (owningType.Namespace == "System.Diagnostics"u8 && method.Name == "DebugBreak"u8)
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
-            else if (owningType.Name.SequenceEqual("RuntimeAugments"u8))
+            else if (owningType.Name == "RuntimeAugments"u8)
             {
-                if (owningType.Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.Name.SequenceEqual("GetCanonType"u8))
+                if (owningType.Namespace == "Internal.Runtime.Augments"u8 && method.Name == "GetCanonType"u8)
                     return GetCanonTypeIntrinsic.EmitIL(method);
             }
-            else if (owningType.Name.SequenceEqual("MethodTable"u8))
+            else if (owningType.Name == "MethodTable"u8)
             {
-                if (owningType.Namespace.SequenceEqual("Internal.Runtime"u8) && method.Name.SequenceEqual("get_SupportsRelativePointers"u8))
+                if (owningType.Namespace == "Internal.Runtime"u8 && method.Name == "get_SupportsRelativePointers"u8)
                 {
                     ILOpcode value = method.Context.Target.SupportsRelativePointers ?
                         ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
                     return new ILStubMethodIL(method, new byte[] { (byte)value, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 }
             }
-            else if (owningType.Name.SequenceEqual("Stream"u8))
+            else if (owningType.Name == "Stream"u8)
             {
-                if (owningType.Namespace.SequenceEqual("System.IO"u8))
+                if (owningType.Namespace == "System.IO"u8)
                     return StreamIntrinsics.EmitIL(method);
             }
 
@@ -97,15 +97,15 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            if (owningType.Name.SequenceEqual("Interlocked"u8))
+            if (owningType.Name == "Interlocked"u8)
             {
-                if (owningType.Namespace.SequenceEqual("System.Threading"u8))
+                if (owningType.Namespace == "System.Threading"u8)
                     return InterlockedIntrinsics.EmitIL(method);
             }
-            else if (owningType.Name.SequenceEqual("Activator"u8))
+            else if (owningType.Name == "Activator"u8)
             {
                 TypeSystemContext context = owningType.Context;
-                if (method.Name.SequenceEqual("CreateInstance"u8) && method.Signature.Length == 0 && method.HasInstantiation
+                if (method.Name == "CreateInstance"u8 && method.Signature.Length == 0 && method.HasInstantiation
                     && method.Instantiation[0] is TypeDesc activatedType
                     && activatedType != context.UniversalCanonType
                     && activatedType.IsValueType
@@ -123,27 +123,27 @@ namespace Internal.IL
                     return new InstantiatedMethodIL(method, emit.Link(method.GetMethodDefinition()));
                 }
             }
-            else if (owningType.Name.SequenceEqual("RuntimeHelpers"u8))
+            else if (owningType.Name == "RuntimeHelpers"u8)
             {
-                if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+                if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
                     return RuntimeHelpersIntrinsics.EmitIL(method);
             }
-            else if (owningType.Name.SequenceEqual("Comparer`1"u8))
+            else if (owningType.Name == "Comparer`1"u8)
             {
-                if (method.Name.SequenceEqual("Create"u8) && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
+                if (method.Name == "Create"u8 && owningType.Namespace == "System.Collections.Generic"u8)
                     return ComparerIntrinsics.EmitComparerCreate(method);
             }
-            else if (owningType.Name.SequenceEqual("EqualityComparer`1"u8))
+            else if (owningType.Name == "EqualityComparer`1"u8)
             {
-                if (method.Name.SequenceEqual("Create"u8) && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
+                if (method.Name == "Create"u8 && owningType.Namespace == "System.Collections.Generic"u8)
                     return ComparerIntrinsics.EmitEqualityComparerCreate(method);
             }
-            else if (owningType.Name.SequenceEqual("ComparerHelpers"u8))
+            else if (owningType.Name == "ComparerHelpers"u8)
             {
-                if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
+                if (owningType.Namespace != "Internal.IntrinsicSupport"u8)
                     return null;
 
-                if (method.Name.SequenceEqual("EnumOnlyCompare"u8))
+                if (method.Name == "EnumOnlyCompare"u8)
                 {
                     //calls CompareTo for underlyingType to avoid boxing
 
@@ -171,12 +171,12 @@ namespace Internal.IL
                     return emitter.Link(method);
                 }
             }
-            else if (owningType.Name.SequenceEqual("EqualityComparerHelpers"u8))
+            else if (owningType.Name == "EqualityComparerHelpers"u8)
             {
-                if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
+                if (owningType.Namespace != "Internal.IntrinsicSupport"u8)
                     return null;
 
-                if (method.Name.SequenceEqual("EnumOnlyEquals"u8))
+                if (method.Name == "EnumOnlyEquals"u8)
                 {
                     // EnumOnlyEquals would basically like to do this:
                     // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x == y;
@@ -211,7 +211,7 @@ namespace Internal.IL
                     },
                     Array.Empty<LocalVariableDefinition>(), null);
                 }
-                else if (method.Name.SequenceEqual("GetComparerForReferenceTypesOnly"u8))
+                else if (method.Name == "GetComparerForReferenceTypesOnly"u8)
                 {
                     TypeDesc elementType = method.Instantiation[0];
                     if (!elementType.IsRuntimeDeterminedSubtype
@@ -225,7 +225,7 @@ namespace Internal.IL
                         Array.Empty<LocalVariableDefinition>(), null);
                     }
                 }
-                else if (method.Name.SequenceEqual("StructOnlyEquals"u8))
+                else if (method.Name == "StructOnlyEquals"u8)
                 {
                     TypeDesc elementType = method.Instantiation[0];
                     if (!elementType.IsRuntimeDeterminedSubtype

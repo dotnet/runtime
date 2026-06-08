@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
 using Internal.IL;
 using Internal.IL.Stubs;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -24,7 +26,7 @@ namespace ILCompiler
             _owningType = owningType;
         }
 
-        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
+        public override Utf8Span Name => _targetMethod.Name;
         public override string DiagnosticName => "RESUME_" + _targetMethod.DiagnosticName;
 
         public override TypeDesc OwningType => _owningType;

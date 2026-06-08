@@ -19,6 +19,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpStatusCode.Created)]
         [InlineData(HttpStatusCode.Accepted)]
         [InlineData(HttpStatusCode.NoContent)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
         public async Task ConnectMethod_Success(HttpStatusCode statusCode)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -78,6 +79,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", TestPlatforms.Wasi)]
         public async Task ConnectMethod_Fails()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

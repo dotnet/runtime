@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public class MetadataVirtualMethodAlgorithm : VirtualMethodAlgorithm
@@ -377,14 +379,14 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            ReadOnlySpan<byte> name = targetMethod.Name;
+            Utf8Span name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
             MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (candidate.Name.SequenceEqual(name))
+                if (candidate.Name == name)
                 {
                     if (candidate.Signature.EquivalentTo(sig))
                     {

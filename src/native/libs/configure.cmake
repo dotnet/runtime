@@ -593,6 +593,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
     unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+    unset(HAVE_GETHOSTNAME) # WASI sysroot declares gethostname in unistd.h but libc.a has no definition
 elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()

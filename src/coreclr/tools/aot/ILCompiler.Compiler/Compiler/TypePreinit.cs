@@ -1837,8 +1837,8 @@ namespace ILCompiler
             if (type.IsByRefLike
                 && type is MetadataType maybeSpan
                 && maybeSpan.Module == type.Context.SystemModule
-                && ((isReadOnlySpan && maybeSpan.Name.SequenceEqual("ReadOnlySpan`1"u8)) || (!isReadOnlySpan && maybeSpan.Name.SequenceEqual("Span`1"u8)))
-                && maybeSpan.Namespace.SequenceEqual("System"u8)
+                && ((isReadOnlySpan && maybeSpan.Name == "ReadOnlySpan`1"u8) || (!isReadOnlySpan && maybeSpan.Name == "Span`1"u8))
+                && maybeSpan.Namespace == "System"u8
                 && maybeSpan.Instantiation[0] is MetadataType readOnlySpanElementType)
             {
                 elementType = readOnlySpanElementType;
@@ -1885,7 +1885,7 @@ namespace ILCompiler
             {
                 case "InitializeArray":
                     if (method.OwningType is MetadataType mdType
-                        && mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
+                        && mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8
                         && mdType.Module == mdType.Context.SystemModule
                         && parameters[0] is ArrayInstance array
                         && parameters[1] is RuntimeFieldHandleValue fieldHandle
@@ -1898,7 +1898,7 @@ namespace ILCompiler
                     return false;
                 case "CreateSpan":
                     if (method.OwningType is MetadataType createSpanType
-                        && createSpanType.Name.SequenceEqual("RuntimeHelpers"u8) && createSpanType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
+                        && createSpanType.Name == "RuntimeHelpers"u8 && createSpanType.Namespace == "System.Runtime.CompilerServices"u8
                         && createSpanType.Module == createSpanType.Context.SystemModule
                         && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
                         && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
@@ -1938,7 +1938,7 @@ namespace ILCompiler
                 }
                 case "IsReferenceOrContainsReferences" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType isReferenceOrContainsReferencesType
-                        && isReferenceOrContainsReferencesType.Name.SequenceEqual("RuntimeHelpers"u8) && isReferenceOrContainsReferencesType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
+                        && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers"u8 && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"u8
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
                 {
                     bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
@@ -1947,7 +1947,7 @@ namespace ILCompiler
                 }
                 case "GetArrayDataReference" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType getArrayDataReferenceType
-                        && getArrayDataReferenceType.Name.SequenceEqual("MemoryMarshal"u8) && getArrayDataReferenceType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
+                        && getArrayDataReferenceType.Name == "MemoryMarshal"u8 && getArrayDataReferenceType.Namespace == "System.Runtime.InteropServices"u8
                         && getArrayDataReferenceType.Module == method.Context.SystemModule
                         && parameters[0] is ArrayInstance arrayData
                         && ((ArrayType)arrayData.Type).ElementType == method.Instantiation[0]:
@@ -1959,7 +1959,7 @@ namespace ILCompiler
 
             static bool IsSystemType(TypeDesc type)
                 => type is MetadataType typeType
-                        && typeType.Name.SequenceEqual("Type"u8) && typeType.Namespace.SequenceEqual("System"u8)
+                        && typeType.Name == "Type"u8 && typeType.Namespace == "System"u8
                         && typeType.Module == typeType.Context.SystemModule;
 
             return false;
@@ -2434,9 +2434,9 @@ namespace ILCompiler
 
             private static bool IsComInterfaceEntryType(TypeDesc type)
                 => type is MetadataType mdType
-                    && mdType.Name.SequenceEqual("ComInterfaceEntry"u8)
+                    && mdType.Name == "ComInterfaceEntry"u8
                     && mdType.ContainingType is MetadataType comWrappersType
-                    && comWrappersType.Name.SequenceEqual("ComWrappers"u8) && comWrappersType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
+                    && comWrappersType.Name == "ComWrappers"u8 && comWrappersType.Namespace == "System.Runtime.InteropServices"u8
                     && comWrappersType.Module == comWrappersType.Context.SystemModule;
 
             public static bool IsCompatible(TypeDesc type, out TypeDesc entryType)
@@ -2536,14 +2536,14 @@ namespace ILCompiler
                     if (field.OwningType != _parent._entryType)
                         return false;
 
-                    if (field.Name.SequenceEqual("IID"u8)
+                    if (field.Name == "IID"u8
                         && value is ValueTypeValue guidValue
                         && guidValue.Size == _parent._guidBytes[_index].Length)
                     {
                         Array.Copy(guidValue.InstanceBytes, _parent._guidBytes[_index], _parent._guidBytes[_index].Length);
                         return true;
                     }
-                    else if (field.Name.SequenceEqual("Vtable"u8)
+                    else if (field.Name == "Vtable"u8
                         && value is ByRefValueBase byrefValue
                         && byrefValue.BackingField != null)
                     {
@@ -2982,7 +2982,7 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         return false;
 
-                    if (field.Name.SequenceEqual("_length"u8))
+                    if (field.Name == "_length"u8)
                     {
                         _value._length = value.AsInt32() * _value._elementType.InstanceFieldSize.AsInt;
                         return true;
@@ -2990,7 +2990,7 @@ namespace ILCompiler
 
                     if (value is ByRefValue byref)
                     {
-                        Debug.Assert(field.Name.SequenceEqual("_reference"u8));
+                        Debug.Assert(field.Name == "_reference"u8);
                         _value._bytes = byref.PointedToBytes;
                         _value._index = byref.PointedToOffset;
                         return true;
@@ -3009,10 +3009,10 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         ThrowHelper.ThrowInvalidProgramException();
 
-                    if (field.Name.SequenceEqual("_length"u8))
+                    if (field.Name == "_length"u8)
                         return ValueTypeValue.FromInt32(_value._length / elementType.InstanceFieldSize.AsInt);
 
-                    Debug.Assert(field.Name.SequenceEqual("_reference"u8));
+                    Debug.Assert(field.Name == "_reference"u8);
                     return new ByRefValue(_value._bytes, _value._index);
                 }
 
@@ -3272,7 +3272,7 @@ namespace ILCompiler
 
                 if (_methodPointed.Signature.IsStatic)
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeOpenStaticThunk"u8));
+                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
                     // _firstParameter
                     builder.EmitPointerReloc(thisNode);
@@ -3289,7 +3289,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeClosedInstance"u8));
+                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
 
                     // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);

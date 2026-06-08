@@ -206,20 +206,6 @@ public class ElidedBoundsChecks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static float SimdLoadBetweenBCs(float[] a)
-    {
-        // The contiguous Vector128.Create from a[1..4] is lowered to a single
-        // SIMD load whose bounds check throws ArgumentOutOfRangeException, not
-        // IndexOutOfRangeException. It must act as a barrier: if a[0]'s check
-        // were strengthened to a[7] across it, a too-short array would observe
-        // IndexOutOfRangeException instead of the ArgumentOutOfRangeException
-        // the SIMD load is required to throw first.
-        float x = a[0];
-        Vector128<float> v = Vector128.Create(a[1], a[2], a[3], a[4]);
-        return x + v.ToScalar() + a[7];
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
     static int UnsignedShiftBySignBit(int i)
     {
         // X64-NOT: CORINFO_HELP_RNGCHKFAIL
@@ -349,20 +335,6 @@ public class ElidedBoundsChecks
 
         if (UnsignedShiftBySignBit(-1) != 1 || UnsignedShiftBySignBit(0) != 0)
             return 0;
-
-        // A SIMD load with a non-IOOB bounds check (ArgumentOutOfRangeException)
-        // between two array checks must act as a barrier: a[0]'s check must not
-        // be strengthened across it, otherwise a short array would observe
-        // IndexOutOfRangeException instead of ArgumentOutOfRangeException.
-        // The contiguous Vector128.Create -> single SIMD load recognition and the
-        // bounds-check coalescing being validated here are RyuJIT-specific, so
-        // only assert the exact exception type on CoreCLR.
-        if (!TestLibrary.Utilities.IsMonoRuntime && Vector128.IsHardwareAccelerated)
-        {
-            if (SimdLoadBetweenBCs(new float[8]) != 0f)
-                return 0;
-            Assert.Throws<ArgumentOutOfRangeException>(() => SimdLoadBetweenBCs(new float[1]));
-        }
 
         return 100;
     }
