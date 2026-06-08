@@ -10380,7 +10380,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -10396,7 +10396,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -10422,7 +10422,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -10438,7 +10438,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 case NI_System_Math_Pow:
                 {
@@ -10514,10 +10514,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_MaxInt_UN;
                 break;
 
-            case NI_System_Math_MaxNative:
-                vnf = VNF_MaxNumber;
-                break;
-
             case NI_System_Math_Min:
                 vnf = VNF_MinInt;
                 break;
@@ -10525,11 +10521,17 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             case NI_System_Math_MinUnsigned:
                 vnf = VNF_MinInt_UN;
                 break;
+#endif // TARGET_RISCV64
+
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+            case NI_System_Math_MaxNative:
+                vnf = VNF_MaxNumber;
+                break;
 
             case NI_System_Math_MinNative:
                 vnf = VNF_MinNumber;
                 break;
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
