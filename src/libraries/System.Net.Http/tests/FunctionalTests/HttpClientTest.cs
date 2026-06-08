@@ -1406,6 +1406,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData((HttpVersionPolicy)(-1))]
+        [InlineData((HttpVersionPolicy)3)]
+        [InlineData((HttpVersionPolicy)int.MaxValue)]
+        public void DefaultVersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => client.DefaultVersionPolicy = invalidValue);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact; // still usable after
+                Assert.Equal(HttpVersionPolicy.RequestVersionExact, client.DefaultVersionPolicy);
+            }
+        }
+
         [Fact]
         public async Task DefaultRequestVersion_SetAfterUse_Throws()
         {
