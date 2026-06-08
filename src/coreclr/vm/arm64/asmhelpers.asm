@@ -325,11 +325,11 @@ OnHijackTripThreadReturn
 ; We prefer to strip a pointer where it's not going to be used to branch execution to.
 ; It is a no-op on non-PAC enabled machines.
     NESTED_ENTRY PacStripPtr
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-16!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-16!
         mov lr, x0
         DCD     0xD50320FF  ; xpaclri instruction in binary to avoid requiring PAC-enabled assemblers
         mov x0, lr
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
     NESTED_END
 
