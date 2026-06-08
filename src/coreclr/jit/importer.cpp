@@ -9036,7 +9036,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
-                            awaitOffset = (IL_OFFSET)(codeAddr - info.compCode);
+                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
                             isAwait     = true;
                             prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
 
