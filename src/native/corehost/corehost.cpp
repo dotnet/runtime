@@ -120,7 +120,7 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
-#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || (defined(TARGET_LINUX) && !defined(TARGET_ANDROID))) && !defined(TARGET_X86)
     extern void initialize_static_createdump();
     initialize_static_createdump();
 #endif

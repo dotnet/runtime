@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,7 +15,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class StackReferenceDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
 
     // --- StackWalk debuggee: basic stack walk ---
 
@@ -23,7 +23,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void WalkStackReferences_ReturnsWithoutThrowing(TestConfiguration config)
     {
-        InitializeDumpTest(config, "StackWalk", "full");
+        InitializeDumpTest(config, "StackWalk", "heap");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
@@ -37,7 +37,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void WalkStackReferences_RefsHaveValidSourceInfo(TestConfiguration config)
     {
-        InitializeDumpTest(config, "StackWalk", "full");
+        InitializeDumpTest(config, "StackWalk", "heap");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);

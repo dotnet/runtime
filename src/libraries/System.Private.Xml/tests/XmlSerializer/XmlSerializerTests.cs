@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization.Tests;
@@ -951,6 +952,52 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_DeserializeFragmentsFromXmlReader()
+    {
+        const string payload = "<SimpleType><P1>one</P1><P2>1</P2></SimpleType><SimpleType><P1>two</P1><P2>2</P2></SimpleType>";
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        byte[] data = Encoding.UTF8.GetBytes(payload);
+
+        // "Switch.System.Xml.UseXmlSerializerReadEndElementWorkaround" default should be true
+        using var stream = new BlockingAfterBufferStream(data);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+        Assert.True(serializer.CanDeserialize(reader));
+
+        SimpleType first = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("one", first.P1);
+        Assert.Equal(1, first.P2);
+
+        Assert.True(serializer.CanDeserialize(reader));
+
+        SimpleType second = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("two", second.P1);
+        Assert.Equal(2, second.P2);
+    }
+ 
+    [Fact]
+    public static void Xml_DeserializeFragmentsFromXmlReader_CanDisableWorkaround()
+    {
+        const string switchName = "Switch.System.Xml.UseXmlSerializerReadEndElementWorkaround";
+        const string payload = "<SimpleType><P1>one</P1><P2>1</P2></SimpleType><SimpleType><P1>two</P1><P2>2</P2></SimpleType>";
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        byte[] data = Encoding.UTF8.GetBytes(payload);
+
+        using var compatSwitch = new XmlSerializerAppContextSwitchScope(switchName, false);
+        Assert.False(compatSwitch.CurrentValue);
+
+        using var stream = new BlockingAfterBufferStream(data);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+        SimpleType first = (SimpleType)serializer.Deserialize(reader);
+        Assert.Equal("one", first.P1);
+        Assert.Equal(1, first.P2);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => serializer.Deserialize(reader));
+        Assert.IsType<TimeoutException>(exception.InnerException);
+    }
+
+    [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
@@ -1712,6 +1759,42 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         Assert.NotNull(actual);
         Assert.Equal(value.Foo, actual.Foo);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize();
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize Bar=\"SomeBar\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></DerivedTypeWithInheritedShouldSerialize>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
+    {
+        var value = new TypeWithFieldBackedSpecifiedMember() { Foo = "SomeValue", FooSpecified = true };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldBackedSpecifiedMember xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithFieldBackedSpecifiedMember>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal("SomeValue", actual.Foo);
+        Assert.True(actual.FooSpecified);
     }
 
     [Fact]
@@ -2607,7 +2690,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #endif
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -2619,6 +2701,46 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         }
         Assert.True(!weakRef.IsAlive);
     }
+
+#if !XMLSERIALIZERGENERATORTESTS
+    // The Generator tests only cover pre-generated serializers that are based on the types in SerializableAssembly.dll.
+    // For this test, we're testing a scenario where one of those types is used inside a generic container - aka, List<SerializationType>.
+    // Since 'List<>' is *not* defined in SerializableAssembly.dll, the pre-generated serializers do not include serializers for List<SerializationType>,
+    // Therefore, this test is excluded from the Generator tests.
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [InlineData("List")]
+    [InlineData("Array")]
+    public static void Xml_CollectibleTypeInGenericContainer(string containerKind)
+    {
+        ExecuteCollectibleContainerAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", containerKind, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    // Mono doesn't support collectible assemblies: RuntimeType.IsCollectible always returns false,
+    // so the serializer never engages its collectible weak-caching path. See dotnet/runtime#34072.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    public static void Xml_RunAndCollectType_DoesNotRemainCached()
+    {
+        ExecuteRunAndCollectAndRelease(out WeakReference weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+#endif
 
     [Fact]
     public static void ValidateXElement()
@@ -2796,6 +2918,150 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         alc.Unload();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteCollectibleContainerAndUnload(string assemblyfile, string typename, string containerKind, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+        var baseType = asm.GetType(typename);
+        Assert.Equal(alc, AssemblyLoadContext.GetLoadContext(baseType.Assembly));
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        Type type;
+        object obj;
+        switch (containerKind)
+        {
+            case "List":
+                type = typeof(List<>).MakeGenericType(baseType);
+                // The type is collectible because it has a collectible type argument, but its
+                // Assembly is in the default ALC since that's where List<> is defined.
+                Assert.True(type.IsCollectible);
+                Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(type.Assembly));
+
+                obj = Activator.CreateInstance(type);
+                object listItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(listItem, "test");
+                baseType.GetProperty("P2").SetValue(listItem, 42);
+                type.GetMethod("Add").Invoke(obj, [listItem]);
+                break;
+
+            case "Array":
+                type = baseType.MakeArrayType();
+                Assert.True(type.IsCollectible);
+
+                var array = Array.CreateInstance(baseType, 1);
+                object arrayItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(arrayItem, "test");
+                baseType.GetProperty("P2").SetValue(arrayItem, 42);
+                array.SetValue(arrayItem, 0);
+                obj = array;
+                break;
+
+            default:
+                throw new ArgumentException($"Unknown container kind: {containerKind}");
+        }
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+        ms.Position = 0;
+        var rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+
+        if (rtobj is Array rtArray)
+            Assert.Equal(1, rtArray.Length);
+        else if (rtobj is ICollection rtCollection)
+            Assert.Equal(1, rtCollection.Count);
+        else
+            Assert.Fail($"Expected deserialized object to be an Array or ICollection, but got {rtobj.GetType()}.");
+
+        alc.Unload();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteRunAndCollectAndRelease(out WeakReference wref)
+    {
+        string uniqueName = "XmlSerializerTests.RunAndCollect.Type_" + Guid.NewGuid().ToString("N");
+        var assemblyName = new AssemblyName(uniqueName);
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            assemblyName,
+            AssemblyBuilderAccess.RunAndCollect);
+
+        ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(uniqueName);
+        TypeBuilder typeBuilder = moduleBuilder.DefineType(
+            uniqueName + ".SimpleType",
+            TypeAttributes.Public | TypeAttributes.Class);
+
+        typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        DefineAutoProperty(typeBuilder, "P1", typeof(string));
+        DefineAutoProperty(typeBuilder, "P2", typeof(int));
+
+        Type type = typeBuilder.CreateTypeInfo()!.AsType();
+
+        Assert.True(type.IsCollectible);
+        Assert.True(type.Assembly.IsCollectible);
+
+        wref = new WeakReference(type.Assembly);
+
+        object obj = Activator.CreateInstance(type)!;
+        type.GetProperty("P1")!.SetValue(obj, "test");
+        type.GetProperty("P2")!.SetValue(obj, 42);
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+
+        ms.Position = 0;
+        object? rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+        Assert.Equal("test", type.GetProperty("P1")!.GetValue(rtobj));
+        Assert.Equal(42, type.GetProperty("P2")!.GetValue(rtobj));
+    }
+
+    private static void DefineAutoProperty(TypeBuilder typeBuilder, string name, Type propertyType)
+    {
+        FieldBuilder field = typeBuilder.DefineField("_" + name, propertyType, FieldAttributes.Private);
+
+        MethodAttributes methodAttributes =
+            MethodAttributes.Public |
+            MethodAttributes.SpecialName |
+            MethodAttributes.HideBySig;
+
+        MethodBuilder getter = typeBuilder.DefineMethod(
+            "get_" + name,
+            methodAttributes,
+            propertyType,
+            Type.EmptyTypes);
+
+        ILGenerator getterIl = getter.GetILGenerator();
+        getterIl.Emit(OpCodes.Ldarg_0);
+        getterIl.Emit(OpCodes.Ldfld, field);
+        getterIl.Emit(OpCodes.Ret);
+
+        MethodBuilder setter = typeBuilder.DefineMethod(
+            "set_" + name,
+            methodAttributes,
+            null,
+            new[] { propertyType });
+
+        ILGenerator setterIl = setter.GetILGenerator();
+        setterIl.Emit(OpCodes.Ldarg_0);
+        setterIl.Emit(OpCodes.Ldarg_1);
+        setterIl.Emit(OpCodes.Stfld, field);
+        setterIl.Emit(OpCodes.Ret);
+
+        PropertyBuilder property = typeBuilder.DefineProperty(
+            name,
+            PropertyAttributes.None,
+            propertyType,
+            null);
+
+        property.SetGetMethod(getter);
+        property.SetSetMethod(setter);
+    }
 
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
@@ -3079,6 +3345,45 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
 }
 
+internal sealed class BlockingAfterBufferStream : Stream
+{
+    private readonly byte[] _buffer;
+    private int _position;
+
+    public BlockingAfterBufferStream(byte[] buffer)
+    {
+        _buffer = buffer;
+    }
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => _buffer.Length;
+    public override long Position
+    {
+        get => _position;
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        if (_position < _buffer.Length)
+        {
+            int toCopy = Math.Min(count, _buffer.Length - _position);
+            Array.Copy(_buffer, _position, buffer, offset, toCopy);
+            _position += toCopy;
+            return toCopy;
+        }
+
+        throw new TimeoutException("Simulated Exception - No additional data is available.");
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Flush() { }
+}
+
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
 {
     private readonly string _name;
@@ -3103,11 +3408,31 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         if (_hadValue)
             AppContext.SetSwitch(_name, _originalValue);
         else
-            // There's no "unset", so pick a default or false
-            AppContext.SetSwitch(_name, false);
+            UnsetSwitch(_name);
+
         ClearCachedSwitch(_cachedName);
     }
 
+    private static void UnsetSwitch(string name)
+    {
+        const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Static;
+
+        if (typeof(AppContext).GetField("s_switches", Flags)?.GetValue(null) is IDictionary switches)
+        {
+            lock (switches)
+            {
+                switches.Remove(name);
+            }
+        }
+
+        if (typeof(AppContext).GetField("s_dataStore", Flags)?.GetValue(null) is IDictionary dataStore)
+        {
+            lock (dataStore)
+            {
+                dataStore.Remove(name);
+            }
+        }
+    }
     private static void ClearCachedSwitch(string name)
     {
         Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");

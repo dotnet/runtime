@@ -3,16 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class WebcilHeader : IData<WebcilHeader>
+[CdacType(nameof(DataType.WebcilHeader))]
+internal sealed partial class WebcilHeader : IData<WebcilHeader>
 {
-    static WebcilHeader IData<WebcilHeader>.Create(Target target, TargetPointer address) => new WebcilHeader(target, address);
-    public WebcilHeader(Target target, TargetPointer address)
-    {
-        CoffSections = target.Read<ushort>(address + 8); // See docs/design/mono/webcil.md
-        VersionMajor = target.Read<ushort>(address + 4); // See docs/design/mono/webcil.md
-    }
+    // See docs/design/mono/webcil.md for the layout.
+    [RawOffset(4)] public ushort VersionMajor { get; }
+    [RawOffset(8)] public ushort CoffSections { get; }
 
-    public ushort CoffSections { get; init; }
-    public ushort VersionMajor { get; init; }
-    public uint Size => VersionMajor >= 1 ? (uint)32 : (uint)28; // See docs/design/mono/webcil.md;
+    public uint Size => VersionMajor >= 1 ? (uint)32 : (uint)28;
 }
