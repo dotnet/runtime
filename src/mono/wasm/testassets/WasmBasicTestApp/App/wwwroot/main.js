@@ -217,7 +217,7 @@ switch (testCase) {
         dotnet.withApplicationArgumentsFromQuery();
         break;
     case "BufferedAssetsTest":
-        const originalFetch3 = globalThis.fetch.bind(globalThis);
+        const originalFetch4 = globalThis.fetch.bind(globalThis);
         dotnet.withModuleConfig({
             onConfigLoaded: (config) => {
                 const bufferedAssets = [
@@ -228,7 +228,7 @@ switch (testCase) {
                 ];
                 for (const asset of bufferedAssets) {
                     const url = new URL(`./_framework/${asset.name}`, location.href);
-                    asset.buffer = originalFetch3(url).then(r => r.arrayBuffer());
+                    asset.buffer = originalFetch4(url).then(r => r.arrayBuffer());
                 }
             }
         });
