@@ -973,11 +973,6 @@ namespace System.IO.Compression
                 message = SR.LocalFileHeaderCorrupt;
                 return false;
             }
-            if (_compressedSize < 0 || _uncompressedSize < 0)
-            {
-                message = SR.LocalFileHeaderCorrupt;
-                return false;
-            }
 
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
             return true;
