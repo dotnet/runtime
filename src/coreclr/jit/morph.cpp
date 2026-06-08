@@ -4264,11 +4264,15 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // the fast tail call cannot be performed. This is common to all platforms.
     // Note that the GC'ness of on stack args need not match since the arg setup area is marked
     // as non-interruptible for fast tail calls.
+    //
+    // Wasm passes args via fresh wasm locals, not the caller's stack, so this check doesn't apply.
+#ifndef TARGET_WASM
     if (calleeArgStackSize > callerArgStackSize)
     {
         reportFastTailCallDecision("Not enough incoming arg space");
         return false;
     }
+#endif // !TARGET_WASM
 
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation

@@ -44,7 +44,10 @@ public:
 #ifdef TARGET_WASM
             MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
                                  // a dedicated register (WASM local), for multiple uses.
-#endif                           // TARGET_WASM
+
+            WasmFastTailCallSp = 0x10, // SP arg of a fast tail call; codegen adds compLclFrameSize
+                                       // to undo the prolog's SP adjustment.
+#endif                                 // TARGET_WASM
         };
     };
 

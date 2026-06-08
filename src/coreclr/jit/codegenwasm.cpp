@@ -370,9 +370,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
+    // BBF_HAS_JMP on wasm comes only from fast tail calls. The return_call already
+    // left the function, but the body still needs an INS_end if this is the last block.
     if (jmpEpilog)
     {
-        NYI_WASM("genFnEpilog: jmpEpilog");
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            instGen(INS_end);
+        }
+        return;
     }
 
     // TODO-WASM: shadow stack maintenance
@@ -2408,6 +2414,19 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
     assert(genIsValidReg(tree->gtSrcReg));
     GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(tree), WasmRegToIndex(tree->gtSrcReg));
+
+    if ((tree->gtLIRFlags & LIR::Flags::WasmFastTailCallSp) != 0)
+    {
+        // Fast tail call SP arg: undo the prolog SP adjustment (asserts funclet tail calls don't happen).
+        assert(m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX);
+        assert(tree->gtSrcReg == GetStackPointerReg(m_compiler->funCurrentFuncIdx()));
+        if (m_compiler->compLclFrameSize != 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+    }
+
     WasmProduceReg(tree);
 }
 
@@ -2571,7 +2590,33 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    if (call->TypeIs(TYP_STRUCT))
+    // For a fast tail call wasm requires the callee's result type to match the enclosing
+    // function's, so derive it from the caller's signature (call->gtType is TYP_VOID).
+    if (params.isJump)
+    {
+        if (m_compiler->info.compRetBuffArg != BAD_VAR_NUM)
+        {
+            // The enclosing method returns its struct via a retbuf arg, so the wasm-level
+            // return is empty.
+            typeStack.Push(CORINFO_WASM_TYPE_VOID);
+        }
+        else if (m_compiler->info.compRetType == TYP_VOID)
+        {
+            typeStack.Push(CORINFO_WASM_TYPE_VOID);
+        }
+        else if (m_compiler->info.compRetType == TYP_STRUCT)
+        {
+            typeStack.Push(
+                m_compiler->info.compCompHnd->getWasmLowering(m_compiler->info.compMethodInfo->args.retTypeClass));
+        }
+        else
+        {
+            // Normalize small ints (bool/byte/short/...).
+            typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(
+                ActualTypeToWasmValueType(m_compiler->info.compRetType)));
+        }
+    }
+    else if (call->TypeIs(TYP_STRUCT))
     {
         typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
     }

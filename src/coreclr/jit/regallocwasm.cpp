@@ -571,6 +571,22 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
     {
         ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
     }
+
+    // Tag the SP arg of a fast tail call so codegen undoes the prolog SP adjustment.
+    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
+    if (callNode->IsFastTailCall())
+    {
+        CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
+        if (spArg != nullptr)
+        {
+            GenTree* const argNode = spArg->GetNode();
+            assert(argNode != nullptr);
+            assert(argNode->OperIs(GT_PHYSREG));
+            assert(argNode->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
+
+            argNode->gtLIRFlags |= LIR::Flags::WasmFastTailCallSp;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
