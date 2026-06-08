@@ -39,7 +39,11 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 ARGS_NON_NULL_ALL static int GetHandshakeStatus(JNIEnv* env, SSLStream* sslStream)
 {
     // int handshakeStatus = sslEngine.getHandshakeStatus().ordinal();
-    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    jobject status = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus);
+    if (CheckJNIExceptions(env) || status == NULL)
+        return -1;
+
+    int handshakeStatus = GetEnumAsInt(env, status);
     if (CheckJNIExceptions(env))
         return -1;
 
