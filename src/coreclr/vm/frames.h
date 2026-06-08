@@ -220,7 +220,6 @@ public:
         TT_NONE,
         TT_M2U, // we can safely cast to a FramedMethodFrame
         TT_U2M, // we can safely cast to a DebuggerU2MCatchHandlerFrame
-        TT_AppDomain, // transitioniting between AppDomains.
         TT_InternalCall, // calling into the CLR (ecall/fcall).
     };
 
@@ -236,6 +235,20 @@ public:
 
         INTERCEPTION_COUNT
     };
+
+#ifdef DACCESS_COMPILE
+    enum StubFrameType
+    {
+        STUB_FRAME_NONE,
+        STUB_FRAME_M2U,
+        STUB_FRAME_U2M,
+        STUB_FRAME_FUNC_EVAL,
+        STUB_FRAME_INTERNAL_CALL,
+        STUB_FRAME_CLASS_INIT,
+        STUB_FRAME_EXCEPTION,
+        STUB_FRAME_JIT_COMPILATION,
+    };
+#endif // DACCESS_COMPILE
 
     void GcScanRoots(promote_func *fn, ScanContext* sc);
     unsigned GetFrameAttribs();
@@ -253,6 +266,9 @@ public:
     int GetFrameType();
     ETransitionType GetTransitionType();
     Interception GetInterception();
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType();
+#endif // DACCESS_COMPILE
     void GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP);
     BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
 #ifdef DACCESS_COMPILE
@@ -428,6 +444,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_NONE;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -767,6 +791,10 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
+#ifdef TARGET_WASM
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
+#endif
+
 class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
@@ -849,6 +877,18 @@ public:
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+        if (pTransitionBlock != NULL)
+        {
+            if ((pTransitionBlock->m_ReturnAddress != 0) && (pTransitionBlock->m_StackPointer != 0))
+            {
+                // If the TransitionBlock is setup with both a return address and a stack pointer, then we can trust the stack pointer value,
+                // and it corresponds into the R2R unwind stack
+                return pTransitionBlock->m_StackPointer;
+            }
+        }
+#endif
         return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
@@ -956,6 +996,14 @@ public:
         return INTERCEPTION_EXCEPTION;
     }
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
+
     unsigned GetFrameAttribs_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1031,6 +1079,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_EXCEPTION;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
 
     ETransitionType GetTransitionType_Impl()
     {
@@ -1113,6 +1169,14 @@ public:
         return TYPE_FUNC_EVAL;
     }
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_FUNC_EVAL;
+    }
+#endif // DACCESS_COMPILE
+
     unsigned GetFrameAttribs_Impl();
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1170,6 +1234,17 @@ public:
     TADDR GetTransitionBlock_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)m_pTransitionBlock;
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress == 0)
+            {
+                // Lazy compute the virtual IP for the frame
+                pTransitionBlock->m_ReturnAddress = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+            }
+        }
+#endif
         return m_pTransitionBlock;
     }
 
@@ -1205,6 +1280,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_CALL;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     friend struct cdac_data<FramedMethodFrame>;
 };
@@ -1300,6 +1383,20 @@ public:
                                      m_ReturnAddress);
     }
 
+    PCODE GetReturnAddress_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+        if (m_SpForPacSign != 0)
+        {
+            return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+        }
+#endif
+
+        return (PCODE)m_ReturnAddress;
+    }
+
     BOOL NeedsUpdateRegDisplay_Impl()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1327,11 +1424,14 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
     TADDR               m_ReturnAddress;
+#if defined(TARGET_ARM64)
+    TADDR               m_SpForPacSign;
+#endif
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
 
@@ -1384,6 +1484,14 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_JIT_COMPILATION;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1465,6 +1573,14 @@ public:
 
     Interception GetInterception_Impl();
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
+
     BOOL SuppressParamTypeArg_Impl()
     {
         //
@@ -1491,6 +1607,7 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
+    static constexpr size_t Indirection = offsetof(StubDispatchFrame, m_pIndirection);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -1562,9 +1679,17 @@ public:
 #ifdef TARGET_X86
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
+
+    friend struct ::cdac_data<ExternalMethodFrame>;
 };
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
+
+template <>
+struct cdac_data<ExternalMethodFrame>
+{
+    static constexpr size_t Indirection = offsetof(ExternalMethodFrame, m_pIndirection);
+};
 
 class DynamicHelperFrame : public FramedMethodFrame
 {
@@ -1584,9 +1709,25 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_INTERNAL_CALL;
+    }
+#endif // DACCESS_COMPILE
+
+    friend struct ::cdac_data<DynamicHelperFrame>;
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
+
+template <>
+struct cdac_data<DynamicHelperFrame>
+{
+    static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
+};
 
 //------------------------------------------------------------------------
 // This frame protects object references for the EE's convenience.
@@ -1602,13 +1743,13 @@ public:
     //--------------------------------------------------------------------
     // This constructor pushes a new GCFrame on the GC frame chain.
     //--------------------------------------------------------------------
-    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-        : GCFrame(GetThread(), pObjRefs, numObjRefs, maybeInterior)
+    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
+        : GCFrame(GetThread(), pObjRefs, numObjRefs, gcFlags)
     {
         WRAPPER_NO_CONTRACT;
     }
 
-    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
+    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags);
     ~GCFrame();
 
     // Push and pop this frame from the thread's stack.
@@ -1663,7 +1804,7 @@ private:
     PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
-    BOOL          m_MaybeInterior;
+    UINT          m_gcFlags;
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
@@ -1762,6 +1903,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_CLASS_INIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_CLASS_INIT;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1788,6 +1937,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -1850,6 +2007,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_U2M;
+    }
+#endif // DACCESS_COMPILE
 
     bool CatchesAllExceptions()
     {
@@ -2032,6 +2197,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FrameHasActiveCall(this) ? STUB_FRAME_M2U : STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     BOOL IsTransitionToNativeFrame_Impl()
     {
@@ -2316,6 +2489,15 @@ private:
     TADDR m_SP;
 #endif // TARGET_WASM
     PTR_Object m_continuation;
+
+    friend struct cdac_data<InterpreterFrame>;
+};
+
+template<>
+struct cdac_data<InterpreterFrame>
+{
+    static constexpr size_t TopInterpMethodContextFrame = offsetof(InterpreterFrame, m_pTopInterpMethodContextFrame);
+    static constexpr size_t IsFaulting = offsetof(InterpreterFrame, m_isFaulting);
 };
 
 #endif // FEATURE_INTERPRETER
@@ -2383,7 +2565,7 @@ private:
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)           do {    \
@@ -2391,14 +2573,14 @@ private:
                         pThread,                                        \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt) do {                     \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt * sizeof(ObjRefArray) / sizeof(OBJECTREF),  \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
@@ -2408,16 +2590,15 @@ private:
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         subjectSize/sizeof(OBJECTREF),                  \
-                        TRUE);                                          \
+                        GC_CALL_INTERIOR);                              \
                 {
 
 #define GCPROTECT_BEGININTERIOR_ARRAY(ObjRefArray,cnt) do {             \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt,                                            \
-                        TRUE);                                          \
+                        GC_CALL_INTERIOR);                              \
                 {
-
 
 #define GCPROTECT_END()                                                 \
                 }                                                       \

@@ -10,7 +10,6 @@ namespace System
     public static partial class AppContext
     {
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnProcessExit(Exception* pException)
         {
             try
@@ -24,7 +23,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnUnhandledException(object* pException, Exception* pOutException)
         {
             try
@@ -38,7 +36,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try

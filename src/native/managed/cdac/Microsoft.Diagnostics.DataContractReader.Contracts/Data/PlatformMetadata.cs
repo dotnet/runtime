@@ -3,19 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class PlatformMetadata : IData<PlatformMetadata>
+[CdacType(nameof(DataType.PlatformMetadata))]
+internal sealed partial class PlatformMetadata : IData<PlatformMetadata>
 {
-    static PlatformMetadata IData<PlatformMetadata>.Create(Target target, TargetPointer address)
-        => new PlatformMetadata(target, address);
+    /// <summary>Address of the embedded PrecodeMachineDescriptor within this PlatformMetadata object.</summary>
+    [FieldAddress]
+    public TargetPointer PrecodeMachineDescriptor { get; }
 
-    public PlatformMetadata(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.PlatformMetadata);
-        PrecodeMachineDescriptor = address + (ulong)type.Fields[nameof(PrecodeMachineDescriptor)].Offset;
-        CodePointerFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(CodePointerFlags)].Offset);
-    }
-
-    /* Address of */
-    public TargetPointer PrecodeMachineDescriptor { get; init; }
-    public byte CodePointerFlags { get; init; }
+    [Field] public byte CodePointerFlags { get; }
 }

@@ -177,7 +177,7 @@ The following section types are defined and described later in this document:
 | ProfileDataInfo           |   111 | Image (added in V2.2)
 | ManifestMetadata          |   112 | Image (added in V2.3)
 | AttributePresence         |   113 | Assembly (added in V3.1)
-| InliningInfo2             |   114 | Image (added in V4.1)
+| InliningInfo2             |   114 | Image (non-composite, added in V4.1), Assembly (composite, added in V6.3)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
@@ -288,6 +288,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Verify_IL_Body                 |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
 | READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
 | READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
+| READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -332,6 +333,21 @@ ECMA 335 does not have a natural encoding for describing an overridden method. T
 #### IL Body signatures
 
 ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
+
+#### InjectStringThunks signatures
+
+The `READYTORUN_FIXUP_InjectStringThunks` fixup is placed in an eager import section and is processed at R2R module load time. There is at most one such fixup per compilation. It encodes a mapping from UTF-8 strings to pregenerated code thunks embedded in the R2R image.
+
+The signature following the fixup kind byte is a series of elements:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| LookupString | variable | A null-terminated UTF-8 string (the lookup key)
+| ThunkRVA | 4 bytes | An RVA into the module indicating the location of the thunk code. On WebAssembly platforms, this is an I32 function table index instead.
+
+The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
+
+At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -396,6 +412,36 @@ which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 |      0 |    4 | Unwind info start RVA
 |      4 |    4 | Unwind info end RVA (1 plus RVA of last byte)
 |      8 |    4 | GC info start RVA
+
+### RUNTIME_FUNCTION (wasm, size = 8 bytes)
+
+On WebAssembly, the `RUNTIME_FUNCTION` uses a virtual IP as the `BeginAddress` rather than an RVA
+into the image. The high bit of the `BeginAddress` field indicates whether the entry represents a
+funclet (1) or a main method body (0). The remaining 31 bits encode the virtual IP of the start of
+the function or funclet.
+
+| Offset | Size | Value
+|-------:|-----:|:-----
+|      0 |    4 | Virtual IP (bits 30:0) &#124; IsFunclet flag (bit 31)
+|      4 |    4 | UnwindData RVA (GC info follows immediately after the unwind blob)
+
+The table is terminated by a sentinel entry with all bits set (`0xFFFFFFFF`), followed by a 4-byte
+value containing the minimum WebAssembly function table index for the image.
+
+### UnwindInfo (wasm)
+
+On WebAssembly, the unwind info blob associated with each `RUNTIME_FUNCTION` entry is encoded as
+two consecutive ULEB128 values:
+
+| Order | Encoding | Value
+|------:|:---------|:-----
+|     1 | ULEB128  | Frame size in bytes (the number of bytes to unwind from the stack)
+|     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
+
+The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
+function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
+ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
+IPs or PortableEntryPoint structures.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 
@@ -588,6 +634,15 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 * RIDs of the inliners follow. They are encoded similarly to the way the inlinee is encoded (shifted left with the lowest bit indicating foreign RID). Instead of encoding the RID directly, RID delta (the difference between the previous RID and the current RID) is encoded. This allows better integer compression.
 
 Foreign RIDs are only present if a fragile inlining was allowed at compile time.
+
+**Note:** In single-file (non-composite) R2R files, this section is image-wide and is
+referenced directly by the main R2R header. In composite R2R files (v6.3+), this section
+is instead emitted per component assembly and is referenced by the
+`READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header of each component; inlinee/inliner RIDs
+without a module override flag refer to methods in the owning component assembly. The
+image-wide [`CrossModuleInlineInfo`](#readytorunsectiontypecrossmoduleinlineinfo-v63)
+section supersedes the image-wide use of `InliningInfo2` for cross-module inlines in
+composite images and may be emitted alongside the per-assembly `InliningInfo2` sections.
 
 **TODO:** It remains to be seen whether `DelayLoadMethodCallThunks` and / or
 `InliningInfo` also require changes specific to the composite R2R file format.
@@ -869,7 +924,7 @@ enum ReadyToRunHelper
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
-    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // Unused since READYTORUN_MAJOR_VERSION 19.0
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
@@ -975,6 +1030,96 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_EndCatch                  = 0x110,
 };
 ```
+
+# Wasm Signature String Encoding
+
+Every managed method signature is encoded as a compact string that uniquely identifies its
+lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
+shared across three codebases:
+
+- **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
+  during R2R compilation.
+- **WasmAppBuilder** (`SignatureMapper`): MSBuild task that generates interpreter-to-native
+  thunk tables from reflection metadata.
+- **CoreCLR runtime** (`helpers.cpp`, `GetSignatureKey`): runtime signature computation for
+  calli and portable entrypoint thunks.
+
+The string format is:
+
+```
+<return> [<this>] [<hidden-params>...] <explicit-params>... [p]
+```
+
+**Return type** (first character):
+
+| Encoding | Meaning |
+|---|---|
+| `v` | void return, or empty struct return (no return buffer) |
+| `i` | returns `i32` |
+| `l` | returns `i64` |
+| `f` | returns `f32` |
+| `d` | returns `f64` |
+| `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
+
+**This pointer** (if the method has a `this` parameter):
+
+| Encoding | Meaning |
+|---|---|
+| `T` | `this` pointer (managed instance methods) |
+
+**Hidden parameters** (inserted between `this` and explicit parameters, in order):
+
+1. **Generic context** (`i`): present when the method requires an inst method desc or
+   method table argument.
+2. **Async continuation** (`i`): present for async calls.
+
+Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
+presence is implied by the return type being `S<N>` — when the caller sees a struct return,
+it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
+
+**Explicit parameters** (one token per parameter, in declaration order):
+
+| Encoding | Meaning |
+|---|---|
+| `i` | `i32` parameter |
+| `l` | `i64` parameter |
+| `f` | `f32` parameter |
+| `d` | `f64` parameter |
+| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
+| `e` | empty struct parameter — elided from Wasm args but present in the string |
+
+**Suffix**:
+
+| Encoding | Meaning |
+|---|---|
+| `p` | managed call with portable entrypoint (the `&pe` argument is implicit) |
+| *(absent)* | unmanaged callers only (reverse P/Invoke) |
+
+**Prefix** (applied by the caller, not part of the core encoding):
+
+When storing signature strings in thunk lookup tables, callers prepend a single-character
+prefix to distinguish thunk categories:
+
+| Prefix | Meaning |
+|---|---|
+| `M` | Calli thunk or interpreter-to-native thunk |
+| `I` | Portable entrypoint-to-interpreter thunk |
+
+**Examples**:
+
+| Method | Signature string (no prefix) |
+|---|---|
+| `static void F()` | `vp` |
+| `static int F(int x)` | `iip` |
+| `void F(int x)` (instance) | `vTip` |
+| `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
+| `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static int F(float x, double y)` | `ifdp` |
+| `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
+
+**Slot sizing for structs**: When computing interpreter stack layout, struct parameters
+(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
+consume exactly 1 slot.
 
 # References
 

@@ -5,7 +5,7 @@
 
 #include "Servers.h"
 
-class TrackMyLifetimeTesting : public UnknownImpl, public ITrackMyLifetimeTesting
+class TrackMyLifetimeTesting : public UnknownImpl, public ITrackMyLifetimeTesting, public IAgileObject
 {
     static std::atomic<uint32_t> _instanceCount;
 
@@ -14,8 +14,15 @@ class TrackMyLifetimeTesting : public UnknownImpl, public ITrackMyLifetimeTestin
         return _instanceCount;
     }
 
+private:
+    const bool _isAgileInstance = false;
+
 public:
     TrackMyLifetimeTesting()
+        : TrackMyLifetimeTesting(false)
+    { }
+    TrackMyLifetimeTesting(bool isAgileInstance)
+        : _isAgileInstance(isAgileInstance)
     {
         _instanceCount++;
     }
@@ -34,11 +41,34 @@ public: // ITrackMyLifetimeTesting
         return S_OK;
     }
 
+    DEF_FUNC(CreateAgileInstance)(ITrackMyLifetimeTesting** agileInstance)
+    {
+        if (agileInstance == nullptr)
+            return E_POINTER;
+
+        *agileInstance = new TrackMyLifetimeTesting(/*isAgileInstance*/ true);
+        return S_OK;
+    }
+
+    DEF_FUNC(Method)()
+    {
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
+        if (_isAgileInstance)
+        {
+            if (riid == __uuidof(IAgileObject))
+            {
+                *ppvObject = static_cast<IAgileObject*>(this);
+                AddRef();
+                return S_OK;
+            }
+        }
         return DoQueryInterface(riid, ppvObject, static_cast<ITrackMyLifetimeTesting *>(this));
     }
 

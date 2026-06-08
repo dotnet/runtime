@@ -28,6 +28,11 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         throw new NotImplementedException(); // TODO(cdac)
     }
 
+    public static TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        throw new NotImplementedException();
+    }
+
     public static byte StubPrecodeData_GetType(Data.StubPrecodeData_1 stubPrecodeData)
     {
         return stubPrecodeData.Type;
@@ -107,5 +112,5 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 
 internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl, Data.StubPrecodeData_1>
 {
-    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags) : base(target, precodeMachineDescriptor, codePointerFlags) { }
+    public PrecodeStubs_1(Target target) : base(target) { }
 }

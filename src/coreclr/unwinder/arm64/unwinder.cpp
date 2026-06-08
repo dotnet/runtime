@@ -31,6 +31,10 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
+#if !defined(DACCESS_COMPILE)
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+#endif // !defined(DACCESS_COMPILE)
+
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
 
@@ -189,6 +193,7 @@ typedef struct _ARM64_UNWIND_PARAMS
     PULONG_PTR      LowLimit;
     PULONG_PTR      HighLimit;
     PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+    PULONG_PTR      SpForPacSign;
 } ARM64_UNWIND_PARAMS, *PARM64_UNWIND_PARAMS;
 
 #define UNWIND_PARAMS_SET_TRAP_FRAME(Params, Address, Size)
@@ -251,16 +256,75 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
-//
 // Macros for stripping pointer authentication (PAC) bits.
-//
+#if !defined(DACCESS_COMPILE)
 
-#if !defined(DEBUGGER_STRIP_PAC)
+#define HANDLE_PAC(pointer, sp)    RtlHandlePacOnline(pointer, sp)
 
-// NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(Params, pointer)
+FORCEINLINE
+VOID RtlHandlePacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
 
-#endif
+/*++
+
+Routine Description:
+
+   This routine authenticates an ARM64 pointer authenticated with PACIASP
+   using the supplied stack pointer as the modifier. Hence this should only
+   be called when authenticating a pointer at runtime (not debugger).
+
+Arguments:
+
+   Pointer - Supplies a pointer to the pointer whose PAC will be authenticated.
+
+   Sp - Supplies the stack pointer value that was used as the PAC modifier.
+
+Return Value:
+
+   None.
+
+--*/
+
+{
+    *Pointer = (ULONG64)PacAuthPtr((void *)(*Pointer), (void *)Sp);
+}
+#else
+
+#define HANDLE_PAC(pointer, sp)    RtlStripPacManual(pointer, sp)
+
+FORCEINLINE
+VOID
+RtlStripPacManual(
+    _Inout_ PULONG64 Pointer,
+    _In_ ULONG64 Sp
+    )
+/*++
+
+Routine Description:
+
+    This routine manually strips the ARM64 Pointer Authentication Code (PAC)
+    from a pointer. This is functionally similar to the XPAC family of
+    instructions.
+
+    N.B. Even though PAC is only supported on ARM64, this routine is available
+         on all architectures to conveniently enable scenarios such as the
+         Debugger.
+
+Arguments:
+
+    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+    None.
+
+--*/
+{
+    UNREFERENCED_PARAMETER(Sp);
+    *Pointer &= 0x0000FFFFFFFFFFFF;
+    return;
+}
+
+#endif // !defined(DACCESS_COMPILE)
 
 //
 // Macros to clarify opcode parsing
@@ -2343,7 +2407,11 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            STRIP_PAC(UnwindParams, &ContextRecord->Lr);
+            if (UnwindParams->SpForPacSign != NULL) {
+                *UnwindParams->SpForPacSign = ContextRecord->Sp;
+            }
+
+            HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
 
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
@@ -2501,6 +2569,7 @@ RtlpxVirtualUnwind (
     _In_opt_ PULONG_PTR LowLimit,
     _In_opt_ PULONG_PTR HighLimit,
     _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_opt_ PULONG_PTR SpForPacSign,
     _In_ ULONG UnwindFlags
     )
 
@@ -2557,6 +2626,9 @@ Arguments:
         language specific exception handler is returned. Otherwise, NULL is
         returned.
 
+    SpForPacSign - Supplies an optional pointer to retrieve the SP used to
+        sign the return address when pointer authentication (PAC) is enabled.
+
     UnwindFlags - Supplies additional flags for the unwind operation.
 
 Return Value:
@@ -2575,6 +2647,10 @@ Return Value:
     UNREFERENCED_PARAMETER(HandlerType);
 
     UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+
+    if (SpForPacSign != NULL) {
+        *SpForPacSign = 0;
+    }
 
     if (FunctionEntry == NULL) {
 
@@ -2636,6 +2712,8 @@ Return Value:
         UnwindParams.LowLimit = LowLimit;
         UnwindParams.HighLimit = HighLimit;
         UnwindParams.ContextPointers = ContextPointers;
+        UnwindParams.SpForPacSign = SpForPacSign;
+
         UnwindType = (FunctionEntry->UnwindData & 3);
 
         //
@@ -2739,6 +2817,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
                                 NULL,
                                 NULL,
                                 &DummyHandlerRoutine,
+                                NULL,
                                 0);
 
     //
@@ -2806,6 +2885,7 @@ RtlVirtualUnwind(
                                 NULL,
                                 NULL,
                                 &HandlerRoutine,
+                                NULL,
                                 0);
 
     //
@@ -2820,4 +2900,47 @@ RtlVirtualUnwind(
 
     return HandlerRoutine;
 }
-#endif
+#endif // HOST_UNIX
+
+EXTERN_C
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
+    )
+{
+    PEXCEPTION_ROUTINE HandlerRoutine;
+    NTSTATUS Status;
+
+    HandlerRoutine = NULL;
+    Status = RtlpxVirtualUnwind(HandlerType,
+                                ImageBase,
+                                ControlPc,
+                                (PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY)FunctionEntry,
+                                ContextRecord,
+                                HandlerData,
+                                EstablisherFrame,
+                                ContextPointers,
+                                NULL,
+                                NULL,
+                                &HandlerRoutine,
+                                (PULONG_PTR)SpForPacSign,
+                                0);
+
+    if (!NT_SUCCESS(Status)) {
+        ContextRecord->Pc = 0;
+        if (SpForPacSign != NULL) {
+            *SpForPacSign = 0;
+        }
+    }
+
+    return HandlerRoutine;
+}

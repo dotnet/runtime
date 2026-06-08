@@ -170,7 +170,27 @@ void WasmRegAlloc::IdentifyCandidates()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         varDsc->SetRegNum(REG_STK);
 
-        if (isRegCandidate(varDsc))
+        checkForDNER(lclNum, varDsc);
+
+        bool varIsRegCandidate = isRegCandidate(varDsc);
+
+        // Wasm RA currently does not support EH write-thru, so any local live in or out
+        // of a handler must be located only on the stack.
+        if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            varIsRegCandidate = false;
+        }
+        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
+        // spilling them to the stack before calls.
+        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        if (varTypeIsGC(varDsc->lvType))
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+            varIsRegCandidate = false;
+        }
+
+        if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
             InitializeCandidate(varDsc);
@@ -413,6 +433,14 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_NULLCHECK:
+            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
+            {
+                ConsumeTemporaryRegForOperand(node->gtGetOp1()
+                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+            }
+            break;
+
         case GT_LCL_VAR:
             CollectReferencesForLclVar(node->AsLclVar());
             break;
@@ -713,7 +741,7 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
     VirtualRegReferences* refs = data->m_virtualRegRefs;
 
-    // We may make multiple consecutive collection calls for the same node.
+    // We may make multiple collection calls for the same node.
     // We only want to collect it once.
     //
     if (data->m_lastVirtualRegRefsCount > 0)
@@ -777,6 +805,8 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     regNumber reg = AllocateTemporaryRegister(node->TypeGet());
     assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
+
+    CollectReference(node);
 }
 
 //------------------------------------------------------------------------
@@ -799,7 +829,6 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
     assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
-    CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
     JITDUMP("Consumed a temporary reg for [%06u]: %s\n", Compiler::dspTreeID(operand), reason);
@@ -819,6 +848,8 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
+    JITDUMP("Requesting internal %s register for [%06u]\n", varTypeName(type), Compiler::dspTreeID(node));
+
     regNumber reg = AllocateTemporaryRegister(type);
     m_codeGen->internalRegisters.Add(node, reg);
     CollectReference(node);
@@ -904,7 +935,7 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (data->m_spReg == argReg))
+                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;

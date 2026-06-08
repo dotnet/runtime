@@ -165,5 +165,24 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in XML format.</summary>
             public const string Xml = "text/xml";
         }
+
+        /// <summary>Specifies the kind of video data in an email message attachment.</summary>
+        public static class Video
+        {
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in MP4 format.</summary>
+            public const string Mp4 = "video/mp4";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in MPEG format.</summary>
+            public const string Mpeg = "video/mpeg";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in Ogg format.</summary>
+            public const string Ogg = "video/ogg";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in QuickTime format.</summary>
+            public const string QuickTime = "video/quicktime";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in WebM format.</summary>
+            public const string WebM = "video/webm";
+        }
     }
 }

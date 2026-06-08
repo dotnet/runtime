@@ -1348,7 +1348,7 @@ InternalDispatchImpl_GetIDsOfNames (
 
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
         if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-            pCMT->CheckParentComVisibility(FALSE);
+            pCMT->CheckParentComVisibility();
 
         pSimpleWrap = pCCW->GetSimpleWrapper();
         pDispInfo = ComMethodTable::ComMethodTableFromIP(pDisp)->GetDispatchInfo();
@@ -1420,7 +1420,7 @@ InternalDispatchImpl_Invoke
 
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
         if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-            pCMT->CheckParentComVisibility(FALSE);
+            pCMT->CheckParentComVisibility();
 
         pSimpleWrap = pCCW->GetSimpleWrapper();
 

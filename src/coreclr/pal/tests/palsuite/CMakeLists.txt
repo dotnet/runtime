@@ -36,14 +36,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  #composite/object_management/event/nonshared/event.cpp
-  #composite/object_management/event/nonshared/main.cpp
-  #composite/object_management/event/shared/event.cpp
-  #composite/object_management/event/shared/main.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -140,15 +132,7 @@ add_executable_clr(paltests
   c_runtime/_wcsnicmp/test1/test1.cpp
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
-  debug_api/OutputDebugStringA/test1/helper.cpp
-  debug_api/OutputDebugStringA/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test1/helper.cpp
-  #debug_api/WriteProcessMemory/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test3/helper.cpp
-  #debug_api/WriteProcessMemory/test3/test3.cpp
-  #debug_api/WriteProcessMemory/test4/helper.cpp
-  #debug_api/WriteProcessMemory/test4/test4.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp
@@ -193,7 +177,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
@@ -308,7 +291,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp
@@ -361,10 +343,6 @@ add_executable_clr(paltests
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateProcessW/test1/childProcess.cpp
-  threading/CreateProcessW/test1/parentProcess.cpp
-  threading/CreateProcessW/test2/childprocess.cpp
-  threading/CreateProcessW/test2/parentprocess.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
   threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
@@ -383,22 +361,14 @@ add_executable_clr(paltests
   threading/ExitProcess/test2/test2.cpp
   threading/ExitProcess/test3/test3.cpp
   threading/ExitThread/test1/test1.cpp
-  threading/ExitThread/test2/childprocess.cpp
-  threading/ExitThread/test2/test2.cpp
   threading/GetCurrentProcess/test1/process.cpp
   threading/GetCurrentProcessId/test1/processId.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/GetExitCodeProcess/test1/childProcess.cpp
-  threading/GetExitCodeProcess/test1/test1.cpp
   threading/OpenEventW/test1/test1.cpp
   threading/OpenEventW/test2/test2.cpp
-  threading/OpenEventW/test3/childprocess.cpp
-  threading/OpenEventW/test3/test3.cpp
   threading/OpenEventW/test5/test5.cpp
-  threading/OpenProcess/test1/childProcess.cpp
-  threading/OpenProcess/test1/test1.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
   threading/releasesemaphore/test1/test.cpp
   threading/ResetEvent/test1/test1.cpp
@@ -416,13 +386,8 @@ add_executable_clr(paltests
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test5/helper.cpp
-  threading/WaitForMultipleObjectsEx/test5/test5.cpp
   threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp

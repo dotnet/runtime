@@ -578,12 +578,18 @@ namespace System.Runtime
         //
         // Called by RhpThrowHwEx
         //
+        [StackTraceHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
-#endif
-        [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
@@ -661,12 +667,19 @@ namespace System.Runtime
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
+        [StackTraceHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
-#endif
-        [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            object exceptionObj = *pExceptionObj;
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS
@@ -694,12 +707,19 @@ namespace System.Runtime
 #endif
         }
 
+        [StackTraceHidden]
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
-#endif
-        [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            ref ExInfo activeExInfo = ref *pActiveExInfo;
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS

@@ -5,6 +5,8 @@
     <TestRuntime>true</TestRuntime>
     <!-- Active issue: https://github.com/dotnet/runtime/issues/87740 -->
     <ShouldILStrip>false</ShouldILStrip>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DebugTests.cs" />

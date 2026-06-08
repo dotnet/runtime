@@ -1574,7 +1574,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         }
 
                         var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString()!;
-                        if (!originalsTypeNameResolver.TryResolveTypeName(originalTargetAssembly, expectedTypeName, out TypeReference? expectedTypeRef, out _))
+                        if (!originalsTypeNameResolver.TryResolveTypeName(originalTargetAssembly, expectedTypeName, fallbackToCoreLib: true, out TypeReference? expectedTypeRef, out _))
                             Assert.Fail($"Could not resolve original type `{expectedTypeName}' in assembly {assemblyName}");
                         TypeDefinition expectedType = expectedTypeRef.Resolve();
                         linkedMembersInAssembly.TryGetValue(new AssemblyQualifiedToken(expectedType), out LinkedEntity? linkedTypeEntity);
