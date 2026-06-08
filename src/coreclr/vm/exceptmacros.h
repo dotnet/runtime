@@ -239,6 +239,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         catch (const ResumeAfterCatchException& ex)                                                                    \
         {                                                                                                              \
             /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */    \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */       \
             ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                             \
         }                                                                                                              \
         if (__resumeSP != 0)                                                                                           \
@@ -253,6 +254,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         catch (const ResumeAfterCatchException& ex)                                                                 \
         {                                                                                                           \
             /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */ \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */    \
             ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                          \
         }                                                                                                           \
         if (__resumeSP != 0)                                                                                        \
