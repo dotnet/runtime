@@ -415,17 +415,17 @@ unsafe class Program
         Check("Avx512Vbmi.VL", ExpectedAvx512Vbmi, &Avx512VbmiVLIsSupported, Avx512Vbmi.VL.IsSupported, null);
         Check("Avx512Vbmi.X64", ExpectedAvx512Vbmi, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
 
-        // Check("Avx512Bitalg", ExpectedAvx512Bitalg, &Avx512BitalgIsSupported, Avx512Bitalg.IsSupported, null);
-        // Check("Avx512Bitalg.VL", ExpectedAvx512Bitalg, &Avx512BitalgVLIsSupported, Avx512Bitalg.VL.IsSupported, null);
-        // Check("Avx512Bitalg.X64", ExpectedAvx512Bitalg, &Avx512BitalgX64IsSupported, Avx512Bitalg.X64.IsSupported, null);
+        Check("Avx512Bitalg", ExpectedAvx512Bitalg, &Avx512BitalgIsSupported, Avx512Bitalg.IsSupported, null);
+        Check("Avx512Bitalg.VL", ExpectedAvx512Bitalg, &Avx512BitalgVLIsSupported, Avx512Bitalg.VL.IsSupported, null);
+        Check("Avx512Bitalg.X64", ExpectedAvx512Bitalg, &Avx512BitalgX64IsSupported, Avx512Bitalg.X64.IsSupported, null);
 
         Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
         Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
         Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
 
-        // Check("Avx512Vpopcntdq", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqIsSupported, Avx512Vpopcntdq.IsSupported, null);
-        // Check("Avx512Vpopcntdq.VL", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqVLIsSupported, Avx512Vpopcntdq.VL.IsSupported, null);
-        // Check("Avx512Vpopcntdq.X64", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqX64IsSupported, Avx512Vpopcntdq.X64.IsSupported, null);
+        Check("Avx512Vpopcntdq", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqIsSupported, Avx512Vpopcntdq.IsSupported, null);
+        Check("Avx512Vpopcntdq.VL", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqVLIsSupported, Avx512Vpopcntdq.VL.IsSupported, null);
+        Check("Avx512Vpopcntdq.X64", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqX64IsSupported, Avx512Vpopcntdq.X64.IsSupported, null);
 
         // Check("Avx512Bf16", ExpectedAvx512Bf16, &Avx512Bf16IsSupported, Avx512Bf16.IsSupported, null);
         // Check("Avx512Bf16.VL", ExpectedAvx512Bf16, &Avx512Bf16VLIsSupported, Avx512Bf16.VL.IsSupported, null);
@@ -456,6 +456,12 @@ unsafe class Program
 
         Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
+
+        // AvxVnni.V512 is folded under AVX512v3 (Avx512Vbmi2 is a representative
+        // sibling). On a machine that has AVX-512-VNNI but lacks the dedicated
+        // VEX AvxVnni CPUID bit, AvxVnni.V512.IsSupported (and AvxVnni.IsSupported)
+        // must still report true.
+        Check("AvxVnni.V512", ExpectedAvx512Vbmi2, &AvxVnniV512IsSupported, AvxVnni.V512.IsSupported, () => AvxVnni.V512.MultiplyWideningAndAdd(Vector512<int>.Zero, Vector512<byte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<int>.Zero));
 
         Check("Gfni", ExpectedGfni, &GfniIsSupported, Gfni.IsSupported, () => Gfni.GaloisFieldMultiply(Vector128<byte>.Zero, Vector128<byte>.Zero).Equals(Vector128<byte>.Zero));
         Check("Gfni.V256", ExpectedGfniV256, &GfniV256IsSupported, Gfni.V256.IsSupported, () => Gfni.V256.GaloisFieldMultiply(Vector256<byte>.Zero, Vector256<byte>.Zero).Equals(Vector256<byte>.Zero));
@@ -548,16 +554,16 @@ unsafe class Program
     static bool Avx512VbmiVLIsSupported() => Avx512Vbmi.VL.IsSupported;
     static bool Avx512VbmiX64IsSupported() => Avx512Vbmi.X64.IsSupported;
 
-    // static bool Avx512BitalgIsSupported() => Avx512Bitalg.IsSupported;
-    // static bool Avx512BitalgVLIsSupported() => Avx512Bitalg.VL.IsSupported;
-    // static bool Avx512BitalgX64IsSupported() => Avx512Bitalg.X64.IsSupported;
+    static bool Avx512BitalgIsSupported() => Avx512Bitalg.IsSupported;
+    static bool Avx512BitalgVLIsSupported() => Avx512Bitalg.VL.IsSupported;
+    static bool Avx512BitalgX64IsSupported() => Avx512Bitalg.X64.IsSupported;
 
     static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
     static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
     static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
 
-    // static bool Avx512VpopcntdqIsSupported() => Avx512Vpopcntdq.IsSupported;
-    // static bool Avx512VpopcntdqVLIsSupported() => Avx512Vpopcntdq.VL.IsSupported;
+    static bool Avx512VpopcntdqIsSupported() => Avx512Vpopcntdq.IsSupported;
+    static bool Avx512VpopcntdqVLIsSupported() => Avx512Vpopcntdq.VL.IsSupported;
     // static bool Avx512VpopcntdqX64IsSupported() => Avx512Vpopcntdq.X64.IsSupported;
 
     // static bool Avx512Bf16IsSupported() => Avx512Bf16.IsSupported;
@@ -590,6 +596,7 @@ unsafe class Program
 
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+    static bool AvxVnniV512IsSupported() => AvxVnni.V512.IsSupported;
     static bool AvxVnniIntIsSupported() => AvxVnniInt8.IsSupported;
     static bool AvxVnniIntV512IsSupported() => AvxVnniInt16.V512.IsSupported;
 

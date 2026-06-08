@@ -1420,7 +1420,14 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVXIFMA);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
+    // AVXVNNI is enabled when the dedicated AVX-VNNI CPUID bit is present or when
+    // AVX-512-VNNI is present (folded under AVX512v3). The latter allows machines
+    // that only ship AVX-512-VNNI (without the VEX-encoded AVXVNNI feature) to
+    // still report AvxVnni.IsSupported as true, since the EVEX-encoded VPDPBUSD/
+    // VPDPWSSD variants can run on XMM/YMM via AVX-512 VL.
+    if ((((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) ||
+         ((cpuFeatures & XArchIntrinsicConstants_Avx512v3) != 0)) &&
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
     }
