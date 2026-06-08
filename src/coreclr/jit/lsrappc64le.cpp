@@ -666,6 +666,67 @@ int LinearScan::BuildNode(GenTree* tree)
 	}
         break;
 
+ case GT_STOREIND:
+ {
+            assert(dstCount == 0);
+
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            {
+                srcCount = BuildGCWriteBarrier(tree);
+                break;
+            }
+
+            srcCount = BuildIndir(tree->AsIndir());
+            if (!tree->gtGetOp2()->isContained())
+            {
+                BuildUse(tree->gtGetOp2());
+                srcCount++;
+            }
+ }
+        break;
+
+ case GT_LEA:
+ {
+            GenTreeAddrMode* lea = tree->AsAddrMode();
+
+            GenTree* base  = lea->Base();
+            GenTree* index = lea->Index();
+            int      cns   = lea->Offset();
+
+            // This LEA is instantiating an address, so we set up the srcCount here.
+            srcCount = 0;
+            if (base != nullptr)
+            {
+                srcCount++;
+                BuildUse(base);
+            }
+            if (index != nullptr)
+            {
+                srcCount++;
+                BuildUse(index);
+            }
+            assert(dstCount == 1);
+
+            // On PPC64LE we may need a single internal register
+            // PowerPC doesn't have a direct LEA instruction like x86/x64
+            // We need to compute: base + (index * scale) + offset
+            // If we have both index and offset, or if offset is large, we need an internal register
+            if ((index != nullptr) && (cns != 0))
+            {
+                // PPC64 needs to compute index contribution separately then add offset
+                buildInternalIntRegisterDefForNode(tree);
+            }
+            else if ((cns != 0) && ((cns < -32768) || (cns > 32767)))
+            {
+                // This offset can't be contained in the addi instruction (16-bit signed immediate)
+                // so we need an internal register
+                buildInternalIntRegisterDefForNode(tree);
+            }
+            buildInternalRegisterUses();
+            BuildDef(tree);
+ }
+        break;
+
 	case GT_EQ:
         case GT_NE:
         case GT_LT:

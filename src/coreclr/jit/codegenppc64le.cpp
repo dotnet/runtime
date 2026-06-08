@@ -317,6 +317,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genCodeForIndir(treeNode->AsIndir());
 	    break;
 
+	case GT_STOREIND:
+	    genCodeForStoreInd(treeNode->AsStoreInd());
+	    break;
+
+	case GT_LEA:
+	    genLeaInstruction(treeNode->AsAddrMode());
+	    break;
+
 	case GT_CMP:
 	case GT_EQ:
 	case GT_NE:
@@ -2479,6 +2487,77 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+#ifdef FEATURE_SIMD
+    // Storing Vector3 of size 12 bytes through indirection
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        abort(); // NYI for PPC64LE
+    }
+#endif // FEATURE_SIMD
+
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    // For now, we don't handle GC write barriers - just do normal stores
+    // TODO: Implement GC write barrier support when genEmitHelperCall is ready
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        // Write barrier needed but not yet implemented
+        // For now, just do a normal store (this may cause GC issues in some scenarios)
+        // TODO: Implement proper write barrier support
+    }
+
+    // Normal store path
+    // We must consume the operands in the proper execution order,
+    // so that liveness is updated appropriately.
+    genConsumeAddress(addr);
+
+    if (!data->isContained())
+    {
+        genConsumeRegs(data);
+    }
+
+    regNumber dataReg;
+    if (data->isContainedIntOrIImmed())
+    {
+        assert(data->IsIntegralConst(0));
+        dataReg = REG_R0; // Use R0 as zero register on PPC64LE
+    }
+    else // data is not contained, so evaluate it into a register
+    {
+        assert(!data->isContained());
+        dataReg = data->GetRegNum();
+    }
+
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Store(type);
+
+    if (tree->IsVolatile())
+    {
+        // Issue a full memory barrier before a volatile store
+        // PowerPC uses sync instruction for memory barriers
+        //instGen(INS_sync);
+	abort();
+    }
+
+    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+
+    if (tree->IsVolatile())
+    {
+        // Issue a load barrier after a volatile store
+        // lwsync is a lighter-weight sync that orders loads
+        instGen(INS_lwsync);
+    }
+}
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
@@ -4034,15 +4113,155 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 }
 
 //------------------------------------------------------------------------
-// genLeaInstruction: Produce code for a GT_LEA node.
+// genLeaInstruction: Produce code for a GT_LEA node (Load Effective Address).
 //
 // Arguments:
-//    lea - the node
+//    lea - the GT_LEA node
 //
+// Notes:
+//    PowerPC doesn't have a direct LEA instruction like x86/x64.
+//    We need to compute: base + (index * scale) + offset
+//    using add and shift instructions.
+//
+
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    emitter* emit = GetEmitter();
+    GenTree* base  = lea->Base();
+    GenTree* index = lea->Index();
+    unsigned scale = lea->GetScale();
+    int      offset = lea->Offset();
+    regNumber targetReg = lea->GetRegNum();
+
+    // Consume the operands
+    if (base != nullptr)
+    {
+        genConsumeReg(base);
+    }
+    if (index != nullptr)
+    {
+        genConsumeReg(index);
+    }
+
+    // PowerPC LEA computation strategy:
+    // 1. If we have an index with scale, compute: index << log2(scale)
+    // 2. Add base (if present)
+    // 3. Add offset (if present)
+
+    regNumber resultReg = targetReg;
+
+    if (index != nullptr && scale > 1)
+    {
+        // Need to scale the index: index << log2(scale)
+        unsigned shift = genLog2(scale);
+        regNumber indexReg = index->GetRegNum();
+
+        if (base == nullptr && offset == 0)
+        {
+            // Just scaled index: targetReg = index << shift
+            emit->emitIns_R_R_I(INS_sldi, EA_PTRSIZE, targetReg, indexReg, shift);
+            resultReg = targetReg;
+        }
+        else
+        {
+            // Need to use internal register for scaled index
+            regNumber tempReg = internalRegisters.GetSingle(lea);
+            emit->emitIns_R_R_I(INS_sldi, EA_PTRSIZE, tempReg, indexReg, shift);
+
+            if (base != nullptr)
+            {
+                // Add base: targetReg = base + (index << shift)
+                emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, base->GetRegNum(), tempReg);
+                resultReg = targetReg;
+            }
+            else
+            {
+                // No base, just move scaled index to target
+                emit->emitIns_Mov(INS_mov, EA_PTRSIZE, targetReg, tempReg, /* canSkip */ false);
+                resultReg = targetReg;
+            }
+        }
+    }
+    else if (index != nullptr)
+    {
+        // Index with scale == 1
+        regNumber indexReg = index->GetRegNum();
+
+        if (base != nullptr)
+        {
+            // targetReg = base + index
+            emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, base->GetRegNum(), indexReg);
+            resultReg = targetReg;
+        }
+        else
+        {
+            // Just index, move to target
+            emit->emitIns_Mov(INS_mov, EA_PTRSIZE, targetReg, indexReg, /* canSkip */ false);
+            resultReg = targetReg;
+        }
+    }
+    else if (base != nullptr)
+    {
+        // Just base, possibly with offset
+        if (offset == 0)
+        {
+            // Just move base to target
+            emit->emitIns_Mov(INS_mov, EA_PTRSIZE, targetReg, base->GetRegNum(), /* canSkip */ false);
+            resultReg = targetReg;
+        }
+        else
+        {
+            // Will add offset below
+            resultReg = base->GetRegNum();
+        }
+    }
+    else
+    {
+        // Just offset (constant address)
+        assert(offset != 0);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, targetReg, offset);
+        genProduceReg(lea);
+        return;
+    }
+
+    // Add offset if present and not yet handled
+    if (offset != 0 && !(base != nullptr && index == nullptr && offset == 0))
+    {
+        // PowerPC addi instruction uses 16-bit signed immediate
+        if ((offset >= -32768) && (offset <= 32767))
+        {
+            // Offset fits in immediate
+            if (resultReg == targetReg)
+            {
+                // Add to target: targetReg = targetReg + offset
+                emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, targetReg, targetReg, offset);
+            }
+            else
+            {
+                // Add to result and store in target: targetReg = resultReg + offset
+                emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, targetReg, resultReg, offset);
+            }
+        }
+        else
+        {
+            // Offset doesn't fit, need to use internal register
+            regNumber tempReg = internalRegisters.GetSingle(lea);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, offset);
+
+            if (resultReg == targetReg)
+            {
+                // Add to target: targetReg = targetReg + tempReg
+                emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, targetReg, tempReg);
+            }
+            else
+            {
+                // Add to result: targetReg = resultReg + tempReg
+                emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, resultReg, tempReg);
+            }
+        }
+    }
+
+    genProduceReg(lea);
 }
 
 #ifdef FEATURE_SIMD
