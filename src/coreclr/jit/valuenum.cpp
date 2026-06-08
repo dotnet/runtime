@@ -2575,12 +2575,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 {
                     *resultVN = funcApp.GetArg(0);
                 }
-                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
-                //
-                else if (VNFuncIsComparison(funcApp.GetFunc()))
-                {
-                    *resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
-                }
             }
         }
 
