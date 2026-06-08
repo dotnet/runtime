@@ -211,21 +211,13 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [MemberData(nameof(SupportedSslProtocolsExcludingMacOSSsl3))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX))]
         public async Task SslStream_NoCallback_UntrustedCert_SendsAlert(SslProtocols protocol)
         {
             // When no RemoteCertificateValidationCallback is set and the server's cert
             // is not trusted, the cert verify callback causes the TLS stack to send an
             // alert so the client sees a proper error.
-
-#pragma warning disable 0618 // SSL2/3 are deprecated
-            if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
-            {
-                // SecureTransport on modern macOS no longer negotiates SSL 3.0.
-                return;
-            }
-#pragma warning restore 0618
 
             X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -289,21 +281,13 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [MemberData(nameof(SupportedSslProtocolsExcludingMacOSSsl3))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX))]
         public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsAlert(SslProtocols protocol)
         {
             // When the server requires a client certificate and no
             // RemoteCertificateValidationCallback is set, the server should send
             // a TLS alert when the client's cert chain cannot be validated.
-
-#pragma warning disable 0618 // SSL2/3 are deprecated
-            if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
-            {
-                // SecureTransport on modern macOS no longer negotiates SSL 3.0.
-                return;
-            }
-#pragma warning restore 0618
 
             X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -392,6 +376,22 @@ namespace System.Net.Security.Tests
         private bool FailClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return false;
+        }
+
+        public static IEnumerable<object[]> SupportedSslProtocolsExcludingMacOSSsl3()
+        {
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols())
+            {
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
+                {
+                    // SecureTransport on modern macOS no longer negotiates SSL 3.0; skip rather
+                    // than silently pass so the xunit runner reports the data point as filtered.
+                    continue;
+                }
+#pragma warning restore 0618
+                yield return new object[] { protocol };
+            }
         }
 
         private bool AllowAnyServerCertificate(
