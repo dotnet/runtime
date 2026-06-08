@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      Transport package providing reusable cDAC test-authoring infrastructure
+      (mock-memory infrastructure, ContractDescriptorBuilder, ClrMD dump host,
+      dump-test base classes, Skip* attributes, etc.) so other repositories
+      that author cDAC contracts can reuse the same harness for their own
+      tests.
+
+      This is NOT a test project (no IsTestProject=true). It's a library of
+      reusable test-authoring building blocks. Consumers write their own xUnit
+      test projects that ProjectReference this assembly.
+    -->
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <!-- Dump-test base classes invoke Assert.* directly, so xunit.assert is part of
+         the harness's public contract. -->
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+
+</Project>

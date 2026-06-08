@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -1449,6 +1451,1296 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 => value.SecondPropertyToBeTested == "TypeInvalid"
                     ? new ValidationResult("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".")
                     : ValidationResult.Success;
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+        public class AsyncAlwaysFailsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(new ValidationResult("Async validation always fails"));
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+        public class AsyncAlwaysSucceedsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(null);
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+        public class AsyncDelayedAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                if (value is string s && s == "Valid Value")
+                    return ValidationResult.Success;
+
+                return new ValidationResult("Async delayed validation failed");
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+        public class AsyncCancellableAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Yield();
+
+                return ValidationResult.Success;
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+        public class AsyncClassAlwaysFailsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<ValidationResult?>(new ValidationResult("Async class validation failed"));
+            }
+        }
+
+        public class HasAsyncProperty
+        {
+            [AsyncAlwaysFails]
+            public string AsyncProp { get; set; }
+        }
+
+        public class HasAsyncSucceedingProperty
+        {
+            [AsyncAlwaysSucceeds]
+            public string AsyncProp { get; set; }
+        }
+
+        public class HasTrulyAsyncProperty
+        {
+            [AsyncDelayed]
+            public string AsyncProp { get; set; }
+        }
+
+        public class HasAsyncCancellableProperty
+        {
+            [AsyncCancellable]
+            public string CancellableProp { get; set; }
+        }
+
+        public class HasMixedValidation
+        {
+            [ValidValueStringProperty]
+            [AsyncAlwaysFails]
+            public string MixedProp { get; set; }
+        }
+
+        public class HasMixedPassingValidation
+        {
+            [ValidValueStringProperty]
+            [AsyncAlwaysSucceeds]
+            public string MixedProp { get; set; }
+        }
+
+        public class HasRequiredAndAsyncProperty
+        {
+            [Required]
+            [AsyncAlwaysFails]
+            public string Prop { get; set; }
+        }
+
+        [AsyncClassAlwaysFails]
+        public class HasAsyncClassLevelAttr
+        {
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = true)]
+        public class AsyncDelayedSucceedsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
+
+                return ValidationResult.Success;
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = true)]
+        public class AsyncDelayedFailsAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
+
+                return new ValidationResult("Async delayed validation failed");
+            }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = true)]
+        public class AsyncConcurrencyProbeAttribute : AsyncValidationAttribute
+        {
+            public static int ConcurrentCount;
+            public static TaskCompletionSource<bool> AllRunningGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public static int ExpectedCount;
+
+            public static void Reset(int expectedCount)
+            {
+                ConcurrentCount = 0;
+                AllRunningGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                ExpectedCount = expectedCount;
+            }
+
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                int current = Interlocked.Increment(ref ConcurrentCount);
+                if (current >= ExpectedCount)
+                    AllRunningGate.TrySetResult(true);
+
+                await AllRunningGate.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+                Interlocked.Decrement(ref ConcurrentCount);
+
+                return ValidationResult.Success;
+            }
+        }
+
+        public class HasMultipleAsyncProperties
+        {
+            [AsyncDelayedSucceeds]
+            public string Prop1 { get; set; } = "value";
+
+            [AsyncDelayedSucceeds]
+            public string Prop2 { get; set; } = "value";
+        }
+
+        public class HasMultipleConcurrencyProbeProperties
+        {
+            [AsyncConcurrencyProbe]
+            public string Prop1 { get; set; } = "value";
+
+            [AsyncConcurrencyProbe]
+            public string Prop2 { get; set; } = "value";
+        }
+
+        public class HasMultipleFailingAsyncProperties
+        {
+            [AsyncDelayedFails]
+            public string Prop1 { get; set; } = "value";
+
+            [AsyncDelayedFails]
+            public string Prop2 { get; set; } = "value";
+        }
+
+        public class AsyncValidatableSuccess : IAsyncValidatableObject
+        {
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+                ValidationContext validationContext, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await Task.CompletedTask;
+                yield return ValidationResult.Success;
+            }
+        }
+
+        public class AsyncValidatableError : IAsyncValidatableObject
+        {
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+                ValidationContext validationContext, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await Task.CompletedTask;
+                yield return new ValidationResult("async object error");
+            }
+        }
+
+        public class AsyncValidatableNull : IAsyncValidatableObject
+        {
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+#pragma warning disable CS1998
+            public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+                ValidationContext validationContext, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                yield break;
+            }
+#pragma warning restore CS1998
+        }
+
+        public class DualValidatableModel : IAsyncValidatableObject
+        {
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+            {
+                return new ValidationResult[] { new ValidationResult("sync error from dual model") };
+            }
+
+            public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+                ValidationContext validationContext, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await Task.CompletedTask;
+                yield return new ValidationResult("async error from dual model");
+            }
+        }
+
+        public class AsyncValidatableWithRequired : IAsyncValidatableObject
+        {
+            [Required]
+            public string RequiredProp { get; set; }
+
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+                ValidationContext validationContext, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await Task.CompletedTask;
+                yield return new ValidationResult("async object error");
+            }
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsyncThrowsIf_instance_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateObjectAsync(null, s_estValidationContext, null));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateObjectAsync(null, s_estValidationContext, null, false));
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsyncThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateObjectAsync(new object(), null, null));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateObjectAsync(new object(), null, null, false));
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_ThrowsIf_instance_does_not_match_ValidationContext()
+        {
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance",
+                async () => await Validator.TryValidateObjectAsync(new object(), s_estValidationContext, null));
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_returns_true_if_no_errors()
+        {
+            var objectToBeValidated = "ToBeValidated";
+            var validationContext = new ValidationContext(objectToBeValidated);
+            Assert.True(await Validator.TryValidateObjectAsync(objectToBeValidated, validationContext, null));
+            Assert.True(await Validator.TryValidateObjectAsync(objectToBeValidated, validationContext, null, true));
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_returns_false_with_sync_errors()
+        {
+            var objectToBeValidated = new ToBeValidated()
+            {
+                PropertyToBeTested = "Invalid Value",
+                PropertyWithRequiredAttribute = "Valid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            var validationResults = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_returns_false_with_async_attr_failure()
+        {
+            var obj = new HasAsyncProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("Async validation always fails", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_returns_true_with_async_attr_success()
+        {
+            var obj = new HasAsyncSucceedingProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_validateAllProperties_false_only_checks_Required()
+        {
+            var obj = new HasAsyncProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, false));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_Required_fails_before_async()
+        {
+            var obj = new HasRequiredAndAsyncProperty { Prop = null };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_collection_can_have_multiple_results()
+        {
+            HasDoubleFailureProperty obj = new HasDoubleFailureProperty();
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_returns_false_if_class_level_attribute_fails()
+        {
+            var obj = new InvalidToBeValidated() { PropertyWithRequiredAttribute = "Valid Value" };
+            var ctx = new ValidationContext(obj);
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, null, true));
+
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidClassAttribute.IsValid failed for class of type " + typeof(InvalidToBeValidated).FullName, results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IValidatableObject_Null()
+        {
+            var instance = new ValidatableNull();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Equal(0, results.Count);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsyncThrowsIf_instance_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateObjectAsync(null, s_estValidationContext));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateObjectAsync(null, s_estValidationContext, false));
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsyncThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateObjectAsync(new object(), null));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateObjectAsync(new object(), null, false));
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_ThrowsIf_instance_does_not_match()
+        {
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance",
+                async () => await Validator.ValidateObjectAsync(new object(), s_estValidationContext));
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_succeeds_if_no_errors()
+        {
+            var obj = "ToBeValidated";
+            var ctx = new ValidationContext(obj);
+            await Validator.ValidateObjectAsync(obj, ctx);
+            await Validator.ValidateObjectAsync(obj, ctx, true);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_throws_ValidationException_if_sync_errors()
+        {
+            var obj = new ToBeValidated()
+            {
+                PropertyToBeTested = "Invalid Value",
+                PropertyWithRequiredAttribute = "Valid Value"
+            };
+            var ctx = new ValidationContext(obj);
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateObjectAsync(obj, ctx, true));
+            Assert.IsType<ValidValueStringPropertyAttribute>(ex.ValidationAttribute);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_throws_ValidationException_if_async_attr_fails()
+        {
+            var obj = new HasAsyncProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateObjectAsync(obj, ctx, true));
+            Assert.Equal("Async validation always fails", ex.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_succeeds_validateAllProperties_false()
+        {
+            var obj = new HasAsyncProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            await Validator.ValidateObjectAsync(obj, ctx, false);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_throws_if_class_level_sync_attribute_fails()
+        {
+            var obj = new InvalidToBeValidated() { PropertyWithRequiredAttribute = "Valid Value" };
+            var ctx = new ValidationContext(obj);
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateObjectAsync(obj, ctx, true));
+            Assert.IsType<ValidClassAttribute>(ex.ValidationAttribute);
+            Assert.Equal("ValidClassAttribute.IsValid failed for class of type " + typeof(InvalidToBeValidated).FullName, ex.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidatePropertyAsync(new object(), null, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_true_if_no_errors()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NoAttributesProperty";
+            Assert.True(await Validator.TryValidatePropertyAsync("Any Value", ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_false_with_sync_attr_failure()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyToBeTested";
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidatePropertyAsync("Invalid Value", ctx, results));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_false_with_async_attr_failure()
+        {
+            var obj = new HasAsyncProperty();
+            var ctx = new ValidationContext(obj);
+            ctx.MemberName = nameof(HasAsyncProperty.AsyncProp);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidatePropertyAsync("anything", ctx, results));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("Async validation always fails", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_true_with_async_attr_success()
+        {
+            var obj = new HasAsyncSucceedingProperty();
+            var ctx = new ValidationContext(obj);
+            ctx.MemberName = nameof(HasAsyncSucceedingProperty.AsyncProp);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidatePropertyAsync("anything", ctx, results));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_value_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidatePropertyAsync(null, s_estValidationContext, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_MemberName_is_null_or_empty()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = null;
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+
+            ctx.MemberName = string.Empty;
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_MemberName_does_not_exist()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NonExist";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_MemberName_is_not_public()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "InternalProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+
+            ctx.MemberName = "ProtectedProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+
+            ctx.MemberName = "PrivateProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_MemberName_is_indexer()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "Item";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_value_is_wrong_type()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NoAttributesProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.TryValidatePropertyAsync(123, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_ThrowsIf_null_passed_to_non_nullable_property()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+
+            ctx.MemberName = "EnumProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+
+            ctx.MemberName = "NonNullableProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_true_if_null_passed_to_nullable_property()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NullableProperty";
+            Assert.True(await Validator.TryValidatePropertyAsync(null, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_false_if_Required_fails()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            Assert.False(await Validator.TryValidatePropertyAsync(null, ctx, null));
+
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidatePropertyAsync(null, ctx, results));
+            Assert.Equal(1, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_collection_can_have_multiple_results()
+        {
+            var ctx = new ValidationContext(new HasDoubleFailureProperty());
+            ctx.MemberName = nameof(HasDoubleFailureProperty.WillAlwaysFailTwice);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidatePropertyAsync("Nope", ctx, results));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidatePropertyAsync_returns_true_if_all_attributes_are_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            Assert.True(await Validator.TryValidatePropertyAsync("Valid Value", ctx, null));
+
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidatePropertyAsync("Valid Value", ctx, results));
+            Assert.Equal(0, results.Count);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidatePropertyAsync(new object(), null));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_succeeds_if_no_errors()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NoAttributesProperty";
+            await Validator.ValidatePropertyAsync("Any Value", ctx);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_throws_ValidationException_with_sync_attr_failure()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyToBeTested";
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidatePropertyAsync("Invalid Value", ctx));
+            Assert.IsType<ValidValueStringPropertyAttribute>(ex.ValidationAttribute);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_throws_ValidationException_with_async_attr_failure()
+        {
+            var obj = new HasAsyncProperty();
+            var ctx = new ValidationContext(obj);
+            ctx.MemberName = nameof(HasAsyncProperty.AsyncProp);
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidatePropertyAsync("anything", ctx));
+            Assert.Equal("Async validation always fails", ex.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_value_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidatePropertyAsync(null, s_estValidationContext));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_MemberName_is_null_or_empty()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = null;
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+
+            ctx.MemberName = string.Empty;
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_MemberName_does_not_exist()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NonExist";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_MemberName_is_not_public()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "InternalProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+
+            ctx.MemberName = "ProtectedProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+
+            ctx.MemberName = "PrivateProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_MemberName_is_indexer()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "Item";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_value_is_wrong_type()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NoAttributesProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.ValidatePropertyAsync(123, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_ThrowsIf_null_passed_to_non_nullable()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+
+            ctx.MemberName = "EnumProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+
+            ctx.MemberName = "NonNullableProperty";
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value",
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_succeeds_if_null_passed_to_nullable()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "NullableProperty";
+            await Validator.ValidatePropertyAsync(null, ctx);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_throws_if_Required_fails()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidatePropertyAsync(null, ctx));
+            Assert.IsType<RequiredAttribute>(ex.ValidationAttribute);
+            Assert.Null(ex.Value);
+        }
+
+        [Fact]
+        public static async Task ValidatePropertyAsync_succeeds_if_all_attributes_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            await Validator.ValidatePropertyAsync("Valid Value", ctx);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_ThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateValueAsync(
+                    new object(), null, null, Enumerable.Empty<ValidationAttribute>()));
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_ThrowsIf_attributes_is_null()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.TryValidateValueAsync(new object(), ctx, null, null));
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_true_if_no_attributes()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            Assert.True(await Validator.TryValidateValueAsync(
+                "any", ctx, null, Enumerable.Empty<ValidationAttribute>()));
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_false_with_async_attr_failure()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new AsyncAlwaysFailsAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("anything", ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("Async validation always fails", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_true_with_async_attr_success()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new AsyncAlwaysSucceedsAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateValueAsync("anything", ctx, results, attrs));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_sync_Required_failure_blocks_async()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new AsyncAlwaysFailsAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync(null, ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_sync_attr_failure_blocks_async()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute(), new AsyncAlwaysFailsAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("Invalid Value", ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_sync_passes_then_async_runs()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute(), new AsyncAlwaysFailsAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("Valid Value", ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("Async validation always fails", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_true_if_Required_and_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
+            Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, null, attrs));
+
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, results, attrs));
+            Assert.Equal(0, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_false_if_Required_and_invalid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
+            Assert.False(await Validator.TryValidateValueAsync("Invalid Value", ctx, null, attrs));
+
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("Invalid Value", ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_true_if_no_Required_and_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyToBeTested";
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute() };
+            Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, null, attrs));
+
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, results, attrs));
+            Assert.Equal(0, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_returns_false_if_no_Required_and_invalid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyToBeTested";
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute() };
+            Assert.False(await Validator.TryValidateValueAsync("Invalid Value", ctx, null, attrs));
+
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("Invalid Value", ctx, results, attrs));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_collection_can_have_multiple_results()
+        {
+            var ctx = new ValidationContext(new HasDoubleFailureProperty());
+            ctx.MemberName = nameof(HasDoubleFailureProperty.WillAlwaysFailTwice);
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute(), new ValidValueStringPropertyDuplicateAttribute() };
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateValueAsync("Not Valid", ctx, results, attrs));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_ThrowsIf_ValidationContext_is_null()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateValueAsync(
+                    new object(), null, Enumerable.Empty<ValidationAttribute>()));
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_ThrowsIf_attributes_is_null()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Validator.ValidateValueAsync(new object(), ctx, null));
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_succeeds_if_no_attributes()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            await Validator.ValidateValueAsync("any", ctx, Enumerable.Empty<ValidationAttribute>());
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_throws_ValidationException_with_async_attr_failure()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new AsyncAlwaysFailsAttribute() };
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateValueAsync("anything", ctx, attrs));
+            Assert.Equal("Async validation always fails", ex.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_succeeds_with_async_attr_success()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new AsyncAlwaysSucceedsAttribute() };
+            await Validator.ValidateValueAsync("anything", ctx, attrs);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_throws_if_Required_and_null()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateValueAsync(null, ctx, attrs));
+            Assert.IsType<RequiredAttribute>(ex.ValidationAttribute);
+            Assert.Null(ex.Value);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_throws_if_Required_and_invalid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateValueAsync("Invalid Value", ctx, attrs));
+            Assert.IsType<ValidValueStringPropertyAttribute>(ex.ValidationAttribute);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", ex.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", ex.Value);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_succeeds_if_Required_and_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
+            await Validator.ValidateValueAsync("Valid Value", ctx, attrs);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_throws_if_no_Required_and_invalid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyWithRequiredAttribute";
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute() };
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateValueAsync("Invalid Value", ctx, attrs));
+            Assert.IsType<ValidValueStringPropertyAttribute>(ex.ValidationAttribute);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", ex.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", ex.Value);
+        }
+
+        [Fact]
+        public static async Task ValidateValueAsync_succeeds_if_no_Required_and_valid()
+        {
+            var ctx = new ValidationContext(new ToBeValidated());
+            ctx.MemberName = "PropertyToBeTested";
+            var attrs = new ValidationAttribute[] { new ValidValueStringPropertyAttribute() };
+            await Validator.ValidateValueAsync("Valid Value", ctx, attrs);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IAsyncValidatableObject_Success()
+        {
+            var instance = new AsyncValidatableSuccess();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IAsyncValidatableObject_Error()
+        {
+            var instance = new AsyncValidatableError();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Equal("async object error", Assert.Single(results).ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IAsyncValidatableObject_Null_Result()
+        {
+            var instance = new AsyncValidatableNull();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IAsyncValidatableObject_Preferred_Over_IValidatableObject()
+        {
+            var instance = new DualValidatableModel();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Equal("async error from dual model", Assert.Single(results).ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IValidatableObject_Fallback()
+        {
+            var instance = new ValidatableError();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(instance, ctx, results));
+            Assert.Equal("error", Assert.Single(results).ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_IAsyncValidatableObject_SkippedIfPropertyErrors()
+        {
+            var instance = new AsyncValidatableWithRequired { RequiredProp = null };
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(instance, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.DoesNotContain(results, r => r.ErrorMessage == "async object error");
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_CancellationToken_Propagated()
+        {
+            var obj = new HasAsyncCancellableProperty { CancellableProp = "value" };
+            var ctx = new ValidationContext(obj);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await Validator.TryValidateObjectAsync(obj, ctx, null, true, cts.Token));
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_CancellationToken_Propagated()
+        {
+            var ctx = new ValidationContext(new object());
+            var attrs = new ValidationAttribute[] { new AsyncCancellableAttribute() };
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await Validator.TryValidateValueAsync("value", ctx, null, attrs, cts.Token));
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_CancellationToken_Propagated()
+        {
+            var obj = new HasAsyncCancellableProperty { CancellableProp = "value" };
+            var ctx = new ValidationContext(obj);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                async () => await Validator.ValidateObjectAsync(obj, ctx, true, cts.Token));
+        }
+
+        [Fact]
+        public static async Task TwoPhase_SyncFailure_BlocksAsyncExecution()
+        {
+            var obj = new HasMixedValidation { MixedProp = "Invalid Value" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TwoPhase_SyncPasses_AsyncRuns()
+        {
+            var obj = new HasMixedValidation { MixedProp = "Valid Value" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.Equal("Async validation always fails", results[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TwoPhase_AllPass()
+        {
+            var obj = new HasMixedPassingValidation { MixedProp = "Valid Value" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TwoPhase_Required_Fails_AsyncSkipped()
+        {
+            var obj = new HasRequiredAndAsyncProperty { Prop = null };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+            Assert.DoesNotContain(results, r => r.ErrorMessage == "Async validation always fails");
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_EmptyObject_ReturnsTrue()
+        {
+            var obj = new object();
+            var ctx = new ValidationContext(obj);
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, null));
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_OnlyAsyncAttrs_Success()
+        {
+            var obj = new HasAsyncSucceedingProperty { AsyncProp = "anything" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_TrulyAsyncAttr_Success()
+        {
+            var obj = new HasTrulyAsyncProperty { AsyncProp = "Valid Value" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_TrulyAsyncAttr_Failure()
+        {
+            var obj = new HasTrulyAsyncProperty { AsyncProp = "Invalid" };
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(1, results.Count);
+        }
+
+        [Fact]
+        public static async Task ValidateObjectAsync_ClassLevel_AsyncAttr()
+        {
+            var obj = new HasAsyncClassLevelAttr();
+            var ctx = new ValidationContext(obj);
+            var ex = await Assert.ThrowsAsync<ValidationException>(
+                async () => await Validator.ValidateObjectAsync(obj, ctx, true));
+            Assert.Equal("Async class validation failed", ex.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_MultipleAsyncProperties_RunInParallel()
+        {
+            AsyncConcurrencyProbeAttribute.Reset(expectedCount: 2);
+            var obj = new HasMultipleConcurrencyProbeProperties();
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateObjectAsync_MultipleAsyncProperties_CollectsAllFailures()
+        {
+            var obj = new HasMultipleFailingAsyncProperties();
+            var ctx = new ValidationContext(obj);
+            var results = new List<ValidationResult>();
+            Assert.False(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_MultipleAsyncAttrs_RunInParallel()
+        {
+            AsyncConcurrencyProbeAttribute.Reset(expectedCount: 2);
+            var ctx = new ValidationContext(new object()) { MemberName = "TestProp" };
+            var results = new List<ValidationResult>();
+            var attrs = new ValidationAttribute[] { new AsyncConcurrencyProbeAttribute(), new AsyncConcurrencyProbeAttribute() };
+            Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, results, attrs));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public static async Task TryValidateValueAsync_MultipleAsyncAttrs_CollectsAllFailures()
+        {
+            var ctx = new ValidationContext(new object()) { MemberName = "TestProp" };
+            var results = new List<ValidationResult>();
+            var attrs = new ValidationAttribute[] { new AsyncAlwaysFailsAttribute(), new AsyncAlwaysFailsAttribute() };
+            Assert.False(await Validator.TryValidateValueAsync("anything", ctx, results, attrs));
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public static void TryValidateObject_IAsyncValidatableObject_SyncPath_ThrowsInvalidOperation()
+        {
+            var instance = new AsyncValidatableError();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.Throws<InvalidOperationException>(
+                () => Validator.TryValidateObject(instance, ctx, results));
+        }
+
+        [Fact]
+        public static void TryValidateObject_DualModel_SyncPath_UsesExplicitValidate()
+        {
+            var instance = new DualValidatableModel();
+            var ctx = new ValidationContext(instance);
+            var results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(instance, ctx, results));
+            Assert.Equal("sync error from dual model", Assert.Single(results).ErrorMessage);
+        }
+
+        [Fact]
+        public static void IAsyncValidatableObject_InheritsIValidatableObject()
+        {
+            var instance = new AsyncValidatableSuccess();
+            Assert.IsAssignableFrom<IValidatableObject>(instance);
         }
     }
 }
