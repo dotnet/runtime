@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
                     static (source, buffer) => source.CopyTo(buffer),
                     out int written);
 
-                // SPKI encoding is either right or wrong, there isn't "optional" things that can be written down. So it
+                // SPKI encoding is either right or wrong, there aren't "optional" things that can be written down. So it
                 // should be precisely sized.
                 if (!encoded || written != SpkiSizeInBytes)
                 {
@@ -86,7 +86,6 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length == PrivateKeySizeInBytes);
             ThrowIfPrivateNeeded();
-
 
             // PKCS#8 keys are not strictly deterministic in size because they could have attributes as "metadata"
             // attached. A minimally encoded PKCS#8 private key is going to be 48 bytes. 512 bytes is 10x more space
@@ -296,7 +295,7 @@ namespace System.Security.Cryptography
                 static (source, buffer) => source.CopyTo(buffer),
                 out int written);
 
-            // SPKI encoding is either right or wrong, there isn't "optional" things that can be written down. So it
+            // SPKI encoding is either right or wrong, there aren't "optional" things that can be written down. So it
             // should be precisely sized.
             if (!encoded || written != SpkiSizeInBytes)
             {

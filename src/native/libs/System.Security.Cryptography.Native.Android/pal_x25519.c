@@ -97,8 +97,22 @@ int32_t AndroidCryptoNative_X25519GenerateKey(jobject* publicKey, jobject* priva
 
     *publicKey = ToGRef(env, loc[pubKey]);
     loc[pubKey] = NULL;
+
+    if (CheckJNIExceptions(env) || *publicKey == NULL)
+    {
+        goto cleanup;
+    }
+
     *privateKey = ToGRef(env, loc[privKey]);
     loc[privKey] = NULL;
+
+    if (CheckJNIExceptions(env) || *privateKey == NULL)
+    {
+        AndroidCryptoNative_X25519DestroyKey(*publicKey);
+        *publicKey = NULL;
+        goto cleanup;
+    }
+
     ret = SUCCESS;
 
 cleanup:
@@ -132,6 +146,11 @@ jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buff
     JNIEnv* env = GetJNIEnv();
     jobject publicKey = ImportSubjectPublicKeyInfo(env, buffer, bufferLength);
     jobject ret = ToGRef(env, publicKey);
+
+    if (CheckJNIExceptions(env) || ret == NULL)
+    {
+        ret = NULL;
+    }
 
     return ret;
 }
@@ -177,6 +196,13 @@ jobject AndroidCryptoNative_X25519ImportPkcs8PrivateKey(const uint8_t* buffer, i
 
     ret = ToGRef(env, loc[privateKey]);
     loc[privateKey] = NULL;
+
+    if (CheckJNIExceptions(env) || ret == NULL)
+    {
+        AndroidCryptoNative_X25519DestroyKey(ret);
+        ret = NULL;
+        goto cleanup;
+    }
 
 cleanup:
     RELEASE_LOCALS(loc, env);
