@@ -47,8 +47,9 @@ ARGS_NON_NULL_ALL static int GetHandshakeStatus(JNIEnv* env, SSLStream* sslStrea
     if (loc[status] == NULL)
         goto cleanup;
 
-    ret = GetEnumAsInt(env, loc[status]);
+    int handshakeStatus = GetEnumAsInt(env, loc[status]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = handshakeStatus;
 
 cleanup:
     RELEASE_LOCALS(loc, env);
