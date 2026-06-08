@@ -5863,11 +5863,13 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // (e.g. LONG) integer struct return. Retype it to the native return type
                 // so that targets with a typed value stack (Wasm) emit e.g. an i64.const
                 // rather than an i32.const. Mirrors the float/double case above.
+#if defined(TARGET_WASM)
                 if (genActualType(retVal) != genActualType(nativeReturnType))
                 {
                     assert(retVal->IsIntegralConst(0));
                     retVal->BashToZeroConst(nativeReturnType);
                 }
+#endif // defined(TARGET_WASM)
             }
             break;
         }
