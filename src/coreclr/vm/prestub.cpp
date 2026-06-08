@@ -1065,12 +1065,12 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
         return true;
     }
 
-    if (TryGenerateAsyncThunk(resolver, methodILDecoder))
+    if (TryGenerateUnsafeAccessor(resolver, methodILDecoder))
     {
         return true;
     }
 
-    if (TryGenerateUnsafeAccessor(resolver, methodILDecoder))
+    if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
         return true;
     }
