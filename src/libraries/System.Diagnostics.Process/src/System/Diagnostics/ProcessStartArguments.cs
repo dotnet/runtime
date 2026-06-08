@@ -7,20 +7,18 @@ using System.Runtime.Versioning;
 namespace System.Diagnostics
 {
     /// <summary>
-    /// Provides the prepared arguments for starting a process via a user-supplied callback.
-    /// This ref struct is populated by the <see cref="Process.Start(ProcessStartInfo, Func{ProcessStartArguments, SafeProcessHandle})"/> method
-    /// with the resolved executable path, command-line arguments, environment variables, and standard I/O handles.
-    /// The user's callback receives this instance and is responsible for invoking the appropriate system call to create the process.
+    /// Provides the prepared data required to start a process via a user-supplied callback.
+    /// This ref struct is populated by the <see cref="Process.Start(ProcessStartInfo, Func{ProcessStartArguments, SafeProcessHandle})"/> method.
     /// </summary>
     public ref struct ProcessStartArguments
     {
         public ProcessStartArguments() { }
 
         /// <summary>
-        /// Gets or sets a pointer to the resolved absolute executable path encoded as null-terminated UTF-8.
+        /// Gets or sets a pointer to the resolved executable path encoded as null-terminated UTF-8.
         /// </summary>
         /// <value>
-        /// A pointer to a null-terminated UTF-8 encoded string representing the resolved absolute executable path.
+        /// A pointer to a null-terminated UTF-8 encoded string representing the resolved executable path.
         /// </value>
         /// <remarks>
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.

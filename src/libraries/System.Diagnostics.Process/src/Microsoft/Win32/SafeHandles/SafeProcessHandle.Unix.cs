@@ -9,9 +9,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -186,7 +186,7 @@ namespace Microsoft.Win32.SafeHandles
                 return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle, out waitStateHolder);
             }
 
-            string? filename;
+            string filename;
             string[] argv;
 
             IDictionary<string, string?> env = startInfo.Environment;
@@ -203,12 +203,8 @@ namespace Microsoft.Win32.SafeHandles
 
             bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
-            filename = ProcessUtils.ResolvePath(startInfo.FileName);
+            filename = ProcessUtils.ResolveValidPath(startInfo.FileName, cwd);
             argv = ProcessUtils.ParseArgv(startInfo);
-            if (Directory.Exists(filename))
-            {
-                throw new Win32Exception(SR.DirectoryNotValidAsInput);
-            }
 
             return ForkAndExecProcess(
                 startInfo, filename, argv, env, cwd,
@@ -224,40 +220,21 @@ namespace Microsoft.Win32.SafeHandles
             waitStateHolder = null;
             ProcessUtils.EnsureInitialized();
 
-            string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
-            if (string.IsNullOrEmpty(resolvedFileName))
-            {
-                Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
-                throw ProcessUtils.CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, startInfo.FileName, startInfo.WorkingDirectory);
-            }
+            string resolvedFileName = ProcessUtils.ResolveValidPath(startInfo.FileName, startInfo.WorkingDirectory);
 
             string[] argv = ProcessUtils.ParseArgv(startInfo);
             bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
             byte** argvPtr = null, envpPtr = null;
-            byte* resolvedPathBufferPtr = null;
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            Utf8StringMarshaller.ManagedToUnmanagedIn resolvedPathMarshaller = default;
 
             try
             {
                 Interop.Sys.AllocArgvArray(argv, ref argvPtr);
                 Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
 
-                int resolvedPathByteCount = Encoding.UTF8.GetByteCount(resolvedFileName);
-                // Keep small paths on the stack, while avoiding excessive stack usage for long executable paths.
-                const int ResolvedPathStackBufferSize =
-#if DEBUG
-                    2; // test the NativeMemory.Alloc code path in DEBUG builds
-#else
-                    256;
-#endif
-                Span<byte> resolvedPathBuffer = resolvedPathByteCount + 1 <= ResolvedPathStackBufferSize
-                    ? stackalloc byte[ResolvedPathStackBufferSize]
-                    : new Span<byte>(resolvedPathBufferPtr = (byte*)NativeMemory.Alloc((nuint)(resolvedPathByteCount + 1)), resolvedPathByteCount + 1);
-                resolvedPathBuffer = resolvedPathBuffer[..(resolvedPathByteCount + 1)];
-
-                int resolvedPathBytesWritten = Encoding.UTF8.GetBytes(resolvedFileName, resolvedPathBuffer);
-                Debug.Assert(resolvedPathBytesWritten == resolvedPathByteCount);
-                resolvedPathBuffer[resolvedPathBytesWritten] = (byte)0;
+                Span<byte> resolvedPathBuffer = stackalloc byte[Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
+                resolvedPathMarshaller.FromManaged(resolvedFileName, resolvedPathBuffer);
 
                 nint stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
 
@@ -279,44 +256,41 @@ namespace Microsoft.Win32.SafeHandles
                     stderrRawFd = stderrHandle.DangerousGetHandle();
                 }
 
-                fixed (byte* resolvedPathPtr = resolvedPathBuffer)
+                ProcessStartArguments args = new()
                 {
-                    ProcessStartArguments args = new()
+                    ResolvedPath = resolvedPathMarshaller.ToUnmanaged(),
+                    Arguments = argvPtr,
+                    EnvironmentVariables = envpPtr,
+                    StandardInput = stdinRawFd,
+                    StandardOutput = stdoutRawFd,
+                    StandardError = stderrRawFd,
+                    ProcessStartInfo = startInfo,
+                };
+
+                // Lock to avoid races with OnSigChild
+                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                ProcessUtils.s_processStartLock.EnterReadLock();
+
+                try
+                {
+                    if (usesTerminal)
                     {
-                        ResolvedPath = resolvedPathPtr,
-                        Arguments = argvPtr,
-                        EnvironmentVariables = envpPtr,
-                        StandardInput = stdinRawFd,
-                        StandardOutput = stdoutRawFd,
-                        StandardError = stderrRawFd,
-                        ProcessStartInfo = startInfo,
-                    };
-
-                    // Lock to avoid races with OnSigChild
-                    // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-                    ProcessUtils.s_processStartLock.EnterReadLock();
-
-                    try
-                    {
-                        if (usesTerminal)
-                        {
-                            ProcessUtils.ConfigureTerminalForChildProcesses(1);
-                            configuredTerminal = true;
-                        }
-
-                        SafeProcessHandle processHandle = callback(args);
-                        if (processHandle is null || processHandle.IsInvalid)
-                        {
-                            throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
-                        }
-
-                        waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
-                        return processHandle;
+                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                        configuredTerminal = true;
                     }
-                    finally
+
+                    SafeProcessHandle processHandle = callback(args);
+                    if (processHandle is null || processHandle.IsInvalid)
                     {
-                        ProcessUtils.s_processStartLock.ExitReadLock();
+                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
                     }
+
+                    waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
+                    return processHandle;
+                }
+                finally
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
                 }
             }
             catch
@@ -348,7 +322,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 NativeMemory.Free(envpPtr);
                 NativeMemory.Free(argvPtr);
-                NativeMemory.Free(resolvedPathBufferPtr);
+                resolvedPathMarshaller.Free();
             }
         }
 

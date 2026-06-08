@@ -323,10 +323,27 @@ namespace System.Diagnostics
             return argvList.ToArray();
         }
 
+        internal static string ResolveValidPath(string filename, string? workingDirectory)
+        {
+            string? resolvedPath = ResolvePath(filename);
+            if (string.IsNullOrEmpty(resolvedPath))
+            {
+                Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
+                throw CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, filename, workingDirectory);
+            }
+
+            if (Directory.Exists(resolvedPath))
+            {
+                throw new Win32Exception(SR.DirectoryNotValidAsInput);
+            }
+
+            return resolvedPath;
+        }
+
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
         /// <returns>The resolved path. It can return null in case of URLs.</returns>
-        internal static string? ResolvePath(string filename)
+        private static string? ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
             // 1. First try the exact path provided
