@@ -308,7 +308,6 @@ void PerfMap::WriteLine(SString& line)
 
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
-    LIMITED_METHOD_CONTRACT;
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
