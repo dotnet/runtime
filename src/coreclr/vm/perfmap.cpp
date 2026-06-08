@@ -309,7 +309,6 @@ void PerfMap::WriteLine(SString& line)
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
     LIMITED_METHOD_CONTRACT;
-
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
@@ -365,6 +364,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
     CONTRACTL
     {
+        THROWS;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -420,7 +420,12 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 // Log a set of stub to the map.
 void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (!s_enabled || !s_LogStubs)
     {
