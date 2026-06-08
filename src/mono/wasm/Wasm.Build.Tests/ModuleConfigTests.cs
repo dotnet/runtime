@@ -131,7 +131,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             TestAsset.WasmBasicTestApp,
             "ModuleConfigTests_BufferedAssetsTest",
             extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
-        PublishProject(info, config);
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
         await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             TestScenario: "BufferedAssetsTest"

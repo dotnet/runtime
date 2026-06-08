@@ -223,7 +223,7 @@ switch (testCase) {
                 const bufferedAssets = [
                     ...config.resources.wasmNative,
                     ...config.resources.assembly,
-                    ...config.resources.pdb,
+                    ...(config.resources.pdb ?? []),
                     ...config.resources.wasmSymbols,
                 ];
                 for (const asset of bufferedAssets) {
