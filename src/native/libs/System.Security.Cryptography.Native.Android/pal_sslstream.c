@@ -38,16 +38,21 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 
 ARGS_NON_NULL_ALL static int GetHandshakeStatus(JNIEnv* env, SSLStream* sslStream)
 {
+    int ret = -1;
+    INIT_LOCALS(loc, status);
+
     // int handshakeStatus = sslEngine.getHandshakeStatus().ordinal();
-    jobject status = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus);
-    if (CheckJNIExceptions(env) || status == NULL)
-        return -1;
+    loc[status] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[status] == NULL)
+        goto cleanup;
 
-    int handshakeStatus = GetEnumAsInt(env, status);
-    if (CheckJNIExceptions(env))
-        return -1;
+    ret = GetEnumAsInt(env, loc[status]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    return handshakeStatus;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 static bool IsHandshaking(int handshakeStatus)
