@@ -184,7 +184,7 @@ namespace System.IO.Tests
                     int totalRead = 0;
                     while (totalRead < readBuffer.Length)
                     {
-                        int bytesRead = RandomAccess.Read(readHandle, readBuffer.AsSpan(totalRead), 0);
+                        int bytesRead = RandomAccess.Read(readHandle, readBuffer.AsSpan(totalRead), totalRead);
                         if (bytesRead == 0)
                         {
                             break;
