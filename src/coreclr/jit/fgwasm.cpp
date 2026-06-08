@@ -1689,9 +1689,11 @@ PhaseStatus Compiler::WasmSpillRefs()
             {
                 highWaterMark = std::max(highWaterMark, defs.size());
 
+                // For any ref/byref values live at the point of a call, spill them into pinned slots
+                //  on the stack where the GC can see them so it won't move them.
                 if (defs.size())
                 {
-                    JITDUMP("Spilling %d live ref(s) for call\n", defs.size());
+                    JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
                     DISPNODE(tree);
                     for (GenTree* def : defs)
                     {
@@ -1702,6 +1704,12 @@ PhaseStatus Compiler::WasmSpillRefs()
                         noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
                         use.ReplaceWith(spill);
                         LIR::AsRange(block).InsertAfter(def, spill);
+                        if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
+                        {
+                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n", Compiler::dspTreeID(def), Compiler::dspTreeID(spill));
+                            def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                            spill->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                        }
                         anyChanges = true;
                     }
 
@@ -1714,6 +1722,7 @@ PhaseStatus Compiler::WasmSpillRefs()
             //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
             //  them. If we can somehow guarantee that all callees will spill their ref parameters
             //  immediately, we could do this before the block above.
+
             // Remove used nodes from defs list, they're no longer meaningfully 'live'.
             tree->VisitOperands([&defs](GenTree* op) {
                 if (!op->IsValue())
@@ -1726,7 +1735,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                     if (op == defs[i - 1])
                     {
                         defs[i - 1] = defs[defs.size() - 1];
-                        defs.erase(defs.begin() + (defs.size() - 1), defs.end());
+                        defs.pop_back();
                         break;
                     }
                 }
@@ -1734,20 +1743,37 @@ PhaseStatus Compiler::WasmSpillRefs()
                 return GenTree::VisitResult::Continue;
             });
 
-            if (tree->IsValue() && tree->TypeIs(TYP_REF, TYP_BYREF) && !tree->OperIs(GT_WASM_SPILL_REF))
+            // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
+            //  nodes appropriately
+            if (!tree->IsValue() || tree->IsUnusedValue() || tree->IsInvariant())
             {
-                // TODO: Can we skip this for GT_LCL_VAR when it lives in memory? Or is it possible
-                //  that the LCL_VAR has been modified since it was loaded onto the Wasm stack?
+                continue;
+            }
+
+            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
+            //  and we won't need to spill it.
+            if (tree->OperIs(GT_LCL_VAR))
+            {
+                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVarCommon());
+                if (!dsc->IsAddressExposed())
+                    continue;
+            }
+
+            // We have a ref sourced from something like a call result or an indirection that hasn't been
+            //  spilled yet, so record it for potential spilling at the next call.
+            if (tree->TypeIs(TYP_REF, TYP_BYREF) && !tree->OperIs(GT_WASM_SPILL_REF))
+            {
                 defs.push_back(tree);
             }
         }
     }
 
-    JITDUMP("High water mark for refs was %d\n", highWaterMark);
-    if (highWaterMark == 0)
+    JITDUMP("High water mark for refs was %zu\n", highWaterMark);
+    if (!anyChanges)
         return PhaseStatus::MODIFIED_NOTHING;
 
-    m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(highWaterMark + 1, 0, getAllocator(CMK_WasmSpillRefs));
+    m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(highWaterMark, 0, getAllocator(CMK_WasmSpillRefs));
 
     // Allocate a temporary wasm local to use as a scratch slot during spills
     {
@@ -1758,8 +1784,8 @@ PhaseStatus Compiler::WasmSpillRefs()
         varDsc->lvHasExplicitInit = true;
         varDsc->lvImplicitlyReferenced = true;
         // HACK: If we don't make this var tracked, regalloc will crash when allocating a register for it
-        varDsc->lvTracked = true;
-        m_wasmSpillSlots->at(0) = varNum;
+        // varDsc->lvTracked = true;
+        lvaWasmSplashZone = varNum;
     }
 
     // Allocate N temporary refs to act as GC-visible storage for all spills that occur during execution
@@ -1772,7 +1798,7 @@ PhaseStatus Compiler::WasmSpillRefs()
         varDsc->lvImplicitlyReferenced = true;
         varDsc->lvMustInit = true;
         lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason::WasmGCVisibility);
-        m_wasmSpillSlots->at(i + 1) = varNum;
+        m_wasmSpillSlots->at(i) = varNum;
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
