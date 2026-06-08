@@ -1727,12 +1727,12 @@ namespace Internal.IL
 
         private static bool IsRuntimeHelpersGetDelegate(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("GetDelegate"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "GetDelegate"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("RuntimeHelpers"u8) && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
+                    return owningType.Name == "RuntimeHelpers"u8 && owningType.Namespace == "System.Runtime.CompilerServices"u8;
                 }
             }
 
