@@ -34,6 +34,7 @@ public enum DataType
     EEAllocContext,
     Exception,
     ExceptionInfo,
+    GCFrame,
     EEExceptionClause,
     ExceptionLookupTableEntry,
     EEILException,

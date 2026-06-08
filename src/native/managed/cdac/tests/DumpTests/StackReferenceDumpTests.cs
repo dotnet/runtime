@@ -104,6 +104,92 @@ public class StackReferenceDumpTests : DumpTestBase
             $"Expected at least one stack ref pointing to a valid object (total refs: {refs.Count})");
     }
 
+    // --- NestedException debuggee: in-flight exception objects reported as roots ---
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
+    public void NestedException_InFlightExceptionsReportedAsRoots(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "NestedException", "full");
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IException exceptionContract = Target.Contracts.Exception;
+
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        // FirstNestedException is the previous tracker on the thread's ExInfo chain
+        // (Thread_1.GetThreadData sets it from currentExInfo.PreviousNestedInfo), so it
+        // enumerates the superseded / nested in-flight exceptions. These are held only by the
+        // runtime's exception-tracking chain (the nested FileNotFoundException lives on the heap
+        // as InvalidOperationException.InnerException, not as a stack local), so the ExInfo scan in
+        // WalkStackReferences is what surfaces them as roots.
+        HashSet<ulong> expected = new();
+        HashSet<ulong> seenTrackers = new();
+        TargetPointer exInfo = crashingThread.FirstNestedException;
+        while (exInfo != TargetPointer.Null && seenTrackers.Add(exInfo))
+        {
+            exceptionContract.GetNestedExceptionInfo(exInfo, out TargetPointer next, out TargetPointer thrownObjectSlot);
+            TargetPointer obj = Target.ReadPointer(thrownObjectSlot);
+            if (obj != TargetPointer.Null)
+                expected.Add(obj);
+            exInfo = next;
+        }
+
+        Assert.True(expected.Count >= 1,
+            $"NestedException debuggee should hold at least one superseded exception on its ExInfo chain; found {expected.Count}");
+
+        // WalkStackReferences must surface every in-flight exception object as a stack reference.
+        HashSet<ulong> reported = new();
+        foreach (StackReferenceData r in stackWalk.WalkStackReferences(crashingThread))
+        {
+            if (r.Object != TargetPointer.Null)
+                reported.Add(r.Object);
+        }
+
+        foreach (ulong exc in expected)
+            Assert.True(reported.Contains(exc),
+                $"Expected in-flight exception object 0x{exc:x} to be reported as a stack reference");
+    }
+
+    // --- GCProtect debuggee: GCFrame (GCPROTECT) protected objects reported as roots ---
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
+    public void GCProtect_GCFrameRootsAreReported(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "GCProtect", "full");
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        // The debuggee crashes inside an AppDomain.AssemblyResolve handler, which the runtime
+        // (AppDomain::RaiseAssemblyResolveEvent) invokes while holding a GCPROTECT frame over the
+        // requesting Assembly reference. ReportGCFrameRoots walks that GCFrame chain and reports
+        // each protected object via UpdateScanContext(sp: null, ip: null, frame: pGCFrame), so a
+        // GCFrame-sourced root is identifiable as IsStackSourceFrame == true with a null
+        // StackPointer. Frameless GcInfo roots carry a non-null StackPointer, and this debuggee
+        // has no in-flight exception (the only other producer of that signature).
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+
+        int gcFrameRoots = 0;
+        foreach (StackReferenceData r in refs)
+        {
+            if (!r.IsStackSourceFrame || r.StackPointer != TargetPointer.Null || r.Object == TargetPointer.Null)
+                continue;
+
+            // A real heap object held alive by a GCFrame: its MethodTable must be readable.
+            TargetPointer methodTable = Target.ReadPointer(r.Object);
+            if (methodTable != TargetPointer.Null)
+                gcFrameRoots++;
+        }
+
+        Assert.True(gcFrameRoots > 0,
+            $"Expected at least one GCFrame (GCPROTECT) protected object to be reported as a stack reference (total refs: {refs.Count})");
+    }
+
     // --- StackRefs debuggee: known objects on stack with verifiable content ---
     // These tests require Frame-based GC root scanning (ScanFrameRoots) which is not yet implemented.
 
