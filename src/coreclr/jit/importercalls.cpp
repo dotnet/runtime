@@ -6408,7 +6408,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                    // Sign-extend the unsigned fold result to int32_t so gtNewIconNode's
+                    // FitsIn<int32_t>(value) check for TYP_INT/TYP_UINT folds doesn't trip
+                    // on the high-bit-set case (e.g. RotateLeft(0xFFFFFFFFu, k)).
+                    result        = gtNewIconNode(
+                        static_cast<int32_t>(BitOperations::RotateLeft(cns1, cns2)), baseType);
                 }
                 break;
             }
@@ -6457,7 +6461,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
+                    // Sign-extend the unsigned fold result to int32_t so gtNewIconNode's
+                    // FitsIn<int32_t>(value) check for TYP_INT/TYP_UINT folds doesn't trip
+                    // on the high-bit-set case (e.g. RotateRight(0xFFFFFFFFu, k)).
+                    result        = gtNewIconNode(
+                        static_cast<int32_t>(BitOperations::RotateRight(cns1, cns2)), baseType);
                 }
                 break;
             }
