@@ -43,6 +43,8 @@ INST(iihf,              "iihf",                 0,              0xc08)
 INST(iilf,              "iilf",                 0,              0xc09)
 INST(break,		"break",		0,		0x00)
 INST(brk_unix,          "brk_unix",             0,              0xD4200000)
+INST(ldr,          	"ldr",             	0,              0x28)
+INST(ler,          	"ler",             	0,              0x38)
 INST(aebr,      "aebr",         0,      0xb30a)
 INST(adbr,      "adbr",         0,      0xb31a)
 INST(sebr,      "sebr",         0,      0xb30b)
@@ -71,6 +73,11 @@ INST(llgfr,     "llgfr",        0,      0xb916)
 INST(lgfr,      "lgfr",         0,      0xb914)
 INST(lcdbr,     "lcdbr",        0,      0xb313)
 INST(lcebr,     "lcebr",        0,      0xb303)
+INST(basr,      "basr",         0,      0x0D)
+INST(agr,       "agr",         0,      0xb908)
+
+////R_X
+INST(ste,       "ste",         0,      0x70)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)
@@ -99,6 +106,49 @@ INST(lcr,       "lcr",          0,      0x13)
 INST(lcgr,      "lcgr",         0,      0xb903)
 INST(nork,      "nork",         0,      0xb976)
 INST(nogrk,     "nogrk",        0,      0xb966)
+INST(tmlh,             "tmlh",                 0,              0xa70)
+INST(tmll,             "tmll",                 0,              0xa71)
+INST(tmhh,             "tmhh",                 0,              0xa72)
+INST(tmhl,             "tmhl",                 0,              0xa73)
+INST(brc,              "brc",                  0,              0xa74)
+INST(brctg,            "brctg",                0,              0xa77)
+INST(ahi,              "ahi",                  0,              0xa7a)
+INST(aghi,             "aghi",                 0,              0xa7b)
+INST(lghi,             "lghi",                 0,              0xa79)
+INST(mhi,              "mhi",                  0,              0xa7c)
+INST(mghi,             "mghi",                 0,              0xa7d)
+INST(cghi,             "cghi",                 0,              0xa7f)
+INST(lhi,              "lhi",                  0,              0xa78)
+
+
+//// R_I_L
+INST(brasl,            "brasl",                0,              0xC05)
+INST(xilf,             "xilf",                 0,              0xC07)
+INST(slgfi,            "slgfi",                0,              0xC24)
+INST(nilf,             "nilf",                 0,              0xC0B)
+INST(oihf,             "oihf",                 0,              0xC0C)
+INST(oilf,             "oilf",                 0,              0xC0D)
+INST(nihh,             "nihh",                 0,              0xA54)
+INST(nihl,             "nihl",                 0,              0xA55)
+INST(nilh,             "nilh",                 0,              0xA56)
+INST(nill,             "nill",                 0,              0xA57)
+INST(oihh,             "oihh",                 0,              0xA58)
+INST(oihl,             "oihl",                 0,              0xA59)
+INST(oilh,             "oilh",                 0,              0xA5A)
+
+
+//// R_I_b
+INST(bras,             "bras",                 0,              0xA75)
+
+//// S_S
+INST(xc,               "xc",                   0,              0xD7)
+
+//// R_S
+INST(srl,              "srl",                  0,              0x88)
+INST(sll,              "sll",                  0,              0x89)
+INST(sra,              "sra",                  0,              0x8a)
+INST(sla,              "sla",                  0,              0x8b)
+INST(slag,             "slag",                 0,              0xEB0B)
 
 //// R_R_I
 INST(stc,		"stc",			0,		0x42)
@@ -164,7 +214,9 @@ INST(xi,        "xi",           0,      0x97)
 //// R_R
 //// R_R_R
 //// R_R
+INST(xgr,		"xgr",			0,		0xb982)
 INST(lgr,		"lgr",			0,		0xb904)
+
 //// R_R_I
 // RV64F
 //// R_R

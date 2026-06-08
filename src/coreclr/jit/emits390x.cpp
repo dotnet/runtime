@@ -3247,6 +3247,7 @@ void emitter::emitIns_R_I(instruction ins,
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
     bool      canEncode = false;
+    instrDesc* id = emitNewInstrSC(attr, imm);
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -3483,6 +3484,20 @@ void emitter::emitIns_R_I(instruction ins,
             }
             break;
 #endif
+        case INS_lghi:
+        case INS_aghi:
+        {
+            // Validate immediate fits in 16-bit signed range
+            assert(imm >= -32768 && imm <= 32767);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 20;
+            code |= ((code_t)imm & 0xFFFF);
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize();
+            break;
+        }
         default:
             break;
             // fallback to emit SVE instructions.
@@ -3493,7 +3508,6 @@ void emitter::emitIns_R_I(instruction ins,
     //assert(canEncode);
     //ssert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -3509,6 +3523,116 @@ void emitter::emitIns_R_I(instruction ins,
     dispIns(id);
     appendToCurIG(id);
 }
+
+
+
+#if 0
+//-----------------------------------------------------------------------------
+// emitIns_R_I: Emit an instruction with a register and immediate operand
+//
+// Arguments:
+//    ins  - The instruction to emit
+//    attr - The operand size attribute
+//    reg  - The destination register
+//    imm  - The immediate value
+//
+// Notes:
+//    For s390x architecture, this handles various instruction formats:
+//    - RI format: 16-bit immediate (e.g., LGHI, AGHI, MGHI)
+//    - RIL format: 32-bit immediate (e.g., LGFI, AGFI, MSGFI)
+//    - RIE format: Extended immediate instructions
+//
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t     imm,
+                          insOpts     opt,     /* = INS_OPTS_NONE */
+                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
+                              DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+{
+    assert(isGeneralRegister(reg));
+
+    insFormat fmt       = IF_NONE;
+    instrDesc* id = emitNewInstrSC(attr, imm);
+    id->idIns(ins);
+    id->idReg1(reg);
+    //id->idAddr()->iiaSetInstrEncode(emitInsSize(ins));
+
+    switch (ins)
+    {
+        // RI-format instructions (16-bit immediate)
+        case INS_lghi:
+        case INS_aghi:
+        {
+            // Validate immediate fits in 16-bit signed range
+            assert(imm >= -32768 && imm <= 32767);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 20;
+            code |= ((code_t)imm & 0xFFFF);
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize();
+            break;
+        }
+
+        // RIL-format instructions (32-bit immediate)
+        case INS_lgfi:
+        {
+            // Validate immediate fits in 32-bit signed range
+            assert(imm >= INT32_MIN && imm <= INT32_MAX);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 36;                    // R1 field
+            code |= ((code_t)imm & 0xFFFFFFFF);          // I2 field (32-bit immediate)
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize(); // RIL format is 6 bytes
+            break;
+        }
+	case INS_iihf:
+        case INS_iilf:
+        //case INS_nihf:
+        //case INS_nilf:
+        //case INS_oihf:
+        //case INS_oilf:
+        //case INS_xihf:
+        //case INS_xilf:
+        {
+            // 32-bit unsigned immediate
+            assert(imm >= 0 && imm <= UINT32_MAX);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 36;
+            code |= ((code_t)imm & 0xFFFFFFFF);
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize();
+            break;
+        }
+
+	case INS_chi:
+        {
+            // Validate immediate fits in 16-bit signed range
+            assert(imm >= -32768 && imm <= 32767);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 20;
+            code |= ((code_t)imm & 0xFFFF);
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize();
+            break;
+        }
+
+        default:
+            unreached(); // Unsupported instruction for emitIns_R_I
+    }
+
+    appendToCurIG(id);
+}
+#endif
+
 
 /*****************************************************************************
  *
@@ -8440,7 +8564,131 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
  *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
+/*****************************************************************************
+ * Emit a call instruction
+ * For s390x, we use BRASL (Branch Relative And Save Long) for direct calls
+ * and BASR (Branch And Save Register) for indirect calls
+ */
 
+void emitter::emitIns_Call(EmitCallType          callType,
+                           CORINFO_METHOD_HANDLE methHnd,
+                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                           void*                 addr,
+                           ssize_t               argSize,
+                           emitAttr              retSize,
+                           emitAttr              secondRetSize,
+                           VARSET_VALARG_TP      ptrVars,
+                           regMaskTP             gcrefRegs,
+                           regMaskTP             byrefRegs,
+                           const DebugInfo&      di,
+                           regNumber             ireg,
+                           regNumber             xreg,
+                           unsigned              xmul,
+                           ssize_t               disp,
+                           bool                  isJump,
+			   bool                  noSafePoint)
+{
+    assert(!isJump); // Tail calls handled separately
+
+    instrDesc* id;
+
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = argSize / REGSIZE_BYTES;
+
+    if (callType == EC_INDIR_R)
+    {
+        /* Indirect call, virtual calls */
+
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+    else
+    {
+        /* Helper/static/nonvirtual/function calls (direct or through handle),
+           and calls to an absolute addr. */
+
+        assert(callType == EC_FUNC_TOKEN);
+
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+
+    /* Update the emitter's live GC ref sets */
+
+    // If the method returns a GC ref, mark R0 appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_R0;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_R0;
+    }
+
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
+    emitThisGCrefRegs = gcrefRegs;
+    emitThisByrefRegs = byrefRegs;
+
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
+
+    /* Set the instruction - special case jumping a function */
+    instruction ins;
+    insFormat   fmt = IF_NONE;
+
+    switch (callType)
+    {
+        case EC_FUNC_TOKEN:
+            ins = INS_brasl;
+            id->idIns(ins);
+            id->idInsOpt(INS_OPTS_NONE);
+            id->idReg1(REG_R14);
+            id->idReg2(ireg);
+
+	    // if addr is nullptr then this call is treated as a recursive call.
+            assert(addr == nullptr || codeGen->validImmForBL((ssize_t)addr));
+            // Set target address
+            id->idAddr()->iiaAddr = (BYTE*)addr;
+	    if (emitComp->opts.compReloc)
+            {
+                // Since this is an indirect call through a pointer and we don't
+                // currently pass in emitAttr into this function we have decided
+                // to always mark the displacement as being relocatable.
+
+                id->idSetIsDspReloc();
+            }
+            break;
+
+        case EC_INDIR_R:
+            ins = INS_basr;
+            id->idIns(ins);
+            id->idReg1(REG_R14);  // Link register
+            id->idReg2(ireg);      // Target address in register
+            break;
+#if 0
+        case CT_HELPER:
+            ins = INS_brasl;
+            id->idIns(ins);
+            id->idAddr()->iiaAddr = (BYTE*)addr;
+            id->idSetIsDspReloc();
+            break;
+#endif
+
+        default:
+            unreached();
+    }
+
+    // Set method handle for GC info
+    id->idDebugOnlyInfo();
+
+    //if (methHnd != nullptr)
+    //{
+    //    id->idCallMethHnd(methHnd);
+    //}
+
+    // Append instruction
+    dispIns(id);
+    appendToCurIG(id);
+}
+#if 0
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
@@ -8655,6 +8903,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
 #endif				  
 }
+#endif
 
 /*****************************************************************************
  *
@@ -10130,7 +10379,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE*       odst = dst;
     code_t      code = 0;
     code_t	op = 0;
-    size_t      sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
+    size_t      sz   = emitGetInstrDescSize(id);
     instruction ins  = id->idIns();
     insFormat   fmt  = id->idInsFmt();
     emitAttr    size = id->idOpSize();
@@ -10600,6 +10849,37 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm = emitGetInsSC(id) & 0x3f;
             S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
             break;
+
+	case INS_brasl:
+        {
+           if (id->idIsCall())
+           {
+               imm = 0;
+           }
+           else
+           {
+               imm = id->idAddr()->iiaGetJitDataOffset();
+           }
+           op = emitInsCode(ins, fmt);
+           assert((id->idReg1() >= 0) && (id->idReg1() <= 15));
+           assert((imm >= -0x80000000LL) && (imm <= 0x7FFFFFFFLL));
+           S390_RIL_b(dst, op, id->idReg1(), imm);
+
+           break; 
+        }
+        case INS_basr:
+           op = emitInsCode(ins, fmt);
+           S390_RR(dst, op, id->idReg1(), id->idReg2());
+           break;
+        case INS_bras:
+           op = emitInsCode(ins, fmt);
+           S390_RI(dst, op, id->idReg1(), 0);
+           break;
+
+        case INS_xgr:
+           op = emitInsCode(ins, fmt);
+           S390_RR(dst, op, id->idReg1(), id->idReg2());
+           break;
 
         default:
             _ASSERTE(!"NYI");

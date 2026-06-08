@@ -1,0 +1,2299 @@
+diff --git a/src/coreclr/jit/CMakeLists.txt b/src/coreclr/jit/CMakeLists.txt
+index 9e0b8d92bfe..4cb37eaf34c 100644
+--- a/src/coreclr/jit/CMakeLists.txt
++++ b/src/coreclr/jit/CMakeLists.txt
+@@ -70,14 +70,14 @@ function(create_standalone_jit)
+   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
+   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
+ 
+-  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")) )
++  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")) AND NOT (TARGETDETAILS_ARCH STREQUAL "s390x") )
+     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
+     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
+   endif ()
+ endfunction()
+ 
+-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX) )
++if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX) AND (NOT CLR_CMAKE_TARGET_ARCH_S390X ))
+   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_SIMD>)
+   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
+   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_MASKED_HW_INTRINSICS>)
+diff --git a/src/coreclr/jit/codegens390x.cpp b/src/coreclr/jit/codegens390x.cpp
+index 1f9a06208d6..5c948bf4244 100644
+--- a/src/coreclr/jit/codegens390x.cpp
++++ b/src/coreclr/jit/codegens390x.cpp
+@@ -5153,8 +5153,6 @@ void CodeGen::genPushCalleeSavedRegisters()
+ 
+ void CodeGen::genFnEpilog(BasicBlock* block)
+ {
+-    //_ASSERTE("!NYI");
+-
+ #ifdef DEBUG
+     if (verbose)
+         printf("*************** In genFnEpilog()\n");
+@@ -5421,7 +5419,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
+ 	int totalFrameSize = genTotalFrameSize();
+ 	GetEmitter()->emitIns_R_R_R_I(INS_lmg, EA_PTRSIZE, REG_FP, REG_SP, REG_SPBASE, totalFrameSize + 88);
+         inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
+-        compiler->unwindReturn(REG_LR);
++        //compiler->unwindReturn(REG_LR);
+ #endif // TARGET_ARM64
+     }
+ 
+diff --git a/src/coreclr/jit/compiler.cpp b/src/coreclr/jit/compiler.cpp
+index f4fca2f8b71..0d196c941cd 100644
+--- a/src/coreclr/jit/compiler.cpp
++++ b/src/coreclr/jit/compiler.cpp
+@@ -4745,7 +4745,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
+ 
+     // Add any internal blocks/trees we may need
+ 
+-#ifndef TARGET_S390X
++#ifdef TARGET_S390X
+ 	//disabled for the initial phase
+     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+ #endif
+diff --git a/src/coreclr/jit/compiler.h b/src/coreclr/jit/compiler.h
+index fc352bdef45..b8c4b345144 100644
+--- a/src/coreclr/jit/compiler.h
++++ b/src/coreclr/jit/compiler.h
+@@ -12436,9 +12436,7 @@ const instruction INS_SQRT = INS_vsqrt;
+ const instruction        INS_MULADD = INS_madd;
+ inline const instruction INS_BREAKPOINT_osHelper()
+ {
+-    // GDB needs the encoding of brk #0
+-    // Windbg needs the encoding of brk #F000
+-    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
++    return INS_brk_unix;
+ }
+ #define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
+ 
+diff --git a/src/coreclr/jit/emit.cpp b/src/coreclr/jit/emit.cpp
+index 276c85844d5..bb9af707646 100644
+--- a/src/coreclr/jit/emit.cpp
++++ b/src/coreclr/jit/emit.cpp
+@@ -2917,6 +2917,131 @@ const char* emitter::emitLabelString(const insGroup* ig) const
+     return retbuf;
+ }
+ 
++#if defined (TARGET_S390X)
++/*****************************************************************************
++ *
++ * Split the region from 'startLoc' to 'endLoc' into fragments by calling
++ * a callback function to indicate the beginning of a fragment. The initial code,
++ * starting at 'startLoc', doesn't get a callback, but the first code fragment,
++ * about 'maxSplitSize' bytes out does, as does the beginning of each fragment
++ * after that. There is no callback for the end (only the beginning of the last
++ * fragment gets a callback). A fragment must contain at least one instruction
++ * group. It should be smaller than 'maxSplitSize', although it may be larger to
++ * satisfy the "at least one instruction group" rule. Do not split prologs or
++ * epilogs. (Currently, prologs exist in a single instruction group at the main
++ * function beginning, so they aren't split. Funclets, however, might span IGs,
++ * so we can't split in between them.)
++ *
++ * Note that the locations must be the start of instruction groups; the part of
++ * the location indicating offset within a group must be zero.
++ *
++ * If 'startLoc' is NULL, it means the start of the code.
++ * If 'endLoc'   is NULL, it means the end   of the code.
++ */
++
++void emitter::emitSplit(emitLocation*         startLoc,
++                        emitLocation*         endLoc,
++                        UNATIVE_OFFSET        maxSplitSize,
++                        void*                 context,
++                        emitSplitCallbackType callbackFunc)
++{
++    insGroup*      igStart = (startLoc == NULL) ? emitIGlist : startLoc->GetIG();
++    insGroup*      igEnd   = (endLoc == NULL) ? NULL : endLoc->GetIG();
++    insGroup*      igPrev;
++    insGroup*      ig;
++    insGroup*      igLastReported;
++    insGroup*      igLastCandidate;
++    UNATIVE_OFFSET curSize;
++    UNATIVE_OFFSET candidateSize;
++
++    auto splitIfNecessary = [&]() {
++        if (curSize < maxSplitSize)
++        {
++            return;
++        }
++
++        // Is there a candidate?
++        if (igLastCandidate == NULL)
++        {
++#ifdef DEBUG
++            if (EMITVERBOSE)
++                printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
++#endif
++            return;
++        }
++
++        // Don't report the same thing twice (this also happens for the first block, since igLastReported is
++        // initialized to igStart).
++        if (igLastCandidate == igLastReported)
++        {
++#ifdef DEBUG
++            if (EMITVERBOSE)
++                printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
++#endif
++            return;
++        }
++
++        // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
++        // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
++        // the split size will be much larger than the maximum size of an instruction group. The invariant we want
++        // to maintain is that each fragment contains a non-zero amount of code.
++        if (candidateSize == 0)
++        {
++#ifdef DEBUG
++            if (EMITVERBOSE)
++                printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
++#endif
++            return;
++        }
++
++        // Report it!
++
++#ifdef DEBUG
++        if (EMITVERBOSE)
++        {
++            printf("emitSplit: split at IG%02u is size %x, %s than requested maximum size of %x\n",
++                   igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
++                   maxSplitSize);
++        }
++#endif
++
++        // hand memory ownership to the callback function
++        emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
++        callbackFunc(context, pEmitLoc);
++        igLastReported  = igLastCandidate;
++        igLastCandidate = NULL;
++        curSize -= candidateSize;
++    };
++
++    for (igPrev = NULL, ig = igLastReported = igStart, igLastCandidate = NULL, candidateSize = 0, curSize = 0;
++         ig != igEnd && ig != NULL; igPrev = ig, ig = ig->igNext)
++    {
++        splitIfNecessary();
++
++        // Update the current candidate to be this block, if it isn't in the middle of a
++        // prolog or epilog, which we can't split. All we know is that certain
++        // IGs are marked as prolog or epilog. We don't actually know if two adjacent
++        // IGs are part of the *same* prolog or epilog, so we have to assume they are.
++
++        if (igPrev && (((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
++                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG))))
++        {
++            // We can't update the candidate
++        }
++        else
++        {
++            igLastCandidate = ig;
++            candidateSize   = curSize;
++        }
++
++        curSize += ig->igSize;
++
++    } // end for loop
++
++    splitIfNecessary();
++    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
++}
++#endif
+ #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+ 
+ // Does the argument location point to an IG at the end of a function or funclet?
+@@ -4393,6 +4518,8 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
+ // This is done as part of emitSetShortJump();
+ // insSize isz = emitInsSize(id->idInsFmt());
+ // id->idInsSize(isz);
++#elif  defined(TARGET_S390X)
++// TODO: Giri : Something needs here ?
+ #else
+         /* It is fatal to over-estimate the instruction size */
+         IMPL_LIMITATION("Over-estimated instruction size");
+@@ -5654,7 +5781,7 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
+     unsigned insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+     unsigned lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+     unsigned paddingBytes     = MAX_ENCODED_SIZE;
+-#elif defined(TARGET_ARM64)
++#elif defined(TARGET_ARM64 ) || defined(TARGET_S390X)
+     unsigned nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
+     unsigned insAlignCount = nAlignInstr;
+     unsigned paddingBytes  = INSTR_ENCODED_SIZE;
+@@ -6170,7 +6297,7 @@ void emitter::emitLoopAlignAdjustments()
+ #if defined(TARGET_XARCH)
+                 int instrAdjusted =
+                     (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+-#elif defined(TARGET_ARM64)
++#elif defined(TARGET_ARM64) || defined(TARGET_S390X)
+                 unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) / INSTR_ENCODED_SIZE;
+                 if (!emitComp->opts.compJitAlignLoopAdaptive)
+                 {
+@@ -6187,7 +6314,7 @@ void emitter::emitLoopAlignAdjustments()
+ #if defined(TARGET_XARCH)
+                     unsigned newPadding = min(paddingToAdj, (unsigned)MAX_ENCODED_SIZE);
+                     alignInstrToAdj->idCodeSize(newPadding);
+-#elif defined(TARGET_ARM64)
++#elif defined(TARGET_ARM64) || defined (TARGET_S390X)
+                     unsigned newPadding = min(paddingToAdj, (unsigned)INSTR_ENCODED_SIZE);
+                     if (newPadding == 0)
+                     {
+@@ -6875,7 +7002,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
+     {
+         assert(((size_t)consBlock & 15) == 0);
+     }
+-#endif // 0
++#endif
+ #endif
+ 
+     // if (emitConsDsc.dsdOffs)
+diff --git a/src/coreclr/jit/emit.h b/src/coreclr/jit/emit.h
+index 2429acb89b3..df2590f5669 100644
+--- a/src/coreclr/jit/emit.h
++++ b/src/coreclr/jit/emit.h
+@@ -1148,7 +1148,7 @@ protected:
+                 case IF_SN_0A:
+                     if (idIsEmptyAlign())
+                     {
+-                        size = 0;
++                        size = 2;
+                     }
+                     break;
+                 default:
+@@ -1163,7 +1163,7 @@ protected:
+         inline bool idIsEmptyAlign() const
+         {
+             //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+-            //return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
++            return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
+         }
+ 
+         unsigned idCodeSize() const
+@@ -1173,6 +1173,7 @@ protected:
+             {
+ 		case INS_ret:
+ 		case INS_br:
++		case INS_nop:
+ 			size = 2;
+ 			break;
+ 		case INS_lgfi:
+@@ -1632,8 +1633,8 @@ protected:
+         bool idReg3Scaled() const
+         {
+             assert(!idIsSmallDsc());
+-	    _ASSERTE(!"NYI");
+-            //return (idAddr()->_idRegBit == 1);
++	    //_ASSERTE(!"NYI");
++            return (idAddr()->_idRegBit == 1);
+         }
+         void idReg3Scaled(bool val)
+         {
+diff --git a/src/coreclr/jit/emitpub.h b/src/coreclr/jit/emitpub.h
+index bf15ba33667..9b92b9ab461 100644
+--- a/src/coreclr/jit/emitpub.h
++++ b/src/coreclr/jit/emitpub.h
+@@ -114,7 +114,7 @@ static instruction inst3opImulForReg(regNumber reg);
+ /*                   Interface for generating unwind information        */
+ /************************************************************************/
+ 
+-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
++#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
+ 
+ bool emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFragment = NULL);
+ 
+diff --git a/src/coreclr/jit/emits390x.cpp b/src/coreclr/jit/emits390x.cpp
+index 02ff5e8ec29..9f0b93bdd50 100644
+--- a/src/coreclr/jit/emits390x.cpp
++++ b/src/coreclr/jit/emits390x.cpp
+@@ -180,10 +180,9 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
+  */
+ void emitter::emitInsSanityCheck(instrDesc* id)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     /* What instruction format have we got? */
+-
++#if 0
+     switch (id->idInsFmt())
+     {
+         instruction ins;
+@@ -972,7 +971,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
+ 
+ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
+ {
+-    _ASSERTE(!"NYI");
++    return false;
++    //_ASSERTE(!"NYI");
+ #if 0
+     instruction ins = id->idIns();
+     insFormat   fmt = id->idInsFmt();
+@@ -1090,7 +1090,8 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
+ 
+ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
+ {
+-    _ASSERTE(!"NYI");
++    return false;
++    //_ASSERTE(!"NYI");
+ #if 0
+     if (!id->idIsLclVar())
+         return false;
+@@ -1117,7 +1118,8 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
+ 
+ bool emitter::emitInsWritesToLclVarStackLocPair(instrDesc* id)
+ {
+-    _ASSERTE(!"NYI");
++    return false;
++    //_ASSERTE(!"NYI");
+ #if 0
+     if (!id->idIsLclVar())
+         return false;
+@@ -1590,13 +1592,11 @@ bool emitter::emitInsIsVectorNarrow(instruction ins)
+ //
+ bool emitter::emitInsIsVectorWide(instruction ins)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++ //   _ASSERTE(!"NYI");
+     if (ins < ArrLen(CodeGenInterface::instInfo))
+         return (CodeGenInterface::instInfo[ins] & WID) != 0;
+     else
+         return false;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -1629,7 +1629,7 @@ bool emitter::emitInsDestIsOp2(instruction ins)
+  *  Returns the specific encoding of the given CPU instruction and format
+  */
+ 
+-emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
++emitter::code_t emitter::emitInsCode(instruction ins)
+ {
+     code_t code = BAD_CODE;
+     // clang-format off
+@@ -1639,7 +1639,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
+         #include "instrs.h"
+     };
+     code = insCode[ins];
+-    assert((code != BAD_CODE));
++    //assert((code != BAD_CODE));
+ 
+     return code;
+ }
+@@ -3061,19 +3061,16 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
+ 
+ void emitter::emitIns(instruction ins)
+ {
+-	return;
+     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+ 
+-   // if (ins != INS_BREAKPOINT)
+-   // {
+-   //     assert(fmt == IF_SN_0A);
+-   // }
++#if 0
++    if (ins != INS_BREAKPOINT)
++    {
++        assert(fmt == IF_SN_0A);
++    }
++#endif
+ 
+     id->idIns(ins);
+-    //id->idInsFmt(fmt);
+-    //id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
+-    //id->idCodeSize(2);
+-
+     dispIns(id);
+     appendToCurIG(id);
+ }
+@@ -3150,7 +3147,9 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
+ #endif
+         default:
+             // fallback to emit SVE instructions.
+-//            return emitInsSve_R(ins, attr, reg, opt);
++            // return emitInsSve_R(ins, attr, reg, opt);
++           _ASSERTE(!"NYI");
++           break;
+     }
+ 
+     assert(fmt != IF_NONE);
+@@ -3495,6 +3494,8 @@ void emitter::emitIns_R_I(instruction ins,
+         default:
+             // fallback to emit SVE instructions.
+       //      return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
++        
++	    _ASSERTE(!"NYI");
+     } // end switch (ins)
+ 
+     //assert(canEncode);
+@@ -10474,7 +10475,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
+     code_t	op = 0;
+     size_t      sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
+     instruction ins  = id->idIns();
+-    insFormat   fmt  = id->idInsFmt();
++    //insFormat   fmt  = id->idInsFmt();
+     emitAttr    size = id->idOpSize();
+ 
+ #ifdef DEBUG
+@@ -10500,44 +10501,42 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
+         emitAttr datasize;
+ 	
+ 	case INS_br: 
+-            assert((ins == INS_ret) || (ins == INS_br));
+-            op = emitInsCode(ins, fmt);
++            assert(ins == INS_br);
++            op = emitInsCode(ins);
+ 	    S390_RR(dst, op, id->idReg1(), 0); 
+             break;
+-	    
+ 	case INS_ret: 
+-            assert((ins == INS_ret) || (ins == INS_br));
+-            op = emitInsCode(ins, fmt);
++            assert(ins == INS_ret);
++            op = emitInsCode(ins);
+ 	    S390_RR(dst, op, 0xf, id->idReg1());
+             break;
+-        
+ 	case INS_st:
+             imm = emitGetInsSC(id); //get instruction's constant value
+             assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
+-            op = emitInsCode(ins, fmt);
++            op = emitInsCode(ins);
+ 	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+             break;
+ 	    
+ 	case INS_stg:
+-	    op = emitInsCode(ins, fmt);
++	    op = emitInsCode(ins);
+ 	    imm = emitGetInsSC(id);
+ 	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+ 	    break;
+ 	    
+ 	case INS_stmg:
+-	    op = emitInsCode(ins, fmt);
++	    op = emitInsCode(ins);
+ 	    imm = emitGetInsSC(id);
+ 	    S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
+ 	    break;
+ 
+ 	case INS_lmg:
+-	    op = emitInsCode(ins, fmt);
++	    op = emitInsCode(ins);
+ 	    imm = emitGetInsSC(id);
+ 	    S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
+ 	    break;
+ 
+ 	case INS_lay:
+-            op = emitInsCode(ins, fmt);
++            op = emitInsCode(ins);
+             imm = emitGetInsSC(id);
+ 	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+             break;
+@@ -10545,25 +10544,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
+ 	case INS_l:    
+             imm = emitGetInsSC(id); //get instruction's constant value
+             assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
+-            op = emitInsCode(ins, fmt);
++            op = emitInsCode(ins);
+ 	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+ 	    break;
+ 
+ 	case INS_lgr:
+-	    op = emitInsCode(ins, fmt);
++	    op = emitInsCode(ins);
+ 	    S390_RRE(dst, op, id->idReg1(), id->idReg2());
+ 	    break;
+        
+ 	case INS_lgfi: 
+             imm = emitGetInsSC(id);
+-            op = emitInsCode(ins, fmt);
++            op = emitInsCode(ins);
+ 	    S390_RIL_a(dst, op, id->idReg1(), imm);
+ 	    break;
+ 
+         case INS_ark: 
+-            op = emitInsCode(ins, fmt);
++            op = emitInsCode(ins);
+        	    S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+             break;
++        case INS_nop:
++            //assert(insOptsNone(id->idInsOpt()));
++            code = emitInsCode(ins);
++            code = ((code << 8) | (0x0 << 4) | 0); // nnnnn
++            dst += emitOutputWord(dst, (ssize_t)code);
++            //op = emitInsCode(ins);
++	    //S390_RR(dst, op, 0, 0); 
++            break;
+ 	   
+ 	default:
+ 	    _ASSERTE(!"NYI");
+@@ -11565,7 +11572,6 @@ void emitter::emitDispLargeJmp(
+ void emitter::emitDispIns(
+     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
+ {
+-#if 0
+     // Special case: IF_LARGEJMP
+ 
+     if ((id->idInsFmt() == IF_LARGEJMP) && id->idIsBound())
+@@ -11585,9 +11591,8 @@ void emitter::emitDispIns(
+     }
+     else
+     {
+-#endif
+         emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
+-//    }
++    }
+ }
+ 
+ //--------------------------------------------------------------------
+@@ -11654,7 +11659,7 @@ void emitter::emitDispInsHelp(
+     /* Get the instruction and format */
+ 
+     instruction ins = id->idIns();
+-    insFormat   fmt = id->idInsFmt();
++    //insFormat   fmt = id->idInsFmt();
+ 
+     emitDispInst(ins);
+ 
+@@ -11670,7 +11675,7 @@ void emitter::emitDispInsHelp(
+     else if (id->idGCref() == GCT_BYREF)
+         attr = EA_BYREF;
+ 
+-    switch (fmt)
++    switch (ins)
+     {
+         ssize_t      imm;
+         int          doffs;
+@@ -11770,12 +11775,10 @@ void emitter::emitDispInsHelp(
+             }
+         }
+         break;
+-#endif
+         case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
+             assert(insOptsNone(id->idInsOpt()));
+             emitDispReg(id->idReg1(), size, false);
+             break;
+-#if 0
+         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
+             // The size of a branch target is always EA_PTRSIZE
+             assert(insOptsNone(id->idInsOpt()));
+@@ -12001,7 +12004,6 @@ void emitter::emitDispInsHelp(
+             emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
+             break;
+-#endif
+         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
+             emitDispReg(id->idReg1(), size, true);
+             hwi.immHWVal = (unsigned)emitGetInsSC(id);
+@@ -12020,7 +12022,6 @@ void emitter::emitDispInsHelp(
+             }
+             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
+             break;
+-#if 0
+         case IF_DI_1C: // DI_1C   X........Nrrrrrr ssssssnnnnn.....         Rn    imm(N,r,s)
+             emitDispReg(id->idReg1(), size, true);
+             bmi.immNRS = (unsigned)emitGetInsSC(id);
+@@ -12218,14 +12219,12 @@ void emitter::emitDispInsHelp(
+             emitDispComma();
+             emitDispCond(cfi.cond);
+             break;
+-#endif
+         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
+             if ((ins == INS_lgfi) /*|| (ins == INS_sub)*/)
+             {
+                 emitDispReg(id->idReg1(), size, true);
+                 emitDispReg(id->idReg2(), size, true);
+             }
+-#if 0
+             else if ((ins == INS_smulh) || (ins == INS_umulh))
+             {
+                 size = EA_8BYTE;
+@@ -12240,7 +12239,6 @@ void emitter::emitDispInsHelp(
+                 size = EA_4BYTE;
+                 emitDispReg(id->idReg2(), size, true);
+             }
+-#endif
+             else
+             {
+                 emitDispReg(id->idReg1(), size, true);
+@@ -12257,7 +12255,6 @@ void emitter::emitDispInsHelp(
+             }
+ 
+             break;
+-#if 0
+         case IF_DR_3B: // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
+             emitDispReg(id->idReg1(), size, true);
+             emitDispReg(id->idReg2(), size, true);
+@@ -13263,10 +13260,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst,
+ 
+ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
+     bool        isLocalAccess = false;
++#if 0
+     instruction ins           = id->idIns();
+ 
+     if (emitInsIsLoadOrStore(ins))
+@@ -13422,10 +13419,9 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool*
+                 break;
+         }
+     }
+-
++#endif
+     *pMemAccessKind = memAccessKind;
+     *pIsLocalAccess = isLocalAccess;
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------
+@@ -13447,8 +13443,7 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool*
+ //
+ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     insExecutionCharacteristics result;
+     instruction                 ins    = id->idIns();
+     insFormat                   insFmt = id->idInsFmt();
+@@ -13460,6 +13455,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
+     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+     result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
+ 
++#if 0
+     // Initialize insLatency based upon the instruction's memAccessKind and local access values
+     //
+     if (memAccessKind == PERFSCORE_MEMORY_READ)
+@@ -15123,9 +15119,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
+             getInsSveExecutionCharacteristics(id, result);
+             break;
+     }
+-
+-    return result;
+ #endif
++    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
++    result.insLatency    = PERFSCORE_LATENCY_1C;
++    return result;
++
+ }
+ 
+ #endif // defined(DEBUG) || defined(LATE_DISASM)
+diff --git a/src/coreclr/jit/emits390x.h b/src/coreclr/jit/emits390x.h
+index 55409b43b46..a4dbd7da9fa 100644
+--- a/src/coreclr/jit/emits390x.h
++++ b/src/coreclr/jit/emits390x.h
+@@ -77,7 +77,7 @@ void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristic
+ 
+ void emitDispInsHelp(
+     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+-void emitDispInsSveHelp(instrDesc* id);
++//void emitDispInsSveHelp(instrDesc* id);
+ void emitDispLargeJmp(
+     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+ void emitDispComma();
+@@ -166,8 +166,7 @@ bool     emitInsDestIsOp2(instruction ins);
+ emitAttr emitInsTargetRegSize(instrDesc* id);
+ emitAttr emitInsLoadStoreSize(instrDesc* id);
+ 
+-emitter::insFormat emitInsFormat(instruction ins);
+-emitter::code_t    emitInsCode(instruction ins, insFormat fmt);
++emitter::code_t    emitInsCode(instruction ins);
+ emitter::code_t    emitInsCodeSve(instruction ins, insFormat fmt);
+ 
+ // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
+@@ -1795,6 +1794,11 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
+             (jmp->idInsFmt() == IF_LARGELDC));
+ }
+ 
++//  The return value replaces REG_ZR with REG_SP
++static regNumber encodingZRtoSP(regNumber reg)
++{
++    return (reg == REG_SP) ? REG_SP : reg; // TODO : Giri : This function can be renamed !!
++} // ZR (R31) encodes the SP register
+ 
+ // Missing functions referenced in emits390x.cpp
+ bool emitInsMayWriteToGCReg(instrDesc* id);
+diff --git a/src/coreclr/jit/gentree.cpp b/src/coreclr/jit/gentree.cpp
+index e11038f8d65..6f22d136b25 100644
+--- a/src/coreclr/jit/gentree.cpp
++++ b/src/coreclr/jit/gentree.cpp
+@@ -3734,7 +3734,7 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
+     return tree;
+ }
+ 
+-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
++#if !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_S390X)
+ //------------------------------------------------------------------------------
+ // IsValidLongMul : Check for long multiplication with 32 bit operands.
+ //
+diff --git a/src/coreclr/jit/gentree.h b/src/coreclr/jit/gentree.h
+index 717d1e5ea0f..696436ccfaa 100644
+--- a/src/coreclr/jit/gentree.h
++++ b/src/coreclr/jit/gentree.h
+@@ -1683,7 +1683,7 @@ public:
+             return true;
+         }
+ #endif
+-#if defined(TARGET_ARM64)
++#if defined(TARGET_ARM64) || defined(TARGET_S390X)
+         if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
+         {
+             return true;
+@@ -3082,7 +3082,7 @@ struct GenTreeOp : public GenTreeUnOp
+         }
+     }
+ 
+-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
++#if !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_S390X)
+     bool IsValidLongMul();
+ #endif
+ 
+@@ -9513,7 +9513,27 @@ enum insCflags : unsigned
+     INS_FLAGS_NZC,
+     INS_FLAGS_NZCV,
+ };
++
++struct GenTreeCCMP final : public GenTreeOpCC
++{
++    insCflags gtFlagsVal;
++
++    GenTreeCCMP(var_types type, GenCondition condition, GenTree* op1, GenTree* op2, insCflags flagsVal)
++        : GenTreeOpCC(GT_CCMP, type, condition, op1, op2)
++        , gtFlagsVal(flagsVal)
++    {
++    }
++
++#if DEBUGGABLE_GENTREE
++    GenTreeCCMP()
++        : GenTreeOpCC()
++    {
++    }
++#endif // DEBUGGABLE_GENTREE
++};
++
+ #endif
++
+ //------------------------------------------------------------------------
+ // Deferred inline functions of GenTree -- these need the subtypes above to
+ // be defined already.
+diff --git a/src/coreclr/jit/gtlist.h b/src/coreclr/jit/gtlist.h
+index e1e1f909896..e6d65fa8077 100644
+--- a/src/coreclr/jit/gtlist.h
++++ b/src/coreclr/jit/gtlist.h
+@@ -202,7 +202,7 @@ GTNODE(MULHI            , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+ // MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
+ #if !defined(TARGET_64BIT)
+ GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
+-#elif defined(TARGET_ARM64)
++#elif defined(TARGET_ARM64) || defined(TARGET_S390X)
+ GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+ #endif
+ // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
+@@ -256,6 +256,12 @@ GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+ GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+ #endif
+ 
++#ifdef TARGET_S390X
++GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
++GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
++GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
++GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
++#endif
+ //-----------------------------------------------------------------------------
+ //  Other nodes that look like unary/binary operators:
+ //-----------------------------------------------------------------------------
+diff --git a/src/coreclr/jit/gtstructs.h b/src/coreclr/jit/gtstructs.h
+index 7dbf6af39c5..856064278b8 100644
+--- a/src/coreclr/jit/gtstructs.h
++++ b/src/coreclr/jit/gtstructs.h
+@@ -121,6 +121,10 @@ GTSTRUCT_3(OpCC        , GT_SELECTCC, GT_JCMP, GT_JTEST)
+ #if !defined(TARGET_64BIT)
+ GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
+ #endif
++
++#ifdef TARGET_S390X
++GTSTRUCT_1(CCMP        , GT_CCMP)
++#endif
+ /*****************************************************************************/
+ #undef  GTSTRUCT_0
+ #undef  GTSTRUCT_1
+diff --git a/src/coreclr/jit/instrss390x.h b/src/coreclr/jit/instrss390x.h
+index 9495b0d0fa3..cf2b2ce598c 100644
+--- a/src/coreclr/jit/instrss390x.h
++++ b/src/coreclr/jit/instrss390x.h
+@@ -32,13 +32,15 @@
+ 
+ // RV32I & RV64I
+ INST(invalid,		"INVALID",		0,		BAD_CODE)
+-INST(nop,		"nop",			0,		0x00000013)
++INST(align,             "align",                0,              BAD_CODE)
++INST(nop,              "nop",                  0,              0x07)
+ //// R
+ INST(br,		"br",			0,		0x07)
+-INST(ret,		"br",			0,		0x07)
++INST(ret,		"ret",			0,		0x07)
+ //// R_R
+ INST(lgfi,		"lgfi",			0,		0xc01)
+ INST(break,		"break",		0,		0x00)
++INST(brk_unix,          "brk_unix",             0,              0xD4200000)
+ 
+ ////R_I
+ INST(llgc,		"llgc",			0,		0xe390)
+diff --git a/src/coreclr/jit/jit.h b/src/coreclr/jit/jit.h
+index 4cc91d299ad..b9a33ebe2ee 100644
+--- a/src/coreclr/jit/jit.h
++++ b/src/coreclr/jit/jit.h
+@@ -826,7 +826,7 @@ inline size_t unsigned_abs(int64_t x)
+ #define CLFLG_STRUCTPROMOTE 0x00000
+ #endif
+ 
+-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
++#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_S390X)
+ #define FEATURE_LOOP_ALIGN 1
+ #else
+ #define FEATURE_LOOP_ALIGN 0
+diff --git a/src/coreclr/jit/lower.h b/src/coreclr/jit/lower.h
+index 2a1efe979cf..e558f3dc3ec 100644
+--- a/src/coreclr/jit/lower.h
++++ b/src/coreclr/jit/lower.h
+@@ -25,7 +25,7 @@ public:
+     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
+         : Phase(compiler, PHASE_LOWERING)
+         , vtableCallTemp(BAD_VAR_NUM)
+-#ifdef TARGET_ARM64
++#if defined(TARGET_ARM64) || defined(TARGET_S390X)
+         , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
+ #endif
+     {
+@@ -98,6 +98,13 @@ private:
+     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
+     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
+     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
++#endif
++#ifdef TARGET_S390X
++    bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
++    bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
++    insCflags TruthifyingFlags(GenCondition cond);
++    void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
++    bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+ #endif
+     void ContainCheckSelect(GenTreeOp* select);
+     void ContainCheckBitCast(GenTree* node);
+@@ -621,7 +628,7 @@ private:
+     unsigned m_outgoingArgSpaceSize = 0;
+ #endif
+ 
+-#ifdef TARGET_ARM64
++#if defined(TARGET_ARM64) || defined(TARGET_S390X)
+     struct SavedIndir
+     {
+         GenTreeIndir*  Indir;
+diff --git a/src/coreclr/jit/lowers390x.cpp b/src/coreclr/jit/lowers390x.cpp
+index 809b1914a26..1be6a07c818 100644
+--- a/src/coreclr/jit/lowers390x.cpp
++++ b/src/coreclr/jit/lowers390x.cpp
+@@ -19,7 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ #pragma hdrstop
+ #endif
+ 
+-#ifdef TARGET_S390X // This file is ONLY used for ARM and ARM64 architectures
++#ifdef TARGET_S390X // This file is ONLY used for S390X architectures
+ 
+ #include "jit.h"
+ #include "sideeffects.h"
+@@ -39,11 +39,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ //
+ bool Lowering::IsCallTargetInRange(void* addr)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+-    //_ASSERTE(!"NYI");
+-//#if 0
+     return comp->codeGen->validImmForBL((ssize_t)addr);
+-//#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -56,12 +52,10 @@ bool Lowering::IsCallTargetInRange(void* addr)
+ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
+ {
+     return false;
+-    //EX_THROW(HRException, (E_FAIL));
+     //_ASSERTE(!"NYI");
+ //#if 0 
+     if (!varTypeIsFloating(parentNode->TypeGet()))
+     {
+-#ifdef TARGET_S390X
+         if (parentNode->OperIsCompare() && childNode->IsFloatPositiveZero())
+         {
+             // Contain 0.0 constant in fcmp on arm64
+@@ -71,7 +65,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
+             assert(!parentNode->OperIs(GT_TEST_EQ, GT_TEST_NE));
+             return true;
+         }
+-#endif
+ 
+         // Make sure we have an actual immediate
+         if (!childNode->IsCnsIntOrI())
+@@ -143,10 +136,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
+     }
+ 
+     return false;
+-//#endif
+ }
+ 
+-#ifdef TARGET_S390X
+ //------------------------------------------------------------------------
+ // IsContainableUnaryOrBinaryOp: Is the child node a unary/binary op that is containable from the parent node?
+ //
+@@ -158,9 +149,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
+ //
+ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const
+ {
+-    EX_THROW(HRException, (E_FAIL));
+-    _ASSERTE(!"NYI");
+-#if 0 
+ #ifdef DEBUG
+     // The node we're checking should be one of the two child nodes
+     if (parentNode->OperIsBinary())
+@@ -446,9 +434,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
+     }
+ 
+     return false;
+-#endif
+ }
+-#endif // TARGET_S390X
+ 
+ //------------------------------------------------------------------------
+ // LowerStoreLoc: Lower a store of a lclVar
+@@ -465,24 +451,8 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
+ //
+ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+ {
+-   // EX_THROW(HRException, (E_FAIL));
+     //_ASSERTE(!"NYI");
+-#if 0 
+-#ifdef TARGET_ARM
+-    // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
+-    // as most small locals have 4-byte-wide stack homes, the common exception being (dependent) struct fields.
+-    //
+-    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsCnsIntOrI())
+-    {
+-        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+-        if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
+-        {
+-            storeLoc->gtType = TYP_INT;
+-        }
+-    }
+-#endif // TARGET_ARM
+ 
+-#endif
+     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
+     {
+         // We should only encounter this for lclVars that are lvDoNotEnregister.
+@@ -493,12 +463,10 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+ 
+     GenTree* next = storeLoc->gtNext;
+ 
+-//#ifdef TARGET_S390X
+     if (comp->opts.OptimizationEnabled())
+     {
+         TryMoveAddSubRMWAfterIndir(storeLoc);
+     }
+-//#endif
+ 
+     return next;
+ }
+@@ -514,13 +482,10 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+ //
+ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+-    _ASSERTE(!"NYI");
+-#if 0 
+     GenTree* next = node->gtNext;
+     ContainCheckStoreIndir(node);
+-
+-#ifdef TARGET_S390X
++#if 0
++//TODO: Needs to revisit this for s390x
+     if (comp->opts.OptimizationEnabled())
+     {
+         OptimizeForLdpStp(node);
+@@ -528,7 +493,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+ #endif
+ 
+     return next;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -545,12 +509,9 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+ //
+ GenTree* Lowering::LowerMul(GenTreeOp* mul)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+-    _ASSERTE(!"NYI");
+-#if 0 
++//    _ASSERTE(!"NYI");
+     assert(mul->OperIsMul());
+ 
+-#ifdef TARGET_S390X
+     if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
+     {
+         GenTreeCast* op1 = mul->gtGetOp1()->AsCast();
+@@ -583,12 +544,10 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
+ 
+         mul->ChangeOper(GT_MUL_LONG);
+     }
+-#endif // TARGET_S390X
+ 
+     ContainCheckMul(mul);
+ 
+     return mul->gtNext;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -602,9 +561,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
+ //
+ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+ {
+-    //EX_THROW(HRException, (E_FAIL));
+-    _ASSERTE(!"NYI");
+-#if 0 
++    //_ASSERTE(!"NYI");
+     if (comp->opts.OptimizationEnabled())
+     {
+         if (binOp->OperIs(GT_AND))
+@@ -631,7 +588,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+             }
+         }
+ 
+-#ifdef TARGET_S390X
+         if (binOp->OperIs(GT_AND, GT_OR))
+         {
+             GenTree* next;
+@@ -640,7 +596,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+                 return next;
+             }
+         }
+-
++//TODO : May need to revisit
++/*
+         if (binOp->OperIs(GT_SUB))
+         {
+             // Attempt to optimize for umsubl/smsubl.
+@@ -650,13 +607,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+                 return next;
+             }
+         }
+-#endif
++*/
+     }
+ 
+     ContainCheckBinary(binOp);
+ 
+     return binOp->gtNext;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -667,9 +623,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+ //
+ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     GenTree* dstAddr = blkNode->Addr();
+     GenTree* src     = blkNode->Data();
+     unsigned size    = blkNode->Size();
+@@ -682,11 +637,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+             ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+         {
+             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+-#ifdef TARGET_S390X
+             // On ARM64 we can just use REG_ZR instead of having to load
+             // the constant into a real register like on ARM32.
+             src->SetContained();
+-#endif
+             return;
+         }
+ #endif
+@@ -712,19 +665,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+ 
+             if (fill == 0)
+             {
+-#ifdef TARGET_S390X
+                 // On ARM64 we can just use REG_ZR instead of having to load
+                 // the constant into a real register like on ARM32.
+                 src->SetContained();
+-#endif
+             }
+-#ifdef TARGET_S390X
+             else if (size >= REGSIZE_BYTES)
+             {
+                 fill *= 0x0101010101010101LL;
+                 src->gtType = TYP_LONG;
+             }
+-#endif
+             else
+             {
+                 fill *= 0x01010101;
+@@ -737,11 +686,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+         else if (blkNode->IsZeroingGcPointersOnHeap())
+         {
+             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+-#ifdef TARGET_S390X
+             // On ARM64 we can just use REG_ZR instead of having to load
+             // the constant into a real register like on ARM32.
+             src->SetContained();
+-#endif
+         }
+         else
+         {
+@@ -807,7 +754,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+             LowerBlockStoreAsHelperCall(blkNode);
+         }
+     }
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -821,9 +767,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+ //
+ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
++//#if 0
+     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
+     assert(size < INT32_MAX);
+ 
+@@ -867,7 +812,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
+     addr->AsAddrMode()->SetScale(0);
+     addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
+     addr->SetContained();
+-#endif
++//#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -878,9 +823,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
+ //
+ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     GenTree* src = putArgNode->Data();
+ 
+     if (src->TypeIs(TYP_STRUCT))
+@@ -895,7 +838,6 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+             comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+         }
+     }
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -920,9 +862,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+ //
+ GenTree* Lowering::LowerCast(GenTree* tree)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     assert(tree->OperGet() == GT_CAST);
+ 
+     JITDUMP("LowerCast for: ");
+@@ -946,7 +886,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
+     ContainCheckCast(tree->AsCast());
+ 
+     return nullptr;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -960,9 +899,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
+ //
+ void Lowering::LowerRotate(GenTree* tree)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     if (tree->OperGet() == GT_ROL)
+     {
+         // There is no ROL instruction on ARM. Convert ROL into ROR.
+@@ -985,7 +922,6 @@ void Lowering::LowerRotate(GenTree* tree)
+         tree->ChangeOper(GT_ROR);
+     }
+     ContainCheckShiftRotate(tree->AsOp());
+-#endif
+ }
+ 
+ #ifdef TARGET_S390X
+@@ -1109,9 +1045,7 @@ const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
+ //
+ bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     if (!store->OperIs(GT_STORE_LCL_VAR))
+     {
+         return false;
+@@ -1168,7 +1102,36 @@ bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
+     }
+ 
+     return false;
+-#endif
++}
++
++//------------------------------------------------------------------------
++// MarkTree: Mark trees involved in the computation of 'node' recursively.
++//
++// Arguments:
++//    node - Root node.
++//
++void Lowering::MarkTree(GenTree* node)
++{
++    node->gtLIRFlags |= LIR::Flags::Mark;
++    node->VisitOperands([=](GenTree* op) {
++        MarkTree(op);
++        return GenTree::VisitResult::Continue;
++    });
++}
++
++//------------------------------------------------------------------------
++// UnmarkTree: Unmark trees involved in the computation of 'node' recursively.
++//
++// Arguments:
++//    node - Root node.
++//
++void Lowering::UnmarkTree(GenTree* node)
++{
++    node->gtLIRFlags &= ~LIR::Flags::Mark;
++    node->VisitOperands([=](GenTree* op) {
++        UnmarkTree(op);
++        return GenTree::VisitResult::Continue;
++    });
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -1184,9 +1147,7 @@ bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
+ //
+ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     GenTree* cur = prevIndir;
+     for (int i = 0; i < POST_INDEXED_ADDRESSING_MAX_DISTANCE; i++)
+     {
+@@ -1302,7 +1263,6 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
+     INDEBUG(dumpWithMarks());
+     JITDUMP("\n");
+     return true;
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -1436,9 +1396,7 @@ bool Lowering::TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next
+ //
+ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     assert(node->GetHWIntrinsicId() == NI_AdvSimd_FusedMultiplyAddScalar);
+ 
+     GenTree* op1 = node->Op(1);
+@@ -1485,7 +1443,6 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
+     {
+         node->ChangeHWIntrinsicId(NI_AdvSimd_FusedMultiplySubtractScalar);
+     }
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------------
+@@ -1496,9 +1453,7 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
+ //
+ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     if (node->TypeGet() == TYP_SIMD12)
+     {
+         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
+@@ -1967,7 +1922,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+ 
+     ContainCheckHWIntrinsic(node);
+     return node->gtNext;
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------------
+@@ -1981,9 +1935,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+ //
+ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
+            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
+@@ -2010,7 +1962,6 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
+     }
+ 
+     return false;
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------------
+@@ -2022,9 +1973,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
+ //
+ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+     var_types      simdBaseType    = node->GetSimdBaseType();
+@@ -2215,7 +2164,6 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
+ 
+     LowerNode(node);
+     return node->gtNext;
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------------
+@@ -2233,9 +2181,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
+ //
+ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+     var_types      simdType        = node->TypeGet();
+     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+@@ -2397,7 +2343,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+     node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp1, idx, opN);
+ 
+     return LowerNode(node);
+-#endif
+ }
+ 
+ //----------------------------------------------------------------------------------------------
+@@ -2408,9 +2353,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+ //
+ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+     var_types      simdBaseType    = node->GetSimdBaseType();
+@@ -2692,7 +2635,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
+ 
+     BlockRange().Remove(node);
+     return tmp2->gtNext;
+-#endif
+ }
+ #endif // FEATURE_HW_INTRINSICS
+ 
+@@ -2722,19 +2664,14 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
+ //
+ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+-#if 0 
+-#ifdef TARGET_S390X
+     GenTree* src = node->Data();
+     if (src->IsIntegralConst(0))
+     {
+         // an integer zero for 'src' can be contained.
+         MakeSrcContained(node, src);
+     }
+-#endif // TARGET_S390X
+     ContainCheckIndir(node);
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -2889,7 +2826,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
+ //
+ void Lowering::ContainCheckMul(GenTreeOp* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     ContainCheckBinary(node);
+@@ -2904,7 +2841,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
+ //
+ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
+@@ -2921,9 +2858,6 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
+ //
+ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+-    _ASSERTE(!"NYI");
+-#if 0 
+     GenTree* shiftBy = node->gtOp2;
+     assert(node->OperIsShiftOrRotate());
+ 
+@@ -2940,7 +2874,6 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
+     {
+         MakeSrcContained(node, shiftBy);
+     }
+-#endif
+ }
+ 
+ //------------------------------------------------------------------------
+@@ -2951,7 +2884,6 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
+ //
+ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
+ {
+-    //EX_THROW(HRException, (E_FAIL));
+     //_ASSERTE(!"NYI");
+ //#if 0
+     assert(storeLoc->OperIsLocalStore());
+@@ -3017,7 +2949,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
+ //
+ void Lowering::ContainCheckCast(GenTreeCast* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     GenTree*  castOp     = node->CastOp();
+@@ -3094,7 +3025,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
+ //
+ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     //_ASSERTE(!"NYI");
+ //#if 0 
+     GenTree* op1 = cmp->gtGetOp1();
+@@ -3134,7 +3065,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
+ //#endif
+ }
+ 
+-#ifdef TARGET_S390X
+ //------------------------------------------------------------------------
+ // TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
+ //
+@@ -3145,7 +3075,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
+ // Return Value:
+ //    false if no changes were made
+ //
+-#if 0 
+ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
+ {
+     _ASSERTE(!"NYI");
+@@ -3237,7 +3166,6 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
+     *next = tree->gtNext;
+     return true;
+ }
+-#endif
+ 
+ //------------------------------------------------------------------------
+ // TruthifyingFlags: Get a flags immediate that will make a specified condition true.
+@@ -3248,7 +3176,6 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
+ // Returns:
+ //    A flags immediate that, if those flags were set, would cause the specified condition to be true.
+ //
+-#if 0 
+ insCflags Lowering::TruthifyingFlags(GenCondition condition)
+ {
+     _ASSERTE(!"NYI");
+@@ -3279,7 +3206,6 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
+             return INS_FLAGS_NONE;
+     }
+ }
+-#endif
+ 
+ //------------------------------------------------------------------------
+ // ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
+@@ -3287,10 +3213,8 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
+ // Arguments:
+ //    node - pointer to the node
+ //
+-#if 0 
+ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
+ {
+-    _ASSERTE(!"NYI");
+     GenTree* op2 = cmp->gtOp2;
+ 
+     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+@@ -3303,7 +3227,6 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
+         }
+     }
+ }
+-#endif
+ 
+ #endif // TARGET_S390X
+ 
+@@ -3315,7 +3238,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
+ //
+ void Lowering::ContainCheckSelect(GenTreeOp* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+ #ifdef TARGET_ARM
+@@ -3605,7 +3528,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
+ // Return Value:
+ //    false if no changes were made
+ //
+-#if 0 
++#if 0
+ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
+ {
+     _ASSERTE(!"NYI");
+@@ -3614,8 +3537,8 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
+     if (!comp->opts.OptimizationEnabled())
+         return false;
+ 
+-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
+-        return false;
++    //if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
++     //   return false;
+ 
+     if (op->isContained())
+         return false;
+@@ -3701,6 +3624,7 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
+ }
+ #endif
+ 
++
+ //----------------------------------------------------------------------------------------------
+ // TryLowerNegToCombinedMulOp: Attempt to convert NEG nodes to a combined multiply
+ // and negate operation. Conversion can only happen if the operands to the
+@@ -3714,17 +3638,17 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
+ // Return Value:
+ //    false if no changes were made
+ //
+-#if 0 
++//TODO: Need to revisit
++#if 0
+ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
+ {
+-    _ASSERTE(!"NYI");
+     assert(op->OperIs(GT_NEG));
+ 
+     if (!comp->opts.OptimizationEnabled())
+         return false;
+ 
+-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
+-        return false;
++    //if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
++     //   return false;
+ 
+     if (op->isContained())
+         return false;
+@@ -3791,7 +3715,7 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
+ //
+ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     assert(node->OperIs(GT_BOUNDS_CHECK));
+@@ -3812,7 +3736,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
+ //
+ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     const HWIntrinsic intrin(node);
+@@ -4169,7 +4093,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
+ //
+ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
+@@ -4292,7 +4216,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
+ //
+ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
+ {
+-    EX_THROW(HRException, (E_FAIL));
++    //EX_THROW(HRException, (E_FAIL));
+     _ASSERTE(!"NYI");
+ #if 0 
+ #ifdef DEBUG
+@@ -4360,6 +4284,5 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
+ }
+ #endif // TARGET_S390X
+ 
+-#endif // FEATURE_HW_INTRINSICS
+ 
+ #endif // TARGET_ARMARCH
+diff --git a/src/coreclr/jit/unwinds390x.cpp b/src/coreclr/jit/unwinds390x.cpp
+index c8a35eee450..4847519e455 100644
+--- a/src/coreclr/jit/unwinds390x.cpp
++++ b/src/coreclr/jit/unwinds390x.cpp
+@@ -602,7 +602,6 @@ void Compiler::unwindReserve()
+ {
+ 	//s390xmarker: this is used by EmitMachineCode:- unimplemented
+ 	return;
+-#if 0
+     assert(!compGeneratingProlog);
+     assert(!compGeneratingEpilog);
+ 
+@@ -611,13 +610,11 @@ void Compiler::unwindReserve()
+     {
+         unwindReserveFunc(funGetFunc(funcIdx));
+     }
+-#endif
+ }
+ 
+ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
+     bool funcHasColdSection = (fgFirstColdBlock != nullptr);
+ 
+@@ -690,7 +687,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
+         func->uwiCold->Split();
+         func->uwiCold->Reserve(isFunclet, false);
+     }
+-#endif
+ }
+ void Compiler::unwindReturn(regNumber reg)
+ {
+@@ -715,8 +711,7 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
+ 
+ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++//    _ASSERTE(!"NYI");
+     // Verify that the JIT enum is in sync with the JIT-EE interface enum
+     static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+@@ -741,10 +736,8 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
+     {
+         func->uwiCold->Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, false);
+     }
+-#endif
+ }
+ 
+-#if defined(TARGET_S390X)
+ 
+ /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+@@ -762,8 +755,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ 
+ unsigned GetOpcodeSizeFromUnwindHeader(BYTE b1)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     static BYTE s_UnwindOpsize[256] = {
+         // array of opsizes, in bytes (as specified in the ARM unwind specification)
+         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 00-0F
+@@ -788,15 +780,13 @@ unsigned GetOpcodeSizeFromUnwindHeader(BYTE b1)
+     assert(opsize == 2 || opsize == 4); // We shouldn't get a code with no opsize (the 0xFF end code is handled
+                                         // specially)
+     return opsize;
+-#endif
+ }
+ 
+ // Return the size of the unwind code (from 1 to 4 bytes), given the first byte of the unwind bytes
+ 
+ unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     static BYTE s_UnwindSize[256] = {
+         // array of unwind sizes, in bytes (as specified in the ARM unwind specification)
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
+@@ -820,7 +810,6 @@ unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
+     unsigned size = s_UnwindSize[b1];
+     assert(1 <= size && size <= 4);
+     return size;
+-#endif
+ }
+ 
+ #endif // DEBUG
+@@ -848,8 +837,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ // count as 16 and 32 bit NOPs (respectively), as well as an "end", in an epilog.
+ unsigned UnwindCodesBase::GetCodeSizeFromUnwindCodes(bool isProlog)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     BYTE*    pCodesStart = GetCodes();
+     BYTE*    pCodes      = pCodesStart;
+     unsigned size        = 0;
+@@ -873,12 +861,10 @@ unsigned UnwindCodesBase::GetCodeSizeFromUnwindCodes(bool isProlog)
+         assert(pCodes - pCodesStart < 256); // 255 is the absolute maximum number of code bytes allowed
+     }
+     return size;
+-#endif
+ }
+ 
+ #endif // DEBUG
+ 
+-#endif // defined(TARGET_S390X)
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ //
+@@ -895,8 +881,7 @@ unsigned UnwindCodesBase::GetCodeSizeFromUnwindCodes(bool isProlog)
+ 
+ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+ #ifdef DEBUG
+     // We're done adding codes. Check that we didn't accidentally create a bigger prolog.
+     unsigned codeSize = GetCodeSizeFromUnwindCodes(true);
+@@ -935,15 +920,13 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
+         // Update upcCodeSlot to point at the new beginning of the prolog codes
+         upcCodeSlot = upcUnwindBlockSlot + headerBytes;
+     }
+-#endif
+ }
+ 
+ // Add a header word. Header words are added starting at the beginning, in order: first to last.
+ // This is in contrast to the prolog unwind codes, which are added in reverse order.
+ void UnwindPrologCodes::AddHeaderWord(DWORD d)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(-1 <= upcHeaderSlot);
+     assert(upcHeaderSlot + 4 < upcCodeSlot); // Don't collide with the unwind codes that are already there!
+ 
+@@ -953,7 +936,6 @@ void UnwindPrologCodes::AddHeaderWord(DWORD d)
+     upcMem[++upcHeaderSlot] = (BYTE)(d >> 8);
+     upcMem[++upcHeaderSlot] = (BYTE)(d >> 16);
+     upcMem[++upcHeaderSlot] = (BYTE)(d >> 24);
+-#endif
+ }
+ 
+ // AppendEpilog: copy the epilog bytes to the next epilog bytes slot
+@@ -977,8 +959,7 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
+ // GetFinalInfo: return a pointer to the final unwind info to hand to the VM, and the size of this info in bytes
+ void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ ULONG* pUnwindBlockSize)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(upcHeaderSlot + 1 == upcCodeSlot); // We better have filled in the header before asking for the final data!
+ 
+     *ppUnwindBlock = &upcMem[upcUnwindBlockSlot];
+@@ -987,12 +968,10 @@ void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ U
+     // unwind block that is a multiple of 4 bytes in size. Subtract off three 'end'
+     // codes (leave one), and then align the size up to a multiple of 4.
+     *pUnwindBlockSize = AlignUp((UINT)(upcMemSize - upcUnwindBlockSlot - 3), sizeof(DWORD));
+-#endif
+ }
+ 
+ // Do the argument unwind codes match our unwind codes?
+ // If they don't match, return -1. If they do, return the offset into
+-// our codes at which they match. Note that this means that the
+ // argument codes can match a subset of our codes. The subset needs to be at
+ // the end, for the "end" code to match.
+ //
+@@ -1005,8 +984,7 @@ void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ U
+ 
+ int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     if (Size() < pEpi->Size())
+     {
+         return -1;
+@@ -1020,7 +998,6 @@ int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
+     }
+ 
+     return -1;
+-#endif
+ }
+ 
+ // Copy the prolog codes from another prolog. The only time this is legal is
+@@ -1052,8 +1029,7 @@ void UnwindPrologCodes::CopyFrom(UnwindPrologCodes* pCopyFrom)
+ 
+ void UnwindPrologCodes::EnsureSize(int requiredSize)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     if (requiredSize > upcMemSize)
+     {
+         // Reallocate, and copy everything to a new array.
+@@ -1077,7 +1053,6 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
+         upcCodeSlot += newSize - upcMemSize;
+         upcMemSize = newSize;
+     }
+-#endif
+ }
+ 
+ #ifdef DEBUG
+@@ -1222,18 +1197,16 @@ int UnwindEpilogInfo::Match(UnwindEpilogInfo* pEpi)
+ 
+ void UnwindEpilogInfo::CaptureEmitLocation()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     noway_assert(epiEmitLocation == NULL); // This function is only called once per epilog
+     epiEmitLocation = new (uwiComp, CMK_UnwindInfo) emitLocation();
+     epiEmitLocation->CaptureLocation(uwiComp->GetEmitter());
+-#endif
+ }
+ 
+ void UnwindEpilogInfo::FinalizeOffset()
+ {
+-    _ASSERTE(!"NYI");
+-    //epiStartOffset = epiEmitLocation->CodeOffset(uwiComp->GetEmitter());
++    //_ASSERTE(!"NYI");
++    epiStartOffset = epiEmitLocation->CodeOffset(uwiComp->GetEmitter());
+ }
+ 
+ #ifdef DEBUG
+@@ -1273,20 +1246,17 @@ UnwindFragmentInfo::UnwindFragmentInfo(Compiler* comp, emitLocation* emitLoc, bo
+     , ufiSize(0)
+     , ufiStartOffset(UFI_ILLEGAL_OFFSET)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+ #ifdef DEBUG
+     ufiNum         = 1;
+     ufiInProlog    = true;
+     ufiInitialized = UFI_INITIALIZED_PATTERN;
+ #endif // DEBUG
+-#endif
+ }
+ 
+ void UnwindFragmentInfo::FinalizeOffset()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     if (ufiEmitLoc == NULL)
+     {
+         // NULL emit location means the beginning of the code. This is to handle the first fragment prolog.
+@@ -1301,13 +1271,11 @@ void UnwindFragmentInfo::FinalizeOffset()
+     {
+         pEpi->FinalizeOffset();
+     }
+-#endif
+ }
+ 
+ void UnwindFragmentInfo::AddEpilog()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+ 
+ #ifdef DEBUG
+@@ -1354,7 +1322,6 @@ void UnwindFragmentInfo::AddEpilog()
+     // Put subsequent unwind codes in this new epilog
+ 
+     ufiCurCodes = &newepi->epiCodes;
+-#endif
+ }
+ 
+ // Copy the prolog codes from the 'pCopyFrom' fragment. These prolog codes will
+@@ -1439,8 +1406,7 @@ bool UnwindFragmentInfo::IsAtFragmentEnd(UnwindEpilogInfo* pEpi)
+ 
+ void UnwindFragmentInfo::MergeCodes()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+ 
+     unsigned epilogCount     = 0;
+@@ -1567,15 +1533,13 @@ void UnwindFragmentInfo::MergeCodes()
+     ufiNeedExtendedCodeWordsEpilogCount = needExtendedCodeWordsEpilogCount;
+     ufiCodeWords                        = codeWords;
+     ufiEpilogScopes                     = epilogScopes;
+-#endif
+ }
+ 
+ // Finalize: Prepare the unwind information for the VM. Compute and prepend the unwind header.
+ 
+ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+ 
+ #ifdef DEBUG
+@@ -1588,22 +1552,11 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+ 
+     // Compute the header
+ 
+-#if defined(TARGET_S390X)
+-    noway_assert((functionLength & 1) == 0);
+-    DWORD headerFunctionLength = functionLength / 2;
+-#elif defined(TARGET_S390X64)
+     noway_assert((functionLength & 3) == 0);
+     DWORD headerFunctionLength = functionLength / 4;
+-#endif // TARGET_S390X64
+-
+     DWORD headerVers = 0; // Version of the unwind info is zero. No other version number is currently defined.
+     DWORD headerXBit = 0; // We never generate "exception data", but the VM might add some.
+     DWORD headerEBit;
+-#if defined(TARGET_S390X)
+-    DWORD headerFBit = ufiHasPhantomProlog ? 1 : 0; // Is this data a fragment in the sense of the unwind data
+-                                                    // specification? That is, do the prolog codes represent a real
+-                                                    // prolog or not?
+-#endif                                              // defined(TARGET_S390X)
+     DWORD headerEpilogCount;                        // This depends on how we set headerEBit.
+     DWORD headerCodeWords;
+     DWORD headerExtendedEpilogCount = 0; // This depends on how we set headerEBit.
+@@ -1643,14 +1596,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+         IMPL_LIMITATION("unwind data too large");
+     }
+ 
+-#if defined(TARGET_S390X)
+-    DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
+-                   (headerFBit << 22) | (headerEpilogCount << 23) | (headerCodeWords << 28);
+-#elif defined(TARGET_S390X64)
+     DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
+                    (headerEpilogCount << 22) | (headerCodeWords << 27);
+-#endif // defined(TARGET_S390X64)
+-
+     ufiPrologCodes.AddHeaderWord(header);
+ 
+     // Construct the second header word, if needed
+@@ -1680,9 +1627,6 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+     {
+         for (UnwindEpilogInfo* pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+         {
+-#if defined(TARGET_S390X)
+-            DWORD headerCondition = 0xE; // The epilog is unconditional. We don't have epilogs under the IT instruction.
+-#endif                                   // defined(TARGET_S390X)
+ 
+             // The epilog must strictly follow the prolog. The prolog is in the first fragment of
+             // the hot section. If this epilog is at the start of a fragment, it can't be the
+@@ -1695,15 +1639,9 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+             // NOT the offset from the beginning of the main function.
+             DWORD headerEpilogStartOffset = pEpi->GetStartOffset() - GetStartOffset();
+ 
+-#if defined(TARGET_S390X)
+-            noway_assert((headerEpilogStartOffset & 1) == 0);
+-            headerEpilogStartOffset /= 2; // The unwind data stores the actual offset divided by 2 (since the low bit of
+-                                          // the actual offset is always zero)
+-#elif defined(TARGET_S390X64)
+             noway_assert((headerEpilogStartOffset & 3) == 0);
+             headerEpilogStartOffset /= 4; // The unwind data stores the actual offset divided by 4 (since the low 2 bits
+                                           // of the actual offset is always zero)
+-#endif // defined(TARGET_S390X64)
+ 
+             DWORD headerEpilogStartIndex = pEpi->GetStartIndex();
+ 
+@@ -1713,24 +1651,19 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
+                 IMPL_LIMITATION("unwind data too large");
+             }
+ 
+-#if defined(TARGET_S390X)
+-            DWORD epilogScopeWord = headerEpilogStartOffset | (headerCondition << 20) | (headerEpilogStartIndex << 24);
+-#elif defined(TARGET_S390X64)
+             DWORD epilogScopeWord = headerEpilogStartOffset | (headerEpilogStartIndex << 22);
+-#endif // defined(TARGET_S390X64)
+ 
+             ufiPrologCodes.AddHeaderWord(epilogScopeWord);
+         }
+     }
+ 
+     // The unwind code words are already here, following the header, so we're done!
+-#endif
+ }
+ 
+ void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
++    return;
+     MergeCodes();
+ 
+     bool isColdCode = !isHotCode;
+@@ -1746,7 +1679,6 @@ void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
+ #endif
+ 
+     uwiComp->eeReserveUnwindInfo(isFunclet, isColdCode, unwindSize);
+-#endif
+ }
+ 
+ // Allocate the unwind info for a fragment with the VM.
+@@ -1761,8 +1693,7 @@ void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
+ void UnwindFragmentInfo::Allocate(
+     CorJitFuncKind funKind, void* pHotCode, void* pColdCode, UNATIVE_OFFSET funcEndOffset, bool isHotCode)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     UNATIVE_OFFSET startOffset;
+     UNATIVE_OFFSET endOffset;
+     UNATIVE_OFFSET codeSize;
+@@ -1843,7 +1774,6 @@ void UnwindFragmentInfo::Allocate(
+ 
+     uwiComp->eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, unwindBlockSize, pUnwindBlock,
+                                funKind);
+-#endif
+ }
+ 
+ #ifdef DEBUG
+@@ -1901,8 +1831,7 @@ void UnwindFragmentInfo::Dump(int indent)
+ 
+ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLocation* endLoc)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++//    _ASSERTE(!"NYI");
+     uwiComp = comp;
+ 
+     // The first fragment is a member of UnwindInfo, so it doesn't need to be allocated.
+@@ -1926,7 +1855,6 @@ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLoca
+     uwiInitialized = UWI_INITIALIZED_PATTERN;
+     uwiAddingNOP   = false;
+ #endif // DEBUG
+-#endif
+ }
+ 
+ // Split the unwind codes in 'puwi' into those that are in the hot section (leave them in 'puwi')
+@@ -1970,8 +1898,7 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
+ 
+ void UnwindInfo::Split()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     UNATIVE_OFFSET maxFragmentSize; // The maximum size of a code fragment in bytes
+ 
+     maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
+@@ -2099,7 +2026,6 @@ void UnwindInfo::Split()
+         assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);
+     }
+ #endif // DEBUG
+-#endif
+ }
+ 
+ /*static*/ void UnwindInfo::EmitSplitCallback(void* context, emitLocation* emitLoc)
+@@ -2115,23 +2041,20 @@ void UnwindInfo::Split()
+ 
+ void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+ 
+     for (UnwindFragmentInfo* pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+     {
+         pFrag->Reserve(isFunclet, isHotCode);
+     }
+-#endif
+ }
+ 
+ // Allocate and populate VM unwind info for all fragments
+ 
+ void UnwindInfo::Allocate(CorJitFuncKind funKind, void* pHotCode, void* pColdCode, bool isHotCode)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+ 
+     UnwindFragmentInfo* pFrag;
+@@ -2160,22 +2083,17 @@ void UnwindInfo::Allocate(CorJitFuncKind funKind, void* pHotCode, void* pColdCod
+     {
+         pFrag->Allocate(funKind, pHotCode, pColdCode, endOffset, isHotCode);
+     }
+-#endif
+ }
+ 
+ void UnwindInfo::AddEpilog()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+     assert(uwiFragmentLast != NULL);
+     uwiFragmentLast->AddEpilog();
+     CaptureLocation();
+-#endif
+ }
+ 
+-#if defined(TARGET_S390X)
+-
+ #if 0
+ unsigned UnwindInfo::GetInstructionSize()
+ {
+@@ -2185,16 +2103,13 @@ unsigned UnwindInfo::GetInstructionSize()
+ }
+ #endif
+ 
+-#endif // defined(TARGET_S390X)
+ 
+ void UnwindInfo::CaptureLocation()
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+     assert(uwiCurLoc != NULL);
+     uwiCurLoc->CaptureLocation(uwiComp->GetEmitter());
+-#endif
+ }
+ 
+ void UnwindInfo::AddFragment(emitLocation* emitLoc)
+@@ -2289,10 +2204,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ // start is 0-based index from LSB, length is number of bits
+ DWORD ExtractBits(DWORD dw, DWORD start, DWORD length)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     return (dw >> start) & ((1 << length) - 1);
+-#endif
+ }
+ 
+ // Dump an integer register set. 'x' is an array of bits where bit 0 = r0, bit 1 = r1, etc.
+@@ -2302,7 +2215,6 @@ DWORD ExtractBits(DWORD dw, DWORD start, DWORD length)
+ DWORD DumpIntRegSet(DWORD x, DWORD lr)
+ {
+     _ASSERTE(!"NYI");
+-#if 0
+     assert(x != 0 || lr != 0); // we must have one
+     assert((x & 0xE000) == 0); // don't handle r13 (sp), r14 (lr), r15 (pc) in 'x'
+     DWORD printed = 0;
+@@ -2340,7 +2252,6 @@ DWORD DumpIntRegSet(DWORD x, DWORD lr)
+     ++printed;
+ 
+     return printed;
+-#endif
+ }
+ 
+ // Dump a register set range from register 'start' to register 'end'.
+@@ -2351,7 +2262,6 @@ DWORD DumpIntRegSet(DWORD x, DWORD lr)
+ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
+ {
+     _ASSERTE(!"NYI");
+-#if 0
+     assert(start <= end);
+     DWORD printed  = 0;
+     DWORD rtypeLen = (DWORD)strlen(rtype);
+@@ -2380,7 +2290,6 @@ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
+     ++printed;
+ 
+     return printed;
+-#endif
+ }
+ 
+ // Dump the opsize.
+@@ -2388,7 +2297,6 @@ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
+ DWORD DumpOpsize(DWORD padding, DWORD opsize)
+ {
+     _ASSERTE(!"NYI");
+-#if 0
+     if (padding > 100) // underflow?
+         padding = 4;
+     DWORD printed = padding;
+@@ -2396,7 +2304,6 @@ DWORD DumpOpsize(DWORD padding, DWORD opsize)
+         printf(" ");
+     printf("; opsize %d\n", opsize);
+     return printed + 11; // assumes opsize is always 2 digits
+-#endif
+ }
+ 
+ // Dump the unwind data.
+@@ -2414,8 +2321,7 @@ void DumpUnwindInfo(Compiler*         comp,
+                     const BYTE* const pHeader,
+                     ULONG             unwindBlockSize)
+ {
+-    _ASSERTE(!"NYI");
+-#if 0
++    //_ASSERTE(!"NYI");
+     printf("Unwind Info%s:\n", isHotCode ? "" : " COLD");
+ 
+     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
+@@ -2782,7 +2688,6 @@ void DumpUnwindInfo(Compiler*         comp,
+     assert(XBit == 0); // We don't handle the case where exception data is present, such as the Exception Handler RVA
+ 
+     printf("\n");
+-#endif
+ }
+ 
+ #endif // DEBUG
+diff --git a/src/coreclr/vm/debuginfostore.cpp b/src/coreclr/vm/debuginfostore.cpp
+index 8d8b05a6762..538e3210100 100644
+--- a/src/coreclr/vm/debuginfostore.cpp
++++ b/src/coreclr/vm/debuginfostore.cpp
+@@ -55,6 +55,7 @@ public:
+     // Use to encode a monotonically increasing delta.
+     void DoEncodedDeltaU32(uint32_t & dw, uint32_t dwLast)
+     {
++        return;
+         CONTRACTL
+         {
+             THROWS;
+diff --git a/src/coreclr/vm/jitinterface.cpp b/src/coreclr/vm/jitinterface.cpp
+index cef1dcee63a..e06312f77c6 100644
+--- a/src/coreclr/vm/jitinterface.cpp
++++ b/src/coreclr/vm/jitinterface.cpp
+@@ -11046,6 +11046,12 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
+     // The JIT passes in a 4-byte aligned block of unwind data.
+     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+ 
++    // Add space for personality routine, it must be 4-byte aligned.
++    unwindSize += sizeof(ULONG);
++#elif defined(TARGET_S390X)
++    // The JIT passes in a 4-byte aligned block of unwind data.
++    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
++
+     // Add space for personality routine, it must be 4-byte aligned.
+     unwindSize += sizeof(ULONG);
+ #else
+@@ -11066,6 +11072,7 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
+ //
+ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
+ {
++  return ;
+ #ifdef FEATURE_EH_FUNCLETS
+     CONTRACTL {
+         NOTHROW;

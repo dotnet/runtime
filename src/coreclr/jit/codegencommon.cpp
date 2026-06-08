@@ -1904,6 +1904,8 @@ void CodeGen::genGenerateMachineCode()
         printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
         printf("generic RISCV64");
+#elif defined(TARGET_S390X)
+        printf("generic S390X");
 #else
         printf("unknown architecture");
 #endif

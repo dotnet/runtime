@@ -186,9 +186,9 @@ void Compiler::unwindEndProlog()
 
 void Compiler::unwindBegEpilog()
 {
-	return;
-    _ASSERTE(!"NYI");
-#if 0
+    return ;
+    //_ASSERTE(!"NYI");
+//#if 0
     assert(compGeneratingEpilog);
     assert(!compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = true;
@@ -201,7 +201,7 @@ void Compiler::unwindBegEpilog()
 #endif // FEATURE_CFI_SUPPORT
 
     funCurrentFunc()->uwi.AddEpilog();
-#endif
+//#endif
 }
 
 void Compiler::unwindEndEpilog()
@@ -430,7 +430,8 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-    _ASSERTE(!"NYI");
+	return;
+    //_ASSERTE(!"NYI");
 #if 0
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())

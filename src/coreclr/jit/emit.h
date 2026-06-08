@@ -446,6 +446,14 @@ enum idAddrUnionTag
     iaut_SHIFT = 2
 };
 
+enum class EmitCallType
+{
+    Direct,      // Direct call to known address (BRASL)
+    Indirect,    // Indirect call through register (BASR)
+    Helper       // Call to JIT helper function (BRASL)
+};
+
+
 class emitter
 {
     friend class emitLocation;
@@ -1192,6 +1200,7 @@ protected:
                 case INS_clr:
                 case INS_dr:
                 case INS_lcr:
+                case INS_basr:
                     size = 2;
                     break;
                 case INS_lgfi:
@@ -1231,6 +1240,14 @@ protected:
                 case INS_srag:
                 case INS_srak:
                 case INS_sllk:
+		case INS_brasl:
+                case INS_bras:
+                case INS_slag:
+                case INS_slgfi:
+                case INS_nilf:
+                case INS_oihf:
+                case INS_oilf:
+                case INS_xilf:
                     size = 6;
                     break;
                 default:

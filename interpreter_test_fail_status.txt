@@ -1,0 +1,54 @@
+Failed test: QSortTest_u_qsort2.Sorter::Main (JIT/Methodical/ELEMENT_TYPE_IU/u_qsort2_d/u_qsort2_d.dll) (JIT.Methodical.Methodical_d1)                        
+# Test output recorded in log file.                                                                                                                           
+                                                                                                                                                              
+Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary                                                                                  
+============================================================================                                                                                  
+    589.754 |    32 |     32 |      0 |       0 | tracing.tracing                                                                                             
+   8023.458 |   562 |    556 |      5 |       1 | JIT.Regression.Regression_2                                                                                 
+    657.773 |    16 |     15 |      1 |       0 | JIT.JIT_r                                                                                                   
+     52.641 |     2 |      2 |      0 |       0 | JIT.JIT_d                                                                                                   
+     76.863 |     1 |      1 |      0 |       0 | ilasm.PortablePdb.XUnitWrapper.dll                                                                          
+      4.792 |     0 |      0 |      0 |       0 | managed.Managed                                                                                             
+     96.308 |     4 |      2 |      2 |       0 | JIT.Regression.Regression_5                                                                                 
+   5142.657 |   217 |    163 |     35 |      19 | Interop.Interop                                                                                             
+     66.111 |     1 |      1 |      0 |       0 | JIT.jit64.jit64_1                                                                                           
+    414.903 |    40 |     39 |      1 |       0 | Loader.classloader.generics.LoaderClassloaderGenerics                                                       
+   2117.244 |    98 |     98 |      0 |       0 | JIT.SIMD.JIT.SIMD                                                                                           
+    207.731 |     7 |      5 |      2 |       0 | baseservices.exceptions.baseservices-exceptions                                                             
+    406.216 |   111 |    111 |      0 |       0 | JIT.IL_Conformance.IL_Conformance                                                                           
+    658.193 |   202 |    197 |      5 |       0 | JIT.Regression.Regression_6                                                                                 
+      9.973 |     1 |      1 |      0 |       0 | JIT.jit64.jit64_4                                                                                           
+    932.152 |    33 |     29 |      4 |       0 | Regressions.Regressions                                                                                     
+   1087.024 |    27 |     17 |      6 |       4 | baseservices.baseservices                                                                                   
+    337.781 |    46 |     32 |     14 |       0 | JIT.jit64.jit64_5                                                                                           
+   1530.281 |     8 |      8 |      0 |       0 | JIT.JIT_others                                                                                              
+    575.745 |    38 |     34 |      4 |       0 | JIT.jit64.jit64_3                                                                                           
+   9322.005 |   233 |    228 |      3 |       2 | JIT.opt.JIT.opt                                                                                             
+     49.066 |     1 |      1 |      0 |       0 | CoreMangLib.CoreMangLib                                                                                     
+   3347.559 |    77 |     71 |      2 |       4 | JIT.Methodical.Methodical_ro                                                                                
+    202.386 |    39 |     39 |      0 |       0 | JIT.Generics.JIT.Generics                                                                                   
+     80.083 |    11 |      9 |      2 |       0 | JIT.Directed.Directed_2                                                                                     
+    649.613 |    16 |     15 |      1 |       0 | JIT.JIT_ro                                                                                                  
+   2410.252 |   223 |    220 |      3 |       0 | JIT.Regression.Regression_3                                                                                 
+   1422.267 |    97 |     90 |      3 |       4 | JIT.Methodical.Methodical_r2                                                                                
+      4.715 |     0 |      0 |      0 |       0 | JIT.jit64.jit64_2                                                                                           
+   1387.569 |    72 |     71 |      1 |       0 | JIT.Directed.Directed_1                                                                                     
+   4926.601 |   153 |    144 |      8 |       1 | Loader.Loader      
+   3145.549 |    79 |     73 |      2 |       4 | JIT.Methodical.Methodical_do                                                                                
+    859.347 |   145 |    144 |      1 |       0 | JIT.Regression.Regression_1                                                                                 
+    228.153 |    33 |     33 |      0 |       0 | JIT.CodeGenBringUpTests.JIT.CodeGenBringUpTests                                                             
+     57.208 |     2 |      2 |      0 |       0 | baseservices.threading.threading_group1                                                                     
+   3968.021 |   152 |    141 |     11 |       0 | JIT.Methodical.Methodical_r1                                                                                
+   4471.709 |    33 |     33 |      0 |       0 | JIT.Regression.Regression_4                                                                                 
+    621.956 |    94 |     87 |      3 |       4 | JIT.Methodical.Methodical_d2                                                                                
+    808.012 |    32 |     31 |      1 |       0 | JIT.Methodical.Methodical_others                                                                            
+      5.169 |     0 |      0 |      0 |       0 | readytorun.coreroot_determinism.readytorun_coreroot_determinism                                             
+   2159.413 |    81 |     71 |      9 |       1 | JIT.Directed.Directed_3                                                                                     
+    437.107 |    10 |      7 |      3 |       0 | reflection.reflection                                                                                       
+     96.921 |     2 |      2 |      0 |       0 | Exceptions.Exceptions                                                                                       
+    426.810 |    14 |     12 |      2 |       0 | Loader.classloader.regressions.LoaderClassloaderRegressions                                                 
+     18.232 |     1 |      1 |      0 |       0 | baseservices.threading.threading_group2                                                                     
+     72.917 |     3 |      3 |      0 |       0 | JIT.JIT_do                   
+   3832.451 |   141 |    131 |     10 |       0 | JIT.Methodical.Methodical_d1                                                                                
+----------------------------------------------------------------------------                                                                                  
+  67998.688 |  3190 |   3002 |    144 |      44 | (total)               

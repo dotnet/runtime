@@ -67,6 +67,18 @@ static bool strictArmAsm;
 	dst += emitOutputLong (dst, i2);					\
 }										\
 
+#define S390_RIL_b(dst, opc, reg, offset)                                       \
+{                                                                               \
+    dst += emitOutputWord (dst, ((opc >> 4) << 8 | (reg) << 4 | (opc & 0xf)));  \
+    dst += emitOutputLong (dst, offset);                                        \
+}                                                                               \
+
+#define S390_RI(dst, opc, reg, offset)                                          \
+{                                                                               \
+    dst += emitOutputLong (dst, ((opc >> 4) << 24 | (reg) << 20 |               \
+                           (opc & 0x0f) << 16 | (offset & 0xffff)));           \
+}                                                                               \
+
 #define S390_RI_a(dst, opc, r1, i2)						\
 {										\
 	dst += emitOutputWord (dst, (((opc >> 4) << 8) | (r1 << 4) |		\
@@ -1455,7 +1467,8 @@ void emitIns_R_I(instruction     ins,
                  ssize_t         imm,
                  insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
-                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+		 DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
 void emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
                                regNumber   targetReg,
                                regNumber   reg,
