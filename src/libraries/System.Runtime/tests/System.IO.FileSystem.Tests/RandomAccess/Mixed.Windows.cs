@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -141,6 +142,47 @@ namespace System.IO.Tests
                         fileOffset += 2;
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void SyncIOOnAsyncHandle_DoesNotCorruptMemory_WhenSynchronizationContextThrows()
+        {
+            // This test verifies that when WaitOne() throws via SynchronizationContext,
+            // the pending IO is properly canceled before freeing the NativeOverlapped,
+            // preventing use-after-free / heap corruption.
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[1024]);
+
+            SynchronizationContext previous = SynchronizationContext.Current;
+            try
+            {
+                var throwingContext = new ThrowingSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(throwingContext);
+
+                using SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, options: FileOptions.Asynchronous);
+
+                byte[] buffer = new byte[512];
+
+                // The ThrowingSynchronizationContext.Wait throws, which should be caught
+                // and the IO should be canceled gracefully.
+                Assert.Throws<InvalidOperationException>(() => RandomAccess.Read(handle, buffer, 0));
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        /// <summary>
+        /// A SynchronizationContext that throws from Wait to simulate the scenario
+        /// where WaitOne() can throw arbitrary exceptions via user code.
+        /// </summary>
+        private sealed class ThrowingSynchronizationContext : SynchronizationContext
+        {
+            public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            {
+                throw new InvalidOperationException("SynchronizationContext.Wait threw an exception");
             }
         }
     }

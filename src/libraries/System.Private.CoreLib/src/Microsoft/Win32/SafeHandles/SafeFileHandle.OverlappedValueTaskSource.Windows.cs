@@ -14,51 +14,36 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
-        private nint _reusableWaitHandle = -1; // reusable native event handle for sync-over-async I/O; -1 means empty
+        private ManualResetEvent? _reusableSyncWaitEvent; // reusable event for sync-over-async I/O
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
         internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
 
-        internal nint RentSyncWaitHandle()
+        // Rent the reusable ManualResetEvent for sync-over-async I/O, or create a new one.
+        // The returned event is guaranteed to be in non-signaled state.
+        internal ManualResetEvent RentSyncWaitEvent()
         {
-            nint handle = Interlocked.Exchange(ref _reusableWaitHandle, -1);
-            if (handle != -1)
+            ManualResetEvent? mre = Interlocked.Exchange(ref _reusableSyncWaitEvent, null);
+            if (mre is not null)
             {
-                return handle;
+                mre.Reset();
+                return mre;
             }
 
-            using SafeWaitHandle safeHandle = Interop.Kernel32.CreateEventEx(
-                IntPtr.Zero,
-                null,
-                Interop.Kernel32.CREATE_EVENT_MANUAL_RESET,
-                (uint)(Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.EVENT_MODIFY_STATE));
-
-            if (safeHandle.IsInvalid)
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-            }
-
-            handle = safeHandle.DangerousGetHandle();
-            safeHandle.SetHandleAsInvalid();
-
-            return handle;
+            return new ManualResetEvent(false);
         }
 
-        internal void ReturnSyncWaitHandle(nint waitHandle)
+        internal void ReturnSyncWaitEvent(ManualResetEvent waitEvent)
         {
-            if (Interlocked.CompareExchange(ref _reusableWaitHandle, waitHandle, -1) != -1)
+            if (Interlocked.CompareExchange(ref _reusableSyncWaitEvent, waitEvent, null) is not null)
             {
-                Interop.Kernel32.CloseHandle(waitHandle);
+                waitEvent.Dispose();
             }
             else if (IsClosed)
             {
-                nint h = Interlocked.Exchange(ref _reusableWaitHandle, -1);
-                if (h != -1)
-                {
-                    Interop.Kernel32.CloseHandle(h);
-                }
+                Interlocked.Exchange(ref _reusableSyncWaitEvent, null)?.Dispose();
             }
         }
 
@@ -67,12 +52,7 @@ namespace Microsoft.Win32.SafeHandles
             bool result = Interop.Kernel32.CloseHandle(handle);
 
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
-
-            nint waitHandle = Interlocked.Exchange(ref _reusableWaitHandle, -1);
-            if (waitHandle != -1)
-            {
-                Interop.Kernel32.CloseHandle(waitHandle);
-            }
+            Interlocked.Exchange(ref _reusableSyncWaitEvent, null)?.Dispose();
 
             return result;
         }
