@@ -28,12 +28,10 @@
 #include "stublink.h"
 #include "cgensys.h"
 #include "comtoclrcall.h"
-#include "clrtocomcall.h"
 #include "comutilnative.h"
 #include "eeconfig.h"
 #include "interoputil.h"
 #include "dispex.h"
-#include "guidfromname.h"
 #include "comconnectionpoints.h"
 #include <objsafe.h>    // IID_IObjctSafe
 #include "virtualcallstub.h"

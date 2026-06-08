@@ -4785,7 +4785,6 @@ void Module::ExpandAll()
 // Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
 // enclosing type.
-#include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE

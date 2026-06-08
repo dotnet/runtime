@@ -6,7 +6,6 @@
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
 #include "gchandleutilities.h"
-#include "interoplibinterface.h"
 
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)

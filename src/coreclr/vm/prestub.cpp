@@ -29,10 +29,6 @@
 #include "interpexec.h"
 #endif
 
-#ifdef FEATURE_COMINTEROP
-#include "clrtocomcall.h"
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif

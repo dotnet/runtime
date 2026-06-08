@@ -11,7 +11,6 @@
 #include "stdafx.h"
 #include "mdinternaldisp.h"
 #include "mdinternalro.h"
-#include "posterror.h"
 #include "corpriv.h"
 #include "pedecoder.h"
 #include "metamodel.h"

@@ -12,7 +12,6 @@
 // ============================================================
 #include "common.h"
 #include "assembly.hpp"
-#include "utils.hpp"
 #include "assemblybindercommon.hpp"
 
 namespace BINDER_SPACE

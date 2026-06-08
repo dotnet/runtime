@@ -13,7 +13,6 @@
 #include "fieldmarshaler.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
-#include "comdatetime.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
 #include "../debug/ee/debugger.h"
@@ -24,7 +23,6 @@
 #include "olevariant.h"
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"
-#include "clrtocomcall.h"
 #include "cominterfacemarshaler.h"
 #endif
 

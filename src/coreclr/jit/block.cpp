@@ -15,8 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#include "jitstd/algorithm.h"
-
 #if MEASURE_BLOCK_SIZE
 /* static  */
 size_t BasicBlock::s_Size;
