@@ -24,7 +24,8 @@ typedef BOOL (*PFN_PAL_VirtualUnwindOutOfProc)(
     KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
-    UnwindReadMemoryCallback readMemoryCallback);
+    UnwindReadMemoryCallback readMemoryCallback,
+    bool *isSignalFrame);
 
 typedef BOOL (*PFN_PAL_GetUnwindInfoSize)(
     SIZE_T baseAddress,
@@ -177,13 +178,14 @@ PAL_VirtualUnwindOutOfProc(
     KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
-    UnwindReadMemoryCallback readMemoryCallback)
+    UnwindReadMemoryCallback readMemoryCallback,
+    bool *isSignalFrame)
 {
     if (!InitializePAL() || g_PAL_VirtualUnwindOutOfProc == nullptr)
     {
         return FALSE;
     }
-    return g_PAL_VirtualUnwindOutOfProc(context, contextPointers, functionStart, baseAddress, readMemoryCallback);
+    return g_PAL_VirtualUnwindOutOfProc(context, contextPointers, functionStart, baseAddress, readMemoryCallback, isSignalFrame);
 }
 
 BOOL
