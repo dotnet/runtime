@@ -1233,12 +1233,6 @@ public:
             return true;
         }
 
-        // Address of static data is not movable by the GC.
-        if (IsIconHandle(GTF_ICON_STATIC_HDL) || (OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL)))
-        {
-            return true;
-        }
-
         return false;
     }
 
