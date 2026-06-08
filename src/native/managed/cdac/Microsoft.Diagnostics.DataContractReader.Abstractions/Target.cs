@@ -34,7 +34,7 @@ public abstract class Target
     /// <param name="contextFlags">A bitwise combination of platform-dependent flags that indicate which portions of the context should be read.</param>
     /// <param name="buffer">Buffer to be filled with thread context.</param>
     /// <returns>HRESULT indicating success or failure</returns>
-    public abstract int TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
+    public abstract CdacHResults TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process

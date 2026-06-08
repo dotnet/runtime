@@ -51,27 +51,27 @@ public sealed class ClrMdDumpHost : IDisposable
 
     /// <summary>
     /// Read memory from the dump at the specified address.
-    /// Returns 0 on success, non-zero on failure.
+    /// Returns S_OK on success, E_FAIL on failure.
     /// </summary>
-    public int ReadFromTarget(ulong address, Span<byte> buffer)
+    public CdacHResults ReadFromTarget(ulong address, Span<byte> buffer)
     {
         try
         {
             int bytesRead = _dataTarget.DataReader.Read(address, buffer);
             if (bytesRead == buffer.Length)
-                return 0; // success
+                return CdacHResults.S_OK;
 
             // If we couldn't read the full buffer, maybe it's in a PE image
             ModuleInfo? info = GetModuleForAddress(address);
             if (info is null || info.FileName is null)
             {
-                return -1;
+                return CdacHResults.E_FAIL;
             }
 
             string? foundFile = FindFileOnDisk(info.FileName);
             if (foundFile is null)
             {
-                return -1;
+                return CdacHResults.E_FAIL;
             }
 
             using FileStream fs = File.OpenRead(foundFile);
@@ -84,7 +84,7 @@ public sealed class ClrMdDumpHost : IDisposable
                 PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
                 if (block.Length == 0)
                 {
-                    return -1;
+                    return CdacHResults.E_FAIL;
                 }
 
                 int toCopy = Math.Min(block.Length, buffer.Length - filled);
@@ -96,21 +96,21 @@ public sealed class ClrMdDumpHost : IDisposable
                 current += (ulong)toCopy;
             }
 
-            return 0;
+            return CdacHResults.S_OK;
         }
         catch
         {
-            return -1;
+            return CdacHResults.E_FAIL;
         }
     }
 
     /// <summary>
     /// Get a thread's register context from the dump.
-    /// Returns 0 on success, non-zero on failure.
+    /// Returns S_OK on success, E_FAIL on failure.
     /// </summary>
-    public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
+    public CdacHResults GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
     {
-        return _dataTarget.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1;
+        return _dataTarget.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? CdacHResults.S_OK : CdacHResults.E_FAIL;
     }
 
     private ModuleInfo? GetModuleForAddress(ulong address)

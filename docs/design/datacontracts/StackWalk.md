@@ -39,13 +39,10 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 // Creates a stack walk and returns a handle, using a caller-provided seed CONTEXT.
 // `contextBuffer` must be at least `IPlatformAgnosticContext.Size` bytes.
 // `isFirst` indicates whether the seed frame should be treated as the active leaf.
-// `skipFrames` controls whether explicit Frames below the seed SP are yielded as
-//   `SkippedFrame` entries before the containing managed frame.
 IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     ThreadData threadData,
     byte[] contextBuffer,
-    bool isFirst = true,
-    bool skipFrames = false);
+    bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
@@ -84,11 +81,11 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 
-// Returns a context for the thread, trying (in order): the debugger filter context,
+// Fills a context for the thread, trying (in order): the debugger filter context,
 // the OS thread context, or a context derived from the explicit Frame chain. The caller
 // owns the buffer and must ensure it is at least sizeof(CONTEXT) bytes and aligned to
 // IPlatformAgnosticContext.ContextAlignment (16).
-int GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
+CdacHResults GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
@@ -615,11 +612,7 @@ The caller owns the buffer and must ensure it is at least `IPlatformAgnosticCont
 
 #### CreateStackWalk with a caller-provided CONTEXT
 
-`CreateStackWalk(ThreadData, byte[], bool isFirst, bool skipFrames)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT, and exposes two extra knobs:
-
-* `isFirst` (default `true`) is propagated to the first yielded `StackWalkData` as its `IsFirst` value.
-* `skipFrames` (default `false`) controls whether the initial `CheckForSkippedFrames` step runs.
-When the seed sits at a managed-to-unmanaged (M2U) boundary, the overload runs a pre-loop that mirrors native `StackFrameIterator::ResetRegDisp` (`stackwalk.cpp:1261-1308`):
+`CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is propagated to the first yielded `StackWalkData` as its `IsFirst` value.
 
 1. Compute the caller SP by cloning the seed context and unwinding the clone.
 2. Iterate the explicit Frame chain; stop at the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check (on x86, where an external OS unwind can produce a slightly wrong SP — see `stackwalk.cpp:1240-1241`).

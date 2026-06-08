@@ -134,7 +134,7 @@ internal partial class StackWalk_1 : IStackWalk
         return RunStackWalk(context, state, frameIterator, threadData);
     }
 
-    IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst, bool skipFrames)
+    IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         context.FillFromBuffer(contextBuffer);
@@ -200,28 +200,26 @@ internal partial class StackWalk_1 : IStackWalk
             frameIterator.Next();
         }
 
-        bool? matchedIsFirst = null;
-        bool? matchedIsInterrupted = null;
+        bool matchedIsInterrupted = false;
         if (matched)
         {
-            matchedIsFirst = matchedType is FrameType.ResumableFrame
+            isFirst = matchedType is FrameType.ResumableFrame
                                          or FrameType.RedirectedThreadFrame
                           || (matchedType is FrameType.HijackFrame && !isX86);
             matchedIsInterrupted = matchedType is FrameType.FaultingExceptionFrame
                                                 or FrameType.SoftwareExceptionFrame;
         }
 
-        return RunStackWalk(context, state, frameIterator, threadData, isFirst, matchedIsFirst, matchedIsInterrupted, skipFrames);
+        return RunStackWalk(context, state, frameIterator, threadData, isFirst, matchedIsInterrupted);
     }
+
     private IEnumerable<IStackDataFrameHandle> RunStackWalk(
         IPlatformAgnosticContext context,
         StackWalkState state,
         FrameIterator frameIterator,
         ThreadData threadData,
-        bool initialIsFirst = true,
-        bool? isFirstOverride = null,
-        bool? isInterruptedOverride = null,
-        bool skipFrames = true)
+        bool isFirst = true,
+        bool isInterrupted = false)
     {
         // Skip the head InterpreterFrame when entering with a context already
         // inside an interpreter execution (e.g. a managed-debugger breakpoint
@@ -236,17 +234,17 @@ internal partial class StackWalk_1 : IStackWalk
             frameIterator.Next();
         }
 
-        StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
-
-        stackWalkData.IsFirst = isFirstOverride ?? initialIsFirst;
-        if (isInterruptedOverride is bool overrideInterrupted)
-            stackWalkData.IsInterrupted = overrideInterrupted;
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData)
+        {
+            IsFirst = isFirst,
+            IsInterrupted = isInterrupted
+        };
 
         // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
         // When the initial frame is managed (Frameless), check if there are explicit
         // Frames below the caller SP that should be reported first. The native walker
         // yields skipped frames BEFORE the containing managed frame.
-        if (skipFrames && stackWalkData.State == StackWalkState.Frameless && CheckForSkippedFrames(stackWalkData))
+        if (stackWalkData.State == StackWalkState.Frameless && CheckForSkippedFrames(stackWalkData))
         {
             stackWalkData.State = StackWalkState.SkippedFrame;
         }
@@ -1051,11 +1049,11 @@ internal partial class StackWalk_1 : IStackWalk
         return new DebuggerEvalData(debuggerEval.MethodToken, debuggerEval.AssemblyPtr);
     }
 
-    int IStackWalk.GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer)
+    CdacHResults IStackWalk.GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         if (contextBuffer.Length < context.Size)
-            return unchecked((int)0x80070057); // E_INVALIDARG
+            return CdacHResults.E_INVALIDARG;
         Span<byte> buffer = contextBuffer.Slice(0, (int)context.Size);
 
         buffer.Clear();
@@ -1068,20 +1066,20 @@ internal partial class StackWalk_1 : IStackWalk
         if (filterContext != TargetPointer.Null)
         {
             _target.ReadBuffer(filterContext.Value, buffer);
-            return 0;
+            return CdacHResults.S_OK;
         }
 
-        int hr = _target.TryGetThreadContext(threadData.OSId.Value, contextFlags, buffer);
-        if (hr == 0)
+        CdacHResults hr = _target.TryGetThreadContext(threadData.OSId.Value, contextFlags, buffer);
+        if (hr.IsSuccess())
         {
-            return 0;
+            return CdacHResults.S_OK;
         }
 
         // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
-        else if ((uint)hr == 0x80004001 /* E_NOTIMPL */)
+        else if (hr == CdacHResults.E_NOTIMPL)
         {
             WriteContextFromFrames(threadData, buffer);
-            return 0;
+            return CdacHResults.S_OK;
         }
         return hr;
     }
@@ -1153,13 +1151,13 @@ internal partial class StackWalk_1 : IStackWalk
         try
         {
             Span<byte> buffer = new(scratch, (int)context.Size);
-            int hr = ((IStackWalk)this).GetContext(
+            CdacHResults hr = ((IStackWalk)this).GetContext(
                 threadData,
                 ThreadContextSource.Debugger,
                 flags,
                 buffer);
-            if (hr < 0)
-                throw Marshal.GetExceptionForHR(hr)!;
+            if (hr.IsFailure())
+                throw Marshal.GetExceptionForHR((int)hr)!;
             context.FillFromBuffer(buffer);
         }
         finally

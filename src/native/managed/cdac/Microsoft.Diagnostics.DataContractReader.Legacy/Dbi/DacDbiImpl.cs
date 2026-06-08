@@ -1298,9 +1298,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint allFlags = ctx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
             Span<byte> seedSpan = new(pInternalContextBuffer, (int)ctx.Size);
-            hr = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, seedSpan);
-            if (hr < 0)
-                throw Marshal.GetExceptionForHR(hr)!;
+            CdacHResults result = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, seedSpan);
+            if (result.IsFailure())
+                throw Marshal.GetExceptionForHR((int)result)!;
 
             handleData = new StackWalkHandleData(_target.Contracts.StackWalk, threadData);
             SeedHandleFromNativeContext(handleData, pInternalContextBuffer, isFirst: true);
@@ -1395,7 +1395,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (handleData.IsValid)
             {
                 IStackWalk sw = _target.Contracts.StackWalk;
-                byte[] context = sw.GetRawContext(handleData.Current!);
+                byte[] context = sw.GetRawContext(handleData.Current);
 
                 // Apply any pending SP adjustment (x86 M2U adjustment after UnwindStackWalkFrame).
                 if (handleData.PendingStackPointerDelta != 0)
@@ -1515,14 +1515,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 // Step 1: if we're sitting on the initial native context
                 // or a U2M native marker AND the control PC is inside a runtime hijack stub,
                 // recover the saved CONTEXT and re-seed the walker.
-                StackWalkState state = handleData.Current!.State;
+                IStackDataFrameHandle currentFrame = handleData.Current;
+                StackWalkState state = currentFrame.State;
                 bool handled = false;
                 if (state is StackWalkState.InitialNativeContext or StackWalkState.NativeMarker)
                 {
-                    TargetPointer controlPC = sw.GetInstructionPointer(handleData.Current);
+                    TargetPointer controlPC = sw.GetInstructionPointer(currentFrame);
                     if (_target.Contracts.Debugger.IsRuntimeUnwindableStub(controlPC, out bool isUnhandled))
                     {
-                        byte[] recoveredContext = sw.RetrieveHijackedContext(handleData.Current, isUnhandled);
+                        byte[] recoveredContext = sw.RetrieveHijackedContext(currentFrame, isUnhandled);
                         handleData.Reset(recoveredContext, isFirst: true);
                         if (!handleData.IsValid)
                         {
@@ -1541,7 +1542,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     uint cbStackParameterSize = 0;
                     if (state == StackWalkState.Frameless)
                     {
-                        TargetPointer controlPC = sw.GetInstructionPointer(handleData.Current);
+                        TargetPointer controlPC = sw.GetInstructionPointer(currentFrame);
                         if (eman.GetCodeBlockHandle(new TargetCodePointer(controlPC)) is CodeBlockHandle cbh)
                         {
                             cbStackParameterSize = eman.GetStackParameterSize(cbh);
@@ -1549,17 +1550,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     }
 
                     // Step 3: advance past Frame/SkippedFrame entries.
-                    handleData.AdvanceForUnwind();
+                    handleData.Advance();
 
                     bool atEndOfStack = !handleData.IsValid;
 
                     // Step 4: if the unwind landed on a NativeMarker (M2U transition),
                     // apply the saved stack-parameter-size adjustment on x86.
-                    if (!atEndOfStack
-                        && handleData.Current!.State == StackWalkState.NativeMarker
-                        && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
+                    if (!atEndOfStack && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86 && handleData.IsValid)
                     {
-                        handleData.PendingStackPointerDelta = -(long)cbStackParameterSize;
+                        if (handleData.Current.State == StackWalkState.NativeMarker)
+                        {
+                            handleData.PendingStackPointerDelta = -(long)cbStackParameterSize;
+                        }
                     }
                     *pResult = atEndOfStack ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
                 }
@@ -1872,9 +1874,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             try
             {
                 Span<byte> leafBuffer = new(pLeaf, (int)leafCtx.Size);
-                int hrLeaf = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags, leafBuffer);
-                if (hrLeaf < 0)
-                    throw Marshal.GetExceptionForHR(hrLeaf)!;
+                CdacHResults hrLeaf = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags, leafBuffer);
+                if (hrLeaf.IsFailure())
+                    throw Marshal.GetExceptionForHR((int)hrLeaf)!;
                 leafCtx.FillFromBuffer(leafBuffer);
             }
             finally
@@ -1916,9 +1918,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint allFlags = ctx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
             Span<byte> destination = new(pContextBuffer, (int)ctx.Size);
-            hr = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, destination);
-            if (hr < 0)
-                throw Marshal.GetExceptionForHR(hr)!;
+            CdacHResults result = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, destination);
+            if (result.IsFailure())
+                throw Marshal.GetExceptionForHR((int)result)!;
         }
         catch (System.Exception ex)
         {

@@ -32,7 +32,7 @@ internal static class Entrypoints
             ContractDescriptorTarget.AllocVirtualDelegate allocDelegate = (ulong size, out ulong allocatedAddress) =>
             {
                 allocatedAddress = 0;
-                return HResults.E_NOTIMPL;
+                return CdacHResults.E_NOTIMPL;
             };
 
             if (allocVirtual != null)
@@ -42,12 +42,12 @@ internal static class Entrypoints
                     if (size > uint.MaxValue)
                     {
                         allocatedAddress = 0;
-                        return HResults.E_INVALIDARG;
+                        return CdacHResults.E_INVALIDARG;
                     }
 
                     fixed (ulong* addrPtr = &allocatedAddress)
                     {
-                        return allocVirtual((uint)size, addrPtr, delegateContext);
+                        return (CdacHResults)allocVirtual((uint)size, addrPtr, delegateContext);
                     }
                 };
             }
@@ -59,21 +59,21 @@ internal static class Entrypoints
                 {
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                        return (CdacHResults)readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
                     }
                 },
                 (address, buffer) =>
                 {
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                        return (CdacHResults)writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
                     }
                 },
                 (threadId, contextFlags, buffer) =>
                 {
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        return (CdacHResults)readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                     }
                 },
                 allocDelegate,
@@ -251,7 +251,7 @@ internal static class Entrypoints
         ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
         {
             allocatedAddress = 0;
-            return HResults.E_NOTIMPL;
+            return CdacHResults.E_NOTIMPL;
         };
 
         if (dataTarget2 is not null)
@@ -265,7 +265,7 @@ internal static class Entrypoints
                 ClrDataAddress addr;
                 int result = dataTarget2.AllocVirtual(0, (uint)size, MEM_COMMIT, PAGE_READWRITE, &addr);
                 allocatedAddress = (ulong)addr;
-                return result;
+                return (CdacHResults)result;
             };
         }
 
@@ -276,7 +276,7 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     uint bytesRead;
-                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    return (CdacHResults)dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
                 }
             },
             (address, buffer) =>
@@ -284,14 +284,14 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     uint bytesWritten;
-                    return dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
+                    return (CdacHResults)dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
                 }
             },
             (threadId, contextFlags, bufferToFill) =>
             {
                 fixed (byte* bufferPtr = bufferToFill)
                 {
-                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                    return (CdacHResults)dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
             allocVirtual,
