@@ -76,9 +76,9 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped) == 0
+                        ? FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle)
+                        : Interop.Errors.ERROR_SUCCESS;
                     if (errorCode is Interop.Errors.ERROR_IO_PENDING)
                     {
                         try
@@ -171,9 +171,9 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped) == 0
+                        ? FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle)
+                        : Interop.Errors.ERROR_SUCCESS;
                     if (errorCode is Interop.Errors.ERROR_IO_PENDING)
                     {
                         try

@@ -151,10 +151,8 @@ namespace System.IO.Tests
             // This test verifies that when WaitOne() throws via SynchronizationContext,
             // the pending IO is properly canceled before freeing the NativeOverlapped,
             // preventing use-after-free / heap corruption.
-            string filePath = GetTestFilePath();
             byte[] expectedData = new byte[1024];
             Random.Shared.NextBytes(expectedData);
-            File.WriteAllBytes(filePath, expectedData);
 
             SynchronizationContext previous = SynchronizationContext.Current;
             try
@@ -162,21 +160,42 @@ namespace System.IO.Tests
                 ThrowingSynchronizationContext throwingContext = new();
                 SynchronizationContext.SetSynchronizationContext(throwingContext);
 
-                using SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, options: FileOptions.Asynchronous);
+                SafeFileHandle.CreateAnonymousPipe(
+                    out SafeFileHandle readHandle,
+                    out SafeFileHandle writeHandle,
+                    asyncRead: true,
+                    asyncWrite: false);
 
-                byte[] buffer = new byte[512];
+                using (readHandle)
+                using (writeHandle)
+                {
+                    byte[] pendingReadBuffer = new byte[1];
 
-                // The ThrowingSynchronizationContext.Wait throws, which should be caught
-                // and the IO should be canceled gracefully.
-                Assert.Throws<InvalidOperationException>(() => RandomAccess.Read(handle, buffer, 0));
+                    // The ThrowingSynchronizationContext.Wait throws, which should be caught
+                    // and the IO should be canceled gracefully.
+                    Assert.Throws<InvalidOperationException>(() => RandomAccess.Read(readHandle, pendingReadBuffer, 0));
 
-                // Restore the previous context and verify the handle is still usable.
-                SynchronizationContext.SetSynchronizationContext(previous);
+                    // Restore the previous context and verify the read handle is still usable.
+                    SynchronizationContext.SetSynchronizationContext(previous);
 
-                byte[] readBuffer = new byte[expectedData.Length];
-                int bytesRead = RandomAccess.Read(handle, readBuffer, 0);
-                Assert.Equal(expectedData.Length, bytesRead);
-                Assert.Equal(expectedData, readBuffer);
+                    RandomAccess.Write(writeHandle, expectedData, 0);
+
+                    byte[] readBuffer = new byte[expectedData.Length];
+                    int totalRead = 0;
+                    while (totalRead < readBuffer.Length)
+                    {
+                        int bytesRead = RandomAccess.Read(readHandle, readBuffer.AsSpan(totalRead), 0);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+
+                        totalRead += bytesRead;
+                    }
+
+                    Assert.Equal(expectedData.Length, totalRead);
+                    Assert.Equal(expectedData, readBuffer);
+                }
             }
             finally
             {
