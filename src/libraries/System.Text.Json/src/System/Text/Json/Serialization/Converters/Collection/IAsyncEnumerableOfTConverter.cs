@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Converters
                     break;
 
                 default:
-                    throw new UnreachableException();
+                    throw new InvalidOperationException("Invalid async enumerator state.");
             }
 
             Debug.Assert(moveNextTask.IsCompleted);

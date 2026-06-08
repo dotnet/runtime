@@ -378,10 +378,22 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             var events = new List<string>();
+            int firstDisposed = 0;
+            int secondStarted = 0;
             var enumerable1 = new DisposalTrackingAsyncEnumerable<int>(
-                new[] { 1, 2, 3 }, "A", events, asyncDisposal);
+                new[] { 1, 2, 3 }, "A", events, asyncDisposal,
+                onDisposed: () => Interlocked.Exchange(ref firstDisposed, 1));
             var enumerable2 = new DisposalTrackingAsyncEnumerable<int>(
-                new[] { 4, 5, 6 }, "B", events, asyncDisposal);
+                new[] { 4, 5, 6 }, "B", events, asyncDisposal,
+                onFirstMoveNext: () =>
+                {
+                    if (Volatile.Read(ref firstDisposed) == 0)
+                    {
+                        throw new InvalidOperationException("First async enumerator was not fully disposed before second started.");
+                    }
+
+                    Interlocked.Exchange(ref secondStarted, 1);
+                });
 
             using var stream = new Utf8MemoryStream();
             await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDtoWithTwoProperties<int>
@@ -391,13 +403,8 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             JsonTestHelper.AssertJsonEqual("""{"Data1":[1,2,3],"Data2":[4,5,6]}""", stream.AsString());
-
-            int disposeAIndex = events.IndexOf("A:Disposed");
-            int startBIndex = events.IndexOf("B:MoveNext");
-            Assert.True(disposeAIndex >= 0, "A should have been disposed");
-            Assert.True(startBIndex >= 0, "B should have started enumeration");
-            Assert.True(disposeAIndex < startBIndex,
-                $"A should be disposed before B starts enumeration. Events: [{string.Join(", ", events)}]");
+            Assert.Equal(1, Volatile.Read(ref firstDisposed));
+            Assert.Equal(1, Volatile.Read(ref secondStarted));
         }
 
         [Theory]
@@ -447,10 +454,22 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             var events = new List<string>();
+            int firstDisposed = 0;
+            int secondStarted = 0;
             var enumerable1 = new DisposalTrackingAsyncEnumerable<int>(
-                Array.Empty<int>(), "A", events, asyncDisposal);
+                Array.Empty<int>(), "A", events, asyncDisposal,
+                onDisposed: () => Interlocked.Exchange(ref firstDisposed, 1));
             var enumerable2 = new DisposalTrackingAsyncEnumerable<int>(
-                Array.Empty<int>(), "B", events, asyncDisposal);
+                Array.Empty<int>(), "B", events, asyncDisposal,
+                onFirstMoveNext: () =>
+                {
+                    if (Volatile.Read(ref firstDisposed) == 0)
+                    {
+                        throw new InvalidOperationException("First async enumerator was not fully disposed before second started.");
+                    }
+
+                    Interlocked.Exchange(ref secondStarted, 1);
+                });
 
             using var stream = new Utf8MemoryStream();
             await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDtoWithTwoProperties<int>
@@ -460,17 +479,14 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             JsonTestHelper.AssertJsonEqual("""{"Data1":[],"Data2":[]}""", stream.AsString());
-
-            int disposeAIndex = events.IndexOf("A:Disposed");
-            int startBIndex = events.IndexOf("B:MoveNext");
-            Assert.True(disposeAIndex >= 0, "A should have been disposed");
-            Assert.True(startBIndex >= 0, "B should have started enumeration");
-            Assert.True(disposeAIndex < startBIndex,
-                $"A should be disposed before B starts enumeration. Events: [{string.Join(", ", events)}]");
+            Assert.Equal(1, Volatile.Read(ref firstDisposed));
+            Assert.Equal(1, Volatile.Read(ref secondStarted));
         }
 
-        [Fact]
-        public async Task WriteAsyncEnumerable_DisposeAsyncThrows_ExceptionPropagated()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WriteAsyncEnumerable_DisposeAsyncThrows_ExceptionPropagated(bool throwAfterAsyncBoundary)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
             {
@@ -478,7 +494,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             using var stream = new Utf8MemoryStream();
-            var enumerable = new ThrowingDisposeAsyncEnumerable<int>(new[] { 1, 2 });
+            var enumerable = new ThrowingDisposeAsyncEnumerable<int>(new[] { 1, 2 }, throwAfterAsyncBoundary);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<int> { Data = enumerable }));
@@ -488,21 +504,33 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<TElement> source,
             string id,
             List<string> events,
-            bool asyncDisposal) : IAsyncEnumerable<TElement>
+            bool asyncDisposal,
+            Action? onFirstMoveNext = null,
+            Action? onDisposed = null) : IAsyncEnumerable<TElement>
         {
             public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-                => new Enumerator(source.GetEnumerator(), id, events, asyncDisposal);
+                => new Enumerator(source.GetEnumerator(), id, events, asyncDisposal, onFirstMoveNext, onDisposed);
 
             private sealed class Enumerator(
                 IEnumerator<TElement> inner,
                 string id,
                 List<string> events,
-                bool asyncDisposal) : IAsyncEnumerator<TElement>
+                bool asyncDisposal,
+                Action? onFirstMoveNext,
+                Action? onDisposed) : IAsyncEnumerator<TElement>
             {
+                private bool _isFirstMoveNext = true;
+
                 public TElement Current => inner.Current;
 
                 public ValueTask<bool> MoveNextAsync()
                 {
+                    if (_isFirstMoveNext)
+                    {
+                        _isFirstMoveNext = false;
+                        onFirstMoveNext?.Invoke();
+                    }
+
                     bool result = inner.MoveNext();
                     events.Add($"{id}:MoveNext");
                     return new ValueTask<bool>(result);
@@ -516,24 +544,26 @@ namespace System.Text.Json.Serialization.Tests
                         return CompleteAsyncDispose();
                     }
 
+                    onDisposed?.Invoke();
                     events.Add($"{id}:Disposed");
                     return default;
 
                     async ValueTask CompleteAsyncDispose()
                     {
                         await Task.Yield();
+                        onDisposed?.Invoke();
                         events.Add($"{id}:Disposed");
                     }
                 }
             }
         }
 
-        private sealed class ThrowingDisposeAsyncEnumerable<TElement>(IEnumerable<TElement> source) : IAsyncEnumerable<TElement>
+        private sealed class ThrowingDisposeAsyncEnumerable<TElement>(IEnumerable<TElement> source, bool throwAfterAsyncBoundary) : IAsyncEnumerable<TElement>
         {
             public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-                => new Enumerator(source.GetEnumerator());
+                => new Enumerator(source.GetEnumerator(), throwAfterAsyncBoundary);
 
-            private sealed class Enumerator(IEnumerator<TElement> inner) : IAsyncEnumerator<TElement>
+            private sealed class Enumerator(IEnumerator<TElement> inner, bool throwAfterAsyncBoundary) : IAsyncEnumerator<TElement>
             {
                 public TElement Current => inner.Current;
                 public ValueTask<bool> MoveNextAsync()
@@ -545,7 +575,18 @@ namespace System.Text.Json.Serialization.Tests
                 public ValueTask DisposeAsync()
                 {
                     inner.Dispose();
+                    if (throwAfterAsyncBoundary)
+                    {
+                        return ThrowAfterAsyncBoundary();
+                    }
+
                     throw new InvalidOperationException("Simulated DisposeAsync failure for testing");
+
+                    static async ValueTask ThrowAfterAsyncBoundary()
+                    {
+                        await Task.Yield();
+                        throw new InvalidOperationException("Simulated asynchronous DisposeAsync failure for testing");
+                    }
                 }
             }
         }
