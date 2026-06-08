@@ -310,6 +310,15 @@ export class HostBuilder implements DotnetHostBuilder {
 
             const params = new URLSearchParams(window.location.search);
             const values = params.getAll("arg");
+
+            // xharness appends its own control arguments here; keep them from reaching Main(string[] args).
+            for (let i = 0; i < values.length; i++) {
+                if (values[i] === "-verbosity") {
+                    values.splice(i, 2);
+                    i--;
+                }
+            }
+
             return this.withApplicationArguments(...values);
         } catch (err) {
             mono_exit(1, err);
