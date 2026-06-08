@@ -29,6 +29,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (long/double).
 #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register
 #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HFA or 2 doubles)
@@ -50,7 +51,7 @@
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
 #define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
 #define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
-#define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
+#define EMIT_GENERATE_GCINFO     1       // Codegen and emit generate GC info; on WASM this enables stack slot GC info encoding without fixed-register GC tracking
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
 #define REG_FP_FIRST             REG_NA
@@ -146,12 +147,6 @@
 #define REG_WRITE_BARRIER_SRC          REG_NA
 #define RBM_WRITE_BARRIER_SRC          RBM_NONE
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_NONE
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_NONE
-
 #define RBM_CALLEE_TRASH_NOGC          RBM_NONE
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -159,12 +154,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   RBM_NONE
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_NONE
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_NA

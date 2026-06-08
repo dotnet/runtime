@@ -757,7 +757,6 @@ namespace System.Reflection.Emit
             return m_exceptionHeader;
         }
 
-        [RequiresUnsafe]
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
             Debug.Assert(m_exceptions != null);
@@ -906,7 +905,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
@@ -923,7 +921,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exceptionsSize);
@@ -940,7 +937,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(signatureSize);

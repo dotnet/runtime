@@ -135,7 +135,7 @@ namespace System.Text.Json.Nodes
         ///   Gets the JSON path.
         /// </summary>
         /// <returns>The JSON Path value.</returns>
-        public string GetPath()
+        public unsafe string GetPath()
         {
             if (Parent == null)
             {

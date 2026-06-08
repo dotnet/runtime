@@ -84,6 +84,12 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     public List<Crossgen2Option> Options { get; init; } = new();
 
     /// <summary>
+    /// Additional raw command-line arguments to pass to crossgen2 (e.g. "--determinism-stress=2").
+    /// Use this for options that take a value or are not modeled by <see cref="Crossgen2Option"/>.
+    /// </summary>
+    public List<string> AdditionalArgs { get; init; } = new();
+
+    /// <summary>
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
@@ -99,8 +105,13 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// to avoid colliding with component stubs that crossgen2 creates alongside the composite image.
     /// </summary>
     public string FilePath => _outputDir != null
-        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + ".dll")
+        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + OutputFileExtension)
         : throw new InvalidOperationException("Output directory not set");
+
+    /// <summary>
+    /// File extension for the crossgen2 output image.
+    /// </summary>
+    public string OutputFileExtension { get; init; } = ".dll";
 
     public void SetOutputDir(string outputDir)
     {
@@ -295,6 +306,9 @@ internal sealed class R2RTestRunner
         // Image-level options
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
+
+        // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
+        args.AddRange(compilation.AdditionalArgs);
 
         // Global refs (runtime pack + System.Private.CoreLib)
         AddRefArgs(args, refPaths);

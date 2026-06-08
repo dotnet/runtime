@@ -532,7 +532,8 @@ struct HWIntrinsicInfo
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName);
+                                   const char*       outerEnclosingClassName,
+                                   bool              isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -897,6 +898,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
             case NI_X86Base_DivRem:
+            case NI_X86Base_X64_BigMul:
             case NI_X86Base_X64_DivRem:
                 return 2;
 #endif // TARGET_XARCH

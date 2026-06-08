@@ -26,22 +26,22 @@ class AsmOffsets
 #endif // TARGET_UNIX
 #elif TARGET_ARM64
 #if TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x9e0;
+    public const int SIZEOF__REGDISPLAY = 0x9f0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x938;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x940;
 #else // TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x940;
+    public const int SIZEOF__REGDISPLAY = 0x950;
     public const int OFFSETOF__REGDISPLAY__SP = 0x898;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x8a0;
 #endif // TARGET_UNIX
 #elif TARGET_ARM
-    public const int SIZEOF__REGDISPLAY = 0x410;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x3ec;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3f0;
+    public const int SIZEOF__REGDISPLAY = 0x408;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x3e4;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3e8;
 #elif TARGET_X86
-    public const int SIZEOF__REGDISPLAY = 0x5fc;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x5f0;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f4;
+    public const int SIZEOF__REGDISPLAY = 0x5f8;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5ec;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f0;
 #elif TARGET_RISCV64
     public const int SIZEOF__REGDISPLAY = 0x6C0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x628;
@@ -51,9 +51,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0xba8;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbb0;
 #elif TARGET_WASM
-    public const int SIZEOF__REGDISPLAY = 0x58;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x50;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x54;
+    public const int SIZEOF__REGDISPLAY = 0x54;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x4c;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x50;
 #endif
 
 #if TARGET_64BIT
@@ -87,22 +87,22 @@ class AsmOffsets
 #endif // TARGET_UNIX
 #elif TARGET_ARM64
 #if TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x9d0;
+    public const int SIZEOF__REGDISPLAY = 0x9e0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x930;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x938;
 #else // TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x930;
+    public const int SIZEOF__REGDISPLAY = 0x940;
     public const int OFFSETOF__REGDISPLAY__SP = 0x890;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x898;
 #endif // TARGET_UNIX
 #elif TARGET_ARM
-    public const int SIZEOF__REGDISPLAY = 0x408;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x3e8;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3ec;
+    public const int SIZEOF__REGDISPLAY = 0x400;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x3e0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3e4;
 #elif TARGET_X86
-    public const int SIZEOF__REGDISPLAY = 0x5f8;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x5ec;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f0;
+    public const int SIZEOF__REGDISPLAY = 0x5f4;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5e8;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5ec;
 #elif TARGET_RISCV64
     public const int SIZEOF__REGDISPLAY = 0x6B0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x620;
@@ -112,9 +112,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0xba0;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xba8;
 #elif TARGET_WASM
-    public const int SIZEOF__REGDISPLAY = 0x54;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x4c;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x50;
+    public const int SIZEOF__REGDISPLAY = 0x50;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x48;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x4c;
 #endif
 
 #if TARGET_64BIT
@@ -189,12 +189,12 @@ class AsmOffsets
     public const int SIZEOF__EHEnum = 0x20;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x20;
     public const int OFFSETOF__ExInfo__m_pPrevExInfo = 0;
-    public const int OFFSETOF__ExInfo__m_pExContext = 0xa8;
-    public const int OFFSETOF__ExInfo__m_exception = 0xb0;
-    public const int OFFSETOF__ExInfo__m_kind = 0xb8;
-    public const int OFFSETOF__ExInfo__m_passNumber = 0xb9;
-    public const int OFFSETOF__ExInfo__m_idxCurClause = 0xbc;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0xc0;
+    public const int OFFSETOF__ExInfo__m_pExContext = 0xa0;
+    public const int OFFSETOF__ExInfo__m_exception = 0xa8;
+    public const int OFFSETOF__ExInfo__m_kind = 0xb0;
+    public const int OFFSETOF__ExInfo__m_passNumber = 0xb1;
+    public const int OFFSETOF__ExInfo__m_idxCurClause = 0xb4;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0xb8;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
     public const int OFFSETOF__ExInfo__m_pCatchHandler = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x48;
     public const int OFFSETOF__ExInfo__m_handlingFrameSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x50;
@@ -217,12 +217,12 @@ class AsmOffsets
     public const int SIZEOF__EHEnum = 0x10;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x14;
     public const int OFFSETOF__ExInfo__m_pPrevExInfo = 0;
-    public const int OFFSETOF__ExInfo__m_pExContext = 0x5c;
-    public const int OFFSETOF__ExInfo__m_exception = 0x60;
-    public const int OFFSETOF__ExInfo__m_kind = 0x64;
-    public const int OFFSETOF__ExInfo__m_passNumber = 0x65;
-    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x68;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0x6c;
+    public const int OFFSETOF__ExInfo__m_pExContext = 0x58;
+    public const int OFFSETOF__ExInfo__m_exception = 0x5c;
+    public const int OFFSETOF__ExInfo__m_kind = 0x60;
+    public const int OFFSETOF__ExInfo__m_passNumber = 0x61;
+    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x64;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0x68;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
     public const int OFFSETOF__ExInfo__m_pCatchHandler = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x2c;
     public const int OFFSETOF__ExInfo__m_handlingFrameSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x30;

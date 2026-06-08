@@ -97,9 +97,9 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
     /// <summary>
-    /// Gets an instance of the SignatureDecoder contract for the target.
+    /// Gets an instance of the Signature contract for the target.
     /// </summary>
-    public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    public virtual ISignature Signature => GetContract<ISignature>();
     /// <summary>
     /// Gets an instance of the SyncBlock contract for the target.
     /// </summary>
@@ -109,9 +109,17 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
     /// <summary>
+    /// Gets an instance of the ObjectiveCMarshal contract for the target.
+    /// </summary>
+    public virtual IObjectiveCMarshal ObjectiveCMarshal => GetContract<IObjectiveCMarshal>();
+    /// <summary>
     /// Gets an instance of the ConditionalWeakTable contract for the target.
     /// </summary>
     public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
+    /// <summary>
+    /// Gets an instance of the ManagedTypeSource contract for the target.
+    /// </summary>
+    public virtual IManagedTypeSource ManagedTypeSource => GetContract<IManagedTypeSource>();
     /// <summary>
     /// Gets an instance of the AuxiliarySymbols contract for the target.
     /// </summary>
@@ -120,6 +128,11 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+
+    /// <summary>
+    /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
+    /// </summary>
+    public virtual IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => GetContract<IRuntimeMutableTypeSystem>();
 
     /// <summary>
     /// Attempts to get an instance of the requested contract for the target.
@@ -158,8 +171,9 @@ public abstract class ContractRegistry
         where TContract : IContract;
 
     /// <summary>
-    /// Flush all cached data held by contracts in this registry.
-    /// Called when the target process state may have changed (e.g. on resume).
+    /// Flush all cached data held by contracts in this registry for the given
+    /// <paramref name="scope"/>. Called when the target process state may have changed
+    /// (e.g. on resume) or as part of a stress-harness re-read of live target state.
     /// </summary>
-    public abstract void Flush();
+    public abstract void Flush(FlushScope scope);
 }

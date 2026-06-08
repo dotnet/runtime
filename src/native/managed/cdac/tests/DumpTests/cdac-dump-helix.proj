@@ -100,21 +100,27 @@
           Include="mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\%(_Debuggee.DumpDir)\%(_Debuggee.R2RDir)\%(_Debuggee.Identity)" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="echo   Generating dump for %(_Debuggee.Identity) (%(_Debuggee.DumpDir)\%(_Debuggee.R2RDir))..." />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.EnvironmentVariables)' != ''"
+          Include="setlocal" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="set &quot;DOTNET_DbgMiniDumpType=%(_Debuggee.MiniDumpType)&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="set &quot;DOTNET_DbgMiniDumpName=%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\%(_Debuggee.DumpDir)\%(_Debuggee.R2RDir)\%(_Debuggee.Identity)\%(_Debuggee.Identity).dmp&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="set &quot;DOTNET_ReadyToRun=%(_Debuggee.R2RValue)&quot;" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.EnvironmentVariables)' != ''"
+          Include="set &quot;$([System.String]::new('%(_Debuggee.EnvironmentVariables)').Replace(';', '&quot; %26 set &quot;'))&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec %25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(_Debuggee.Identity)\%(_Debuggee.Identity).dll" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.EnvironmentVariables)' != ''"
+          Include="endlocal" />
       <!-- Unix: create dir, run debuggee with inline env vars -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="echo &quot;  Generating dump for %(_Debuggee.Identity) (%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir))...&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="DOTNET_DbgMiniDumpType=%(_Debuggee.MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)/%(_Debuggee.Identity).dmp DOTNET_ReadyToRun=%(_Debuggee.R2RValue) $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(_Debuggee.Identity)/%(_Debuggee.Identity).dll || true" />
+          Include="$([System.String]::new('%(_Debuggee.EnvironmentVariables)').Replace(';', ' ')) DOTNET_DbgMiniDumpType=%(_Debuggee.MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)/%(_Debuggee.Identity).dmp DOTNET_ReadyToRun=%(_Debuggee.R2RValue) $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(_Debuggee.Identity)/%(_Debuggee.Identity).dll || true" />
     </ItemGroup>
   </Target>
 
@@ -127,6 +133,10 @@
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <!-- Check available disk space before running tests -->
+    <HelixPreCommand Include="df -h" />
+    <!-- Disable core dumps (ulimit -c 0) since system cores are too large and we create many intentional crashes for tests, which would fill the machine. -->
+    <HelixPreCommand Include="ulimit -c 0" />
     <HelixPreCommand Include="export DOTNET_DbgEnableMiniDump=1" />
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
   </ItemGroup>
@@ -185,7 +195,7 @@
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\%(Identity).dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
+          Include="@(_UniqueDebuggee->'copy /Y &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
 
       <!-- Unix: copy SPC from testhost shared framework -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
@@ -198,7 +208,7 @@
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
+          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->

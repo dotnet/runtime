@@ -1097,6 +1097,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
 
     block->CopyFlags(target, BBF_COMPACT_UPD);
 
+    // If target was a resumption block, block now plays that role.
+    block->CopyFlags(target, BBF_ASYNC_RESUMPTION);
+
     // mark target as removed
 
     target->SetFlags(BBF_REMOVED);
@@ -1384,6 +1387,9 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 unreached();
         }
 
+        // Inherit some special affordances.
+        block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
+
         //
         // When we optimize a branch to branch we need to update the profile weight
         // of bDest by subtracting out the weight of the path that is being optimized.
@@ -1646,6 +1652,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             {
                 bDest->decreaseBBProfileWeight(edge->getLikelyWeight());
             }
+
+            // Inherit affordances
+            block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
 
             // Redirect the jump to the new target
             //
@@ -4633,6 +4642,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
                         fgRedirectEdge(block->TrueEdgeRef(), bNext->GetTarget());
 
+                        // Inherit some affordances
+                        block->CopyFlags(bNext, BBF_ASYNC_RESUMPTION);
+
                         // bNext no longer flows to target
                         //
                         fgRemoveRefPred(bNext->GetTargetEdge());
@@ -5480,13 +5492,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
-
-    tailMergePreds(nullptr);
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+        {
+            // If this block was already merged, skip it
+            //
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
+            {
+                continue;
+            }
+            predInfo.Push(PredInfo(block, block->lastStmt()));
+        }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //

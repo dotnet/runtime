@@ -153,8 +153,11 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
-    void     MovePutArgNodesUpToCall(GenTreeCall* call);
-    void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
+#ifdef TARGET_WASM
+    void LowerPEPCall(GenTreeCall* call);
+#endif
+    void MovePutArgNodesUpToCall(GenTreeCall* call);
+    void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
@@ -433,10 +436,12 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
-    void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
-    bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerInitBlockStore(GenTreeBlk* blkNode);
+    void     LowerCopyBlockStore(GenTreeBlk* blkNode);
+    bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
@@ -450,8 +455,9 @@ private:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    GenTree* LowerNeg(GenTreeOp* node);
-    void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTree*    LowerNeg(GenTreeOp* node);
+    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -605,8 +611,11 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
+    bool IsInvariantInRange(GenTree*     node,
+                            GenTree*     endExclusive,
+                            GenTree*     ignoreNode,
+                            GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
     bool IsRangeInvariantInRange(GenTree* rangeStart,
                                  GenTree* rangeEnd,
                                  GenTree* endExclusive,

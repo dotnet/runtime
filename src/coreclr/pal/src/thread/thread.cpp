@@ -28,6 +28,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/virtual.h"
 
 #include <minipal/thread.h>
+#include <minipal/cpucount.h>
 
 #if defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID
 #include <sys/cdefs.h>
@@ -347,7 +348,6 @@ CreateThread(
         lpStartAddress,
         lpParameter,
         dwCreationFlags,
-        UserCreatedThread,
         &osThreadId,
         &hNewThread
         );
@@ -405,7 +405,6 @@ PAL_CreateThread64(
         lpStartAddress,
         lpParameter,
         dwCreationFlags,
-        UserCreatedThread,
         pThreadId,
         &hNewThread
     );
@@ -429,7 +428,6 @@ CorUnix::InternalCreateThread(
     LPTHREAD_START_ROUTINE lpStartAddress,
     LPVOID lpParameter,
     DWORD dwCreationFlags,
-    PalThreadType eThreadType,
     SIZE_T* pThreadId,
     HANDLE *phThread
     )
@@ -506,7 +504,6 @@ CorUnix::InternalCreateThread(
     pNewThread->m_lpStartAddress = lpStartAddress;
     pNewThread->m_lpStartParameter = lpParameter;
     pNewThread->m_bCreateSuspended = (dwCreationFlags & CREATE_SUSPENDED) == CREATE_SUSPENDED;
-    pNewThread->m_eThreadType = eThreadType;
 
     if (0 != pthread_attr_init(&pthreadAttr))
     {
@@ -1396,10 +1393,10 @@ CPalThread::ThreadEntry(
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
 
     {
-        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
         if (configuredCpuCount == -1)
         {
-            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing thread creation.
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing thread creation.
             configuredCpuCount = CPU_SETSIZE;
         }
 
@@ -1426,7 +1423,7 @@ CPalThread::ThreadEntry(
                     // vendor-modified Android kernels with strict SELinux policy) block
                     // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
                     // Treat this as non-fatal — the thread will continue running on any
-                    // available CPU rather than the originally affinitized one. 
+                    // available CPU rather than the originally affinitized one.
                     WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
                 }
                 else
@@ -1497,13 +1494,10 @@ CPalThread::ThreadEntry(
 
     pThread->synchronizationInfo.SetThreadState(TS_RUNNING);
 
-    if (UserCreatedThread == pThread->GetThreadType())
-    {
-        /* Inform all loaded modules that a thread has been created */
-        /* note : no need to take a critical section to serialize here; the loader
-           will take the module critical section */
-        LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
-    }
+    /* Inform all loaded modules that a thread has been created */
+    /* note : no need to take a critical section to serialize here; the loader
+       will take the module critical section */
+    LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
 
     /* call the startup routine */
     pfnStartRoutine = pThread->GetStartAddress();
@@ -2322,6 +2316,12 @@ CPalThread::GetStackBase()
 #ifdef TARGET_APPLE
     // This is a Mac specific method
     stackBase = pthread_get_stackaddr_np(pthread_self());
+#elif defined(TARGET_OPENBSD)
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    stackBase = stack.ss_sp;
 #else
     pthread_attr_t attr;
     void* stackAddr;
@@ -2367,6 +2367,12 @@ CPalThread::GetStackLimit()
     // This is a Mac specific method
     stackLimit = ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
                    pthread_get_stacksize_np(pthread_self()));
+#elif defined(TARGET_OPENBSD)
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    stackLimit = (void*)stack.ss_size;
 #else
     pthread_attr_t attr;
     size_t stackSize;
