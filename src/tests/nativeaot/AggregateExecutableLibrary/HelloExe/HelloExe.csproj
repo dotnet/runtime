@@ -2,8 +2,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);EXCLUDE_WIN32RESOURCES_MAIN</DefineConstants>
+    <Win32Resource Condition="'$(TargetsWindows)' == 'true'">..\..\SmokeTests\Win32Resources\test.res</Win32Resource>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HelloExe.cs" />
+    <Compile Include="..\..\SmokeTests\Win32Resources\Win32Resources.cs" Link="Win32Resources.cs" />
   </ItemGroup>
 </Project>

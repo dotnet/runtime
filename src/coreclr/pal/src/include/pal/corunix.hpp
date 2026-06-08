@@ -163,7 +163,6 @@ namespace CorUnix
         otiFile,
         otiFileMapping,
         otiSocket,
-        otiProcess,
         otiThread,
         otiIOCompletionPort,
         ObjectTypeIdCount    // This entry must come last in the enumeration
