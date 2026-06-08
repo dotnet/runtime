@@ -798,13 +798,6 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             }
             break;
 
-            case VNF_StrFastAllocate:
-            {
-                result.lLimit = Limit(Limit::keConstant, 0);
-                result.uLimit = Limit(Limit::keConstant, CORINFO_String_MaxLength);
-            }
-            break;
-
             case VNF_GT:
             case VNF_GT_UN:
             case VNF_GE:
