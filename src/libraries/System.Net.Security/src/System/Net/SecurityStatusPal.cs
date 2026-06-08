@@ -75,6 +75,7 @@ namespace System.Net
         NoRenegotiation,
         KeySetDoesNotExist,
         ContextExpiredError,
-        CertValidationFailed
+        CertValidationFailed,
+        MutualAuthFailed
     }
 }

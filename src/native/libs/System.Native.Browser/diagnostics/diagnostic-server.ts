@@ -8,6 +8,7 @@ import { createDiagConnectionWs } from "./diagnostic-server-ws";
 import { advertise } from "./client-commands";
 import { IDiagnosticConnection } from "./types";
 import { dotnetApi, Module } from "./cross-module";
+import { ENVIRONMENT_IS_WEB } from "./per-module";
 
 let socketHandles: Map<number, IDiagnosticConnection> = undefined as any;
 let nextSocketHandle = 1;
@@ -90,12 +91,11 @@ export function connectDSRouter(url: string): void {
 }
 
 export function initializeDS() {
-    /* WASM-TODO, do this only when <EnableDiagnostics>true</EnableDiagnostics>
     const loaderConfig = dotnetApi.getConfig();
     const diagnosticPorts = "DOTNET_DiagnosticPorts";
-    if (!loaderConfig.environmentVariables![diagnosticPorts]) {
+    loaderConfig.environmentVariables ??= {};
+    if (ENVIRONMENT_IS_WEB && loaderConfig.environmentVariables![diagnosticPorts] === undefined) {
         loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
     }
-    */
     initializeJsClient();
 }
