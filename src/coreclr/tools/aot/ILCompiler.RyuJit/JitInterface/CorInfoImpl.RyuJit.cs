@@ -1259,7 +1259,7 @@ namespace Internal.JitInterface
                     // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
                     // We can't do this for any other method since ToString and Equals have different semantics for enums
                     // and their underlying type.
-                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    if (method.OwningType.IsObject && method.Name == "GetHashCode"u8)
                     {
                         constrainedType = constrainedType.UnderlyingType;
                     }

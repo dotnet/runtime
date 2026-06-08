@@ -119,7 +119,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int Id { get; }
 
         /// <summary>
-        /// The relative virtual address to the start of the code block
+        /// The relative virtual address to the start of the code block.
+        /// On WASM this is the virtual IP with the funclet flag masked off.
         /// </summary>
         public int StartAddress { get; }
 
@@ -127,6 +128,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The relative virtual address to the end of the code block
         /// </summary>
         public int EndAddress { get; }
+
+        /// <summary>
+        /// Whether this runtime function represents a funclet (WASM only).
+        /// </summary>
+        public bool WasmIsFunclet { get; }
 
         /// <summary>
         /// The size of the code block in bytes
@@ -207,7 +213,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             int unwindRva,
             int codeOffset,
             ReadyToRunMethod method,
-            BaseUnwindInfo unwindInfo)
+            BaseUnwindInfo unwindInfo,
+            bool wasmIsFunclet = false)
         {
             _readyToRunReader = readyToRunReader;
 
@@ -218,6 +225,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             Method = method;
             UnwindInfo = unwindInfo;
             CodeOffset = codeOffset;
+            WasmIsFunclet = wasmIsFunclet;
         }
 
         private void EnsureInitialized()
@@ -253,6 +261,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             else if (UnwindInfo is RiscV64.UnwindInfo riscv64Info)
             {
                 return (int)riscv64Info.FunctionLength;
+            }
+            else if (UnwindInfo is Wasm32.UnwindInfo wasmInfo)
+            {
+                return (int)wasmInfo.FunctionLength;
             }
             else if (Method.GcInfo != null)
             {
@@ -625,11 +637,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     runtimeFunctionId = coldRuntimeFunctionId;
                 }
                 int startRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                bool isFunclet = false;
                 if (_readyToRunReader.Machine == Machine.ArmThumb2)
                 {
                     // The low bit of this address is set since the function contains thumb code.
                     // Clear this bit in order to get the "real" RVA of the start of the function.
                     startRva = (int)(startRva & ~1);
+                }
+                else if (_readyToRunReader.Machine == WasmMachine.Wasm32)
+                {
+                    // On WASM, bit 31 is the funclet flag and bits 30:0 are the virtual IP.
+                    isFunclet = (startRva & unchecked((int)0x80000000)) != 0;
+                    startRva = (int)(startRva & 0x7FFFFFFF);
                 }
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
@@ -664,6 +683,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     unwindInfo = new RiscV64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
+                else if (_readyToRunReader.Machine == WasmMachine.Wasm32)
+                {
+                    unwindInfo = new Wasm32.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
+                }
 
                 if (i == 0 && unwindInfo != null)
                 {
@@ -690,7 +713,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindRva,
                     codeOffset,
                     this,
-                    unwindInfo);
+                    unwindInfo,
+                    isFunclet);
 
                 _runtimeFunctions.Add(rtf);
                 runtimeFunctionId++;

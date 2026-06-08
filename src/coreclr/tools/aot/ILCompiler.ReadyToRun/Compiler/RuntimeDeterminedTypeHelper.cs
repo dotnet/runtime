@@ -142,7 +142,7 @@ namespace ILCompiler
             {
                 return field1 == null && field2 == null;
             }
-            return field1.Name.SequenceEqual(field2.Name) &&
+            return field1.Name == field2.Name &&
                 RuntimeDeterminedTypeHelper.Equals(field1.OwningType, field2.OwningType) &&
                 RuntimeDeterminedTypeHelper.Equals(field1.FieldType, field2.FieldType);
         }

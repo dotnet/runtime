@@ -811,10 +811,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
     optCanPropLclVar       = false;
-    optCanPropEqual        = false;
-    optCanPropNonNull      = false;
-    optCanPropBndsChk      = false;
-    optCanPropSubRange     = false;
 }
 
 #ifdef DEBUG
@@ -1524,10 +1520,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 
     // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion.CanPropLclVar();
-    optCanPropEqual |= newAssertion.CanPropEqualOrNotEqual();
-    optCanPropNonNull |= newAssertion.CanPropNonNull();
-    optCanPropSubRange |= newAssertion.CanPropSubRange();
-    optCanPropBndsChk |= newAssertion.CanPropBndsCheck();
 
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
@@ -2428,10 +2420,6 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
     assert(optLocalAssertionProp); // Subrange assertions are local only.
-    if (!optCanPropSubRange)
-    {
-        return NO_ASSERTION_INDEX;
-    }
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
@@ -4298,7 +4286,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 //
 AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
@@ -5083,11 +5071,6 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
-    {
-        return false;
-    }
-
     op = op->gtEffectiveVal();
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -5102,6 +5085,11 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     }
     else
     {
+        if (BitVecOps::MayBeUninit(assertions))
+        {
+            return false;
+        }
+
         // Find live assertions related to lclNum
         //
         unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
@@ -5156,18 +5144,24 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
 
-    // Check each assertion to find if we have a vn != null assertion.
+    // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
+    // may be uninit here (e.g. when the current block has no live assertions); in that case we
+    // skip the iteration and fall through to the reaching-assertions walk below, which can still
+    // prove non-null via predecessor-edge assertions (e.g. across PHIs).
     //
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
-        AssertionIndex      assertionIndex = GetAssertionIndex(index);
-        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-        if (curAssertion.CanPropNonNull() &&
-            ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            return true;
+            AssertionIndex      assertionIndex = GetAssertionIndex(index);
+            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+            if (curAssertion.CanPropNonNull() &&
+                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+            {
+                return true;
+            }
         }
     }
 
@@ -5503,7 +5497,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  */
 GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optLocalAssertionProp || !optCanPropBndsChk)
+    if (optLocalAssertionProp)
     {
         return nullptr;
     }
@@ -6658,6 +6652,15 @@ PhaseStatus Compiler::optAssertionPropMain()
 
     noway_assert(optAssertionCount == 0);
     bool madeChanges = false;
+
+    // Reset any bbAssertionOut left over from earlier phases (e.g. morph's cross-block
+    // local AP writes them with a different apTraits). Until dataflow re-initializes
+    // them, MayBeUninit guards in optGetEdgeAssertions / optAssertionVNIsNonNull will
+    // skip iteration that would otherwise see stale (out-of-range) bits.
+    for (BasicBlock* const block : Blocks())
+    {
+        block->bbAssertionOut = BitVecOps::UninitVal();
+    }
 
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
