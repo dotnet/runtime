@@ -35,7 +35,6 @@
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MT-</WorkItemPrefix>
 
-    <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
                                       '$(Scenario)' == 'WasmTestOnFirefox'">true</IsRunningLibraryTests>
@@ -177,9 +176,8 @@
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
-                      '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
-                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox and BuildWasmApps at the moment. It was $(Scenario)." />
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
     <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
