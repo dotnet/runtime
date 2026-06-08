@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -37,51 +37,13 @@ namespace ILCompiler
         //
         // Turn a name into a valid C/C++ identifier
         //
-        private static string SanitizeName(string s)
-        {
-            StringBuilder sb = null;
-            for (int i = 0; i < s.Length; i++)
-            {
-                char c = s[i];
-
-                if (char.IsAsciiLetter(c))
-                {
-                    sb?.Append(c);
-                    continue;
-                }
-
-                if (char.IsAsciiDigit(c))
-                {
-                    // C identifiers cannot start with a digit. Prepend underscores.
-                    if (i == 0)
-                    {
-                        sb ??= new StringBuilder(s.Length + 2);
-                        sb.Append('_');
-                    }
-                    sb?.Append(c);
-                    continue;
-                }
-
-                sb ??= new StringBuilder(s, 0, i, s.Length);
-
-                // Everything else is replaced by underscore.
-                // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
-                sb.Append('_');
-            }
-
-            string sanitizedName = (sb != null) ? sb.ToString() : s;
-
-            // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
-            // restricted to that use only. Replace them if they happened to be used in any identifiers in
-            // the compilation input.
-            return sanitizedName;
-        }
-
         public override Utf8String SanitizeName(Utf8String s)
             => SanitizeName(s.AsSpan());
 
-        private static Utf8String SanitizeName(ReadOnlySpan<byte> s)
+        private static Utf8String SanitizeName(Utf8Span n)
         {
+            ReadOnlySpan<byte> s = n.AsSpan();
+
             Utf8StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)
             {
@@ -132,62 +94,26 @@ namespace ILCompiler
             return sanitizedName;
         }
 
-        private static byte[] GetBytesFromString(string literal)
+        private static bool ContainsUtf8ReplacementCharacter(ReadOnlySpan<byte> bytes)
         {
-            byte[] bytes = new byte[checked(literal.Length * 2)];
-            for (int i = 0; i < literal.Length; i++)
-            {
-                int iByteBase = i * 2;
-                char c = literal[i];
-                bytes[iByteBase] = (byte)c;
-                bytes[iByteBase + 1] = (byte)(c >> 8);
-            }
-            return bytes;
+            ReadOnlySpan<byte> replacementCharacter = [0xEF, 0xBF, 0xBD];
+            return bytes.IndexOf(replacementCharacter) >= 0;
         }
 
-        private string SanitizeNameWithHash(string literal)
-        {
-            string mangledName = SanitizeName(literal);
-
-            if (mangledName.Length > 30)
-                mangledName = mangledName.Substring(0, 30);
-
-            if (mangledName != literal)
-            {
-                byte[] hash;
-                lock (this)
-                {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    hash = SHA256.HashData(GetBytesFromString(literal));
-                }
-
-                mangledName += "_" + Convert.ToHexString(hash);
-            }
-
-            return mangledName;
-        }
-
-        private Utf8String SanitizeNameWithHash(Utf8String literal)
+        private static Utf8String SanitizeNameWithHash(Utf8String literal, byte[] hash = null)
         {
             Utf8String mangledName = SanitizeName(literal);
 
             if (mangledName.Length > 30)
                 mangledName = new Utf8String(mangledName.AsSpan().Slice(0, 30).ToArray());
 
-            if (!mangledName.AsSpan().SequenceEqual(literal.AsSpan()))
+            if (hash is not null || !mangledName.AsSpan().SequenceEqual(literal.AsSpan()))
             {
-                byte[] hash;
-                lock (this)
-                {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    hash = SHA256.HashData(literal.AsSpan());
-                }
+                // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                // failure.
+                hash ??= SHA256.HashData(literal.AsSpan());
 
                 mangledName = new Utf8StringBuilder()
                     .Append(mangledName)
@@ -297,7 +223,7 @@ namespace ILCompiler
                         // This problem needs a better fix.
                         if (isSystemPrivate)
                             assemblyName = string.Concat("S.P.", assemblyName.AsSpan(15));
-                        Utf8String prependAssemblyName = new Utf8String(SanitizeName(assemblyName));
+                        Utf8String prependAssemblyName = SanitizeName(new Utf8String(assemblyName));
 
                         var deduplicator = new HashSet<Utf8String>();
 
@@ -318,7 +244,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    ReadOnlySpan<byte> ns = t.Namespace;
+                                    Utf8Span ns = t.Namespace;
                                     if (ns.Length > 0)
                                         sb.Append(SanitizeName(ns)).Append('_');
                                 }
@@ -657,7 +583,7 @@ namespace ILCompiler
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         foreach (var f in field.OwningType.GetFields())
                         {
-                            sb.Clear().Append(prependTypeName).Append("__"u8);
+                            sb.Clear().Append(prependTypeName).Append("__f_"u8);
                             Utf8String name = SanitizeName(f.Name);
 
                             name = DisambiguateName(name, deduplicator);
@@ -674,7 +600,7 @@ namespace ILCompiler
 
 
             Utf8String mangledName = SanitizeName(field.Name);
-            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__"u8).Append(mangledName).ToUtf8String();
+            Utf8String utf8MangledName = new Utf8StringBuilder().Append(prependTypeName).Append("__f_"u8).Append(mangledName).ToUtf8String();
 
             lock (this)
             {
@@ -684,18 +610,22 @@ namespace ILCompiler
             return utf8MangledName;
         }
 
-        private Dictionary<string, string> _mangledStringLiterals = new Dictionary<string, string>();
+        private Dictionary<string, Utf8String> _mangledStringLiterals = new Dictionary<string, Utf8String>();
 
-        public override string GetMangledStringName(string literal)
+        public override Utf8String GetMangledStringName(string literal)
         {
-            string mangledName;
+            Utf8String mangledName;
             lock (this)
             {
                 if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
                     return mangledName;
             }
 
-            mangledName = SanitizeNameWithHash(literal);
+            Utf8String utf8Literal = new Utf8String(literal);
+            byte[] hash = ContainsUtf8ReplacementCharacter(utf8Literal.AsSpan())
+                ? SHA256.HashData(MemoryMarshal.AsBytes(literal.AsSpan()))
+                : null;
+            mangledName = SanitizeNameWithHash(utf8Literal, hash);
 
             lock (this)
             {

@@ -3,6 +3,7 @@
 
 using System;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -77,6 +78,23 @@ namespace ILCompiler
             return null;
         }
 
+        public static TypeDesc GetUnmanagedCallersOnlyAssociatedSourceType(this EcmaMethod This)
+        {
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute");
+            if (decoded == null)
+                return null;
+
+            var decodedValue = decoded.Value;
+
+            foreach (var argument in decodedValue.NamedArguments)
+            {
+                if (argument.Name == "AssociatedSourceType")
+                    return (TypeDesc)argument.Value;
+            }
+
+            return null;
+        }
+
 #if !READYTORUN
         /// <summary>
         /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
@@ -142,11 +160,11 @@ namespace ILCompiler
 
             if (ret is MetadataType md
                 && md.Module == method.Context.SystemModule
-                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+                && md.Namespace == "System.Threading.Tasks"u8)
             {
-                ReadOnlySpan<byte> name = md.Name;
-                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
-                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                Utf8Span name = md.Name;
+                if (name == "Task"u8 || name == "Task`1"u8
+                    || name == "ValueTask"u8 || name == "ValueTask`1"u8)
                 {
                     return true;
                 }

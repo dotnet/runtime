@@ -1175,7 +1175,6 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef SWIFT_SUPPORT
@@ -1252,7 +1251,6 @@ protected:
 
     void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void                 genJumpTable(GenTree* tree);

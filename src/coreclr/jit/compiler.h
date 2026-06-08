@@ -5253,7 +5253,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig,
+                                        CORINFO_SIG_INFO*     sig
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5935,6 +5936,8 @@ public:
     PhaseStatus fgMorphInit();
 
     PhaseStatus fgInline();
+
+    PhaseStatus fgPostInlineNoReturnCleanup();
 
     PhaseStatus fgResolveGDVs();
 
@@ -7098,19 +7101,6 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
-#ifdef FEATURE_SIMD
-    GenTree* getSIMDStructFromField(GenTree*  tree,
-                                    unsigned* indexOut,
-                                    unsigned* simdSizeOut,
-                                    bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldStores(Statement* stmt);
-
-    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field store
-    // in function: Compiler::impMarkContiguousSIMDFieldStores.
-    Statement* fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-
-#endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -7569,6 +7559,7 @@ public:
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
+    PhaseStatus optBoundsCheckCoalesce();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
@@ -8547,11 +8538,6 @@ public:
             return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
-        bool CanPropBndsCheck() const
-        {
-            return GetOp1().KindIs(O1K_VN);
-        }
-
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
@@ -9061,10 +9047,6 @@ protected:
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
-    bool           optCanPropEqual;
-    bool           optCanPropNonNull;
-    bool           optCanPropBndsChk;
-    bool           optCanPropSubRange;
 
     RangeCheck* optRangeCheck = nullptr;
     RangeCheck* GetRangeCheck();
@@ -9228,6 +9210,7 @@ public:
     };
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
@@ -10163,12 +10146,7 @@ private:
 
     GenTree* impSIMDPopStack();
 
-    void     setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool     areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
-    bool     areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
-    bool     areArrayElementsContiguous(GenTree* op1, GenTree* op2);
-    bool     areArgumentsContiguous(GenTree* op1, GenTree* op2);
-    GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
+    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
@@ -11555,7 +11533,6 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
-        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 

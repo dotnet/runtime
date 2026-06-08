@@ -1317,7 +1317,7 @@ public:
             *value = 0;
             return false;
         }
-        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        int64_t val = CoercedConstantValue<int64_t>(vn);
         if (FitsIn<T>(val))
         {
             *value = static_cast<T>(val);
@@ -1383,6 +1383,10 @@ public:
     // Returns "true" iff "vn" is a function application for a HWIntrinsic
     bool IsVNHWIntrinsicFunc(
         ValueNum vn, VNFuncApp* funcApp, NamedIntrinsic* intrinsicId, unsigned* simdSize, var_types* simdBaseType);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    uint32_t GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType);
+#endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.

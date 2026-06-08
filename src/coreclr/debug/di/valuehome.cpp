@@ -620,7 +620,7 @@ void RemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void RemoteValueHome::CreateInternalValue(CordbType *       pType,
-                                          SIZE_T            offset,
+                                          CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
                                           ICorDebugValue ** ppValue)
@@ -719,7 +719,7 @@ void RegisterValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void RegisterValueHome::CreateInternalValue(CordbType *       pType,
-                                            SIZE_T            offset,
+                                            CORDB_ADDRESS     offset,
                                             void *            localAddress,
                                             ULONG32           size,
                                             ICorDebugValue ** ppValue)
@@ -930,7 +930,7 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void HandleValueHome::CreateInternalValue(CordbType *       pType,
-                                          SIZE_T            offset,
+                                          CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
                                           ICorDebugValue ** ppValue)

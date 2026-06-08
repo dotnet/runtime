@@ -1497,28 +1497,51 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE HasTypeParams(VMPTR_TypeHandle th, OUT BOOL * pResult) = 0;
 
-    // Get type information for a class
+    // Callback invoked for each FieldData computed by EnumerateClassFields or
+    // EnumerateInstantiationFields.
+    //
+    // Arguments:
+    //    pFieldData - the FieldData for this field. Only valid for the duration of the
+    //                 callback; the consumer must copy the contents if it needs to keep
+    //                 them. The pointer is not null.
+    //    pUserData  - user data passed to the Enumerate* call.
+    typedef void (*FP_FIELDDATA_CALLBACK)(FieldData *pFieldData, CALLBACK_DATA pUserData);
+
+    // Enumerate the FieldData entries for a class.
     //
     // Arguments:
     //     input:  thExact       - exact type handle for type
-    //     output:
-    //             pData         - structure containing information about the class and its
-    //                             fields
+    //             fpCallback    - callback invoked once per field (in iterator order:
+    //                             regular FieldDescs first, then EnC-added instance,
+    //                             then EnC-added static).
+    //             pUserData     - opaque user data passed back to the callback.
+    //     output: pObjectSize   - size of the object in bytes for non-generic types;
+    //                             zero for open generic types. Always written on S_OK.
+    //
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateClassFields(VMPTR_TypeHandle thExact,
+                                                           OUT SIZE_T *pObjectSize,
+                                                           FP_FIELDDATA_CALLBACK fpCallback,
+                                                           CALLBACK_DATA pUserData) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData) = 0;
-
-    // get field information and object size for an instantiated generic
+    // Enumerate the FieldData entries for an instantiated generic type and report its
+    // instantiation-specific object size.
     //
     // Arguments:
     //     input:  vmAssembly  - module containing metadata for the type
-    //             thExact       - exact type handle for type (may be NULL)
-    //             thApprox      - approximate type handle for the type
-    //     output:
-    //             pFieldList    - array of structures containing information about the fields. Clears any previous
-    //                             contents. Allocated and initialized by this function.
-    //             pObjectSize   - size of the instantiated object
+    //             vmThExact   - exact type handle for type (may be NULL)
+    //             vmThApprox  - approximate type handle for the type
+    //             fpCallback  - callback invoked once per field.
+    //             pUserData   - opaque user data passed back to the callback.
+    //     output: pObjectSize - size of the instantiated object. Always written on S_OK.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize) = 0;
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateInstantiationFields(VMPTR_Assembly vmAssembly,
+                                                                   VMPTR_TypeHandle vmThExact,
+                                                                   VMPTR_TypeHandle vmThApprox,
+                                                                   OUT SIZE_T *pObjectSize,
+                                                                   FP_FIELDDATA_CALLBACK fpCallback,
+                                                                   CALLBACK_DATA pUserData) = 0;
 
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
     //
@@ -1779,7 +1802,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This function will return a failure HRESULT if given a NULL or otherwise invalid pointer,
     //    but if given a valid address to an invalid pointer, it will produce
     //    a VMPTR_Object which points to invalid memory.
@@ -1796,7 +1818,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This will produce a VMPTR_Object regardless of whether the pointer is
     //    valid or not.
     virtual HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal) = 0;
@@ -1877,22 +1898,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     virtual HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal) = 0;
-
-    // Given a VMPTR to an Object, get the target address.
-    //
-    // Arguments:
-    //    obj      - the Object VMPTR to get the address from
-    //    pRetVal - [out] The target address which obj is using.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The VMPTR this consumes can be reconstructed using GetObject and
-    //    providing the address stored in the returned TargetBuffer. This has
-    //    undefined behavior for invalid VMPTR_Objects.
-
-    virtual HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal) = 0;
 
     //
     // Get the thread which owns the monitor lock on an object and the acquisition
@@ -2231,19 +2236,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable) = 0;
 
-
-    typedef enum
-    {
-        kClosedDelegate,
-        kOpenDelegate,
-        kOpenInstanceVSD,
-        kClosedStaticWithScpecialSig,
-        kTrueMulticastDelegate,
-        kWrapperDelegate,
-        kUnmanagedFunctionDelegate,
-        kUnknownDelegateType
-    } DelegateType;
-
     // Returns true if the object is a type deriving from System.MulticastDelegate
     //
     // Arguments:
@@ -2252,20 +2244,14 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // Get the delegate type
-    virtual HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType) = 0;
-
     virtual HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain) = 0;
+        OUT VMPTR_Object *ppTargetObj) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 
