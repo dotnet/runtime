@@ -129,7 +129,21 @@ cd ..
 
 git clone https://github.com/alhad-deshpande/JIT_Testing.git
 cd JIT_Testing
+
+git fetch --all
+
 git checkout ppc64le_coreclr_jit_testing
+
+git reset --hard origin/ppc64le_coreclr_jit_testing
+
+echo "Current commit:"
+git log --oneline -1
+
+echo "Testcase count:"
+find testcases -name "*.cs" | wc -l
+
+echo "Files discovered:"
+find testcases -name "*.cs" | sort
 
 chmod +x run_test.sh
 
