@@ -26,16 +26,32 @@ cd runtime
 git checkout ppc64le_coreclr_jit
 
 # =========================================================
-#  Fix disabled NuGet feed
+#  Remove disabled NuGet feeds
 # =========================================================
 echo "=================================="
-echo "Fix NuGet feed"
+echo "Check NuGet feeds"
 echo "=================================="
 
-if grep -q "darc-pub-dotnet-emsdk-78f6f07" NuGet.config; then
-    sed -i '/darc-pub-dotnet-emsdk-78f6f07/d' NuGet.config
-    echo "Removed disabled emsdk feed from NuGet.config"
-fi
+cp NuGet.config NuGet.config.bkp
+
+grep 'value="https://pkgs.dev.azure.com' NuGet.config | while read -r line
+do
+    FEED_URL=$(echo "$line" | sed -n 's/.*value="\([^"]*\)".*/\1/p')
+
+    echo "Checking: $FEED_URL"
+
+    HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" "$FEED_URL" || echo "000")
+
+    if [ "$HTTP_CODE" = "404" ]; then
+        echo "Removing disabled feed: $FEED_URL"
+
+        ESCAPED_URL=$(printf '%s\n' "$FEED_URL" | sed 's/[\/&]/\\&/g')
+
+        sed -i "\|$ESCAPED_URL|d" NuGet.config
+    fi
+done
+
+echo "NuGet feed validation completed"
 
 # =========================================================
 #  Install .NET SDK
