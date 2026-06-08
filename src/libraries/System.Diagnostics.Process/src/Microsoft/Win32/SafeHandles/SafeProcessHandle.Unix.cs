@@ -177,8 +177,6 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
         {
-            waitStateHolder = null;
-
             ProcessUtils.EnsureInitialized();
 
             if (startInfo.UseShellExecute)
@@ -226,14 +224,14 @@ namespace Microsoft.Win32.SafeHandles
             bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
             byte** argvPtr = null, envpPtr = null;
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
-            Utf8StringMarshaller.ManagedToUnmanagedIn resolvedPathMarshaller = default;
+            scoped Utf8StringMarshaller.ManagedToUnmanagedIn resolvedPathMarshaller = default;
+            Span<byte> resolvedPathBuffer = stackalloc byte[Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
 
             try
             {
                 Interop.Sys.AllocArgvArray(argv, ref argvPtr);
                 Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
 
-                Span<byte> resolvedPathBuffer = stackalloc byte[Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
                 resolvedPathMarshaller.FromManaged(resolvedFileName, resolvedPathBuffer);
 
                 nint stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
