@@ -4237,6 +4237,8 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     EX_TRY
     {
+        LoadNativeInfo();
+
         NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos;
         const ICorDebugInfo::NativeVarInfo **pVarInfosBuffer = NULL;
         if (pOffsets != NULL && bufferSize > 0)
