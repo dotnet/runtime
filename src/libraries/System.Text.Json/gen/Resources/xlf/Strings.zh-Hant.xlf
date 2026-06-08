@@ -134,37 +134,37 @@
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
         <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
-        <target state="new">The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</target>
+        <target state="translated">無法解析多型基底類型 '{1}' 的開放式泛型衍生類型 '{0}': {2}。</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
         <source>the derived type matches the base type through multiple ancestors</source>
-        <target state="new">the derived type matches the base type through multiple ancestors</target>
+        <target state="translated">衍生的類型會透過多個上階項目來比對基底類型</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
         <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
-        <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
+        <target state="translated">'{1}' 未滿足類型參數 '{0}' 上的條件約束</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
         <source>the derived type is not assignable to the base type</source>
-        <target state="new">the derived type is not assignable to the base type</target>
+        <target state="translated">衍生的類型無法指派給基底類型</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
         <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
-        <target state="new">the type parameter '{0}' of the derived type is not bound by the base type's arguments</target>
+        <target state="translated">衍生類型的類型參數 '{0}' 並未由基底類型的引數繫結</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
         <source>the base type's arguments do not match the derived type's base specification</source>
-        <target state="new">the base type's arguments do not match the derived type's base specification</target>
+        <target state="translated">基底類型的引數與衍生類型的基底規格不符</target>
         <note />
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
         <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
-        <target state="new">Open generic derived type could not be resolved for the polymorphic base type.</target>
+        <target state="translated">無法解析多型基底類型的開放式泛型衍生類型。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">

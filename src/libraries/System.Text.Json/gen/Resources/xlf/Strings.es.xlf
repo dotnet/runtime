@@ -134,37 +134,37 @@
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
         <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
-        <target state="new">The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</target>
+        <target state="translated">No se pudo resolver el tipo derivado genérico abierto "{0}" para el tipo base polimórfico "{1}": {2}.</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
         <source>the derived type matches the base type through multiple ancestors</source>
-        <target state="new">the derived type matches the base type through multiple ancestors</target>
+        <target state="translated">el tipo derivado coincide con el tipo base a través de varios antecesores</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
         <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
-        <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
+        <target state="translated">la restricción del parámetro de tipo "{0}" no se satisface con "{1}"</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
         <source>the derived type is not assignable to the base type</source>
-        <target state="new">the derived type is not assignable to the base type</target>
+        <target state="translated">el tipo derivado no se puede asignar al tipo base</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
         <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
-        <target state="new">the type parameter '{0}' of the derived type is not bound by the base type's arguments</target>
+        <target state="translated">el parámetro de tipo "{0}" del tipo derivado no está enlazado por los argumentos del tipo base</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
         <source>the base type's arguments do not match the derived type's base specification</source>
-        <target state="new">the base type's arguments do not match the derived type's base specification</target>
+        <target state="translated">los argumentos del tipo base no coinciden con la especificación base del tipo derivado</target>
         <note />
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
         <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
-        <target state="new">Open generic derived type could not be resolved for the polymorphic base type.</target>
+        <target state="translated">No se pudo resolver el tipo derivado genérico abierto para el tipo base polimórfico.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">

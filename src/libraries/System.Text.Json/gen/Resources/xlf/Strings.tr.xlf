@@ -134,37 +134,37 @@
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
         <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
-        <target state="new">The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</target>
+        <target state="translated">Açık genel türetilmiş tür '{0}' çok biçimli temel tür '{1}' için çözümlenemedi: {2}.</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
         <source>the derived type matches the base type through multiple ancestors</source>
-        <target state="new">the derived type matches the base type through multiple ancestors</target>
+        <target state="translated">türetilen tür, birden fazla atası aracılığıyla temel türle eşleşir</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
         <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
-        <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
+        <target state="translated">'{0}' tür parametresi için kısıtlama '{1}' tarafından karşılanmıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
         <source>the derived type is not assignable to the base type</source>
-        <target state="new">the derived type is not assignable to the base type</target>
+        <target state="translated">Türetilmiş tür, temel türe atanamıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
         <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
-        <target state="new">the type parameter '{0}' of the derived type is not bound by the base type's arguments</target>
+        <target state="translated">Türetilmiş türün '{0}' tür parametresi, temel türün bağımsız değişkenleri tarafından bağlanmıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
         <source>the base type's arguments do not match the derived type's base specification</source>
-        <target state="new">the base type's arguments do not match the derived type's base specification</target>
+        <target state="translated">Temel türün bağımsız değişkenleri, türetilmiş türün temel belirtimiyle eşleşmiyor</target>
         <note />
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
         <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
-        <target state="new">Open generic derived type could not be resolved for the polymorphic base type.</target>
+        <target state="translated">Açık genel türetilmiş tür, çok biçimli temel tür için çözümlenemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
