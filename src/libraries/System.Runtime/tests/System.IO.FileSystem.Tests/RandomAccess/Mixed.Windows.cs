@@ -190,6 +190,11 @@ namespace System.IO.Tests
         /// </summary>
         private sealed class ThrowingSynchronizationContext : SynchronizationContext
         {
+            public ThrowingSynchronizationContext()
+            {
+                SetWaitNotificationRequired();
+            }
+
             public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
             {
                 throw new InvalidOperationException("SynchronizationContext.Wait threw an exception");
