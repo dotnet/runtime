@@ -91,7 +91,7 @@ namespace System.Threading
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_state_connect_failed_t
     {
-        public byte error_code;
+        public int error_code;
     }
 
     internal enum tcp_socket_state_tag
@@ -122,16 +122,21 @@ namespace System.Threading
         public tcp_socket_state_union state;
     }
 
+    // Layout mirrors wasi-libc (WASIp2) tcp_socket_t from
+    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/tcp.h
+    // Only `socket`, `state` and `socket_pollable` are read; trailing fields are modelled for completeness.
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_t
     {
         public tcp_own_tcp_socket_t socket;
-        public poll_own_pollable_t socket_pollable;
-        public bool blocking;
-        public bool fake_nodelay;
-        public bool fake_reuseaddr;
-        public byte family;
         public tcp_socket_state_t state;
+        public poll_own_pollable_t socket_pollable;
+        public byte blocking;
+        public byte fake_nodelay;
+        public byte fake_reuseaddr;
+        public byte family;
+        public ulong send_timeout;
+        public ulong recv_timeout;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -191,34 +196,16 @@ namespace System.Threading
         public udp_socket_state_union state;
     }
 
+    // Layout mirrors wasi-libc (WASIp2) udp_socket_t from
+    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/sources/udp.c
     [StructLayout(LayoutKind.Sequential)]
     internal struct udp_socket_t
     {
         public udp_own_udp_socket_t socket;
         public poll_own_pollable_t socket_pollable;
-        public bool blocking;
+        public byte blocking;
         public byte family;
         public udp_socket_state_t state;
-    }
-
-    internal enum descriptor_table_entry_tag
-    {
-        DESCRIPTOR_TABLE_ENTRY_TCP_SOCKET,
-        DESCRIPTOR_TABLE_ENTRY_UDP_SOCKET,
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    internal struct descriptor_table_entry_union
-    {
-        [FieldOffset(0)] public tcp_socket_t tcp_socket;
-        [FieldOffset(0)] public udp_socket_t udp_socket;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct descriptor_table_entry_t
-    {
-        public descriptor_table_entry_tag tag;
-        public descriptor_table_entry_union entry;
     }
 
     public sealed partial class UnixHandleAsyncContext
@@ -246,8 +233,9 @@ namespace System.Threading
                 }
 
                 nint entryPtr = default;
+                int socketType = 0;
                 IntPtr socketHandle = Handle.DangerousGetHandle();
-                unsafe { error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr); }
+                unsafe { error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr, &socketType); }
                 if (error != Interop.Error.SUCCESS)
                 {
                     return false; // Registration failed.
@@ -286,6 +274,29 @@ namespace System.Threading
             }
         }
 
+        // Kinds understood by SystemNative_WasiSubscribeSocketPollable.
+        private const int SubscribeKindInputStream = 0;
+        private const int SubscribeKindOutputStream = 1;
+        private const int SubscribeKindTcpSocket = 2;
+        private const int SubscribeKindIncomingDatagramStream = 4;
+        private const int SubscribeKindOutgoingDatagramStream = 5;
+
+        // In the new wasi-libc, the pollables embedded in the socket state are created lazily:
+        // their handle stays 0 until the matching `subscribe` import is called. Subscribe on demand
+        // and store the handle back into the socket state so wasi-libc owns and later drops it.
+        private static int EnsurePollable(int kind, int streamOrSocketHandle, ref int pollableHandle)
+        {
+            if (pollableHandle == 0)
+            {
+                pollableHandle = Interop.Sys.WasiSubscribeSocketPollable(kind, streamOrSocketHandle);
+            }
+            if (pollableHandle == 0)
+            {
+                Environment.FailFast("Failed to subscribe WASI pollable for kind " + kind + " and handle " + streamOrSocketHandle);
+            }
+            return pollableHandle;
+        }
+
         private static unsafe IList<int> BeforePollHook(object? state)
         {
             var asyncContext = (UnixHandleAsyncContext)state!;
@@ -296,28 +307,31 @@ namespace System.Threading
 
             List<int> pollableHandles = new();
             nint entryPtr = default;
+            int socketType = 0;
             IntPtr socketHandle = asyncContext.Handle.DangerousGetHandle();
-            var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
+            var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr, &socketType);
             if (error != Interop.Error.SUCCESS)
             {
                 Environment.FailFast("Can't resolve libc descriptor for socket handle " + socketHandle);
             }
 
-            var entry = (descriptor_table_entry_t*)entryPtr;
-            switch (entry->tag)
+            // wasi-libc no longer exposes a tagged union for descriptor entries; entryPtr points
+            // directly at the socket struct and socketType (1 = TCP/stream, 2 = UDP/datagram)
+            // is derived natively via SO_TYPE.
+            switch (socketType)
             {
-                case descriptor_table_entry_tag.DESCRIPTOR_TABLE_ENTRY_TCP_SOCKET:
+                case 1:
                 {
-                    tcp_socket_t* socket = &(entry->entry.tcp_socket);
+                    tcp_socket_t* socket = (tcp_socket_t*)entryPtr;
                     switch (socket->state.tag)
                     {
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTING:
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_LISTENING:
-                            pollableHandles.Add(socket->socket_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED:
-                            pollableHandles.Add(socket->state.state.connected.input_pollable.handle);
-                            pollableHandles.Add(socket->state.state.connected.output_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
+                            pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
                             asyncContext.HandleEventsInline(Sys.HandleEvents.Error);
@@ -330,9 +344,9 @@ namespace System.Threading
                     }
                     break;
                 }
-                case descriptor_table_entry_tag.DESCRIPTOR_TABLE_ENTRY_UDP_SOCKET:
+                case 2:
                 {
-                    udp_socket_t* socket = &(entry->entry.udp_socket);
+                    udp_socket_t* socket = (udp_socket_t*)entryPtr;
                     switch (socket->state.tag)
                     {
                         case udp_socket_state_tag.UDP_SOCKET_STATE_UNBOUND:
@@ -351,8 +365,8 @@ namespace System.Threading
                             {
                                 streams = &(socket->state.state.connected.streams);
                             }
-                            pollableHandles.Add(streams->incoming_pollable.handle);
-                            pollableHandles.Add(streams->outgoing_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindIncomingDatagramStream, streams->incoming.handle, ref streams->incoming_pollable.handle));
+                            pollableHandles.Add(EnsurePollable(SubscribeKindOutgoingDatagramStream, streams->outgoing.handle, ref streams->outgoing_pollable.handle));
                             break;
                         }
 
@@ -362,7 +376,7 @@ namespace System.Threading
                     break;
                 }
                 default:
-                    throw new NotImplementedException("TYPE" + entry->tag);
+                    throw new NotImplementedException("TYPE" + socketType);
             }
             return pollableHandles;
         }

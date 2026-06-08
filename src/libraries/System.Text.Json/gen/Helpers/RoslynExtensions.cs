@@ -129,6 +129,11 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
+            if (SymbolEqualityComparer.Default.Equals(baseType, type))
+            {
+                return true;
+            }
+
             if (baseType.TypeKind is TypeKind.Interface)
             {
                 if (type.AllInterfaces.Contains(baseType, SymbolEqualityComparer.Default))
@@ -155,32 +160,434 @@ namespace System.Text.Json.SourceGeneration
                 return null;
             }
 
-            Debug.Assert(baseType.IsGenericTypeDefinition());
+            return type.GetCompatibleGenericBaseTypes(baseType).FirstOrDefault();
+        }
 
-            if (baseType.TypeKind is TypeKind.Interface)
+        /// <summary>
+        /// Enumerates every ancestor of <paramref name="type"/> whose original definition matches
+        /// <paramref name="baseTypeDefinition"/>. For interface bases this yields every implementing
+        /// instantiation (a type can implement the same interface definition with different type
+        /// arguments); for class bases it yields at most the first match found while walking the
+        /// base-type chain (only one such instantiation is reachable).
+        ///
+        /// IMPORTANT: This implementation mirrors
+        /// <c>System.Text.Json.Reflection.ReflectionExtensions.GetMatchingGenericBaseTypes</c> in
+        /// src/System/ReflectionExtensions.cs. Any change to the enumeration order or matching
+        /// rules MUST be applied on both sides to keep reflection and source-gen behaviour in sync.
+        /// </summary>
+        public static IEnumerable<INamedTypeSymbol> GetCompatibleGenericBaseTypes(this ITypeSymbol type, INamedTypeSymbol baseTypeDefinition)
+        {
+            Debug.Assert(baseTypeDefinition.IsGenericTypeDefinition());
+
+            if (baseTypeDefinition.TypeKind is TypeKind.Interface)
             {
                 foreach (INamedTypeSymbol interfaceType in type.AllInterfaces)
                 {
-                    if (IsMatchingGenericType(interfaceType, baseType))
+                    if (IsMatchingGenericType(interfaceType, baseTypeDefinition))
                     {
-                        return interfaceType;
+                        yield return interfaceType;
                     }
                 }
+
+                // Note: do NOT yield break here. `AllInterfaces` does not include `type` itself,
+                // so when `type` IS the interface we're looking for, the fall-through to the
+                // BaseType walk below picks it up via the self-check on the first iteration
+                // (interface symbols have a null BaseType, so the loop terminates immediately).
             }
 
-            for (INamedTypeSymbol? current = type as INamedTypeSymbol; current != null; current = current.BaseType)
+            for (INamedTypeSymbol? current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
             {
-                if (IsMatchingGenericType(current, baseType))
+                if (IsMatchingGenericType(current, baseTypeDefinition))
                 {
-                    return current;
+                    yield return current;
+                    yield break;
                 }
             }
-
-            return null;
 
             static bool IsMatchingGenericType(INamedTypeSymbol candidate, INamedTypeSymbol baseType)
             {
                 return candidate.IsGenericType && SymbolEqualityComparer.Default.Equals(candidate.ConstructedFrom, baseType);
+            }
+        }
+
+        /// <summary>
+        /// Returns the full set of type parameters that must be bound to construct
+        /// <paramref name="typeDef"/>: the type parameters of every enclosing type
+        /// (outermost first) followed by the type parameters declared on
+        /// <paramref name="typeDef"/> itself.
+        /// </summary>
+        public static List<ITypeParameterSymbol> GetAllTypeParameters(this INamedTypeSymbol typeDef)
+        {
+            var result = new List<ITypeParameterSymbol>();
+            AppendEnclosing(typeDef.ContainingType, result);
+            result.AddRange(typeDef.TypeParameters);
+            return result;
+
+            static void AppendEnclosing(INamedTypeSymbol? enclosing, List<ITypeParameterSymbol> list)
+            {
+                if (enclosing is null)
+                {
+                    return;
+                }
+
+                AppendEnclosing(enclosing.ContainingType, list);
+                list.AddRange(enclosing.TypeParameters);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to unify a <paramref name="pattern"/> type (which may contain type-parameter
+        /// references) with a <paramref name="target"/> type, recording bindings in
+        /// <paramref name="substitution"/>. Returns <see langword="true"/> if the pattern matches
+        /// the target under some extension of the current substitution.
+        ///
+        /// IMPORTANT: This implementation MIRRORS
+        /// <c>System.Text.Json.Reflection.ReflectionExtensions.TryUnifyWith</c> in
+        /// src/System/ReflectionExtensions.cs. Any structural change (e.g. new type-kind handling,
+        /// refined array/pointer rules) MUST be applied on both sides to keep reflection and
+        /// source-gen behaviour in sync. The two implementations are exercised by:
+        ///   * tests/.../PolymorphicTests.CustomTypeHierarchies.cs (reflection)
+        ///   * tests/.../JsonSourceGeneratorDiagnosticsTests.cs (source-gen)
+        ///
+        /// Known intentional asymmetries with the reflection mirror:
+        ///   * Reflection distinguishes SZ arrays (<c>T[]</c>) from rank-1 multi-dimensional
+        ///     arrays (<c>T[*]</c>) via <c>Type.IsSZArray</c>. Roslyn surfaces both as
+        ///     <see cref="IArrayTypeSymbol"/> with <c>Rank == 1</c>, and C# <c>typeof()</c> syntax
+        ///     only produces SZ arrays in attribute arguments, so this asymmetry is unobservable
+        ///     from source.
+        ///   * Reflection has a branch for <c>Type.IsByRef</c>; Roslyn never surfaces ref types
+        ///     as generic arguments, so the branch has no source-gen counterpart.
+        /// </summary>
+        public static bool TryUnifyWith(this ITypeSymbol pattern, ITypeSymbol target, IDictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
+        {
+            if (pattern is ITypeParameterSymbol patternParam)
+            {
+                if (substitution.TryGetValue(patternParam, out ITypeSymbol? existing))
+                {
+                    return SymbolEqualityComparer.Default.Equals(existing, target);
+                }
+
+                substitution[patternParam] = target;
+                return true;
+            }
+
+            if (pattern is IArrayTypeSymbol patternArray)
+            {
+                return target is IArrayTypeSymbol targetArray
+                    && patternArray.Rank == targetArray.Rank
+                    && patternArray.ElementType.TryUnifyWith(targetArray.ElementType, substitution);
+            }
+
+            if (pattern is IPointerTypeSymbol patternPointer)
+            {
+                return target is IPointerTypeSymbol targetPointer
+                    && patternPointer.PointedAtType.TryUnifyWith(targetPointer.PointedAtType, substitution);
+            }
+
+            if (pattern is INamedTypeSymbol { IsGenericType: true } patternNamed)
+            {
+                if (target is not INamedTypeSymbol { IsGenericType: true } targetNamed)
+                {
+                    return false;
+                }
+
+                if (!SymbolEqualityComparer.Default.Equals(patternNamed.OriginalDefinition, targetNamed.OriginalDefinition))
+                {
+                    return false;
+                }
+
+                // Walk ContainingType to mirror reflection's Type.GetGenericArguments() flattening
+                // behaviour for nested generic types. For example, for Outer<int>.Box<T>, Roslyn
+                // surfaces the enclosing 'int' on ContainingType.TypeArguments while
+                // Type.GetGenericArguments() flattens enclosing + leaf into [int, T]. Without this
+                // recursion, the source-gen resolver would (a) miss enclosing-type mismatches
+                // (e.g. unify Outer<int>.Box<T> with Outer<string>.Box<int>, false accept), and
+                // (b) fail to bind type parameters that only appear in the enclosing type
+                // (e.g. Outer<T>.Box<int> against Outer<string>.Box<int>, false reject).
+                INamedTypeSymbol? patternContaining = patternNamed.ContainingType;
+                INamedTypeSymbol? targetContaining = targetNamed.ContainingType;
+                if (patternContaining is not null && targetContaining is not null &&
+                    !patternContaining.TryUnifyWith(targetContaining, substitution))
+                {
+                    return false;
+                }
+
+                ImmutableArray<ITypeSymbol> patternArgs = patternNamed.TypeArguments;
+                ImmutableArray<ITypeSymbol> targetArgs = targetNamed.TypeArguments;
+                if (patternArgs.Length != targetArgs.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < patternArgs.Length; i++)
+                {
+                    if (!patternArgs[i].TryUnifyWith(targetArgs[i], substitution))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return SymbolEqualityComparer.Default.Equals(pattern, target);
+        }
+
+        /// <summary>
+        /// Returns the type that results from applying <paramref name="substitution"/> to every
+        /// type-parameter reference inside <paramref name="type"/>. Generic types and array types
+        /// are rebuilt recursively; other types are returned unchanged. For nested generic types,
+        /// the substitution is also applied to the containing type so that type parameters
+        /// declared on the enclosing type are correctly rebound.
+        /// </summary>
+        public static ITypeSymbol SubstituteTypeParameters(this Compilation compilation, ITypeSymbol type, IReadOnlyDictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
+        {
+            if (type is ITypeParameterSymbol param)
+            {
+                return substitution.TryGetValue(param, out ITypeSymbol? mapped) ? mapped : type;
+            }
+
+            if (type is INamedTypeSymbol { IsGenericType: true } named)
+            {
+                // Walk ContainingType so substitutions can reach type parameters declared on
+                // enclosing generic types (e.g. T in Outer<T>.Box<int> when substitution maps
+                // T to string). Without this, the leaf would be rebuilt unchanged because
+                // TypeArguments is leaf-only and OriginalDefinition.Construct(...) discards the
+                // enclosing instantiation. Mirrors the reflection-side recursion through
+                // Type.GetGenericArguments() / MakeGenericType which flatten enclosing+leaf.
+                INamedTypeSymbol? containingType = named.ContainingType;
+                INamedTypeSymbol? substitutedContaining = null;
+                bool containingChanged = false;
+                if (containingType is { IsGenericType: true })
+                {
+                    substitutedContaining = (INamedTypeSymbol)compilation.SubstituteTypeParameters(containingType, substitution);
+                    containingChanged = !SymbolEqualityComparer.Default.Equals(substitutedContaining, containingType);
+                }
+
+                ImmutableArray<ITypeSymbol> args = named.TypeArguments;
+                ITypeSymbol[]? newArgs = null;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    ITypeSymbol substituted = compilation.SubstituteTypeParameters(args[i], substitution);
+                    if (!SymbolEqualityComparer.Default.Equals(substituted, args[i]))
+                    {
+                        newArgs ??= args.ToArray();
+                        newArgs[i] = substituted;
+                    }
+                }
+
+                if (newArgs is null && !containingChanged)
+                {
+                    return type;
+                }
+
+                ITypeSymbol[] leafArgs = newArgs ?? args.ToArray();
+
+                if (substitutedContaining is null)
+                {
+                    return named.OriginalDefinition.Construct(leafArgs);
+                }
+
+                // Locate the nested definition inside the substituted containing type and
+                // construct it with the substituted leaf args.
+                INamedTypeSymbol nestedDef = substitutedContaining
+                    .GetTypeMembers(named.Name, leafArgs.Length)
+                    .Single(t => SymbolEqualityComparer.Default.Equals(t.OriginalDefinition, named.OriginalDefinition));
+                return leafArgs.Length == 0 ? nestedDef : nestedDef.Construct(leafArgs);
+            }
+
+            if (type is IArrayTypeSymbol array)
+            {
+                ITypeSymbol substituted = compilation.SubstituteTypeParameters(array.ElementType, substitution);
+                return SymbolEqualityComparer.Default.Equals(substituted, array.ElementType)
+                    ? type
+                    : compilation.CreateArrayTypeSymbol(substituted, array.Rank);
+            }
+
+            return type;
+        }
+
+        /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="arg"/> satisfies a
+        /// <c>where T : new()</c> constraint — i.e. it is a value type, or a non-abstract,
+        /// non-static reference type with an accessible public parameterless constructor.
+        /// </summary>
+        public static bool SatisfiesNewConstraint(this ITypeSymbol arg)
+        {
+            if (arg.IsValueType)
+            {
+                return true;
+            }
+
+            if (arg is not INamedTypeSymbol named || named.IsAbstract || named.IsStatic)
+            {
+                return false;
+            }
+
+            foreach (IMethodSymbol ctor in named.InstanceConstructors)
+            {
+                if (ctor.Parameters.Length == 0 && ctor.DeclaredAccessibility == Accessibility.Public)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Validates that every type parameter in <paramref name="parameters"/> has a substitution
+        /// in <paramref name="substitution"/> that satisfies the parameter's declared constraints
+        /// (reference type, value type, unmanaged, <c>new()</c>, and constraint types). Constraint
+        /// types are themselves substituted before checking, to handle F-bounded constraints such
+        /// as <c>where T : IFoo&lt;U&gt;</c>.
+        ///
+        /// Known intentional asymmetry with the reflection mirror: source-gen MUST reject
+        /// managed value types (e.g. structs containing reference fields) for a
+        /// <c>where T : unmanaged</c> constraint because emitting <c>Derived&lt;ManagedStruct&gt;</c>
+        /// would produce a C# compile error (CS8377: the type 'T' must be a non-nullable value type,
+        /// along with all fields at any level of nesting, in order to use it as parameter 'T').
+        /// Reflection's <c>MakeGenericType</c> only enforces the underlying value-type part of the
+        /// constraint at runtime (the <c>modreq</c> for <c>unmanaged</c> is not surfaced through
+        /// standard reflection metadata), so it accepts managed structs in this scenario. This is
+        /// an inherent reflection-vs-source-gen divergence that cannot be bridged without
+        /// emitting invalid C# code.
+        /// </summary>
+        public static bool TryValidateGenericConstraints(
+            this Compilation compilation,
+            IReadOnlyList<ITypeParameterSymbol> parameters,
+            IReadOnlyDictionary<ITypeParameterSymbol, ITypeSymbol> substitution,
+            [NotNullWhen(false)] out ITypeParameterSymbol? failedParameter,
+            out ITypeSymbol? failedArgument)
+        {
+            foreach (ITypeParameterSymbol param in parameters)
+            {
+                if (!substitution.TryGetValue(param, out ITypeSymbol? arg))
+                {
+                    failedParameter = param;
+                    failedArgument = null;
+                    return false;
+                }
+
+                if (param.HasReferenceTypeConstraint && !arg.IsReferenceType)
+                {
+                    failedParameter = param;
+                    failedArgument = arg;
+                    return false;
+                }
+
+                if (param.HasValueTypeConstraint)
+                {
+                    if (!arg.IsValueType || arg is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
+                    {
+                        failedParameter = param;
+                        failedArgument = arg;
+                        return false;
+                    }
+                }
+
+                if (param.HasUnmanagedTypeConstraint && !arg.IsUnmanagedType)
+                {
+                    failedParameter = param;
+                    failedArgument = arg;
+                    return false;
+                }
+
+                if (param.HasConstructorConstraint && !arg.SatisfiesNewConstraint())
+                {
+                    failedParameter = param;
+                    failedArgument = arg;
+                    return false;
+                }
+
+                foreach (ITypeSymbol constraintType in param.ConstraintTypes)
+                {
+                    ITypeSymbol substituted = compilation.SubstituteTypeParameters(constraintType, substitution);
+
+                    // Use HasImplicitConversion so generic variance is respected (e.g.
+                    // `where T : IEnumerable<object>` is satisfied by `List<string>` via the
+                    // covariant `IEnumerable<out T>`). The identity-based IsAssignableFrom helper
+                    // would reject variance-satisfiable constraints, diverging from reflection's
+                    // MakeGenericType (which delegates to the CLR type system, where interface
+                    // variance is native).
+                    if (!compilation.HasImplicitConversion(arg, substituted))
+                    {
+                        failedParameter = param;
+                        failedArgument = arg;
+                        return false;
+                    }
+                }
+            }
+
+            failedParameter = null;
+            failedArgument = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Constructs <paramref name="typeDef"/> using <paramref name="allArgs"/>, accounting for
+        /// nesting: the leading args bind enclosing-type parameters (outermost first) and the
+        /// trailing args bind <paramref name="typeDef"/>'s own parameters. Non-generic intermediate
+        /// enclosing types still need to be re-resolved against the constructed outer so that
+        /// references to their generic outers carry the supplied type arguments.
+        /// </summary>
+        public static INamedTypeSymbol ConstructWithEnclosingTypeArguments(this INamedTypeSymbol typeDef, IReadOnlyList<ITypeSymbol> allArgs)
+        {
+            int offset = 0;
+            INamedTypeSymbol? constructedContaining = ConstructEnclosing(typeDef.ContainingType, allArgs, ref offset);
+
+            int leafParamCount = typeDef.TypeParameters.Length;
+            ITypeSymbol[] leafArgs = new ITypeSymbol[leafParamCount];
+            for (int i = 0; i < leafParamCount; i++)
+            {
+                leafArgs[i] = allArgs[offset + i];
+            }
+
+            if (constructedContaining is not null)
+            {
+                INamedTypeSymbol nestedDef = constructedContaining
+                    .GetTypeMembers(typeDef.Name, leafParamCount)
+                    .Single(t => SymbolEqualityComparer.Default.Equals(t.OriginalDefinition, typeDef));
+                return leafParamCount == 0 ? nestedDef : nestedDef.Construct(leafArgs);
+            }
+
+            return leafParamCount == 0 ? typeDef : typeDef.Construct(leafArgs);
+
+            static INamedTypeSymbol? ConstructEnclosing(INamedTypeSymbol? type, IReadOnlyList<ITypeSymbol> allArgs, ref int offset)
+            {
+                if (type is null)
+                {
+                    return null;
+                }
+
+                INamedTypeSymbol? outer = ConstructEnclosing(type.ContainingType, allArgs, ref offset);
+                int paramCount = type.TypeParameters.Length;
+
+                if (paramCount == 0)
+                {
+                    if (outer is null)
+                    {
+                        return type;
+                    }
+
+                    return outer.GetTypeMembers(type.Name, 0).Single(t => SymbolEqualityComparer.Default.Equals(t.OriginalDefinition, type));
+                }
+
+                ITypeSymbol[] args = new ITypeSymbol[paramCount];
+                for (int i = 0; i < paramCount; i++)
+                {
+                    args[i] = allArgs[offset + i];
+                }
+
+                offset += paramCount;
+
+                if (outer is null)
+                {
+                    return type.Construct(args);
+                }
+
+                INamedTypeSymbol nestedDef = outer.GetTypeMembers(type.Name, paramCount).Single(t => SymbolEqualityComparer.Default.Equals(t.OriginalDefinition, type));
+                return nestedDef.Construct(args);
             }
         }
 
