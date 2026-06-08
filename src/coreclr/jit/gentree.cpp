@@ -13225,7 +13225,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             else if (wasmSpillSlotIndex > -1)
             {
                 ilKind = "spill";
-                ilNum = wasmSpillSlotIndex;
+                ilNum  = wasmSpillSlotIndex;
             }
 #endif // defined(TARGET_WASM)
             else

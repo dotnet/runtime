@@ -1675,7 +1675,7 @@ PhaseStatus Compiler::WasmSpillRefs()
 {
     bool anyChanges = false;
 
-    size_t highWaterMark = 0;
+    size_t                   highWaterMark = 0;
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
 
     for (BasicBlock* const block : Blocks())
@@ -1697,7 +1697,8 @@ PhaseStatus Compiler::WasmSpillRefs()
 
                     if (!m_wasmSpillSlots)
                     {
-                        m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
+                        m_wasmSpillSlots =
+                            new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
                     }
 
                     unsigned spillSlotIndex = 0;
@@ -1715,27 +1716,28 @@ PhaseStatus Compiler::WasmSpillRefs()
                         }
                         else
                         {
-                            spillSlot = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
-                            LclVarDsc* const varDsc = lvaGetDesc(spillSlot);
-                            varDsc->lvType = TYP_BYREF;
-                            varDsc->lvPinned = true;
+                            spillSlot                      = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+                            LclVarDsc* const varDsc        = lvaGetDesc(spillSlot);
+                            varDsc->lvType                 = TYP_BYREF;
+                            varDsc->lvPinned               = true;
                             varDsc->lvImplicitlyReferenced = true;
-                            varDsc->lvMustInit = true;
+                            varDsc->lvMustInit             = true;
                             lvaSetVarDoNotEnregister(spillSlot, DoNotEnregisterReason::WasmGCVisibility);
                             m_wasmSpillSlots->push_back(spillSlot);
                         }
                         spillSlotIndex++;
 
-                        GenTreeLclVar *spill = gtNewStoreLclVarNode(spillSlot, def);
-                        GenTreeLclVar *reload = gtNewLclVarNode(spillSlot);
-                        LIR::Use use;
+                        GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
+                        GenTreeLclVar* reload = gtNewLclVarNode(spillSlot);
+                        LIR::Use       use;
                         noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
                         use.ReplaceWith(reload);
                         LIR::AsRange(block).InsertAfter(def, spill);
                         LIR::AsRange(block).InsertAfter(spill, reload);
                         if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
                         {
-                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n", Compiler::dspTreeID(def), Compiler::dspTreeID(reload));
+                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n",
+                                    Compiler::dspTreeID(def), Compiler::dspTreeID(reload));
                             def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
                             reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
                         }
