@@ -236,7 +236,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
    { JITDUMP("NYI_WASM: " msg); implReadyToRunUnsupported(); } \
    else { NYIRAW("NYI_WASM: " msg); } } while (0)
 
-#define NYI_WASM_SIMD(msg) do { if (JitConfig.JitWasmNyiToR2RUnsupported() > 0) \
+#define NYI_WASM_SIMD(msg) do { if (JitConfig.JitWasmSimdNyiToR2RUnsupported() > 0) \
    { JITDUMP("NYI_WASM_SIMD: " msg); implReadyToRunUnsupported(); } \
    else { NYIRAW("NYI_WASM_SIMD: " msg); } } while (0)
 
