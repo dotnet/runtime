@@ -1504,13 +1504,8 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Return Value:
 //    New CT_HELPER node
 //
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned  helper,
-                                                  var_types type,
-                                                  GenTree*  arg1,
-                                                  GenTree*  arg2,
-                                                  GenTree*  arg3,
-                                                  GenTree*  arg4,
-                                                  GenTree*  arg5)
+inline GenTreeCall* Compiler::gtNewHelperCallNode(
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4, GenTree* arg5)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
