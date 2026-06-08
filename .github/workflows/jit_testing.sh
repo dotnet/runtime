@@ -6,7 +6,6 @@ export DEBIAN_FRONTEND=noninteractive
 echo "=================================="
 echo "Install dependencies"
 echo "=================================="
-
 apt-get update
 apt-get install -y \
   bc automake clang curl findutils git hostname libtool \
