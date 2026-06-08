@@ -13129,6 +13129,20 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     const char* ilName = nullptr;
 
     unsigned ilNum = compMap2ILvarNum(lclNum);
+#if TARGET_WASM
+    int wasmSpillSlotIndex = -1;
+    if (m_wasmSpillSlots)
+    {
+        for (unsigned i = 0; i < m_wasmSpillSlots->size(); i++)
+        {
+            if (m_wasmSpillSlots->at(i) == lclNum)
+            {
+                wasmSpillSlotIndex = i;
+                break;
+            }
+        }
+    }
+#endif
 
     if (ilNum == (unsigned)ICorDebugInfo::RETBUF_ILNUM)
     {
@@ -13202,6 +13216,23 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             else if (lclNum == lvaWasmSpArg)
             {
                 ilName = "SP";
+            }
+            else if (lclNum == lvaWasmVirtualIP)
+            {
+                ilName = "VirtualIP";
+            }
+            else if (lclNum == lvaWasmFunctionIndex)
+            {
+                ilName = "FuncIndex";
+            }
+            else if (lclNum == lvaWasmSplashZone)
+            {
+                ilName = "SplashZone";
+            }
+            else if (wasmSpillSlotIndex > -1)
+            {
+                ilKind = "spill";
+                ilNum = wasmSpillSlotIndex;
             }
 #endif // defined(TARGET_WASM)
             else
