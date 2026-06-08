@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -196,7 +197,7 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {
