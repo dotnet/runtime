@@ -1728,7 +1728,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                         spillSlotIndex++;
 
                         GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
-                        GenTreeLclVar* reload = gtNewLclVarNode(spillSlot);
+                        GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
                         LIR::Use       use;
                         noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
                         use.ReplaceWith(reload);
