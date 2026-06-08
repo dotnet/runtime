@@ -29,7 +29,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
-#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
+#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
 
 #define MaxICUVersionStringLength 33
 
