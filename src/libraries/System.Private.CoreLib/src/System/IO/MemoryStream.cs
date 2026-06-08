@@ -34,8 +34,6 @@ namespace System.IO
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
-        private static int MemStreamMaxLength => Array.MaxLength;
-
         public MemoryStream()
             : this(0)
         {
@@ -44,7 +42,6 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
             _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
@@ -311,7 +308,7 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
-                if (value > MemStreamMaxLength - _origin)
+                if (value > int.MaxValue - _origin)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
                 _position = _origin + (int)value;
             }
@@ -524,7 +521,7 @@ namespace System.IO
 
         private long SeekCore(long offset, int loc)
         {
-            if (offset > MemStreamMaxLength - loc)
+            if (offset > int.MaxValue - loc)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
             int tempPosition = unchecked(loc + (int)offset);
             if (unchecked(loc + offset) < _origin || tempPosition < _origin)
@@ -537,24 +534,23 @@ namespace System.IO
 
         // Sets the length of the stream to a given value.  The new
         // value must be nonnegative and less than the space remaining in
-        // the array, MemStreamMaxLength - origin
+        // the array, int.MaxValue - origin
         // Origin is 0 in all cases other than a MemoryStream created on
         // top of an existing array and a specific starting offset was passed
         // into the MemoryStream constructor.  The upper bounds prevents any
         // situations where a stream may be created on top of an array then
         // the stream is made longer than the maximum possible length of the
-        // array (MemStreamMaxLength).
+        // array (int.MaxValue).
         //
         public override void SetLength(long value)
         {
-            if (value < 0 || value > MemStreamMaxLength)
+            if (value < 0 || value > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
-            if (value > (MemStreamMaxLength - _origin))
+            if (value > (int.MaxValue - _origin))
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             int newLength = _origin + (int)value;

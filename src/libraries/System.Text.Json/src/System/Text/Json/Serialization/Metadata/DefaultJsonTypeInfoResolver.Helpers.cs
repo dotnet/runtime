@@ -89,6 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (options is not null)
             {
+                ResolveOpenGenericDerivedTypes(typeInfo.Type, options.DerivedTypes);
                 typeInfo.SetPolymorphismOptions(options);
             }
 
@@ -108,6 +109,232 @@ namespace System.Text.Json.Serialization.Metadata
                     (typeInfo.TypeClassifierFactory is not null || typeInfo.Options.TypeClassifiers.Count > 0))
                 {
                     typeInfo.TypeClassifierResolutionPending = true;
+                }
+            }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void ResolveOpenGenericDerivedTypes(Type baseType, IList<JsonDerivedType> derivedTypes)
+        {
+            Type? baseTypeDefinition = null;
+            Type[]? baseTypeArgs = null;
+
+            for (int i = 0; i < derivedTypes.Count; i++)
+            {
+                JsonDerivedType entry = derivedTypes[i];
+
+                if (entry.DerivedType is null || !entry.DerivedType.IsGenericTypeDefinition)
+                {
+                    // entry.DerivedType is annotated non-nullable, but the public
+                    // JsonDerivedType constructors do not validate the argument, so a
+                    // [JsonDerivedType(derivedType: null)] attribute (or an explicit
+                    // null) yields an entry with DerivedType == null. The downstream
+                    // validation in PolymorphicTypeResolver will surface a friendly
+                    // diagnostic; skip silently here so the explicit error wins.
+                    continue;
+                }
+
+                if (!baseType.IsGenericType)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeCouldNotBeResolved(
+                        baseType, entry.DerivedType, SR.Polymorphism_OpenGeneric_Reason_NotAssignable);
+                }
+
+                baseTypeDefinition ??= baseType.GetGenericTypeDefinition();
+                baseTypeArgs ??= baseType.GetGenericArguments();
+
+                if (!TryResolveOpenGenericDerivedType(
+                        entry.DerivedType, baseTypeDefinition, baseTypeArgs,
+                        out Type? resolvedType, out string? failureReason))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeCouldNotBeResolved(
+                        baseType, entry.DerivedType, failureReason!);
+                }
+
+                derivedTypes[i] = new JsonDerivedType(resolvedType!, entry.TypeDiscriminator);
+            }
+        }
+
+        /// <summary>
+        /// Reflection-side resolver: closes <paramref name="openDerivedType"/> against the
+        /// constructed base type identified by (<paramref name="baseTypeDefinition"/>,
+        /// <paramref name="baseTypeArgs"/>) via structural unification.
+        ///
+        /// IMPORTANT: This implementation MIRRORS the source-gen resolver
+        /// <c>JsonSourceGenerator.Parser.TryResolveOpenGenericDerivedType</c> in
+        /// gen/JsonSourceGenerator.Parser.cs. Both implementations -- the structural
+        /// unbound pre-check, the per-ancestor unification, and the ambiguity
+        /// detection -- must be kept in lockstep so that reflection and source-gen
+        /// produce the same closed type for the same registration. Any algorithmic
+        /// change here must be applied in the source-gen mirror as well.
+        ///
+        /// Known intentional asymmetry with the source-gen mirror: source-gen rejects a
+        /// managed value type (e.g. a struct containing reference fields) supplied for a
+        /// <c>where T : unmanaged</c> constraint because emitting such a closed type would
+        /// produce a C# compile error (CS8377). The reflection resolver, by contrast,
+        /// delegates constraint validation to <see cref="Type.MakeGenericType"/>, which only
+        /// enforces the underlying value-type part of the constraint at runtime (the
+        /// <c>unmanaged</c> modreq is not surfaced through standard reflection metadata).
+        /// As a result, reflection accepts managed structs for <c>unmanaged</c>-constrained
+        /// derived types where source-gen rejects them. This divergence cannot be bridged
+        /// without emitting invalid C# code on the source-gen side.
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static bool TryResolveOpenGenericDerivedType(
+            Type openDerivedType,
+            Type baseTypeDefinition,
+            Type[] baseTypeArgs,
+            out Type? closedDerivedType,
+            out string? failureReason)
+        {
+            closedDerivedType = null;
+            failureReason = null;
+
+            // Find every ancestor of the open derived type whose generic type definition matches
+            // the base type definition. For classes there is at most one such ancestor, but for
+            // interfaces a derived type can implement the same interface definition multiple times
+            // with different type arguments (e.g. Derived<T> : IBase<T>, IBase<List<T>>).
+            List<Type> matchingBases = new();
+            foreach (Type match in openDerivedType.GetMatchingGenericBaseTypes(baseTypeDefinition))
+            {
+                matchingBases.Add(match);
+            }
+
+            if (matchingBases.Count == 0)
+            {
+                failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                return false;
+            }
+
+            // The full set of generic parameters we must bind includes the parameters of the
+            // derived type itself plus any parameters declared by enclosing generic types
+            // (e.g. Outer<T>.Derived needs T bound from the outer class).
+            // Type.GetGenericArguments() on an open generic type returns this complete set.
+            Type[] requiredParams = openDerivedType.GetGenericArguments();
+
+            // Structural unbound pre-check: every required parameter must appear at least once
+            // somewhere in some matching ancestor's type arguments. If a parameter never appears
+            // at all, no closed base could ever bind it -- the derived definition is malformed
+            // regardless of which closed base it is registered against.
+            HashSet<Type> referencedParams = new();
+            foreach (Type mb in matchingBases)
+            {
+                foreach (Type arg in mb.GetGenericArguments())
+                {
+                    CollectReferencedParameters(arg, referencedParams);
+                }
+            }
+            foreach (Type required in requiredParams)
+            {
+                if (!referencedParams.Contains(required))
+                {
+                    failureReason = SR.Format(SR.Polymorphism_OpenGeneric_Reason_UnboundParameter, required.Name);
+                    return false;
+                }
+            }
+
+            Type[]? successfulArgs = null;
+            int successCount = 0;
+
+            foreach (Type matchingBase in matchingBases)
+            {
+                Type[] matchingBaseArgs = matchingBase.GetGenericArguments();
+                Debug.Assert(matchingBaseArgs.Length == baseTypeArgs.Length,
+                    "matchingBase and baseTypeArgs share the same generic type definition, so arity must match.");
+
+                var substitution = new Dictionary<Type, Type>(requiredParams.Length);
+                bool unified = true;
+                for (int i = 0; i < matchingBaseArgs.Length; i++)
+                {
+                    if (!matchingBaseArgs[i].TryUnifyWith(baseTypeArgs[i], substitution))
+                    {
+                        unified = false;
+                        break;
+                    }
+                }
+
+                if (!unified)
+                {
+                    continue;
+                }
+
+                // Unification succeeded for every position. Every required parameter of the
+                // derived type definition must be bound by this ancestor; otherwise the
+                // resulting closed type would have unbound type arguments (an unspeakable type).
+                // A sibling ancestor may still bind this parameter, so failure here is not fatal.
+                Type[] closedArgs = new Type[requiredParams.Length];
+                bool allBound = true;
+                for (int i = 0; i < requiredParams.Length; i++)
+                {
+                    if (!substitution.TryGetValue(requiredParams[i], out Type? boundArg))
+                    {
+                        allBound = false;
+                        break;
+                    }
+
+                    closedArgs[i] = boundArg;
+                }
+
+                if (!allBound)
+                {
+                    continue;
+                }
+
+                successCount++;
+                if (successCount == 1)
+                {
+                    successfulArgs = closedArgs;
+                }
+                else
+                {
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_AmbiguousMatch;
+                    return false;
+                }
+            }
+
+            if (successCount == 0 || successfulArgs is null)
+            {
+                failureReason = SR.Polymorphism_OpenGeneric_Reason_UnificationFailed;
+                return false;
+            }
+
+            try
+            {
+                closedDerivedType = openDerivedType.MakeGenericType(successfulArgs);
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or TypeLoadException)
+            {
+                // Constraint violation or load failure (e.g. unmanaged constraint, which is
+                // not observable via the standard reflection constraint metadata). We use a
+                // structured reason rather than ex.Message so that the outer template — which
+                // appends its own trailing period — never produces a double period.
+                failureReason = SR.Polymorphism_OpenGeneric_Reason_ConstraintViolation;
+                return false;
+            }
+        }
+
+        private static void CollectReferencedParameters(Type pattern, HashSet<Type> set)
+        {
+            if (pattern.IsGenericParameter)
+            {
+                set.Add(pattern);
+                return;
+            }
+
+            if (pattern.HasElementType)
+            {
+                CollectReferencedParameters(pattern.GetElementType()!, set);
+                return;
+            }
+
+            if (pattern.IsGenericType)
+            {
+                foreach (Type arg in pattern.GetGenericArguments())
+                {
+                    CollectReferencedParameters(arg, set);
                 }
             }
         }

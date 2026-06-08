@@ -1778,6 +1778,8 @@ struct FuncInfoDsc
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
+    unsigned startVirtualIP;
+    unsigned endVirtualIP;
 
     void ensureUnwindableFrame(Compiler* comp);
 #endif // defined(TARGET_WASM)
@@ -1991,6 +1993,15 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
+    // Whether the consumer must emit its own runtime entry guard for this loop.
+    // Set when AnalyzeIteration could not prove statically that the loop
+    // condition [IterVar TestOper Limit] holds on entry (so the analysis
+    // invariants only hold conditionally). The consumer must insert a runtime
+    // test equivalent to that condition on the path that reaches the analyzed
+    // loop body. Only set when AnalyzeIteration is called with
+    // allowMissingBaseCase=true.
+    bool NeedsZeroTripGuard : 1;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -1998,6 +2009,7 @@ struct NaturalLoopIterInfo
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
         , HasArrayLengthLimit(false)
+        , NeedsZeroTripGuard(false)
     {
     }
 
@@ -2191,7 +2203,7 @@ public:
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
-    bool AnalyzeIteration(NaturalLoopIterInfo* info);
+    bool AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase = false);
 
     bool HasDef(unsigned lclNum);
 
@@ -4963,6 +4975,34 @@ public:
                              bool                    isExplicitTailCall,
                              IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
+    // Information needed to turn a resolved devirtualization target into a direct call.
+    struct DevirtualizedCallInfo
+    {
+        CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
+        CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
+        bool                    objIsNonNull;            // True if the receiver is known non-null.
+        bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
+        bool                    isDelegateCall;          // True when transforming a delegate invoke into a direct call.
+        bool                    isExplicitTailCall;      // True for explicit tail calls.
+        bool                    objClassIsExact;         // True if the receiver type is exact.
+        bool                    objClassIsFinal;         // True if the receiver type is final.
+        IL_OFFSET               ilOffset;                // IL offset of the original call.
+    };
+
+    void impTransformDevirtualizedCall(GenTreeCall*            call,
+                                       CORINFO_METHOD_HANDLE*  method,
+                                       unsigned*               methodFlags,
+                                       DevirtualizedCallInfo*  dcInfo,
+                                       BasicBlock*             block,
+                                       CORINFO_CONTEXT_HANDLE* contextHandle
+#if defined(DEBUG)
+                                     , CORINFO_METHOD_HANDLE   baseMethod
+#endif // defined(DEBUG)
+    );
+
     bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
@@ -5107,7 +5147,8 @@ protected:
 
     void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
-    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
+    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
+    void impInheritAsyncContextsFromInliner(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
@@ -5214,7 +5255,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig,
+                                        CORINFO_SIG_INFO*     sig
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5896,6 +5938,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgPostInlineNoReturnCleanup();
+
     PhaseStatus fgResolveGDVs();
 
     PhaseStatus fgRemoveEmptyTry();
@@ -5913,8 +5957,6 @@ public:
     BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
 
     void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
-
-    PhaseStatus fgTailMergeThrows();
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -7058,19 +7100,6 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
-#ifdef FEATURE_SIMD
-    GenTree* getSIMDStructFromField(GenTree*  tree,
-                                    unsigned* indexOut,
-                                    unsigned* simdSizeOut,
-                                    bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldStores(Statement* stmt);
-
-    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field store
-    // in function: Compiler::impMarkContiguousSIMDFieldStores.
-    Statement* fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-
-#endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -7106,13 +7135,11 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                           CORINFO_LOOKUP*         pLookup,
-                           GenTreeFlags            handleFlags,
-                           void*                   compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                  CORINFO_LOOKUP*         pLookup,
-                                  void*                   compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
+                           GenTreeFlags    handleFlags,
+                           void*           compileTimeHandle);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
+                                  void*           compileTimeHandle);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);
@@ -7531,6 +7558,7 @@ public:
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
+    PhaseStatus optBoundsCheckCoalesce();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
@@ -8006,17 +8034,17 @@ public:
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
-    void addGuardedDevirtualizationCandidate(GenTreeCall*           call,
-                                             CORINFO_METHOD_HANDLE  methodHandle,
-                                             CORINFO_CLASS_HANDLE   classHandle,
-                                             CORINFO_CONTEXT_HANDLE contextHandle,
-                                             unsigned               methodAttr,
-                                             unsigned               classAttr,
-                                             unsigned               likelihood,
-                                             bool                   arrayInterface,
-                                             bool                   instantiatingStub,
-                                             CORINFO_METHOD_HANDLE  originalMethodHandle,
-                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
+    void addGuardedDevirtualizationCandidate(GenTreeCall*            call,
+                                             CORINFO_METHOD_HANDLE   methodHandle,
+                                             CORINFO_CLASS_HANDLE    classHandle,
+                                             CORINFO_CONTEXT_HANDLE  contextHandle,
+                                             unsigned                methodAttr,
+                                             unsigned                classAttr,
+                                             unsigned                likelihood,
+                                             const CORINFO_LOOKUP*   instParamLookup,
+                                             CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
     int getGDVMaxTypeChecks()
     {
@@ -8509,11 +8537,6 @@ public:
             return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
-        bool CanPropBndsCheck() const
-        {
-            return GetOp1().KindIs(O1K_VN);
-        }
-
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
@@ -8954,13 +8977,14 @@ public:
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc           = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind        = FromVNFunc(relop);
-            dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1VN;
-            dsc.m_op2.m_kind           = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn             = checkedBndVN;
-            dsc.m_op2.m_icon.m_iconVal = cns;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = FromVNFunc(relop);
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal    = cns;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -8999,7 +9023,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = op2VN;
             dsc.m_op2.m_icon.m_iconVal    = 0; // TODO-CQ: consider decomposing VN to VN* + CNS if beneficial.
-            dsc.m_op2.m_isVNNeverNegative = false;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(op2VN);
             return dsc;
         }
     };
@@ -9023,10 +9047,6 @@ protected:
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
-    bool           optCanPropEqual;
-    bool           optCanPropNonNull;
-    bool           optCanPropBndsChk;
-    bool           optCanPropSubRange;
 
     RangeCheck* optRangeCheck = nullptr;
     RangeCheck* GetRangeCheck();
@@ -9190,6 +9210,7 @@ public:
     };
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
@@ -10125,12 +10146,7 @@ private:
 
     GenTree* impSIMDPopStack();
 
-    void     setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool     areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
-    bool     areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
-    bool     areArrayElementsContiguous(GenTree* op1, GenTree* op2);
-    bool     areArgumentsContiguous(GenTree* op1, GenTree* op2);
-    GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
+    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
@@ -11517,7 +11533,6 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
-        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 
