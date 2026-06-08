@@ -1306,6 +1306,14 @@ public:
           cache[idx] = elem;
         }
 
+#ifdef CHAIN_LOOKUP
+    inline Crst *GetWriteLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_writeLock;
+    }
+#endif
+
     inline void ClearCacheEntry(size_t idx)
     {
         LIMITED_METHOD_CONTRACT;

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
+using Internal.Text;
 
 namespace Internal.TypeSystem
 {
@@ -557,7 +558,7 @@ namespace Internal.TypeSystem
             {
                 // TODO: Precise check
                 // TODO: Cache?
-                return this.Name.SequenceEqual(".ctor"u8);
+                return this.Name == ".ctor"u8;
             }
         }
 
@@ -587,11 +588,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the method as specified in the metadata.
         /// </summary>
-        public virtual ReadOnlySpan<byte> Name
+        public virtual Utf8Span Name
         {
             get
             {
-                return [];
+                return Array.Empty<byte>();
             }
         }
 
@@ -600,6 +601,8 @@ namespace Internal.TypeSystem
             return System.Text.Encoding.UTF8.GetString(Name
 #if NETSTANDARD
                 .ToArray()
+#else
+                .AsSpan()
 #endif
                 );
         }
@@ -727,7 +730,7 @@ namespace Internal.TypeSystem
             get
             {
                 TypeDesc owningType = OwningType;
-                return (owningType.IsObject && Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
+                return (owningType.IsObject && Name == "Finalize"u8) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

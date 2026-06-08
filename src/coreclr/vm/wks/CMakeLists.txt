@@ -67,6 +67,10 @@ target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
 target_compile_definitions(cee_wks_core PRIVATE GC_DESCRIPTOR)
 
+if (FEATURE_PERFTRACING_DISABLE_THREADS)
+  target_compile_definitions(cee_wks_core PRIVATE PERFTRACING_DISABLE_THREADS)
+endif()
+
 if (CLR_CMAKE_HOST_WIN32)
     link_natvis_sources_for_target(cee_wks INTERFACE ../vm.natvis)
     link_natvis_sources_for_target(cee_wks_mergeable INTERFACE ../vm.natvis)
