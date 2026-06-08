@@ -677,7 +677,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512,                 W("EnableAVX512"
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BMM,              W("EnableAVX512BMM"),           1, "Allows AVX512BMM and dependent hardware intrinsics to be disabled")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v2,               W("EnableAVX512v2"),            1, "Allows AVX512 IFMA+VBMI and dependent hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v3,               W("EnableAVX512v3"),            1, "Allows AVX512 BITALG+VBMI2+VPOPCNTDQ and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v3,               W("EnableAVX512v3"),            1, "Allows AVX512 BITALG+VBMI2+VPOPCNTDQ+VNNI and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v1,                W("EnableAVX10v1"),             1, "Allows AVX10v1 and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v2,                W("EnableAVX10v2"),             0, "Allows AVX10v2 and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAPX,                    W("EnableAPX"),                 0, "Allows APX and dependent features to be disabled")

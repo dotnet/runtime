@@ -65,14 +65,12 @@ namespace Thunkerator
             public string Architecture { get; }
             public string JitName { get; }
             public string ImpliedJitName { get; }
-            public bool GenerateReverseImplication { get; }
 
-            public InstructionSetImplication(string architecture, string jitName, string impliedJitName, bool generateReverseImplication = true)
+            public InstructionSetImplication(string architecture, string jitName, string impliedJitName)
             {
                 Architecture = architecture;
                 JitName = jitName;
                 ImpliedJitName = impliedJitName;
-                GenerateReverseImplication = generateReverseImplication;
             }
 
             public InstructionSetImplication(string architecture, InstructionSetImplication similarInstructionSet)
@@ -80,7 +78,6 @@ namespace Thunkerator
                 Architecture = architecture;
                 ImpliedJitName = similarInstructionSet.ImpliedJitName;
                 JitName = similarInstructionSet.JitName;
-                GenerateReverseImplication = similarInstructionSet.GenerateReverseImplication;
             }
         }
 
@@ -202,23 +199,10 @@ namespace Thunkerator
                             _architectureJitNames[command[1]].Add(command[2] + "_" + ArchToInstructionSetSuffixArch(command[1]));
                             break;
                         case "implication":
-                            if ((command.Length != 4) && (command.Length != 5))
-                                throw new Exception($"Incorrect number of args for implication. Expected 4 or 5. Line: '{currentLine}'");
+                            if (command.Length != 4)
+                                throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
-                            bool generateReverseImplication = true;
-                            if (command.Length == 5)
-                            {
-                                string implicationOption = command[4].Trim();
-                                if (implicationOption == "NoReverse")
-                                {
-                                    generateReverseImplication = false;
-                                }
-                                else
-                                {
-                                    throw new Exception($"Unknown implication option '{implicationOption}'. Expected NoReverse.");
-                                }
-                            }
-                            _implications.Add(new InstructionSetImplication(command[1], command[2], command[3], generateReverseImplication));
+                            _implications.Add(new InstructionSetImplication(command[1], command[2], command[3]));
                             break;
                         case "instructionsetgroup":
                             if (command.Length != 4)
@@ -684,7 +668,6 @@ namespace Internal.JitInterface
                 foreach (var implication in _implications)
                 {
                     if (implication.Architecture != architecture) continue;
-                    if (!implication.GenerateReverseImplication) continue;
                     AddReverseImplication(architecture, implication.JitName, implication.ImpliedJitName);
                 }
                 tr.WriteLine("                        break;");

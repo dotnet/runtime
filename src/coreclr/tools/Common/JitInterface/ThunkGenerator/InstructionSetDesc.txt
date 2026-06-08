@@ -16,7 +16,7 @@
 ; vectorinstructionset,<architecture>,<jit instruction set name>
 ;
 ; Add an instruction set implication (i.e, if instruction set A is present, then instruction set B must be present too.)
-; implication,<architecture>,<jit instruction set name>,<implied jit instruction set name>,<optional NoReverse>
+; implication,<architecture>,<jit instruction set name>,<implied jit instruction set name>
 ;
 ; Copy instruction sets defined for other architecture at this point in the file.
 ; copyinstructionsets,<architecture>,<copytoarchitecture>
