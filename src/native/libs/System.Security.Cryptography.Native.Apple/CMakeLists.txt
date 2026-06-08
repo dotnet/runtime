@@ -132,6 +132,14 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
+    add_custom_command(TARGET System.Security.Cryptography.Native.Apple POST_BUILD
+        COMMENT "Verifying System.Security.Cryptography.Native.Apple has no Swift ObjC classes"
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-no-swift-objc-classes.sh
+            $<TARGET_FILE:System.Security.Cryptography.Native.Apple>
+            ${CMAKE_NM}
+        VERBATIM
+    )
+
     if (NOT CLR_CMAKE_TARGET_APPLE_MOBILE)
         add_custom_command(TARGET System.Security.Cryptography.Native.Apple POST_BUILD
             COMMENT "Verifying System.Security.Cryptography.Native.Apple points against entrypoints.c "
@@ -143,6 +151,14 @@ if (GEN_SHARED_LIB)
         )
     endif()
 endif()
+
+add_custom_command(TARGET System.Security.Cryptography.Native.Apple-Static POST_BUILD
+    COMMENT "Verifying System.Security.Cryptography.Native.Apple static archive has no Swift ObjC classes"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-no-swift-objc-classes.sh
+        $<TARGET_FILE:System.Security.Cryptography.Native.Apple-Static>
+        ${CMAKE_NM}
+    VERBATIM
+)
 
 if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)

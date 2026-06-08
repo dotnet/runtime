@@ -521,7 +521,7 @@ RtlVirtualUnwind(
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
 #define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
 
-inline PEXCEPTION_ROUTINE
+PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,
@@ -531,24 +531,18 @@ RtlVirtualUnwind (
     _Out_ PVOID *HandlerData,
     _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
-    )
-{
-    PORTABILITY_ASSERT("The function RtlVirtualUnwind is not implemented on wasm");
-    return nullptr;
-}
+    );
 
-FORCEINLINE
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
+
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     _In_ TADDR ImageBase
-    )
-{
-    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
-    return 0;
-}
+    );
 
-#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
+#define RUNTIME_FUNCTION__IsFunclet(FunctionEntry) ((FunctionEntry)->BeginAddress & 0x80000000)
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress & 0x7FFFFFFF)
 #define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
 
 #define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))

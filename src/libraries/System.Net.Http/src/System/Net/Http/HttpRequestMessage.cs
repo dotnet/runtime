@@ -53,6 +53,11 @@ namespace System.Net.Http
             get { return _versionPolicy; }
             set
             {
+                if ((uint)value > (uint)HttpVersionPolicy.RequestVersionExact)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(HttpVersionPolicy)), nameof(value));
+                }
+
                 CheckDisposed();
 
                 _versionPolicy = value;
