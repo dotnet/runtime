@@ -246,7 +246,7 @@ namespace Microsoft.Win32.SafeHandles
                 // Keep small paths on the stack, while avoiding excessive stack usage for long executable paths.
                 const int ResolvedPathStackBufferSize =
 #if DEBUG
-                    2; // make sure we test both code paths
+                    2; // test the NativeMemory.Alloc code path in DEBUG builds
 #else
                     256;
 #endif
