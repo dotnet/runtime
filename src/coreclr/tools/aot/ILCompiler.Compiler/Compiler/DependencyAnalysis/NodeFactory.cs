@@ -435,9 +435,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenDelegateNodes = new NodeCache<SerializedFrozenDelegateKey, SerializedFrozenObjectNode>(key =>
+            _frozenDelegateNodes = new NodeCache<SerializedFrozenDelegateKey, FrozenDelegateNode>(key =>
             {
-                return new SerializedFrozenObjectNode(key.DelegateType, key.Method.GetHashCode(), key.SerializableObject);
+                return new FrozenDelegateNode(key.Method, key.SerializableObject);
             });
 
             _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
@@ -1533,11 +1533,11 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenDelegateKey, SerializedFrozenObjectNode> _frozenDelegateNodes;
+        private NodeCache<SerializedFrozenDelegateKey, FrozenDelegateNode> _frozenDelegateNodes;
 
-        public SerializedFrozenObjectNode SerializedDelegateObject(MetadataType delegateType, MethodDesc method)
+        public FrozenDelegateNode SerializedDelegateObject(MetadataType delegateType, MethodDesc method)
         {
-            return _frozenDelegateNodes.GetOrAdd(new SerializedFrozenDelegateKey(delegateType, method, TypePreinit.GetLambdaDelegate(delegateType, method)));
+            return _frozenDelegateNodes.GetOrAdd(new SerializedFrozenDelegateKey(method, TypePreinit.GetLambdaDelegate(delegateType, method)));
         }
 
         private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
@@ -1815,20 +1815,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected struct SerializedFrozenDelegateKey : IEquatable<SerializedFrozenDelegateKey>
         {
-            public readonly MetadataType DelegateType;
             public readonly MethodDesc Method;
             public readonly TypePreinit.ISerializableReference SerializableObject;
 
-            public SerializedFrozenDelegateKey(MetadataType delegateType, MethodDesc method, TypePreinit.ISerializableReference obj)
+            public SerializedFrozenDelegateKey(MethodDesc method, TypePreinit.ISerializableReference obj)
             {
-                DelegateType = delegateType;
                 Method = method;
                 SerializableObject = obj;
             }
 
             public override bool Equals(object obj) => obj is SerializedFrozenDelegateKey && Equals((SerializedFrozenDelegateKey)obj);
-            public bool Equals(SerializedFrozenDelegateKey other) => DelegateType == other.DelegateType && Method == other.Method;
-            public override int GetHashCode() => HashCode.Combine(DelegateType, Method);
+            public bool Equals(SerializedFrozenDelegateKey other) => SerializableObject.Type == other.SerializableObject.Type && Method == other.Method;
+            public override int GetHashCode() => HashCode.Combine(SerializableObject.Type, Method);
         }
 
         protected struct SerializedFrozenObjectKey : IEquatable<SerializedFrozenObjectKey>

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Diagnostics;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -602,6 +602,29 @@ namespace Internal.IL
                     {
                         _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
                         _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
+                    }
+
+                    // Is this a verifiable delegate creation sequence?
+                    if (_currentOffset >= 11
+                        && _basicBlocks[_currentOffset] == null
+                        && _ilBytes[_currentOffset - 11] == (byte)ILOpcode.prefix1
+                        && (_ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldftn) ||
+                            _ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldvirtftn)))
+                    {
+                        int targetToken = ReadILTokenAt(_currentOffset - 9);
+                        var delegateMethod = (MethodDesc)_methodIL.GetObject(targetToken);
+                        if (!delegateMethod.Signature.IsStatic)
+                        {
+                            var owningType = delegateMethod.OwningType;
+                            if (owningType.IsRuntimeDeterminedSubtype)
+                            {
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
+                            }
+                            else
+                            {
+                                _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
+                            }
+                        }
                     }
 
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetDelegate), reason);
