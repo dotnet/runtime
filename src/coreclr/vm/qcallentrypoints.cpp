@@ -25,7 +25,6 @@
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 
-
 #include "appdomainnative.hpp"
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
