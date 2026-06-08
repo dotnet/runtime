@@ -79,11 +79,12 @@ namespace System.IO
                     Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    if (errorCode is Interop.Errors.ERROR_IO_PENDING or Interop.Errors.ERROR_SUCCESS)
+                    if (errorCode is Interop.Errors.ERROR_IO_PENDING)
                     {
                         try
                         {
                             waitEvent.WaitOne();
+                            errorCode = Interop.Errors.ERROR_SUCCESS;
                         }
                         catch
                         {
@@ -94,7 +95,10 @@ namespace System.IO
                             Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref canceledBytes, bWait: true);
                             throw;
                         }
+                    }
 
+                    if (errorCode is Interop.Errors.ERROR_SUCCESS)
+                    {
                         int result = 0;
                         if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {
@@ -170,11 +174,12 @@ namespace System.IO
                     Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    if (errorCode is Interop.Errors.ERROR_IO_PENDING or Interop.Errors.ERROR_SUCCESS)
+                    if (errorCode is Interop.Errors.ERROR_IO_PENDING)
                     {
                         try
                         {
                             waitEvent.WaitOne();
+                            errorCode = Interop.Errors.ERROR_SUCCESS;
                         }
                         catch
                         {
@@ -185,7 +190,10 @@ namespace System.IO
                             Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref canceledBytes, bWait: true);
                             throw;
                         }
+                    }
 
+                    if (errorCode is Interop.Errors.ERROR_SUCCESS)
+                    {
                         int result = 0;
                         if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {

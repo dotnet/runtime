@@ -152,12 +152,14 @@ namespace System.IO.Tests
             // the pending IO is properly canceled before freeing the NativeOverlapped,
             // preventing use-after-free / heap corruption.
             string filePath = GetTestFilePath();
-            File.WriteAllBytes(filePath, new byte[1024]);
+            byte[] expectedData = new byte[1024];
+            Random.Shared.NextBytes(expectedData);
+            File.WriteAllBytes(filePath, expectedData);
 
             SynchronizationContext previous = SynchronizationContext.Current;
             try
             {
-                var throwingContext = new ThrowingSynchronizationContext();
+                ThrowingSynchronizationContext throwingContext = new();
                 SynchronizationContext.SetSynchronizationContext(throwingContext);
 
                 using SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, options: FileOptions.Asynchronous);
@@ -167,6 +169,14 @@ namespace System.IO.Tests
                 // The ThrowingSynchronizationContext.Wait throws, which should be caught
                 // and the IO should be canceled gracefully.
                 Assert.Throws<InvalidOperationException>(() => RandomAccess.Read(handle, buffer, 0));
+
+                // Restore the previous context and verify the handle is still usable.
+                SynchronizationContext.SetSynchronizationContext(previous);
+
+                byte[] readBuffer = new byte[expectedData.Length];
+                int bytesRead = RandomAccess.Read(handle, readBuffer, 0);
+                Assert.Equal(expectedData.Length, bytesRead);
+                Assert.Equal(expectedData, readBuffer);
             }
             finally
             {
