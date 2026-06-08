@@ -1344,10 +1344,9 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
     if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
     {
         // The local is live into an EH handler (an exceptional exit). The
-        // regular exit blocks visited below do not include handlers, and
-        // EH-live locals are no longer necessarily marked DNER at this point
-        // (that now happens during LSRA/lowering), so we must check for
-        // handler liveness explicitly here.
+        // regular exit blocks visited below do not include handlers, and we
+        // use this as a cheap alternative to checking all EH successors
+        // of all blocks in the loop.
         return true;
     }
 
