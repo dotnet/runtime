@@ -9,6 +9,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
@@ -352,7 +354,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && Name.SequenceEqual(".ctor"u8)
+                    && Name == ".ctor"u8
                     && !_type.IsAbstract;
             }
         }
@@ -369,7 +371,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && Name.SequenceEqual(".cctor"u8);
+                return Attributes.IsRuntimeSpecialName() && Name == ".cctor"u8;
             }
         }
 
@@ -405,7 +407,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe ReadOnlySpan<byte> Name
+        public override unsafe Utf8Span Name
         {
             get
             {

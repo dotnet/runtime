@@ -784,7 +784,18 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         // full info load level
         if(desiredLoadLevel == FullInfo)
         {
-            IfFailThrow(pDac->GetClassInfo(vmTypeHandle, &m_classInfo));
+            CallbackAccumulator<FieldData> acc;
+
+            HRESULT hrEnum = pDac->EnumerateClassFields(vmTypeHandle,
+                                                        &m_classInfo.m_objectSize,
+                                                        &CallbackAccumulator<FieldData>::PushCallback,
+                                                        &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.items.Size();
+            m_classInfo.m_fieldList.Init(fieldCount > 0 ? &acc.items[0] : NULL, fieldCount);
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 

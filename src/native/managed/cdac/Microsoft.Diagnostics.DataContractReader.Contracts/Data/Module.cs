@@ -30,5 +30,6 @@ internal sealed partial class Module : IData<Module>
     [FieldAddress] public TargetPointer TypeDefToMethodTableMap { get; }
     [FieldAddress] public TargetPointer TypeRefToMethodTableMap { get; }
     [FieldAddress] public TargetPointer MethodDefToILCodeVersioningStateMap { get; }
+    [FieldAddress] public TargetPointer? EnCClassList { get; }
     [Field] public TargetPointer DynamicILBlobTable { get; }
 }
