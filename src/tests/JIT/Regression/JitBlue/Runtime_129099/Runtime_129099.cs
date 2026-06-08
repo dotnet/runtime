@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // NI_PRIMITIVE_RotateLeft/Right's const-fold path stored the unsigned
-// fold result into gtNewIconNode(ssize_t, TYP_INT). For uint operands
-// with the high bit set (e.g. RotateRight(0xFFFFFFFFu, k)) the result
-// zero-extends to a positive ssize_t whose value (0xFFFFFFFF = 4294967295)
-// does not fit in int32_t, tripping GenTreeIntCon::SetIconValue's
-// FitsIn<int32_t>(value) assert during 'Morph - Global'.
+// fold result into a TYP_INT/TYP_UINT GenTreeIntCon via gtNewIconNode.
+// For uint operands with the high bit set (e.g. RotateRight(0xFFFFFFFFu, k))
+// the zero-extended ssize_t value (0xFFFFFFFF = 4294967295) does not fit
+// in int32_t, tripping a downstream FitsIn<int32_t> assert during
+// 'Morph - Global' when the constant was bashed/updated.
 //
 // The volatile Sink is required so the fold result is materialized as a
 // store (rather than dropped or inlined into the return path) -- that
-// store is what hits SetIconValue with the wide value.
+// store is what hits the wide-value assert.
 
 namespace Runtime_129099;
 
