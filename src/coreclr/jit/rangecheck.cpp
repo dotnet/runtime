@@ -785,18 +785,9 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
             case VNF_MDARR_LENGTH:
             case VNF_ARR_LENGTH:
-            {
                 result.lLimit = Limit(Limit::keConstant, 0);
                 result.uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
-
-                int size;
-                if (comp->vnStore->TryGetNewArrSize(comp->vnStore->GetArrForLenVn(num), &size) && (size >= 0))
-                {
-                    result.lLimit = Limit(Limit::keConstant, size);
-                    result.uLimit = Limit(Limit::keConstant, size);
-                }
-            }
-            break;
+                break;
 
             case VNF_GT:
             case VNF_GT_UN:
