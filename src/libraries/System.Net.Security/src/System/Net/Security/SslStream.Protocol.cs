@@ -944,6 +944,11 @@ namespace System.Net.Security
 #if TARGET_APPLE
         private ProtocolToken VerifyRemoteCertificateAndGenerateNextToken(ProtocolToken token)
         {
+            // SecureTransport pauses the handshake (errSSL{Server,Client}AuthCompleted) before
+            // any bytes are produced for the next handshake flight, so the pending-writes buffer
+            // drained into token should be empty here. Assert to catch any future regression
+            // that would silently drop handshake bytes.
+            Debug.Assert(token.Size == 0, "Expected empty payload at CertValidationNeeded pause; dropping non-empty payload would lose handshake bytes.");
             token.ReleasePayload();
 
             ProtocolToken alertToken = default;
