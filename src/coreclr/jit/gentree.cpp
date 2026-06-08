@@ -11767,9 +11767,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
-#ifdef TARGET_WASM
-        case GT_WASM_SPILL_REF:
-#endif
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -13224,10 +13221,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             else if (lclNum == lvaWasmFunctionIndex)
             {
                 ilName = "FuncIndex";
-            }
-            else if (lclNum == lvaWasmSplashZone)
-            {
-                ilName = "SplashZone";
             }
             else if (wasmSpillSlotIndex > -1)
             {

@@ -217,7 +217,6 @@ protected:
     ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
     unsigned                   wasmCursor                = 0;
     unsigned                   wasmExtraControlFlowDepth = 0;
-    unsigned                   wasmSpillRefIndex = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
@@ -795,7 +794,6 @@ protected:
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
     void genCatchArg(GenTree* treeNode);
-    void genWasmSpillRef(GenTree* treeNode);
 #endif
 
 #if defined(TARGET_X86)

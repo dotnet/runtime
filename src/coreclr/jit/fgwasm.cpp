@@ -1693,22 +1693,51 @@ PhaseStatus Compiler::WasmSpillRefs()
                 //  on the stack where the GC can see them so it won't move them.
                 if (defs.size())
                 {
+                    anyChanges = true;
+
+                    if (!m_wasmSpillSlots)
+                    {
+                        m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
+                    }
+
+                    unsigned spillSlotIndex = 0;
                     JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
                     DISPNODE(tree);
                     for (GenTree* def : defs)
                     {
                         JITDUMP("    ");
                         DISPNODE(def);
-                        GenTreeUnOp* spill = gtNewOperNode(GT_WASM_SPILL_REF, def->TypeGet(), def);
+
+                        unsigned spillSlot;
+                        if (spillSlotIndex < m_wasmSpillSlots->size())
+                        {
+                            spillSlot = m_wasmSpillSlots->at(spillSlotIndex);
+                        }
+                        else
+                        {
+                            spillSlot = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+                            LclVarDsc* const varDsc = lvaGetDesc(spillSlot);
+                            varDsc->lvType = TYP_BYREF;
+                            varDsc->lvPinned = true;
+                            varDsc->lvImplicitlyReferenced = true;
+                            varDsc->lvMustInit = true;
+                            lvaSetVarDoNotEnregister(spillSlot, DoNotEnregisterReason::WasmGCVisibility);
+                            m_wasmSpillSlots->push_back(spillSlot);
+                        }
+                        spillSlotIndex++;
+
+                        GenTreeLclVar *spill = gtNewStoreLclVarNode(spillSlot, def);
+                        GenTreeLclVar *reload = gtNewLclVarNode(spillSlot);
                         LIR::Use use;
                         noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
-                        use.ReplaceWith(spill);
+                        use.ReplaceWith(reload);
                         LIR::AsRange(block).InsertAfter(def, spill);
+                        LIR::AsRange(block).InsertAfter(spill, reload);
                         if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
                         {
-                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n", Compiler::dspTreeID(def), Compiler::dspTreeID(spill));
+                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n", Compiler::dspTreeID(def), Compiler::dspTreeID(reload));
                             def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
-                            spill->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                            reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
                         }
                         anyChanges = true;
                     }
@@ -1762,7 +1791,7 @@ PhaseStatus Compiler::WasmSpillRefs()
 
             // We have a ref sourced from something like a call result or an indirection that hasn't been
             //  spilled yet, so record it for potential spilling at the next call.
-            if (tree->TypeIs(TYP_REF, TYP_BYREF) && !tree->OperIs(GT_WASM_SPILL_REF))
+            if (tree->TypeIs(TYP_REF, TYP_BYREF))
             {
                 defs.push_back(tree);
             }
@@ -1770,38 +1799,7 @@ PhaseStatus Compiler::WasmSpillRefs()
     }
 
     JITDUMP("High water mark for refs was %zu\n", highWaterMark);
-    if (!anyChanges)
-        return PhaseStatus::MODIFIED_NOTHING;
-
-    m_wasmSpillSlots = new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(highWaterMark, 0, getAllocator(CMK_WasmSpillRefs));
-
-    // Allocate a temporary wasm local to use as a scratch slot during spills
-    {
-        const unsigned varNum = lvaGrabTemp(false DEBUGARG("WasmSpillRefs splash zone"));
-        LclVarDsc* const varDsc = lvaGetDesc(varNum);
-        // HACK: Make this TYP_I_IMPL because if we make it a REF or BYREF that may block enregistration
-        varDsc->lvType = TYP_I_IMPL;
-        varDsc->lvHasExplicitInit = true;
-        varDsc->lvImplicitlyReferenced = true;
-        // HACK: If we don't make this var tracked, regalloc will crash when allocating a register for it
-        // varDsc->lvTracked = true;
-        lvaWasmSplashZone = varNum;
-    }
-
-    // Allocate N temporary refs to act as GC-visible storage for all spills that occur during execution
-    for (size_t i = 0; i < highWaterMark; i++)
-    {
-        const unsigned varNum = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
-        LclVarDsc* const varDsc = lvaGetDesc(varNum);
-        varDsc->lvType = TYP_BYREF;
-        varDsc->lvPinned = true;
-        varDsc->lvImplicitlyReferenced = true;
-        varDsc->lvMustInit = true;
-        lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason::WasmGCVisibility);
-        m_wasmSpillSlots->at(i) = varNum;
-    }
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return anyChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG

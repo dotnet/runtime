@@ -858,7 +858,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CALL:
-            wasmSpillRefIndex = 0;
             genCall(treeNode->AsCall());
             break;
 
@@ -912,10 +911,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_unreachable);
             break;
 
-        case GT_WASM_SPILL_REF:
-            genWasmSpillRef(treeNode);
-            break;
-
         case GT_CATCH_ARG:
             genCatchArg(treeNode);
             break;
@@ -937,43 +932,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
             break;
     }
-}
-
-//------------------------------------------------------------------------
-// genWasmSpillRef: spill a ref/byref to one of the reserved spill slots on the
-//  stack so the GC can see it
-//
-// Arguments:
-//    treeNode - WASM_SPILL_REF node
-//
-void CodeGen::genWasmSpillRef(GenTree* treeNode)
-{
-    const unsigned splashZoneVar = m_compiler->lvaWasmSplashZone;
-    noway_assert(wasmSpillRefIndex < m_compiler->m_wasmSpillSlots->size());
-    const unsigned spillTargetVar = m_compiler->m_wasmSpillSlots->at(wasmSpillRefIndex);
-    unsigned       splashZoneLclIndex;
-    bool           FPBased;
-
-    {
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(splashZoneVar);
-        assert(genIsValidReg(varDsc->GetRegNum()));
-        splashZoneLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-
-        GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, splashZoneLclIndex);
-    }
-
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    m_compiler->lvaFrameAddress(spillTargetVar, &FPBased);
-    // TODO-WASM: Emit this offset as the memarg of the store, below.
-    GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, spillTargetVar, 0);
-    GetEmitter()->emitIns(INS_I_add);
-
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, splashZoneLclIndex);
-
-    instruction ins = ins_Store(TYP_BYREF);
-    GetEmitter()->emitIns_I(ins, EA_PTRSIZE, 0);
-
-    wasmSpillRefIndex++;
 }
 
 //------------------------------------------------------------------------

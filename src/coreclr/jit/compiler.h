@@ -4244,7 +4244,6 @@ public:
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
-    unsigned lvaWasmSplashZone = BAD_VAR_NUM; // Temporary local used for spilling GC refs on Wasm
     jitstd::vector<unsigned>* m_wasmSpillSlots = nullptr;
 #endif // defined(TARGET_WASM)
 

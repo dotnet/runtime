@@ -461,9 +461,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 #endif
 
 #ifdef TARGET_WASM
-    // Reset spill counter at block boundaries.
-    wasmSpillRefIndex = 0;
-
     // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
     // we have moved it out of the prolog to the first basic block in order to
     // work around the restriction that the prolog can only be one insGroup.

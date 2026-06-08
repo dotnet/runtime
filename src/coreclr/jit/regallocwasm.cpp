@@ -190,13 +190,6 @@ void WasmRegAlloc::IdentifyCandidates()
             varIsRegCandidate = false;
         }
 
-        // HACK: Ensure that we always enregister the splash zone, even if we are not enregistering other locals.
-        // Spilling codegen won't work unless the splash zone lives in a native wasm local.
-        if ((m_compiler->lvaWasmSplashZone != BAD_VAR_NUM) && (lclNum == m_compiler->lvaWasmSplashZone))
-        {
-            varIsRegCandidate = true;
-        }
-
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
