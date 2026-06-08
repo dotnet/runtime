@@ -8,6 +8,8 @@ on:
     branches:
       - ppc64le_coreclr_jit
   workflow_dispatch:
+  schedule:
+    - cron: "30 0 * * *"   # 6:00 AM IST (00:30 UTC)
 
 # Prevent multiple workflow runs from executing simultaneously
 concurrency:
