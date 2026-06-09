@@ -708,7 +708,12 @@ namespace System.Diagnostics.Tests
                 Assert.True(match.Success, $"Could not find expected pattern '{pattern}' in exception text:\n{exceptionText} starting at index {startIndex}.");
                 startIndex = match.Index + match.Length;
             }
-            Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/129155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+            if (!PlatformDetection.IsNativeAot)
+            {
+                Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

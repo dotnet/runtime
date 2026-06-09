@@ -61,6 +61,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     clsload.cpp
     codeman.cpp
     codeversion.cpp
+    conditionalweaktable.cpp
     contractimpl.cpp
     corhost.cpp
     crst.cpp
@@ -279,7 +280,6 @@ list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
-    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
 )
 
 set(VM_HEADERS_DAC
