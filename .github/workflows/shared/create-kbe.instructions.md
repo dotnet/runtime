@@ -141,9 +141,20 @@ never match because there is no test name. Add:
 Each candidate body must be fetched and read; do not match on title alone. On
 hit, record `existing-PR #<n>`.
 
+### Integrity-filtered PR candidate
+
+If any PR search above returns a `[Filtered]` marker for a candidate whose
+title, source symbol, or assertion slice overlaps the failing signature, do
+**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
+you are not permitted to read, and it may already handle this failure. Record
+`skipped: integrity-filtered candidate, needs human review` and stop for this
+signature. A human can confirm whether the hidden PR fixes the failure; filing a
+duplicate KBE that is immediately closed as "fixed by" the hidden PR is a
+scanner-quality miss the feedback workflow will penalize.
+
 ### Merged fix PR (last 14 days)
 
-Only when an existing KBE or area-team tracker was recorded:
+When an existing KBE or area-team tracker was recorded:
 
 - `is:pr is:merged "<test-name>" merged:>=<14-days-ago>`
 - `is:pr is:merged "<test-file-path>" merged:>=<14-days-ago>`
@@ -151,6 +162,29 @@ Only when an existing KBE or area-team tracker was recorded:
 
 On match, record `skipped: fix recently merged in #<n>` and do not file a
 test-disable PR.
+
+#### Always run this for assertion / native / build-level signatures
+
+For a JIT, runtime, or build-level signature (assert in `coreclr!*`, `clrjit!*`,
+a native crash, or a compiler diagnostic), run the merged-PR search
+**unconditionally** — even when no existing KBE was found. These signatures
+recur and their KBEs are frequently closed-as-fixed, so an open-only dedup will
+not see the closed predecessor and the failure gets re-filed from a stale build.
+Search:
+
+- `is:pr is:merged "<assertion-text>" merged:>=<14-days-ago>` using a 6-12 word
+  literal slice of the assert / diagnostic message.
+- `is:pr is:merged "<source-symbol>" merged:>=<14-days-ago>` for each of the 2-3
+  most unique C / C++ identifiers in the stack frame or assertion text.
+
+For every merged PR hit, compare its `mergedAt` against the failing build's
+`finishTime` (the AzDO build that produced this failure; read it from the build
+metadata, not the queue time). If the fix merged **after** the build finished,
+the failure is stale and already addressed: record
+`skipped: fix already merged after source build` (cite the PR `#<n>`) and do not
+file. Only file a new KBE when the same assertion still reproduces in a build
+that finished **after** the fix merged (a genuine post-fix recurrence), and say
+so explicitly in the KBE body with both the fix PR `#<n>` and the post-fix build.
 
 <a id="verify-embedded-issues"></a>
 

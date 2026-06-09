@@ -219,4 +219,25 @@
   <data name="UnionTypeShapeNotSupportedMessageFormat" xml:space="preserve">
     <value>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</value>
   </data>
+  <data name="OpenGenericDerivedTypeCouldNotBeResolvedTitle" xml:space="preserve">
+    <value>Open generic derived type could not be resolved for the polymorphic base type.</value>
+  </data>
+  <data name="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat" xml:space="preserve">
+    <value>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
+    <value>the derived type is not assignable to the base type</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_UnificationFailed" xml:space="preserve">
+    <value>the base type's arguments do not match the derived type's base specification</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_UnboundParameter" xml:space="preserve">
+    <value>the type parameter '{0}' of the derived type is not bound by the base type's arguments</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_ConstraintViolation" xml:space="preserve">
+    <value>the constraint on type parameter '{0}' is not satisfied by '{1}'</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_AmbiguousMatch" xml:space="preserve">
+    <value>the derived type matches the base type through multiple ancestors</value>
+  </data>
 </root>

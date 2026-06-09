@@ -628,62 +628,24 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 
 See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path and [Signature-Based Scanning](#signature-based-scanning) for the signature decoding path.
 
-### Signature-Based Scanning
+### Signature-Based Scanning (currently deferred)
 
-When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the GC reference walk classifies caller-stack arguments by decoding the callee's method signature. This corresponds to native `TransitionFrame::PromoteCallerStack` (`src/coreclr/vm/frames.cpp`).
+When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the native runtime classifies caller-stack arguments by decoding the callee's method signature (`TransitionFrame::PromoteCallerStack` in `src/coreclr/vm/frames.cpp`).
 
-#### GcSignatureTypeProvider
-
-`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, GcSignatureContext>` that classifies each parameter type into one of:
+The cDAC does **not** currently port this scan. `GcScanner.PromoteCallerStack` is a stub that records the frame as deferred and returns without enumerating any refs:
 
 ```csharp
-internal enum GcTypeKind
+private static void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
 {
-    None,       // Non-GC primitive that fits in a single slot
-    Ref,        // Object reference (TYPE_GC_REF)
-    Interior,   // Managed pointer / byref (TYPE_GC_BYREF)
-    Other,      // Value type that may contain GC refs, or any type larger than a slot
+    scanContext.RecordDeferredFrame(frameAddress);
 }
 ```
 
-The provider is scoped to the method's containing module (captured at construction) so that `TypeDef` and `TypeRef` tokens can be resolved to a loaded `MethodTable` via the module's `TypeDefToMethodTable` / `TypeRefToMethodTable` lookup tables. The decoder's generic context is a `GcSignatureContext(TypeHandle classContext, MethodDescHandle methodContext)` carrying the method's class and method instantiations.
+`RecordDeferredFrame` (on `GcScanContext`) appends a sentinel `StackRefData` entry with `Flags = GcScanFlags.CDAC_DEFERRED_FRAME (0x40000000)` and `Source = frameAddress`. The sentinel has no real GC ref payload; downstream consumers (e.g. the cDAC stress harness in `src/coreclr/vm/cdacstress.cpp`) can detect it and treat the missing refs at that frame as expected gaps rather than cDAC bugs. See [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) for the stress framework's handling and the tracking work to re-enable the scan.
 
-The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`). For `TypeDef`/`TypeRef` it resolves the loaded `TypeHandle` and classifies via `RuntimeTypeSystem.GetSignatureCorElementType`, treating enums (`IsEnum`) as their underlying primitive (`None`). When the type cannot be resolved (e.g., not yet loaded), classification falls back to the signature's `rawTypeKind` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are resolved against the `GcSignatureContext` (via `GetInstantiation` / `GetGenericMethodInstantiation`) and classified by their actual instantiation -- matching native `SigTypeContext`-driven `PeekElemTypeNormalized` behavior. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
+The `GcSignatureTypeProvider` class remains in the tree as the scaffolding the eventual port will use; it has no callers while `PromoteCallerStack` is stubbed.
 
-#### PromoteCallerStack Algorithm
-
-1. Read the `MethodDesc` pointer from the `FramedMethodFrame` and obtain a `MethodDescHandle` from `RuntimeTypeSystem`.
-2. Resolve the method's `MetadataReader` via `Loader.GetModuleHandleFromModulePtr` and `EcmaMetadata.GetMetadata`. If metadata is unavailable, no caller-stack refs are reported (matches native fallback behavior).
-3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
-   - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
-   - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
-4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [Signature contract](./Signature.md) for the decoder.
-5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
-6. Compute the number of reserved register slots in the `TransitionBlock`:
-
-   | Reserved Slot | Condition |
-   |---|---|
-   | `this` pointer | `MethodSignature.Header.IsInstance` |
-   | Return buffer | Return type is `GcTypeKind.Other` |
-   | Generic instantiation arg | `RuntimeTypeSystem.RequiresInstArg(methodDesc)` |
-   | Async continuation | `RuntimeTypeSystem.IsAsyncMethod(methodDesc)` |
-   | ARM64 indirect-result register (`x8`) | Target architecture is ARM64 |
-
-7. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
-8. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
-   - `GcTypeKind.Ref` -> report as a reference.
-   - `GcTypeKind.Interior` -> report with `GC_CALL_INTERIOR`.
-   - `GcTypeKind.Other` / `GcTypeKind.None` -> not reported (large value types are reported via the GCRefMap path when one is available; otherwise their interior refs are not visible to this scan).
-
-The slot address is computed using the same formula as the GCRefMap path:
-
-```csharp
-slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
-```
-
-#### Limitations vs. Native
-
-This signature-based scan has known gaps relative to native see [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765) for tracking.
+Tracking work to re-enable the scan: it requires porting `ArgIterator` behind an `ICallingConvention` contract. Once that lands, `PromoteCallerStack` will fan out into the signature-decoding algorithm (reserved-slot computation, signature walk, slot reporting) that mirrors the native version. See also [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765).
 
 ### GCRefMap Format and Resolution
 

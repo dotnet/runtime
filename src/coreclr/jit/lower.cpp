@@ -710,6 +710,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_INDEX_ADDR:
             LowerIndexAddr(node->AsIndexAddr());
             break;
+
+        case GT_CKFINITE:
+            LowerCkfinite(node->AsOp());
+            break;
 #endif // defined(TARGET_WASM)
 
         default:
@@ -5859,6 +5863,16 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             else
             {
                 assert(varTypeUsesIntReg(nativeReturnType));
+                // ZeroObj assertion propagation can create an INT zero for a wider
+                // (e.g. LONG) integer struct return. Retype it to the native return type
+                // so that targets with a typed value stack (Wasm) emit e.g. an i64.const
+                // rather than an i32.const. Mirrors the float/double case above.
+#if defined(TARGET_WASM)
+                if ((genActualType(retVal) != genActualType(nativeReturnType)) && retVal->IsIntegralConst(0))
+                {
+                    retVal->BashToZeroConst(nativeReturnType);
+                }
+#endif // defined(TARGET_WASM)
             }
             break;
         }
