@@ -1722,7 +1722,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                             varDsc->lvPinned               = true;
                             varDsc->lvImplicitlyReferenced = true;
                             varDsc->lvMustInit             = true;
-                            lvaSetVarDoNotEnregister(spillSlot, DoNotEnregisterReason::WasmGCVisibility);
+                            lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
                             m_wasmSpillSlots->push_back(spillSlot);
                         }
                         spillSlotIndex++;
