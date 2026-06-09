@@ -6,6 +6,7 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -50,4 +51,5 @@ jobs:
             extraHelixArguments: /p:BrowserHost=$(_hostedOs)
             scenarios:
             - buildwasmapps
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
 

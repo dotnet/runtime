@@ -27,11 +27,20 @@ parameters:
   HelixBaseUri: 'https://helix.dot.net/' # optional -- sets the Helix API base URI (allows targeting https://helix.int-dot.net )
   Creator: ''                            # optional -- if the build is external, use this to specify who is sending the job
   DisplayNamePrefix: 'Run Tests'         # optional -- rename the beginning of the displayName of the steps in AzDO 
+  UseHelixMonitor: false                 # optional -- true will use the Helix Monitor to wait for work item completion instead of the built-in monitor
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
 
 steps:
-  - powershell: 'powershell "$env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1 $env:BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /t:Test /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"'
+  - powershell: >
+      $env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1
+      $env:BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }}
+      /restore
+      /p:TreatWarningsAsErrors=false
+      /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
+      ${{ parameters.HelixProjectArguments }}
+      /t:Test
+      /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
       BuildConfig: $(_BuildConfig)
@@ -61,7 +70,15 @@ steps:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}
-  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
+  - script: >
+      $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh
+      $BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }}
+      /restore
+      /p:TreatWarningsAsErrors=false
+      /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
+      ${{ parameters.HelixProjectArguments }}
+      /t:Test
+      /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
     env:
       BuildConfig: $(_BuildConfig)

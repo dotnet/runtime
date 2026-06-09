@@ -114,9 +114,29 @@ This file should be imported by eng/Versions.props
     <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.26302.1</SystemTextRegularExpressionsTestDataPackageVersion>
     <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.26302.1</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet-xharness dependencies -->
-    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessCLIPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
+    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessCLIPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
+    <!-- dotnet/arcade dependencies -->
+    <MicrosoftDotNetArcadeSdkPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetArcadeSdkPackageVersion>
+    <MicrosoftDotNetBuildTasksArchivesPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksArchivesPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetBuildTasksInstallersPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksInstallersPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>
+    <MicrosoftDotNetBuildTasksTemplatingPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksTemplatingPackageVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetHelixJobMonitorPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetHelixJobMonitorPackageVersion>
+    <MicrosoftDotNetHelixSdkPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetHelixSdkPackageVersion>
+    <MicrosoftDotNetPackageTestingPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetPackageTestingPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetSharedFrameworkSdkPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
+    <MicrosoftDotNetXliffTasksPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetXliffTasksPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.26264.2</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.26265.3</MicrosoftDotNetXUnitExtensionsPackageVersion>
   </PropertyGroup>
   <!--Property group for alternate package version names-->
   <PropertyGroup>
@@ -161,8 +181,26 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataVersion>$(SystemReflectionMetadataPackageVersion)</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>$(SystemReflectionMetadataLoadContextPackageVersion)</SystemReflectionMetadataLoadContextVersion>
     <SystemTextJsonVersion>$(SystemTextJsonPackageVersion)</SystemTextJsonVersion>
-    <!-- dotnet-hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion)</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <!-- dotnet/arcade dependencies -->
+    <MicrosoftDotNetArcadeSdkVersion>$(MicrosoftDotNetArcadeSdkPackageVersion)</MicrosoftDotNetArcadeSdkVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>$(MicrosoftDotNetBuildTasksArchivesPackageVersion)</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>$(MicrosoftDotNetBuildTasksFeedPackageVersion)</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>$(MicrosoftDotNetBuildTasksInstallersPackageVersion)</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>$(MicrosoftDotNetBuildTasksPackagingPackageVersion)</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>$(MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion)</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>$(MicrosoftDotNetBuildTasksTemplatingPackageVersion)</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsVersion>$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)</MicrosoftDotNetBuildTasksWorkloadsVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>$(MicrosoftDotNetCodeAnalysisPackageVersion)</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>$(MicrosoftDotNetGenAPIPackageVersion)</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>$(MicrosoftDotNetGenFacadesPackageVersion)</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetHelixJobMonitorVersion>$(MicrosoftDotNetHelixJobMonitorPackageVersion)</MicrosoftDotNetHelixJobMonitorVersion>
+    <MicrosoftDotNetHelixSdkVersion>$(MicrosoftDotNetHelixSdkPackageVersion)</MicrosoftDotNetHelixSdkVersion>
+    <MicrosoftDotNetPackageTestingVersion>$(MicrosoftDotNetPackageTestingPackageVersion)</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>$(MicrosoftDotNetRemoteExecutorPackageVersion)</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetSharedFrameworkSdkVersion>$(MicrosoftDotNetSharedFrameworkSdkPackageVersion)</MicrosoftDotNetSharedFrameworkSdkVersion>
+    <MicrosoftDotNetXliffTasksVersion>$(MicrosoftDotNetXliffTasksPackageVersion)</MicrosoftDotNetXliffTasksVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>$(MicrosoftDotNetXUnitExtensionsPackageVersion)</MicrosoftDotNetXUnitExtensionsVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>$(MicrosoftNETCoreRuntimeICUTransportPackageVersion)</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- dotnet-llvm-project dependencies -->
