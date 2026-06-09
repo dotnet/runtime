@@ -308,8 +308,11 @@ internal partial class StackWalk_1 : IStackWalk
             {
                 // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
                 // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
+                // The ExInfo lives on the stack, so report its address as the StackPointer: native
+                // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
+                // (SOSDacImpl.GetStackReferences) forward it.
                 exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
-                scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pExInfo);
+                scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo);
                 scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
                 pExInfo = previous;
             }
@@ -342,7 +345,10 @@ internal partial class StackWalk_1 : IStackWalk
             while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
             {
                 Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
-                scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pGCFrame);
+                // The GCFrame lives on the stack, so report its address as the StackPointer: native
+                // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
+                // (SOSDacImpl.GetStackReferences) forward it.
+                scanContext.UpdateScanContext(pGCFrame, TargetPointer.Null, pGCFrame);
                 GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
                 for (uint i = 0; i < gcFrame.NumObjRefs; i++)
                 {

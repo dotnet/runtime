@@ -149,6 +149,11 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
 | `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
 | `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
+| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame (GCPROTECT) chain, scanned by `WalkStackReferences` (optional) |
+| `GCFrame` | `Next` | Pointer to the next `GCFrame` toward the top of the chain (terminated by `GCFRAME_TOP`) |
+| `GCFrame` | `ObjRefs` | Pointer to the array of protected object reference slots |
+| `GCFrame` | `NumObjRefs` | Count of protected object reference slots starting at `ObjRefs` |
+| `GCFrame` | `GCFlags` | `GC_CALL_*` promotion flags applied when reporting the protected slots |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -627,6 +632,15 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - Other frame types: No GC roots to report.
 
 See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) is currently a stub awaiting an `ICallingConvention` contract port; the stress harness handles the resulting gaps via a deferred-frame sentinel (see [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) and tracking issue [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765)).
+
+#### GCFrame and Exception Tracker Roots
+
+After walking the thread's frames, `WalkStackReferences` reports two additional sets of roots that the GC keeps alive but that are not surfaced by per-frame GC info (matching native `gcenv.ee.cpp` `ScanStackRoots`):
+
+- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame`, each `GCFrame` is walked via its `Next` pointer until the `GCFRAME_TOP` terminator (`~0`, sized to the pointer width). For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
+- **Exception tracker (ExInfo) chain**: starting from `Thread.ExceptionTracker`, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
+
+Both sets are reported as frame-sourced roots: `Source` is the GCFrame / ExInfo node address, and `StackPointer` is that same address (the node lives on the stack), so the roots carry a non-zero, stack-resident location consistent with the per-frame roots. Each helper is independently wrapped in a try/catch so a single unreadable node yields partial results rather than failing the whole walk.
 
 ### GCRefMap Format and Resolution
 
