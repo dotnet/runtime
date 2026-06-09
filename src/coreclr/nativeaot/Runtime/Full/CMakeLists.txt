@@ -41,7 +41,6 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
-  set(NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.nm")
   set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize.unsorted")
   # The relocatable object includes runtime-owned objects so their references to
   # libunwind implementation symbols are resolved before localization. The
@@ -67,7 +66,6 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
     OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f
             "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     # Generate the objcopy symbol list from libunwind-owned object files only.
     COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_SH}" -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
@@ -78,7 +76,6 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f
-            "${NATIVEAOT_PRIVATE_LIBUNWIND_NM_OUTPUT}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
     COMMAND "${CMAKE_OBJCOPY}"
