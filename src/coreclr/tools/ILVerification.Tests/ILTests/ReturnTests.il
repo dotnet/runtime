@@ -127,6 +127,23 @@
         ret
     }
 
+    .method public hidebysig instance int32& Return.ByRefArg_Valid(int32& i) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig instance int32& Return.ByRefLocal_Invalid_ReturnPtrToStack(int32 i) cil managed
+    {
+        .locals init (
+            [0] int32&
+        )
+        ldarga.s    i
+        stloc.0
+        ldloc.0
+        ret
+    }
+
     .method public hidebysig instance int32& Return.InstanceFieldByRef_Valid(int32 i) cil managed
     {
         ldarg.0
