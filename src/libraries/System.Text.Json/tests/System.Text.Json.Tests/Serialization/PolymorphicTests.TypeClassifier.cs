@@ -741,7 +741,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128765", platforms: TestPlatforms.iOS | TestPlatforms.tvOS, runtimes: TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128765", platforms: TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]
         public void MetadataServices_NullPolymorphismOptions_DoesNotActivateAttributeClassifier()
         {
             JsonTypeInfo<AttrClassifiedAnimal> typeInfo = JsonMetadataServices.CreateObjectInfo(
