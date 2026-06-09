@@ -344,6 +344,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         return -1;
     }
 
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    flags |= O_NOCTTY;
+
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
 #if !HAVE_O_CLOEXEC
