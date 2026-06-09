@@ -8,8 +8,10 @@ on:
     branches:
       - ppc64le_coreclr_jit
   workflow_dispatch:
+  
   schedule:
-    - cron: "30 0 * * *"   # 6:00 AM IST (00:30 UTC)
+    - cron: "20 0 * * *"   # ~6:00 AM IST
+
 
 # Prevent multiple workflow runs from executing simultaneously
 concurrency:
@@ -18,6 +20,7 @@ concurrency:
 
 jobs:
   jit-testing:
+    if: github.ref == 'refs/heads/ppc64le_coreclr_jit'
     runs-on: ubuntu-24.04-ppc64le-p10
 
     steps:
