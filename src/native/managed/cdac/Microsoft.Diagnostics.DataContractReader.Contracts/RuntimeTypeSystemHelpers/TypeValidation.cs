@@ -9,14 +9,38 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 internal sealed class TypeValidation
 {
     private readonly Target _target;
-    private readonly TargetPointer _continuationMethodTablePointer;
-    private readonly TargetPointer _continuationSingletonEEClassPointer;
+    private TargetPointer _continuationMethodTablePointer;
+    private TargetPointer _continuationSingletonEEClassPointer;
 
     internal TypeValidation(Target target, TargetPointer continuationMethodTablePointer, TargetPointer continuationSingletonEEClassPointer)
     {
         _target = target;
         _continuationMethodTablePointer = continuationMethodTablePointer;
         _continuationSingletonEEClassPointer = continuationSingletonEEClassPointer;
+    }
+
+    private TargetPointer ContinuationMethodTablePointer
+    {
+        get
+        {
+            if (_continuationMethodTablePointer != TargetPointer.Null)
+                return _continuationMethodTablePointer;
+            _continuationMethodTablePointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
+            return _continuationMethodTablePointer;
+        }
+    }
+
+    private TargetPointer ContinuationSingletonEEClassPointer
+    {
+        get
+        {
+            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
+                return _continuationSingletonEEClassPointer;
+            _continuationSingletonEEClassPointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
+            return _continuationSingletonEEClassPointer;
+        }
     }
 
     // This doesn't need as many properties as MethodTable because we don't want to be operating on
@@ -235,10 +259,10 @@ internal sealed class TypeValidation
     // duplicate the check using the raw ParentMethodTable read from target memory.
     private bool IsContinuationWithoutMetadata(NonValidatedMethodTable methodTable)
     {
-        return _continuationMethodTablePointer != TargetPointer.Null
-            && methodTable.ParentMethodTable == _continuationMethodTablePointer
-            && _continuationSingletonEEClassPointer != TargetPointer.Null
-            && GetClassThrowing(methodTable) == _continuationSingletonEEClassPointer;
+        return ContinuationMethodTablePointer != TargetPointer.Null
+            && methodTable.ParentMethodTable == ContinuationMethodTablePointer
+            && ContinuationSingletonEEClassPointer != TargetPointer.Null
+            && GetClassThrowing(methodTable) == ContinuationSingletonEEClassPointer;
     }
 
     internal bool TryValidateMethodTablePointer(TargetPointer methodTablePointer)
