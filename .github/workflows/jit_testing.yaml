@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - ppc64le_coreclr_jit
+      - main   # optional (if you want to test failure on main)
   pull_request:
     branches:
       - ppc64le_coreclr_jit
@@ -17,13 +18,10 @@ concurrency:
 
 jobs:
   jit-testing:
-    #  Skip execution if NOT target branch
-    if: github.ref == 'refs/heads/ppc64le_coreclr_jit'
-
     runs-on: ubuntu-24.04-ppc64le-p10
 
     steps:
-   
+     
       - name: Fail if not correct branch
         if: github.ref != 'refs/heads/ppc64le_coreclr_jit'
         run: |
