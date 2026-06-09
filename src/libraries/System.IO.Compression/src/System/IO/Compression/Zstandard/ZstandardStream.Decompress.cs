@@ -227,13 +227,22 @@ namespace System.IO.Compression
         {
             if (hasPendingOutput)
             {
-                // There is output to hand back now. Resolve the boundary only from already-buffered bytes:
-                // if this was the final frame (trailing non-zstd data) rewind a seekable base stream now;
-                // otherwise defer crossing into the next frame to the next Read (the decoder stays finished),
-                // so we don't block on the next frame's header before returning data we already have.
-                if (_buffer.ActiveLength >= ZstdFrameMagicLength && !StartsWithZstdFrame(_buffer.ActiveSpan) && _stream.CanSeek)
+                // There is output to hand back now. If the next frame's header is already buffered, ready the
+                // decoder for it now (no read needed) so the next read decodes it directly; if this was instead
+                // the final frame (trailing non-zstd data) rewind a seekable base stream. With fewer than
+                // ZstdFrameMagicLength bytes buffered we can't tell yet, so defer the decision to the next read
+                // rather than block on the next frame's header before returning data we already have.
+                if (_buffer.ActiveLength >= ZstdFrameMagicLength)
                 {
-                    TryRewindStream(_stream);
+                    if (StartsWithZstdFrame(_buffer.ActiveSpan))
+                    {
+                        Debug.Assert(_decoder != null);
+                        _decoder.Reset();
+                    }
+                    else if (_stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                    }
                 }
 
                 return false;
@@ -283,13 +292,22 @@ namespace System.IO.Compression
         {
             if (hasPendingOutput)
             {
-                // There is output to hand back now. Resolve the boundary only from already-buffered bytes:
-                // if this was the final frame (trailing non-zstd data) rewind a seekable base stream now;
-                // otherwise defer crossing into the next frame to the next read (the decoder stays finished),
-                // so we don't block on the next frame's header before returning data we already have.
-                if (_buffer.ActiveLength >= ZstdFrameMagicLength && !StartsWithZstdFrame(_buffer.ActiveSpan) && _stream.CanSeek)
+                // There is output to hand back now. If the next frame's header is already buffered, ready the
+                // decoder for it now (no read needed) so the next read decodes it directly; if this was instead
+                // the final frame (trailing non-zstd data) rewind a seekable base stream. With fewer than
+                // ZstdFrameMagicLength bytes buffered we can't tell yet, so defer the decision to the next read
+                // rather than block on the next frame's header before returning data we already have.
+                if (_buffer.ActiveLength >= ZstdFrameMagicLength)
                 {
-                    TryRewindStream(_stream);
+                    if (StartsWithZstdFrame(_buffer.ActiveSpan))
+                    {
+                        Debug.Assert(_decoder != null);
+                        _decoder.Reset();
+                    }
+                    else if (_stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                    }
                 }
 
                 return false;
@@ -306,7 +324,7 @@ namespace System.IO.Compression
                 // Not enough buffered to tell a split next-frame magic from end-of-stream; read more.
                 int needed = ZstdFrameMagicLength - _buffer.ActiveLength;
                 _buffer.EnsureAvailableSpace(needed);
-                int peeked = await _stream.ReadAtLeastAsync(_buffer.AvailableMemory, needed, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                int peeked = await _stream.ReadAtLeastAsync(_buffer.AvailableMemory, needed, throwOnEndOfStream: false, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (peeked > 0)
                 {
                     _nonEmptyInput = true;
@@ -413,7 +431,7 @@ namespace System.IO.Compression
 
                     // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
                     // section 3), so decide whether another frame follows before reporting end-of-stream.
-                    if (!await AdvanceToNextFrameAsync(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, cancellationToken).ConfigureAwait(false))
+                    if (!await AdvanceToNextFrameAsync(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, cancellationToken: cancellationToken).ConfigureAwait(false))
                     {
                         return bytesWritten;
                     }
