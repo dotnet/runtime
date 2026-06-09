@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal Interop.Crypto.X509VerifyStatusCode FindChainViaAia(
+        internal unsafe Interop.Crypto.X509VerifyStatusCode FindChainViaAia(
             ref List<X509Certificate2>? downloadedCerts)
         {
             IntPtr lastCert = IntPtr.Zero;

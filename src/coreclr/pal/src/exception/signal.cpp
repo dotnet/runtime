@@ -448,9 +448,11 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
-            // Shutdown and create the core dump before we restore the signal to the default handler.
+            // Shutdown, log the managed callstack (if a host callback is registered),
+            // and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
+            PROCLogManagedCallstackForSignal(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
@@ -970,20 +972,22 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
-
-    // Call the original handler when it is not ignored or default (terminate).
-    if (g_previous_activation.sa_flags & SA_SIGINFO)
-    {
-        _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-        g_previous_activation.sa_sigaction(code, siginfo, context);
-    }
     else
     {
-        if (g_previous_activation.sa_handler != SIG_IGN &&
-            g_previous_activation.sa_handler != SIG_DFL)
+        // Call the original handler when it is not ignored or default (terminate).
+        if (g_previous_activation.sa_flags & SA_SIGINFO)
         {
-            _ASSERTE(g_previous_activation.sa_handler != NULL);
-            g_previous_activation.sa_handler(code);
+            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+            g_previous_activation.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            if (g_previous_activation.sa_handler != SIG_IGN &&
+                g_previous_activation.sa_handler != SIG_DFL)
+            {
+                _ASSERTE(g_previous_activation.sa_handler != NULL);
+                g_previous_activation.sa_handler(code);
+            }
         }
     }
 }

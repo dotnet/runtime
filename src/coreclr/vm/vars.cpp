@@ -68,8 +68,10 @@ GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_IMPL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_IMPL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -111,6 +113,8 @@ MethodTable* g_pCastHelpers;
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
+
+GPTR_IMPL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 

@@ -118,7 +118,7 @@ namespace System.Formats.Tar
         /// When the <see cref="EntryType"/> indicates an entry that can contain data, this property returns the length in bytes of such data.
         /// </summary>
         /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarEntryFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
-        public long Length => _header._dataStream != null ? _header._dataStream.Length : _header._size;
+        public long Length => _header._gnuSparseDataStream?.Length ?? (_header._dataStream is not null ? _header._dataStream.Length : _header._size);
 
         /// <summary>
         /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.
@@ -217,7 +217,8 @@ namespace System.Formats.Tar
             {
                 throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
+            // HardLink entries are rejected above. hardLinkMode will not be used.
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink);
         }
 
         /// <summary>
@@ -251,7 +252,8 @@ namespace System.Formats.Tar
             {
                 return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
-            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, cancellationToken);
+            // HardLink entries are rejected above. hardLinkMode will not be used.
+            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, cancellationToken);
         }
 
         /// <summary>
@@ -265,7 +267,7 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public Stream? DataStream
         {
-            get => _header._dataStream;
+            get => (Stream?)_header._gnuSparseDataStream ?? _header._dataStream;
             set
             {
                 if (!IsDataStreamSetterSupported())
@@ -288,6 +290,8 @@ namespace System.Formats.Tar
                     _readerOfOrigin = null;
                 }
 
+                _header._gnuSparseDataStream?.Dispose();
+                _header._gnuSparseDataStream = null;
                 _header._dataStream?.Dispose();
 
                 _header._dataStream = value;
@@ -313,7 +317,7 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode)
         {
             (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
@@ -326,12 +330,12 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite);
+                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite, hardLinkMode);
             }
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, CancellationToken cancellationToken)
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -350,7 +354,7 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, cancellationToken);
+                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, hardLinkMode, cancellationToken);
             }
         }
 
@@ -375,6 +379,13 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                // On Windows, reject rooted-but-not-fully-qualified symlink targets (e.g., "\Windows\win.ini").
+                // Unlike files, symlink targets are resolved at access time, not extraction time,
+                // so Path.GetFullPath here cannot reliably predict what drive the OS will resolve them against.
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
@@ -416,7 +427,7 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
-        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode)
         {
             VerifyDestinationPath(filePath, overwrite);
 
@@ -426,12 +437,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath);
+                CreateNonRegularFile(filePath, linkTargetPath, hardLinkMode);
             }
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -445,12 +456,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath);
+                CreateNonRegularFile(filePath, linkTargetPath, hardLinkMode);
                 return Task.CompletedTask;
             }
         }
 
-        private void CreateNonRegularFile(string filePath, string? linkTargetPath)
+        private void CreateNonRegularFile(string filePath, string? linkTargetPath, TarHardLinkMode hardLinkMode)
         {
             Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
@@ -481,7 +492,15 @@ namespace System.Formats.Tar
 
                 case TarEntryType.HardLink:
                     Debug.Assert(!string.IsNullOrEmpty(linkTargetPath));
-                    ExtractAsHardLink(linkTargetPath, filePath);
+                    if (hardLinkMode == TarHardLinkMode.CopyContents)
+                    {
+                        // Overwrite is already handled by VerifyDestinationPath.
+                        File.Copy(linkTargetPath, filePath);
+                    }
+                    else
+                    {
+                        ExtractAsHardLink(linkTargetPath, filePath);
+                    }
                     break;
 
                 case TarEntryType.BlockDevice:
@@ -550,8 +569,19 @@ namespace System.Formats.Tar
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: false)))
             {
-                // Important: The DataStream will be written from its current position
-                DataStream?.CopyTo(fs);
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
+                {
+                    // Sparse-aware extraction: write only the populated segments, seeking over holes
+                    // so file systems can leave them as actual sparse holes (NTFS once marked sparse;
+                    // most Unix file systems do this automatically).
+                    TryMarkFileSparse(fs);
+                    sparseStream.CopyPopulatedDataTo(fs);
+                }
+                else
+                {
+                    // Important: The DataStream will be written from its current position
+                    DataStream?.CopyTo(fs);
+                }
             }
 
             AttemptSetLastWriteTime(destinationFileName, ModificationTime);
@@ -569,7 +599,12 @@ namespace System.Formats.Tar
             FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
             await using (fs.ConfigureAwait(false))
             {
-                if (DataStream != null)
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
+                {
+                    TryMarkFileSparse(fs);
+                    await sparseStream.CopyPopulatedDataToAsync(fs, cancellationToken).ConfigureAwait(false);
+                }
+                else if (DataStream != null)
                 {
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
@@ -598,7 +633,11 @@ namespace System.Formats.Tar
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
                 Share = FileShare.None,
-                PreallocationSize = Length,
+                // Skip preallocation for GNU sparse entries: the entry's Length is the expanded
+                // (real) size, while the archive only contains the much smaller packed data.
+                // Preallocating to the expanded size would reserve disk space that bears no
+                // relation to the archive contents and can fail surprisingly on small volumes.
+                PreallocationSize = _header._gnuSparseDataStream is null ? Length : 0,
                 Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 

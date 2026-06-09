@@ -34,7 +34,6 @@ namespace Internal.JitInterface
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
-        private MethodDesc _asyncResumptionStub;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -57,10 +56,10 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
         {
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+            MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(asyncResumptionStub));
+            return ObjectToHandle(asyncResumptionStub);
         }
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
@@ -513,9 +512,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;
@@ -773,6 +769,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
+                        return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
@@ -1259,7 +1259,7 @@ namespace Internal.JitInterface
                     // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
                     // We can't do this for any other method since ToString and Equals have different semantics for enums
                     // and their underlying type.
-                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    if (method.OwningType.IsObject && method.Name == "GetHashCode"u8)
                     {
                         constrainedType = constrainedType.UnderlyingType;
                     }
@@ -2504,6 +2504,18 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
             return true;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
         }
     }
 }

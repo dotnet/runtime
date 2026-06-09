@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Xml.Tests</RootNamespace>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -422,6 +425,7 @@
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateAttribute_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateMisc.cs" />
+    <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidationErrorMessageTests.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_EndElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateWhitespace_String.cs" />

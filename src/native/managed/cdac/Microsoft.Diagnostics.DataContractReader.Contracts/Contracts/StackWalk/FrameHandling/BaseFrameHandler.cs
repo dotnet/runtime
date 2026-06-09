@@ -13,6 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext context)
 {
     protected readonly Target _target = target;
+    protected readonly FrameHelpers _frameHelpers = new FrameHelpers(target);
     private readonly IPlatformAgnosticContext _context = context;
 
     public virtual void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
@@ -59,8 +60,8 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     {
         Data.DebuggerEval debuggerEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
 
-        // No context to update if we're doing a func eval from within exception processing.
-        if (debuggerEval.EvalDuringException)
+        // No context to update if the eval doesn't use a hijack (exception or interpreter path).
+        if (!debuggerEval.EvalUsesHijack)
         {
             return;
         }
@@ -106,5 +107,16 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
         }
+    }
+
+    protected Data.Frame? GetNextFrame(TargetPointer currentFrameAddress)
+    {
+        Data.Frame current = _target.ProcessedData.GetOrAdd<Data.Frame>(currentFrameAddress);
+        if (current.Next == TargetPointer.Null)
+            return null;
+        ulong terminator = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        if (current.Next.Value == terminator)
+            return null;
+        return _target.ProcessedData.GetOrAdd<Data.Frame>(current.Next);
     }
 }

@@ -375,7 +375,7 @@ BOOL MethodTable::ValidateWithPossibleAV()
     }
 
     // generic instantiation check
-    return (HasInstantiation() || IsArray() || IsContinuation()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
+    return (HasInstantiation() || IsArray() || IsContinuationWithoutMetadata()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -1297,7 +1297,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->IsContinuation());
+        PRECONDITION(!pTargetMT->IsContinuationWithoutMetadata());
     }
     CONTRACTL_END
 
@@ -3087,7 +3087,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         PTR_MethodTable fieldType = pFieldDesc->GetFieldTypeHandleThrowing().GetMethodTable();
-        CorElementType corType = fieldType->GetVerifierCorElementType();
+        CorElementType corType = fieldType->GetInternalCorElementType();
 
         if (corType == ELEMENT_TYPE_VALUETYPE)
         {
@@ -4969,9 +4969,8 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin CoreLib types
-        // and primitive valuetypes
+    case enum_flag_Category_Primitive:
+        // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Primitive here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
                     (ret != ELEMENT_TYPE_VALUETYPE));
@@ -4991,48 +4990,6 @@ CorElementType MethodTable::GetInternalCorElementType()
         _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
     }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    return ret;
-}
-
-//==========================================================================================
-CorElementType MethodTable::GetVerifierCorElementType()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    // This should not touch the EEClass, at least not in the
-    // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-    CorElementType ret;
-
-    switch (GetFlag(enum_flag_Category_ElementTypeMask))
-    {
-    case enum_flag_Category_Array:
-        ret = ELEMENT_TYPE_ARRAY;
-        break;
-
-    case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
-        ret = ELEMENT_TYPE_SZARRAY;
-        break;
-
-    case enum_flag_Category_ValueType:
-        ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    case enum_flag_Category_PrimitiveValueType:
-        //
-        // This is the only difference from MethodTable::GetInternalCorElementType()
-        //
-        if (IsTruePrimitive() || IsEnum())
-            ret = GetClass()->GetInternalCorElementType();
-        else
-            ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    default:
-        ret = ELEMENT_TYPE_CLASS;
-        break;
-    }
-
     return ret;
 }
 
@@ -5058,7 +5015,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     case enum_flag_Category_ValueType:
     case enum_flag_Category_Nullable:
-    case enum_flag_Category_PrimitiveValueType:
+    case enum_flag_Category_Primitive:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
@@ -5077,11 +5034,11 @@ CorElementType MethodTable::GetSignatureCorElementType()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-void MethodTable::SetInternalCorElementType (CorElementType _NormType)
+void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive)
 {
     WRAPPER_NO_CONTRACT;
 
-    switch (_NormType)
+    switch (elemType)
     {
     case ELEMENT_TYPE_CLASS:
         _ASSERTE(!IsArray());
@@ -5089,16 +5046,14 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     case ELEMENT_TYPE_VALUETYPE:
         SetFlag(enum_flag_Category_ValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(enum_flag_Category_PrimitiveValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_PrimitiveValueType);
+        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_Primitive);
         break;
     }
 
-    GetClass()->SetInternalCorElementType(_NormType);
-    _ASSERTE(GetInternalCorElementType() == _NormType);
+    GetClass()->SetInternalCorElementType(elemType);
+    _ASSERTE(GetInternalCorElementType() == elemType);
 }
 
 #endif // !DACCESS_COMPILE
@@ -5695,7 +5650,6 @@ namespace
                 FALSE,                  // allowInstParam
                 TRUE,                   // forceRemoteableMethod
                 TRUE,                   // allowCreate
-                AsyncVariantLookup::MatchingAsyncVariant,
                 level                   // level
             );
         }
@@ -6397,9 +6351,16 @@ BOOL MethodTable::SanityCheck()
     if (GetNumGenericArgs() != 0)
         return (pCanonMT->GetClass() == pClass);
     else
-        return (pCanonMT == this) || IsArray() || IsContinuation();
+        return (pCanonMT == this) || IsArray() || IsContinuationWithoutMetadata();
 }
 
+BOOL MethodTable::IsContinuationWithoutMetadata()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass && GetClass() == g_singletonContinuationEEClass;
+}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7643,7 +7604,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         CHECK_OK;
 
 
@@ -7789,14 +7750,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        DispatchMap * pMap = GetDispatchMap();
-        if (pMap != NULL)
-        {
-            pMap->EnumMemoryRegions(flags);
-        }
-    }
 } // MethodTable::EnumMemoryRegions
 
 #endif // DACCESS_COMPILE
@@ -7919,6 +7872,26 @@ namespace
     }
 }
 
+MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_METADATA_UPDATER
+    if (pDefMD->IsEnCAddedMethod())
+    {
+        return GetParallelMethodDescForEnC(this, pDefMD);
+    }
+#endif // FEATURE_METADATA_UPDATER
+
+    return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot());
+}
+
 MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup)
 {
     CONTRACTL
@@ -7929,30 +7902,23 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
     }
     CONTRACTL_END;
 
-    if (asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
+    if (pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
-#ifdef FEATURE_METADATA_UPDATER
-        if (pDefMD->IsEnCAddedMethod())
-            return GetParallelMethodDescForEnC(this, pDefMD);
-#endif // FEATURE_METADATA_UPDATER
-
-        return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
+        return GetParallelMethodDesc(pDefMD);
     }
     else
     {
-        // Slow path for finding the Async variant (or not-Async variant, if we start from Async one)
+        // Slow path for finding the matching async variant.
         // This could be optimized with some trickery around slot numbers, but doing so is ... confusing, so I'm not implementing this yet
         mdMethodDef tkMethod = pDefMD->GetMemberDef();
         Module* mod = pDefMD->GetModule();
-        bool isAsyncVariantMethod = pDefMD->IsAsyncVariantMethod();
-
         MethodTable::IntroducedMethodIterator it(this);
         for (; it.IsValid(); it.Next())
         {
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() != isAsyncVariantMethod)
+                && (pMD->MatchesAsyncVariantLookup(asyncVariantLookup)))
             {
                 return pMD;
             }
@@ -8341,18 +8307,19 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
 
         bool differsByAsyncVariant = false;
+        _ASSERTE(!pMethodDecl->IsAsyncVariantMethod());
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
             if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() &&
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
-                pMethodDecl->IsAsyncVariantMethod() != pInterfaceMD->IsAsyncVariantMethod())
+                pInterfaceMD->IsAsyncVariantMethod())
             {
                 differsByAsyncVariant = true;
-                pMethodDecl = pMethodDecl->GetAsyncOtherVariant();
+                pMethodDecl = pMethodDecl->GetAsyncVariant();
                 if (verifyImplemented)
                 {
                     // if only asked to verify, return pMethodDecl as a success (not NULL)
-                    // otherwise GetAsyncOtherVariant down below will trigger verifying again and we will keep coming here
+                    // otherwise GetAsyncVariant down below will trigger verifying again and we will keep coming here
                     _ASSERTE(pMethodDecl != NULL);
                     return pMethodDecl;
                 }
@@ -8388,7 +8355,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
 
         if (differsByAsyncVariant)
         {
-            pMethodImpl = pMethodImpl->GetAsyncOtherVariant();
+            pMethodImpl = pMethodImpl->GetAsyncVariant();
         }
 
         if (!verifyImplemented && instantiateMethodParameters)
@@ -8401,7 +8368,6 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                AsyncVariantLookup::MatchingAsyncVariant,
                 /* level */ level);
         }
         if (pMethodImpl != nullptr)

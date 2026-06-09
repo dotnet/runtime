@@ -43,7 +43,7 @@ public: // Identification
 public: // Exceptions
     static void* GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
 public: // GC interaction
@@ -59,6 +59,11 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization);
 
 extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
+    _In_ QCall::ObjectHandleOnStack obj,
+    _Out_ int* memInSizeT,
+    _Outptr_ void** mem);
+
+extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
     _Out_ int* memInSizeT,
     _Outptr_ void** mem);
@@ -105,7 +110,7 @@ public:
 
     static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
     // Notify started/finished when GC is running.

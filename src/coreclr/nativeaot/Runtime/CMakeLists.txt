@@ -1,10 +1,7 @@
 set(GC_DIR ../../gc)
 
 set(COMMON_RUNTIME_SOURCES
-    allocheap.cpp
     rhassert.cpp
-    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatch_Aot.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
@@ -226,6 +223,7 @@ endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
@@ -235,20 +233,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
-
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
-  )
-endif ()
-
-if(CLR_CMAKE_TARGET_WIN32)
-  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-    list(APPEND RUNTIME_SOURCES_ARCH_ASM
-      ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
-    )
-  endif()
-endif()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -285,11 +269,10 @@ add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
-if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
-  add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
-endif()
 add_definitions(-D_LIB)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_definitions(-DGC_DESCRIPTOR)
+endif()
 
 # there is a problem with undefined symbols when this is set
 # add_definitions(-DSTRESS_HEAP)
@@ -345,4 +328,14 @@ endif()
 
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
+endif()
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # Create an interface library that captures the Runtime's include directories
+  # for use by the datadescriptor intermediary compilation.
+  add_library(nativeaot_runtime_includes INTERFACE)
+  get_property(_runtime_includes DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  target_include_directories(nativeaot_runtime_includes INTERFACE ${_runtime_includes})
+
+  add_subdirectory(datadescriptor)
 endif()

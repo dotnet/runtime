@@ -1517,7 +1517,7 @@ namespace System.Net.Http
             await WriteToStreamAsync(source, async).ConfigureAwait(false);
         }
 
-        private ValueTask WriteHexInt32Async(int value, bool async)
+        private unsafe ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
             if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))

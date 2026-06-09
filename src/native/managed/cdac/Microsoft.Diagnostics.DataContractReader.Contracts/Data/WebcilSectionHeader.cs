@@ -3,21 +3,18 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class WebcilSectionHeader : IData<WebcilSectionHeader>
+[CdacType(nameof(DataType.WebcilSectionHeader))]
+internal sealed partial class WebcilSectionHeader : IData<WebcilSectionHeader>
 {
-    static WebcilSectionHeader IData<WebcilSectionHeader>.Create(Target target, TargetPointer address) => new WebcilSectionHeader(target, address);
-    public WebcilSectionHeader(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.WebcilSectionHeader);
+    [RawOffset(0)]
+    public uint VirtualSize { get; }
 
-        VirtualSize = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualSize)].Offset);
-        VirtualAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualAddress)].Offset);
-        SizeOfRawData = target.Read<uint>(address + (ulong)type.Fields[nameof(SizeOfRawData)].Offset);
-        PointerToRawData = target.Read<uint>(address + (ulong)type.Fields[nameof(PointerToRawData)].Offset);
-    }
+    [RawOffset(4)]
+    public uint VirtualAddress { get; }
 
-    public uint VirtualSize { get; init; }
-    public uint VirtualAddress { get; init; }
-    public uint SizeOfRawData { get; init; }
-    public uint PointerToRawData { get; init; }
+    [RawOffset(8)]
+    public uint SizeOfRawData { get; }
+
+    [RawOffset(12)]
+    public uint PointerToRawData { get; }
 }

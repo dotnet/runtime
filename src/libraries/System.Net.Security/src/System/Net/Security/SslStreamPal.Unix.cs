@@ -18,6 +18,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CertValidationInCallback = true;
         internal const bool CanEncryptEmptyMessage = false;
         internal const bool CanGenerateCustomAlerts = false;
 
@@ -78,22 +79,29 @@ namespace System.Net.Security
             return token;
         }
 
-        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, Span<byte> buffer, out int offset, out int count)
+        public static SecurityStatusPal DecryptMessage(
+            SafeDeleteSslContext securityContext,
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
-            offset = 0;
-            count = 0;
+            bytesWritten = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
 
             try
             {
-                int resultSize = Interop.OpenSsl.Decrypt((SafeSslHandle)securityContext, buffer, out Interop.Ssl.SslErrorCode errorCode);
+                bytesWritten = Interop.OpenSsl.Decrypt(
+                    (SafeSslHandle)securityContext,
+                    encrypted,
+                    destination,
+                    out leftoverOffset,
+                    out leftoverLength,
+                    out Interop.Ssl.SslErrorCode errorCode);
 
                 SecurityStatusPal retVal = MapNativeErrorCode(errorCode);
-
-                if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK ||
-                    retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
-                {
-                    count = resultSize;
-                }
 
                 return retVal;
             }
@@ -185,8 +193,7 @@ namespace System.Net.Security
                     context = Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
                 }
 
-                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, ref token);
-                consumed = inputBuffer.Length;
+                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out consumed, ref token);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
@@ -205,27 +212,16 @@ namespace System.Net.Security
 
                     // set the cert and continue
                     TryUpdateClintCertificate(null, context, sslAuthenticationOptions);
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer.Slice(consumed), out int c, ref token);
+                    consumed += c;
                 }
 
                 // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
                 if (token.Size == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
                 {
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
-                }
-
-                // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
-                // If it was, then that indicates ALPN failed, send failure.
-                // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
-                // whereas ALPN is supported from version 1.0.2.
-                SafeSslHandle sslContext = (SafeSslHandle)context;
-                if (errorCode == SecurityStatusPalErrorCode.OK && sslAuthenticationOptions.IsServer
-                    && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0
-                    && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
-                {
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
-                    return token;
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer.Slice(consumed), out int c, ref token);
+                    consumed += c;
                 }
 
                 token.Status = new SecurityStatusPal(errorCode);
@@ -238,7 +234,10 @@ namespace System.Net.Security
             return token;
         }
 
-        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(
+            SafeDeleteContext? securityContext,
+            TlsAlertType alertType,
+            TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by

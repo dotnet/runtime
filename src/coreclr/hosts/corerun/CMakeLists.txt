@@ -55,6 +55,9 @@ else()
             System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+        if (TARGET coreclr_gen_static)
+            target_link_libraries(corerun PRIVATE coreclr_gen_static)
+        endif()
 
         # additional requirements for System.IO.Compression.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
@@ -80,6 +83,7 @@ else()
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
+                -sALLOW_TABLE_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
@@ -88,7 +92,9 @@ else()
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
-                -Wl,-error-limit=0)
+                -lexports.js
+                -Wl,--export=__stack_pointer
+                -Wl,--error-limit=0)
 
             if (CORERUN_IN_BROWSER)
                 # Node.js doesn't have good support for WASM_BIGINT

@@ -9,6 +9,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
 using Internal.Text;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -499,16 +500,18 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<VirtualResolutionFixupSignature, Import> _virtualFunctionOverrideCache;
 
-        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod, bool checkOnly = false)
         {
-            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(
-                _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_VirtualFunctionOverride : ReadyToRunFixupKind.Check_VirtualFunctionOverride,
-                declMethod, implType, implMethod));
+            ReadyToRunFixupKind fixupKind = (checkOnly || !_verifyTypeAndFieldLayout) ?
+                ReadyToRunFixupKind.Check_VirtualFunctionOverride :
+                ReadyToRunFixupKind.Verify_VirtualFunctionOverride;
+            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(fixupKind, declMethod, implType, implMethod));
         }
 
         private NodeCache<ILBodyFixupSignature, Import> _ilBodyFixupsCache;
-        public Import CheckILBodyFixupSignature(EcmaMethod method)
+        public Import CheckILBodyFixupSignature(MethodDesc method)
         {
+            Debug.Assert(method.IsTypicalMethodDefinition);
             return _ilBodyFixupsCache.GetOrAdd(_codegenNodeFactory.ILBodyFixupSignature(
                 _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_IL_Body : ReadyToRunFixupKind.Check_IL_Body,
                 method));

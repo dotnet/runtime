@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class PInvokeTableGeneratorTests : PInvokeTableGeneratorTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -152,6 +151,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
+        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
+        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
+        [TestCategory("mono")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -180,6 +183,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
+        // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
+        [TestCategory("mono")]
         public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
         {
             string appendToTheEnd =
@@ -288,6 +294,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The BuildNative test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var extraEnvVars = new Dictionary<string, string> {
                 { "LANG", culture },
@@ -328,10 +338,14 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
+            string pinvokeTableFileName = IsCoreClrRuntime ? "pinvoke-table.cpp" : "pinvoke-table.h";
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            string pinvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(accept_double_struct_and_return_float_struct)"
+                : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
+            Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
@@ -351,16 +365,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")] // coreclr ActiveIssue: https://github.com/dotnet/runtime/issues/120897
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native-mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
@@ -373,6 +390,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
+        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
+        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
+        [TestCategory("mono")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
@@ -381,6 +402,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The UnmanagedCallback test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(

@@ -57,6 +57,39 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     return success;
 }
 
+namespace
+{
+    void* GetTaggedMemoryForObject(
+        _In_ QCall::ObjectHandleOnStack obj,
+        _Out_ size_t* memInSizeT)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(CheckPointer(memInSizeT));
+        }
+        CONTRACTL_END;
+
+        // The reference tracking system must be initialized.
+        if (!g_ReferenceTrackerInitialized)
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
+
+        // The object's type must be marked appropriately and with a finalizer.
+        if (!obj.Get()->GetMethodTable()->IsTrackedReferenceWithFinalizer())
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
+
+        // Initialize the syncblock for this instance.
+        SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
+        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+        void* taggedMemoryLocal = interopInfo->EnsureTaggedMemoryAllocated(memInSizeT);
+        _ASSERTE(taggedMemoryLocal != NULL);
+
+        return taggedMemoryLocal;
+    }
+}
+
 extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
         _In_ QCall::ObjectHandleOnStack obj,
         _Out_ int* memInSizeT,
@@ -72,44 +105,42 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
 
     BEGIN_QCALL;
 
-    // The reference tracking system must be initialized.
-    if (!g_ReferenceTrackerInitialized)
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
-
     // Switch to Cooperative mode since object references
     // are being manipulated.
-    {
-        GCX_COOP();
-
-        struct
-        {
-            OBJECTREF objRef;
-        } gc;
-        gc.objRef = NULL;
-        GCPROTECT_BEGIN(gc);
-
-        gc.objRef = obj.Get();
-
-        // The object's type must be marked appropriately and with a finalizer.
-        if (!gc.objRef->GetMethodTable()->IsTrackedReferenceWithFinalizer())
-            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
-
-        // Initialize the syncblock for this instance.
-        SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
-        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-        taggedMemoryLocal = interopInfo->AllocTaggedMemory(&memInSizeTLocal);
-        _ASSERTE(taggedMemoryLocal != NULL);
-
-        instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, HNDTYPE_REFCOUNTED);
-
-        GCPROTECT_END();
-    }
+    GCX_COOP();
+    taggedMemoryLocal = GetTaggedMemoryForObject(obj, &memInSizeTLocal);
+    instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
     END_QCALL;
 
     *memInSizeT = (int)memInSizeTLocal;
     *mem = taggedMemoryLocal;
     return (void*)instHandle;
+}
+
+extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
+        _In_ QCall::ObjectHandleOnStack obj,
+        _Out_ int* memInSizeT,
+        _Outptr_ void** mem)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(memInSizeT != NULL);
+    _ASSERTE(mem != NULL);
+
+    size_t memInSizeTLocal;
+    void* taggedMemoryLocal;
+
+    BEGIN_QCALL;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    GCX_COOP();
+    taggedMemoryLocal = GetTaggedMemoryForObject(obj, &memInSizeTLocal);
+
+    END_QCALL;
+
+    *memInSizeT = (int)memInSizeTLocal;
+    *mem = taggedMemoryLocal;
 }
 
 namespace
@@ -271,15 +302,15 @@ namespace
 
 void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
-    _In_ OBJECTHANDLE throwable,
+    _In_ OBJECTREF throwableRef,
     _Outptr_ void** context)
 {
     CONTRACT(void*)
     {
         THROWS;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
         PRECONDITION(codeInfo != NULL);
-        PRECONDITION(throwable != NULL);
+        PRECONDITION(throwableRef != NULL);
         PRECONDITION(context != NULL);
     }
     CONTRACT_END;
@@ -301,11 +332,8 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     }
 
     {
-        GCX_COOP();
-        OBJECTREF throwableRef = NULL;
         GCPROTECT_BEGIN(throwableRef);
 
-        throwableRef = ObjectFromHandle(throwable);
         callback = CallInvokeUnhandledExceptionPropagation(
             &throwableRef,
             method,

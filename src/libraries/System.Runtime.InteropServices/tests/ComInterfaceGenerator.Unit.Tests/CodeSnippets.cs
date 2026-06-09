@@ -416,6 +416,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+#pragma warning disable IL2057 // https://github.com/dotnet/runtime/issues/126862
         public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -431,6 +432,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
+#pragma warning restore IL2057
 
         public string DerivedComInterfaceTypeWithShadowingMethod => $$"""
             using System.Runtime.CompilerServices;
@@ -698,6 +700,25 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 [PreserveSig]
                 int GetName(out char* name);
+            }
+            """;
+
+        public string DerivedComInterfaceTypeWithUnsafeBaseMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterfaceBase
+            {
+                unsafe void Method(void* pBuffer);
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterfaceDerived : IComInterfaceBase
+            {
+                void Method2();
             }
             """;
 

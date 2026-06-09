@@ -28,6 +28,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -439,7 +440,7 @@ void ConfigureSignals()
 
 void InitializeCurrentProcessCpuCount()
 {
-    uint32_t count;
+    uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
     // process affinity and CPU quota limit.
@@ -456,14 +457,41 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
+        if (configuredCpuCount == -1)
         {
-            _ASSERTE(!"sched_getaffinity failed");
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        count = CPU_COUNT(&cpuSet);
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
+        }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
@@ -477,7 +505,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 static pthread_key_t key;
 #endif
 
@@ -521,7 +549,7 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -531,7 +559,7 @@ bool PalInit()
     return true;
 }
 
-#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -577,7 +605,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
@@ -840,6 +868,11 @@ void PalPrintFatalError(const char* message)
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    if (copy.IsNull())
+    {
+        return nullptr;
+    }
+
     strcpy(copy, toCopy);
     return copy.Extract();
 }

@@ -2,6 +2,8 @@
 
 This contract is for fetching information related to GCInfo associated with native code. Currently, this contract does not support x86 architecture.
 
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is not currently supported by this contract.
+
 ## APIs of contract
 
 ```csharp
@@ -19,6 +21,40 @@ IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersio
 
 // Fetches length of code as reported in GCInfo
 uint GetCodeLength(IGCInfoHandle handle);
+
+// Returns the stack base register number decoded from GCInfo
+uint GetStackBaseRegister(IGCInfoHandle handle);
+
+// Returns the list of interruptible code offset ranges from the GCInfo
+IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
+
+// Returns all live GC slots at the given instruction offset
+IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
+```
+
+```csharp
+// Describes a code region where the GC can safely interrupt execution.
+public readonly record struct InterruptibleRange(
+    uint StartOffset,   // Start of the interruptible region (byte offset from method start)
+    uint EndOffset);    // End of the interruptible region, exclusive (byte offset from method start)
+
+// Describes a live GC slot at a given instruction offset.
+public readonly record struct LiveSlot(
+    bool IsRegister,       // True if the slot is a CPU register; false if stack location
+    uint RegisterNumber,   // Register number (meaningful only when IsRegister is true)
+    int SpOffset,          // Stack offset from the base (meaningful only when IsRegister is false)
+    uint SpBase,           // Stack base: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL
+    uint GcFlags);         // GC slot flags: 0x1 = interior pointer, 0x2 = pinned
+
+// Options controlling which GC slots are reported by EnumerateLiveSlots.
+public record struct GcSlotEnumerationOptions
+{
+    bool IsActiveFrame;                  // True if this is the active (leaf) stack frame
+    bool IsExecutionAborted;             // True if execution was interrupted by an exception
+    bool IsParentOfFuncletStackFrame;    // True if a funclet already reported GC references
+    bool SuppressUntrackedSlots;         // True to suppress untracked slots (e.g., filter funclets)
+    bool ReportFPBasedSlotsOnly;         // True to report only frame-register-relative stack slots
+}
 ```
 
 ## Version 1
@@ -43,10 +79,6 @@ Constants:
 | `NO_REVERSE_PINVOKE_FRAME` | Indicates no reverse P/Invoke frame | -1 |
 | `NO_PSP_SYM` | Indicates no PSP symbol | -1 |
 
-
-## Implementation
-
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is not currently supported by this contract.
 
 ### GCInfo Format
 
@@ -312,7 +344,7 @@ Signed values use the same encoding as unsigned, but with sign considerations:
 
 ### Implementation
 
-The GCInfo contract implementation follows this process:
+The GCInfo decoder uses **lazy sequential decoding** — data is decoded on demand as APIs are called, and each section of the bitstream is decoded at most once. The decoder tracks a set of `DecodePoints` that represent completion of each section. When an API like `GetCodeLength()` or `GetInterruptibleRanges()` is called, the decoder advances through the bitstream until the requested data has been decoded.
 
 ```csharp
 IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
@@ -326,13 +358,231 @@ IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersio
     // Create a new decoder instance using the interpreter encoding
     return new GcInfoDecoder<InterpreterGCInfoTraits>(target, gcInfoAddress, gcVersion);
 }
-
-uint GetCodeLength(IGCInfoHandle handle)
-{
-    // Cast to the appropriate decoder type and return the decoded code length
-    GcInfoDecoder<PlatformTraits> decoder = (GcInfoDecoder<PlatformTraits>)handle;
-    return decoder.GetCodeLength();
-}
 ```
 
-The decoder reads and parses the GCInfo data structure sequentially, using the platform-specific encoding bases and normalization rules to reconstruct the original method metadata.
+#### Header Decoding
+
+The first bit of the GCInfo bitstream determines whether the header is **slim** or **fat**.
+
+**Slim Header** (first bit = 0):
+
+The slim header is a compact encoding for simple methods. It reads only a few fields:
+
+```
+isSlimHeader = ReadBits(1)  // 0 = slim
+usingStackBaseRegister = ReadBits(1)
+if usingStackBaseRegister:
+    stackBaseRegister = DenormalizeStackBaseRegister(0)
+codeLength = DenormalizeCodeLength(DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE))
+numSafePoints = DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE)
+numInterruptibleRanges = 0  // slim header never has interruptible ranges
+```
+
+All optional fields (GS cookie, PSP symbol, generics context, EnC info, reverse P/Invoke) default to their sentinel "not present" values.
+
+**Fat Header** (first bit = 1):
+
+The fat header contains a full flags bitfield and conditionally-present optional fields:
+
+```
+isSlimHeader = ReadBits(1)  // 1 = fat
+headerFlags = ReadBits(GC_INFO_FLAGS_BIT_SIZE)  // 10 bits
+codeLength = DenormalizeCodeLength(DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE))
+
+// Prolog/epilog sizes (conditional on GS cookie or generics context)
+if HAS_GS_COOKIE:
+    normPrologSize = DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1
+    normEpilogSize = DecodeVarLengthUnsigned(NORM_EPILOG_SIZE_ENCBASE)
+elif HAS_GENERICS_INST_CONTEXT:
+    normPrologSize = DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1
+
+// Optional fields (each conditional on its header flag)
+if HAS_GS_COOKIE:
+    gsCookieStackSlot = DenormalizeStackSlot(DecodeVarLengthSigned(GS_COOKIE_STACK_SLOT_ENCBASE))
+if HAS_GENERICS_INST_CONTEXT:
+    genericsInstContextStackSlot = DenormalizeStackSlot(DecodeVarLengthSigned(...))
+if HAS_STACK_BASE_REGISTER:
+    stackBaseRegister = DenormalizeStackBaseRegister(DecodeVarLengthUnsigned(...))
+if HAS_EDIT_AND_CONTINUE_INFO:
+    sizeOfEnCPreservedArea = DecodeVarLengthUnsigned(...)
+    if ARM64: sizeOfEnCFixedStackFrame = DecodeVarLengthUnsigned(...)
+if REVERSE_PINVOKE_FRAME:
+    reversePInvokeFrameStackSlot = DenormalizeStackSlot(DecodeVarLengthSigned(...))
+if HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA:  // platform-dependent
+    fixedStackParameterScratchArea = DenormalizeSizeOfStackArea(DecodeVarLengthUnsigned(...))
+
+numSafePoints = DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE)
+numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+```
+
+#### Body Decoding
+
+Following the header, the GCInfo body contains data sections that must be decoded in strict order:
+
+##### 1. Safe Point Offsets
+
+Safe points (also called call sites) are code offsets where the GC can safely interrupt execution for partially-interruptible methods. Each offset is encoded as a fixed-width bitfield:
+
+```
+numBitsPerOffset = CeilOfLog2(NormalizeCodeOffset(codeLength))
+for each safe point:
+    offset = ReadBits(numBitsPerOffset)  // normalized code offset
+```
+
+The offsets are stored in sorted order to enable binary search during `EnumerateLiveSlots`.
+
+##### 2. Interruptible Ranges
+
+Interruptible ranges define code regions where the method is **fully interruptible** — the GC can interrupt at any instruction within these ranges. Each range is encoded as a pair of delta-compressed, normalized offsets:
+
+```
+lastStopNormalized = 0
+
+for each range:
+    startDelta = DecodeVarLengthUnsigned(INTERRUPTIBLE_RANGE_DELTA1_ENCBASE)
+    stopDelta  = DecodeVarLengthUnsigned(INTERRUPTIBLE_RANGE_DELTA2_ENCBASE) + 1
+
+    startNormalized = lastStopNormalized + startDelta
+    stopNormalized  = startNormalized + stopDelta
+
+    startOffset = DenormalizeCodeOffset(startNormalized)
+    stopOffset  = DenormalizeCodeOffset(stopNormalized)
+
+    emit InterruptibleRange(startOffset, stopOffset)
+    lastStopNormalized = stopNormalized
+```
+
+##### 3. Slot Table
+
+The slot table describes all GC-tracked locations used by the method. It has three sections decoded in order: register slots, tracked stack slots, and untracked stack slots.
+
+**Slot counts** are encoded with presence bits:
+
+```
+if ReadBits(1):  // has register slots
+    numRegisters = DecodeVarLengthUnsigned(NUM_REGISTERS_ENCBASE)
+if ReadBits(1):  // has stack/untracked slots
+    numStackSlots = DecodeVarLengthUnsigned(NUM_STACK_SLOTS_ENCBASE)
+    numUntrackedSlots = DecodeVarLengthUnsigned(NUM_UNTRACKED_SLOTS_ENCBASE)
+```
+
+**Register slots** use delta encoding when consecutive slots share the same flags:
+
+```
+// First slot: absolute register number + 2-bit flags
+regNum = DecodeVarLengthUnsigned(REGISTER_ENCBASE)
+flags = ReadBits(2)
+
+// Subsequent slots:
+if previousFlags != 0:
+    regNum = DecodeVarLengthUnsigned(REGISTER_ENCBASE)  // absolute
+    flags = ReadBits(2)
+else:
+    regNum += DecodeVarLengthUnsigned(REGISTER_DELTA_ENCBASE) + 1  // delta
+    // flags inherited from previous
+```
+
+**Stack slots** follow a similar delta encoding pattern:
+
+```
+// First slot: base (2 bits) + normalized offset + flags (2 bits)
+spBase = ReadBits(2)  // CALLER_SP_REL, SP_REL, or FRAMEREG_REL
+normSpOffset = DecodeVarLengthSigned(STACK_SLOT_ENCBASE)
+spOffset = DenormalizeStackSlot(normSpOffset)
+flags = ReadBits(2)
+
+// Subsequent slots:
+spBase = ReadBits(2)
+if previousFlags != 0:
+    normSpOffset = DecodeVarLengthSigned(STACK_SLOT_ENCBASE)  // absolute
+    flags = ReadBits(2)
+else:
+    normSpOffset += DecodeVarLengthUnsigned(STACK_SLOT_DELTA_ENCBASE)  // delta
+    // flags inherited from previous
+```
+
+Untracked slots use the same encoding as tracked stack slots.
+
+The 2-bit slot flags are:
+
+| Flag | Value | Meaning |
+| --- | --- | --- |
+| `GC_SLOT_BASE` | 0x0 | Normal object reference |
+| `GC_SLOT_INTERIOR` | 0x1 | Interior pointer (points inside an object) |
+| `GC_SLOT_PINNED` | 0x2 | Pinned object reference |
+
+##### 4. Live State Data
+
+Following the slot table, the remaining bitstream contains per-safe-point and per-chunk liveness information used by `EnumerateLiveSlots` to determine which slots are live at a given instruction offset. This data uses either a direct 1-bit-per-slot encoding or RLE (run-length encoding) compression for methods with many tracked slots.
+
+For **partially interruptible** methods (at safe points), each safe point has a bitvector indicating which tracked slots are live. An optional indirection table allows sharing identical bitvectors across safe points.
+
+For **fully interruptible** methods (within interruptible ranges), the interruptible region is divided into fixed-size chunks (`NUM_NORM_CODE_OFFSETS_PER_CHUNK = 64` normalized offsets). Each chunk records a "could be live" bitvector, a final state bitvector, and transition points within the chunk where slot liveness changes.
+
+### EnumerateLiveSlots
+
+`EnumerateLiveSlots` determines which GC-tracked slots (registers and stack locations) are live at a given instruction offset, then reports each live slot via a callback. The algorithm handles two distinct cases depending on whether the instruction offset falls at a **safe point** (partially-interruptible) or within an **interruptible range** (fully-interruptible).
+
+**Input**: instruction offset, `GcSlotEnumerationOptions`, slot report callback.
+
+**Step 1 — Find safe point**: Search the safe point offset table for an exact match against the normalized instruction offset. If found, the safe point index is used for the partially-interruptible path.
+
+**Step 2 — Partially-interruptible path** (safe point found, not `ExecutionAborted`):
+
+Each safe point has a bitvector with one bit per tracked slot. If the bit is set, the slot is live. An optional **indirection table** allows sharing identical bitvectors across safe points — when present, each safe point stores an offset into a deduplicated bitvector table. The bitvectors may use either direct 1-bit-per-slot encoding or **RLE** (run-length encoding) for methods with many tracked slots.
+
+**Step 3 — Fully-interruptible path** (no safe point match, offset is within an interruptible range):
+
+The total interruptible length is computed by summing all interruptible range sizes. A **pseudo-offset** maps the instruction offset into this linear space. The interruptible region is divided into fixed-size **chunks** of 64 normalized offsets each.
+
+For each chunk, the encoding stores:
+- A **couldBeLive** bitvector identifying which slots may be live anywhere in the chunk (1-bit-per-slot or RLE).
+- A **finalState** bit per couldBeLive slot indicating liveness at the end of the chunk.
+- **Transition points** within the chunk where each slot's liveness toggles.
+
+To determine liveness at the target offset: start from the chunk's final state, then apply any transitions that occur *after* the target offset (toggling the state backwards). A slot is live if its final state (after toggle adjustment) is 1.
+
+**Step 4 — Report untracked slots**: Untracked slots are always live (they represent stack locations the JIT doesn't track at each safe point). They are reported unconditionally unless `ParentOfFuncletStackFrame` or `NoReportUntracked` flags are set. Untracked slots are reported with `reportScratchSlots=true` since the JIT may produce untracked scratch register slots for interior pointers.
+
+**Slot filtering**: Before reporting any slot, the algorithm checks:
+- **Scratch registers**: Only reported for the active/leaf frame (`ActiveStackFrame` flag).
+- **Scratch stack slots**: Only reported for the active/leaf frame (slots in the outgoing/scratch area).
+- **FP-based-only mode** (`ReportFPBasedSlotsOnly`): Only frame-register-relative stack slots are reported; all register slots and non-frame-relative stack slots are skipped.
+
+#### API Implementations
+
+All APIs use lazy decoding — the GCInfo bitstream is decoded up to the required point on first access, and cached for subsequent calls.
+
+```csharp
+uint GetCodeLength(IGCInfoHandle handle)
+{
+    // Ensure header is decoded, then return the code length field.
+}
+
+uint GetStackBaseRegister(IGCInfoHandle handle)
+{
+    // Ensure header is decoded through the stack base register field,
+    // then return the denormalized register number (e.g., RBP on x64).
+}
+
+IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle)
+{
+    // Ensure header and body are decoded through interruptible ranges,
+    // then return the decoded range list.
+}
+
+IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle,
+    uint instructionOffset, GcSlotEnumerationOptions options)
+{
+    // Ensure header, body, and slot table are fully decoded.
+    // Then execute the EnumerateLiveSlots algorithm described above:
+    //   1. Find safe point match for the normalized instruction offset
+    //   2. If found: read the per-safe-point bitvector (partially-interruptible path)
+    //   3. If not found: compute pseudo-offset into interruptible ranges,
+    //      locate the chunk, read couldBeLive/finalState/transitions
+    //      (fully-interruptible path)
+    //   4. Report untracked slots unconditionally (unless SuppressUntrackedSlots)
+    //   5. Apply slot filtering (scratch registers, FP-based-only mode)
+    // Collect each live slot into a list and return it.
+}
+```

@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/runtime/issues/90427  -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Validate.cs" />
     <Compile Include="GenericTypeSubstitution.cs" />

@@ -26,6 +26,7 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
 
 void AsyncContinuationsManager::NotifyUnloadingClasses()
 {
+#ifdef PROFILING_SUPPORTED
     if (!CORProfilerTrackClasses())
     {
         return;
@@ -39,9 +40,8 @@ void AsyncContinuationsManager::NotifyUnloadingClasses()
         ClassLoader::NotifyUnload(pMT, true);
         ClassLoader::NotifyUnload(pMT, false);
     }
+#endif // PROFILING_SUPPORTED
 }
-
-static EEClass* volatile g_singletonContinuationEEClass;
 
 EEClass* AsyncContinuationsManager::GetOrCreateSingletonSubContinuationEEClass()
 {
@@ -385,11 +385,6 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
     }
 
     return dwHash;
-}
-
-void ContinuationLayoutKeyHashTableHelper::ReplaceKey(EEHashEntry_t *pEntry, ContinuationLayoutKey newKey)
-{
-    memcpy(pEntry->Key, &newKey, sizeof(ContinuationLayoutKey));
 }
 
 #endif

@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -20,7 +22,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ExceptionHandlingInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ExceptionHandlingInfo";
-    protected override string DumpType => "full";
 
     /// <summary>
     /// Finds the CodeBlockHandle for the CrashInExceptionHandler method by walking
@@ -35,7 +36,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle frame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
@@ -52,6 +53,22 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         Assert.Fail("Could not find CrashInExceptionHandler on the crashing thread's stack");
         return default;
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
+    public void GetCodeKind_ReturnsCorrectValue(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
+        CodeKind codeKind = Target.Contracts.ExecutionManager.GetCodeKind(new TargetCodePointer(codeBlock.Address.Value));
+        if (config.R2RMode == "jit")
+            Assert.Equal(CodeKind.Jitted, codeKind);
+        else if (config.R2RMode == "r2r")
+            Assert.Equal(CodeKind.ReadyToRun, codeKind);
+        else
+            Assert.Fail($"Unexpected R2RMode value: {config.R2RMode}");
     }
 
     [ConditionalTheory]

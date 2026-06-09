@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                 case TargetArchitecture.ARM64:
-                    return target.OperatingSystem == TargetOS.OSX ?
+                    return target.IsApplePlatform ?
                         AppleArm64TransitionBlock.Instance :
                         Arm64TransitionBlock.Instance;
 
@@ -48,6 +48,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case TargetArchitecture.RiscV64:
                     return RiscV64TransitionBlock.Instance;
+
+                case TargetArchitecture.Wasm32:
+                    return Wasm32TransitionBlock.Instance;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
@@ -68,6 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsARM64 => Architecture == TargetArchitecture.ARM64;
         public bool IsLoongArch64 => Architecture == TargetArchitecture.LoongArch64;
         public bool IsRiscV64 => Architecture == TargetArchitecture.RiscV64;
+        public bool IsWasm32 => Architecture == TargetArchitecture.Wasm32;
 
         /// <summary>
         /// This property is only overridden in AMD64 Unix variant of the transition block.
@@ -285,7 +289,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Check whether an arg is automatically switched to passing by reference.
         /// Note that this overload does not handle varargs. This method only works for 
         /// valuetypes - true value types, primitives, enums and TypedReference.
-        /// The method is only overridden to do something meaningful on X64 and ARM64.
+        /// The method is only overridden to do something meaningful on X64, ARM64 and WASM.
         /// </summary>
         /// <param name="th">Type to analyze</param>
         public virtual bool IsArgPassedByRef(TypeHandle th)
@@ -381,6 +385,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 int haElementSize = thRetType.GetHomogeneousAggregateElementSize();
                                 fpReturnSize = 4 * (uint)haElementSize;
+                                break;
+                            }
+
+                            if (IsWasm32)
+                            {
+                                // Wasm doesn't use a ret buffer for returning structs in the interpreter calling convention, which is the TransitionBlock convention on Wasm platforms.
                                 break;
                             }
 
@@ -740,6 +750,44 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
             
+        }
+
+        private class Wasm32TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new Wasm32TransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.Wasm32;
+
+            public override int PointerSize => 4;
+
+            public override int FloatRegisterSize => 0;
+
+            public override int NumArgumentRegisters => 0;
+
+            public override int NumCalleeSavedRegisters => 0;
+
+            public override int SizeOfTransitionBlock => 8;
+
+            public override int OffsetOfArgumentRegisters => 8;
+
+            public override int OffsetOfFloatArgumentRegisters => 0;
+
+            public override int EnregisteredParamTypeMaxSize => 0;
+
+            public override int EnregisteredReturnTypeIntegerMaxSize => 0;
+
+            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? StackElemSize(PointerSize, false, false) : 0);
+
+            public override bool IsArgPassedByRef(TypeHandle th)
+            {
+                return false;
+            }
+
+            public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)
+            {
+                int stackSlotSize = 8;
+                return ALIGN_UP(parmSize, stackSlotSize);
+            }
         }
     }
 }

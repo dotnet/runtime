@@ -116,14 +116,14 @@ namespace Internal.JitInterface
         public mdToken token;
 
         public CorInfoType retType { get { return (CorInfoType)_retType; } set { _retType = (byte)value; } }
-        private CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
+        internal CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
         private bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
         private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
         private bool hasImplicitThis() { return ((callConv & (CorInfoCallConv.CORINFO_CALLCONV_HASTHIS | CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS)) == CorInfoCallConv.CORINFO_CALLCONV_HASTHIS); }
         private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
-        private bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
+        internal bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
     };
 
     //----------------------------------------------------------------------------
@@ -514,8 +514,12 @@ namespace Internal.JitInterface
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                                //  e.g. taking the address of a C++ global.
+        WASM_MEMORY_ADDR_REL_SLEB,           // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of an i32.const instruction,
+                                               // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
+        WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
+                                               // e.g. in R2R scenarios, encoding an offset from $imageBase
     }
 
     public enum CorInfoGCType
@@ -725,20 +729,11 @@ namespace Internal.JitInterface
         CORINFO_TYPE_NATIVEUINT = 0xd,
         CORINFO_TYPE_FLOAT = 0xe,
         CORINFO_TYPE_DOUBLE = 0xf,
-        CORINFO_TYPE_STRING = 0x10,         // Not used, should remove
-        CORINFO_TYPE_PTR = 0x11,
-        CORINFO_TYPE_BYREF = 0x12,
-        CORINFO_TYPE_VALUECLASS = 0x13,
-        CORINFO_TYPE_CLASS = 0x14,
-        CORINFO_TYPE_REFANY = 0x15,
+        CORINFO_TYPE_PTR = 0x10,
+        CORINFO_TYPE_BYREF = 0x11,
+        CORINFO_TYPE_VALUECLASS = 0x12,
+        CORINFO_TYPE_CLASS = 0x13,
 
-        // CORINFO_TYPE_VAR is for a generic type variable.
-        // Generic type variables only appear when the JIT is doing
-        // verification (not NOT compilation) of generic code
-        // for the EE, in which case we're running
-        // the JIT in "import only" mode.
-
-        CORINFO_TYPE_VAR = 0x16,
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
@@ -967,12 +962,12 @@ namespace Internal.JitInterface
         public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
         // Method handle for AsyncHelpers.CaptureExecutionContext
         public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
-        // Method handle for AsyncHelpers.RestoreExecutionContext
-        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1181,21 +1176,17 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
         // - detail describes the computation done by the jit host
-        // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
-        //     (in which case the method handle and context will be a generic method)
+        // - instParamLookup contains all the information necessary to pass the instantiation parameter for
+        //   the devirtualized method.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public CORINFO_CONTEXT_STRUCT* exactContext;
+        public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-        public byte _isInstantiatingStub;
-        public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _needsMethodContext;
-        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     //----------------------------------------------------------------------------
@@ -1373,10 +1364,11 @@ namespace Internal.JitInterface
         VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
         RETBUF_ILNUM        = -2, // Pointer to the return-buffer
         TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        ASYNC_CONTINUATION_ILNUM = -4, // Async continuation argument
 
-        UNKNOWN_ILNUM       = -4, // Unknown variable
+        UNKNOWN_ILNUM       = -5, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in the enum
+        MAX_ILNUM           = -5  // Sentinel value. This should be set to the largest magnitude value in the enum
                                   // so that the compression routines know the enum's range.
     };
 
@@ -1536,6 +1528,8 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+
+        CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
     }
 
     public struct CORJIT_FLAGS

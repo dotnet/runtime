@@ -33,5 +33,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ObjectHandleOnStack obj,
             out int memInSizeT,
             out IntPtr mem) => throw new NotImplementedException();
+
+        private static void GetOrCreateReferenceTrackingMemoryInternal(
+            ObjectHandleOnStack obj,
+            out int memInSizeT,
+            out IntPtr mem) => throw new NotImplementedException();
     }
 }

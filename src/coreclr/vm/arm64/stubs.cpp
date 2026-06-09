@@ -222,7 +222,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -254,7 +253,6 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -343,7 +341,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -376,7 +373,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
@@ -460,7 +456,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
         pRD->volatileCurrContextPointers.X[i] = &m_Regs->X[i];
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -472,9 +467,8 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LIMITED_METHOD_CONTRACT;
 
      pRD->IsCallerContextValid = FALSE;
-     pRD->IsCallerSPValid      = FALSE;
 
-     pRD->pCurrentContext->Pc = m_ReturnAddress;
+     pRD->pCurrentContext->Pc = GetReturnAddress();
      size_t s = sizeof(struct HijackArgs);
      _ASSERTE(s%8 == 0); // HijackArgs contains register values and hence will be a multiple of 8
      // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
@@ -520,39 +514,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-	// adr x12, label_comCallMethodDesc
-	// ldr x10, label_target
-	// br x10
-	// 4 byte padding for alignment
-	// label_target:
-    // target address (8 bytes)
-    // label_comCallMethodDesc:
-    DWORD rgCode[] = {
-        0x100000cc,
-        0x5800006a,
-        0xd61f0140
-    };
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    memcpy(pBufferRW, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
-
-    // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
-}
-#endif // FEATURE_COMINTEROP
 
 #ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)

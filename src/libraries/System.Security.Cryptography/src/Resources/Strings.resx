@@ -237,6 +237,9 @@
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
     <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
+  <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
+    <value>The Android X.509 certificate chain could not be initialized.</value>
+  </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
   </data>
@@ -254,6 +257,9 @@
   </data>
   <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
     <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
+  </data>
+  <data name="Cryptography_ArgX25519RequiresX25519Key" xml:space="preserve">
+    <value>Keys used with the X25519DiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman using curve25519.</value>
   </data>
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
@@ -548,6 +554,9 @@
   </data>
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
+  </data>
+  <data name="Cryptography_X25519InvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not an X25519 Diffie-Hellman key.</value>
   </data>
   <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
     <value>The current instance does not contain a decapsulation key.</value>

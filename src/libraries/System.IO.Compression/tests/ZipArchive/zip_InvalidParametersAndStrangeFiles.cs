@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -318,6 +319,40 @@ namespace System.IO.Compression.Tests
             await DisposeStream(async, source);
 
             await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task Deflate64_MaximumMatchLength_DoesNotOverflowOutputWindow(bool async)
+        {
+            byte[] crashInput = Convert.FromBase64String(
+                "UgD///9ubm5ubm5u//9ubm5ubm5ubm5ubm5ubm5ubm5ubltubm7////////////////////////////////" +
+                "/////////////////////AAE6AFsA////bm5ubm5ubm5ubm5ubm5ubm5ubm5u////////////////DwAAAQ" +
+                "AA/////////wAAAAAAEAAA//////////////////////////////////////////96/////////////wUA/" +
+                "9///wcA/////////////////////////////////wABXQAX");
+
+            Type deflateManagedStreamType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.DeflateManagedStream", throwOnError: true)!;
+            Type compressionMethodType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCompressionMethod", throwOnError: true)!;
+            object deflate64 = Enum.Parse(compressionMethodType, "Deflate64");
+
+            using Stream deflate64Stream = (Stream)Activator.CreateInstance(
+                deflateManagedStreamType,
+                bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                args: new object[] { new MemoryStream(crashInput), deflate64, -1L },
+                culture: null)!;
+
+            using MemoryStream destination = new MemoryStream();
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => deflate64Stream.CopyToAsync(destination));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => deflate64Stream.CopyTo(destination));
+            }
         }
 
         [Theory]

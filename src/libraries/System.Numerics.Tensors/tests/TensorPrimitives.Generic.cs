@@ -462,7 +462,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Acos, T.Acos);
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
-            yield return Create(TensorPrimitives.Asin, T.Asin);
+            yield return Create(TensorPrimitives.Asin, T.Asin, trigTolerance);
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
             yield return Create(TensorPrimitives.Atan, T.Atan);
@@ -570,7 +570,6 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
@@ -1805,6 +1804,38 @@ namespace System.Numerics.Tensors.Tests
                 x[^1] = T.MinValue;
 
                 Assert.Throws<OverflowException>(() => TensorPrimitives.SumOfMagnitudes<T>(x.Span));
+            });
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(One);
+                    x[expected] = MinValue;
+                    x[tensorLength - 1] = MinValue;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(MinValue);
+                    x[expected] = One;
+                    x[tensorLength - 1] = One;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x));
+                }
             });
         }
     }
