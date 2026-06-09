@@ -4978,8 +4978,10 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
         else
         {
-            JITDUMP("Marking " FMT_BB " as needs gc poll\n", compCurBB->bbNum);
-            compCurBB->SetFlags(BBF_NEEDS_GCPOLL);
+            // The block ends in a tail call dispatched via the JIT helper, which does not
+            // return and cannot poll for GC. fgInsertGCPolls will detect this (the call is
+            // recognized by IsTailCallViaJitHelper) and insert a poll before the call.
+            JITDUMP("Method needs GC poll before tail call in " FMT_BB "\n", compCurBB->bbNum);
             optMethodFlags |= OMF_NEEDS_GCPOLLS;
         }
 
@@ -6427,10 +6429,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Regardless of the state of the basic block with respect to GC safe point,
     // we will always insert a GC Poll for scenarios involving a suppressed GC
-    // transition. Only mark the block for GC Poll insertion on the first morph.
+    // transition. fgInsertGCPolls detects such calls (IsUnmanaged + IsSuppressGCTransition)
+    // by walking the trees, so only the global OMF_NEEDS_GCPOLLS flag needs to be set here.
     if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
-        compCurBB->SetFlags(BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
+        compCurBB->SetFlags(BBF_GC_SAFE_POINT);
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
@@ -14829,7 +14832,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEa
         elseBlock->SetFlags(BBF_IMPORTED);
     }
 
-    block->RemoveFlags(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
 
     condBlock->SetFlags(propagateFlagsToAll);

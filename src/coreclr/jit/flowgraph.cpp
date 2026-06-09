@@ -27,7 +27,7 @@
 //
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
-    bool blockMayNeedGCPoll = block->HasFlag(BBF_NEEDS_GCPOLL);
+    bool blockMayNeedGCPoll = false;
     for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
@@ -48,6 +48,12 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 
                         blockMayNeedGCPoll = true;
                     }
+                    else if (call->IsTailCallViaJitHelper())
+                    {
+                        // Slow tail calls dispatched via the JIT helper do not return, so the
+                        // helper itself cannot poll for GC. We need to insert a poll before it.
+                        blockMayNeedGCPoll = true;
+                    }
                 }
                 else if (tree->OperIs(GT_GCPOLL))
                 {
@@ -59,14 +65,49 @@ static bool blockNeedsGCPoll(BasicBlock* block)
     return blockMayNeedGCPoll;
 }
 
+//------------------------------------------------------------------------
+// blockHasTailCallViaHelper: Determine whether the block contains a tail call
+//    dispatched via the JIT helper.
+//
+// Arguments:
+//   block - the block to check
+//
+// Returns:
+//    True if the block contains a tail call dispatched via the JIT helper.
+//
+// Notes:
+//    Such tail calls do not return, so the GC poll must be inserted before the
+//    call rather than at the end of the block.
+//
+static bool blockHasTailCallViaHelper(BasicBlock* block)
+{
+    for (Statement* const stmt : block->NonPhiStatements())
+    {
+        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+        {
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                if (tree->OperIs(GT_CALL) && tree->AsCall()->IsTailCallViaJitHelper())
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------------
 // fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
 //                   with SuppressGCTransitionAttribute.
 //
 // Notes:
-//    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
-//    find the basic blocks that require GC polls; when optimizing the tree nodes
-//    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//    The trees are scanned (in both optimized and minopts) to find the basic blocks
+//    that require GC polls: blocks with a call to a method with
+//    SuppressGCTransitionAttribute, blocks with an explicit GC poll (GT_GCPOLL), and
+//    blocks ending in a slow tail call dispatched via the JIT helper. The phase itself
+//    only runs when the global OMF_NEEDS_GCPOLLS flag indicates the method has any such
+//    block.
 //
 //    This must be done after any transformations that would add control flow between
 //    calls.
@@ -91,21 +132,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         compCurBB = block;
 
-        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-        if (opts.OptimizationDisabled())
+        if (!blockNeedsGCPoll(block))
         {
-            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-        }
-        else
-        {
-            if (!blockNeedsGCPoll(block))
-            {
-                continue;
-            }
+            continue;
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -201,7 +230,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         Statement* newStmt = nullptr;
 
-        if (block->HasFlag(BBF_NEEDS_GCPOLL))
+        if (blockHasTailCallViaHelper(block))
         {
             // This is a block that ends in a tail call; gc probe early.
             //

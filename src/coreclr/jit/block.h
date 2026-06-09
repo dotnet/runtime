@@ -411,10 +411,9 @@ enum BasicBlockFlags : uint64_t
     BBF_DONT_REMOVE          = MAKE_BBFLAG( 3), // BB should not be removed during flow graph optimizations
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
-    BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 6), // BB may need a GC poll because it uses the slow tail call helper
+    // Note: bits 6 and 9 are available for reuse.
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 7), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 8), // Last block of a cloned finally region
-    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG( 9), // BB contains a call to a method with SuppressGCTransitionAttribute
     BBF_HAS_LABEL            = MAKE_BBFLAG(10), // BB needs a label
     BBF_LOOP_ALIGN           = MAKE_BBFLAG(11), // Block is lexically the first block in a loop we intend to align.
     BBF_HAS_ALIGN            = MAKE_BBFLAG(12), // BB ends with 'align' instruction
@@ -452,7 +451,7 @@ enum BasicBlockFlags : uint64_t
 
     // Flags to update when two blocks are compacted
 
-    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | \
+    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_BACKWARD_JUMP | \
                       BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
 
     // Flags a block should not have had before it is split.
@@ -464,14 +463,14 @@ enum BasicBlockFlags : uint64_t
     // For example, the top block might or might not have BBF_GC_SAFE_POINT,
     // but we assume it does not have BBF_GC_SAFE_POINT any more.
 
-    BBF_SPLIT_LOST = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_RECURSIVE_TAILCALL,
+    BBF_SPLIT_LOST = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_RECURSIVE_TAILCALL,
 
     // Flags gained by the bottom block when a block is split.
     // Note, this is a conservative guess.
     // For example, the bottom block might or might not have BBF_HAS_NEWARR, but we assume it has BBF_HAS_NEWARR.
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not

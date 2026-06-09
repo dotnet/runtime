@@ -4219,7 +4219,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Thread_FastPollGC:
             {
                 optMethodFlags |= OMF_NEEDS_GCPOLLS;
-                compCurBB->SetFlags(BBF_NEEDS_GCPOLL);
 
                 GenTree* gcpoll = new (this, GT_GCPOLL) GenTree(GT_GCPOLL, TYP_VOID);
                 // Prevent both reordering and removal. Invalid optimizations of Thread.FastPollGC are
