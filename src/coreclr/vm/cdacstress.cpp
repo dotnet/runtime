@@ -812,10 +812,24 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
 
     pThread->StackWalkFrames(dacLikeCallback, &diagCtx, flagsStackWalk);
 
-    // NOTE: ScanStackRoots also scans the separate GCFrame linked list
-    // (Thread::GetGCFrame), but the DAC's GetStackReferences / DacStackReferenceWalker
-    // does NOT include those. We intentionally omit GCFrame scanning here so our
-    // runtime-side collection matches what the cDAC is expected to produce.
+    // ScanStackRoots also scans two root sets that are not part of the frame walk: the
+    // GCFrame (GCPROTECT) chain and the in-flight ExInfo chain. GetStackReferences reports
+    // both, so mirror them here to keep the runtime-side collection in parity. See
+    // ScanStackRoots in gcenv.ee.cpp.
+    GCFrame* pGCFrame = pThread->GetGCFrame();
+    while (pGCFrame != GCFRAME_TOP)
+    {
+        pGCFrame->GcScanRoots(gcctx.f, gcctx.sc);
+        pGCFrame = pGCFrame->PtrNextFrame();
+    }
+
+    PTR_ExInfo pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo != NULL)
+    {
+        PTR_PTR_Object pRef = dac_cast<PTR_PTR_Object>(&pExInfo->m_exception);
+        gcctx.f(pRef, gcctx.sc, 0);
+        pExInfo = pExInfo->GetPreviousExceptionTracker();
+    }
 
     return collectCtx.overflow ? S_FALSE : S_OK;
 }
