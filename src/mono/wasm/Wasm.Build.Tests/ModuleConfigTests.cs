@@ -121,7 +121,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime))]
     public async Task BufferedAssetsTest()
     {
         Configuration config = Configuration.Debug;
@@ -132,15 +132,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             "ModuleConfigTests_BufferedAssetsTest",
             extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
         PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
-        if (EnvironmentVariables.UseJavascriptBundler)
-        {
-            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-            string publicFrameworkDir = Path.Combine(Path.GetDirectoryName(frameworkDir)!, "public", "_framework");
-            Directory.CreateDirectory(publicFrameworkDir);
-            foreach (string symbolFile in Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols"))
-                File.Copy(symbolFile, Path.Combine(publicFrameworkDir, Path.GetFileName(symbolFile)), overwrite: true);
-        }
-
         await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             TestScenario: "BufferedAssetsTest"
