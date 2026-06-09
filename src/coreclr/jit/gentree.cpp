@@ -9059,12 +9059,18 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
+    // For TYP_INT-sized constants the value must fit in int32_t; otherwise the
+    // node is in an invalid state and downstream SetIconValue / BashToConst
+    // will assert when the constant is updated. Wider values should use
+    // gtNewLconNode (TYP_LONG) or TYP_I_IMPL on 64-bit targets.
+    assert(genTypeSize(type) > genTypeSize(TYP_INT) || FitsIn<int32_t>(value));
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
 GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
+    assert(genTypeSize(type) > genTypeSize(TYP_INT) || FitsIn<int32_t>(value));
     GenTreeIntCon* cns = new (this, GT_CNS_INT) GenTreeIntCon(type, value);
     comp->fgUpdateConstTreeValueNumber(cns);
     return cns;
