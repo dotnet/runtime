@@ -25,9 +25,9 @@ struct InitVarDscInfo
     bool      anyFloatStackArgs;
 #endif // TARGET_ARM
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
     bool hasSplitParam;
-#endif // TARGET_ARM || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_RISCV64 || TARGET_POWERPC64
 
     // Bytes passed on the stack (including things like padding after structs)
     unsigned stackArgSize;
@@ -49,9 +49,9 @@ public:
         anyFloatStackArgs    = false;
 #endif // TARGET_ARM
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
         hasSplitParam = false;
-#endif // TARGET_ARM || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_RISCV64 || TARGET_POWERPC64
 
         stackArgSize = 0;
     }

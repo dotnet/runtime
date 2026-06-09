@@ -2676,14 +2676,41 @@ inline
         FPbased = varDsc->lvFramePointerBased;
 
 #ifdef TARGET_POWERPC64
-        // For PPC64LE incoming stack parameters that are frame-pointer-based,
+        // For PPC64LE incoming parameters that are frame-pointer-based,
         // adjust the offset to account for the frame size since the offset is
         // relative to the caller's SP but we're accessing from the callee's FP (which equals callee's SP)
-        if (FPbased && varDsc->lvIsParam && !varDsc->lvIsRegArg && (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT))
+        if (FPbased && varDsc->lvIsParam && (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT))
         {
-            varOffset = varDsc->GetStackOffset() + codeGen->genTotalFrameSize();
-            *pFPbased = FPbased;
-            return varOffset;
+            if (varDsc->lvIsSplit)
+            {
+                // Split parameter: first part in register, second part on stack
+                // For PPC64LE, the register portion should be saved in the parameter save area
+                // which the caller has reserved at offsets 32-95 from the caller's SP.
+                // The parameter save area starts at callee's FP + calleeFrameSize + 32.
+                // For r10 (8th register), the offset is 32 + 7*8 = 88 from caller's SP.
+                // From callee's FP: calleeFrameSize + 88.
+                
+                // Get the register number to calculate the parameter save area offset
+                regNumber regNum = varDsc->GetArgReg();
+                assert(regNum >= REG_R3 && regNum <= REG_R10);
+                int paramSaveOffset = 32 + ((regNum - REG_R3) * 8);
+                
+                // Calculate the base address from callee's FP
+                // Example: For r10 with calleeFrameSize=224, paramSaveOffset=88
+                // Base = 224 + 88 = 312
+                // Field offset 0: 312 + 0 = 312 (r10 saved location)
+                // Field offset 8: 312 + 8 = 320 (stack portion location)
+                varOffset = codeGen->genTotalFrameSize() + paramSaveOffset;
+                *pFPbased = FPbased;
+                return varOffset;
+            }
+            else if (!varDsc->lvIsRegArg)
+            {
+                // Regular stack parameter
+                varOffset = varDsc->GetStackOffset() + codeGen->genTotalFrameSize();
+                *pFPbased = FPbased;
+                return varOffset;
+            }
         }
 #endif
 

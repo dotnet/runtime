@@ -10626,9 +10626,17 @@ const size_t TREE_NODE_SZ_SMALL = sizeof(GenTreeLclFld);
 // For some configurations, such as x86 release, GenTreeVecCon is
 // the largest by a small margin due to needing to carry a simd64_t
 // constant value. Otherwise, GenTreeCall is the largest.
+// On PowerPC64 with FEATURE_ARG_SPLIT, GenTreePutArgSplit may be larger due to MAX_REG_ARG=8.
 
+#if defined(TARGET_POWERPC64) && FEATURE_ARG_SPLIT
+const size_t TREE_NODE_SZ_LARGE =
+    (sizeof(GenTreePutArgSplit) > sizeof(GenTreeCall))
+        ? ((sizeof(GenTreePutArgSplit) > sizeof(GenTreeVecCon)) ? sizeof(GenTreePutArgSplit) : sizeof(GenTreeVecCon))
+        : ((sizeof(GenTreeCall) > sizeof(GenTreeVecCon)) ? sizeof(GenTreeCall) : sizeof(GenTreeVecCon));
+#else
 const size_t TREE_NODE_SZ_LARGE =
     (sizeof(GenTreeVecCon) < sizeof(GenTreeCall)) ? sizeof(GenTreeCall) : sizeof(GenTreeVecCon);
+#endif
 
 enum varRefKinds
 {

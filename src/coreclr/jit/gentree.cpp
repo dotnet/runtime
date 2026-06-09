@@ -266,9 +266,21 @@ void GenTree::InitNodeSize()
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
 #if FEATURE_ARG_SPLIT
-    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
+    // Ensure GT_PUTARG_SPLIT has enough space for the actual structure size
+    // On some platforms (e.g., PowerPC64 with MAX_REG_ARG=8), GenTreePutArgSplit
+    // may be larger than TREE_NODE_SZ_LARGE.
+    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  =
+        (sizeof(GenTreePutArgSplit) > TREE_NODE_SZ_LARGE) ? sizeof(GenTreePutArgSplit) : TREE_NODE_SZ_LARGE;
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
+
+#if defined(TARGET_POWERPC64) && FEATURE_ARG_SPLIT
+    // On PowerPC64, FEATURE_PUT_STRUCT_ARG_STK is not defined, but we still need to set
+    // the size for GT_PUTARG_SPLIT. GenTreePutArgSplit (128 bytes) may be larger than
+    // TREE_NODE_SZ_LARGE due to MAX_REG_ARG=8.
+    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  =
+        (sizeof(GenTreePutArgSplit) > TREE_NODE_SZ_LARGE) ? sizeof(GenTreePutArgSplit) : TREE_NODE_SZ_LARGE;
+#endif // TARGET_POWERPC64 && FEATURE_ARG_SPLIT
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".

@@ -291,9 +291,9 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
     compHasSplitParam = varDscInfo.hasSplitParam;
-#endif // TARGET_ARM || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_RISCV64 || TARGET_POWERPC64
 
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
@@ -961,8 +961,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
+            // On LoongArch64, RISCV64, and PPC64LE, if there aren't any remaining floating-point registers to pass the
             // argument, integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
@@ -974,7 +974,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 // If a struct-arg which needs two registers but only one integer register available,
                 // it has to be split.
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 argRegTypeInStruct1   = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
+#endif
             }
 #endif
         }
@@ -1116,28 +1118,40 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType, info.compCallConv));
             }
 
+#if defined(TARGET_ARM) || defined(TARGET_POWERPC64)
 #ifdef TARGET_ARM
             if (varDsc->TypeGet() == TYP_LONG)
             {
                 varDsc->SetOtherArgReg(
                     genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT, info.compCallConv));
             }
+#endif // TARGET_ARM
 
             unsigned numEnregistered = 0;
             unsigned stackSize       = 0;
             // Check if arg was split between registers and stack.
+#ifdef TARGET_POWERPC64
+            if (varTypeUsesIntReg(argType) || varTypeIsStruct(argType))
+#else
             if (varTypeUsesIntReg(argType))
+#endif
             {
                 unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
                 if (lastRegArgNum >= varDscInfo->maxIntRegArgNum)
                 {
+#ifdef TARGET_ARM
                     assert(varDscInfo->stackArgSize == 0);
+#endif
                     numEnregistered = varDscInfo->maxIntRegArgNum - firstRegArgNum;
                     varDsc->SetStackOffset(-(int)numEnregistered * REGSIZE_BYTES);
                     stackSize = (cSlots - numEnregistered) * REGSIZE_BYTES;
                     varDscInfo->stackArgSize += stackSize;
                     varDscInfo->hasSplitParam = true;
+#ifdef TARGET_POWERPC64
+                    varDsc->lvIsSplit = 1;
+                    varDsc->SetOtherArgReg(REG_STK);
+#endif
                     JITDUMP("set user arg V%02u offset to %d\n", varDscInfo->varNum, varDsc->GetStackOffset());
                 }
                 else
@@ -1149,7 +1163,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 numEnregistered = cSlots;
             }
-#endif // TARGET_ARM
+#endif // defined(TARGET_ARM) || defined(TARGET_POWERPC64)
 
 #ifdef DEBUG
             if (verbose)
@@ -1871,8 +1885,9 @@ void Compiler::lvaClassifyParameterABI()
                 }
                 else if (segment0.IsPassedInRegister() && segment1.IsPassedOnStack())
                 {
-                    // Split argument
+                    // Split argument: first part in register, second part on stack
                     dsc->lvIsRegArg = true;
+                    dsc->lvIsSplit = 1;
                     dsc->SetArgReg(segment0.GetRegister());
                     dsc->SetOtherArgReg(REG_STK);
                     dsc->SetStackOffset(segment1.GetStackOffset());
@@ -1903,11 +1918,16 @@ void Compiler::lvaClassifyParameterABI()
                 }
                 else if (segment0.IsPassedInRegister() && segment1.IsPassedOnStack())
                 {
-                    // Split argument
+                    // Split argument: first part in register, second part on stack
+                    // Use negative offset encoding to indicate number of slots in registers
+                    // (consistent with the old code path at lines 1119-1160)
                     dsc->lvIsRegArg = true;
                     dsc->SetArgReg(segment0.GetRegister());
                     dsc->SetOtherArgReg(REG_STK);
-                    dsc->SetStackOffset(segment1.GetStackOffset());
+                    // Encode number of register slots as negative offset
+                    // The actual stack offset is stored in the ABI info
+                    unsigned numRegSlots = 1; // segment0 is in register
+                    dsc->SetStackOffset(-(int)numRegSlots * REGSIZE_BYTES);
                     dsc->lvFramePointerBased = true;
                 }
                 else if (segment0.IsPassedOnStack())
@@ -1978,7 +1998,15 @@ void Compiler::lvaClassifyParameterABI()
             {
                 reg = dsc->GetOtherArgReg();
             }
-#endif
+#if defined(TARGET_POWERPC64)
+            else
+            {
+                // PPC64LE can pass structs in up to 8 registers (r3-r10)
+                // For segments beyond the first two, use lvRegNumForSlot
+                reg = dsc->lvRegNumForSlot(i);
+            }
+#endif // TARGET_POWERPC64
+#endif // FEATURE_MULTIREG_ARGS
 
             if (expected.IsPassedOnStack())
             {
@@ -6343,6 +6371,17 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     compLclFrameSize = 0;
 
+#ifdef TARGET_POWERPC64
+    // For PPC64LE, allocate the outgoing argument space first, before local variables.
+    // This ensures local variables (including multireg-arg structs) don't overlap
+    // with the outgoing argument space.
+    if (lvaOutgoingArgSpaceSize > 0)
+    {
+        noway_assert((lvaOutgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclSize(lvaOutgoingArgSpaceVar), stkOffs);
+    }
+#endif // TARGET_POWERPC64
+
 #ifdef TARGET_AMD64
     // For methods with patchpoints, the Tier0 method must reserve
     // space for all the callee saves, as this area is shared with the
@@ -6990,6 +7029,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // TARGET_ARM64
 
 #if FEATURE_FIXED_OUT_ARGS
+#ifndef TARGET_POWERPC64
+    // For PPC64LE, the outgoing argument space is allocated earlier (before local variables)
+    // to prevent overlap with multireg-arg structs.
     if (lvaOutgoingArgSpaceSize > 0)
     {
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI) // No 4 slots for outgoing params on System V.
@@ -7003,6 +7045,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclSize(lvaOutgoingArgSpaceVar), stkOffs);
     }
+#endif // !TARGET_POWERPC64
 #endif // FEATURE_FIXED_OUT_ARGS
 
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address

@@ -561,9 +561,9 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
     unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
-#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
@@ -698,6 +698,14 @@ public:
         {
             return GetOtherArgReg();
         }
+#if defined(TARGET_POWERPC64)
+        else if (slotNum < MAX_ARG_REG_COUNT)
+        {
+            // PPC64LE can pass structs in up to 8 registers (r3-r10)
+            // Calculate the register number based on the first register and slot offset
+            return (regNumber)((regNumber)_lvArgReg + slotNum);
+        }
+#endif // TARGET_POWERPC64
         else
         {
             assert(false && "Invalid slotNum!");
@@ -10884,7 +10892,7 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
     bool compHasSplitParam;
 #endif
 

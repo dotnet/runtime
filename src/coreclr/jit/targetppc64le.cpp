@@ -168,7 +168,11 @@ ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
             }
             
             // Put remainder on stack
-            unsigned stackOffset = currentArgOffset + (regsUsed * TARGET_POINTER_SIZE);
+            // For split arguments, we need to recalculate the stack offset after incrementing m_numTotalSlots
+            // by the number of register slots used, so the stack portion gets the correct offset
+            m_numTotalSlots += regsUsed; // Increment by register slots used
+            unsigned stackOffset = 32 + (m_numTotalSlots * 8); // Recalculate stack offset
+            
             for (unsigned i = regsUsed; i < slots; i++)
             {
                 unsigned slotSize = min(size - offset, (unsigned)TARGET_POINTER_SIZE);
@@ -178,8 +182,8 @@ ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
             }
             
             m_argNum++; // Increment argument count
-            m_numTotalSlots += slots; // Struct consumes 'slots' number of slots
-            m_stackArgSize = currentArgOffset + (slots * TARGET_POINTER_SIZE);
+            m_numTotalSlots += stackSlots; // Add remaining stack slots
+            m_stackArgSize = stackOffset; // Update to the final stack offset
             return info;
         }
         else

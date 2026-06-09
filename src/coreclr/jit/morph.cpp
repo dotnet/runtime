@@ -2177,7 +2177,21 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 }
                 else
                 {
+#if defined(TARGET_POWERPC64)
+                    // PPC64LE ELFv2 ABI: Stack offset = 32 + (slot_count * 8)
+                    // - 32 bytes: mandatory header (linkage area)
+                    // - slot_count: number of 8-byte slots consumed by previous arguments
+                    // Split arguments can start at any valid stack offset >= 32
+                    assert(segment.GetStackOffset() >= 32);
+                    // Set ByteOffset to the stack offset of the first stack segment
+                    if (arg.AbiInfo.ByteOffset == 0)
+                    {
+                        arg.AbiInfo.ByteOffset = segment.GetStackOffset();
+                    }
+#else
+                    // On most platforms, the stack portion of a split argument starts at offset 0
                     assert(segment.GetStackOffset() == 0);
+#endif
                 }
             }
         }

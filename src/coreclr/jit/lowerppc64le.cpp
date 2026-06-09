@@ -449,7 +449,17 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
             // the non-split case.
             comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
+        // Note: For PUTARG_SPLIT with FIELD_LIST, the FIELD_LIST itself is contained,
+        // but the individual field nodes are NOT contained - they need to be allocated
+        // registers by LSRA so genPutArgSplit can consume them via genConsumeReg.
     }
+#if FEATURE_ARG_SPLIT
+    // For PUTARG_SPLIT with direct local reads (not FIELD_LIST), mark them as contained
+    else if (putArgNode->OperIs(GT_PUTARG_SPLIT) && src->OperIsLocalRead())
+    {
+        MakeSrcContained(putArgNode, src);
+    }
+#endif // FEATURE_ARG_SPLIT
 }
 
 //------------------------------------------------------------------------
