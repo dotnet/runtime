@@ -3173,10 +3173,10 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
                                                        unsigned          resultOffset,
                                                        BasicBlock*       storeResultBB)
 {
-    auto clearGCRef = [=](unsigned offset) {
+    auto clearGCRef = [=](unsigned offset, var_types type) {
         GenTree* base  = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        GenTree* null  = m_compiler->gtNewNull();
-        GenTree* clear = StoreAtOffset(base, offset, null, TYP_REF);
+        GenTree* zero  = m_compiler->gtNewZeroConNode(type);
+        GenTree* clear = StoreAtOffset(base, offset, zero, type);
         LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, clear));
     };
 
@@ -3198,7 +3198,7 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
             {
                 if (retLayout->IsGCPtr(i))
                 {
-                    clearGCRef(resultOffset + (i * TARGET_POINTER_SIZE));
+                    clearGCRef(resultOffset + (i * TARGET_POINTER_SIZE), retLayout->GetGCPtrType(i));
                 }
             }
         }
@@ -3216,7 +3216,7 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
     }
     else if (retInfo->Type.ReturnType == TYP_REF)
     {
-        clearGCRef(resultOffset);
+        clearGCRef(resultOffset, TYP_REF);
     }
 }
 
