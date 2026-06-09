@@ -173,6 +173,7 @@ Contracts used:
 | `Thread` |
 | `RuntimeTypeSystem` |
 | `GCInfo` |
+| `Exception` |
 
 
 ### Stackwalk Algorithm
@@ -599,7 +600,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 ### GC Stack Reference Scanning
 
-`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers. The native equivalent is `DacStackReferenceWalker` which calls `GcStackCrawlCallBack` at each frame.
+`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers, then reporting the thread's GCFrame (GCPROTECT) chain and in-flight exception (ExInfo) chain. This mirrors the GC's own root enumeration, `ScanStackRoots` (`src/coreclr/vm/gcenv.ee.cpp`); the legacy `DacStackReferenceWalker` reports only the per-frame subset and omits the GCFrame and ExInfo roots.
 
 #### Stack Walk Integration
 
