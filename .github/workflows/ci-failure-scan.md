@@ -309,7 +309,7 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 - Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues and one `missing_data` safe-output. Record `skipped: suspected infra outage` for each signature.
 - Product-shaped (assertion, exception, stack frame, JIT marker) converging on a common element (same assembly / stack frame / assertion file): file ONE representative KBE per element (cap 3 total). Skip the rest with `skipped: representative KBE filed as #aw_<id>`.
 
-**Leg-level failures.** Evaluate this per leg (`definition + queue + stress mode`, per line 429) before per-test signature scoring. When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, queue, stress_mode, shared-signal)` — matching the Step 4.0 dedup key shape `<definition_id>|<queue>|<stress_mode>|<signature_norm>` so the leg identity is preserved and unrelated legs sharing a crash signal do not collide — scoped to that leg with `Known Build Error` + `blocking-clean-ci`, and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
+**Leg-level failures.** Evaluate this per leg (`definition + queue + stress mode`, per [the leg definition](#leg-definition)) before per-test signature scoring. When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, queue, stress_mode, shared-signal)` — matching the Step 4.0 dedup key shape `<definition_id>|<queue>|<stress_mode>|<signature_norm>` so the leg identity is preserved and unrelated legs sharing a crash signal do not collide — scoped to that leg with `Known Build Error` + `blocking-clean-ci`, and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
 
 **Branch A — No existing KBE; signature is stable.**
 
@@ -426,6 +426,7 @@ Scope rule (mandatory): condition must be AS NARROW AS the observed failure scop
 | Only NativeAOT on a single arch | `<NativeAotIncompatible>true</NativeAotIncompatible>` (all arches) | `<NativeAotIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</NativeAotIncompatible>` |
 | Only one stress mode | `<GCStressIncompatible>true</GCStressIncompatible>` (all stress modes) | Add stress-mode predicate via the failing variant |
 
+<a id="leg-definition"></a>
 In the PR `Reasoning` section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition.
 
 Pre-emit compile-validation checklist for test-disable PRs:
