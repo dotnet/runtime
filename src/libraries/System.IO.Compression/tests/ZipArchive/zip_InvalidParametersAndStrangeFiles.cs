@@ -2443,11 +2443,17 @@ namespace System.IO.Compression.Tests
             // (observed as -1L) cannot be represented by the long-based public surface and is
             // malformed. The central directory parser must reject it eagerly so that callers
             // never see a negative Length or CompressedLength on a ZipArchiveEntry.
+            //
+            // The async path (ZipArchive.CreateAsync) calls EnsureCentralDirectoryReadAsync eagerly
+            // during construction, so the exception is thrown there. The sync path (new ZipArchive)
+            // defers central directory parsing until first access to .Entries, so we must trigger
+            // that access explicitly to exercise the same validation.
             byte[] zipArchive = CreateZipWithNegativeZip64UncompressedSize();
 
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
                 ZipArchive archive = await CreateZipArchive(async, new MemoryStream(zipArchive), ZipArchiveMode.Read);
+                _ = archive.Entries; // force lazy central-directory read in the sync path
                 await DisposeZipArchive(async, archive);
             });
         }
