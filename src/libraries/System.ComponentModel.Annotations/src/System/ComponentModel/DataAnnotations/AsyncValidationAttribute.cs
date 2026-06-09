@@ -8,6 +8,7 @@ namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
     ///     Base class for validation attributes that require asynchronous operations, such as database lookups or API calls.
+    ///     Derived classes should never make any threading assumptions. Implementations of this attribute may or may not be called in parallel.
     /// </summary>
     public abstract class AsyncValidationAttribute : ValidationAttribute
     {
