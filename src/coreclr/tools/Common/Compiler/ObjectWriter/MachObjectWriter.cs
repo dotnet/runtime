@@ -499,16 +499,12 @@ namespace ILCompiler.ObjectWriter
                     if (_cpuType == CPU_TYPE_ARM64 || IsEhFrameSection(sectionIndex))
                     {
                         section.NeedsRelocAnchors = true;
-
-                        if ((section.Flags & S_ATTR_PURE_INSTRUCTIONS) != 0)
-                        {
-                            // We cannot emit anchor symbols in executable sections as they may split
-                            // existing functions into multiple atoms, and ld-classic corrupts the
-                            // unwinding information for such functions. In theory we could support this
-                            // by using nearest preceding symbol as an anchor but that requires more
-                            // complex handling and we don't have any such relocs in our current scenarios.
-                            throw new NotSupportedException("Executable sections cannot contain RELPTR32 relocations on Mach-O");
-                        }
+                        // We cannot emit anchor symbols in executable sections as they may split
+                        // existing functions into multiple atoms, and ld-classic corrupts the
+                        // unwinding information for such functions. In theory we could support this
+                        // by using nearest preceding symbol as an anchor but that requires more
+                        // complex handling and we don't have any such relocs in our current scenarios.
+                        Debug.Assert((section.Flags & S_ATTR_PURE_INSTRUCTIONS) == 0, "Executable sections cannot contain RELPTR32 relocations on Mach-O");
 
                         // On ARM64 we need to represent PC relative relocations as
                         // subtraction and the PC offset is baked into the addend.
