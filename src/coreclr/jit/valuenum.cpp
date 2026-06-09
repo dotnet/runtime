@@ -2052,9 +2052,13 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             var_types castToType;
             bool      srcIsUnsigned;
             GetCastOperFromVN(castInfoVN, &castToType, &srcIsUnsigned);
-            if ((castToType == TYP_LONG) && !srcIsUnsigned && TypeOfVN(srcVN) == TYP_INT)
+            if ((genActualType(castToType) == TYP_LONG) && (TypeOfVN(srcVN) == TYP_INT))
             {
-                return srcVN;
+                // A zero-extending cast preserves the sign-extended value only when the source is non-negative.
+                if (!srcIsUnsigned || IsVNNeverNegative(srcVN))
+                {
+                    return srcVN;
+                }
             }
         }
 
@@ -5271,6 +5275,18 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     if (typ == TYP_BYREF) // We don't want/need to optimize a zero byref
     {
         return resultVN; // return the unsuccessful value
+    }
+
+    // Narrow "(long)x <cmp> (long)y" to an int comparison when both operands are just
+    // sign-extended ints; only TYP_INT comparisons feed assertion prop / bounds checks.
+    if (VNFuncIsComparison(func) && (TypeOfVN(arg0VN) == TYP_LONG) && (TypeOfVN(arg1VN) == TYP_LONG))
+    {
+        ValueNum newArg0VN = VNIgnoreIntToLongCast(arg0VN);
+        ValueNum newArg1VN = VNIgnoreIntToLongCast(arg1VN);
+        if ((TypeOfVN(newArg0VN) == TYP_INT) && (TypeOfVN(newArg1VN) == TYP_INT))
+        {
+            return VNForFunc(TYP_INT, func, newArg0VN, newArg1VN);
+        }
     }
 
     ValueNum cnsVN = NoVN;
