@@ -363,5 +363,58 @@ namespace System.Runtime.InteropServices.Tests
             public InnerStruct s;
             public byte b;
         }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct StructWithByValString
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
+            public string? Name;
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void StructureToPtr_ByValTStr_MultiByte_Overflow()
+        {
+            // ByValTStr uses UTF-8 on Unix. € is 3 bytes, so the string exceeds the specified SizeConst
+            var payload = new StructWithByValString { Name = "€€€" };
+
+            int size = Marshal.SizeOf<StructWithByValString>();
+            IntPtr buffer = Marshal.AllocHGlobal(size + 1);
+            byte sentinelValue = 0xFF;
+            try
+            {
+                Marshal.WriteByte(buffer, size, sentinelValue);
+                Assert.Throws<ArgumentException>(() => Marshal.StructureToPtr(payload, buffer, false));
+                Assert.Equal(sentinelValue, Marshal.ReadByte(buffer, size));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+
+        [Fact]
+        public void StructureToPtr_ByValTStr_Ascii_TruncatesLongString()
+        {
+            var payload = new StructWithByValString { Name = "abcdef" };
+
+            int size = Marshal.SizeOf<StructWithByValString>();
+            IntPtr buffer = Marshal.AllocHGlobal(size + 1);
+            byte sentinelValue = 0xFF;
+            try
+            {
+                Marshal.WriteByte(buffer, size, sentinelValue);
+                Marshal.StructureToPtr(payload, buffer, false);
+                Assert.Equal((byte)'a', Marshal.ReadByte(buffer, 0));
+                Assert.Equal((byte)'b', Marshal.ReadByte(buffer, 1));
+                Assert.Equal((byte)'c', Marshal.ReadByte(buffer, 2));
+                Assert.Equal((byte)0, Marshal.ReadByte(buffer, 3));
+                Assert.Equal(sentinelValue, Marshal.ReadByte(buffer, size));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
     }
 }
