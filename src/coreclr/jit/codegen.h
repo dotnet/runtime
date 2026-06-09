@@ -288,10 +288,8 @@ protected:
                               bool        inUnwindRegion = false);
     //void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
-    void genZeroInitFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed);
     //void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
     //void genPushCalleeSavedRegisters();
-    void genPutArgStk(GenTree* arg, unsigned offset);
 #endif
 #if defined(TARGET_ARM64)
     bool genInstrWithConstant(instruction ins,
