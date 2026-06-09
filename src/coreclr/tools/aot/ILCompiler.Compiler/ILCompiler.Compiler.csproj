@@ -36,7 +36,6 @@
     <Compile Include="..\..\Common\Compiler\AsyncContinuationType.cs" Link="Compiler\AsyncContinuationType.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.Mangling.cs" Link="Compiler\AsyncMethodVariant.Mangling.cs" />
-    <Compile Include="..\..\Common\Compiler\AsyncVersionMethodIL.cs" Link="Compiler\AsyncVersionMethodIL.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Wasm.cs" Link="Compiler\CompilerTypeSystemContext.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />

@@ -195,14 +195,6 @@ namespace Internal.IL
             return false;
         }
 
-        private static bool NeedsAsyncThunk(MethodDesc method)
-        {
-            Debug.Assert(method.IsTypicalMethodDefinition);
-            if (method is not AsyncMethodVariant)
-                return false;
-            return !method.IsAsync;
-        }
-
         private MethodIL GetMethodILForAsyncMethod(MethodDesc method)
         {
             Debug.Assert(method.IsAsync && method is EcmaMethod);
@@ -245,9 +237,11 @@ namespace Internal.IL
                 if (_manifestModuleWrappedMethods.TryGetValue(amv, out var methodIL))
                     return methodIL;
 
-                return NeedsAsyncThunk(amv) ?
-                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, amv.Target)
-                    : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create(amv.Target));
+                EcmaMethodIL asyncTargetMethodIL = EcmaMethodIL.Create(amv.Target);
+                if (asyncTargetMethodIL == null)
+                    return null;
+
+                return new AsyncEcmaMethodIL(amv, asyncTargetMethodIL);
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {

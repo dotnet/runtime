@@ -577,7 +577,7 @@ namespace Internal.JitInterface
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, AsyncVersionMethodIL.UnwrapIfAsyncVersion(methodIL));
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -1276,7 +1276,7 @@ namespace Internal.JitInterface
                 return false;
 
 
-            MethodIL methodIL = method.IsUnboxingThunk() ? null : AsyncVersionMethodIL.GetWrappedIfAsyncVersion(method, _compilation);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -1305,7 +1305,7 @@ namespace Internal.JitInterface
             {
                 if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
                 {
-                    var calleeIL = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(calleeMethod, _compilation);
+                    var calleeIL = _compilation.GetMethodIL(calleeMethod);
                     if (calleeIL.GetExceptionRegions().Length != 0)
                     {
                         // Fail inlining if root method and callee have different exception wrapping behavior
@@ -1338,7 +1338,7 @@ namespace Internal.JitInterface
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            var methodIL = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(HandleToObject(ftn), _compilation);
+            var methodIL = _compilation.GetMethodIL(HandleToObject(ftn));
 
             var ehRegion = methodIL.GetExceptionRegions()[EHnumber];
 
@@ -1527,7 +1527,7 @@ namespace Internal.JitInterface
 #endif
 
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
-                MethodILScope scope = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(methodWithToken.Method, jitInterface._compilation);
+                MethodILScope scope = jitInterface._compilation.GetMethodIL(methodWithToken.Method);
                 scope ??= EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
                 result.tokenScope = jitInterface.ObjectToHandle(scope);
                 result.tokenContext = jitInterface.contextFromMethod(method);
@@ -1901,7 +1901,7 @@ namespace Internal.JitInterface
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, AsyncVersionMethodIL.UnwrapIfAsyncVersion((MethodIL)methodIL), method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)

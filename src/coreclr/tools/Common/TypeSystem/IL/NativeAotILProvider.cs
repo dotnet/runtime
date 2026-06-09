@@ -360,16 +360,10 @@ namespace Internal.IL
                 return AsyncThunkILEmitter.EmitReturnDroppingThunk(returnDroppingVariant, returnDroppingVariant.AsyncVariantTarget);
             }
             else
-            if (method is AsyncMethodVariant asyncVariantImpl)
+            if (method is AsyncMethodVariant asyncVariantImpl
+                && EcmaMethodIL.Create(asyncVariantImpl.Target) is EcmaMethodIL asyncTargetIL)
             {
-                if (asyncVariantImpl.IsAsync)
-                {
-                    return new AsyncEcmaMethodIL(asyncVariantImpl, EcmaMethodIL.Create(asyncVariantImpl.Target));
-                }
-                else
-                {
-                    return AsyncThunkILEmitter.EmitAsyncMethodThunk(asyncVariantImpl, asyncVariantImpl.Target);
-                }
+                return new AsyncEcmaMethodIL(asyncVariantImpl, asyncTargetIL);
             }
             else
             {

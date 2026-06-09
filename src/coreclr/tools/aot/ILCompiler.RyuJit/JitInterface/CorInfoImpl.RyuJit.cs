@@ -68,7 +68,7 @@ namespace Internal.JitInterface
             _methodCodeNode = methodCodeNodeNeedingCode;
             _isFallbackBodyCompilation = methodIL != null;
 
-            methodIL ??= AsyncVersionMethodIL.GetWrappedIfAsyncVersion(MethodBeingCompiled, _compilation);
+            methodIL ??= _compilation.GetMethodIL(MethodBeingCompiled);
 
             try
             {
