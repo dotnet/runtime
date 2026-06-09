@@ -784,7 +784,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
-                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0
+                        // Not implemented on x86: https://github.com/dotnet/runtime/issues/99516
+                        && _compilation.NodeFactory.TypeSystemContext.Target.Architecture != TargetArchitecture.X86)
                         return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:

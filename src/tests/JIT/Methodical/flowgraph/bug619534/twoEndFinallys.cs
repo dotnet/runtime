@@ -26,7 +26,7 @@ public class Test
     private int _temp;
     private static int s_result = 100;
 
-    private Test()
+    public Test()
     {
         _temp = 101;
     }
