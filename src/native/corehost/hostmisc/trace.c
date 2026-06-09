@@ -207,7 +207,7 @@ void trace_setup(void)
     {
         if (trace_enable())
         {
-            pal_char_t timestamp[100];
+            pal_char_t timestamp[128];
             trace_format_timestamp(timestamp, ARRAY_SIZE(timestamp));
             trace_info(_X("Tracing enabled @ %s"), timestamp);
         }
