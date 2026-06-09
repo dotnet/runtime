@@ -1183,6 +1183,7 @@ namespace System
         static char System.Numerics.IBinaryInteger<char>.LeadingZeroCount(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.Log10(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.PopCount(char value) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.ReverseBits(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
