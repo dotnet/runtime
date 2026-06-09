@@ -1223,7 +1223,7 @@ namespace System.Threading.Tasks.Tests
                 RunScenarioAndFlush(() => TaskAsync_WaitThenYield_BalancesResumeAndComplete_Marker());
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
