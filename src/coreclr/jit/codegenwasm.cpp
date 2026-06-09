@@ -1910,12 +1910,22 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
         case PackTypes(TYP_DOUBLE, TYP_LONG):
             ins = INS_f64_reinterpret_i64;
             break;
+
+        // Same-size bitcasts are no-ops on the wasm value stack. PackTypes normalizes
+        // TYP_REF/TYP_BYREF to TYP_I_IMPL, so this covers all INT/REF/BYREF combos on wasm32
+        // and LONG/REF/BYREF on wasm64.
+        case PackTypes(TYP_INT, TYP_INT):
+        case PackTypes(TYP_LONG, TYP_LONG):
+            break;
+
         default:
             unreached();
-            break;
     }
 
-    GetEmitter()->emitIns(ins);
+    if (ins != INS_none)
+    {
+        GetEmitter()->emitIns(ins);
+    }
     WasmProduceReg(tree);
 }
 
