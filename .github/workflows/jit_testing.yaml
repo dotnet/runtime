@@ -8,22 +8,28 @@ on:
     branches:
       - ppc64le_coreclr_jit
   workflow_dispatch:
-  
   schedule:
-    - cron: "20 0 * * *"   # ~6:00 AM IST
+    - cron: "20 0 * * *"
 
-
-# Prevent multiple workflow runs from executing simultaneously
 concurrency:
   group: jit-testing-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   jit-testing:
+    #  Skip execution if NOT target branch
     if: github.ref == 'refs/heads/ppc64le_coreclr_jit'
+
     runs-on: ubuntu-24.04-ppc64le-p10
 
     steps:
+   
+      - name: Fail if not correct branch
+        if: github.ref != 'refs/heads/ppc64le_coreclr_jit'
+        run: |
+          echo "This workflow is only allowed on ppc64le_coreclr_jit branch"
+          exit 1
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
