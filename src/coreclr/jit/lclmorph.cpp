@@ -2458,29 +2458,121 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
             {
                 for (GenTreeLclVarCommon* const lcl : stmt->LocalsTreeList())
                 {
-                    if (!lcl->OperIs(GT_STORE_LCL_VAR))
+                    if (lcl->OperIs(GT_STORE_LCL_VAR))
                     {
+                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
+                        GenTree* const   value     = lcl->Data();
+
+                        // A struct store to a promoted destination implicitly
+                        // defines each field. Propagate per-field from a
+                        // matching promoted source LCL_VAR; otherwise mark
+                        // each destination field as has-GC.
+                        //
+                        if (varTypeIsStruct(dstDsc->TypeGet()) && dstDsc->lvPromoted)
+                        {
+                            LclVarDsc* srcDsc      = nullptr;
+                            unsigned   srcLclN     = BAD_VAR_NUM;
+                            bool       srcEligible = false;
+                            if (value->OperIs(GT_LCL_VAR))
+                            {
+                                srcLclN     = value->AsLclVar()->GetLclNum();
+                                srcDsc      = lvaGetDesc(srcLclN);
+                                srcEligible = varTypeIsStruct(srcDsc->TypeGet()) && srcDsc->lvPromoted &&
+                                              (srcDsc->lvFieldCnt == dstDsc->lvFieldCnt);
+                            }
+
+                            for (unsigned i = 0; i < dstDsc->lvFieldCnt; i++)
+                            {
+                                unsigned const dstFieldLclNum = dstDsc->lvFieldLclStart + i;
+                                if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstFieldLclNum))
+                                {
+                                    continue;
+                                }
+
+                                bool isNoGc = false;
+                                if (srcEligible)
+                                {
+                                    LclVarDsc* const dstFld         = lvaGetDesc(dstFieldLclNum);
+                                    unsigned const   srcFieldLclNum = srcDsc->lvFieldLclStart + i;
+                                    LclVarDsc* const srcFld         = lvaGetDesc(srcFieldLclNum);
+                                    if (dstFld->lvIsStructField && srcFld->lvIsStructField &&
+                                        (dstFld->lvParentLcl == dstLclNum) && (srcFld->lvParentLcl == srcLclN) &&
+                                        (dstFld->lvFldOffset == srcFld->lvFldOffset) &&
+                                        (dstFld->lvFldOrdinal == srcFld->lvFldOrdinal) &&
+                                        (dstFld->TypeGet() == srcFld->TypeGet()))
+                                    {
+                                        isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, srcFieldLclNum);
+                                    }
+                                }
+
+                                if (!isNoGc)
+                                {
+                                    BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstFieldLclNum);
+                                    changed = true;
+                                }
+                            }
+
+                            // Mark the promoted parent as has-GC for tidiness;
+                            // it is never consulted as a pinned local.
+                            //
+                            if (BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                            {
+                                BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                                changed = true;
+                            }
+
+                            continue;
+                        }
+
+                        if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                        {
+                            continue;
+                        }
+
+                        bool isNoGc = value->IsNotGcDef();
+
+                        if (!isNoGc && value->OperIs(GT_LCL_VAR))
+                        {
+                            isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, value->AsLclVar()->GetLclNum());
+                        }
+
+                        if (!isNoGc)
+                        {
+                            BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                            changed = true;
+                        }
+
                         continue;
                     }
 
-                    unsigned const dstLclNum = lcl->GetLclNum();
-                    if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                    // Any other def we do not analyze (GT_STORE_LCL_FLD,
+                    // retbuf GT_LCL_ADDR, etc.): mark the destination as
+                    // has-GC, plus all fields if it is a promoted parent.
+                    //
+                    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
                     {
-                        continue;
-                    }
+                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
 
-                    GenTree* const value  = lcl->Data();
-                    bool           isNoGc = value->IsNotGcDef();
+                        if (BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                        {
+                            BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                            changed = true;
+                        }
 
-                    if (!isNoGc && value->OperIs(GT_LCL_VAR))
-                    {
-                        isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, value->AsLclVar()->GetLclNum());
-                    }
-
-                    if (!isNoGc)
-                    {
-                        BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
-                        changed = true;
+                        if (varTypeIsStruct(dstDsc->TypeGet()) && dstDsc->lvPromoted)
+                        {
+                            for (unsigned i = 0; i < dstDsc->lvFieldCnt; i++)
+                            {
+                                unsigned const dstFieldLclNum = dstDsc->lvFieldLclStart + i;
+                                if (BitVecOps::IsMember(&traits, hasNoGcValue, dstFieldLclNum))
+                                {
+                                    BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstFieldLclNum);
+                                    changed = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
