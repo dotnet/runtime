@@ -3050,7 +3050,8 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 //------------------------------------------------------------------------
 // AsyncTransformation::CopyReturnValueOnResumption:
 //   Create IR that copies the return value from the continuation object to the
-//   right local.
+//   right local. When continuations may be reused, also clears out any GC
+//   references in the return value from the continuation afterwards.
 //
 // Parameters:
 //   call          - The async call.
@@ -3148,6 +3149,74 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         }
 
         LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
+    }
+
+    if (ReuseContinuations())
+    {
+        ClearReturnValueOnResumption(retInfo, resultOffset, storeResultBB);
+    }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ClearReturnValueOnResumption:
+//   Create IR that clears out any GC references in the return value from the
+//   continuation object. This is used after the return value has been copied
+//   out to ensure that a reused continuation does not keep those references
+//   alive.
+//
+// Parameters:
+//   retInfo       - Information about the return value in the continuation.
+//   resultOffset  - Offset of the return value from the start of the continuation object.
+//   storeResultBB - Basic block to append IR to.
+//
+void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo,
+                                                       unsigned          resultOffset,
+                                                       BasicBlock*       storeResultBB)
+{
+    auto clearGCRef = [=](unsigned offset) {
+        GenTree* base  = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null  = m_compiler->gtNewNull();
+        GenTree* clear = StoreAtOffset(base, offset, null, TYP_REF);
+        LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, clear));
+    };
+
+    if (retInfo->Type.ReturnType == TYP_STRUCT)
+    {
+        ClassLayout* retLayout  = retInfo->Type.ReturnLayout;
+        unsigned     gcPtrCount = retLayout->GetGCPtrCount();
+        if (gcPtrCount == 0)
+        {
+            return;
+        }
+
+        // If there are few GC references, and at most half of the struct is
+        // made up of GC references, then clear the individual GC pointers
+        // instead of zeroing out the whole struct.
+        if ((gcPtrCount <= 4) && ((gcPtrCount * 2) <= retLayout->GetSlotCount()))
+        {
+            for (unsigned i = 0; i < retLayout->GetSlotCount(); i++)
+            {
+                if (retLayout->IsGCPtr(i))
+                {
+                    clearGCRef(resultOffset + (i * TARGET_POINTER_SIZE));
+                }
+            }
+        }
+        else
+        {
+            GenTree*     base   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+            GenTree*     offset = m_compiler->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
+            GenTree*     addr   = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, base, offset);
+            GenTreeFlags indirFlags =
+                GTF_IND_NONFAULTING | (retInfo->HeapAlignment() < retInfo->Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
+            GenTree* zero  = m_compiler->gtNewIconNode(0);
+            GenTree* store = m_compiler->gtNewStoreValueNode(retLayout, addr, zero, indirFlags);
+            LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
+        }
+    }
+    else if (retInfo->Type.ReturnType == TYP_REF)
+    {
+        clearGCRef(resultOffset);
     }
 }
 
