@@ -68,19 +68,15 @@ namespace System.IO
         private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             ManualResetEvent waitEvent = handle.RentSyncWaitEvent();
-            SafeWaitHandle waitHandle = waitEvent.SafeWaitHandle;
-            bool releaseFileHandle = false;
-            bool releaseWaitHandle = false;
+            NativeOverlapped* overlapped = null;
 
             try
             {
-                handle.DangerousAddRef(ref releaseFileHandle);
-                waitHandle.DangerousAddRef(ref releaseWaitHandle);
-                NativeOverlapped overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, waitHandle.DangerousGetHandle());
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    int errorCode = Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, &overlapped) == 0
+                    int errorCode = Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped) == 0
                         ? FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle)
                         : Interop.Errors.ERROR_SUCCESS;
                     if (errorCode is Interop.Errors.ERROR_IO_PENDING)
@@ -94,9 +90,9 @@ namespace System.IO
                         {
                             // WaitOne can throw arbitrary exceptions (e.g., via SynchronizationContext).
                             // Cancel the pending IO and wait for completion before freeing the overlapped.
-                            Interop.Kernel32.CancelIoEx(handle, &overlapped);
+                            Interop.Kernel32.CancelIoEx(handle, overlapped);
                             int canceledBytes = 0;
-                            Interop.Kernel32.GetOverlappedResult(handle, &overlapped, ref canceledBytes, bWait: true);
+                            Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref canceledBytes, bWait: true);
                             throw;
                         }
                     }
@@ -104,7 +100,7 @@ namespace System.IO
                     if (errorCode is Interop.Errors.ERROR_SUCCESS)
                     {
                         int result = 0;
-                        if (Interop.Kernel32.GetOverlappedResult(handle, &overlapped, ref result, bWait: false))
+                        if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {
                             Debug.Assert(result >= 0 && result <= buffer.Length, $"GetOverlappedResult returned {result} for {buffer.Length} bytes request");
                             return result;
@@ -123,14 +119,9 @@ namespace System.IO
             }
             finally
             {
-                if (releaseWaitHandle)
+                if (overlapped != null)
                 {
-                    waitHandle.DangerousRelease();
-                }
-
-                if (releaseFileHandle)
-                {
-                    handle.DangerousRelease();
+                    NativeMemory.Free(overlapped);
                 }
 
                 handle.ReturnSyncWaitEvent(waitEvent);
@@ -172,19 +163,15 @@ namespace System.IO
             }
 
             ManualResetEvent waitEvent = handle.RentSyncWaitEvent();
-            SafeWaitHandle waitHandle = waitEvent.SafeWaitHandle;
-            bool releaseFileHandle = false;
-            bool releaseWaitHandle = false;
+            NativeOverlapped* overlapped = null;
 
             try
             {
-                handle.DangerousAddRef(ref releaseFileHandle);
-                waitHandle.DangerousAddRef(ref releaseWaitHandle);
-                NativeOverlapped overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, waitHandle.DangerousGetHandle());
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    int errorCode = Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, &overlapped) == 0
+                    int errorCode = Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped) == 0
                         ? FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle)
                         : Interop.Errors.ERROR_SUCCESS;
                     if (errorCode is Interop.Errors.ERROR_IO_PENDING)
@@ -198,9 +185,9 @@ namespace System.IO
                         {
                             // WaitOne can throw arbitrary exceptions (e.g., via SynchronizationContext).
                             // Cancel the pending IO and wait for completion before freeing the overlapped.
-                            Interop.Kernel32.CancelIoEx(handle, &overlapped);
+                            Interop.Kernel32.CancelIoEx(handle, overlapped);
                             int canceledBytes = 0;
-                            Interop.Kernel32.GetOverlappedResult(handle, &overlapped, ref canceledBytes, bWait: true);
+                            Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref canceledBytes, bWait: true);
                             throw;
                         }
                     }
@@ -208,7 +195,7 @@ namespace System.IO
                     if (errorCode is Interop.Errors.ERROR_SUCCESS)
                     {
                         int result = 0;
-                        if (Interop.Kernel32.GetOverlappedResult(handle, &overlapped, ref result, bWait: false))
+                        if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {
                             Debug.Assert(result == buffer.Length, $"GetOverlappedResult returned {result} for {buffer.Length} bytes request");
                             return;
@@ -230,14 +217,9 @@ namespace System.IO
             }
             finally
             {
-                if (releaseWaitHandle)
+                if (overlapped != null)
                 {
-                    waitHandle.DangerousRelease();
-                }
-
-                if (releaseFileHandle)
-                {
-                    handle.DangerousRelease();
+                    NativeMemory.Free(overlapped);
                 }
 
                 handle.ReturnSyncWaitEvent(waitEvent);
@@ -740,14 +722,14 @@ namespace System.IO
             }
         }
 
-        private static NativeOverlapped GetNativeOverlappedForAsyncHandle(SafeFileHandle handle, long fileOffset, nint eventHandle)
+        private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, EventWaitHandle waitHandle)
         {
-            NativeOverlapped result = default;
+            NativeOverlapped* result = (NativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(NativeOverlapped));
 
             if (handle.CanSeek)
             {
-                result.OffsetLow = unchecked((int)fileOffset);
-                result.OffsetHigh = (int)(fileOffset >> 32);
+                result->OffsetLow = unchecked((int)fileOffset);
+                result->OffsetHigh = (int)(fileOffset >> 32);
             }
 
             // From https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
@@ -761,7 +743,7 @@ namespace System.IO
             // "If the file handle associated with the completion packet was previously associated with an I/O completion port
             // [...] setting the low-order bit of hEvent in the OVERLAPPED structure prevents the I/O completion
             // from being queued to a completion port."
-            result.EventHandle = eventHandle | 1;
+            result->EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle() | 1;
 
             return result;
         }
