@@ -1734,7 +1734,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
@@ -1860,7 +1860,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
