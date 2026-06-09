@@ -224,7 +224,7 @@ src/tests/build.sh -cross -$arch -$os -p:LibrariesConfiguration=Debug --use-boot
 ./build.sh libs.tests --cross --arch $arch --os $os --use-bootstrap -p:ArchiveTests=true
 
 # A single library's test project can also be built and archived on its own.
-# The resulting zip lands under artifacts/helix/tests.
+# The resulting zip lands under artifacts/helix/tests/.
 ./dotnet.sh build src/libraries/System.Formats.Nrbf/tests -p:CrossBuild=true -p:UseBootstrap=true -p:ArchiveTests=true -p:TargetOS=$os -p:TargetArchitecture=$arch
 ```
 
