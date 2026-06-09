@@ -173,7 +173,10 @@ namespace Microsoft.Interop
             merged.AddRange(accessorAttributes);
             foreach (AttributeData attr in associatedPropertyAttributes)
             {
-                if (accessorAttributeTypes.Add(attr.AttributeClass))
+                // Accessor-level attributes win over property-level ones of the same type.
+                // Otherwise carry over all property-level attributes (including repeated
+                // AllowMultiple attributes such as MarshalUsing).
+                if (!accessorAttributeTypes.Contains(attr.AttributeClass))
                 {
                     merged.Add(attr);
                 }
