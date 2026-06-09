@@ -45,10 +45,11 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite, false));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
         [DynamicDependency(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), typeof(ConnectedStreamConformanceTests))]
-        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS, "Mobile platforms block binding to UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) =>
             base.CopyToAsync_AllDataCopied(byteCount, useAsync);
 
