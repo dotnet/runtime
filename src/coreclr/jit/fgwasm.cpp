@@ -1730,7 +1730,6 @@ PhaseStatus Compiler::WasmSpillRefs()
                             LclVarDsc* const varDsc        = lvaGetDesc(spillSlot);
                             varDsc->lvType                 = def->TypeGet();
                             varDsc->lvPinned               = true;
-                            varDsc->lvImplicitlyReferenced = true;
                             varDsc->lvMustInit             = true;
                             lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
                             spillSlotList->push_back(spillSlot);
