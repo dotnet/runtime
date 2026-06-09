@@ -46,8 +46,10 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataPackageVersion>11.0.0-preview.5.26257.113</SystemReflectionMetadataPackageVersion>
     <SystemReflectionMetadataLoadContextPackageVersion>11.0.0-preview.5.26257.113</SystemReflectionMetadataLoadContextPackageVersion>
     <SystemTextJsonPackageVersion>11.0.0-preview.5.26257.113</SystemTextJsonPackageVersion>
+    <!-- dotnet-hotreload-utils dependencies -->
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>11.0.0-alpha.0.26180.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
     <!-- dotnet-icu dependencies -->
-    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26263.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
+    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26281.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.26208.2</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26208.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
@@ -88,33 +90,33 @@ This file should be imported by eng/Versions.props
     <runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26208.5</runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26208.5</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationlinuxarm64MIBCRuntimePackageVersion>1.0.0-prerelease.26180.1</optimizationlinuxarm64MIBCRuntimePackageVersion>
-    <optimizationlinuxx64MIBCRuntimePackageVersion>1.0.0-prerelease.26180.1</optimizationlinuxx64MIBCRuntimePackageVersion>
-    <optimizationPGOCoreCLRPackageVersion>1.0.0-prerelease.26180.1</optimizationPGOCoreCLRPackageVersion>
-    <optimizationwindows_ntarm64MIBCRuntimePackageVersion>1.0.0-prerelease.26180.1</optimizationwindows_ntarm64MIBCRuntimePackageVersion>
-    <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.26180.1</optimizationwindows_ntx64MIBCRuntimePackageVersion>
-    <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.26180.1</optimizationwindows_ntx86MIBCRuntimePackageVersion>
+    <optimizationlinuxarm64MIBCRuntimePackageVersion>1.0.0-prerelease.26276.2</optimizationlinuxarm64MIBCRuntimePackageVersion>
+    <optimizationlinuxx64MIBCRuntimePackageVersion>1.0.0-prerelease.26276.2</optimizationlinuxx64MIBCRuntimePackageVersion>
+    <optimizationPGOCoreCLRPackageVersion>1.0.0-prerelease.26276.2</optimizationPGOCoreCLRPackageVersion>
+    <optimizationwindows_ntarm64MIBCRuntimePackageVersion>1.0.0-prerelease.26276.2</optimizationwindows_ntarm64MIBCRuntimePackageVersion>
+    <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.26276.2</optimizationwindows_ntx64MIBCRuntimePackageVersion>
+    <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.26276.2</optimizationwindows_ntx86MIBCRuntimePackageVersion>
     <!-- dotnet-runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.26261.1</MicrosoftDotNetCilStripSourcesPackageVersion>
-    <MicrosoftDotnetFuzzingTestDataPackageVersion>11.0.0-beta.26261.1</MicrosoftDotnetFuzzingTestDataPackageVersion>
-    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.26261.1</MicrosoftNETHostModelTestDataPackageVersion>
-    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.26261.1</SystemComponentModelTypeConverterTestDataPackageVersion>
-    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.26261.1</SystemDataCommonTestDataPackageVersion>
-    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.26261.1</SystemDrawingCommonTestDataPackageVersion>
-    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.26261.1</SystemFormatsTarTestDataPackageVersion>
-    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.26261.1</SystemIOCompressionTestDataPackageVersion>
-    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.26261.1</SystemIOPackagingTestDataPackageVersion>
-    <SystemNetTestDataPackageVersion>11.0.0-beta.26261.1</SystemNetTestDataPackageVersion>
-    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.26261.1</SystemPrivateRuntimeUnicodeDataPackageVersion>
-    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.26261.1</SystemRuntimeNumericsTestDataPackageVersion>
-    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.26261.1</SystemRuntimeTimeZoneDataPackageVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.26261.1</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
-    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.26261.1</SystemTextRegularExpressionsTestDataPackageVersion>
-    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.26261.1</SystemWindowsExtensionsTestDataPackageVersion>
+    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.26302.1</MicrosoftDotNetCilStripSourcesPackageVersion>
+    <MicrosoftDotnetFuzzingTestDataPackageVersion>11.0.0-beta.26302.1</MicrosoftDotnetFuzzingTestDataPackageVersion>
+    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.26302.1</MicrosoftNETHostModelTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.26302.1</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.26302.1</SystemDataCommonTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.26302.1</SystemDrawingCommonTestDataPackageVersion>
+    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.26302.1</SystemFormatsTarTestDataPackageVersion>
+    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.26302.1</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.26302.1</SystemIOPackagingTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>11.0.0-beta.26302.1</SystemNetTestDataPackageVersion>
+    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.26302.1</SystemPrivateRuntimeUnicodeDataPackageVersion>
+    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.26302.1</SystemRuntimeNumericsTestDataPackageVersion>
+    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.26302.1</SystemRuntimeTimeZoneDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.26302.1</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.26302.1</SystemTextRegularExpressionsTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.26302.1</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet-xharness dependencies -->
-    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessCLIPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.26204.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
+    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessCLIPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.26279.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
   </PropertyGroup>
   <!--Property group for alternate package version names-->
   <PropertyGroup>
@@ -159,6 +161,8 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataVersion>$(SystemReflectionMetadataPackageVersion)</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>$(SystemReflectionMetadataLoadContextPackageVersion)</SystemReflectionMetadataLoadContextVersion>
     <SystemTextJsonVersion>$(SystemTextJsonPackageVersion)</SystemTextJsonVersion>
+    <!-- dotnet-hotreload-utils dependencies -->
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion)</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>$(MicrosoftNETCoreRuntimeICUTransportPackageVersion)</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- dotnet-llvm-project dependencies -->

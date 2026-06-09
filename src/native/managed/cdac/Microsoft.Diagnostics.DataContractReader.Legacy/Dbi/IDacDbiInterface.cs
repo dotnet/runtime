@@ -24,6 +24,26 @@ public struct COR_TYPEID
     public ulong token2;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct FieldData
+{
+    public uint m_fldMetadataToken;
+    public Interop.BOOL m_fFldStorageAvailable;
+
+    public byte m_fFldIsStatic;
+    public byte m_fFldIsRVA;
+    public byte m_fFldIsTLS;
+    public byte m_fFldIsPrimitive;
+    public byte m_fFldIsCollectibleStatic;
+
+    public ulong m_fldInstanceOffset;
+    public ulong m_pFldStaticAddress;
+    public nuint m_fldSignatureCache;
+    public uint m_fldSignatureCacheSize;
+
+    public ulong m_vmFieldDesc;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -280,6 +300,13 @@ public struct DebuggerIPCE_ExpandedTypeData
     [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_TypeHandle
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct ArgInfoList
+{
+    public DebuggerIPCE_BasicTypeData* m_pList;
+    public int m_nEntries;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -370,7 +397,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
+    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded);
 
     [PreserveSig]
     int GetAddressType(ulong address, int* pRetVal);
@@ -383,9 +410,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
-
-    [PreserveSig]
-    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();
@@ -532,10 +556,10 @@ public unsafe partial interface IDacDbiInterface
     int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetClassInfo(ulong thExact, nint pData);
+    int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
+    int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);
@@ -550,10 +574,11 @@ public unsafe partial interface IDacDbiInterface
     int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
 
     [PreserveSig]
-    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
+    int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
@@ -565,7 +590,8 @@ public unsafe partial interface IDacDbiInterface
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
+    int EnumerateTypeHandleParams(ulong vmTypeHandle,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);
@@ -611,9 +637,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal);
 
     [PreserveSig]
     int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal);
@@ -703,13 +726,10 @@ public unsafe partial interface IDacDbiInterface
     int IsDelegate(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetDelegateType(ulong delegateObject, int* delegateType);
+    int GetDelegateFunctionData(ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
 
     [PreserveSig]
-    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
-
-    [PreserveSig]
-    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
+    int GetDelegateTargetObject(ulong delegateObject, ulong* ppTargetObj);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

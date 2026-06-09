@@ -7679,6 +7679,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // because we won't be able to use ldar/star
         return false;
     }
+
+    // TODO-SVE: Create an addressable node containing an index scaled by VL or PL
+    if (parent->TypeIs(TYP_MASK, TYP_SIMD))
+    {
+        return false;
+    }
 #endif
 
     GenTree* base   = nullptr;
@@ -10146,16 +10152,21 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
     assert(!blk->OperIsInitBlkOp());
-    assert(!blk->IsAddressNotOnHeap(m_compiler));
     assert(!blk->IsVolatile());
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
+
+    // Capture whether the original block store could throw (e.g. NRE from a null address).
 
     GenTree* dest = blk->Addr();
     GenTree* data = blk->Data();
 
+    bool destMayFault = blk->IndirMayFault(m_compiler);
+    bool dataMayFault;
+
     if (data->OperIs(GT_IND))
     {
         // Drop GT_IND nodes
+        dataMayFault = data->IndirMayFault(m_compiler);
         BlockRange().Remove(data);
         data = data->AsIndir()->Addr();
     }
@@ -10164,6 +10175,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
         // Convert local to LCL_ADDR
+        dataMayFault       = false;
         unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
         data->ChangeOper(GT_LCL_ADDR);
         data->ChangeType(TYP_I_IMPL);
@@ -10228,8 +10240,16 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LowerNode(nullcheck);
         }
     };
-    wrapWithNullcheck(dest);
-    wrapWithNullcheck(data);
+
+    if (destMayFault)
+    {
+        wrapWithNullcheck(dest);
+    }
+
+    if (dataMayFault)
+    {
+        wrapWithNullcheck(data);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -10271,21 +10291,26 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     const unsigned unrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 #endif
 
+#if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
         // No write barriers are needed if the destination is known to be outside of the GC heap.
         // If the layout contains a byref, then we know it must live on the stack.
         doCpObj = false;
-#if !defined(JIT32_GCENCODER) && !defined(TARGET_WASM)
+#if !defined(TARGET_WASM)
         if (size <= unrollLimit)
         {
             // If the size is small enough to unroll then we need to mark the block as non-interruptible
             // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER, so
+            // on that target we keep doCpObj=true above and stay on the GC-aware CpObj path; the lowering
+            // heuristics in TryDecomposeBlockStoreAsIndirs then choose between per-slot decomposition and
+            // the bulk write-barrier helper.
             blkNode->gtBlkOpGcUnsafe = true;
         }
 #endif
     }
+#endif // !JIT32_GCENCODER
 
     if (doCpObj)
     {
@@ -10327,6 +10352,96 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     LowerBlockStoreAsHelperCall(blkNode);
 #endif // TARGET_WASM
 }
+
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// LowerInitBlockStore: Shared lowering of a block init store (memset).
+//
+// Arguments:
+//    blkNode - The block store node to lower. Must be an init (not copy).
+//
+void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIsInitBlkOp());
+
+#ifdef TARGET_XARCH
+    TryCreateAddrMode(blkNode->Addr(), false, blkNode);
+#endif
+
+    GenTree*       dstAddr = blkNode->Addr();
+    GenTree*       src     = blkNode->Data();
+    const unsigned size    = blkNode->Size();
+
+    if (src->OperIs(GT_INIT_VAL))
+    {
+        src->SetContained();
+        src = src->AsUnOp()->gtGetOp1();
+    }
+
+#ifdef TARGET_ARM64
+    // On arm64 SIMD stores guarantee 8-byte atomicity when data is 8-byte aligned
+    const bool canUseSimd = true;
+#else
+    const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences();
+#endif
+
+    if (src->OperIs(GT_CNS_INT) && (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd)))
+    {
+        // The fill value of an initblk is interpreted to hold a value of (unsigned int8)
+        ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
+
+        bool useSimdFill = false;
+
+#ifdef TARGET_XARCH
+        useSimdFill = canUseSimd && (size >= XMM_REGSIZE_BYTES);
+#endif
+
+        if (useSimdFill)
+        {
+            // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register
+            // with a fill value just to handle the remainder when we can do that with
+            // an overlapped SIMD load).
+            src->SetContained();
+        }
+        else if (fill == 0)
+        {
+#if FEATURE_HAS_ZERO_REG
+            // We can use the hardware zero register as the contained source.
+            src->SetContained();
+#endif
+        }
+#ifdef TARGET_64BIT
+        else if (size >= REGSIZE_BYTES)
+        {
+            fill *= 0x0101010101010101LL;
+            src->gtType = TYP_LONG;
+        }
+#endif
+        else
+        {
+            fill *= 0x01010101;
+        }
+
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+        src->AsIntCon()->SetIconValue(fill);
+        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        return;
+    }
+
+    if (blkNode->IsZeroingGcPointersOnHeap())
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#if FEATURE_HAS_ZERO_REG
+        // We can use the hardware zero register as the contained source.
+        src->SetContained();
+#endif
+    }
+    else
+    {
+        LowerBlockStoreAsHelperCall(blkNode);
+    }
+}
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
@@ -12164,7 +12279,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
-        LowerBlockStore(blkNode);
+        LowerInitBlockStore(blkNode);
     }
     else
     {

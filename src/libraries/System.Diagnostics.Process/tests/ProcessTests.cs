@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -34,6 +35,7 @@ namespace System.Diagnostics.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingProcess();

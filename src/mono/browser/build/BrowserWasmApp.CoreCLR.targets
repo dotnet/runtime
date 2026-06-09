@@ -91,6 +91,7 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 

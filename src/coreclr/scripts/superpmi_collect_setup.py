@@ -44,7 +44,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
-parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2, corelib)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
@@ -55,6 +55,8 @@ parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 parser.add_argument("-input_directory", help="Directory containing assemblies which SuperPMI will use for collection (for pmi/crossgen2 collections)")
 parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi/crossgen2 collections)")
 parser.add_argument("-public_queues", action="store_true", help="Whether to set up for public queues (or internal ones, if not specified)")
+parser.add_argument("-target_os", help="Target OS for cross-targeting crossgen2 collections (e.g., 'browser' for wasm). Defaults to the host platform.")
+parser.add_argument("-target_arch", help="Target architecture for cross-targeting crossgen2 collections (e.g., 'wasm'). Defaults to the host architecture.")
 
 is_windows = platform.system() == "Windows"
 
@@ -278,6 +280,18 @@ def setup_args(args):
                         "public_queues",
                         lambda unused: True,
                         "Whether to use public queues (or, if not specified, internal queues)")
+
+    coreclr_args.verify(args,
+                        "target_os",
+                        lambda unused: True,
+                        "Unable to set target_os",
+                        modify_arg=lambda target_os: target_os if target_os else coreclr_args.platform)
+
+    coreclr_args.verify(args,
+                        "target_arch",
+                        lambda unused: True,
+                        "Unable to set target_arch",
+                        modify_arg=lambda target_arch: target_arch if target_arch else coreclr_args.arch)
     return coreclr_args
 
 
@@ -511,6 +525,16 @@ def main(main_args):
       jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
       print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
       copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
+    elif coreclr_args.collection_name == "corelib":
+      # For the corelib crossgen2 collection (e.g. wasm), use the release Core_Root
+      # for the host (crossgen2, framework refs) and overlay the checked JIT so that
+      # SPMI collections include JIT asserts.  System.Private.CoreLib.dll itself is
+      # release-built (it's what crossgen2 consumes).
+      print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.target_os, coreclr_args.arch, coreclr_args.target_arch)
+      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
+      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     else:
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
@@ -629,6 +653,24 @@ def main(main_args):
             if coreclr_args.collection_type != "nativeaot":
                 raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
 
+        if coreclr_args.collection_name == "corelib":
+            # corelib is a single-assembly crossgen2 collection over a pre-built
+            # System.Private.CoreLib.dll. The YAML routes InputDirectory to:
+            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release/IL)
+            #     for wasm cross-target collections, or
+            #   - the host release Core_Root for non-cross-target collections.
+            # Build a custom one-file input directory so the partitioning logic produces
+            # exactly one helix partition. The references crossgen2 needs are resolved
+            # out of the release Core_Root that's part of the correlation payload (see
+            # run_crossgen2 in superpmi.py, which passes -r:<core_root>\System.*.dll etc.).
+            corelib_src = os.path.join(coreclr_args.input_directory, "System.Private.CoreLib.dll")
+            if not os.path.isfile(corelib_src):
+                raise RuntimeError("Cannot find System.Private.CoreLib.dll at " + corelib_src)
+            corelib_input_dir = os.path.join(workitem_payload_directory, "corelib_input")
+            os.makedirs(corelib_input_dir, exist_ok=True)
+            copy_files(coreclr_args.input_directory, corelib_input_dir, [corelib_src])
+            coreclr_args.input_directory = corelib_input_dir
+
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
 
@@ -642,6 +684,8 @@ def main(main_args):
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
     set_pipeline_variable("MchFileTag", coreclr_args.mch_file_tag)
+    set_pipeline_variable("TargetOS", coreclr_args.target_os)
+    set_pipeline_variable("TargetArchitecture", coreclr_args.target_arch)
 
 
 ################################################################################

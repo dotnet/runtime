@@ -2575,12 +2575,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 {
                     *resultVN = funcApp.GetArg(0);
                 }
-                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
-                //
-                else if (VNFuncIsComparison(funcApp.GetFunc()))
-                {
-                    *resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
-                }
             }
         }
 
@@ -7075,6 +7069,30 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
+            // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+#if defined(FEATURE_HW_INTRINSICS)
+            NamedIntrinsic id;
+            unsigned       simdSize;
+            var_types      simdBaseType;
+            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
+            {
+                if (HWIntrinsicInfo::ReturnsBoolean(id))
+                {
+                    // A boolean [0, 1]
+                    return VNVisit::Continue;
+                }
+
+                if (HWIntrinsicInfo::ReturnsScalarT(id))
+                {
+                    // We are extracting a value of the base types width and sign
+                    if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
+                    {
+                        return VNVisit::Continue;
+                    }
+                }
+            }
+#endif // FEATURE_HW_INTRINSICS
+
             switch (funcApp.GetFunc())
             {
                 case VNF_GT:
@@ -7088,35 +7106,81 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_LE_UN:
                 case VNF_LT_UN:
                 case VNF_MDArrLowerBound:
-#ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_XARCH
+                {
+                    return VNVisit::Continue;
+                }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+                case VNF_HWI_Vector256_ExtractMostSignificantBits:
+                case VNF_HWI_Vector512_ExtractMostSignificantBits:
+                case VNF_HWI_X86Base_MoveMask:
+                case VNF_HWI_AVX_MoveMask:
+                case VNF_HWI_AVX2_MoveMask:
+                case VNF_HWI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+                case VNF_HWI_Vector64_ExtractMostSignificantBits:
+#endif
+                case VNF_HWI_Vector128_ExtractMostSignificantBits:
+                {
+                    // We have 1 bit per element, remaining upper bits are 0
+
+                    var_types simdBaseType;
+                    uint32_t  simdSize = GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                    size_t elementSize  = genTypeSize(simdBaseType);
+                    size_t elementCount = simdSize / elementSize;
+
+                    if (elementCount <= 16)
+                    {
+                        return VNVisit::Continue;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
                 case VNF_HWI_AVX2_LeadingZeroCount:
                 case VNF_HWI_AVX2_TrailingZeroCount:
                 case VNF_HWI_AVX2_X64_LeadingZeroCount:
                 case VNF_HWI_AVX2_X64_TrailingZeroCount:
-                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
-                case VNF_HWI_AdvSimd_PopCount:
-                case VNF_HWI_AdvSimd_LeadingZeroCount:
-                case VNF_HWI_AdvSimd_LeadingSignCount:
                 case VNF_HWI_ArmBase_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                    return VNVisit::Continue;
+#else
+#error Unsupported platform
 #endif
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
+                    // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
                 case VNF_XOR:
+                {
                     if (IsVNLog2(vn))
                     {
                         return VNVisit::Continue;
                     }
                     break;
-
+                }
 #endif // FEATURE_HW_INTRINSICS
 
+                case VNF_LeadingZeroCount:
+                case VNF_PopCount:
+                case VNF_TrailingZeroCount:
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
                 default:
+                {
                     break;
+                }
             }
         }
         return VNVisit::Abort;
@@ -9792,12 +9856,7 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-
-#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
     assert(m_compiler->IsMathIntrinsic(gtMathFN) || m_compiler->IsBitCountingIntrinsic(gtMathFN));
-#else
-    assert(m_compiler->IsMathIntrinsic(gtMathFN));
-#endif
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
@@ -10553,28 +10612,47 @@ bool ValueNumStore::IsVNHWIntrinsicFunc(
         return false;
     }
 
-    assert(funcApp->GetArity() != 0);
-    VNFuncApp simdType;
-
-    if (!GetVNFunc(funcApp->GetArg(funcApp->GetArity() - 1), &simdType))
-    {
-        return false;
-    }
-
-    assert(simdType.FuncIs(VNF_SimdType));
-    assert(simdType.GetArity() == 2);
-    assert(IsVNConstant(simdType.GetArg(0)));
-    assert(IsVNConstant(simdType.GetArg(1)));
-
-    *intrinsicId  = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
-    *simdSize     = static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    *intrinsicId = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
+    *simdSize    = GetVNHWIntrinsicSizeAndBaseType(*funcApp, simdBaseType);
 
     return true;
 #else
     return false;
 #endif // FEATURE_HW_INTRINSICS
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------
+// GetVNHWIntrinsicSizeAndBaseType: Gets the simdSize and simdBaseType of a HWIntrinsic funcApp
+//
+// Arguments:
+//    funcApp         - The function application
+//    simdBaseType    - The simd base type for the intrinsic.
+//
+// Return Value:
+//    The simd size of the intrinsic.
+//
+uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType)
+{
+    assert((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST));
+    assert(simdBaseType != nullptr);
+
+    assert(funcApp.GetArity() != 0);
+    VNFuncApp simdType;
+
+    // All HWIntrinsic funcApps must encode the simdSize and baseType
+    bool succeeded = GetVNFunc(funcApp.GetArg(funcApp.GetArity() - 1), &simdType);
+    assert(succeeded);
+
+    assert(simdType.FuncIs(VNF_SimdType));
+    assert(simdType.GetArity() == 2);
+    assert(IsVNConstant(simdType.GetArg(0)));
+    assert(IsVNConstant(simdType.GetArg(1)));
+
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    return static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
+}
+#endif // FEATURE_HW_INTRINSICS
 
 bool ValueNumStore::VNIsValid(ValueNum vn)
 {
@@ -13608,6 +13686,10 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
+    }
+    else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
+    {
+        intrinsic->gtVNPair = vnStore->VNPUniqueWithExc(intrinsic->TypeGet(), arg0VNPx);
     }
     else
     {

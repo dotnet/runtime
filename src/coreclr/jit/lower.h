@@ -436,10 +436,10 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
-    void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerInitBlockStore(GenTreeBlk* blkNode);
     void     LowerCopyBlockStore(GenTreeBlk* blkNode);
     bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);

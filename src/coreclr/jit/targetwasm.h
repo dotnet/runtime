@@ -29,6 +29,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (long/double).
 #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register
 #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HFA or 2 doubles)

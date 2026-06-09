@@ -973,6 +973,32 @@ int LinearScan::BuildNode(GenTree* tree)
                     break;
                 }
 
+                case NI_PRIMITIVE_PopCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
+
+                    // We need a SIMD register to execute popcnt
+                    buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+
+                    BuildUse(tree->gtGetOp1());
+                    buildInternalRegisterUses();
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
+
+                    BuildUse(tree->gtGetOp1());
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
                 default:
                     unreached();
             }
