@@ -66,6 +66,14 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
         /// <remarks>
         /// <para>
+        /// This API opens the handle immediately. In contrast, <see cref="Process.GetProcessById(int)"/> only checks whether
+        /// the process is currently running; opening the process handle is deferred until <see cref="Process.SafeHandle"/> is accessed.
+        /// </para>
+        /// <para>
+        /// On Windows, this API requests query/synchronize/terminate rights, while <see cref="Process.SafeHandle"/> requests
+        /// broader rights for interop scenarios.
+        /// </para>
+        /// <para>
         /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
         /// </para>
         /// <para>
@@ -98,6 +106,14 @@ namespace Microsoft.Win32.SafeHandles
         /// <remarks>
         /// <para>
         /// This method does not throw when the process does not exist. Instead, it returns <see langword="false"/>.
+        /// </para>
+        /// <para>
+        /// This API opens the handle immediately. In contrast, <see cref="Process.TryGetProcessById(int, out Process)"/> only checks
+        /// whether the process is currently running; opening the process handle is deferred until <see cref="Process.SafeHandle"/> is accessed.
+        /// </para>
+        /// <para>
+        /// On Windows, this API requests query/synchronize/terminate rights, while <see cref="Process.SafeHandle"/> requests
+        /// broader rights for interop scenarios.
         /// </para>
         /// <para>
         /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
