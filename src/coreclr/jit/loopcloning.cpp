@@ -1189,10 +1189,11 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     NaturalLoopIterInfo* iterInfo = context->GetLoopIterInfo(loop->GetIndex());
-    // Note we see cases where the test oper is NE (array.Len) which we could handle
-    // with some extra care.
+    // Loop tests we can reason about for cloning: ordered relops (LT/LE/GT/GE) and
+    // NE limits (treated as LT/GT-equivalent when stride is exactly +/-1; see
+    // NaturalLoopIterInfo::IsIncreasingLoop/IsDecreasingLoop).
     //
-    if (!GenTree::StaticOperIs(iterInfo->TestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
+    if (!GenTree::StaticOperIs(iterInfo->TestOper(), GT_LT, GT_LE, GT_GT, GT_GE, GT_NE))
     {
         // We can't reason about how this loop iterates
         return false;
@@ -1312,8 +1313,17 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
 
         // TestOper() returns the stays-in-loop relop in IV-on-lhs form, already
-        // adjusted for IsReversed and ExitedOnTrue.
-        LC_Condition zeroTrip(iterInfo->TestOper(), LC_Expr(initIdent), LC_Expr(limitIdent),
+        // adjusted for IsReversed and ExitedOnTrue. For GT_NE we substitute an
+        // ordered relop (LT for increasing, GT for decreasing) so that the
+        // runtime guard strictly orders init and limit. Using the raw "init !=
+        // limit" form would let a misordered init pass while the fast clone
+        // (with bounds checks removed) wraps the IV through the type.
+        genTreeOps zeroTripOp = iterInfo->TestOper();
+        if (zeroTripOp == GT_NE)
+        {
+            zeroTripOp = iterInfo->IsIncreasingLoop() ? GT_LT : GT_GT;
+        }
+        LC_Condition zeroTrip(zeroTripOp, LC_Expr(initIdent), LC_Expr(limitIdent),
                               iterInfo->TestTree->IsUnsigned());
         context->EnsureConditions(loop->GetIndex())->Push(zeroTrip);
         JITDUMP("Added zero-trip guard cloning condition\n");
@@ -1427,19 +1437,25 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // GT_LT loop test: (start < end) ==> (end <= arrLen)
     // GT_LE loop test: (start <= end) ==> (end < arrLen)
     //
+    // GT_NE loop test (stride = +/-1; see IsIncreasing/DecreasingLoop):
+    //   For increasing: visited indices are [init..end-1] => guard end <= arrLen (same as LT)
+    //   For decreasing: visited indices are [end+1..init] => guard end < arrLen (same as GT)
+    //
     // Decreasing loops
     // Always check if iter var is less than array length.
     genTreeOps opLimitCondition;
     switch (iterInfo->TestOper())
     {
         case GT_LT:
-
             opLimitCondition = GT_LE;
             break;
         case GT_LE:
         case GT_GE:
         case GT_GT:
             opLimitCondition = GT_LT;
+            break;
+        case GT_NE:
+            opLimitCondition = isIncreasingLoop ? GT_LE : GT_LT;
             break;
         default:
             unreached();
@@ -1494,6 +1510,54 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 assert(!"Unknown opt type");
                 return false;
         }
+    }
+
+    // For GT_NE loops (with stride exactly +/-1; see IsIncreasing/DecreasingLoop),
+    // the cloned fast path preserves the "i != limit" exit test. If the IV starts
+    // past the limit, the loop would wrap around the type and access arbitrary
+    // memory because the fast path has its bounds checks removed. Guard the fast
+    // path with an ordered "init RELOP limit" condition (init <= limit for
+    // increasing, init >= limit for decreasing) so that a misordered init falls
+    // back to the slow path with bounds checks.
+    if (iterInfo->TestOper() == GT_NE)
+    {
+        LC_Ident neInitIdent;
+        if (iterInfo->HasConstInit)
+        {
+            assert(iterInfo->ConstInitValue >= 0);
+            neInitIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+        }
+        else
+        {
+            const unsigned initLcl = iterInfo->IterVar;
+            assert(genActualTypeIsInt(lvaGetDesc(initLcl)));
+            neInitIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
+        }
+
+        LC_Ident neLimitIdent;
+        if (iterInfo->HasConstLimit)
+        {
+            const int limit = iterInfo->ConstLimit();
+            assert(limit >= 0);
+            neLimitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+        }
+        else if (iterInfo->HasInvariantLocalLimit)
+        {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            assert(genActualTypeIsInt(lvaGetDesc(limitLcl)));
+            neLimitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
+        }
+        else
+        {
+            assert(iterInfo->HasArrayLengthLimit);
+            assert(limitArrIndex != nullptr);
+            neLimitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+        }
+
+        const genTreeOps cmpOp = isIncreasingLoop ? GT_LE : GT_GE;
+        LC_Condition initLimitCond(cmpOp, LC_Expr(neInitIdent), LC_Expr(neLimitIdent));
+        context->EnsureConditions(loop->GetIndex())->Push(initLimitCond);
+        JITDUMP("Added NE init-vs-limit cloning condition\n");
     }
 
     JITDUMP("Conditions: ");
