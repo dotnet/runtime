@@ -22,14 +22,14 @@ namespace System.Security.Cryptography
         /// A constant value indicating that the PSS salt length should be the maximum allowable
         /// </summary>
         /// <remarks>A constant is used to define the upper limit for the salt length in PSS-based
-        /// cryptographic operations. The maximum length is determined by the hash algorithm's output size.</remarks>
+        /// cryptographic operations. The maximum length is determined by the hash algorithm's output size and the size of the RSA key used.</remarks>
         public const int PssSaltLengthMax = RsaPaddingProcessor.PssSaltLengthMax;
 
         /// <summary>
         /// Specifies the salt length to use for PSS padding. This property is only relevant when the <see cref="Mode"/> is <see cref="RSASignaturePaddingMode.Pss"/>.
         /// </summary>
         /// <remarks>
-        /// This value must either be a positive number or one of the special constants <see cref="PssSaltLengthIsHashLength"/> or <see cref="PssSaltLengthMax"/>.
+        /// This value must either be a non-negative number or one of the special constants <see cref="PssSaltLengthIsHashLength"/> or <see cref="PssSaltLengthMax"/>.
         /// </remarks>
         public int PssSaltLength { get; }
 

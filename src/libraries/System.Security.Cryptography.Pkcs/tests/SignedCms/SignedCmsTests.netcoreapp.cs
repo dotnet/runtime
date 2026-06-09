@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
     public static partial class SignedCmsTests
     {
-        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+        private static bool AreCustomPssSaltLengthsSupported => PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
 
         [Fact]
         public static void CmsSignerKeyIsNullByDefault()

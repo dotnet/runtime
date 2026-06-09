@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Assert.NotThrows
             cms.CheckHash();
 
-            // PSS signature with parameters are only supported on .NET 10 or later, but not on all platforms.
+            // PSS signature with parameters are only supported on .NET 11 or later, but not on all platforms.
             if (PlatformSupport.AreCustomSaltLengthsSupportedWithPss)
             {
                 cms.CheckSignature(true);

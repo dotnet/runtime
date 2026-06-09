@@ -357,7 +357,6 @@ namespace System.Security.Cryptography
 
                 // 11. Set the "unused" bits in the leftmost byte of maskedDB to 0.
                 int unusedBits = 8 * emLen - emBits;
-
                 if (unusedBits != 0)
                 {
                     byte mask = (byte)(0xFF >> unusedBits);
@@ -371,6 +370,7 @@ namespace System.Security.Cryptography
 
         internal static unsafe bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize, int saltLength)
         {
+            int sLen = saltLength;
             int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.2
@@ -386,7 +386,7 @@ namespace System.Security.Cryptography
             Debug.Assert(em.Length >= emLen);
 
             // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
-            if (emLen < hLen + saltLength + 2)
+            if (emLen < hLen + sLen + 2)
             {
                 return false;
             }
@@ -435,7 +435,7 @@ namespace System.Security.Cryptography
                     //
                     // Since signature verification is a public key operation there's no need to
                     // use fixed time equality checking here.
-                    for (int i = emLen - hLen - saltLength - 2 - 1; i >= 0; --i)
+                    for (int i = emLen - hLen - sLen - 2 - 1; i >= 0; --i)
                     {
                         if (dbMask[i] != 0)
                         {
@@ -445,13 +445,13 @@ namespace System.Security.Cryptography
 
                     // 10 ("b") If the octet at position emLen - hLen - sLen - 1 (under a 1-indexed scheme)
                     // is not 0x01, output "inconsistent" and stop.
-                    if (dbMask[emLen - hLen - saltLength - 2] != 0x01)
+                    if (dbMask[emLen - hLen - sLen - 2] != 0x01)
                     {
                         return false;
                     }
 
                     // 11. Let salt be the last sLen octets of DB.
-                    ReadOnlySpan<byte> salt = dbMask.Slice(dbMask.Length - saltLength);
+                    ReadOnlySpan<byte> salt = dbMask.Slice(dbMask.Length - sLen);
 
                     // 12/13. Let H' = Hash(eight zeros || mHash || salt)
                     hasher.AppendData(EightZeros);

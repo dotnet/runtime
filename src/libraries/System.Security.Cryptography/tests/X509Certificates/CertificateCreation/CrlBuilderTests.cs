@@ -1774,7 +1774,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
         {
             bool signatureValid;
 
-            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss ||certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss || certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
             {
                 using RSA rsa = cert.GetRSAPublicKey();
                 signatureValid = rsa.VerifyData(data, signature, hashAlgorithm, GetRsaPadding(certKind));

@@ -86,7 +86,8 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         internal static int CalculatePssSaltLength(int pssSaltLength, int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
         {
-            int emLen = BytesRequiredForBitCount(rsaKeySizeInBits);
+            // Using rsaKeySizeInBits to align with EncodePss and DecodePss
+            int emLen = BytesRequiredForBitCount(rsaKeySizeInBits - 1);
             int hLen = HashLength(hashAlgorithm);
             return pssSaltLength switch
             {
