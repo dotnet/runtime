@@ -130,9 +130,11 @@ struct LoaderHeapFreeBlock
         void                  *m_pBlockAddress; // Virtual address of the block
 
 #ifndef DACCESS_COMPILE
-        static void InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap);
-        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap);
+        static void InsertFreeBlock(void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap);
+        static void *AllocFromFreeList(size_t dwSize, UnlockedLoaderHeap *pHeap);
     private:
+        static LoaderHeapFreeBlock **GetFreeListHead(UnlockedLoaderHeap *pHeap, size_t dwSize);
+        static void *AllocFromLargeList(size_t dwSize, UnlockedLoaderHeap *pHeap);
         // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
         static BOOL MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap);
 #endif // DACCESS_COMPILE
