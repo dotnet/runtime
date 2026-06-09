@@ -476,9 +476,7 @@ class AsyncTransformation
                                             const CallDefinitionInfo& callDefInfo,
                                             const ContinuationLayout& layout,
                                             BasicBlock*               storeResultBB);
-    void        ClearReturnValueOnResumption(const ReturnInfo* retInfo,
-                                             unsigned          resultOffset,
-                                             BasicBlock*       storeResultBB);
+    void ClearReturnValueOnResumption(const ReturnInfo* retInfo, unsigned resultOffset, BasicBlock* storeResultBB);
 
     GenTreeIndir*    LoadFromOffset(GenTree*     base,
                                     unsigned     offset,
