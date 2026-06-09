@@ -1565,7 +1565,14 @@ namespace System.Runtime.CompilerServices
                 return null;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void EmitAsyncCallstack<T>(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, ref T captureCallstack)
+                where T : ICaptureAsyncCallstack, allows ref struct
+            {
+                EmitAsyncCallstack(context, currentTimestamp, delta, eventID, id, 0, ref captureCallstack);
+            }
+
+            private static void EmitAsyncCallstack<T>(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, byte continuationIndex, ref T captureCallstack)
                 where T : ICaptureAsyncCallstack, allows ref struct
             {
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
@@ -1573,12 +1580,12 @@ namespace System.Runtime.CompilerServices
                 // Max callstack data that can fit in the buffer after flush.
                 int maxCallstackBytes = Math.Min(byte.MaxValue * T.MaxAsyncMethodFrameSize, eventBuffer.Data.Length);
 
-                // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
-                const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
+                // Static callstack payload: type (1) + callstackId (1) + continuationIndex (1) + frameCount (1) + id (max 10 bytes compressed).
+                const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
 
                 if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out Serializer.AsyncEventHeaderRollbackData rollbackData))
                 {
-                    int frameCountOffset = CallstackHeader(ref eventBuffer, id, T.CallstackType, 0);
+                    int frameCountOffset = CallstackHeader(ref eventBuffer, id, T.CallstackType, continuationIndex, 0);
 
                     byte[] buffer = eventBuffer.Data;
                     int startIndex = eventBuffer.Index;
@@ -1602,7 +1609,7 @@ namespace System.Runtime.CompilerServices
                             // Write the callstack again.
                             if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index))
                             {
-                                CallstackHeader(ref eventBuffer, id, T.CallstackType, count);
+                                CallstackHeader(ref eventBuffer, id, T.CallstackType, continuationIndex, count);
                                 CallstackData(ref eventBuffer, rentedArray, index);
                             }
 
@@ -1623,10 +1630,10 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte callstackFrameCount)
+            private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte continuationIndex, byte callstackFrameCount)
             {
-                // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + frameCount (1 byte) + id (max 10 bytes compressed).
-                const int MaxCallstackHeaderSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
+                // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + continuationIndex (1 byte) + frameCount (1 byte) + id (max 10 bytes compressed).
+                const int MaxCallstackHeaderSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
 
                 ref int index = ref eventBuffer.Index;
 
@@ -1635,6 +1642,7 @@ namespace System.Runtime.CompilerServices
 
                 callstackHeaderSpan[spanIndex++] = (byte)type;
                 callstackHeaderSpan[spanIndex++] = 0; // Reserved callstack ID for future callstack interning.
+                callstackHeaderSpan[spanIndex++] = continuationIndex;
 
                 int frameCountOffset = index + spanIndex;
                 callstackHeaderSpan[spanIndex++] = callstackFrameCount;

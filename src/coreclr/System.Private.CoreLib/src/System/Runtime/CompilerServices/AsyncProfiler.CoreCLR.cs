@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
                         EmitEvent(context, currentTimestamp, id);
                     }
 
-                    if (IsEnabled.CreateAsyncCallstackEvent(eventKeywords))
+                    if (IsEnabled.CreateAsyncCallstackEvent(eventKeywords) && nextContinuation != null)
                     {
                         AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.CreateAsyncCallstack, id, nextContinuation);
                     }
@@ -75,7 +75,8 @@ namespace System.Runtime.CompilerServices
 
                     if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, id, info.NextContinuation);
+                        byte wrapperIndex = (byte)(info.AsyncProfilerInfo.ContinuationIndex & ContinuationWrapper.COUNT_MASK);
+                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, wrapperIndex, info.NextContinuation);
                     }
                 }
             }
@@ -94,7 +95,7 @@ namespace System.Runtime.CompilerServices
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
 
-                    if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords))
+                    if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords) && nextContinuation != null)
                     {
                         AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.SuspendAsyncCallstack, GetId(ref info), nextContinuation);
                     }
@@ -456,21 +457,18 @@ namespace System.Runtime.CompilerServices
                 public static int MaxAsyncMethodFrameSize => MaxRuntimeAsyncMethodFrameSize;
             }
 
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
+            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
             {
                 CaptureRuntimeAsyncCallstackState state = default;
                 state.Continuation = asyncCallstack;
-                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.ResumeAsyncCallstack, id, ref state);
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, 0, ref state);
             }
 
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
+            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, byte continuationIndex, Continuation? asyncCallstack)
             {
-                if (asyncCallstack != null)
-                {
-                    CaptureRuntimeAsyncCallstackState state = default;
-                    state.Continuation = asyncCallstack;
-                    EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, ref state);
-                }
+                CaptureRuntimeAsyncCallstackState state = default;
+                state.Continuation = asyncCallstack;
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, continuationIndex, ref state);
             }
 
             private static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
