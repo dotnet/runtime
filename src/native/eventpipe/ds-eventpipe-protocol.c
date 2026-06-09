@@ -871,7 +871,7 @@ eventpipe_protocol_helper_stop_tracing (
 		ep_raise_error ();
 	}
 
-	ep_disable (payload->session_id);
+	ep_disable (ep_rt_val_uint64_t((uint64_t)payload->session_id));
 
 	eventpipe_protocol_helper_send_stop_tracing_success (stream, payload->session_id);
 	ds_ipc_stream_flush (stream);
