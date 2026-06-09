@@ -38,7 +38,7 @@ struct FloatTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0f / 0.0f on x86/x64 has
     //    different binary representation (0xffc00000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7fc00000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7fc00000).
 
     static float NaN()
     {
@@ -65,7 +65,7 @@ struct DoubleTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0 / 0.0 on x86/x64 has
     //    different binary representation (0xfff8000000000000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7ff8000000000000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7ff8000000000000).
 
     static double NaN()
     {
@@ -88,7 +88,7 @@ struct DoubleTraits
 // FpAdd: Computes value1 + value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 + value2  - Otherwise
 //
 // Notes:
@@ -124,7 +124,7 @@ TFp FpAdd(TFp value1, TFp value2)
 // FpSub: Computes value1 - value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 - value2  - Otherwise
 //
 // Notes:
@@ -160,7 +160,7 @@ TFp FpSub(TFp value1, TFp value2)
 // FpMul: Computes value1 * value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 * value2  - Otherwise
 //
 // Notes:
@@ -194,7 +194,7 @@ TFp FpMul(TFp value1, TFp value2)
 // FpDiv: Computes value1 / value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 / value2  - Otherwise
 //
 // Notes:
