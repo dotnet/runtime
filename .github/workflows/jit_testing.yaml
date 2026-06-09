@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - ppc64le_coreclr_jit
-      - main   # optional (if you want to test failure on main)
+     
   pull_request:
     branches:
       - ppc64le_coreclr_jit
