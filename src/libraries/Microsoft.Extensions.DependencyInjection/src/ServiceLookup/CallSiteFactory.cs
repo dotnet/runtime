@@ -603,125 +603,96 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, parameterCallSites, serviceIdentifier.ServiceKey);
                 }
 
-                ConstructorInfo? bestConstructor = null;
-                ParameterInfo[]? bestConstructorParameters = null;
-                HashSet<Type>? bestConstructorParameterTypes = null;
-                int bestConstructorParameterLength = -1;
-                ConstructorInfo? ambiguousConstructor = null;
-                ConstructorInfo? bestConstructorForAmbiguousConstructor = null;
-                List<KeyValuePair<ConstructorInfo, ParameterInfo[]>>? resolvedConstructors = null;
-
-                ParameterInfo[][] parametersByConstructor = new ParameterInfo[constructors.Length][];
-                for (int i = 0; i < constructors.Length; i++)
+                int constructorCount = constructors.Length;
+                var sortedConstructors = new ConstructorInfo[constructorCount];
+                var sortedParameters = new ParameterInfo[constructorCount][];
+                for (int i = 0; i < constructorCount; i++)
                 {
-                    parametersByConstructor[i] = constructors[i].GetParameters();
+                    ConstructorInfo constructor = constructors[i];
+                    ParameterInfo[] parameters = constructor.GetParameters();
+
+                    int sortedIndex = i;
+                    while (sortedIndex > 0 && sortedParameters[sortedIndex - 1].Length < parameters.Length)
+                    {
+                        sortedConstructors[sortedIndex] = sortedConstructors[sortedIndex - 1];
+                        sortedParameters[sortedIndex] = sortedParameters[sortedIndex - 1];
+                        sortedIndex--;
+                    }
+
+                    sortedConstructors[sortedIndex] = constructor;
+                    sortedParameters[sortedIndex] = parameters;
                 }
 
-                for (int i = 0; i < constructors.Length; i++)
-                {
-                    ParameterInfo[] parameters = parametersByConstructor[i];
+                ConstructorInfo? bestConstructor = null;
+                int bestConstructorParameterLength = -1;
+                HashSet<ServiceIdentifier>? bestParametersResolvedFromCallSite = null;
+                HashSet<ServiceIdentifier>? bestParametersResolvedFromDefault = null;
 
-                    if (bestConstructor is not null && parameters.Length < bestConstructorParameterLength)
+                for (int i = 0; i < constructorCount; i++)
+                {
+                    ConstructorInfo constructor = sortedConstructors[i];
+                    ParameterInfo[] parameters = sortedParameters[i];
+
+                    if (bestConstructor is null)
                     {
+                        var currentParametersResolvedFromCallSite = new HashSet<ServiceIdentifier>();
+                        var currentParametersResolvedFromDefault = new HashSet<ServiceIdentifier>();
+                        ServiceCallSite[]? currentParameterCallSites = CreateArgumentCallSites(
+                            serviceIdentifier,
+                            implementationType,
+                            callSiteChain,
+                            parameters,
+                            throwIfCallSiteNotFound: false,
+                            currentParametersResolvedFromCallSite,
+                            currentParametersResolvedFromDefault);
+
+                        if (currentParameterCallSites is null)
+                        {
+                            continue;
+                        }
+
+                        bestConstructor = constructor;
+                        bestConstructorParameterLength = parameters.Length;
+                        parameterCallSites = currentParameterCallSites;
+                        bestParametersResolvedFromCallSite = currentParametersResolvedFromCallSite;
+                        bestParametersResolvedFromDefault = currentParametersResolvedFromDefault;
                         continue;
                     }
 
-                    ServiceCallSite[]? currentParameterCallSites = CreateArgumentCallSites(
+                    Debug.Assert(bestParametersResolvedFromCallSite is not null);
+                    Debug.Assert(bestParametersResolvedFromDefault is not null);
+
+                    if (!TryResolveConstructorWithoutCreatingArgumentCallSites(
                         serviceIdentifier,
                         implementationType,
                         callSiteChain,
                         parameters,
-                        throwIfCallSiteNotFound: false);
-
-                    if (currentParameterCallSites != null)
+                        bestParametersResolvedFromCallSite,
+                        bestParametersResolvedFromDefault,
+                        out bool hasNewResolvableParameter))
                     {
-                        resolvedConstructors ??= new List<KeyValuePair<ConstructorInfo, ParameterInfo[]>>();
-                        resolvedConstructors.Add(new KeyValuePair<ConstructorInfo, ParameterInfo[]>(constructors[i], parameters));
+                        continue;
+                    }
 
-                        if (bestConstructor is null || parameters.Length > bestConstructorParameterLength)
-                        {
-                            bestConstructor = constructors[i];
-                            bestConstructorParameters = parameters;
-                            bestConstructorParameterLength = parameters.Length;
-                            parameterCallSites = currentParameterCallSites;
-                            bestConstructorParameterTypes = null;
-                            ambiguousConstructor = null;
-                            bestConstructorForAmbiguousConstructor = null;
-
-                            if (resolvedConstructors.Count > 1)
-                            {
-                                bestConstructorParameterTypes = new HashSet<Type>();
-                                foreach (ParameterInfo p in bestConstructorParameters)
-                                {
-                                    bestConstructorParameterTypes.Add(p.ParameterType);
-                                }
-
-                                foreach (KeyValuePair<ConstructorInfo, ParameterInfo[]> resolvedConstructor in resolvedConstructors)
-                                {
-                                    if (resolvedConstructor.Key == bestConstructor)
-                                    {
-                                        continue;
-                                    }
-
-                                    foreach (ParameterInfo p in resolvedConstructor.Value)
-                                    {
-                                        if (!bestConstructorParameterTypes.Contains(p.ParameterType))
-                                        {
-                                            ambiguousConstructor = resolvedConstructor.Key;
-                                            bestConstructorForAmbiguousConstructor = bestConstructor;
-                                            break;
-                                        }
-                                    }
-
-                                    if (ambiguousConstructor is not null)
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (bestConstructorParameterTypes == null)
-                            {
-                                bestConstructorParameterTypes = new HashSet<Type>();
-                                foreach (ParameterInfo p in bestConstructorParameters!)
-                                {
-                                    bestConstructorParameterTypes.Add(p.ParameterType);
-                                }
-                            }
-
-                            foreach (ParameterInfo p in parameters)
-                            {
-                                if (!bestConstructorParameterTypes.Contains(p.ParameterType))
-                                {
-                                    ambiguousConstructor ??= constructors[i];
-                                    bestConstructorForAmbiguousConstructor ??= bestConstructor;
-                                    break;
-                                }
-                            }
-                        }
+                    if (hasNewResolvableParameter)
+                    {
+                        throw new InvalidOperationException(string.Join(
+                            Environment.NewLine,
+                            SR.Format(SR.AmbiguousConstructorException, implementationType),
+                            bestConstructor,
+                            constructor));
                     }
                 }
 
-                if (bestConstructor == null)
+                if (bestConstructor is null)
                 {
                     throw new InvalidOperationException(
                         SR.Format(SR.UnableToActivateTypeException, implementationType));
                 }
-                else if (ambiguousConstructor != null)
-                {
-                    throw new InvalidOperationException(string.Join(
-                        Environment.NewLine,
-                        SR.Format(SR.AmbiguousConstructorException, implementationType),
-                        bestConstructorForAmbiguousConstructor,
-                        ambiguousConstructor));
-                }
-                else
-                {
-                    Debug.Assert(parameterCallSites != null);
-                    return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, bestConstructor, parameterCallSites, serviceIdentifier.ServiceKey);
-                }
+
+                Debug.Assert(parameterCallSites != null);
+                Debug.Assert(bestConstructorParameterLength >= 0);
+                return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, bestConstructor, parameterCallSites, serviceIdentifier.ServiceKey);
             }
             finally
             {
@@ -735,80 +706,185 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
-            bool throwIfCallSiteNotFound)
+            bool throwIfCallSiteNotFound,
+            HashSet<ServiceIdentifier>? parametersResolvedFromCallSite = null,
+            HashSet<ServiceIdentifier>? parametersResolvedFromDefault = null)
         {
             var parameterCallSites = new ServiceCallSite[parameters.Length];
 
             for (int index = 0; index < parameters.Length; index++)
             {
-                ServiceCallSite? callSite = null;
-                bool isKeyedParameter = false;
-                Type parameterType = parameters[index].ParameterType;
-                foreach (var attribute in parameters[index].GetCustomAttributes(true))
+                if (!TryResolveCallSite(
+                    serviceIdentifier,
+                    implementationType,
+                    callSiteChain,
+                    parameters[index],
+                    throwIfCallSiteNotFound,
+                    createCallSite: true,
+                    out ServiceIdentifier parameterServiceIdentifier,
+                    out ParameterResolutionKind parameterResolutionKind,
+                    out ServiceCallSite? callSite))
                 {
-                    if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
-                    {
-                        // Even though the parameter may be strongly typed, support 'object' if AnyKey is used.
-
-                        if (serviceIdentifier.ServiceKey == KeyedService.AnyKey)
-                        {
-                            parameterType = typeof(object);
-                        }
-                        else if (parameterType != serviceIdentifier.ServiceKey.GetType()
-                            && parameterType != typeof(object))
-                        {
-                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
-                        }
-
-                        callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
-                        break;
-                    }
-
-                    if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
-                    {
-                        object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
-                        {
-                            ServiceKeyLookupMode.InheritKey => serviceIdentifier.ServiceKey,
-                            ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
-                            ServiceKeyLookupMode.NullKey => null,
-                            _ => null
-                        };
-
-                        if (serviceKey is not null)
-                        {
-                            callSite = GetCallSite(new ServiceIdentifier(serviceKey, parameterType), callSiteChain);
-                            isKeyedParameter = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!isKeyedParameter)
-                {
-                    callSite ??= GetCallSite(ServiceIdentifier.FromServiceType(parameterType), callSiteChain);
-                }
-
-                if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out object? defaultValue))
-                {
-                    callSite = new ConstantCallSite(parameterType, defaultValue);
-                }
-
-                if (callSite == null)
-                {
-                    if (throwIfCallSiteNotFound)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.CannotResolveService,
-                            parameterType,
-                            implementationType));
-                    }
-
                     return null;
+                }
+
+                Debug.Assert(callSite is not null);
+                if (parameterResolutionKind == ParameterResolutionKind.FromCallSite)
+                {
+                    parametersResolvedFromCallSite?.Add(parameterServiceIdentifier);
+                }
+                else
+                {
+                    Debug.Assert(parameterResolutionKind == ParameterResolutionKind.FromDefaultValue);
+                    parametersResolvedFromDefault?.Add(parameterServiceIdentifier);
                 }
 
                 parameterCallSites[index] = callSite;
             }
 
             return parameterCallSites;
+        }
+
+        private bool TryResolveConstructorWithoutCreatingArgumentCallSites(
+            ServiceIdentifier serviceIdentifier,
+            Type implementationType,
+            CallSiteChain callSiteChain,
+            ParameterInfo[] parameters,
+            HashSet<ServiceIdentifier> bestParametersResolvedFromCallSite,
+            HashSet<ServiceIdentifier> bestParametersResolvedFromDefault,
+            out bool hasNewResolvableParameter)
+        {
+            hasNewResolvableParameter = false;
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (!TryResolveCallSite(
+                    serviceIdentifier,
+                    implementationType,
+                    callSiteChain,
+                    parameters[i],
+                    throwIfCallSiteNotFound: false,
+                    createCallSite: false,
+                    out ServiceIdentifier parameterServiceIdentifier,
+                    out ParameterResolutionKind parameterResolutionKind,
+                    out _))
+                {
+                    return false;
+                }
+
+                if (parameterResolutionKind == ParameterResolutionKind.FromCallSite)
+                {
+                    if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
+                    {
+                        continue;
+                    }
+
+                    if (bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
+                    {
+                        return false;
+                    }
+
+                    hasNewResolvableParameter = true;
+                    continue;
+                }
+
+                Debug.Assert(parameterResolutionKind == ParameterResolutionKind.FromDefaultValue);
+                if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier) ||
+                    bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
+                {
+                    continue;
+                }
+
+                hasNewResolvableParameter = true;
+            }
+
+            return true;
+        }
+
+        private bool TryResolveCallSite(
+            ServiceIdentifier serviceIdentifier,
+            Type implementationType,
+            CallSiteChain callSiteChain,
+            ParameterInfo parameter,
+            bool throwIfCallSiteNotFound,
+            bool createCallSite,
+            out ServiceIdentifier parameterServiceIdentifier,
+            out ParameterResolutionKind parameterResolutionKind,
+            out ServiceCallSite? callSite)
+        {
+            Type parameterType = parameter.ParameterType;
+            parameterServiceIdentifier = ServiceIdentifier.FromServiceType(parameterType);
+
+            foreach (object attribute in parameter.GetCustomAttributes(true))
+            {
+                if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
+                {
+                    // Even though the parameter may be strongly typed, support 'object' if AnyKey is used.
+                    if (serviceIdentifier.ServiceKey == KeyedService.AnyKey)
+                    {
+                        parameterType = typeof(object);
+                    }
+                    else if (parameterType != serviceIdentifier.ServiceKey.GetType() &&
+                        parameterType != typeof(object))
+                    {
+                        throw new InvalidOperationException(SR.InvalidServiceKeyType);
+                    }
+
+                    parameterServiceIdentifier = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
+                    parameterResolutionKind = ParameterResolutionKind.FromCallSite;
+                    callSite = createCallSite ? new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey) : null;
+                    return true;
+                }
+
+                if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
+                {
+                    object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
+                    {
+                        ServiceKeyLookupMode.InheritKey => serviceIdentifier.ServiceKey,
+                        ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
+                        ServiceKeyLookupMode.NullKey => null,
+                        _ => null
+                    };
+
+                    if (serviceKey is not null)
+                    {
+                        parameterServiceIdentifier = new ServiceIdentifier(serviceKey, parameterType);
+                    }
+                }
+            }
+
+            ServiceCallSite? parameterCallSite = GetCallSite(parameterServiceIdentifier, callSiteChain);
+            if (parameterCallSite is not null)
+            {
+                parameterResolutionKind = ParameterResolutionKind.FromCallSite;
+                callSite = createCallSite ? parameterCallSite : null;
+                return true;
+            }
+
+            if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
+            {
+                parameterResolutionKind = ParameterResolutionKind.FromDefaultValue;
+                callSite = createCallSite ? new ConstantCallSite(parameterType, defaultValue) : null;
+                return true;
+            }
+
+            if (throwIfCallSiteNotFound)
+            {
+                throw new InvalidOperationException(SR.Format(SR.CannotResolveService,
+                    parameterType,
+                    implementationType));
+            }
+
+            parameterResolutionKind = ParameterResolutionKind.Unresolved;
+            callSite = null;
+            return false;
+        }
+
+        private enum ParameterResolutionKind
+        {
+            Unresolved,
+            FromCallSite,
+            FromDefaultValue,
         }
 
         /// <summary>
