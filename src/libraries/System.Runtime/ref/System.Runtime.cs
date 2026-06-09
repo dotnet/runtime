@@ -975,6 +975,7 @@ namespace System
         public static byte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static byte Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static byte PopCount(byte value) { throw null; }
+        public static byte ReverseBits(byte value) { throw null; }
         public static byte RotateLeft(byte value, int rotateAmount) { throw null; }
         public static byte RotateRight(byte value, int rotateAmount) { throw null; }
         public static int Sign(byte value) { throw null; }
@@ -3716,6 +3717,7 @@ namespace System
         public static System.Int128 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Int128 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Int128 PopCount(System.Int128 value) { throw null; }
+        public static System.Int128 ReverseBits(System.Int128 value) { throw null; }
         public static System.Int128 RotateLeft(System.Int128 value, int rotateAmount) { throw null; }
         public static System.Int128 RotateRight(System.Int128 value, int rotateAmount) { throw null; }
         public static int Sign(System.Int128 value) { throw null; }
@@ -3814,6 +3816,7 @@ namespace System
         public static short Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static short Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static short PopCount(short value) { throw null; }
+        public static short ReverseBits(short value) { throw null; }
         public static short RotateLeft(short value, int rotateAmount) { throw null; }
         public static short RotateRight(short value, int rotateAmount) { throw null; }
         public static int Sign(short value) { throw null; }
@@ -3955,6 +3958,7 @@ namespace System
         public static int Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static int Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static int Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static int ReverseBits(int value) { throw null; }
         public static int PopCount(int value) { throw null; }
         public static int RotateLeft(int value, int rotateAmount) { throw null; }
         public static int RotateRight(int value, int rotateAmount) { throw null; }
@@ -4097,6 +4101,7 @@ namespace System
         public static long Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static long Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static long Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static long ReverseBits(long value) { throw null; }
         public static long PopCount(long value) { throw null; }
         public static long RotateLeft(long value, int rotateAmount) { throw null; }
         public static long RotateRight(long value, int rotateAmount) { throw null; }
@@ -4257,6 +4262,7 @@ namespace System
         public static nint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static nint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static nint Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static nint ReverseBits(nint value) { throw null; }
         public static nint PopCount(nint value) { throw null; }
         public static nint RotateLeft(nint value, int rotateAmount) { throw null; }
         public static nint RotateRight(nint value, int rotateAmount) { throw null; }
@@ -5264,6 +5270,7 @@ namespace System
         public static sbyte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static sbyte Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static sbyte PopCount(sbyte value) { throw null; }
+        public static sbyte ReverseBits(sbyte value) { throw null; }
         public static sbyte RotateLeft(sbyte value, int rotateAmount) { throw null; }
         public static sbyte RotateRight(sbyte value, int rotateAmount) { throw null; }
         public static int Sign(sbyte value) { throw null; }
@@ -7013,6 +7020,7 @@ namespace System
         public static System.UInt128 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.UInt128 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.UInt128 PopCount(System.UInt128 value) { throw null; }
+        public static System.UInt128 ReverseBits(System.UInt128 value) { throw null; }
         public static System.UInt128 RotateLeft(System.UInt128 value, int rotateAmount) { throw null; }
         public static System.UInt128 RotateRight(System.UInt128 value, int rotateAmount) { throw null; }
         public static int Sign(System.UInt128 value) { throw null; }
@@ -7110,6 +7118,7 @@ namespace System
         public static ushort Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static ushort Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static ushort Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static ushort ReverseBits(ushort value) { throw null; }
         public static ushort PopCount(ushort value) { throw null; }
         public static ushort RotateLeft(ushort value, int rotateAmount) { throw null; }
         public static ushort RotateRight(ushort value, int rotateAmount) { throw null; }
@@ -7252,6 +7261,7 @@ namespace System
         public static uint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static uint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static uint Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static uint ReverseBits(uint value) { throw null; }
         public static uint PopCount(uint value) { throw null; }
         public static uint RotateLeft(uint value, int rotateAmount) { throw null; }
         public static uint RotateRight(uint value, int rotateAmount) { throw null; }
@@ -7394,6 +7404,7 @@ namespace System
         public static ulong Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static ulong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static ulong Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static ulong ReverseBits(ulong value) { throw null; }
         public static ulong PopCount(ulong value) { throw null; }
         public static ulong RotateLeft(ulong value, int rotateAmount) { throw null; }
         public static ulong RotateRight(ulong value, int rotateAmount) { throw null; }
@@ -7551,6 +7562,7 @@ namespace System
         public static nuint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static nuint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static nuint Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static nuint ReverseBits(nuint value) { throw null; }
         public static nuint PopCount(nuint value) { throw null; }
         public static nuint RotateLeft(nuint value, int rotateAmount) { throw null; }
         public static nuint RotateRight(nuint value, int rotateAmount) { throw null; }
@@ -11641,6 +11653,7 @@ namespace System.Numerics
         static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
         static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReverseBits(TSelf value) { throw null; }
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
         static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);

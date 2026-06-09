@@ -8,6 +8,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
@@ -334,6 +337,16 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static nint ReverseBits(nint value)
+        {
+#if TARGET_64BIT
+            return (nint)long.ReverseBits((long)value);
+#else
+            return (nint)int.ReverseBits((int)value);
+#endif
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         [Intrinsic]

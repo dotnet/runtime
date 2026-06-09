@@ -330,6 +330,16 @@ namespace System
         [Intrinsic]
         public static nuint PopCount(nuint value) => (nuint)BitOperations.PopCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static nuint ReverseBits(nuint value)
+        {
+#if TARGET_64BIT
+            return (nuint)ulong.ReverseBits((ulong)value);
+#else
+            return (nuint)uint.ReverseBits((uint)value);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         [Intrinsic]
         public static nuint RotateLeft(nuint value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
