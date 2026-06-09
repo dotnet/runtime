@@ -3389,14 +3389,18 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
 #endif
 
-                if ((tree->CastToType() != srct) || tree->gtOverflow())
+                // CastToType may differ in signedness from srct (e.g. ULONG vs LONG). Both have the
+                // same actual type and storage width, so the narrowing transformation handled below
+                // (converting an int<->long cast into an int<->int identity cast) is bit-identical
+                // for either signedness.
+                if ((genActualType(tree->CastToType()) != genActualType(srct)) || tree->gtOverflow())
                 {
                     return false;
                 }
 
-                if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
+                if (varTypeIsInt(op1) && varTypeIsInt(dstt) && (genActualType(tree) == TYP_LONG))
                 {
-                    // We have a CAST that converts into to long while dstt is int.
+                    // We have a CAST that converts int to long while dstt is int.
                     // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {
