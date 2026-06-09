@@ -6,7 +6,7 @@ using System.Text;
 
 namespace System.Net.ServerSentEvents
 {
-    /// <summary>Provides a parser for parsing server-sent events.</summary>
+    /// <summary>Provides a parser for parsing server-sent events read from a trustworthy stream.</summary>
     public static class SseParser
     {
         /// <summary>The default <see cref="SseItem{T}.EventType"/> ("message") for an event that did not explicitly specify a type.</summary>
