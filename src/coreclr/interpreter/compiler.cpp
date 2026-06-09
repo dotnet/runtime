@@ -3604,6 +3604,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             }
 
             InterpOpcode convOp;
+            // For small (sub-int32) target types, ConvertToIntegerNative truncates the low
+            // bits of the saturating R -> int conversion rather than clamping at the small
+            // type's range. The "consistent" R -> small conversion opcodes saturate at the
+            // small type's range (matching the .NET 9 saturating R -> int rules applied at
+            // the destination width), so we explicitly emit a saturating R -> int4 followed
+            // by a truncating int4 -> small narrow.
+            InterpOpcode narrowOp = INTOP_NOP;
 
             // Interpreter-TODO: In theory this should use the "native" variants of the conversion opcodes which are likely faster
             // than the ones with cross-platform consistent behavior; however, that is quite a lot of new opcodes for probably little gain, so
@@ -3619,14 +3626,18 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
                 case CORINFO_TYPE_ULONG:
                     convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U8_R4 : INTOP_CONV_U8_R8; break;
                 case CORINFO_TYPE_SHORT:
-                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I2_R4 : INTOP_CONV_I2_R8; break;
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8;
+                    narrowOp = INTOP_CONV_I2_I4; break;
                 case CORINFO_TYPE_CHAR:
                 case CORINFO_TYPE_USHORT:
-                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U2_R4 : INTOP_CONV_U2_R8; break;
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8;
+                    narrowOp = INTOP_CONV_U2_I4; break;
                 case CORINFO_TYPE_BYTE:
-                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I1_R4 : INTOP_CONV_I1_R8; break;
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8;
+                    narrowOp = INTOP_CONV_I1_I4; break;
                 case CORINFO_TYPE_UBYTE:
-                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U1_R4 : INTOP_CONV_U1_R8; break;
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8;
+                    narrowOp = INTOP_CONV_U1_I4; break;
 #ifdef TARGET_64BIT
                 case CORINFO_TYPE_NATIVEINT:
                     convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I8_R4 : INTOP_CONV_I8_R8; break;
@@ -3643,6 +3654,10 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             }
 
             EmitConv(m_pStackPointer - 1, g_stackTypeFromInterpType[targetType], convOp);
+            if (narrowOp != INTOP_NOP)
+            {
+                EmitConv(m_pStackPointer - 1, StackTypeI4, narrowOp);
+            }
             return true;
         }
 
