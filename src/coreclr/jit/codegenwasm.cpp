@@ -3163,7 +3163,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
 
-    genConsumeOperands(blkOp);
+    // Unwrap a contained GT_INIT_VAL so the wrapped fill value (not the wrapper) is pushed onto the WASM value stack.
+    GenTree* srcForConsume = src->OperIs(GT_INIT_VAL) ? src->gtGetOp1() : src;
+    assert(!src->OperIs(GT_INIT_VAL) || src->isContained());
+
+    genConsumeRegs(dest);
+    genConsumeRegs(srcForConsume);
 
     // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
     //  actual address we're loading from. Note that this does not apply to the destination.
