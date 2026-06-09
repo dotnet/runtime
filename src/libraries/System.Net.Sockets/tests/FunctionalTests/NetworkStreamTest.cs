@@ -48,8 +48,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
         [DynamicDependency(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), typeof(ConnectedStreamConformanceTests))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic | TestPlatforms.iOS | TestPlatforms.tvOS, "Binding listening sockets is restricted by the CI sandbox on these platforms")]
         public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) =>
             base.CopyToAsync_AllDataCopied(byteCount, useAsync);
 
