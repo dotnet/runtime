@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    _ = disposeTask.Result;
+                    disposeTask.GetAwaiter().GetResult();
                     return true;
                 }
 
