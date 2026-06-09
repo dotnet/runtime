@@ -3189,12 +3189,29 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
             return;
         }
 
-        // If there are few GC references, and at most half of the struct is
-        // made up of GC references, then clear the individual GC pointers
-        // instead of zeroing out the whole struct.
-        if ((gcPtrCount <= 4) && ((gcPtrCount * 2) <= retLayout->GetSlotCount()))
+        // Find the range of slots spanning the first to the last GC reference. A block store only
+        // needs to cover this range, since everything outside it is non-GC.
+        unsigned firstSlot = 0;
+        while (!retLayout->IsGCPtr(firstSlot))
         {
-            for (unsigned i = 0; i < retLayout->GetSlotCount(); i++)
+            firstSlot++;
+        }
+
+        unsigned lastSlot = retLayout->GetSlotCount() - 1;
+        while (!retLayout->IsGCPtr(lastSlot))
+        {
+            lastSlot--;
+        }
+
+        unsigned sliceSlotCount = lastSlot - firstSlot + 1;
+
+        // If there are few GC references, and at most half of the slice is made up of GC references,
+        // then clear the individual GC pointers instead of zeroing out the slice.
+        // Otherwise we prefer to clear the entire slice of GC references as a TYP_STRUCT store to allow
+        // the backend to use SIMD instructions.
+        if ((gcPtrCount <= 4) && ((gcPtrCount * 2) <= sliceSlotCount))
+        {
+            for (unsigned i = firstSlot; i <= lastSlot; i++)
             {
                 if (retLayout->IsGCPtr(i))
                 {
@@ -3204,13 +3221,18 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
         }
         else
         {
+            unsigned sliceOffset = firstSlot * TARGET_POINTER_SIZE;
+            unsigned sliceSize   = sliceSlotCount * TARGET_POINTER_SIZE;
+
+            ClassLayout* sliceLayout = retLayout->SliceLayout(m_compiler, sliceOffset, sliceSize);
+
             GenTree*     base   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-            GenTree*     offset = m_compiler->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
+            GenTree*     offset = m_compiler->gtNewIconNode((ssize_t)(resultOffset + sliceOffset), TYP_I_IMPL);
             GenTree*     addr   = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, base, offset);
             GenTreeFlags indirFlags =
                 GTF_IND_NONFAULTING | (retInfo->HeapAlignment() < retInfo->Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
             GenTree* zero  = m_compiler->gtNewIconNode(0);
-            GenTree* store = m_compiler->gtNewStoreValueNode(retLayout, addr, zero, indirFlags);
+            GenTree* store = m_compiler->gtNewStoreValueNode(sliceLayout, addr, zero, indirFlags);
             LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
         }
     }
