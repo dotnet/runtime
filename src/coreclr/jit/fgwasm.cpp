@@ -1695,13 +1695,20 @@ PhaseStatus Compiler::WasmSpillRefs()
                 {
                     anyChanges = true;
 
-                    if (!m_wasmSpillSlots)
+                    if (!m_wasmRefSpillSlots)
                     {
-                        m_wasmSpillSlots =
+                        m_wasmRefSpillSlots =
+                            new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
+                        m_wasmByRefSpillSlots =
                             new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
                     }
+                    else
+                    {
+                        assert(m_wasmByRefSpillSlots);
+                    }
 
-                    unsigned spillSlotIndex = 0;
+                    unsigned refSpillSlotIndex   = 0;
+                    unsigned byRefSpillSlotIndex = 0;
                     JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
                     DISPNODE(tree);
                     for (GenTree* def : defs)
@@ -1709,23 +1716,25 @@ PhaseStatus Compiler::WasmSpillRefs()
                         JITDUMP("    ");
                         DISPNODE(def);
 
+                        unsigned *spillSlotIndex = def->TypeIs(TYP_BYREF) ? &byRefSpillSlotIndex : &refSpillSlotIndex;
+                        jitstd::vector<unsigned> *spillSlotList = def->TypeIs(TYP_BYREF) ? m_wasmByRefSpillSlots : m_wasmRefSpillSlots;
                         unsigned spillSlot;
-                        if (spillSlotIndex < m_wasmSpillSlots->size())
+                        if (*spillSlotIndex < spillSlotList->size())
                         {
-                            spillSlot = m_wasmSpillSlots->at(spillSlotIndex);
+                            spillSlot = spillSlotList->at(*spillSlotIndex);
                         }
                         else
                         {
                             spillSlot                      = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
                             LclVarDsc* const varDsc        = lvaGetDesc(spillSlot);
-                            varDsc->lvType                 = TYP_BYREF;
+                            varDsc->lvType                 = def->TypeGet();
                             varDsc->lvPinned               = true;
                             varDsc->lvImplicitlyReferenced = true;
                             varDsc->lvMustInit             = true;
                             lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-                            m_wasmSpillSlots->push_back(spillSlot);
+                            spillSlotList->push_back(spillSlot);
                         }
-                        spillSlotIndex++;
+                        *spillSlotIndex++;
 
                         GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
                         GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
