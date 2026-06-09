@@ -570,6 +570,9 @@ namespace Internal.TypeSystem.Ecma
             TypeSpecification typeSpecification = _metadataReader.GetTypeSpecification(handle);
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
+
+            ValidateTypeSpecificationSignature(signatureReader);
+
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
             TypeDesc parsedType = parser.ParseType();
@@ -577,6 +580,23 @@ namespace Internal.TypeSystem.Ecma
                 return parser.ResolutionFailure;
             else
                 return parsedType;
+        }
+
+        private static void ValidateTypeSpecificationSignature(BlobReader signatureReader)
+        {
+            switch (signatureReader.ReadSignatureTypeCode())
+            {
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.FunctionPointer:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.GenericTypeInstance:
+                case SignatureTypeCode.GenericTypeParameter:
+                case SignatureTypeCode.GenericMethodParameter:
+                    return;
+            }
+
+            ThrowHelper.ThrowBadImageFormatException();
         }
 
         private object ResolveMemberReference(MemberReferenceHandle handle)

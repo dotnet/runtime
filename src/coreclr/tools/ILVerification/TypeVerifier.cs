@@ -39,11 +39,17 @@ namespace Internal.TypeVerifier
 
         public void Verify()
         {
-            VerifyBaseType();
+            // Once the base type metadata is invalid, later checks can force the type system to
+            // resolve the same bad base token again and produce a duplicate token resolution error.
+            if (!VerifyBaseType())
+            {
+                return;
+            }
+
             VerifyInterfaces();
         }
 
-        private void VerifyBaseType()
+        private bool VerifyBaseType()
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
@@ -53,6 +59,7 @@ namespace Internal.TypeVerifier
                 if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    return false;
                 }
             }
             else if (baseType.Kind == HandleKind.TypeSpecification)
@@ -60,46 +67,35 @@ namespace Internal.TypeVerifier
                 if (!IsValidBaseTypeSpecification((TypeSpecificationHandle)baseType))
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    return false;
                 }
 
             }
-            else if (IsValueType(baseType))
+            else if (_module.GetType(baseType).IsValueType)
             {
                 VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                return false;
             }
-        }
 
-        private bool IsValueType(EntityHandle typeHandle)
-        {
-            return _module.GetType(typeHandle).IsValueType;
+            return true;
         }
 
         private bool IsValidBaseTypeSpecification(TypeSpecificationHandle typeSpecificationHandle)
         {
             try
             {
-                TypeSpecification typeSpecification = _module.MetadataReader.GetTypeSpecification(typeSpecificationHandle);
-                BlobReader signatureReader = _module.MetadataReader.GetBlobReader(typeSpecification.Signature);
+                TypeDesc baseType = _module.GetType(typeSpecificationHandle);
 
-                if (signatureReader.ReadSignatureTypeCode() != SignatureTypeCode.GenericTypeInstance)
+                // Arrays, pointers, and generic variables are valid TypeSpec forms in other
+                // metadata and IL token contexts, so GetType must continue to resolve them. A
+                // BaseType TypeSpec is narrower: it has to name a constructed generic class,
+                // which resolves to InstantiatedType.
+                if (baseType is not InstantiatedType)
                 {
                     return false;
                 }
 
-                int genericTypeKind = signatureReader.ReadCompressedInteger();
-                if (genericTypeKind != (int)SignatureTypeKind.Class)
-                {
-                    return false;
-                }
-
-                EntityHandle genericTypeHandle = signatureReader.ReadTypeHandle();
-                if (genericTypeHandle.Kind != HandleKind.TypeDefinition &&
-                    genericTypeHandle.Kind != HandleKind.TypeReference)
-                {
-                    return false;
-                }
-
-                if (IsValueType(genericTypeHandle))
+                if (baseType.IsValueType)
                 {
                     return false;
                 }
@@ -107,6 +103,10 @@ namespace Internal.TypeVerifier
                 return true;
             }
             catch (BadImageFormatException)
+            {
+                return false;
+            }
+            catch (TypeSystemException)
             {
                 return false;
             }
@@ -185,18 +185,14 @@ namespace Internal.TypeVerifier
 
         private string Format(TypeDesc type)
         {
-            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages && typeDefinition is EcmaType ecmaType)
             {
-                // type can be an InstantiatedType, so use the TypeDef to get the metadata token.
-                TypeDesc typeDesc = type.GetTypeDefinition();
-                EcmaModule module = (EcmaModule)((MetadataType)typeDesc).Module;
+                EcmaModule module = (EcmaModule)ecmaType.Module;
+                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(ecmaType.Handle));
+            }
 
-                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(((EcmaType)typeDesc).Handle));
-            }
-            else
-            {
-                return type.ToString();
-            }
+            return type.ToString();
         }
 
         private string Format(EntityHandle handle)
@@ -206,21 +202,20 @@ namespace Internal.TypeVerifier
                 return "nil";
             }
 
-            if (handle.Kind == HandleKind.TypeDefinition ||
-                handle.Kind == HandleKind.TypeReference ||
-                handle.Kind == HandleKind.TypeSpecification)
+            try
             {
                 return Format(_module.GetType(handle));
             }
+            catch (BadImageFormatException)
+            {
+            }
+            catch (TypeSystemException)
+            {
+            }
 
-            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
-            {
-                return string.Format("{0}([{1}]0x{2:X8})", handle.Kind, _module, _module.MetadataReader.GetToken(handle));
-            }
-            else
-            {
-                return handle.Kind.ToString();
-            }
+            return _verifierOptions.IncludeMetadataTokensInErrorMessages ?
+                string.Format("{0}([{1}]0x{2:X8})", handle.Kind, _module, _module.MetadataReader.GetToken(handle)) :
+                handle.Kind.ToString();
         }
 
         private string Format(TypeDesc interfaceTypeDesc, EcmaModule module, InterfaceImplementation interfaceImplementation)

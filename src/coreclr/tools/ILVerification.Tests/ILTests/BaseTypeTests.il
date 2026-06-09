@@ -22,6 +22,16 @@
     }
 }
 
+.class public auto ansi beforefieldinit ArrayTypeSpecBase_InvalidType_InvalidBaseType
+    extends int32[]
+{
+}
+
+.class public auto ansi beforefieldinit PointerTypeSpecBase_InvalidType_InvalidBaseType
+    extends int32*
+{
+}
+
 .class interface public auto ansi abstract NilBaseInterface_ValidType_Valid
 {
 }
@@ -33,6 +43,11 @@
 
 .class public auto ansi beforefieldinit GenericClassTypeSpecBase_ValidType_Valid
     extends class GenericBase`1<int32>
+{
+}
+
+.class public auto ansi beforefieldinit GenericOpenClassTypeSpecBase_ValidType_Valid`1<T>
+    extends class GenericBase`1<!0>
 {
 }
 
