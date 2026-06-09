@@ -1138,5 +1138,75 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
         }
+
+        // The following tests document the current limitation that indexer accessors cannot
+        // reference peer index parameters via [MarshalUsing(CountElementName = ...)]. All
+        // property accessors (including indexers) are routed through EmptyElementInfoProvider,
+        // which intentionally fails peer-element lookups. Lifting this limitation for indexers
+        // would require additional design (the index parameters are legitimate peers of the
+        // value surface) and is tracked as future work. If indexer peer-element lookups are
+        // enabled, these tests should be updated to expect a successful compile.
+
+        [Fact]
+        public async Task IndexerGetterWithCountElementName_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [assembly:DisableRuntimeMarshalling]
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    int[] {|#0:this|}[int count] { [return: {|#1:MarshalUsing(CountElementName = "count")|}] get; }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.ArraySizeMustBeSpecified, "get_Item"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("count", ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName));
+        }
+
+        [Fact]
+        public async Task IndexerSetterWithCountElementName_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [assembly:DisableRuntimeMarshalling]
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    int[] {|#0:this|}[int count] { [param: {|#1:MarshalUsing(CountElementName = "count")|}] set; }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.ArraySizeMustBeSpecified, "value"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("count", ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName));
+        }
     }
 }
