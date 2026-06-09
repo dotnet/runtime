@@ -720,6 +720,27 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     VNFuncApp funcApp;
     if (comp->vnStore->GetVNFunc(num, &funcApp))
     {
+#if defined(FEATURE_HW_INTRINSICS)
+        // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+        NamedIntrinsic id;
+        unsigned       simdSize;
+        var_types      simdBaseType;
+        if (comp->vnStore->IsVNHWIntrinsicFunc(num, &funcApp, &id, &simdSize, &simdBaseType))
+        {
+            if (HWIntrinsicInfo::ReturnsBoolean(id))
+            {
+                // A boolean [0, 1]
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+            }
+            else if (HWIntrinsicInfo::ReturnsScalarT(id) && varTypeIsSmall(simdBaseType))
+            {
+                // We are extracting a value of the base types width and sign
+                result = GetRangeFromType(simdBaseType);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         switch (funcApp.GetFunc())
         {
             case VNF_Cast:
@@ -770,6 +791,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_RSH:
             case VNF_RSZ:
             case VNF_UMOD:
+            case VNF_UDIV:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
                 Range r1 = GetRangeFromAssertionsWorker(comp, funcApp.GetArg(0), assertions, --budget, visited);
@@ -803,6 +825,9 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         break;
                     case VNF_UMOD:
                         binOpResult = RangeOps::UnsignedMod(r1, r2);
+                        break;
+                    case VNF_UDIV:
+                        binOpResult = RangeOps::UnsignedDivide(r1, r2);
                         break;
                     default:
                         unreached();
@@ -926,69 +951,6 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 {
                     result.lLimit = Limit(Limit::keConstant, 0);
                     result.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
-                }
-                break;
-            }
-
-#if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_op_Equality:
-            case VNF_HWI_Vector256_op_Inequality:
-            case VNF_HWI_Vector512_op_Equality:
-            case VNF_HWI_Vector512_op_Inequality:
-            case VNF_HWI_X86Base_CompareScalarOrderedEqual:
-            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThan:
-            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
-            case VNF_HWI_X86Base_CompareScalarOrderedLessThan:
-            case VNF_HWI_X86Base_CompareScalarOrderedLessThanOrEqual:
-            case VNF_HWI_X86Base_CompareScalarOrderedNotEqual:
-            case VNF_HWI_X86Base_CompareScalarUnorderedEqual:
-            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThan:
-            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
-            case VNF_HWI_X86Base_CompareScalarUnorderedLessThan:
-            case VNF_HWI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-            case VNF_HWI_X86Base_CompareScalarUnorderedNotEqual:
-            case VNF_HWI_X86Base_TestC:
-            case VNF_HWI_X86Base_TestNotZAndNotC:
-            case VNF_HWI_X86Base_TestZ:
-            case VNF_HWI_AVX_TestC:
-            case VNF_HWI_AVX_TestNotZAndNotC:
-            case VNF_HWI_AVX_TestZ:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_op_Equality:
-            case VNF_HWI_Vector64_op_Inequality:
-#endif
-            case VNF_HWI_Vector128_op_Equality:
-            case VNF_HWI_Vector128_op_Inequality:
-            {
-                // A boolean [0, 1]
-                result.lLimit = Limit(Limit::keConstant, 0);
-                result.uLimit = Limit(Limit::keConstant, 1);
-                break;
-            }
-
-#if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_GetElement:
-            case VNF_HWI_Vector256_ToScalar:
-            case VNF_HWI_Vector512_GetElement:
-            case VNF_HWI_Vector512_ToScalar:
-            case VNF_HWI_X86Base_Extract:
-            case VNF_HWI_X86Base_X64_Extract:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_GetElement:
-            case VNF_HWI_Vector64_ToScalar:
-            case VNF_HWI_AdvSimd_Extract:
-#endif
-            case VNF_HWI_Vector128_GetElement:
-            case VNF_HWI_Vector128_ToScalar:
-            {
-                // We are extracting a value of the base types width and sign
-
-                var_types simdBaseType;
-                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
-
-                if (varTypeIsSmall(simdBaseType))
-                {
-                    result = GetRangeFromType(simdBaseType);
                 }
                 break;
             }
@@ -1272,7 +1234,13 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         //  Example: "(uint)normalLclVN < span.Length"   means normalLclVN's range is [0..INT32_MAX-1]
         //  Example: "(uint)normalLclVN <= array.Length" means normalLclVN's range is [0..Array.MaxLength]
         //
-        else if (!canUseCheckedBounds && curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+        // This is restricted to upper-bound (LT/LE) relops: we substitute op2 with its upper bound
+        // (maxValue), which is only valid when op2 bounds normalLclVN from above. GT/GE relops (where
+        // op2 is a lower bound) would need op2's lower bound instead, so they fall through to the
+        // general "X <relop> Y" branch below.
+        else if (!canUseCheckedBounds &&
+                 curAssertion.KindIs(Compiler::OAK_LT, Compiler::OAK_LE, Compiler::OAK_LT_UN, Compiler::OAK_LE_UN) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  (curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS)) &&
                  (curAssertion.GetOp2().IsVNNeverNegative()) && (curAssertion.GetOp2().GetCns() == 0))
         {
