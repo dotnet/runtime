@@ -27370,24 +27370,6 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
     }
 #endif // TARGET_ARM64
 
-    if (elementCount == 1)
-    {
-        GenTree* result = op1;
-
-        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
-        {
-            return result;
-        }
-
-        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
-        {
-            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
-        }
-
-        GenTree* resultDup = fgMakeMultiUse(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
-    }
-
 #if defined(TARGET_XARCH)
     if (simdSize == 16)
     {
