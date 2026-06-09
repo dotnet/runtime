@@ -5293,7 +5293,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 auto getRank = [=]() -> unsigned {
                     bool const isNoSplit     = stmt == predBlock->firstStmt();
                     bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
-                    bool const isNoGcPoll    = !predBlock->HasFlag(BasicBlockFlags::BBF_NEEDS_GCPOLL);
 
                     // From most to least preferable.
                     //
@@ -5303,10 +5302,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                         return 1;
                     if (isFallThrough)
                         return 2;
-                    if (isNoGcPoll)
-                        return 3;
 
-                    return 4;
+                    return 3;
                 };
 
                 unsigned const rank = getRank();
