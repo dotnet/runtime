@@ -2575,12 +2575,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 {
                     *resultVN = funcApp.GetArg(0);
                 }
-                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
-                //
-                else if (VNFuncIsComparison(funcApp.GetFunc()))
-                {
-                    *resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
-                }
             }
         }
 
@@ -7075,6 +7069,30 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
+            // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+#if defined(FEATURE_HW_INTRINSICS)
+            NamedIntrinsic id;
+            unsigned       simdSize;
+            var_types      simdBaseType;
+            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
+            {
+                if (HWIntrinsicInfo::ReturnsBoolean(id))
+                {
+                    // A boolean [0, 1]
+                    return VNVisit::Continue;
+                }
+
+                if (HWIntrinsicInfo::ReturnsScalarT(id))
+                {
+                    // We are extracting a value of the base types width and sign
+                    if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
+                    {
+                        return VNVisit::Continue;
+                    }
+                }
+            }
+#endif // FEATURE_HW_INTRINSICS
+
             switch (funcApp.GetFunc())
             {
                 case VNF_GT:
@@ -7114,67 +7132,6 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     size_t elementCount = simdSize / elementSize;
 
                     if (elementCount <= 16)
-                    {
-                        return VNVisit::Continue;
-                    }
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case VNF_HWI_Vector256_op_Equality:
-                case VNF_HWI_Vector256_op_Inequality:
-                case VNF_HWI_Vector512_op_Equality:
-                case VNF_HWI_Vector512_op_Inequality:
-                case VNF_HWI_X86Base_CompareScalarOrderedEqual:
-                case VNF_HWI_X86Base_CompareScalarOrderedGreaterThan:
-                case VNF_HWI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
-                case VNF_HWI_X86Base_CompareScalarOrderedLessThan:
-                case VNF_HWI_X86Base_CompareScalarOrderedLessThanOrEqual:
-                case VNF_HWI_X86Base_CompareScalarOrderedNotEqual:
-                case VNF_HWI_X86Base_CompareScalarUnorderedEqual:
-                case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThan:
-                case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
-                case VNF_HWI_X86Base_CompareScalarUnorderedLessThan:
-                case VNF_HWI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-                case VNF_HWI_X86Base_CompareScalarUnorderedNotEqual:
-                case VNF_HWI_X86Base_TestC:
-                case VNF_HWI_X86Base_TestNotZAndNotC:
-                case VNF_HWI_X86Base_TestZ:
-                case VNF_HWI_AVX_TestC:
-                case VNF_HWI_AVX_TestNotZAndNotC:
-                case VNF_HWI_AVX_TestZ:
-#elif defined(TARGET_ARM64)
-                case VNF_HWI_Vector64_op_Equality:
-                case VNF_HWI_Vector64_op_Inequality:
-#endif
-                case VNF_HWI_Vector128_op_Equality:
-                case VNF_HWI_Vector128_op_Inequality:
-                {
-                    // A boolean [0, 1]
-                    return VNVisit::Continue;
-                }
-
-#if defined(TARGET_XARCH)
-                case VNF_HWI_Vector256_GetElement:
-                case VNF_HWI_Vector256_ToScalar:
-                case VNF_HWI_Vector512_GetElement:
-                case VNF_HWI_Vector512_ToScalar:
-                case VNF_HWI_X86Base_Extract:
-                case VNF_HWI_X86Base_X64_Extract:
-#elif defined(TARGET_ARM64)
-                case VNF_HWI_Vector64_GetElement:
-                case VNF_HWI_Vector64_ToScalar:
-                case VNF_HWI_AdvSimd_Extract:
-#endif
-                case VNF_HWI_Vector128_GetElement:
-                case VNF_HWI_Vector128_ToScalar:
-                {
-                    // We are extracting a value of the base types width and sign
-
-                    var_types simdBaseType;
-                    uint32_t  simdSize = GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
-
-                    if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
                     {
                         return VNVisit::Continue;
                     }
