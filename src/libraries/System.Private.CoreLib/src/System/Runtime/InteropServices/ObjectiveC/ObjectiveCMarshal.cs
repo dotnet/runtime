@@ -155,12 +155,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
             }
 
-            unsafe
+            if (!IsTrackedReferenceWithFinalizer(obj))
             {
-                if (!RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
-                }
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
             }
 
             ObjcTrackingInformation trackerInfo = s_objects.GetOrAdd(obj, static _ => new ObjcTrackingInformation());

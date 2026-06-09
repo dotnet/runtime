@@ -59,6 +59,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
             => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
 
+        private static unsafe bool IsTrackedReferenceWithFinalizer(object obj)
+            => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;
+
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)
         {

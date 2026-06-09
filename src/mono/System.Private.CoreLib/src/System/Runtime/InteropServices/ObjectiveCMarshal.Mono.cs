@@ -31,5 +31,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
             => throw new NotImplementedException();
+
+        private static bool IsTrackedReferenceWithFinalizer(object obj)
+            => throw new NotImplementedException();
     }
 }

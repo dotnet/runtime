@@ -119,5 +119,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
             => RuntimeImports.RhHandleAllocRefCounted(obj);
+
+        private static bool IsTrackedReferenceWithFinalizer(object obj)
+            => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;
     }
 }
