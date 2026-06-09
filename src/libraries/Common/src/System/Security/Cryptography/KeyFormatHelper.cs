@@ -53,7 +53,8 @@ namespace System.Security.Cryptography
         internal static ReadOnlySpan<byte> ReadSubjectPublicKeyInfo(
             string[] validOids,
             ReadOnlySpan<byte> source,
-            out int bytesRead)
+            out int bytesRead,
+            bool permitParameters = true)
         {
             ValueSubjectPublicKeyInfoAsn spki;
             int read;
@@ -70,7 +71,8 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
+            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0 ||
+                (!permitParameters && spki.Algorithm.HasParameters))
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
@@ -130,7 +132,8 @@ namespace System.Security.Cryptography
         internal static ReadOnlySpan<byte> ReadPkcs8(
             string[] validOids,
             ReadOnlySpan<byte> source,
-            out int bytesRead)
+            out int bytesRead,
+            bool permitParameters = true)
         {
             try
             {
@@ -138,7 +141,8 @@ namespace System.Security.Cryptography
                 int read = reader.PeekEncodedValue().Length;
                 ValuePrivateKeyInfoAsn.Decode(ref reader, out ValuePrivateKeyInfoAsn privateKeyInfo);
 
-                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0 ||
+                    (!permitParameters && privateKeyInfo.PrivateKeyAlgorithm.HasParameters))
                 {
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                 }
