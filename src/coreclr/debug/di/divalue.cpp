@@ -985,7 +985,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
     {
         // That worked, so update the copy of the value we have in
         // our local cache.
-        m_info.objRef = CORDB_ADDRESS_TO_PTR(address);
+        m_info.objRef = address;
 
 
         if (m_info.objTypeData.elementType == ELEMENT_TYPE_STRING)
@@ -1058,7 +1058,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
     CordbAppDomain * pAppDomain,
     CordbType * pType,
     CordbType * pRealTypeOfTypedByref,
-    DebuggerIPCE_ObjectData * pInfo,
+    DacDbiObjectData * pInfo,
     ICorDebugValue **ppValue
 )
 {
@@ -1488,11 +1488,11 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
 // Arguments:
 //     input:  objectType  - type of the referent of the objRef being examined
 //     output: pObjectData - information about the reference to be initialized
-void PreInitObjectData(DebuggerIPCE_ObjectData * pObjectData, void * objAddress, CorElementType objectType)
+void PreInitObjectData(DacDbiObjectData * pObjectData, CORDB_ADDRESS objAddress, CorElementType objectType)
 {
     _ASSERTE(pObjectData != NULL);
 
-    memset(pObjectData, 0, sizeof(DebuggerIPCE_ObjectData));
+    memset(pObjectData, 0, sizeof(DacDbiObjectData));
     pObjectData->objRef = objAddress;
     pObjectData->objTypeData.elementType = objectType;
 
@@ -1513,27 +1513,30 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
                                         void *                    objectAddress,
                                         CorElementType            type,
                                         VMPTR_AppDomain           vmAppdomain,
-                                        DebuggerIPCE_ObjectData * pInfo)
+                                        DacDbiObjectData * pInfo)
 {
     IDacDbiInterface *pInterface = pProcess->GetDAC();
     CORDB_ADDRESS objTargetAddr = PTR_TO_CORDB_ADDRESS(objectAddress);
 
     // make sure we don't end up with old garbage values in case the reference is bad
-    PreInitObjectData(pInfo, objectAddress, type);
-
-    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, pInfo));
+    PreInitObjectData(pInfo, objTargetAddr, type);
+    BOOL isValidRef = FALSE;
+    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, &isValidRef, &pInfo->objSize, &pInfo->objOffsetToVars, &pInfo->objTypeData));
+    pInfo->objRefBad = !isValidRef;
 
     if (!pInfo->objRefBad)
     {
         // for certain referent types, we need a bit more information:
         if (pInfo->objTypeData.elementType == ELEMENT_TYPE_STRING)
         {
-            IfFailThrow(pInterface->GetStringData(objTargetAddr, pInfo));
+            IfFailThrow(pInterface->GetStringData(objTargetAddr, &pInfo->stringInfo.length, &pInfo->stringInfo.offsetToStringBase));
         }
         else if ((pInfo->objTypeData.elementType == ELEMENT_TYPE_ARRAY) ||
                  (pInfo->objTypeData.elementType == ELEMENT_TYPE_SZARRAY))
         {
-            IfFailThrow(pInterface->GetArrayData(objTargetAddr, pInfo));
+            BOOL isValidArray = FALSE;
+            IfFailThrow(pInterface->GetArrayData(objTargetAddr, &isValidArray, &pInfo->arrayInfo));
+            pInfo->objRefBad = !isValidArray;
         }
     }
 
@@ -1553,18 +1556,18 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
                                             CORDB_ADDRESS             pTypedByRef,
                                             CorElementType            type,
                                             VMPTR_AppDomain           vmAppDomain,
-                                            DebuggerIPCE_ObjectData * pInfo)
+                                            DacDbiObjectData * pInfo)
 {
 
     // make sure we don't end up with old garbage values since we don't set all the values for TypedByRef objects
-    PreInitObjectData(pInfo, CORDB_ADDRESS_TO_PTR(pTypedByRef), type);
+    PreInitObjectData(pInfo, pTypedByRef, type);
 
     // Though pTypedByRef is the value of the object ref represented by an instance of CordbReferenceValue,
     // it is not the address of an object, as we would ordinarily expect. Instead, in the special case of
     // TypedByref objects, it is actually the address of the TypedByRef struct which  contains the
     // type and the object address.
 
-    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, pInfo));
+    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, &pInfo->objRef, &pInfo->typedByrefType));
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced
@@ -1615,7 +1618,7 @@ void CordbReferenceValue::UpdateTypeInfo()
     if (m_info.objTypeData.elementType == ELEMENT_TYPE_TYPEDBYREF)
 {
         IfFailThrow(CordbType::TypeDataToType(m_appdomain,
-                    &m_info.typedByrefInfo.typedByrefType,
+                    &m_info.typedByrefType,
                     &m_realTypeOfTypedByref));
     }
 } // CordbReferenceValue::UpdateTypeInfo
@@ -1727,7 +1730,7 @@ HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
 CordbObjectValue::CordbObjectValue(CordbAppDomain *          pAppdomain,
                                    CordbType *               pType,
                                    TargetBuffer              remoteValue,
-                                   DebuggerIPCE_ObjectData *pObjectData )
+                                   DacDbiObjectData *pObjectData )
     : CordbValue(pAppdomain, pType, remoteValue.pAddress,
                 false, pAppdomain->GetProcess()->GetContinueNeuterList()),
       m_info(*pObjectData),
@@ -3589,7 +3592,7 @@ HRESULT CordbBoxValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnu
 //         remoteValue - buffer describing the remote location of the value
 CordbArrayValue::CordbArrayValue(CordbAppDomain *          pAppdomain,
                                  CordbType *               pType,
-                                 DebuggerIPCE_ObjectData * pObjectInfo,
+                                 DacDbiObjectData * pObjectInfo,
                                  TargetBuffer              remoteValue)
     : CordbValue(pAppdomain,
                  pType,
@@ -3909,7 +3912,7 @@ HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
         else  _ASSERTE(cbElemSize != 0);
 
         m_idxLower = nPosition;
-        m_idxUpper = min(m_idxLower + len, m_info.arrayInfo.componentCount);
+        m_idxUpper = min(m_idxLower + len, (SIZE_T)m_info.arrayInfo.componentCount);
         _ASSERTE(m_idxLower < m_idxUpper);
 
         SIZE_T cbOffsetFrom = m_info.arrayInfo.offsetToArrayBase + m_idxLower * cbElemSize;

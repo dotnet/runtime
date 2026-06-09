@@ -26,6 +26,10 @@ string GetStringValue(TargetPointer address);
 // Get the pointer to the data corresponding to a managed array object. Error if address does not represent a array.
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
 
+// Get the length (in chars) and the offset from the object base to the first character
+// for a managed string object. Error if address does not represent a string.
+void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar);
+
 // Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
 
@@ -37,6 +41,10 @@ int TryGetHashCode(TargetPointer address);
 TargetPointer GetSyncBlockAddress(TargetPointer address);
 
 DelegateInfo GetDelegateInfo(TargetPointer address);
+
+// Returns the logical size of the object in bytes (base size plus any variable-size
+// component data), padded up to the minimum allocated object size.
+ulong GetSize(TargetPointer address);
 ```
 
 ## Version 1
@@ -96,6 +104,19 @@ string GetStringValue(TargetPointer address)
     Span<byte> span = stackalloc byte[(int)length * sizeof(char)];
     target.ReadBuffer(address + /* String::m_FirstChar offset */, span);
     return new string(MemoryMarshal.Cast<byte, char>(span));
+}
+
+void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar)
+{
+    TargetPointer mt = GetMethodTableAddress(address);
+    if (mt == TargetPointer.Null)
+        throw new ArgumentException("Address represents a set-free object");
+    TargetPointer stringMethodTable = target.ReadPointer(target.ReadGlobalPointer("StringMethodTable"));
+    if (mt != stringMethodTable)
+        throw new ArgumentException("Address does not represent a string object", nameof(address));
+
+    length = target.Read<uint>(address + /* String::m_StringLength offset */);
+    offsetToFirstChar = /* String::m_FirstChar offset */;
 }
 
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
@@ -209,5 +230,31 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     };
 
     return new DelegateInfo(targetObject, targetMethodPtr, delegateType);
+}
+
+ulong GetSize(TargetPointer address)
+{
+    TargetPointer mt = GetMethodTableAddress(address);
+    if (mt == TargetPointer.Null)
+        throw new ArgumentException("Address represents a set-free object");
+
+    Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+    TypeHandle typeHandle = rts.GetTypeHandle(mt);
+
+    ulong size = rts.GetBaseSize(typeHandle);
+    uint componentSize = rts.GetComponentSize(typeHandle);
+    if (componentSize > 0)
+    {
+        // Variable-size object (array or string): add the component data size.
+        // Both Array and String share the m_NumComponents/m_StringLength field layout.
+        uint numComponents = target.Read<uint>(address + /* Array::m_NumComponents offset */);
+        size += (ulong)numComponents * componentSize;
+    }
+
+    // Round up to the minimum allocated object size. The GC will not produce an
+    // object smaller than 2 pointers plus the object header, so report at least
+    // that much regardless of the type's declared base size.
+    ulong minObjectSize = (ulong)(2 * (uint)target.PointerSize) + target.ReadGlobal<uint>("ObjectHeaderSize");
+    return size < minObjectSize ? minObjectSize : size;
 }
 ```
