@@ -6299,6 +6299,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ulong)((op1 <= op2) ? 1 : 0);
         }
 
+        public static int WhileGreaterThanMask(int op1, int op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanMask(uint op1, uint op2)
+        {
+            return (uint)((op1 > op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanMask(long op1, long op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 > op2) ? 1 : 0);
+        }
+
+        public static int WhileGreaterThanOrEqualMask(int op1, int op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanOrEqualMask(uint op1, uint op2)
+        {
+            return (uint)((op1 >= op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanOrEqualMask(long op1, long op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanOrEqualMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 >= op2) ? 1 : 0);
+        }
+
         public static ulong MaskBothSet(byte[] op1, byte[] op2)
         {
             ulong acc = 0;

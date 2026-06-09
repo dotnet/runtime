@@ -259,7 +259,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     // and before first of the current block is emitted
     genUpdateLife(block->bbLiveIn);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Even if liveness didn't change, we need to update the registers containing GC references.
     // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
     // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
@@ -353,7 +353,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     /* Start a new code output block */
 
@@ -569,7 +569,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 
     regSet.rsSpillChk();
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Make sure we didn't bungle pointer register tracking
     regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
     regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
@@ -618,7 +618,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 
     noway_assert(nonVarPtrRegs == RBM_NONE);
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 #endif // DEBUG
 
 #if defined(DEBUG)
@@ -1475,7 +1475,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
         }
     }
 
-    assert(node->OperIs(GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
+    assert((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0);
     assert((lastConsumedNode == nullptr) || (node->gtUseNum == -1) || (node->gtUseNum > lastConsumedNode->gtUseNum));
 
     node->gtDebugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
@@ -1601,7 +1601,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
     // 2. it was produced by a local that is going dead
@@ -1659,7 +1659,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     genCheckConsumeNode(tree);
     return tree->GetRegNum();
@@ -2339,6 +2339,30 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 #endif
 
 //------------------------------------------------------------------------
+// genCodeForCatchArg:
+//   Generates code for GT_CATCH_ARG.
+//
+// Arguments:
+//    tree - the GT_CATCH_ARG node.
+//
+void CodeGen::genCodeForCatchArg(GenTree* tree)
+{
+    noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
+
+    // Catch arguments get passed in a register. genCodeForBBlist()
+    // would have marked it as holding a GC object, but not used.
+
+    noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
+    inst_Mov(TYP_REF, tree->GetRegNum(), REG_EXCEPTION_OBJECT, /* canSkip */ true);
+
+    if (tree->GetRegNum() != REG_EXCEPTION_OBJECT)
+    {
+        gcInfo.gcMarkRegSetNpt(RBM_EXCEPTION_OBJECT);
+    }
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
 //
 // Arguments:
@@ -2679,6 +2703,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
+ * Wasm:  all, simd
  */
 
 #if defined(DEBUG)
@@ -2703,7 +2728,14 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
+    GetEmitter()->emitIns_BlockTy(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2727,6 +2759,14 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsCCMP();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "cfcmov") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCFCMOV();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ctest") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCTEST();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
@@ -2745,6 +2785,13 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsPac();
     }
+
+#elif defined(TARGET_WASM)
+    if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
+    {
+        genWasmEmitterUnitTestsSimd();
+    }
+    instGen(INS_end);
 #endif
 
     genDefineTempLabel(skipLabel);

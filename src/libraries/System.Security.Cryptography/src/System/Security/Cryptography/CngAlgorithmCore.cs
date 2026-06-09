@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
+        public unsafe CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
         {
             ThrowIfDisposed();
 

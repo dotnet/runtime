@@ -15,7 +15,6 @@ namespace System.Runtime.CompilerServices
         private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        [RequiresUnsafe]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         [Intrinsic]
@@ -23,7 +22,6 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnsafe]
         private static ref byte GetNonGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
@@ -31,7 +29,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetNonGCStaticBase(MethodTable* mt)
         {
             ref byte nonGCStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics);
@@ -43,7 +40,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetDynamicNonGCStaticBase(DynamicStaticsInfo* dynamicStaticsInfo)
         {
             ref byte nonGCStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pNonGCStatics);
@@ -56,7 +52,6 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnsafe]
         private static ref byte GetGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
@@ -64,7 +59,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetGCStaticBase(MethodTable* mt)
         {
             ref byte gcStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics);
@@ -76,7 +70,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetDynamicGCStaticBase(DynamicStaticsInfo* dynamicStaticsInfo)
         {
             ref byte gcStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pGCStatics);
@@ -162,7 +155,6 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnsafe]
         private static ref byte GetNonGCThreadStaticBaseSlow(MethodTable* mt)
         {
             ByteRef result = default;
@@ -172,7 +164,6 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnsafe]
         private static ref byte GetGCThreadStaticBaseSlow(MethodTable* mt)
         {
             ByteRef result = default;
@@ -228,7 +219,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetNonGCThreadStaticBase(MethodTable* mt)
         {
             int index = mt->AuxiliaryData->GetThreadStaticsInfo()._nonGCTlsIndex;
@@ -239,7 +229,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetGCThreadStaticBase(MethodTable* mt)
         {
             int index = mt->AuxiliaryData->GetThreadStaticsInfo()._gcTlsIndex;
@@ -250,7 +239,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetDynamicNonGCThreadStaticBase(ThreadStaticsInfo* threadStaticsInfo)
         {
             int index = threadStaticsInfo->_nonGCTlsIndex;
@@ -261,7 +249,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static ref byte GetDynamicGCThreadStaticBase(ThreadStaticsInfo* threadStaticsInfo)
         {
             int index = threadStaticsInfo->_gcTlsIndex;
@@ -292,14 +279,12 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static unsafe ref byte StaticFieldAddress_Dynamic(StaticFieldAddressArgs* pArgs)
         {
             return ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset);
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
         private static unsafe ref byte StaticFieldAddressUnbox_Dynamic(StaticFieldAddressArgs* pArgs)
         {
             object boxedObject = Unsafe.As<byte, object>(ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset));

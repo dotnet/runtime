@@ -158,10 +158,11 @@ struct StoredProfilerNode
 {
     CLSID guid;
     SString path;
-    SLink m_Link;
+    // Next pointer for SList linkage.
+    DPTR(StoredProfilerNode) m_pNext;
 };
 
-typedef SList<StoredProfilerNode, true> STOREDPROFILERLIST;
+typedef SList<StoredProfilerNode> STOREDPROFILERLIST;
 // ---------------------------------------------------------------------------------------
 // Global struct that lets the EE see the load status of the profiler, and provides a
 // pointer (pProfInterface) through which profiler calls can be made

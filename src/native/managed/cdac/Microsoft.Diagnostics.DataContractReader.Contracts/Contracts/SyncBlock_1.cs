@@ -1,27 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct SyncBlock_1 : ISyncBlock
 {
-    private const string LockStateName = "_state";
-    private const string LockOwningThreadIdName = "_owningThreadId";
-    private const string LockRecursionCountName = "_recursionCount";
-    private const string LockName = "Lock";
-    private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
-    private readonly ulong _syncBlockLinkOffset;
 
     internal SyncBlock_1(Target target)
     {
         _target = target;
         _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
-        _syncBlockLinkOffset = (ulong)target.GetTypeInfo(DataType.SyncBlock).Fields[nameof(Data.SyncBlock.LinkNext)].Offset;
     }
 
     public TargetPointer GetSyncBlock(uint index)
@@ -57,23 +47,12 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
         if (sb.Lock != null)
         {
-            ILoader loader = _target.Contracts.Loader;
-            TargetPointer systemAssembly = loader.GetSystemAssembly();
-            ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            TypeHandle lockType = rts.GetTypeByNameAndModule(LockName, LockNamespace, moduleHandle);
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
-            TargetPointer lockObjPtr = sb.Lock.Object;
-            Data.Object lockObj = _target.ProcessedData.GetOrAdd<Data.Object>(lockObjPtr);
-            TargetPointer dataAddr = lockObj.Data;
-            uint state = ReadUintField(lockType, LockStateName, rts, mdReader, dataAddr);
-            bool monitorHeld = (state & 1) != 0;
+            Data.Lock lockData = _target.ProcessedData.GetOrAdd<Data.Lock>(sb.Lock.Object);
+            bool monitorHeld = (lockData.State & 1) != 0;
             if (monitorHeld)
             {
-                owningThreadId = ReadUintField(lockType, LockOwningThreadIdName, rts, mdReader, dataAddr);
-                recursion = ReadUintField(lockType, LockRecursionCountName, rts, mdReader, dataAddr);
+                owningThreadId = (uint)lockData.OwningThreadId;
+                recursion = lockData.RecursionCount;
             }
             return monitorHeld;
         }
@@ -108,7 +87,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         TargetPointer cleanupBlockList = cache.CleanupBlockList;
         if (cleanupBlockList == TargetPointer.Null)
             return TargetPointer.Null;
-        return new TargetPointer(cleanupBlockList.Value - _syncBlockLinkOffset);
+        return cleanupBlockList;
     }
 
     public TargetPointer GetNextSyncBlock(TargetPointer syncBlock)
@@ -116,7 +95,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
         if (sb.LinkNext == TargetPointer.Null)
             return TargetPointer.Null;
-        return new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
+        return sb.LinkNext;
     }
 
     public bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
@@ -130,19 +109,9 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         if (interopInfo == null)
             return false;
 
-        rcw = interopInfo.RCW & ~1ul;
-        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
-        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
+        rcw = (interopInfo.RCW ?? TargetPointer.Null) & ~1ul;
+        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : (interopInfo.CCW ?? TargetPointer.Null);
+        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : (interopInfo.CCF ?? TargetPointer.Null);
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
-    }
-
-    private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)
-    {
-        TargetPointer field = rts.GetFieldDescByName(enclosingType, fieldName);
-        uint token = rts.GetFieldDescMemberDef(field);
-        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-        uint offset = rts.GetFieldDescOffset(field, fieldDef);
-        return _target.Read<uint>(dataAddr + offset);
     }
 }

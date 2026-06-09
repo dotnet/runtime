@@ -26,6 +26,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -108,13 +109,11 @@ typedef cpuset_t cpu_set_t;
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/heap.h>
-#endif // __EMSCRIPTEN__
-
-
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
+
+// The number of CPUs that are configured in the OS.
+uint32_t g_configuredCpuCount = 0;
 
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
@@ -151,13 +150,14 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    int configuredCpuCount = minipal_get_cpu_max_possible_count();
     if (configuredCpuCount == -1)
     {
         return false;
     }
 
     g_totalCpuCount = cpuCount;
+    g_configuredCpuCount = configuredCpuCount;
 
     if (!g_processAffinitySet.Initialize(configuredCpuCount))
     {
@@ -208,7 +208,7 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    for (size_t i = 0; i < configuredCpuCount; i++)
+    for (int i = 0; i < configuredCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
@@ -347,7 +347,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     requested.tv_nsec = (sleepMSec - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
 
     timespec remaining;
-    while (nanosleep(&requested, &remaining) == EINTR)
+    while (nanosleep(&requested, &remaining) == -1 && errno == EINTR)
     {
         requested = remaining;
     }
@@ -405,7 +405,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -453,13 +453,9 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
-#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-#else
-    bool success = true;
-#endif // !TARGET_WASM
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -467,7 +463,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
     }
 #endif
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
         if ((int)node <= g_highestNumaNode)
@@ -485,7 +481,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }
     }
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
 
     return success;
 }
@@ -544,13 +540,13 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 #endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     if (bRetVal)
     {
         // Do not include freed memory in coredump.
         madvise(address, size, MADV_DONTDUMP);
     }
-#endif // defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#endif // defined(MADV_DONTDUMP)
 
     return  bRetVal;
 }
@@ -565,39 +561,24 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-#ifdef TARGET_WASM
-    return true;
-#else // !TARGET_WASM
     int st = EINVAL;
-
-#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
-
-    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
     // Do not include reset memory in coredump.
-    madviseFlags |= MADV_DONTDUMP;
+    st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
-#ifdef HAVE_MADV_FREE
+#ifdef MADV_FREE
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
-    madviseFlags |= MADV_FREE;
-#endif
-
-    st = madvise(address, size, madviseFlags);
-
-#endif // defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
-
-#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    st = madvise(address, size, MADV_FREE);
+#elif defined(HAVE_POSIX_MADVISE)
     // DONTNEED is the nearest posix equivalent of FREE.
     // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
     st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
-
-#endif // defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+#endif // MADV_FREE
 
     return (st == 0);
-#endif // !TARGET_WASM
 }
 
 // Check if the OS supports write watching
@@ -847,7 +828,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+#if !defined(__APPLE__) && !defined(__HAIKU__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -915,9 +896,16 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET((int)procNo, &cpuSet);
+
+    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
+    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    if (pCpuSet == nullptr)
+    {
+        return false;
+    }
+
+    CPU_ZERO_S(cpuSetSize, pCpuSet);
+    CPU_SET_S((int)procNo, cpuSetSize, pCpuSet);
 
     // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
     // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
@@ -929,10 +917,12 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
 #if HAVE_SCHED_SETAFFINITY
-    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    int st = sched_setaffinity(0, cpuSetSize, pCpuSet);
 #else
-    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+    int st = pthread_setaffinity_np(pthread_self(), cpuSetSize, pCpuSet);
 #endif
+
+    CPU_FREE(pCpuSet);
 
     return (st == 0);
 
@@ -1108,15 +1098,13 @@ uint64_t GetAvailablePhysicalMemory()
     sz = sizeof(free_count);
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
 
-    available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+    available = (inactive_count + laundry_count + free_count) * minipal_getpagesize();
 #elif defined(__HAIKU__)
     system_info info;
     if (get_system_info(&info) == B_OK)
     {
         available = info.free_memory;
     }
-#elif defined(__EMSCRIPTEN__)
-    available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
@@ -1166,7 +1154,7 @@ uint64_t GetAvailablePageFile()
     rc = sysctlnametomib("vm.swap_info", mib, &length);
     if (rc == 0)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         // Aggregate the information for all swap files on the system
         for (mib[2] = 0; ; mib[2]++)
         {
@@ -1187,7 +1175,7 @@ uint64_t GetAvailablePageFile()
     struct anoninfo ai;
     if (swapctl(SC_AINFO, &ai) != -1)
     {
-        int pagesize = getpagesize();
+        uint32_t pagesize = minipal_getpagesize();
         available = ai.ani_free * pagesize;
     }
 #elif HAVE_SYSINFO
@@ -1356,14 +1344,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
                     int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

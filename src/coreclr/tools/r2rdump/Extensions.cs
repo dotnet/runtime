@@ -186,14 +186,27 @@ namespace R2RDump
 
         public static void WriteTo(this RuntimeFunction theThis, TextWriter writer, DumpModel model)
         {
+            bool isWasm = theThis.UnwindInfo is ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo;
             if (!model.Naked)
             {
                 writer.WriteLine($"Id: {theThis.Id}");
-                writer.WriteLine($"StartAddress: 0x{theThis.StartAddress:X8}");
+                if (isWasm)
+                {
+                    writer.WriteLine($"VirtualIP: {theThis.StartAddress}");
+                    writer.WriteLine($"IsFunclet: {theThis.WasmIsFunclet}");
+                }
+                else
+                {
+                    writer.WriteLine($"StartAddress: 0x{theThis.StartAddress:X8}");
+                }
             }
             if (theThis.Size == -1)
             {
                 writer.WriteLine("Size: Unavailable");
+            }
+            else if (isWasm)
+            {
+                writer.WriteLine($"Size: {theThis.Size} virtual IPs");
             }
             else
             {

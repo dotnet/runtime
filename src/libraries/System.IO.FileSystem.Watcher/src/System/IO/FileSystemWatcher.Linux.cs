@@ -513,7 +513,7 @@ namespace System.IO
                 }
             }
 
-            private bool ProcessEvent(NotifyEvent nextEvent, ref int movedFromWatchCount, ref string movedFromName, ref uint movedFromCookie, ref bool movedFromIsDir)
+            private unsafe bool ProcessEvent(NotifyEvent nextEvent, ref int movedFromWatchCount, ref string movedFromName, ref uint movedFromCookie, ref bool movedFromIsDir)
             {
                 // Subset of EventMask that are emitted conditionally based on NotifyFilters.DirectoryName/FileName.
                 const Interop.Sys.NotifyEvents FileDirEvents =

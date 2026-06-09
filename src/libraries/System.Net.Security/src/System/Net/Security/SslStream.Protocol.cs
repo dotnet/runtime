@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -24,7 +25,7 @@ namespace System.Net.Security
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
         private SafeDeleteContext? _securityContext;
 #else
-        private SafeDeleteSslContext? _securityContext;
+        internal SafeDeleteSslContext? _securityContext;
 #endif
 
         private SslConnectionInfo _connectionInfo;
@@ -152,7 +153,7 @@ namespace System.Net.Security
         // SECURITY: we open a private key container on behalf of the caller
         // and we require the caller to have permission associated with that operation.
         //
-        internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
+        internal static unsafe X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
         {
             if (certificate == null)
             {
@@ -970,30 +971,100 @@ namespace System.Net.Security
 #endif
         }
 
-        internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
+        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
+            ThrowIfExceptionalOrNotAuthenticated();
 
-            ProtocolToken token = SslStreamPal.EncryptMessage(
-                _securityContext!,
-                buffer,
-                _headerSize,
-                _trailerSize);
-
-            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            lock (_handshakeLock)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
-            }
+                if (_handshakeWaiter != null)
+                {
+                    ProtocolToken waitToken = default;
+                    // avoid waiting under lock.
+                    waitToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    return waitToken;
+                }
 
-            return token;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
+
+                ProtocolToken token = SslStreamPal.EncryptMessage(
+                    _securityContext!,
+                    buffer,
+                    _headerSize,
+                    _trailerSize);
+
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
+                }
+
+                return token;
+            }
         }
 
-        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
+        // On some platforms, the platform APIs decrypt in-place via single
+        // call (Schannel), while others have separate write-ciphertext +
+        // read-plaintext primitives. To allow the most efficient thing (copying
+        // plaintext straight to the `destination` buffer provided by the
+        // SslStream caller) on platforms that support it, the contract of this
+        // method is as follows:
+        //  - After the call, first `bytesWritten` bytes of `destination` contain decrypted plaintext
+        //  - Rest of the decrypted plaintext, if any, is stored in `_buffer.DecryptedSpan`.
+        private SecurityStatusPal DecryptData(int frameSize, Span<byte> destination, out int bytesWritten)
         {
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
-            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            SecurityStatusPal status;
+
+            lock (_handshakeLock)
             {
-                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
+                ThrowIfExceptionalOrNotAuthenticated();
+
+                status = SslStreamPal.DecryptMessage(
+                    _securityContext!,
+                    _buffer.EncryptedSpanSliced(frameSize),
+                    destination,
+                    out bytesWritten,
+                    out int leftoverOffset,
+                    out int leftoverLength);
+
+                _buffer.OnDecrypted(leftoverOffset, leftoverLength, frameSize);
+
+                if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                {
+                    if (bytesWritten > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, destination.Slice(0, bytesWritten));
+                    }
+
+                    if (_buffer.DecryptedSpan.Length > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, _buffer.DecryptedSpan);
+                    }
+                }
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                {
+                    // The status indicates that the peer or TLS implementation requires additional
+                    // handshake/session processing. In practice, there can be other reasons too,
+                    // like TLS1.3 session creation or alert handling. We need to pass the data to
+                    // the underlying security provider and it is not safe to do parallel write any
+                    // more as that can change TLS state and the EncryptData() can fail in strange ways.
+
+                    // To handle this we call DecryptData() under lock and we create TCS waiter.
+                    // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
+                    // Instead it will wait synchronously or asynchronously and it will try again after the wait.
+                    // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
+                    // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
+                    // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
+
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
+                    {
+                        // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
+                        // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                        // for session management e.g. anything lsass needs to see.
+                        // We also allow it when explicitly requested using RenegotiateAsync().
+                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                }
             }
 
             return status;
@@ -1007,15 +1078,8 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
-            sslPolicyErrors = SslPolicyErrors.None;
-            chainStatus = X509ChainStatusFlags.NoError;
-
-            // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
-            bool success = false;
-            X509Chain? chain = null;
-
             // We need to note the number of certs in ExtraStore that were
             // provided (by the user), we will add more from the received peer
             // chain and we want to dispose only these after we perform the
@@ -1023,113 +1087,13 @@ namespace System.Net.Security
             // TODO: this forces allocation of X509Certificate2Collection
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
+            X509Chain? chain = null;
+
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
-                if (_remoteCertificate != null &&
-                    certificate != null &&
-                    certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
-                {
-                    // This is renegotiation or TLS 1.3 and the certificate did not change.
-                    // There is no reason to process callback again as we already established trust.
-                    certificate.Dispose();
-                    return true;
-                }
 
-                // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
-
-                if (certificate == null)
-                {
-                    if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-                }
-                else
-                {
-                    chain ??= new X509Chain();
-
-                    if (_sslAuthenticationOptions.CertificateChainPolicy != null)
-                    {
-                        chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
-                    }
-                    else
-                    {
-                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
-                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                        if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
-                        {
-                            chain.ChainPolicy.DisableCertificateDownloads = true;
-                        }
-
-                        if (trust != null)
-                        {
-                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                            if (trust._store != null)
-                            {
-                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                            }
-                            if (trust._trustList != null)
-                            {
-                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
-                            }
-                        }
-                    }
-
-                    // set ApplicationPolicy unless already provided.
-                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
-                    {
-                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-                    }
-
-                    sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
-                        _securityContext!,
-                        chain,
-                        certificate,
-                        _sslAuthenticationOptions.CheckCertName,
-                        _sslAuthenticationOptions.IsServer,
-                        TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
-                }
-
-                _remoteCertificate = certificate;
-
-                if (remoteCertValidationCallback != null)
-                {
-                    success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
-                }
-                else
-                {
-                    if (!RemoteCertRequired)
-                    {
-                        sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
-                    }
-
-                    success = (sslPolicyErrors == SslPolicyErrors.None);
-                }
-
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
-                    NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
-                }
-
-                if (!success)
-                {
-#pragma warning disable CS0162 // unreachable code detected (compile time const)
-                    if (SslStreamPal.CanGenerateCustomAlerts)
-                    {
-                        CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
-                    }
-#pragma warning restore CS0162 // unreachable code detected (compile time const)
-
-                    if (chain != null)
-                    {
-                        foreach (X509ChainStatus status in chain.ChainStatus)
-                        {
-                            chainStatus |= status.Status;
-                        }
-                    }
-                }
+                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
             }
             finally
             {
@@ -1141,7 +1105,7 @@ namespace System.Net.Security
                     // Only cleanup certificates if no user callback was provided.
                     // When a callback is provided, users might add their own certificates to ExtraStore
                     // or keep references to certificates from ChainElements.
-                    if (remoteCertValidationCallback == null)
+                    if (_sslAuthenticationOptions.CertValidationDelegate == null)
                     {
                         // Dispose only the certificates that were added by GetRemoteCertificate
                         for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
@@ -1159,18 +1123,154 @@ namespace System.Net.Security
                     chain.Dispose();
                 }
             }
+        }
+
+        internal bool VerifyRemoteCertificate(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            out SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus)
+        {
+            sslPolicyErrors = SslPolicyErrors.None;
+            chainStatus = X509ChainStatusFlags.NoError;
+
+            bool success = false;
+
+            RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
+
+            if (_remoteCertificate != null &&
+                certificate != null &&
+                certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
+            {
+                // This is renegotiation or TLS 1.3 post-handshake auth and the (remote) certificate did not change.
+                // Revalidating the same certificate MAY fail for a couple of reasons (expiration, revocation,
+                // change in system trust, ...), but we have already established trust on this particular
+                // connection to even get this far.
+                certificate.Dispose();
+                return true;
+            }
+
+            // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
+
+            if (certificate == null)
+            {
+                if (NetEventSource.Log.IsEnabled() && RemoteCertRequired)
+                {
+                    NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                }
+                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+            }
+            else
+            {
+                chain ??= new X509Chain();
+
+                if (_sslAuthenticationOptions.CertificateChainPolicy != null)
+                {
+                    chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
+                }
+                else
+                {
+                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                    if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
+                    {
+                        chain.ChainPolicy.DisableCertificateDownloads = true;
+                    }
+
+                    if (trust != null)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        if (trust._store != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                        }
+                        if (trust._trustList != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                        }
+                    }
+                }
+
+                // set ApplicationPolicy unless already provided.
+                if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+                {
+                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                    chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
+                }
+
+                sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                    _securityContext!,
+                    chain,
+                    certificate,
+                    _sslAuthenticationOptions.CheckCertName,
+                    _sslAuthenticationOptions.IsServer,
+                    TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
+            }
+
+            _remoteCertificate = certificate;
+
+            if (remoteCertValidationCallback != null)
+            {
+                // Ensure connection info is populated before calling the user callback,
+                // which may access properties like SslProtocol or CipherAlgorithm.
+                // During inline cert validation the handshake hasn't completed yet, so
+                // _connectionInfo may not have been set by ProcessHandshakeSuccess.
+                if (_connectionInfo.Protocol == 0 && _securityContext is not null)
+                {
+                    SslStreamPal.QueryContextConnectionInfo(_securityContext, ref _connectionInfo);
+                }
+
+                success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
+            }
+            else
+            {
+                if (!RemoteCertRequired)
+                {
+                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+
+                success = sslPolicyErrors == SslPolicyErrors.None;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain);
+                NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
+            }
+
+            if (!success)
+            {
+#pragma warning disable CS0162 // unreachable code detected (compile time const)
+                if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
+                {
+                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+                }
+#pragma warning restore CS0162 // unreachable code detected (compile time const)
+
+                if (chain != null)
+                {
+                    foreach (X509ChainStatus status in chain.ChainStatus)
+                    {
+                        chainStatus |= status.Status;
+                    }
+                }
+            }
 
             return success;
         }
 
-        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain, ref ProtocolToken alertToken)
+        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain? chain, ref ProtocolToken alertToken)
         {
             TlsAlertMessage alertMessage;
 
             switch (sslPolicyErrors)
             {
                 case SslPolicyErrors.RemoteCertificateChainErrors:
-                    alertMessage = GetAlertMessageFromChain(chain);
+                    Debug.Assert(chain != null);
+                    alertMessage = GetAlertMessageFromChain(chain!);
                     break;
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
                     alertMessage = TlsAlertMessage.BadCertificate;
@@ -1227,7 +1327,7 @@ namespace System.Net.Security
             return GenerateToken(default, out _);
         }
 
-        private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
+        internal static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
         {
             foreach (X509ChainStatus chainStatus in chain.ChainStatus)
             {
@@ -1263,8 +1363,8 @@ namespace System.Net.Security
 
                 if ((chainStatus.Status &
                     (X509ChainStatusFlags.CtlNotSignatureValid | X509ChainStatusFlags.InvalidExtension |
-                     X509ChainStatusFlags.NotSignatureValid | X509ChainStatusFlags.InvalidPolicyConstraints) |
-                     X509ChainStatusFlags.NoIssuanceChainPolicy | X509ChainStatusFlags.NotValidForUsage) != 0)
+                     X509ChainStatusFlags.NotSignatureValid | X509ChainStatusFlags.InvalidPolicyConstraints |
+                     X509ChainStatusFlags.NoIssuanceChainPolicy | X509ChainStatusFlags.NotValidForUsage)) != 0)
                 {
                     return TlsAlertMessage.BadCertificate;
                 }
@@ -1276,7 +1376,7 @@ namespace System.Net.Security
             return TlsAlertMessage.BadCertificate;
         }
 
-        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain chain)
+        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain? chain)
         {
             if (!NetEventSource.Log.IsEnabled())
                 return;
@@ -1296,8 +1396,9 @@ namespace System.Net.Security
 
                 if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
                 {
+                    Debug.Assert(chain != null);
                     string chainStatusString = "ChainStatus: ";
-                    foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+                    foreach (X509ChainStatus chainStatus in chain!.ChainStatus)
                     {
                         chainStatusString += "\t" + chainStatus.StatusInformation;
                     }

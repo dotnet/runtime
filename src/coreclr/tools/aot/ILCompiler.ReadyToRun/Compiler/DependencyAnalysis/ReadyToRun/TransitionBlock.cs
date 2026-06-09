@@ -289,7 +289,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Check whether an arg is automatically switched to passing by reference.
         /// Note that this overload does not handle varargs. This method only works for 
         /// valuetypes - true value types, primitives, enums and TypedReference.
-        /// The method is only overridden to do something meaningful on X64 and ARM64.
+        /// The method is only overridden to do something meaningful on X64, ARM64 and WASM.
         /// </summary>
         /// <param name="th">Type to analyze</param>
         public virtual bool IsArgPassedByRef(TypeHandle th)
@@ -385,6 +385,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 int haElementSize = thRetType.GetHomogeneousAggregateElementSize();
                                 fpReturnSize = 4 * (uint)haElementSize;
+                                break;
+                            }
+
+                            if (IsWasm32)
+                            {
+                                // Wasm doesn't use a ret buffer for returning structs in the interpreter calling convention, which is the TransitionBlock convention on Wasm platforms.
                                 break;
                             }
 
@@ -760,9 +766,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int NumCalleeSavedRegisters => 0;
 
-            public override int SizeOfTransitionBlock => 0;
+            public override int SizeOfTransitionBlock => 8;
 
-            public override int OffsetOfArgumentRegisters => 0;
+            public override int OffsetOfArgumentRegisters => 8;
 
             public override int OffsetOfFloatArgumentRegisters => 0;
 
@@ -770,16 +776,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int EnregisteredReturnTypeIntegerMaxSize => 0;
 
-            public override int GetRetBuffArgOffset(bool hasThis) => hasThis ? 4 : 0;
+            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? StackElemSize(PointerSize, false, false) : 0);
 
             public override bool IsArgPassedByRef(TypeHandle th)
             {
-                return WasmLowering.LowerToAbiType(th.GetRuntimeTypeHandle()) == null;
+                return false;
             }
 
             public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)
             {
-                int stackSlotSize = 4;
+                int stackSlotSize = 8;
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
         }

@@ -5,6 +5,13 @@ This contract is for reading and iterating the threads of the process.
 ## APIs of contract
 
 ``` csharp
+[Flags]
+enum ThreadContextSource
+{
+    None = 0,
+    Debugger = 1,
+}
+
 record struct ThreadStoreData (
     int ThreadCount,
     TargetPointer FirstThread,
@@ -25,9 +32,12 @@ enum ThreadState
     Unstarted           = 0x00000400,    // Thread has never been started
     Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
+    WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
+    Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 record struct ThreadData (
+    TargetPointer ThreadAddress,
     uint Id;
     TargetNUInt OSId;
     ThreadState State;
@@ -36,19 +46,36 @@ record struct ThreadData (
     TargetPointer AllocContextLimit;
     TargetPointer Frame;
     TargetPointer FirstNestedException;
-    TargetPointer TEB;
+    TargetPointer ExposedObjectHandle;
     TargetPointer LastThrownObjectHandle;
+    TargetPointer CurrentCustomDebuggerNotificationHandle;
+    bool LastThrownObjectIsUnhandled;
+    bool HasUnhandledException;
     TargetPointer NextThread;
+    TargetPointer ThreadHandle;
+    bool IsInteropDebuggingHijacked;
+    TargetPointer DebuggerFilterContext;
 );
+```
+
+``` csharp
+[Flags]
+enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
+}
 ```
 
 ``` csharp
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
-TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
+TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
 ```
 
 ## Version 1
@@ -93,16 +120,22 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
+| `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
-| `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
+| `Thread` | `CurrentCustomDebuggerNotification` | Handle to the current custom debugger notification object |
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
+| `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
+| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
+| `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
@@ -175,6 +208,23 @@ ThreadData GetThreadData(TargetPointer address)
         allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
 
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be stale.
+    TargetPointer lastThrownObjectHandle = TargetPointer.Null;
+    if (exceptionTrackerAddr != TargetPointer.Null)
+    {
+        TargetPointer thrownObject = target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ThrownObject offset */);
+        if (thrownObject != TargetPointer.Null)
+        {
+            lastThrownObjectHandle = exceptionTrackerAddr + /* ExceptionInfo::ThrownObject field offset */;
+        }
+    }
+    if (lastThrownObjectHandle == TargetPointer.Null)
+    {
+        lastThrownObjectHandle = target.ReadPointer(address + /* Thread::LastThrownObject offset */);
+    }
+
     ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
@@ -184,8 +234,7 @@ ThreadData GetThreadData(TargetPointer address)
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
         Frame: target.ReadPointer(address + /* Thread::Frame offset */),
-        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
-        LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
+        LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
@@ -196,6 +245,18 @@ void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer st
     stackBase = target.ReadPointer(threadPointer + /* Thread::CachedStackBase offset */);
     stackLimit = target.ReadPointer(threadPointer + /* Thread::CachedStackLimit offset */);
     frameAddress = threadPointer + /* Thread::Frame offset */;
+}
+
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current | (uint)state);
+}
+
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current & ~(uint)state);
 }
 
 TargetPointer IThread.IdToThread(uint id)
@@ -271,12 +332,14 @@ TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
     TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
     if (exceptionTrackerPtr == TargetPointer.Null)
         return TargetPointer.Null;
-    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+    TargetPointer thrownObject = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObject offset */);
 
-    if (thrownObjectHandle == TargetPointer.Null || target.ReadPointer(thrownObjectHandle) == TargetPointer.Null)
+    if (thrownObject == TargetPointer.Null)
         return TargetPointer.Null;
 
-    return thrownObjectHandle;
+    // Return the address of the ThrownObject field as a pseudo-handle.
+    // Callers dereference this address to read the exception Object*.
+    return exceptionTrackerPtr + /* ExceptionInfo::ThrownObject field offset */;
 }
 
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)

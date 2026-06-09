@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -676,7 +676,7 @@ namespace System
         /// If a localized resource file exists, we LoadString resource with the id specified inside resource input
         /// string and and return it to our caller.
         /// </summary>
-        private static string GetLocalizedNameByMuiNativeResource(string resource)
+        private static unsafe string GetLocalizedNameByMuiNativeResource(string resource)
         {
             if (string.IsNullOrEmpty(resource) || Invariant || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {

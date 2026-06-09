@@ -25,6 +25,9 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
+        public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
+        public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
@@ -73,7 +76,7 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
+                "linux" or "android" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
@@ -118,6 +121,23 @@ namespace System.CommandLine
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
                 };
             }
+        }
+
+        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetSpec(string targetArchitectureToken, string targetOSToken)
+        {
+            targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
+            targetOSToken = targetOSToken?.ToLowerInvariant();
+
+            TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
+            TargetOS targetOS = GetTargetOS(targetOSToken);
+            TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
+            {
+                (_, "armel") => TargetAbi.NativeAotArmel,
+                ("android", "arm") => TargetAbi.NativeAotArmel,
+                _ => TargetAbi.NativeAot,
+            };
+
+            return (targetArchitecture, targetOS, targetAbi);
         }
 
         public static RootCommand UseVersion(this RootCommand command)
