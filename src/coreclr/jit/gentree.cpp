@@ -13220,25 +13220,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "AsyncCont";
             }
-#if defined(TARGET_WASM)
-            else if (lclNum == lvaWasmSpArg)
-            {
-                ilName = "SP";
-            }
-            else if (lclNum == lvaWasmVirtualIP)
-            {
-                ilName = "VirtualIP";
-            }
-            else if (lclNum == lvaWasmFunctionIndex)
-            {
-                ilName = "FuncIndex";
-            }
-            else if (wasmSpillSlotIndex > -1)
-            {
-                ilKind = "spill";
-                ilNum  = wasmSpillSlotIndex;
-            }
-#endif // defined(TARGET_WASM)
             else
             {
                 ilKind = "tmp";
@@ -13279,6 +13260,26 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilNum -= info.compILargsCount;
         }
     }
+
+#if defined(TARGET_WASM)
+    if (lclNum == lvaWasmSpArg)
+    {
+        ilName = "SP";
+    }
+    else if (lclNum == lvaWasmVirtualIP)
+    {
+        ilName = "VirtualIP";
+    }
+    else if (lclNum == lvaWasmFunctionIndex)
+    {
+        ilName = "FuncIndex";
+    }
+    else if (wasmSpillSlotIndex > -1)
+    {
+        ilKind = "spill";
+        ilNum  = wasmSpillSlotIndex;
+    }
+#endif // defined(TARGET_WASM)
 
     *ilKindOut = ilKind;
     *ilNameOut = ilName;
