@@ -403,25 +403,34 @@ namespace System.Runtime.CompilerServices
             private static ContinuationWrapperTable s_continuationWrappers = InitContinuationWrappers();
         }
 
-        private static partial class SyncPoint
+        internal static partial class SyncPoint
         {
             private static unsafe void ResumeAsyncCallstacks(AsyncThreadContext context)
             {
-                //Write recursively all the resume async callstack events.
-                AsyncDispatcherInfo* info = AsyncDispatcherInfo.t_current;
-                if (info != null)
-                {
-                    ResumeRuntimeAsyncCallstacks(info, context);
-                }
+                //Write recursively all the resume async callstack events for both AsyncDispatcherInfo (V2) and AsyncTaskDispatcherInfo (V1).
+                //Ordered by their stack location, largest address first (assumes stack grow downwards).
+                AsyncDispatcherInfo* runtimeAsyncInfo = AsyncDispatcherInfo.t_current;
+                AsyncTaskDispatcherInfo* taskAsyncInfo = AsyncTaskDispatcherInfo.t_current;
 
+                ResumeAsyncCallstacks(runtimeAsyncInfo, taskAsyncInfo, context);
             }
 
-            private static unsafe void ResumeRuntimeAsyncCallstacks(AsyncDispatcherInfo* info, AsyncThreadContext context)
+            private static unsafe void ResumeAsyncCallstacks(AsyncDispatcherInfo* runtimeAsyncInfo, AsyncTaskDispatcherInfo* taskAsyncInfo, AsyncThreadContext context)
             {
-                if (info != null)
+                if (runtimeAsyncInfo == null && taskAsyncInfo == null)
                 {
-                    ResumeRuntimeAsyncCallstacks(info->Next, context);
-                    ResumeAsyncContext.Resume(ref *info, context, ResumeAsyncContext.GetId(ref *info), Config.ActiveEventKeywords);
+                    return;
+                }
+
+                if (taskAsyncInfo == null || (runtimeAsyncInfo != null && (void*)runtimeAsyncInfo < (void*)taskAsyncInfo))
+                {
+                    ResumeAsyncCallstacks(runtimeAsyncInfo->Next, taskAsyncInfo, context);
+                    ResumeAsyncContext.Resume(ref *runtimeAsyncInfo, context, ResumeAsyncContext.GetId(ref *runtimeAsyncInfo), Config.ActiveEventKeywords);
+                }
+                else
+                {
+                    ResumeAsyncCallstacks(runtimeAsyncInfo, taskAsyncInfo->Next, context);
+                    ResumeAsyncContext.Resume(ref *taskAsyncInfo, context, ResumeAsyncContext.GetId(ref *taskAsyncInfo), Config.ActiveEventKeywords);
                 }
             }
         }
@@ -449,7 +458,9 @@ namespace System.Runtime.CompilerServices
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
             {
-                EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, asyncCallstack);
+                CaptureRuntimeAsyncCallstackState state = default;
+                state.Continuation = asyncCallstack;
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.ResumeAsyncCallstack, id, ref state);
             }
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
@@ -464,9 +475,14 @@ namespace System.Runtime.CompilerServices
 
             private static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
-                if (index > buffer.Length || state.Continuation == null)
+                if (index > buffer.Length)
                 {
                     return false;
+                }
+
+                if (state.Continuation == null)
+                {
+                    return true;
                 }
 
                 byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxRuntimeAsyncMethodFrameSize);

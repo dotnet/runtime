@@ -355,7 +355,7 @@ namespace System.Runtime.CompilerServices
 
                 if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    AsyncTaskDispatcherInfo.TryFireResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                    AsyncTaskDispatcherInfo.ResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
                 }
 
                 bool loggingOn = TplEventSource.Log.IsEnabled();

@@ -1644,6 +1644,208 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplaysPendingV1Chain_Inner_Marker()
+        {
+            using var dummy = new TestEventListener();
+            dummy.AddSource(AsyncProfilerEventSourceName, EventLevel.Informational, EventKeywords.None);
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplaysPendingV1Chain_Mid_Marker()
+        {
+            await TaskAsync_ResetContext_ReplaysPendingV1Chain_Inner_Marker();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplaysPendingV1Chain_Outer_Marker()
+        {
+            await TaskAsync_ResetContext_ReplaysPendingV1Chain_Mid_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        public void TaskAsync_ResetContext_ReplaysPendingV1Chain()
+        {
+            var events = CollectEvents(AllKeywords, () =>
+            {
+                RunScenarioAndFlush(() => TaskAsync_ResetContext_ReplaysPendingV1Chain_Outer_Marker());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // Locate the V1 dispatcher driving the marker chain via its ResumeAsyncCallstack
+            // events (which carry the marker frames in their callstack).
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, "TaskAsync_ResetContext_ReplaysPendingV1Chain");
+            Assert.NotEmpty(markerCallstacks);
+
+            // Thread-scoped replay assertion: at least one OS thread must have seen two
+            // ResetAsyncThreadContext events AND show a marker ResumeAsyncCallstack plus
+            // matching ResumeAsyncContext after its most recent reset. Multiple threads
+            // in the trace can accumulate two resets (e.g. the test thread re-enables on
+            // its initial event then again later), so we have to look at each candidate
+            // thread, not just the first one. The thread that actually drove the replay
+            // is the one the V1 continuation resumed onto.
+            var resetsByThread = stream.All
+                .Where(e => e.EventId == AsyncEventID.ResetAsyncThreadContext && e.OsThreadId != 0)
+                .GroupBy(e => e.OsThreadId)
+                .Where(g => g.Count() >= 2)
+                .ToList();
+            Assert.NotEmpty(resetsByThread);
+
+            bool found = false;
+            foreach (var threadResets in resetsByThread)
+            {
+                ulong threadId = threadResets.Key;
+                long lastResetTimestamp = threadResets.Max(e => e.Timestamp);
+
+                var postResetMarkerCallstacks = markerCallstacks
+                    .Where(c => c.OsThreadId == threadId && c.Timestamp >= lastResetTimestamp)
+                    .ToList();
+                if (postResetMarkerCallstacks.Count == 0)
+                {
+                    continue;
+                }
+
+                var replayTaskIds = postResetMarkerCallstacks.Select(c => c.TaskId).ToHashSet();
+                var postResetResumeContext = stream.All
+                    .Where(e => e.EventId == AsyncEventID.ResumeAsyncContext
+                                && e.OsThreadId == threadId
+                                && e.Timestamp >= lastResetTimestamp
+                                && replayTaskIds.Contains(e.TaskId))
+                    .ToList();
+                if (postResetResumeContext.Count == 0)
+                {
+                    continue;
+                }
+
+                found = true;
+                break;
+            }
+
+            Assert.True(found,
+                "Expected at least one OS thread with >= 2 ResetAsyncThreadContext events followed by a marker ResumeAsyncCallstack and matching ResumeAsyncContext.");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplaysMultipleDispatchers_Inner_Marker(
+            Task gate,
+            ManualResetEventSlim block,
+            Action onBlocked,
+            TaskCompletionSource innerDone)
+        {
+            await gate;
+            onBlocked();
+            block.Wait();
+            innerDone.SetResult();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplaysMultipleDispatchers_Outer_Marker(TaskCompletionSource innerDone)
+        {
+            await innerDone.Task;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        public void TaskAsync_ResetContext_ReplaysMultipleDispatchers()
+        {
+            var events = CollectEvents(AllKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var block = new ManualResetEventSlim(false);
+                    var blocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var innerDone = new TaskCompletionSource();
+
+                    Task inner = TaskAsync_ResetContext_ReplaysMultipleDispatchers_Inner_Marker(gate.Task, block, () => blocked.SetResult(), innerDone);
+                    Task outer = TaskAsync_ResetContext_ReplaysMultipleDispatchers_Outer_Marker(innerDone);
+
+                    _ = Task.Run(() => gate.SetResult());
+
+                    await blocked.Task;
+
+                    var dummy = new TestEventListener();
+                    try
+                    {
+                        dummy.AddSource(AsyncProfilerEventSourceName, EventLevel.Informational, EventKeywords.None);
+
+                        block.Set();
+
+                        await outer;
+                        await inner;
+                    }
+                    finally
+                    {
+                        dummy.Dispose();
+                    }
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // The replay must emit at least one ResumeAsyncCallstack carrying the V1 marker chain.
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, "TaskAsync_ResetContext_ReplaysMultipleDispatchers");
+            Assert.NotEmpty(markerCallstacks);
+
+            // The decisive proof: find an OS thread where a single ResetAsyncThreadContext
+            // event is followed by >= 2 ResumeAsyncContext events before the next reset
+            // (or end of trace). A normal dispatcher resume can only emit one Resume
+            // per MoveNext invocation; observing >= 2 in a single reset window proves
+            // the walker traversed multiple nested dispatchers from a single ResetContext.
+            var resetsByThread = stream.All
+                .Where(e => e.EventId == AsyncEventID.ResetAsyncThreadContext && e.OsThreadId != 0)
+                .GroupBy(e => e.OsThreadId)
+                .ToList();
+            Assert.NotEmpty(resetsByThread);
+
+            bool found = false;
+            foreach (var threadResets in resetsByThread)
+            {
+                ulong threadId = threadResets.Key;
+                var orderedResets = threadResets.OrderBy(e => e.Timestamp).ToList();
+
+                for (int i = 0; i < orderedResets.Count; i++)
+                {
+                    long windowStart = orderedResets[i].Timestamp;
+                    long windowEnd = (i + 1 < orderedResets.Count)
+                        ? orderedResets[i + 1].Timestamp
+                        : long.MaxValue;
+
+                    int resumeContextCount = stream.All
+                        .Count(e => e.EventId == AsyncEventID.ResumeAsyncContext
+                                    && e.OsThreadId == threadId
+                                    && e.Timestamp >= windowStart
+                                    && e.Timestamp < windowEnd);
+
+                    if (resumeContextCount >= 2)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found)
+                {
+                    break;
+                }
+            }
+
+            Assert.True(found,
+                "Expected at least one OS thread with a ResetAsyncThreadContext event " +
+                "followed by >= 2 ResumeAsyncContext events in the same reset window, " +
+                "proving the reset-replay walker traversed multiple nested dispatchers.");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task TaskAsync_SingleThread_ChainEventsAndCallstack_Inner_Marker(Task gate)
         {
             await gate;
