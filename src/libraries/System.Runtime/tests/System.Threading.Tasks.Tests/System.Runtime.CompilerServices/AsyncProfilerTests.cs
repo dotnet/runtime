@@ -125,7 +125,19 @@ namespace System.Threading.Tasks.Tests
                 else if (callstackType == AsyncCallstackType.Compiler)
                 {
                     System.RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr((IntPtr)methodId);
-                    MethodBase? method = MethodBase.GetMethodFromHandle(handle);
+                    MethodBase? method = null;
+                    try
+                    {
+                        method = MethodBase.GetMethodFromHandle(handle);
+                    }
+                    catch (ArgumentException)
+                    {
+                        // The 1-arg GetMethodFromHandle cannot resolve handles whose declaring
+                        // type is generic (e.g. xUnit's TestClassRunner<TTestCase>+<...>d__N);
+                        // it requires the 2-arg overload with an explicit declaring type, which
+                        // we cannot recover from a bare MethodId. Real ETW/EventPipe consumers
+                        // get the declaring type from method-metadata rundown events.
+                    }
                     if (method != null)
                     {
                         string methodName = method.DeclaringType.Name;
