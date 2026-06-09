@@ -344,14 +344,15 @@ namespace System.Threading.Tasks.Tests
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
             out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            ReadCallstackPayload(buffer, ref index, out _, out _, out frameCount, out frames);
+            ReadCallstackPayload(buffer, ref index, out _, out _, out _, out frameCount, out frames);
         }
 
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out ulong taskId, out AsyncCallstackType callstackType, out byte frameCount, out List<(ulong MethodId, int State)> frames)
+            out ulong taskId, out AsyncCallstackType callstackType, out byte continuationIndex, out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
             callstackType = (AsyncCallstackType)buffer[index++];
-            index++;
+            index++; // Reserved callstack ID (for future callstack interning).
+            continuationIndex = buffer[index++];
             frameCount = buffer[index++];
             taskId = ReadCompressedUInt64(buffer, ref index);
             frames = new List<(ulong, int)>(frameCount);
@@ -432,6 +433,7 @@ namespace System.Threading.Tasks.Tests
             public ulong TaskId { get; init; }
 
             public AsyncCallstackType CallstackType { get; init; }
+            public byte ContinuationIndex { get; init; }
             public byte FrameCount { get; init; }
             public List<(ulong MethodId, int State)> Frames { get; init; } = [];
 
@@ -555,6 +557,7 @@ namespace System.Threading.Tasks.Tests
                                 OsThreadId = evt.OsThreadId,
                                 TaskId = evt.TaskId,
                                 CallstackType = evt.CallstackType,
+                                ContinuationIndex = evt.ContinuationIndex,
                                 FrameCount = evt.FrameCount,
                                 Frames = new List<(ulong MethodId, int State)>(evt.Frames),
                             };
@@ -579,6 +582,7 @@ namespace System.Threading.Tasks.Tests
                                     OsThreadId = existing.OsThreadId,
                                     TaskId = existing.TaskId,
                                     CallstackType = existing.CallstackType,
+                                    ContinuationIndex = existing.ContinuationIndex,
                                     FrameCount = (byte)Math.Min(combinedFrames.Count, byte.MaxValue),
                                     Frames = combinedFrames,
                                 };
@@ -757,7 +761,7 @@ namespace System.Threading.Tasks.Tests
             static ParsedEvent ParseCallstackEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
                 ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
-                ReadCallstackPayload(buffer, ref index, out ulong taskId, out AsyncCallstackType callstackType, out byte frameCount, out var frames);
+                ReadCallstackPayload(buffer, ref index, out ulong taskId, out AsyncCallstackType callstackType, out byte continuationIndex, out byte frameCount, out var frames);
                 if (taskId != currentTaskId)
                 {
                     taskIdStack.Push(currentTaskId);
@@ -771,6 +775,7 @@ namespace System.Threading.Tasks.Tests
                     OsThreadId = osThreadId,
                     TaskId = taskId,
                     CallstackType = callstackType,
+                    ContinuationIndex = continuationIndex,
                     FrameCount = frameCount,
                     Frames = frames
                 };
@@ -1385,17 +1390,20 @@ namespace System.Threading.Tasks.Tests
                 ulong id;
                 byte type;
                 byte callstackId;
+                byte continuationIndex;
                 byte asyncCallstackLength;
                 int index = 0;
 
                 type = buffer[index++];
                 callstackId = buffer[index++];
+                continuationIndex = buffer[index++];
                 asyncCallstackLength = buffer[index++];
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out id);
 
                 Console.WriteLine($"  ID: {id}");
                 Console.WriteLine($"  Type: {type}");
                 Console.WriteLine($"  CallstackId: {callstackId}");
+                Console.WriteLine($"  ContinuationIndex: {continuationIndex}");
                 Console.WriteLine($"  Length: {asyncCallstackLength}");
 
                 if (asyncCallstackLength == 0)
