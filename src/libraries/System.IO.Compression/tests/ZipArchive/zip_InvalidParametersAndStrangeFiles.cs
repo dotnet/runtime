@@ -2457,9 +2457,19 @@ namespace System.IO.Compression.Tests
 
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
-                ZipArchive archive = await CreateZipArchive(async, new MemoryStream(zipArchive), ZipArchiveMode.Read);
-                _ = archive.Entries;
-                await DisposeZipArchive(async, archive);
+                ZipArchive? archive = null;
+                try
+                {
+                    archive = await CreateZipArchive(async, new MemoryStream(zipArchive), ZipArchiveMode.Read);
+                    _ = archive.Entries;
+                }
+                finally
+                {
+                    if (archive is not null)
+                    {
+                        await DisposeZipArchive(async, archive);
+                    }
+                }
             });
         }
 
