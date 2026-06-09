@@ -333,8 +333,6 @@ elseif(CLR_CMAKE_HOST_OPENBSD)
   add_linker_flag("-Wl,--build-id=sha1")
   # OpenBSD's ld.so can't resolve native TLS relocs in a .so; rely on clang's default
   # emulated TLS (don't pass -fno-emulated-tls).
-  # Allow W+X mappings (JIT) via the PT_OPENBSD_WXNEEDED note; needs a wxallowed mount.
-  add_linker_flag("-Wl,-z,wxneeded")
   # The PAL's hand-written asm lacks endbr64 landing pads, so disable branch-target CFI.
   add_linker_flag("-Wl,-z,nobtcfi")
 elseif(CLR_CMAKE_HOST_SUNOS)
