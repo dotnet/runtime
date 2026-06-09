@@ -269,7 +269,14 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             {
                 if (className[7] == '\0')
                 {
-                    return InstructionSet_AVXVNNI;
+                    if (compSupportsHWIntrinsic(InstructionSet_AVXVNNI))
+                    {
+                        return InstructionSet_AVXVNNI;
+                    }
+                    else
+                    {
+                        return InstructionSet_AVX512v3;
+                    }
                 }
                 else if (strncmp(className + 7, "Int", 3) == 0)
                 {

@@ -138,7 +138,7 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
         }
 
         private static Vector512<T> LoadVector512<T>(T[] values)
-            where T : struct
+            where T : unmanaged
         {
             return Vector512.Create(values);
         }
