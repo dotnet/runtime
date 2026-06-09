@@ -245,6 +245,10 @@ extern jclass    g_PrivateKeyEntryClass;
 extern jmethodID g_PrivateKeyEntryGetCertificate;
 extern jmethodID g_PrivateKeyEntryGetPrivateKey;
 
+// java/security/Key
+extern jclass    g_KeyClass;
+extern jmethodID g_KeyGetEncoded;
+
 // java/security/KeyStore$TrustedCertificateEntry
 extern jclass    g_TrustedCertificateEntryClass;
 extern jmethodID g_TrustedCertificateEntryGetTrustedCertificate;

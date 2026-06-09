@@ -1208,6 +1208,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Random.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X25519.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X25519.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
@@ -1302,7 +1304,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
     <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.AndroidKeyStore.cs" />
