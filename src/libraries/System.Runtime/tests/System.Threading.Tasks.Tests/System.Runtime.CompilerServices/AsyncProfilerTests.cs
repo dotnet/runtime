@@ -362,14 +362,16 @@ namespace System.Threading.Tasks.Tests
                 return;
             }
 
+            bool readState = callstackType == AsyncCallstackType.Compiler;
+
             ulong currentMethodId = ReadCompressedUInt64(buffer, ref index);
-            int state = ReadCompressedInt32(buffer, ref index);
+            int state = readState ? ReadCompressedInt32(buffer, ref index) : 0;
             frames.Add((currentMethodId, state));
 
             for (int i = 1; i < frameCount; i++)
             {
                 long delta = ReadCompressedInt64(buffer, ref index);
-                state = ReadCompressedInt32(buffer, ref index);
+                state = readState ? ReadCompressedInt32(buffer, ref index) : 0;
                 currentMethodId = (ulong)((long)currentMethodId + delta);
                 frames.Add((currentMethodId, state));
             }
@@ -911,6 +913,9 @@ namespace System.Threading.Tasks.Tests
             public ConcurrentQueue<EventWrittenEventArgs> Events { get; } = new();
         }
 
+        private static Task<CollectedEvents> CollectValueTaskEventsAsync(EventKeywords keywords, Func<ValueTask> scenario)
+            => CollectEventsAsync(keywords, () => scenario().AsTask());
+
         private static async Task<CollectedEvents> CollectEventsAsync(EventKeywords keywords, Func<Task> scenario)
         {
             var result = new CollectedEvents();
@@ -1413,10 +1418,15 @@ namespace System.Threading.Tasks.Tests
 
                 ulong previousMethodId;
                 ulong currentMethodId;
-                int state;
+                int state = 0;
+
+                bool readState = (AsyncCallstackType)type == AsyncCallstackType.Compiler;
 
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out currentMethodId);
-                Deserializer.ReadCompressedInt32(buffer, ref index, out state);
+                if (readState)
+                {
+                    Deserializer.ReadCompressedInt32(buffer, ref index, out state);
+                }
 
                 OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, 0);
 
@@ -1424,7 +1434,10 @@ namespace System.Threading.Tasks.Tests
                 {
                     previousMethodId = currentMethodId;
                     Deserializer.ReadCompressedInt64(buffer, ref index, out long methodIdDelta);
-                    Deserializer.ReadCompressedInt32(buffer, ref index, out state);
+                    if (readState)
+                    {
+                        Deserializer.ReadCompressedInt32(buffer, ref index, out state);
+                    }
                     currentMethodId = previousMethodId + (ulong)methodIdDelta;
                     OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, i);
                 }
@@ -1435,7 +1448,14 @@ namespace System.Threading.Tasks.Tests
             private static void OutputAsyncFrame(AsyncCallstackType type, ulong methodId, int state, int frameIndex)
             {
                 string asyncMethodName = GetMethodNameFromMethodId(type, methodId) ?? "??";
-                Console.WriteLine($"    [{frameIndex}] {asyncMethodName} (0x{methodId:X}) (state={state})");
+                if (type == AsyncCallstackType.Compiler)
+                {
+                    Console.WriteLine($"    [{frameIndex}] {asyncMethodName} (0x{methodId:X}) (state={state})");
+                }
+                else
+                {
+                    Console.WriteLine($"    [{frameIndex}] {asyncMethodName} (0x{methodId:X})");
+                }
             }
         }
     }

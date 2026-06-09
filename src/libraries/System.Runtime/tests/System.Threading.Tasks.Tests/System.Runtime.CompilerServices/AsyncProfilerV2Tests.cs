@@ -1549,9 +1549,10 @@ namespace System.Threading.Tasks.Tests
                         firstId == AsyncEventID.CreateAsyncCallstack ||
                         firstId == AsyncEventID.SuspendAsyncCallstack)
                     {
-                        // Callstack payload: type(1) + callstackId(1) + frameCount(1) + compressed taskId + frames...
+                        // Callstack payload: type(1) + callstackId(1) + continuationIndex(1) + frameCount(1) + compressed taskId + frames...
                         index++; // type byte
                         index++; // callstack ID (reserved)
+                        index++; // continuation index
                         if (index < buffer.Length)
                             frameCount = buffer[index];
                     }
@@ -1866,8 +1867,10 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            var frameNames = markerCallstacks[0].Frames
-                .Select(f => GetMethodNameFromMethodId(markerCallstacks[0].CallstackType, f.MethodId))
+            var deepest = markerCallstacks.OrderByDescending(cs => cs.FrameCount).First();
+
+            var frameNames = deepest.Frames
+                .Select(f => GetMethodNameFromMethodId(deepest.CallstackType, f.MethodId))
                 .Where(n => n is not null)
                 .ToList();
 
@@ -1877,7 +1880,7 @@ namespace System.Threading.Tasks.Tests
 
             // ConfigureAwait(false) on a sequential await chain collapses Leaf -> Mid -> Marker into one
             // continuation chain, so exactly one Create / one Complete is expected on the marker's TaskId.
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
+            AssertExactlyOneCreateAndComplete(stream, deepest.TaskId, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -2101,7 +2104,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker());
+            var events = await CollectValueTaskEventsAsync(CallstackKeywords, RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker);
 
             // DumpAllEvents(events);
 
@@ -2110,8 +2113,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            // Async lambda -> Marker -> Level1 -> Level2 -> Level3.
-            Assert.Equal(5, markerCallstacks[0].FrameCount);
+            // Marker -> Level1 -> Level2 -> Level3.
+            Assert.Equal(4, markerCallstacks[0].FrameCount);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
