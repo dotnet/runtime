@@ -22781,7 +22781,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, var_types simd
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM) 
+#elif defined(TARGET_WASM)
     NYI_WASM_SIMD("gtNewSimdAbsNode");
     return nullptr;
 #else
@@ -35671,7 +35671,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     return resultNode;
 }
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)                                                                                                                                                                                                                                                                     
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------------
 // gtFoldExprConvertVecCnsToMask: Folds a constant vector plus conversion to
 //                                mask into a constant mask.

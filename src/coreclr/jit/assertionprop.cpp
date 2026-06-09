@@ -335,7 +335,7 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_Arm64_LeadingSignCount:
 #elif defined(TARGET_WASM)
                 // TODO-WASM: See if we can support CTZ/CLZ ranges here
-#else            
+#else
 #error Unsupported platform
 #endif
                 {

@@ -10217,7 +10217,7 @@ public:
                 return FP_REGSIZE_BYTES;
             }
 #elif defined(TARGET_WASM)
-        // TODO-WASM: Verify if we need a more complicated condition here 
+        // TODO-WASM: Verify if we need a more complicated condition here
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
