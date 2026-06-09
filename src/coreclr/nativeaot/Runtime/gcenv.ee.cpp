@@ -797,16 +797,22 @@ uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
-    UNREFERENCED_PARAMETER(privateKey);
-    UNREFERENCED_PARAMETER(publicKey);
-    UNREFERENCED_PARAMETER(value);
+    if (g_pRhConfig->ReadStringConfigValue(privateKey, value))
+    {
+        return true;
+    }
+
+    if (publicKey)
+    {
+        return g_pRhConfig->ReadKnobStringValue(publicKey, value);
+    }
 
     return false;
 }
 
 void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
-    delete[] value;
+    g_pRhConfig->FreeStringConfigValue(value);
 }
 
 void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)

@@ -950,8 +950,12 @@ char* PalCopyTCharAsChar(const TCHAR* toCopy)
         return nullptr;
 
     char* converted = new (nothrow) char[len];
-    int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
-    assert(len == written);
+
+    if (converted != nullptr)
+    {
+        int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+        assert(len == written);
+    }
     return converted;
 }
 
