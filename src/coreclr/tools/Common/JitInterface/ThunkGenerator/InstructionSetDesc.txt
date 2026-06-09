@@ -305,12 +305,12 @@ instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a
 
 
 ; Definition of Wasm instruction sets
-definearch           ,WASM      ,32Bit               ,        ,        ,Wasm32
+definearch           ,Wasm32      ,32Bit               ,        ,        ,Wasm
 
-instructionset       ,WASM      ,WasmBase            ,         ,91     ,WasmBase        ,base
-instructionset       ,WASM      ,PackedSimd          ,         ,92     ,PackedSimd      ,simd128
-instructionset       ,WASM      ,                      ,       ,       ,Vector128       ,
+instructionset       ,Wasm32      ,WasmBase            ,         ,91     ,WasmBase        ,base
+instructionset       ,Wasm32      ,PackedSimd          ,         ,92     ,PackedSimd      ,simd128
+instructionset       ,Wasm32      ,                      ,       ,       ,Vector128       ,
 
-vectorinstructionset ,WASM      ,Vector128
-implication          ,WASM      ,Vector128   ,PackedSimd
-implication          ,WASM      ,PackedSimd  ,WasmBase
+vectorinstructionset ,Wasm32      ,Vector128
+implication          ,Wasm32      ,Vector128   ,PackedSimd
+implication          ,Wasm32      ,PackedSimd  ,WasmBase

@@ -7138,6 +7138,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     break;
                 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) // TODO-WASM: Handle popcount /trailing/leading zero count
 #if defined(TARGET_XARCH)
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
@@ -7156,6 +7157,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     // The actual range is [0..32] or [0..64]
                     return VNVisit::Continue;
                 }
+#endif
 
                     // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
 
