@@ -51,7 +51,7 @@ jobs:
   
       - name: Run Build + Test
         run: |
-          docker exec gha bash -c "/jit_testing.sh | tee /tmp/jit.log; exit \${PIPESTATUS[0]}"
+          docker exec gha bash -c "set -euo pipefail; /jit_testing.sh | tee /tmp/jit.log"
 
       - name: Copy Logs
         if: always()
