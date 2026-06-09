@@ -3924,7 +3924,13 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 
@@ -4235,7 +4241,13 @@ Exit:;
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 

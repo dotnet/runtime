@@ -491,9 +491,85 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
 size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
+// File-local WebAssembly exception tag used only by RtlRestoreContext.
+asm(".globl __coreclr_wasm_rtlrestorecontext_tag\n"
+    ".tagtype __coreclr_wasm_rtlrestorecontext_tag i32, i32\n"
+    "__coreclr_wasm_rtlrestorecontext_tag:\n");
+
+__attribute__((naked)) void ThrowRtlRestoreContextTag(uint32_t ip, uint32_t sp)
+{
+    asm("local.get 0\n"
+        "local.get 1\n"
+        "throw __coreclr_wasm_rtlrestorecontext_tag\n"
+        "unreachable\n" ::);
+}
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
-    PORTABILITY_ASSERT("RtlRestoreContext is not implemented on wasm");
+    UNREFERENCED_PARAMETER(ExceptionRecord);
+
+    uint32_t ip = (uint32_t)GetIP(ContextRecord);
+    uint32_t sp = (uint32_t)GetSP(ContextRecord);
+
+    // Tag payload order: first ip, then sp.
+    ThrowRtlRestoreContextTag(ip, sp);
+
+    __builtin_unreachable();
+}
+
+__attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
+{
+    asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
+         "local.get       3\n"               // Get pFuncletCallerSP address to store the original stack pointer for the caller of the funclet
+         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
+         "i32.const       16\n"
+         "i32.sub \n"
+         "i32.store       0\n"               // Store the stack pointer into pFuncletCallerSP
+         "local.get       3\n"               // Get pFuncletCallerSP address to load the value we just stored
+         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         "local.tee       3\n"               // Tee the stack pointer into a local so that we can use it again.
+
+         "global.set      __stack_pointer\n" // Update the global stack pointer
+         "local.get       3\n"               // Get the stack pointer
+         "i32.const       2\n"
+         "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       3\n"               // Get the stack pointer
+         "local.get       1\n"               // Get the frame pointer argument for the original function
+         "local.get       2\n"               // Get the exception object for the funclet
+         "local.get       0\n"               // Get the funclet address to call
+         "call_indirect    __indirect_function_table, (i32, i32, i32) -> (i32)\n"
+         "local.set       0\n"               // Capture the return into a local so that we can return it after restoring the original stack pointer
+         "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
+         "local.get       0\n"               // Return the value from the funclet call
+         "return" ::);
+}
+
+__attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
+{
+    asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
+         "local.get       2\n"               // Get pFuncletCallerSP address to store the original stack pointer for the caller of the funclet
+         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
+         "i32.const       16\n"
+         "i32.sub \n"
+         "i32.store       0\n"               // Store the stack pointer into pFuncletCallerSP
+         "local.get       2\n"               // Get pFuncletCallerSP address to load the value we just stored
+         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         "local.tee       2\n"               // Tee the stack pointer into a local so that we can use it again.
+
+         "global.set      __stack_pointer\n" // Update the global stack pointer
+         "local.get       2\n"               // Get the stack pointer
+         "i32.const       2\n"
+         "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       2\n"               // Get the stack pointer
+         "local.get       1\n"               // Get the frame pointer argument for the original function
+         "local.get       0\n"               // Get the funclet address to call
+         "call_indirect    __indirect_function_table, (i32, i32) -> ()\n"
+         "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
+         "i32.const       0\n"
+         "return\n"
+          ::);
 }
 
 extern "C" void TheUMEntryPrestub(void)
