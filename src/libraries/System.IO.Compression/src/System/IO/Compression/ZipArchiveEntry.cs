@@ -481,9 +481,9 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // OpenInUpdateMode validates that _uncompressedSize fits in [0, Array.MaxLength]
-                // via ThrowIfNotOpenable before reaching this code, so the (int) cast is safe
-                // and the capacity hint is bounded by MemoryStream's maximum.
+                // ThrowIfNotOpenable has already verified that _uncompressedSize fits in
+                // [0, Array.MaxLength], so the (int) cast is safe and the capacity hint
+                // is bounded by MemoryStream's maximum.
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)
@@ -940,7 +940,7 @@ namespace System.IO.Compression
 
                 // when this property gets called, some duplicated work
                 long offsetOfCompressedData = GetOffsetOfCompressedData();
-                if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
+                if (!IsOpenableFinalVerifications(needToUncompress, needToLoadIntoMemory, offsetOfCompressedData, out message))
                 {
                     return false;
                 }
@@ -979,7 +979,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        private bool IsOpenableFinalVerifications(bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
+        private bool IsOpenableFinalVerifications(bool needToUncompress, bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
         {
             message = null;
             if (offsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
@@ -1002,15 +1002,13 @@ namespace System.IO.Compression
                     }
                 }
 
-                // The uncompressed data is loaded into a MemoryStream, which is backed by a
-                // single byte[] and therefore cannot grow beyond Array.MaxLength. Reject
-                // up front rather than failing later from the MemoryStream constructor with
-                // a misleading argument-out-of-range exception (caused by the unchecked
-                // (int) cast in GetUncompressedData wrapping a long > int.MaxValue to a
-                // negative value).
-                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+                // Only check this when needToUncompress is true (i.e., we're about to decompress
+                // and load the data into a MemoryStream), not during archive construction where
+                // the entry might never be opened.
+                if (needToUncompress && (ulong)_uncompressedSize > (ulong)Array.MaxLength)
                 {
-                    message = SR.EntryTooLarge;
+                    message = SR.EntryUncompressedSizeTooLargeForUpdateMode;
                     return false;
                 }
             }

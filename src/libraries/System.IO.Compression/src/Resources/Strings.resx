@@ -212,6 +212,9 @@
   <data name="EntryTooLarge" xml:space="preserve">
     <value>Entries larger than 4GB are not supported in Update mode.</value>
   </data>
+  <data name="EntryUncompressedSizeTooLargeForUpdateMode" xml:space="preserve">
+    <value>Entries with uncompressed data larger than 2GB are not supported in Update mode.</value>
+  </data>
   <data name="EOCDNotFound" xml:space="preserve">
     <value>End of Central Directory record could not be found.</value>
   </data>
