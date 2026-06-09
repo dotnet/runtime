@@ -6264,6 +6264,12 @@ public:
     // Returns "true" if the variable needs explicit zero initialization.
     inline bool fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool bbIsReturn);
 
+    // Returns the number of int-sized stack slots the prolog zero-initializes for a must-init local.
+    inline unsigned lvaGetPrologZeroInitSlotCount(unsigned lclNum);
+
+    // Returns "true" if the prolog zero-initializes every byte of the local (not just its GC slots).
+    inline bool fgVarPrologFullyZeroInits(unsigned lclNum);
+
     // The value numbers for this compilation.
     ValueNumStore* vnStore = nullptr;
     class ValueNumberState* vnState = nullptr;

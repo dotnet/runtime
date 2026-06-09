@@ -3690,24 +3690,6 @@ void CodeGen::genCheckUseBlockInit()
     unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
                                 // larger than int count for more than 1).
 
-    // Computes how many int-sized stack slots a must-init local will actually zero in the prolog.
-    // Under SkipLocalsInit (!compInitMem), a struct with GC fields only needs its GC slots zeroed for
-    // GC safety (see the per-slot zeroing path in genZeroInitFrame); its non-GC bytes are left
-    // uninitialized. Such a struct therefore contributes only its GC-pointer slots here, which keeps
-    // GC-sparse structs below the block-init threshold so the prolog zeroes just the GC slots instead
-    // of the whole struct. For a fully-GC struct the GC-slot count equals the full size, so its
-    // contribution (and hence its codegen) is unchanged and it continues to use block initialization.
-    auto getInitSlotCount = [this](unsigned lclNum, LclVarDsc* dsc) -> unsigned {
-        if (!m_compiler->info.compInitMem && dsc->TypeIs(TYP_STRUCT) && dsc->HasGCPtr() &&
-            (dsc->lvExactSize() >= TARGET_POINTER_SIZE))
-        {
-            // Only the GC slots will be zeroed; each pointer-sized GC slot is
-            // (TARGET_POINTER_SIZE / sizeof(int)) int-sized slots.
-            return dsc->GetLayout()->GetGCPtrCount() * (TARGET_POINTER_SIZE / sizeof(int));
-        }
-        return roundUp(m_compiler->lvaLclStackHomeSize(lclNum), TARGET_POINTER_SIZE) / sizeof(int);
-    };
-
     unsigned   varNum;
     LclVarDsc* varDsc;
 
@@ -3786,7 +3768,7 @@ void CodeGen::genCheckUseBlockInit()
                             if (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler())
                             {
                                 // Var is on the stack at entry.
-                                initStkLclCnt += getInitSlotCount(varNum, varDsc);
+                                initStkLclCnt += m_compiler->lvaGetPrologZeroInitSlotCount(varNum);
                                 counted = true;
                             }
                         }
@@ -3843,7 +3825,7 @@ void CodeGen::genCheckUseBlockInit()
 
                     if (!counted)
                     {
-                        initStkLclCnt += getInitSlotCount(varNum, varDsc);
+                        initStkLclCnt += m_compiler->lvaGetPrologZeroInitSlotCount(varNum);
                         counted = true;
                     }
                 }

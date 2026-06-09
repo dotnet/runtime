@@ -4293,6 +4293,72 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
+// fgVarPrologFullyZeroInits : Check whether the prolog zero-initializes every byte of a local (when it
+//    is zero-initialized in the prolog at all), as opposed to only its GC slots.
+//
+// Arguments:
+//    lclNum - local var number
+//
+// Returns:
+//    true  - the prolog (if it zero-inits this local) zeroes all of its bytes;
+//    false - only the local's GC slots are guaranteed zeroed.
+//
+// Notes:
+//    Under SkipLocalsInit (!compInitMem) an address-exposed struct with both GC and non-GC slots only
+//    needs its GC slots zeroed in the prolog for GC safety (see lvaGetPrologZeroInitSlotCount /
+//    CodeGen::genZeroInitFrame); its non-GC bytes are left uninitialized. We restrict this to
+//    address-exposed structs (out-params / by-ref locals - the cases that actually benefit) so that
+//    value-numbered locals keep their "fully zeroed by the prolog" guarantee.
+//
+//    fgVarNeedsExplicitZeroInit returning false is enough for callers that only rely on the prolog for
+//    GC safety (i.e. to suppress inserting an explicit init), but callers that treat the whole local as
+//    zero - value numbering its fields as zero, removing a dominating explicit full zero-init, or
+//    skipping an explicit re-init - must additionally check this.
+//
+bool Compiler::fgVarPrologFullyZeroInits(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    // The GC-slot-only prolog init applies to address-exposed, GC-sparse structs under SkipLocalsInit
+    // (out-params / by-ref locals). We exclude any local whose explicit zero-init was suppressed or
+    // removed elsewhere (lvSuppressedZeroInit): those relied on the prolog to fully zero them, so they
+    // are kept on full block init (and are therefore still fully zeroed here).
+    if (!info.compInitMem && varDsc->IsAddressExposed() && !varDsc->lvSuppressedZeroInit &&
+        varDsc->TypeIs(TYP_STRUCT) && varDsc->HasGCPtr() && (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
+    {
+        // A fully-GC struct is still fully zeroed; a GC-sparse struct only has its GC slots zeroed.
+        ClassLayout* layout = varDsc->GetLayout();
+        return layout->GetGCPtrCount() == layout->GetSlotCount();
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// lvaGetPrologZeroInitSlotCount : Number of int-sized stack slots the prolog zero-initializes for a
+//    must-init local.
+//
+// Arguments:
+//    lclNum - local var number
+//
+// Returns:
+//    The number of int-sized (4-byte) slots that will be zeroed in the prolog for this local.
+//
+// Notes:
+//    A struct whose prolog init only zeroes its GC slots (see fgVarPrologFullyZeroInits) contributes
+//    just its GC-pointer slots; everything else contributes its full size. Used by
+//    CodeGen::genCheckUseBlockInit to decide between block init and per-slot init.
+//
+unsigned Compiler::lvaGetPrologZeroInitSlotCount(unsigned lclNum)
+{
+    if (!fgVarPrologFullyZeroInits(lclNum))
+    {
+        // Only the GC slots will be zeroed; each pointer-sized GC slot is
+        // (TARGET_POINTER_SIZE / sizeof(int)) int-sized slots.
+        return lvaGetDesc(lclNum)->GetLayout()->GetGCPtrCount() * (TARGET_POINTER_SIZE / sizeof(int));
+    }
+    return roundUp(lvaLclStackHomeSize(lclNum), TARGET_POINTER_SIZE) / sizeof(int);
+}
+
+//------------------------------------------------------------------------------
 // fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
@@ -4351,9 +4417,12 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
             return false;
         }
 
-        // Below conditions guarantee block initialization, which will initialize
-        // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
-        // changes, these conditions need to be updated.
+        // The conditions below cause the variable to be (GC-safely) zero-initialized in the prolog, so
+        // no explicit zero-init is needed to make it safe to suppress. Note that under SkipLocalsInit a
+        // GC-sparse struct only has its GC slots zeroed in the prolog (see genCheckUseBlockInit /
+        // lvaGetPrologZeroInitSlotCount), not all of its bytes; callers that rely on the whole local
+        // being zero must additionally check fgVarPrologFullyZeroInits. This must stay consistent with
+        // the block-init logic in CodeGen::genCheckUseBlockInit().
 #ifdef TARGET_WASM
         // On WASM the prolog always uses a single memory.fill to zero any
         // locals that need initialization, regardless of size.
