@@ -1695,7 +1695,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                 {
                     anyChanges = true;
 
-                    if (!m_wasmRefSpillSlots)
+                    if (m_wasmRefSpillSlots == nullptr)
                     {
                         m_wasmRefSpillSlots =
                             new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
@@ -1704,7 +1704,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                     }
                     else
                     {
-                        assert(m_wasmByRefSpillSlots);
+                        assert(m_wasmByRefSpillSlots != nullptr);
                     }
 
                     unsigned refSpillSlotIndex   = 0;
