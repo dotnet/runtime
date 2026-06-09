@@ -631,12 +631,12 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         if (varTypeIsFloating(select))
         {
-            JITDUMP("Abort using SELECT of type float\n");
+            JITDUMP("Abort: SELECT of type float\n");
             return true;
         }
 
 #ifdef TARGET_RISCV64
-        JITDUMP("Abort using SELECT on RISCV\n");
+        JITDUMP("Abort: SELECT on RISCV\n");
         return true;
 #endif
 
@@ -645,7 +645,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         // handle contained relops efficiently after decomposition.
         if (varTypeIsLong(select))
         {
-            JITDUMP("Abort using SELECT of type Long on 32-bit system\n");
+            JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
             return true;
         }
 #endif
