@@ -1,6 +1,8 @@
 ---
 ---
 
+When reviewing pull requests, always use the `code-review` skill.
+
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
 You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
