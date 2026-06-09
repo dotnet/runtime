@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Globalization;
-using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
@@ -448,10 +446,10 @@ namespace System.Security.Cryptography.Pkcs
                 string digestOid = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithmName);
                 Debug.Assert(publicKey != null, "Expected a public key to be present for PSS parameters.");
 
-                PssParamsAsn parameters = new PssParamsAsn
+                ValuePssParamsAsn parameters = new ValuePssParamsAsn
                 {
-                    HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
-                    MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
+                    HashAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = digestOid },
+                    MaskGenAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
                     SaltLength = RsaPaddingProcessor.CalculatePssSaltLength(SignaturePadding.PssSaltLength, publicKey.KeySize, hashAlgorithmName),
                     TrailerField = 1
                 };
