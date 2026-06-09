@@ -193,7 +193,9 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    _ASSERTE(!"NYI");
+    GenTree* next = node->gtNext;
+    ContainCheckStoreIndir(node);  // Perform containment checks
+    return next;  // Return next node to lower
 }
 
 //------------------------------------------------------------------------
@@ -674,7 +676,15 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
-    _ASSERTE(!"NYI");
+	// For PowerPC64LE, we can contain integer zero as source
+    GenTree* src = node->Data();
+    if (src->IsIntegralConst(0))
+    {
+        // an integer zero for 'src' can be contained.
+        MakeSrcContained(node, src);
+    }
+    ContainCheckIndir(node);  // Check address containment
+
 }
 
 //------------------------------------------------------------------------

@@ -96,6 +96,27 @@
 #define ppc_stfs(c,S,d,a)  ppc_emit32 (c, (52 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
 #define ppc_stfd(c,S,d,a)  ppc_emit32 (c, (54 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
 
+// Indexed Load/Store Instructions (X-form) - Phase 4A: Array Support
+// Format: opcode(6) | D/S(5) | A(5) | B(5) | XO(10) | Rc(1)
+// Load Indexed - loads from address (rA + rB)
+#define ppc_lbzx(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (87 << 1) | 0)
+#define ppc_lhzx(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (279 << 1) | 0)
+#define ppc_lhax(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (343 << 1) | 0)
+#define ppc_lwzx(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (23 << 1) | 0)
+#define ppc_lwax(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (341 << 1) | 0)
+#define ppc_ldx(c,D,A,B)    ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (21 << 1) | 0)
+#define ppc_lfsx(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (535 << 1) | 0)
+#define ppc_lfdx(c,D,A,B)   ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (599 << 1) | 0)
+
+// Store Indexed - stores to address (rA + rB)
+#define ppc_stbx(c,S,A,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (215 << 1) | 0)
+#define ppc_sthx(c,S,A,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (407 << 1) | 0)
+#define ppc_stwx(c,S,A,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (151 << 1) | 0)
+#define ppc_stdx(c,S,A,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (149 << 1) | 0)
+#define ppc_stfsx(c,S,A,B)  ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (663 << 1) | 0)
+#define ppc_stfdx(c,S,A,B)  ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (727 << 1) | 0)
+
+
 // Floating-point arithmetic instructions (A-form)
 // Format: opcode(6) | fD(5) | fA(5) | fB(5) | 0(5) | XO(5) | Rc(1)
 #define ppc_fadds(c,D,A,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (21 << 1) | 0)

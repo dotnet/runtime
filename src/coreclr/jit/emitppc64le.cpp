@@ -282,7 +282,13 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             assert(isFloatReg(reg1));
             assert(size == EA_8BYTE);
             break;
-
+	case INS_addi:
+            // Add immediate - D-form instruction
+            // Used for computing addresses: addi targetReg, baseReg, offset
+            assert(isGeneralRegister(reg1));
+            // Size can be EA_4BYTE or EA_8BYTE (EA_PTRSIZE)
+            assert((size == EA_4BYTE) || (size == EA_8BYTE));
+            break;
         default:
             NYI("emitIns_R_S");
             return;
@@ -1131,7 +1137,35 @@ void emitter::emitIns_R_R_R(instruction ins,
             assert(isGeneralRegister(reg3));
             assert(size == EA_4BYTE || size == EA_8BYTE);
             break;
-	        
+	// Indexed Load/Store instructions (X-form) - Phase 4A
+        case INS_lbzx:
+        case INS_lhzx:
+        case INS_lhax:
+        case INS_lwzx:
+        case INS_lwax:
+        case INS_ldx:
+        case INS_stbx:
+        case INS_sthx:
+        case INS_stwx:
+        case INS_stdx:
+            assert(isGeneralRegister(reg1));  // Data register
+            assert(isGeneralRegister(reg2));  // Base address register
+            assert(isGeneralRegister(reg3));  // Index register
+            assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE);
+            break;
+
+        // Indexed Floating-Point Load/Store (X-form) - Phase 4A
+        case INS_lfsx:
+        case INS_lfdx:
+        case INS_stfsx:
+        case INS_stfdx:
+            assert(isFloatReg(reg1));         // FP data register
+            assert(isGeneralRegister(reg2));  // Base address register
+            assert(isGeneralRegister(reg3));  // Index register
+            assert(size == EA_4BYTE || size == EA_8BYTE);
+            break;
+
+           
         default:
             NYI("emitIns_R_R_R - unsupported instruction");
             return;
@@ -1193,6 +1227,23 @@ void emitter::emitIns_R_R_R(instruction ins,
     case INS_sraw:
         fmt = IF_RR_2A; 
 	break;    
+    // Indexed Load/Store (X-form) - Phase 4A
+    case INS_lbzx:
+    case INS_lhzx:
+    case INS_lhax:
+    case INS_lwzx:
+    case INS_lwax:
+    case INS_ldx:
+    case INS_lfsx:
+    case INS_lfdx:
+    case INS_stbx:
+    case INS_sthx:
+    case INS_stwx:
+    case INS_stdx:
+    case INS_stfsx:
+    case INS_stfdx:
+        fmt = IF_RR_2A;  // Use same format as other 3-register operations
+        break;
     default:
         	assert(!"Unexpected instruction in emitIns_R_R_R");
         	break;
@@ -1936,6 +1987,62 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_orc (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
            break;
 
+        case INS_lbzx:
+            ppc_lbzx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lhzx:
+            ppc_lhzx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lhax:
+            ppc_lhax(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lwzx:
+            ppc_lwzx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lwax:
+            ppc_lwax(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_ldx:
+            ppc_ldx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lfsx:
+            ppc_lfsx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_lfdx:
+            ppc_lfdx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_stbx:
+            ppc_stbx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_sthx:
+            ppc_sthx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_stwx:
+            ppc_stwx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_stdx:
+            ppc_stdx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_stfsx:
+            ppc_stfsx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
+        case INS_stfdx:
+            ppc_stfdx(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+            break;
+
        default:
            _ASSERTE(!"NYI");
 
@@ -1989,7 +2096,86 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
         case INS_mtctr:   return "mtctr   ";
 	case INS_bctrl:   return "bctrl   ";
 	case INS_blt:     return "blt     ";
-	case INS_add:     return "add     "; 
+	case INS_add:     return "add     ";
+	case INS_trap:    return "trap    ";
+	case INS_movi:    return "movi    ";
+	case INS_push:    return "push    ";
+	case INS_pop:     return "pop     ";
+	case INS_bctr:    return "bctr    ";
+        case INS_sld:     return "sld     ";
+	case INS_srd:     return "srd     ";
+	case INS_srad:    return "srad    ";
+	case INS_slw:     return "slw     ";
+	case INS_srw:     return "srw     ";
+	case INS_sraw:    return "sraw    ";
+	case INS_sradi:   return "sradi   ";
+	case INS_slwi:    return "slwi    ";
+	case INS_srwi:    return "srwi    ";
+	case INS_srawi:   return "srawi   ";			  
+	case INS_cmpd:    return "cmpd    ";
+	case INS_cmpdi:   return "cmpdi   ";
+	case INS_lbz:     return "lbz     ";
+	case INS_lhz:     return "lhz     ";
+	case INS_lha:     return "lha     ";
+	case INS_lfs:     return "lfs     ";
+	case INS_lfd:     return "lfd     ";
+        case INS_stfs:    return "stfs    ";
+	case INS_stfd:    return "stfd    ";
+	case INS_stb:     return "stb     ";
+	case INS_sth:     return "sth     ";			
+	case INS_bge:     return "bge     ";
+	case INS_bgt:     return "bgt     ";
+	case INS_ble:     return "ble     ";
+	case INS_fadds:   return "fadds   ";
+	case INS_fadd:    return "fadd    ";
+	case INS_fsubs:   return "fsubs   ";
+	case INS_fsub:    return "fsub    ";
+	case INS_fmuls:   return "fmuls   ";
+	case INS_fmul:    return "fmul    ";
+	case INS_fdivs:   return "fdivs   ";
+	case INS_fdiv:    return "fdiv    ";
+	case INS_fmr:     return "fmr     ";
+	case INS_fcmpu:   return "fcmpu   ";
+	case INS_fcmpo:   return "fcmpo   ";
+	case INS_frsp:    return "frsp    ";		  
+	case INS_fctiwz:  return "fctiwz  ";
+	case INS_fctidz:  return "fctidz  ";
+	case INS_fctiwuz: return "fctiwuz ";
+	case INS_fctiduz: return "fctiduz ";
+	case INS_fcfid:   return "fcfid   ";
+	case INS_fcfids:  return "fcfids  ";
+	case INS_fcfidu:  return "fcfidu  ";
+	case INS_fcfidus: return "fcfidus ";
+	case INS_subf:    return "subf    ";
+	case INS_mulld:   return "mulld   ";
+	case INS_mullw:   return "mullw   ";
+	case INS_divd:    return "divd    ";
+	case INS_divdu:   return "divdu   ";
+	case INS_divw:    return "divw    ";
+	case INS_divwu:   return "divwu   ";
+	case INS_and_ins: return "and     ";
+	case INS_or_ins:  return "or      ";
+	case INS_xor_ins: return "xor     ";
+	case INS_nor:     return "nor     ";
+	case INS_nand:    return "nand    ";
+	case INS_andc:    return "andc    ";
+	case INS_orc:     return "orc     ";
+	case INS_xori:    return "xori    ";
+	case INS_xoris:   return "xoris   ";
+	case INS_lbzx:   return "lbzx";
+        case INS_lhzx:   return "lhzx";
+        case INS_lhax:   return "lhax";
+        case INS_lwzx:   return "lwzx";
+        case INS_lwax:   return "lwax";
+        case INS_ldx:    return "ldx";
+        case INS_lfsx:   return "lfsx";
+        case INS_lfdx:   return "lfdx";
+        case INS_stbx:   return "stbx";
+        case INS_sthx:   return "sthx";
+        case INS_stwx:   return "stwx";
+        case INS_stdx:   return "stdx";
+        case INS_stfsx:  return "stfsx";
+        case INS_stfdx:  return "stfdx";			  
         default:
             return "???     ";
     }
