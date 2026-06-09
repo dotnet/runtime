@@ -279,7 +279,6 @@ internal sealed class Xcode
             predefinedExcludes.Add(".pdb");
             predefinedExcludes.Add(".deps.json");
             predefinedExcludes.Add(".runtimeconfig.json");
-            predefinedExcludes.Add(".runtimeconfig.dev.json");
             predefinedExcludes.Add(".bin");
             predefinedExcludes.Add(".dSYM");
         }

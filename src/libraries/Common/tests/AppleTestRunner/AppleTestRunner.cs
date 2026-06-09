@@ -41,10 +41,6 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         }
         Console.WriteLine(".");
 
-        // CurrentDirectory on Apple-mobile defaults to "/", which makes test data shipped alongside
-        // the test assemblies (via Content/CopyToOutputDirectory) unreachable via relative paths.
-        // Redirect to the bundle directory; on Mac Catalyst the binary lives in .app/Contents/MacOS
-        // while data is in .app/Contents/Resources, so prefer the Resources directory when present.
         string cwd = AppContext.BaseDirectory;
         string maccatResources = Path.Combine(cwd, "..", "Resources");
         if (Directory.Exists(maccatResources))
@@ -186,8 +182,6 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
                 return path;
             }
 
-            // On NativeAOT maccatalyst the binary lives in .app/Contents/MacOS/
-            // but xunit-excludes.txt is bundled under .app/Contents/Resources/.
             string? appBase = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
             if (appBase is not null)
             {

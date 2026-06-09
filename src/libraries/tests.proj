@@ -532,11 +532,8 @@
 
   <!-- https://github.com/dotnet/runtime/issues/126697 -->
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
-    <!-- EventSource tests require EventSourceSupport=true -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
-
-    <!-- Apple-mobile behavioural differences -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
   </ItemGroup>
