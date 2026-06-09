@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - ppc64le_coreclr_jit
-     
   pull_request:
     branches:
       - ppc64le_coreclr_jit
@@ -21,7 +20,6 @@ jobs:
     runs-on: ubuntu-24.04-ppc64le-p10
 
     steps:
-     
       - name: Fail if not correct branch
         if: github.ref != 'refs/heads/ppc64le_coreclr_jit'
         run: |
@@ -50,9 +48,10 @@ jobs:
           docker cp .github/workflows/jit_testing.sh gha:/jit_testing.sh
           docker exec gha chmod +x /jit_testing.sh
 
+  
       - name: Run Build + Test
         run: |
-          docker exec gha bash -c "/jit_testing.sh | tee /tmp/jit.log"
+          docker exec gha bash -c "/jit_testing.sh | tee /tmp/jit.log; exit \${PIPESTATUS[0]}"
 
       - name: Copy Logs
         if: always()
