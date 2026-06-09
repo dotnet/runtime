@@ -11597,9 +11597,8 @@ PhaseStatus Compiler::fgValueNumber()
             // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
             // these are variables that are read before being initialized (at least on some control flow paths)
             // if they are not must-init, then they get VNF_InitVal(i), as with the param case.)
-            // A var is only known to start out as zero if the prolog fully zero-initializes it. Under
-            // SkipLocalsInit a GC-sparse struct only has its GC slots zeroed in the prolog, so we must
-            // not value-number its (uninitialized) non-GC fields as zero.
+            // Only treat as zero if the prolog fully zeroes it: under SkipLocalsInit a GC-sparse struct
+            // only has its GC slots zeroed, so its non-GC fields must not be value-numbered as zero.
             bool isZeroed = !fgVarNeedsExplicitZeroInit(lclNum, /* bbInALoop */ false, /* bbIsReturn */ false) &&
                             fgVarPrologFullyZeroInits(lclNum);
             ValueNum  initVal = ValueNumStore::NoVN; // We must assign a new value to initVal

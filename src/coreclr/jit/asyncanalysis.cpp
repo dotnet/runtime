@@ -179,8 +179,8 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
         // We could improve this a bit by still skipping it but inserting
         // explicit zero init on resumption, but these cases seem to be rare
         // and that would require tracking additional information.
-        // Note: a GC-sparse struct is only GC-slot zeroed in the prolog under SkipLocalsInit, so its
-        // non-GC bytes are not zeroed there; such an explicit full zero init must still be honored.
+        // Note: a GC-sparse struct is only GC-slot zeroed in the prolog under SkipLocalsInit, so an
+        // explicit full zero init (fgVarPrologFullyZeroInits) must still be honored.
         if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
             !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
                                                   /* bbIsReturn */ false) &&
