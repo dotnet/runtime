@@ -40,10 +40,6 @@ namespace Microsoft.Extensions.DependencyInjection
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
     }
-    public partial interface IServiceCollectionValidator
-    {
-        Microsoft.Extensions.DependencyInjection.ValidationResult Validate(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor> services);
-    }
     public partial interface IServiceProviderFactory<TContainerBuilder> where TContainerBuilder : notnull
     {
         TContainerBuilder CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services);
@@ -147,12 +143,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TService : class where TImplementation : class, TService { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddTransient<TService, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
     }
-    public static partial class ServiceCollectionValidationExtensions
-    {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddValidator<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TValidator>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TValidator : class, Microsoft.Extensions.DependencyInjection.IServiceCollectionValidator { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddValidator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.DependencyInjection.IServiceCollectionValidator validator) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddValidator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, Microsoft.Extensions.DependencyInjection.ValidationResult> validator) { throw null; }
-    }
     public partial class ServiceDescriptor
     {
         public ServiceDescriptor(System.Type serviceType, System.Func<System.IServiceProvider, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
@@ -252,18 +242,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
         public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }
-    }
-    public readonly partial struct ValidationResult
-    {
-        private readonly object _dummy;
-        private readonly int _dummyPrimitive;
-        public ValidationResult(System.Collections.Generic.IReadOnlyList<string> errors) { }
-        public static Microsoft.Extensions.DependencyInjection.ValidationResult Success { get { throw null; } }
-        public System.Collections.Generic.IReadOnlyList<string> Errors { get { throw null; } }
-        public bool IsSuccess { get { throw null; } }
-        public static Microsoft.Extensions.DependencyInjection.ValidationResult Fail(string error) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.ValidationResult Fail(System.Collections.Generic.IReadOnlyList<string> errors) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.ValidationResult operator +(Microsoft.Extensions.DependencyInjection.ValidationResult left, Microsoft.Extensions.DependencyInjection.ValidationResult right) { throw null; }
     }
 }
 namespace Microsoft.Extensions.DependencyInjection.Extensions
