@@ -1001,6 +1001,11 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
+                        case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, RtlRestoreContextTagIndex + addend);
+                            break;
+                        }
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
@@ -1030,6 +1035,7 @@ namespace ILCompiler.ObjectWriter
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
         public const int TableBaseGlobalIndex = 2;
+        public const int RtlRestoreContextTagIndex = 0;
 
         private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
             new([WasmValueType.I32, WasmValueType.I32]),
@@ -1045,7 +1051,7 @@ namespace ILCompiler.ObjectWriter
                 new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
                 new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
                 new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
-                new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: 0),
+                new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];
         }
 
