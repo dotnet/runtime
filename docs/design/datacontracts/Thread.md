@@ -123,6 +123,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame (GCPROTECT) chain (optional; readers should expect `TargetPointer.Null` when the field is absent) |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
 | `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |

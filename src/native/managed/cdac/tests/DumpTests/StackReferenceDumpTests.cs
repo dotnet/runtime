@@ -190,10 +190,18 @@ public class StackReferenceDumpTests : DumpTestBase
             if (!gcFrameNodes.Contains(r.Source) || r.Object == TargetPointer.Null)
                 continue;
 
-            // A real heap object held alive by a GCFrame: its MethodTable must be readable.
-            TargetPointer methodTable = Target.ReadPointer(r.Object);
-            if (methodTable != TargetPointer.Null)
-                gcFrameRoots++;
+            // A real heap object held alive by a GCFrame: its MethodTable must be readable. A reported
+            // GCFrame root can be an interior pointer or otherwise unreadable, so guard the read.
+            try
+            {
+                TargetPointer methodTable = Target.ReadPointer(r.Object);
+                if (methodTable != TargetPointer.Null)
+                    gcFrameRoots++;
+            }
+            catch
+            {
+                // Interior pointer or otherwise unreadable slot; not a countable heap object.
+            }
         }
 
         Assert.True(gcFrameRoots > 0,

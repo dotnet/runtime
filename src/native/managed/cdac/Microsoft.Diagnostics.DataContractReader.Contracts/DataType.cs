@@ -34,7 +34,6 @@ public enum DataType
     EEAllocContext,
     Exception,
     ExceptionInfo,
-    GCFrame,
     EEExceptionClause,
     ExceptionLookupTableEntry,
     EEILException,
@@ -163,6 +162,7 @@ public enum DataType
     HijackArgs,
 
     Frame,
+    GCFrame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
     FramedMethodFrame,
