@@ -93,7 +93,13 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            AsyncProfiler.Config.Update(m_level, m_matchAnyKeyword);
+            EventKeywords keywords = m_matchAnyKeyword;
+            if (keywords == 0)
+            {
+                keywords = AsyncEventKeywords;
+            }
+
+            AsyncProfiler.Config.Update(m_level, keywords);
         }
     }
 }

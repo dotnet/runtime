@@ -48,18 +48,7 @@ namespace System.Runtime.CompilerServices
         internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()
         {
             AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
-            if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
-            {
-                // V1 dispatchers emit only Resume/Complete per MoveNext invocation — no Suspend
-                // events. Each dispatcher MoveNext is treated as a discrete unit. When a child
-                // wrapper is created here (parent box yielded), the parent's MoveNext will simply
-                // emit Complete on return; the child's lifecycle (Resume + Complete) fires later
-                // when its continuation runs. The logical context spans multiple dispatchers via
-                // shared contextId, with Resume count == Complete count as the balance invariant.
-                return activeDispatcher;
-            }
-
-            return null;
+            return current != null ? current->Dispatcher : null;
         }
 
         internal static unsafe void UnwindAsyncFrame()
@@ -72,13 +61,18 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void TryFireResumeAsyncMethod(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
+        internal static unsafe void ResumeAsyncMethod(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
             AsyncTaskDispatcherInfo* current = t_current;
-            if (current == null || current->Dispatcher is not AsyncTaskDispatcher activeDispatcher)
+            AsyncTaskDispatcher? activeDispatcher = current != null ? current->Dispatcher : null;
+            if (activeDispatcher == null)
             {
                 return;
             }
+
+            activeDispatcher.CurrentContinuation = box;
+
+            SyncPoint.Check(ref current->AsyncProfilerInfo);
 
             bool methodEventEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags);
             bool callstackEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags);
@@ -105,6 +99,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void CompleteAsyncMethod()
         {
             AsyncTaskDispatcherInfo* current = t_current;
@@ -118,10 +113,15 @@ namespace System.Runtime.CompilerServices
     internal sealed class AsyncTaskDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
+        private IAsyncStateMachineBox? _current;
         private Action? _moveNextAction;
         private ulong _contextId;
 
-        internal IAsyncStateMachineBox? InnerBox => _inner;
+        internal IAsyncStateMachineBox? CurrentContinuation
+        {
+            get { return _current; }
+            set { _current = value; }
+        }
 
         internal Task? LastContinuation;
 
@@ -130,12 +130,14 @@ namespace System.Runtime.CompilerServices
         internal AsyncTaskDispatcher(IAsyncStateMachineBox inner) : base()
         {
             _inner = inner;
+            _current = inner;
             _contextId = 0;
         }
 
         internal AsyncTaskDispatcher(IAsyncStateMachineBox inner, AsyncTaskDispatcher parent) : base()
         {
             _inner = inner;
+            _current = inner;
             _contextId = parent.ContextId;
         }
 
@@ -156,18 +158,21 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
-            AsyncTaskDispatcherInfo* activeInfo = AsyncTaskDispatcherInfo.t_current;
-            AsyncTaskDispatcher? activeDispatcher = (activeInfo != null && activeInfo->Dispatcher is AsyncTaskDispatcher d) ? d : null;
-            AsyncTaskDispatcher dispatcher = activeDispatcher != null
-                ? new AsyncTaskDispatcher(box, activeDispatcher)
-                : new AsyncTaskDispatcher(box);
+            if (box is AsyncTaskDispatcher existing)
+            {
+                return existing;
+            }
+
+            AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
+            AsyncTaskDispatcher? activeDispatcher = current != null ? current->Dispatcher : null;
+            AsyncTaskDispatcher dispatcher = activeDispatcher != null ? new AsyncTaskDispatcher(box, activeDispatcher) : new AsyncTaskDispatcher(box);
 
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                if (activeDispatcher is not null)
+                if (activeDispatcher != null)
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref activeInfo->AsyncProfilerInfo, (ulong)dispatcher.ContextId);
+                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref current->AsyncProfilerInfo, (ulong)dispatcher.ContextId);
                 }
                 else
                 {
@@ -224,7 +229,7 @@ namespace System.Runtime.CompilerServices
         public IAsyncStateMachine GetStateMachineObject()
         {
             IAsyncStateMachineBox? inner = _inner;
-            return inner is not null ? inner.GetStateMachineObject() : null!;
+            return inner != null ? inner.GetStateMachineObject() : null!;
         }
 
         public void ClearStateUponCompletion()
