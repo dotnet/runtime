@@ -165,19 +165,29 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        // The debuggee crashes inside an AppDomain.AssemblyResolve handler, which the runtime
-        // (AppDomain::RaiseAssemblyResolveEvent) invokes while holding a GCPROTECT frame over the
-        // requesting Assembly reference. ReportGCFrameRoots walks that GCFrame chain and reports
-        // each protected object via UpdateScanContext(sp: null, ip: null, frame: pGCFrame), so a
-        // GCFrame-sourced root is identifiable as IsStackSourceFrame == true with a null
-        // StackPointer. Frameless GcInfo roots carry a non-null StackPointer, and this debuggee
-        // has no in-flight exception (the only other producer of that signature).
+        // The debuggee crashes inside an AppDomain.AssemblyResolve handler the runtime invokes while
+        // holding a GCPROTECT frame over the requesting Assembly reference. WalkStackReferences reports
+        // each GCFrame-protected object with the GCFrame node address as its Source; the test walks the
+        // thread's GCFrame chain and asserts a reported root's Source matches a node in that chain.
         IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+
+        // Enumerate the thread's GCFrame chain node addresses; each reported GCFrame root carries the
+        // GCFrame node address as its Source (UpdateScanContext(frame: pGCFrame)).
+        Target.TypeInfo threadType = Target.GetTypeInfo("Thread");
+        Target.TypeInfo gcFrameType = Target.GetTypeInfo("GCFrame");
+        TargetPointer terminator = TargetPointer.PlatformMaxValue(Target);
+
+        HashSet<ulong> gcFrameNodes = new();
+        TargetPointer node = Target.ReadPointerFieldOrNull(crashingThread.ThreadAddress, threadType, "GCFrame");
+        while (node != TargetPointer.Null && node != terminator && gcFrameNodes.Add(node))
+            node = Target.ReadPointerField(node, gcFrameType, "Next");
+
+        Assert.True(gcFrameNodes.Count > 0, "GCProtect debuggee should have at least one live GCFrame");
 
         int gcFrameRoots = 0;
         foreach (StackReferenceData r in refs)
         {
-            if (!r.IsStackSourceFrame || r.StackPointer != TargetPointer.Null || r.Object == TargetPointer.Null)
+            if (!gcFrameNodes.Contains(r.Source) || r.Object == TargetPointer.Null)
                 continue;
 
             // A real heap object held alive by a GCFrame: its MethodTable must be readable.
