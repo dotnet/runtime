@@ -53,11 +53,15 @@ pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t o
 }
 
 // Returns the index of the first character outside the [0-9] range, starting
-// from `start`. Returns (size_t)-1 if no such character exists.
-static size_t index_of_non_numeric(const pal_char_t* str, size_t start)
+// from `start` for `len` or until '\0' if `len` is -1. Returns (size_t)-1 if
+// no such character exists.
+static size_t index_of_non_numeric(const pal_char_t* str, size_t start, size_t len)
 {
-    for (size_t i = start; str[i] != _X('\0'); i++)
+    for (size_t i = start; i - start < len; i++)
     {
+        if (str[i] == _X('\0'))
+            return (size_t)-1;
+        
         if (str[i] < _X('0') || str[i] > _X('9'))
             return i;
     }
@@ -71,11 +75,8 @@ static bool try_stou(const pal_char_t* str, size_t len, unsigned* num)
     if (len == 0)
         return false;
 
-    for (size_t i = 0; i < len; i++)
-    {
-        if (str[i] < _X('0') || str[i] > _X('9'))
-            return false;
-    }
+    if (index_of_non_numeric(str, 0, len) != (size_t)-1)
+        return false;
 
     pal_char_t buf[32];
     if (len >= ARRAY_SIZE(buf))
@@ -136,16 +137,7 @@ static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_met
     {
         // Numeric pre-release identifiers must not be padded with 0s.
         // https://semver.org/#spec-item-9
-        bool all_numeric = true;
-        for (size_t i = 1; i < id_len; i++)
-        {
-            if (id[i] < _X('0') || id[i] > _X('9'))
-            {
-                all_numeric = false;
-                break;
-            }
-        }
-        if (all_numeric)
+        if (index_of_non_numeric(id, 1, id_len - 1) == (size_t)-1)
             return false;
     }
     return true;
@@ -193,7 +185,7 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
         return false;
 
     const pal_char_t* pat_start = min_dot + 1;
-    size_t pat_non_numeric = index_of_non_numeric(pat_start, 0);
+    size_t pat_non_numeric = index_of_non_numeric(pat_start, 0, (size_t)-1);
 
     unsigned patch_val = 0;
     if (pat_non_numeric == (size_t)-1)
