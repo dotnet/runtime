@@ -295,21 +295,28 @@ internal partial class StackWalk_1 : IStackWalk
     // gcenv.ee.cpp ScanStackRoots.
     private void ReportExceptionTrackerRoots(ThreadData threadData, GcScanContext scanContext)
     {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-        TargetPointer pExInfo = _target.ReadPointer(thread.ExceptionTracker);
-        if (pExInfo == TargetPointer.Null)
-            return;
-
-        IException exceptionContract = _target.Contracts.Exception;
-        HashSet<TargetPointer> seen = new();
-        while (pExInfo != TargetPointer.Null && seen.Add(pExInfo))
+        try
         {
-            // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
-            // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
-            exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
-            scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pExInfo);
-            scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
-            pExInfo = previous;
+            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+            TargetPointer pExInfo = _target.ReadPointer(thread.ExceptionTracker);
+            if (pExInfo == TargetPointer.Null)
+                return;
+
+            IException exceptionContract = _target.Contracts.Exception;
+            HashSet<TargetPointer> seen = new();
+            while (pExInfo != TargetPointer.Null && seen.Add(pExInfo))
+            {
+                // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
+                // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
+                exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
+                scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pExInfo);
+                scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
+                pExInfo = previous;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"Exception during {nameof(ReportExceptionTrackerRoots)}: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -318,29 +325,36 @@ internal partial class StackWalk_1 : IStackWalk
     // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
     private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-
-        // The GCFrame field is optional in the data contract; nothing to scan when the target
-        // does not describe it.
-        if (thread.GCFrame is not TargetPointer head)
-            return;
-
-        // The chain is terminated by GCFRAME_TOP (FRAME_TOP_VALUE == ~0), sized to the pointer width.
-        TargetPointer terminator = TargetPointer.PlatformMaxValue(_target);
-        ulong pointerSize = (ulong)_target.PointerSize;
-        HashSet<TargetPointer> seen = new();
-        TargetPointer pGCFrame = head;
-        while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
+        try
         {
-            Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
-            scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pGCFrame);
-            GcScanFlags flags = gcFrame.GCFlags != 0 ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
-            for (uint i = 0; i < gcFrame.NumObjRefs; i++)
+            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+
+            // The GCFrame field is optional in the data contract; nothing to scan when the target
+            // does not describe it.
+            if (thread.GCFrame is not TargetPointer head)
+                return;
+
+            // The chain is terminated by GCFRAME_TOP (FRAME_TOP_VALUE == ~0), sized to the pointer width.
+            TargetPointer terminator = TargetPointer.PlatformMaxValue(_target);
+            ulong pointerSize = (ulong)_target.PointerSize;
+            HashSet<TargetPointer> seen = new();
+            TargetPointer pGCFrame = head;
+            while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
             {
-                TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
-                scanContext.GCReportCallback(slot, flags);
+                Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
+                scanContext.UpdateScanContext(TargetPointer.Null, TargetPointer.Null, pGCFrame);
+                GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
+                for (uint i = 0; i < gcFrame.NumObjRefs; i++)
+                {
+                    TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
+                    scanContext.GCReportCallback(slot, flags);
+                }
+                pGCFrame = gcFrame.Next;
             }
-            pGCFrame = gcFrame.Next;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"Exception during {nameof(ReportGCFrameRoots)}: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
