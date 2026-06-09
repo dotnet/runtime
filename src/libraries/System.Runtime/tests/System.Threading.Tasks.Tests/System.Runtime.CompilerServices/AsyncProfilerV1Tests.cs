@@ -679,7 +679,7 @@ namespace System.Threading.Tasks.Tests
         private static async Task TaskAsync_AppendCallstack_FiresOnLateParentRegistration_Parent_Marker()
         {
             Task t = TaskAsync_AppendCallstack_FiresOnLateParentRegistration_Child_Marker();
-            s_appendRace_proceed.Wait();
+            Assert.True(s_appendRace_proceed.Wait(TimeSpan.FromSeconds(20)), "Timed out waiting for child to reach append-race checkpoint");
             await t;
         }
 
@@ -914,7 +914,7 @@ namespace System.Threading.Tasks.Tests
 
             var events = CollectEvents(kw, () =>
             {
-                RunScenarioAndFlush(() => TaskAsync_NoEventsWhenDisabled_Marker());
+                RunScenarioAndFlush(() => TaskAsync_KeywordGatekeeping_Marker());
             });
 
             var stream = ParseAllEvents(events);

@@ -7224,7 +7224,7 @@ namespace System.Threading.Tasks
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
 
-        internal object? ContinuationForDiagnostics => m_continuationObject;
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {
