@@ -607,8 +607,7 @@ class Array : public ArrayBase
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        // return m_Array;
-        return PTR_KIND(GetGCSafeDataPtr()); // This also handles arrays of dim 1 with lower bounds present
+        return PTR_KIND(m_Array);
     }
 };
 
