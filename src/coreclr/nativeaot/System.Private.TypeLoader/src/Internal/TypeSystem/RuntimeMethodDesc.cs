@@ -4,6 +4,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 
@@ -91,7 +92,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
