@@ -1716,8 +1716,9 @@ PhaseStatus Compiler::WasmSpillRefs()
                         JITDUMP("    ");
                         DISPNODE(def);
 
-                        unsigned *spillSlotIndex = def->TypeIs(TYP_BYREF) ? &byRefSpillSlotIndex : &refSpillSlotIndex;
-                        jitstd::vector<unsigned> *spillSlotList = def->TypeIs(TYP_BYREF) ? m_wasmByRefSpillSlots : m_wasmRefSpillSlots;
+                        unsigned* spillSlotIndex = def->TypeIs(TYP_BYREF) ? &byRefSpillSlotIndex : &refSpillSlotIndex;
+                        jitstd::vector<unsigned>* spillSlotList =
+                            def->TypeIs(TYP_BYREF) ? m_wasmByRefSpillSlots : m_wasmRefSpillSlots;
                         unsigned spillSlot;
                         if (*spillSlotIndex < spillSlotList->size())
                         {
@@ -1734,7 +1735,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                             lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
                             spillSlotList->push_back(spillSlot);
                         }
-                        *spillSlotIndex++;
+                        (*spillSlotIndex) += 1;
 
                         GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
                         GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
