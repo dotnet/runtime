@@ -19,8 +19,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly TargetPointer _objectMethodTablePointer;
-    private readonly TargetPointer _continuationMethodTablePointer;
-    private readonly TargetPointer _continuationSingletonEEClassPointer;
+    private TargetPointer _continuationMethodTablePointer;
+    private TargetPointer _continuationSingletonEEClassPointer;
     private readonly TargetPointer _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
@@ -436,7 +436,29 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
     internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
-    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+    internal TargetPointer ContinuationMethodTablePointer
+    {
+        get
+        {
+            if (_continuationMethodTablePointer != TargetPointer.Null)
+                return _continuationMethodTablePointer;
+            _continuationMethodTablePointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
+            return _continuationMethodTablePointer;
+        }
+    }
+
+    internal TargetPointer ContinuationSingletonEEClassPointer
+    {
+        get
+        {
+            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
+                return _continuationSingletonEEClassPointer;
+            _continuationSingletonEEClassPointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
+            return _continuationSingletonEEClassPointer;
+        }
+    }
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -571,10 +593,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
-        && _continuationMethodTablePointer != TargetPointer.Null
-        && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer
-        && _continuationSingletonEEClassPointer != TargetPointer.Null
-        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
+        && ContinuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
+        && ContinuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == ContinuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
     {
