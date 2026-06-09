@@ -68,11 +68,14 @@ namespace System.IO
         private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             ManualResetEvent waitEvent = handle.RentSyncWaitEvent();
+            SafeWaitHandle waitHandle = waitEvent.SafeWaitHandle;
             NativeOverlapped* overlapped = null;
+            bool releaseWaitHandle = false;
 
             try
             {
-                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitEvent);
+                waitHandle.DangerousAddRef(ref releaseWaitHandle);
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitHandle.DangerousGetHandle());
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -124,6 +127,11 @@ namespace System.IO
                     NativeMemory.Free(overlapped);
                 }
 
+                if (releaseWaitHandle)
+                {
+                    waitHandle.DangerousRelease();
+                }
+
                 handle.ReturnSyncWaitEvent(waitEvent);
             }
         }
@@ -163,11 +171,14 @@ namespace System.IO
             }
 
             ManualResetEvent waitEvent = handle.RentSyncWaitEvent();
+            SafeWaitHandle waitHandle = waitEvent.SafeWaitHandle;
             NativeOverlapped* overlapped = null;
+            bool releaseWaitHandle = false;
 
             try
             {
-                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitEvent);
+                waitHandle.DangerousAddRef(ref releaseWaitHandle);
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, waitHandle.DangerousGetHandle());
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -220,6 +231,11 @@ namespace System.IO
                 if (overlapped != null)
                 {
                     NativeMemory.Free(overlapped);
+                }
+
+                if (releaseWaitHandle)
+                {
+                    waitHandle.DangerousRelease();
                 }
 
                 handle.ReturnSyncWaitEvent(waitEvent);
@@ -722,7 +738,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, EventWaitHandle waitHandle)
+        private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, nint waitHandle)
         {
             NativeOverlapped* result = (NativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(NativeOverlapped));
 
@@ -743,7 +759,7 @@ namespace System.IO
             // "If the file handle associated with the completion packet was previously associated with an I/O completion port
             // [...] setting the low-order bit of hEvent in the OVERLAPPED structure prevents the I/O completion
             // from being queued to a completion port."
-            result->EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle() | 1;
+            result->EventHandle = waitHandle | 1;
 
             return result;
         }
