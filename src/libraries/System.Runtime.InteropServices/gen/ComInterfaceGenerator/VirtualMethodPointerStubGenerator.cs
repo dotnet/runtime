@@ -176,6 +176,7 @@ namespace Microsoft.Interop
                 : SyntaxKind.GetAccessorDeclaration;
 
             AccessorDeclarationSyntax accessor = AccessorDeclaration(accessorKind)
+                .AddAttributeLists(methodStub.SignatureContext.AdditionalAttributes.ToArray())
                 .WithBody(stubCode);
 
             if (isIndexer)
