@@ -1856,8 +1856,9 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 //    treeNode - The GT_CKFINITE node
 //
 // Notes:
-//    The operand is expected to be marked MultiplyUsed so that codegen can
-//    re-use its value (via "local.get") after the check.
+//    op1 is expected to be marked MultiplyUsed so that its producer tees
+//    its value into a temporary local. That lets us re-read the value
+//    after the finiteness check by emitting a "local.get".
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
@@ -1867,13 +1868,13 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     var_types targetType = treeNode->TypeGet();
     assert(varTypeIsFloating(targetType));
 
-    // Push the operand value on the wasm stack. Because op1 was flagged as
-    // MultiplyUsed during lowering, "WasmProduceReg" will tee it into a
-    // temporary local so we can re-read it for the exponent check.
-    //
     genConsumeOperands(treeNode->AsOp());
 
-    // Re-read the operand to feed the finiteness check.
+    // op1's producer emitted "local.tee" via "WasmProduceReg" (because
+    // op1 was flagged as MultiplyUsed during lowering), leaving its
+    // value both on the wasm operand stack and in a temporary local.
+    // We re-read the local below to feed the finiteness check; the
+    // value on the stack will flow through as the result of GT_CKFINITE.
     //
     regNumber op1Reg = GetMultiUseOperandReg(op1);
     emitter*  emit   = GetEmitter();
@@ -1903,12 +1904,14 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     }
     emit->emitIns(INS_i32_eqz);
 
-    // If "!(|x| < +Inf)", the value is NaN or +/-Inf; throw.
+    // If "!(|x| < +Inf)", the value is NaN or +/-Inf; throw. The wasm
+    // stack underneath the predicate (including op1's value) is preserved
+    // on the fall-through path.
     //
     genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
 
-    // The operand value is still on the wasm stack from genConsumeOperands;
-    // produce it as the result of the GT_CKFINITE node.
+    // op1's value is still on top of the wasm operand stack; produce it
+    // as the result of the GT_CKFINITE node.
     //
     WasmProduceReg(treeNode);
 }
