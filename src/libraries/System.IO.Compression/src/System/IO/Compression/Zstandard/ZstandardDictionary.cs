@@ -103,6 +103,7 @@ namespace System.IO.Compression
             // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
             // access violations later in native code.
             byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
+            byte[]? dictionaryBuffer = null;
             try
             {
                 Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
@@ -127,34 +128,30 @@ namespace System.IO.Compression
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
 
-                byte[] dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
-                try
-                {
-                    nuint dictSize;
+                dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
+                nuint dictSize;
 
-                    unsafe
+                unsafe
+                {
+                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                    fixed (byte* dictPtr = dictionaryBuffer)
+                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
                     {
-                        fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                        fixed (byte* dictPtr = dictionaryBuffer)
-                        fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
-                        {
-                            dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                                    dictPtr, (nuint)maxDictionarySize,
-                                    samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
-                        }
-
-                        ZstandardUtils.ThrowIfError(dictSize);
-                        return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                                dictPtr, (nuint)maxDictionarySize,
+                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
                     }
-                }
-                finally
-                {
-                    // Clear before returning: the trained dictionary is derived from caller-supplied samples.
-                    ArrayPool<byte>.Shared.Return(dictionaryBuffer, clearArray: true);
+
+                    ZstandardUtils.ThrowIfError(dictSize);
+                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
                 }
             }
             finally
             {
+                if (dictionaryBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(dictionaryBuffer);
+                }
                 ArrayPool<byte>.Shared.Return(lengthsArray);
             }
         }
