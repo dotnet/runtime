@@ -255,6 +255,9 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INTRINSIC]     = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ALLOCOBJ]      = TREE_NODE_SZ_LARGE;
+#ifdef TARGET_WASM
+    GenTree::s_gtNodeSizes[GT_HWINTRINSIC]   = TREE_NODE_SZ_LARGE;
+#endif
 #if USE_HELPERS_FOR_INT_DIV
     GenTree::s_gtNodeSizes[GT_DIV]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UDIV]          = TREE_NODE_SZ_LARGE;
@@ -23444,6 +23447,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // return Vector128.Create(lower, upper)
                 return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseType, simdSize);
             }
+#elif defined(TARGET_WASM)
+            NYI_WASM_SIMD("gtNewSimdWithElementNode");
 #endif // !TARGET_XARCH && !TARGET_ARM64
             unreached();
         }
@@ -26468,6 +26473,8 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
             op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
             op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
         }
+#elif defined(TARGET_WASM)
+        NYI_WASM_SIMD("gtNewSimdMinMaxNode");
 #else
         assert(!isScalar);
 #endif
@@ -31412,6 +31419,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     assert(op1 != nullptr);
     assert(op1->TypeIs(simdType));
     assert(op2 != nullptr);
+
+#ifdef TARGET_WASM
+    NYI_WASM_SIMD("GetHWIntrinsicIdForBinOp");
+#endif
 
 #if defined(TARGET_XARCH)
     if ((simdSize == 64) || (simdSize == 32))

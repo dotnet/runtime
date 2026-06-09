@@ -1092,6 +1092,9 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
 
 static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntrinsicIsaRange& isaRange)
 {
+    #ifdef TARGET_WASM
+    NYI_WASM_SIMD("ValidateHWIntrinsicIsaRange");
+    #endif
     // Both entries should be illegal if either is
     if (isaRange.FirstId == NI_Illegal)
     {
