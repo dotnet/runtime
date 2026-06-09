@@ -1892,8 +1892,7 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
             break;
 
         default:
-            NYI_WASM("genCodeForBitCast: unsupported type combination");
-            break;
+            unreached();
     }
 
     if (ins != INS_none)
