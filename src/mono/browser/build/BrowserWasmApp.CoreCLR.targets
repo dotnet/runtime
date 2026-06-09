@@ -93,6 +93,15 @@
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
     </PropertyGroup>
+
+    <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
+         path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
+         app's own [UnmanagedCallersOnly] reverse thunks into dotnet.native.wasm; the runtime
+         pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+    </PropertyGroup>
   </Target>
 
   <!-- Build entry point: runs after Build. The inner _CoreCLRWasmBuildAppCore is
