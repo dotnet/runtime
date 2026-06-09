@@ -710,6 +710,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_INDEX_ADDR:
             LowerIndexAddr(node->AsIndexAddr());
             break;
+
+        case GT_CKFINITE:
+            LowerCkfinite(node->AsOp());
+            break;
 #endif // defined(TARGET_WASM)
 
         default:
