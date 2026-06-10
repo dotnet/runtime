@@ -83,8 +83,7 @@ internal static class Entrypoints
                 };
             }
 
-            // TODO: [cdac] Better error code/details
-            if (!ContractDescriptorTarget.TryCreate(
+            ContractDescriptorTarget target = ContractDescriptorTarget.Create(
                 descriptor,
                 (address, buffer) =>
                 {
@@ -129,9 +128,7 @@ internal static class Entrypoints
                 },
                 setThreadContextDelegate,
                 allocDelegate,
-                [Contracts.CoreCLRContracts.Register],
-                out ContractDescriptorTarget? target))
-                return -1;
+                [Contracts.CoreCLRContracts.Register]);
 
             GCHandle gcHandle = GCHandle.Alloc(target);
             *handle = GCHandle.ToIntPtr(gcHandle);
@@ -321,7 +318,7 @@ internal static class Entrypoints
             };
         }
 
-        if (!ContractDescriptorTarget.TryCreate(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -369,11 +366,7 @@ internal static class Entrypoints
                 }
             },
             allocVirtual,
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            return -1;
-        }
+            [Contracts.CoreCLRContracts.Register]);
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
