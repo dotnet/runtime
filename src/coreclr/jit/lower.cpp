@@ -1707,9 +1707,10 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     JITDUMP("Dividing split arg [%06u] with %u registers, %u stack space into two arguments\n",
             Compiler::dspTreeID(arg), numRegs, stackSeg.Size);
 
-    ClassLayout* registersLayout = SliceLayout(callArg->GetSignatureLayout(), 0, stackSeg.Offset);
-    ClassLayout* stackLayout     = SliceLayout(callArg->GetSignatureLayout(), stackSeg.Offset,
-                                               callArg->GetSignatureLayout()->GetSize() - stackSeg.Offset);
+    ClassLayout* registersLayout = callArg->GetSignatureLayout()->SliceLayout(m_compiler, 0, stackSeg.Offset);
+    ClassLayout* stackLayout =
+        callArg->GetSignatureLayout()->SliceLayout(m_compiler, stackSeg.Offset,
+                                                   callArg->GetSignatureLayout()->GetSize() - stackSeg.Offset);
 
     GenTree* stackNode     = nullptr;
     GenTree* registersNode = nullptr;
@@ -1900,54 +1901,6 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     JITDUMP("Added a new call arg. New call is:\n");
     DISPTREERANGE(BlockRange(), call);
-}
-
-//------------------------------------------------------------------------
-// SliceLayout:
-//   Slice a class layout into the specified range.
-//
-// Parameters:
-//   layout - The layout
-//   offset - Start offset of the slice
-//   size   - Size of the slice
-//
-// Returns:
-//   New layout of size 'size'
-//
-ClassLayout* Lowering::SliceLayout(ClassLayout* layout, unsigned offset, unsigned size)
-{
-    ClassLayoutBuilder builder(m_compiler, size);
-    INDEBUG(
-        builder.SetName(m_compiler->printfAlloc("%s[%03u..%03u)", layout->GetClassName(), offset, offset + size),
-                        m_compiler->printfAlloc("%s[%03u..%03u)", layout->GetShortClassName(), offset, offset + size)));
-
-    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && layout->HasGCPtr())
-    {
-        for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
-        {
-            builder.SetGCPtrType(i / TARGET_POINTER_SIZE, layout->GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
-        }
-    }
-    else
-    {
-        assert(!layout->HasGCPtr());
-    }
-
-    builder.AddPadding(SegmentList::Segment(0, size));
-
-    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
-    {
-        if ((nonPadding.End <= offset) || (nonPadding.Start >= offset + size))
-        {
-            continue;
-        }
-
-        unsigned start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
-        unsigned end   = nonPadding.End >= (offset + size) ? size : (nonPadding.End - offset);
-
-        builder.RemovePadding(SegmentList::Segment(start, end));
-    }
-    return m_compiler->typGetCustomLayout(builder);
 }
 
 //------------------------------------------------------------------------
