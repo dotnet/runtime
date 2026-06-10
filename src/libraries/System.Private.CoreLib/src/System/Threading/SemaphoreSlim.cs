@@ -968,9 +968,8 @@ namespace System.Threading
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't null");
                     int maxAsyncToRelease = currentCount - waitCount;
                     int asyncReleased = 0;
-                    while (maxAsyncToRelease > 0 && m_asyncHead is not null)
+                    while (asyncReleased < maxAsyncToRelease && m_asyncHead is not null)
                     {
-                        --maxAsyncToRelease;
                         ++asyncReleased;
 
                         TaskNode waiterTask = m_asyncHead;
