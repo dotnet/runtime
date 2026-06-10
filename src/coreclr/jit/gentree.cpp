@@ -13727,7 +13727,8 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint8_t element = simdVal.gtSimdScalableIndexU8[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element = static_cast<uint8_t>(element + (element * simdVal.gtSimdScalableStepU8[0]));
+                                    element =
+                                        static_cast<uint8_t>(element + (element * simdVal.gtSimdScalableStepU8[0]));
                                 }
                                 else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
                                 {

@@ -2577,7 +2577,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         case SimdScalableRepeated:
                         {
                             if (varTypeIsIntegral(baseType) && indexHasImm &&
-                                (emitter::isValidSimm<8>(indexImm) || emitter::isValidSimm_MultipleOf<8, 256>(indexImm)))
+                                (emitter::isValidSimm<8>(indexImm) ||
+                                 emitter::isValidSimm_MultipleOf<8, 256>(indexImm)))
                             {
                                 emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, indexImm, opt);
                             }
@@ -2654,8 +2655,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             else if ((baseType == TYP_DOUBLE) &&
                                      emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
                             {
-                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
-                                                  simdVal.gtSimdScalableIndexF64[0]);
+                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);
                             }
                             else
                             {
