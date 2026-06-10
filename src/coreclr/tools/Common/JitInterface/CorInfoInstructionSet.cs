@@ -1496,7 +1496,7 @@ namespace Internal.JitInterface
                     break;
 
                 case TargetArchitecture.Wasm32:
-                    platformIntrinsicNamespace = "System.Runtime.Intrinsics.Wasm32";
+                    platformIntrinsicNamespace = "System.Runtime.Intrinsics.Wasm";
                     break;
 
                 case TargetArchitecture.X64:
@@ -2307,7 +2307,7 @@ namespace Internal.JitInterface
 
                 case (InstructionSet.Wasm32_WasmBase, TargetArchitecture.Wasm32):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm32"u8, "WasmBase"u8, false);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "WasmBase"u8, false);
                     if (type != null)
                     {
                         yield return type;
@@ -2317,7 +2317,7 @@ namespace Internal.JitInterface
 
                 case (InstructionSet.Wasm32_PackedSimd, TargetArchitecture.Wasm32):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm32"u8, "PackedSimd"u8, false);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "PackedSimd"u8, false);
                     if (type != null)
                     {
                         yield return type;

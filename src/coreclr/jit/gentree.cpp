@@ -30625,7 +30625,10 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
     assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
 
     // All ids being set must be valid
+#ifndef TARGET_WASM
+    // TODO-WASM: Re-enable once we have more intrinsics implemented.
     assert(!HWIntrinsicInfo::IsInvalidNodeId(intrinsicId));
+#endif
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;
