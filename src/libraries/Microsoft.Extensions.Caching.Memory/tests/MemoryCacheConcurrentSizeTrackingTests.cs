@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [Fact]
         public void ConcurrentSetReplaceAndRemove_DoesNotDriftSizeNegative_NorLatch()
         {
-            using var cache = new MemoryCache(new MemoryCacheOptions
+            using MemoryCache cache = new(new MemoryCacheOptions
             {
                 SizeLimit = 200L * 1024 * 1024, // far larger than the working set below
                 TrackStatistics = true
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Caching.Memory
             int threadCount = Math.Max(8, Environment.ProcessorCount * 4);
 
             long observedNegative = 0;
-            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3)))
+            using (CancellationTokenSource cts = new(TimeSpan.FromSeconds(3)))
             {
                 Task monitor = Task.Run(() =>
                 {
@@ -45,12 +45,12 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                 });
 
-                var workers = new Task[threadCount];
+                Task[] workers = new Task[threadCount];
                 for (int t = 0; t < threadCount; t++)
                 {
                     workers[t] = Task.Run(() =>
                     {
-                        var rnd = new Random(Environment.CurrentManagedThreadId);
+                        Random rnd = new(Environment.CurrentManagedThreadId);
                         while (!cts.IsCancellationRequested)
                         {
                             string key = "k" + rnd.Next(KeyCount);
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [Fact]
         public void SizeLimit_StillEnforced_AfterReplaceAccountingFix()
         {
-            using var cache = new MemoryCache(new MemoryCacheOptions
+            using MemoryCache cache = new(new MemoryCacheOptions
             {
                 SizeLimit = 40, // room for ~10 entries of size 4
                 TrackStatistics = true
