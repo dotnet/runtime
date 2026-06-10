@@ -154,7 +154,7 @@ namespace System.Net.Security
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                return default;
+                return new ProtocolToken { Status = status };
             }
             return HandshakeInternal(ref context!, null, out _, sslAuthenticationOptions);
         }

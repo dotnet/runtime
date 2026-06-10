@@ -371,6 +371,21 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// LowerCkfinite: Lowers a GT_CKFINITE node.
+//
+// Mark the operand as multiply-used since codegen needs to read it twice:
+// once for the finiteness check and once for the produced value.
+//
+// Arguments:
+//    node - the GT_CKFINITE node to be lowered
+//
+void Lowering::LowerCkfinite(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_CKFINITE));
+    SetMultiplyUsed(node->gtGetOp1() DEBUGARG("LowerCkfinite op1 (finiteness check)"));
+}
+
+//------------------------------------------------------------------------
 // LowerIndexAddr: Lowers a GT_INDEX_ADDR node
 //
 // Mark operands that need multiple uses for exception-inducing checks.
