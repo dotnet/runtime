@@ -12,7 +12,7 @@ internal sealed class OletxDependentTransaction : OletxTransaction
 {
     private readonly OletxVolatileEnlistmentContainer _volatileEnlistmentContainer;
 
-    private int _completed;
+    private bool _completed;
 
     internal OletxDependentTransaction(RealOletxTransaction realTransaction, bool delayCommit)
         : base(realTransaction)
@@ -38,10 +38,9 @@ internal sealed class OletxDependentTransaction : OletxTransaction
             etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this, $"{nameof(DependentTransaction)}.{nameof(Complete)}");
         }
 
-        Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+        Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
-        int localCompleted = Interlocked.Exchange(ref _completed, 1);
-        if (localCompleted == 1)
+        if (Interlocked.Exchange(ref _completed, true))
         {
             throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
         }

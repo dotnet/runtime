@@ -42,7 +42,7 @@ namespace System.Transactions.Oletx
         // transation needs to be created and if so, to create the transaction.
         private readonly byte[]? _propagationTokenForDeserialize;
 
-        protected int Disposed;
+        protected bool Disposed;
 
         // In GetRealObject, we ask LTM if it has a promoted transaction with the same ID.  If it does,
         // we need to remember that transaction because GetRealObject is called twice during
@@ -201,8 +201,7 @@ namespace System.Transactions.Oletx
                 etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this, $"{nameof(IDisposable)}.{nameof(Dispose)}");
             }
 
-            int localDisposed = Interlocked.CompareExchange(ref Disposed, 1, 0);
-            if (localDisposed == 0)
+            if (!Interlocked.Exchange(ref Disposed, true))
             {
                 RealOletxTransaction.OletxTransactionDisposed();
             }
@@ -239,7 +238,7 @@ namespace System.Transactions.Oletx
                 etwLog.TransactionRollback(TraceSourceType.TraceSourceOleTx, TransactionTraceId, "Transaction");
             }
 
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             RealOletxTransaction.Rollback();
 
@@ -260,7 +259,7 @@ namespace System.Transactions.Oletx
             }
 
             Debug.Assert(singlePhaseNotification != null, "Argument is null");
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
@@ -291,7 +290,7 @@ namespace System.Transactions.Oletx
             }
 
             Debug.Assert(enlistmentNotification != null, "Argument is null");
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
@@ -326,7 +325,7 @@ namespace System.Transactions.Oletx
                     $"{nameof(OletxTransaction)}.{nameof(EnlistDurable)}({nameof(ISinglePhaseNotificationInternal)})");
             }
 
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
@@ -368,7 +367,7 @@ namespace System.Transactions.Oletx
                 etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this, $"{nameof(OletxTransaction)}.{nameof(DependentClone)}");
             }
 
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             if (TransactionStatus.Aborted == Status)
             {
@@ -445,7 +444,7 @@ namespace System.Transactions.Oletx
                 etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this, $"{nameof(OletxTransaction)}.{nameof(GetObjectData)}");
             }
 
-            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
+            Debug.Assert(!Disposed, "OletxTransction object is disposed");
 
             propagationToken = TransactionInterop.GetTransmitterPropagationToken(this);
 

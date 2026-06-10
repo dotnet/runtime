@@ -171,7 +171,7 @@ namespace System
             Interop.Advapi32.DeregisterEventSource(handle);
         }
 
-        private static byte s_once;
+        private static bool s_once;
 
         public static bool ShouldLogInEventLog
         {
@@ -180,7 +180,7 @@ namespace System
                 if (Debugger.IsNativeDebuggerAttached())
                     return false;
 
-                if (s_once == 1 || Interlocked.Exchange(ref s_once, 1) == 1)
+                if (s_once || Interlocked.Exchange(ref s_once, true))
                     return false;
 
                 return true;

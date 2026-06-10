@@ -7077,13 +7077,13 @@ namespace System.Threading.Tasks
             /// <summary>Implementation backing the ValueTask used to wait for the next task to be available.</summary>
             /// <remarks>This is a mutable struct. Do not make it readonly.</remarks>
             private ManualResetValueTaskSourceCore<bool> _waitForNextCompletedTask = new() { RunContinuationsAsynchronously = true }; // _waitForNextCompletedTask.Set is called while holding a lock
-            /// <summary>0 if this has never been used in an iteration; 1 if it has.</summary>
+            /// <summary>false if this has never been used in an iteration; true if it has.</summary>
             /// <remarks>This is used to ensure we only ever iterate through the tasks once.</remarks>
-            private int _enumerated;
+            private bool _enumerated;
 
             /// <summary>Called at the beginning of the iterator to assume ownership of the state.</summary>
             /// <returns>true if the caller owns the state; false if the caller should end immediately.</returns>
-            public bool TryStart() => Interlocked.Exchange(ref _enumerated, 1) == 0;
+            public bool TryStart() => !Interlocked.Exchange(ref _enumerated, true);
 
             /// <summary>Gets or sets the number of tasks that haven't yet been yielded.</summary>
             public int Remaining { get; set; }

@@ -61,7 +61,7 @@ namespace System.Threading
         //   a responsibility of the thread that holds the lock.
         // The main goal here is that the threads who release other threads do not get themselves blocked as
         // the releasers are the hot threads that do the actual work (as opposed to threads who are parking/unparking).
-        private int _pendingWake;
+        private bool _pendingWake;
 
         public LowLevelLifoSemaphore(Action onWait)
         {
@@ -315,7 +315,7 @@ namespace System.Threading
             _blockerStackLock.Release();
 
             // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
-            if (_pendingWake > 0)
+            if (_pendingWake)
                 WakeOneCore();
 
             if (blockerNode != null)
@@ -362,8 +362,8 @@ namespace System.Threading
         private void WakeOne()
         {
             // Use Interlocked. This assignment must happen before trying to acquire the _blockerStackLock
-            int origWake = Interlocked.Exchange(ref _pendingWake, 1);
-            Debug.Assert(origWake == 0);
+            bool origWake = Interlocked.Exchange(ref _pendingWake, true);
+            Debug.Assert(!origWake);
             WakeOneCore();
         }
 
@@ -382,7 +382,7 @@ namespace System.Threading
                     return;
                 }
 
-                if (_pendingWake == 0)
+                if (!_pendingWake)
                 {
                     _blockerStackLock.Release();
 
@@ -390,7 +390,7 @@ namespace System.Threading
                     //       it is highly unlikely, but not impossible.
                     //
                     // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
-                    if (_pendingWake != 0)
+                    if (_pendingWake)
                         continue;
 
                     // no pending wakes
@@ -401,9 +401,9 @@ namespace System.Threading
                 // We are also holding the _blockerStackLock and whoever we are unparking cannot acknowledge
                 // the wake while we are holding the lock.
                 // Until the wake is acknowledged _pendingWake cannot be changed by any thread except the current.
-                // Therefore we can use an ordinary --
-                Debug.Assert(_pendingWake == 1);
-                _pendingWake--;
+                // Therefore we can use an ordinary assignment
+                Debug.Assert(_pendingWake);
+                _pendingWake = false;
 
                 LifoBlockerNode? top = _blockerStack;
                 if (top != null)
@@ -420,7 +420,7 @@ namespace System.Threading
                 // No new wakes can be pended while we are holding the lock for the purpose of
                 // clearing an existing pending wake.
                 // Thus we do not check _pendingWake after releasing the lock in this case.
-                Debug.Assert(_pendingWake == 0);
+                Debug.Assert(!_pendingWake);
                 _blockerStackLock.Release();
 
                 if (top != null)
@@ -464,7 +464,7 @@ namespace System.Threading
             _blockerStackLock.Release();
 
             // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
-            if (_pendingWake > 0)
+            if (_pendingWake)
                 WakeOneCore();
 
             return removed;

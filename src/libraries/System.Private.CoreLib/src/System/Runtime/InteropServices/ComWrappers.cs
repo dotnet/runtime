@@ -667,11 +667,11 @@ namespace System.Runtime.InteropServices
         {
             private IntPtr _trackerObject;
             internal readonly IntPtr _contextToken;
-            private int _trackerObjectDisconnected; // Atomic boolean, so using int.
+            private bool _trackerObjectDisconnected;
             private readonly bool _releaseTrackerObject;
             internal readonly GCHandle _nativeObjectWrapperWeakHandle;
 
-            public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
+            public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected) ? IntPtr.Zero : _trackerObject;
 
             public ReferenceTrackerNativeObjectWrapper(
                 nint externalComObject,
@@ -721,7 +721,7 @@ namespace System.Runtime.InteropServices
             public void DisconnectTracker()
             {
                 // Return if already disconnected or the tracker isn't set.
-                if (_trackerObject == IntPtr.Zero || Interlocked.CompareExchange(ref _trackerObjectDisconnected, 1, 0) != 0)
+                if (_trackerObject == IntPtr.Zero || Interlocked.Exchange(ref _trackerObjectDisconnected, true))
                 {
                     return;
                 }

@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     internal sealed class QueryTaskGroupState
     {
         private Task? _rootTask; // The task under which all query tasks root.
-        private int _alreadyEnded; // Whether the tasks have been waited on already.
+        private bool _alreadyEnded; // Whether the tasks have been waited on already.
         private readonly CancellationState _cancellationState; // The cancellation state.
         private readonly int _queryId; // Id of this query execution.
 
@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
 
         internal bool IsAlreadyEnded
         {
-            get { return _alreadyEnded == 1; }
+            get { return _alreadyEnded; }
         }
 
         //-----------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
             Debug.Assert(_rootTask != null);
             //Debug.Assert(Task.Current == null || (Task.Current != _rootTask && Task.Current.Parent != _rootTask));
 
-            if (Interlocked.Exchange(ref _alreadyEnded, 1) == 0)
+            if (!Interlocked.Exchange(ref _alreadyEnded, true))
             {
                 // There are four cases:
                 // Case #1: Wait produced an exception that is not OCE(ct), or an AggregateException which is not full of OCE(ct) ==>  We rethrow.

@@ -42,7 +42,7 @@ internal sealed class OletxCommittableTransaction : OletxTransaction
             etwLog.TransactionCommit(TraceSourceType.TraceSourceOleTx, TransactionTraceId, "CommittableTransaction");
         }
 
-        Debug.Assert(0 == Disposed, "OletxTransction object is disposed");
+        Debug.Assert(!Disposed, "OletxTransction object is disposed");
         RealOletxTransaction.InternalTransaction = internalTransaction;
 
         _commitCalled = true;

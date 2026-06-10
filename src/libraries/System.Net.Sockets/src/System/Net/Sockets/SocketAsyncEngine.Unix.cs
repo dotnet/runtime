@@ -102,7 +102,7 @@ namespace System.Net.Sockets
         //       and resetting the flag, when the flag is in a wrong state.
         //       A new work item may be added right before the flag is reset
         //       without asking for a worker, while the last worker is quitting.
-        private int _hasOutstandingThreadRequest;
+        private bool _hasOutstandingThreadRequest;
 
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
@@ -242,7 +242,7 @@ namespace System.Net.Sockets
         private void EnsureWorkerScheduled()
         {
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
+            if (!Interlocked.Exchange(ref _hasOutstandingThreadRequest, true))
             {
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
             }
@@ -251,8 +251,8 @@ namespace System.Net.Sockets
         void IThreadPoolWorkItem.Execute()
         {
             // We are asking for one worker at a time, thus the state should be 1.
-            Debug.Assert(_hasOutstandingThreadRequest == 1);
-            _hasOutstandingThreadRequest = 0;
+            Debug.Assert(_hasOutstandingThreadRequest);
+            _hasOutstandingThreadRequest = false;
 
             // Checking for items must happen after resetting the processing state.
             Interlocked.MemoryBarrier();

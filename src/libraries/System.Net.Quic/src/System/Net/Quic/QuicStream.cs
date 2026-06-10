@@ -110,7 +110,7 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-    private int _sendLocked;
+    private bool _sendLocked;
     private Exception? _sendException;
 
     private readonly long _defaultErrorCode;
@@ -442,7 +442,7 @@ public sealed partial class QuicStream
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
-        if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0)
+        if (!Interlocked.Exchange(ref _sendLocked, true))
         {
             unsafe
             {
@@ -457,7 +457,7 @@ public sealed partial class QuicStream
                 if (StatusFailed(status))
                 {
                     _sendBuffers.Reset();
-                    Volatile.Write(ref _sendLocked, 0);
+                    Volatile.Write(ref _sendLocked, false);
 
                     // There might be stored exception from when we held the lock.
                     if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
@@ -530,10 +530,10 @@ public sealed partial class QuicStream
         {
             var exception = ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted);
             Interlocked.CompareExchange(ref _sendException, exception, null);
-            if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0)
+            if (!Interlocked.Exchange(ref _sendLocked, true))
             {
                 _sendTcs.TrySetException(_sendException);
-                Volatile.Write(ref _sendLocked, 0);
+                Volatile.Write(ref _sendLocked, false);
             }
         }
     }
@@ -616,7 +616,7 @@ public sealed partial class QuicStream
     {
         // Release buffer and unlock.
         _sendBuffers.Reset();
-        Volatile.Write(ref _sendLocked, 0);
+        Volatile.Write(ref _sendLocked, false);
 
         // There might be stored exception from when we held the lock.
         Exception? exception = Volatile.Read(ref _sendException);
