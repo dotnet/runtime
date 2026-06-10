@@ -4,6 +4,7 @@ set -x
 
 STAGE="${1:-all}"
 export DEBIAN_FRONTEND=noninteractive
+[ -f /env.sh ] && source /env.sh
 
 RUNTIME_DIR="$(pwd)/runtime"
 TEST_DIR="$(pwd)/JIT_Testing"
@@ -53,6 +54,9 @@ setup() {
 
   echo "DOTNET installed:"
   dotnet --version
+
+  echo "export DOTNET_ROOT=$DOTNET_ROOT" > /env.sh
+  echo "export PATH=$DOTNET_ROOT:\$PATH" >> /env.sh
 }
 
 # =========================================================
@@ -60,17 +64,16 @@ setup() {
 # =========================================================
 build_runtime() {
   cd runtime
-
-  export DOTNET_ROOT="$DOTNET_ROOT"
   export PATH="$DOTNET_ROOT:$PATH"
   export DOTNET_MULTILEVEL_LOOKUP=0
   export UseInstalledDotNetCli=true
 
   ./build.sh clr+clr.hosts \
-    /p:PrimaryRuntimeFlavor=CoreCLR \
-    /p:PublishAot=false \
-    /p:SupportsNativeAotComponents=false \
-    2>&1 | tee build.log
+  -skipmanagedtools \
+  /p:PrimaryRuntimeFlavor=CoreCLR \
+  /p:PublishAot=false \
+  /p:SupportsNativeAotComponents=false \
+  2>&1 | tee build.log
 }
 
 # =========================================================
