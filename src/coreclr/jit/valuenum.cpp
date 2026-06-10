@@ -6665,7 +6665,7 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
                                                   : ValueSize::FromJitType(elemType);
 
     var_types loadType    = loadTree->TypeGet();
-    ValueSize loadSize    = loadTree->AsIndir()->ValueSize();
+    ValueSize loadSize    = loadTree->AsIndir()->GetValueSize();
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
@@ -12608,7 +12608,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             GenTreeLclVarCommon* lclVarTree = nullptr;
             ssize_t              offset     = 0;
-            ValueSize            storeSize  = store->AsIndir()->ValueSize();
+            ValueSize            storeSize  = store->AsIndir()->GetValueSize();
             GenTree*             baseAddr   = nullptr;
             FieldSeq*            fldSeq     = nullptr;
 

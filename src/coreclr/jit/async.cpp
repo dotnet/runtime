@@ -1331,7 +1331,7 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
                 block->getTryIndex());
     }
 
-    if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
+    if (call->GetAsyncInfo().ContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
     {
         layoutBuilder->SetNeedsContinuationContext();
         JITDUMP("  Continuation continues on captured context; continuation will have context\n");
@@ -1899,10 +1899,10 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
     const AsyncCallInfo& asyncInfoThis  = call->GetAsyncInfo();
     const AsyncCallInfo& asyncInfoOther = predAsyncCall->AsCall()->GetAsyncInfo();
 
-    if (asyncInfoThis.ContinuationContextHandling != asyncInfoOther.ContinuationContextHandling)
+    if (asyncInfoThis.ContextHandling != asyncInfoOther.ContextHandling)
     {
         JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n",
-                asyncInfoThis.ContinuationContextHandling, asyncInfoOther.ContinuationContextHandling);
+                asyncInfoThis.ContextHandling, asyncInfoOther.ContextHandling);
         return false;
     }
 
@@ -2212,7 +2212,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
                     CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
     }
 
-    if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+    if (callInfo.ContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
     {
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
     }
@@ -2432,7 +2432,7 @@ SuspensionContextHelper AsyncTransformation::GetSuspensionContextHelper(GenTreeC
         return SuspensionContextHelper::None;
     }
 
-    if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
+    if (call->GetAsyncInfo().ContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
     {
         return SuspensionContextHelper::WithContinuationContext;
     }

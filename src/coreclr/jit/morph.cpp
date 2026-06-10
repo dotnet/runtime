@@ -8475,7 +8475,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
     {
         int       lclNum    = addr->AsLclVarCommon()->GetLclNum();
         unsigned  offset    = addr->AsLclVarCommon()->GetLclOffs();
-        ValueSize indirSize = indir->ValueSize();
+        ValueSize indirSize = indir->GetValueSize();
 
         if (!IsWideAccess(lclNum, offset, indirSize))
         {

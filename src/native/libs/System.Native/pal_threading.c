@@ -259,13 +259,6 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else // defined(TARGET_LINUX)
 
-#ifdef DEBUG 
-#define DEBUGNOTRETURN __attribute__((noreturn)) 
-#else 
-#define DEBUGNOTRETURN 
-#endif
-
-DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     (void)address; // unused
@@ -274,20 +267,16 @@ void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparan
     // trivial implementation of Wait always wakes spuriously.
 }
 
-DEBUGNOTRETURN
 int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
 {
     (void)address; // unused
     (void)comparand; // unused
     (void)timeoutMilliseconds; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
-#ifndef DEBUG
     // trivial implementation of Wait always wakes spuriously.
     return 1;
-#endif
 }
 
-DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     (void)address; // unused

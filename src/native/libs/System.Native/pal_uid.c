@@ -108,7 +108,7 @@ static pthread_mutex_t s_groupLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #if !HAVE_GETGROUPLIST
-int getgrouplist(const char *uname, gid_t agroup, gid_t *groups, int *groupCount)
+static int getgrouplist(const char *uname, gid_t agroup, gid_t *groups, int *groupCount)
 {
     int ngroups = 1;
     int maxgroups = *groupCount;

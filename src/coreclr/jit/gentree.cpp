@@ -19958,7 +19958,7 @@ unsigned GenTreeIndir::Size() const
     return ValueSize().GetExact();
 }
 
-ValueSize GenTreeIndir::ValueSize() const
+ValueSize GenTreeIndir::GetValueSize() const
 {
     assert(isIndir() || OperIsBlk());
     return OperIsBlk() ? ::ValueSize(AsBlk()->Size()) : ValueSize::FromJitType(TypeGet());

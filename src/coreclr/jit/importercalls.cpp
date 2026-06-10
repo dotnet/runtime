@@ -7073,7 +7073,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
         assert(inlCall->IsAsync());
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        asyncInfo.ContextHandling = inlCall->GetAsyncInfo().ContextHandling;
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
         m_nextAwaitIsTail = false;
@@ -7092,12 +7092,12 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
         if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
         {
-            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+            asyncInfo.ContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
             JITDUMP("  Continuation continues on captured context\n");
         }
         else
         {
-            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+            asyncInfo.ContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
             JITDUMP("  Continuation continues on thread pool\n");
         }
     }
@@ -7108,7 +7108,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
     if (m_nextAwaitIsTail)
     {
-        asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
+        asyncInfo.ContextHandling = ContinuationContextHandling::None;
         asyncInfo.IsTailAwait                 = true;
         m_nextAwaitIsTail                     = false;
     }
