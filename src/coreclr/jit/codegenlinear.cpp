@@ -91,6 +91,8 @@ void CodeGen::genInitialize()
     }
 
     initializeVariableLiveKeeper();
+    emittedCallReturnInfo =
+        new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
 
     genPendingCallLabel = nullptr;
 
