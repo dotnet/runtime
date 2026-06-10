@@ -1,5 +1,3 @@
----
----
 
 When reviewing pull requests, use the `code-review` skill unless the user has stated they will review the changes themselves.
 
