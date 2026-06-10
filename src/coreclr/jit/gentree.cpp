@@ -30699,6 +30699,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
     return oper;
 }
 
+
 //------------------------------------------------------------------------------
 // GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
 //
@@ -30713,7 +30714,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
 genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
     *isScalar = false;
-
+#ifndef TARGET_WASM
     switch (id)
     {
 #if defined(TARGET_XARCH)
@@ -31214,6 +31215,8 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
             return GT_NONE;
         }
     }
+#endif // !defined(TARGET_WASM)
+    return GT_NONE;
 }
 
 //------------------------------------------------------------------------------
@@ -33984,7 +33987,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
 
 #else
-                    NYI_WASM_SIMD("gtNewSimdExtractMSBNode");
+                    NYI_WASM_SIMD("gtFoldExprHWIntrinsic: Extract MSB");
                     resultNode = nullptr;
                     break;
 #endif
@@ -35269,7 +35272,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     else
     {
         assert(opCount == 3);
-
+#ifndef TARGET_WASM
+// TODO-WASM: Implement gtFoldExprHWIntrinsic for Wasm SIMD ternary operations
         switch (ni)
         {
 #if defined(TARGET_XARCH)
@@ -35561,6 +35565,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
         }
+#endif // !defined(TARGET_WASM)
     }
 
 #if FEATURE_MASKED_HW_INTRINSICS
