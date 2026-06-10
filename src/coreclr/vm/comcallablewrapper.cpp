@@ -4207,6 +4207,69 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
 }
 
 //--------------------------------------------------------------------------
+// Returns TRUE if the parent's ComMethodTable for pItfMT can be reused for
+// pClassMT. This requires that no class between pClassMT and pParentMT has
+// re-implemented pItfMT in its dispatch map, and that the interface methods
+// resolve to the same MethodDescs on both pClassMT and pParentMT.
+//--------------------------------------------------------------------------
+static bool CanShareComMethodTableWithParent(MethodTable* pClassMT, MethodTable* pParentMT, MethodTable* pItfMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pClassMT != NULL && !pClassMT->IsInterface());
+        PRECONDITION(pParentMT != NULL && !pParentMT->IsInterface());
+        PRECONDITION(pItfMT != NULL && pItfMT->IsInterface());
+    }
+    CONTRACTL_END;
+
+    // Check for explicit interface re-implementations in the dispatch map.
+    MethodTable* pMT = pClassMT;
+    do
+    {
+        DispatchMap::EncodedMapIterator mapIt(pMT);
+        for (; mapIt.IsValid(); mapIt.Next())
+        {
+            DispatchMapEntry *pEntry = mapIt.Entry();
+            if (pMT->DispatchMapTypeMatchesMethodTable(pEntry->GetTypeID(), pItfMT))
+            {
+                return false;
+            }
+        }
+
+        pMT = pMT->GetParentMethodTable();
+        _ASSERTE(pMT != NULL);
+    }
+    while (pMT != pParentMT);
+
+    // Check that interface methods resolve to the same MethodDescs on both
+    // this class and pParentMT. With the baked-in dispatch target model, the
+    // ComMethodTable stores the resolved MethodDesc at layout time, so the
+    // table can only be shared if the targets are identical.
+    for (unsigned i = 0; i < pItfMT->GetNumVirtuals(); i++)
+    {
+        MethodDesc *pItfMD = pItfMT->GetMethodDescForSlot_NoThrow(i);
+        _ASSERTE(pItfMD != NULL);
+
+        if (pItfMD->IsAsyncMethod())
+            continue;
+
+        DispatchSlot childSlot(pClassMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));
+        DispatchSlot parentSlot(pParentMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));
+
+        if (childSlot.IsNull() || parentSlot.IsNull())
+            return false;
+
+        if (childSlot.GetMethodDesc() != parentSlot.GetMethodDesc())
+            return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------------
 // Creates a ComMethodTable for an interface and stores it in the m_rgpIPtr array.
 //--------------------------------------------------------------------------
 ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pParentMT, MethodTable *pItfMT, DWORD dwIndex)
@@ -4222,22 +4285,16 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
     ComMethodTable *pItfComMT = NULL;
     if (m_pParent != NULL)
     {
-        pItfComMT = m_pParent->GetComMTForItf(pItfMT);
-        if (pItfComMT != NULL)
+        // Check if we can reuse the parent's ComMethodTable for this interface.
+        ComMethodTable* pParentComMT = m_pParent->GetComMTForItf(pItfMT);
+        if (pParentComMT != NULL && CanShareComMethodTableWithParent(m_thClass.GetMethodTable(), pParentMT, pItfMT))
         {
-            // if the parent COM MT is not a trivial aggregate, simple MethodTable slot check is enough
-            if (!m_thClass.GetMethodTable()->ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
-            {
-                // the interface is implemented by parent but this class reimplemented
-                // its method(s) so we will need to build a new COM vtable for it
-                pItfComMT = NULL;
-            }
+            pItfComMT = pParentComMT;
         }
     }
 
     if (pItfComMT == NULL)
     {
-        // we couldn't use parent's vtable so we create a new one
         pItfComMT = CreateComMethodTableForInterface(pItfMT);
     }
 

@@ -149,7 +149,6 @@ typedef enum
 #define PAL_LEGAL_FLAGS_ATTRIBS (FILE_ATTRIBUTE_NORMAL| \
                                  FILE_FLAG_SEQUENTIAL_SCAN| \
                                  FILE_FLAG_WRITE_THROUGH| \
-                                 FILE_FLAG_NO_BUFFERING| \
                                  FILE_FLAG_RANDOM_ACCESS| \
                                  FILE_FLAG_BACKUP_SEMANTICS)
 
@@ -576,18 +575,6 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    if ( dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING )
-    {
-        TRACE("I/O will be unbuffered\n");
-#ifdef O_DIRECT
-        open_flags |= O_DIRECT;
-#endif
-    }
-    else
-    {
-        TRACE("I/O will be buffered\n");
-    }
-
     filed = InternalOpen(lpUnixPath, open_flags, create_flags);
     TRACE("Allocated file descriptor [%d]\n", filed);
 
@@ -605,31 +592,6 @@ CorUnix::InternalCreateFile(
                     dwCreationDisposition == CREATE_NEW ||
                     dwCreationDisposition == OPEN_ALWAYS) &&
         !fFileExists;
-
-#ifndef O_DIRECT
-    if ( dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING )
-    {
-#ifdef F_NOCACHE
-        if (-1 == fcntl(filed, F_NOCACHE, 1))
-        {
-            ASSERT("Can't set F_NOCACHE; fcntl() failed. errno is %d (%s)\n",
-               errno, strerror(errno));
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-#elif HAVE_DIRECTIO
-        if (-1 == directio(filed, DIRECTIO_ON))
-        {
-            ASSERT("Can't set DIRECTIO_ON; directio() failed. errno is %d (%s)\n",
-               errno, strerror(errno));
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-#else
-#error Insufficient support for uncached I/O on this platform
-#endif
-    }
-#endif
 
     /* make file descriptor close-on-exec; inheritable handles will get
       "uncloseonexeced" in CreateProcess if they are actually being inherited*/
