@@ -279,46 +279,45 @@ extends:
               condition: failed()
 
     #
-    # cDAC Shared Build — One coreclr+libs build per platform, consumed by
-    # both CdacDumpTests and CdacStressTests (and the X-plat dump stages)
-    # so we don't rebuild coreclr per test leg. Runtime is built Checked;
-    # cDAC native shim ships in the Release testhost (used by stress tests
-    # in-process); dump tests will rebuild the cDAC managed assemblies at
-    # /p:Configuration=Debug during payload prep.
+    # cDAC Stage — single stage containing the shared build + all per-platform
+    # test legs (dump tests, stress tests, x-plat dump generation). Putting
+    # them in one stage lets each test job depend on its OWN platform's
+    # CdacBuild job via job-level `dependsOnGlobalBuilds`, so linux_x64 dump
+    # tests start as soon as linux_x64 build is done -- no waiting for the
+    # slowest platform's build.
     #
-    - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
-      - stage: CdacBuild
-        dependsOn: []
-        jobs:
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            platforms: ${{ parameters.cdacDumpPlatforms }}
-            jobParameters:
-              nameSuffix: CdacBuild
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
-              isOfficialBuild: ${{ variables.isOfficialBuild }}
-              timeoutInMinutes: 180
-              postBuildSteps:
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-                  displayName: cDAC Shared Build Artifacts
+    # Runtime is built Checked; the cDAC native shim ships in the Release
+    # testhost (used by stress tests in-process); dump tests rebuild the
+    # cDAC managed assemblies at /p:Configuration=Debug during payload prep.
+    #
+    - stage: Cdac
+      dependsOn: []
+      jobs:
+      # ---- Shared per-platform build (always runs; downstream jobs depend on
+      # this via job-level dependsOnGlobalBuilds: - nameSuffix: CdacBuild) ----
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms: ${{ parameters.cdacDumpPlatforms }}
+          jobParameters:
+            nameSuffix: CdacBuild
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                displayName: cDAC Shared Build Artifacts
 
-    #
-    # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)
-    #
-    - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
-      - stage: CdacDumpTests
-        dependsOn:
-        - CdacBuild
-        jobs:
+      # ---- cDAC Dump Tests (single-leg mode, not on schedule) ----
+      - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -368,16 +367,8 @@ extends:
                 displayName: 'Fail on test errors'
                 condition: always()
 
-    #
-    # cDAC GC Stress Tests — runs in-process cDAC vs runtime stack-ref
-    # verification at GC stress points. Independent stage with its own build
-    # so its status/failures don't get conflated with the dump tests.
-    #
-    - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
-      - stage: CdacStressTests
-        dependsOn:
-        - CdacBuild
-        jobs:
+      # ---- cDAC GC Stress Tests (not on schedule) ----
+      - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -428,16 +419,8 @@ extends:
                 continueOnError: true
                 condition: failed()
 
-    #
-    # cDAC X-Plat Dump Generation and Testing — Two-stage flow:
-    # 1. Generate dumps on each platform via Helix, download and publish as artifacts
-    # 2. Download all platforms' dumps and run tests on each target platform
-    #
-    - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
-      - stage: CdacXPlatDumpGen
-        dependsOn:
-        - CdacBuild
-        jobs:
+      # ---- cDAC X-Plat Dump Generation (xplat mode or schedule) ----
+      - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -492,10 +475,16 @@ extends:
                 displayName: 'Fail on dump generation errors'
                 condition: always()
 
+    #
+    # cDAC X-Plat Dump Tests — runs after all source platforms have generated
+    # their dumps. This stage IS cross-platform-synchronizing (every target
+    # platform's test needs every source platform's dumps), so it remains a
+    # separate stage depending on Cdac.
+    #
+    - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
       - stage: CdacXPlatDumpTests
         dependsOn:
-        - CdacBuild
-        - CdacXPlatDumpGen
+        - Cdac
         jobs:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -507,8 +496,10 @@ extends:
               nameSuffix: CdacXPlatDumpTest
               buildArgs: -s tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
-              dependsOnGlobalBuilds:
-              - nameSuffix: CdacBuild
+              # No dependsOnGlobalBuilds: this stage depends on the entire Cdac
+              # stage (which already has the per-platform CdacBuild jobs), and
+              # AzDO does not support cross-stage job-level deps. The stage-level
+              # dependsOn: Cdac above is sufficient.
               preBuildSteps:
                 - template: /eng/pipelines/common/download-artifact-step.yml
                   parameters:
@@ -522,9 +513,6 @@ extends:
                   buildDebuggees: false
                   skipDebuggeeCopy: true
                   cdacTestConfig: Debug
-                parameters:
-                  buildDebuggees: false
-                  skipDebuggeeCopy: true
               # Download dump artifacts from all source platforms
               - ${{ each platform in parameters.cdacXPlatDumpPlatforms }}:
                 - task: DownloadPipelineArtifact@2
