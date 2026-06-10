@@ -62,9 +62,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
 
     m_pRangeList                 = pRangeList;
 
-    for (size_t i = 0; i < NumFreeListBuckets; i++)
-        m_freeListBuckets[i] = NULL;
-    m_pLargeFreeBlock            = NULL;
+    m_pFirstFreeBlock            = NULL;
 
     if (dwReservedRegionAddress != NULL && dwReservedRegionSize > 0)
     {
@@ -331,7 +329,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
     if (unusedRemainder >= AllocMem_TotalSize(GetStubCodePageSize()))
     {
-        LoaderHeapFreeBlock::InsertFreeBlock(m_pAllocPtr, unusedRemainder, this);
+        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
     }
     else
     {
@@ -427,7 +425,7 @@ again:
 
     {
         // Any memory available on the free list?
-        void *pData = LoaderHeapFreeBlock::AllocFromFreeList(dwSize, this);
+        void *pData = LoaderHeapFreeBlock::AllocFromFreeList(&m_pFirstFreeBlock, dwSize, this);
         if (!pData)
         {
             // Enough bytes available in committed region?
@@ -640,7 +638,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     }
     else
     {
-        LoaderHeapFreeBlock::InsertFreeBlock(pMem, dwSize, this);
+        LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pMem, dwSize, this);
     }
 }
 
@@ -835,14 +833,16 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 void UnlockedLoaderHeap::DumpFreeList()
 {
     LIMITED_METHOD_CONTRACT;
-    bool fAny = false;
-    InlineSString<128> buf;
-    for (size_t b = 0; b <= NumFreeListBuckets; b++)
+    if (m_pFirstFreeBlock == NULL)
     {
-        LoaderHeapFreeBlock *pBlock = (b < NumFreeListBuckets) ? m_freeListBuckets[b] : m_pLargeFreeBlock;
+        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
+    }
+    else
+    {
+        InlineSString<128> buf;
+        LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
         while (pBlock != NULL)
         {
-            fAny = true;
             size_t dwsize = pBlock->m_dwSize;
             BOOL ccbad = FALSE;
             BOOL sizeunaligned = FALSE;
@@ -872,28 +872,12 @@ void UnlockedLoaderHeap::DumpFreeList()
             pBlock = pBlock->m_pNext;
         }
     }
-
-    if (!fAny)
-    {
-        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
-    }
 }
 
 #endif //_DEBUG
 
 #ifndef DACCESS_COMPILE
-
-/*static*/ LoaderHeapFreeBlock **LoaderHeapFreeBlock::GetFreeListHead(UnlockedLoaderHeap *pHeap, size_t dwSize)
-{
-    LIMITED_METHOD_CONTRACT;
-    size_t bucket = dwSize / UnlockedLoaderHeap::FreeListBucketSize - 1;
-    _ASSERTE(bucket >= 0);
-    if (bucket < UnlockedLoaderHeap::NumFreeListBuckets)
-        return &pHeap->m_freeListBuckets[bucket];
-    return &pHeap->m_pLargeFreeBlock;
-}
-
-/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
+/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -935,8 +919,6 @@ void UnlockedLoaderHeap::DumpFreeList()
     }
 #endif // DEBUG
 
-    LoaderHeapFreeBlock **ppHead = GetFreeListHead(pHeap, dwTotalSize);
-
     LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
     // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
     if (pNewBlock != NULL)
@@ -945,23 +927,23 @@ void UnlockedLoaderHeap::DumpFreeList()
         pNewBlock->m_dwSize = dwTotalSize;
         pNewBlock->m_pBlockAddress = pMem;
         *ppHead = pNewBlock;
-        // Coalescing only matters for the overflow list.
-        if (ppHead == &pHeap->m_pLargeFreeBlock)
-            MergeBlock(pNewBlock, pHeap);
+        MergeBlock(pNewBlock, pHeap);
     }
 
     LOADER_HEAP_END_TRAP_FAULT
 }
 
-/*static*/ void *LoaderHeapFreeBlock::AllocFromLargeList(size_t dwSize, UnlockedLoaderHeap *pHeap)
+/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    void *pResult = NULL;
+    INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
 
-    LoaderHeapFreeBlock **ppWalk = &pHeap->m_pLargeFreeBlock;
-    size_t scanned = 0;
+    void *pResult = NULL;
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    LoaderHeapFreeBlock **ppWalk = ppHead;
     while (*ppWalk)
     {
         LoaderHeapFreeBlock *pCur = *ppWalk;
@@ -979,59 +961,15 @@ void UnlockedLoaderHeap::DumpFreeList()
             // Partial match. Ok...
             pResult = pCur->m_pBlockAddress;
             *ppWalk = pCur->m_pNext;
-            InsertFreeBlock(((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap);
+            InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
             delete pCur;
             break;
         }
 
         // Either block is too small or splitting the block would leave a remainder that's smaller than
         // the minimum block size. Onto next one.
+
         ppWalk = &( pCur->m_pNext );
-        scanned++;
-    }
-
-    // The overflow list is expected to stay short, otherwise the linear scan becomes a performance bottleneck.
-    const size_t LargeFreeListWarnThreshold = 256;
-    if (scanned > LargeFreeListWarnThreshold)
-    {
-        STRESS_LOG2(LF_LOADER, LL_WARNING,
-            "LoaderHeap %p: large free list scan length 0x%zx is unexpectedly long\n",
-            pHeap, scanned);
-    }
-
-    return pResult;
-}
-
-/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(size_t dwSize, UnlockedLoaderHeap *pHeap)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
-
-    void *pResult = NULL;
-    LOADER_HEAP_BEGIN_TRAP_FAULT
-
-    size_t bucket = dwSize / UnlockedLoaderHeap::FreeListBucketSize - 1;
-    _ASSERTE(bucket >= 0);
-    bool blockFound = false;
-    if (bucket < UnlockedLoaderHeap::NumFreeListBuckets)
-    {
-        LoaderHeapFreeBlock **ppHead = &pHeap->m_freeListBuckets[bucket];
-        LoaderHeapFreeBlock *pCur = *ppHead;
-        if (pCur != NULL)
-        {
-            // Every block in this bucket is exactly dwSize, so the head is always a fit.
-            pResult = pCur->m_pBlockAddress;
-            *ppHead = pCur->m_pNext;
-            delete pCur;
-            blockFound = true;
-        }
-    }
-    
-    if (!blockFound)
-    {
-        pResult = AllocFromLargeList(dwSize, pHeap);
     }
 
     if (pResult)
@@ -1141,64 +1079,59 @@ void UnlockedLoaderHeap::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     // This contract violation is permanent.
     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation);  // This violation won't be removed
 
+    LoaderHeapFreeBlock *pFree     = pHeap->m_pFirstFreeBlock;
+    LoaderHeapFreeBlock *pPrev     = NULL;
+
+
     void                *pBadAddr = NULL;
     LoaderHeapFreeBlock *pProbeThis = NULL;
     const char          *pExpected = NULL;
-    bool                 fFound = false;
 
-    for (size_t b = 0; b <= NumFreeListBuckets && !fFound; b++)
+    while (pFree != NULL)
     {
-        LoaderHeapFreeBlock **ppHead = (b < NumFreeListBuckets) ? &pHeap->m_freeListBuckets[b] : &pHeap->m_pLargeFreeBlock;
-        LoaderHeapFreeBlock *pFree   = *ppHead;
-        LoaderHeapFreeBlock *pPrev   = NULL;
-
-        while (pFree != NULL)
+        if ( 0 != ( ((ULONG_PTR)pFree) & ALLOC_ALIGN_CONSTANT ))
         {
-            if ( 0 != ( ((ULONG_PTR)pFree) & ALLOC_ALIGN_CONSTANT ))
-            {
-                // Not aligned - can't be a valid freeblock. Most likely we followed a bad pointer from the previous block.
-                pProbeThis = pPrev;
-                pBadAddr = pPrev ? (void*)&(pPrev->m_pNext) : (void*)ppHead;
-                pExpected = "a pointer to a valid LoaderHeapFreeBlock";
-                fFound = true;
-                break;
-            }
-
-            size_t dwSize = pFree->m_dwSize;
-            if (dwSize < pHeap->AllocMem_TotalSize(1) ||
-                0 != (dwSize & ALLOC_ALIGN_CONSTANT))
-            {
-                // Size is not a valid value (out of range or unaligned.)
-                pProbeThis = pFree;
-                pBadAddr = &(pFree->m_dwSize);
-                pExpected = "a valid block size (multiple of pointer size)";
-                fFound = true;
-                break;
-            }
-
-            size_t i;
-            for (i = sizeof(LoaderHeapFreeBlock); i < dwSize; i++)
-            {
-                if ( ((BYTE*)pFree)[i] != 0xcc )
-                {
-                    pProbeThis = pFree;
-                    pBadAddr = i + ((BYTE*)pFree);
-                    pExpected = "0xcc (our fill value for free blocks)";
-                    break;
-                }
-            }
-            if (i != dwSize)
-            {
-                fFound = true;
-                break;
-            }
-
-            pPrev = pFree;
-            pFree = pFree->m_pNext;
+            // Not aligned - can't be a valid freeblock. Most likely we followed a bad pointer from the previous block.
+            pProbeThis = pPrev;
+            pBadAddr = pPrev ? &(pPrev->m_pNext) : &(pHeap->m_pFirstFreeBlock);
+            pExpected = "a pointer to a valid LoaderHeapFreeBlock";
+            break;
         }
+
+        size_t dwSize = pFree->m_dwSize;
+        if (dwSize < pHeap->AllocMem_TotalSize(1) ||
+            0 != (dwSize & ALLOC_ALIGN_CONSTANT))
+        {
+            // Size is not a valid value (out of range or unaligned.)
+            pProbeThis = pFree;
+            pBadAddr = &(pFree->m_dwSize);
+            pExpected = "a valid block size (multiple of pointer size)";
+            break;
+        }
+
+        size_t i;
+        for (i = sizeof(LoaderHeapFreeBlock); i < dwSize; i++)
+        {
+            if ( ((BYTE*)pFree)[i] != 0xcc )
+            {
+                pProbeThis = pFree;
+                pBadAddr = i + ((BYTE*)pFree);
+                pExpected = "0xcc (our fill value for free blocks)";
+                break;
+            }
+        }
+        if (i != dwSize)
+        {
+            break;
+        }
+
+
+
+        pPrev = pFree;
+        pFree = pFree->m_pNext;
     }
 
-    if (!fFound)
+    if (pFree == NULL)
     {
         return; // No problems found
     }

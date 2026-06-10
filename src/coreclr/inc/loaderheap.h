@@ -319,14 +319,7 @@ private:
     // startup working set reasons we want to delay that as long as possible.
     LoaderHeapBlock      m_reservedBlock;
 
-    // Free blocks are stored in size-segregated free lists so that finding a reusable block
-    // is O(1) for small allocations. Under heavy concurrent backout, keeping only a single list
-    // can lead to tens of thousands of entries making allocations very slow.
-    // Buckets are indexed by (size / FreeListBucketSize - 1) plus a single overflow list for larger blocks.
-    static const size_t FreeListBucketSize = sizeof(void*);
-    static const size_t NumFreeListBuckets = 32;
-    LoaderHeapFreeBlock *m_freeListBuckets[NumFreeListBuckets];
-    LoaderHeapFreeBlock *m_pLargeFreeBlock;
+    LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
 #ifndef DACCESS_COMPILE
 protected:
