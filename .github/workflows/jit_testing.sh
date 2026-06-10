@@ -135,8 +135,6 @@ build_tests() {
 # RUN TESTS
 # =========================================================
 run_tests() {
-  cd "$TEST_DIR"
-
   echo "Cloning JIT tests..."
   git clone https://github.com/alhad-deshpande/JIT_Testing.git
   cd JIT_Testing
