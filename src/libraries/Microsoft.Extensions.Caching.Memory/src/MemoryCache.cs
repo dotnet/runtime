@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     coherentState.RemoveEntry(priorEntry, _options);
                 }
             }
-            else if (!UpdateCacheSizeExceedsCapacity(entry, coherentState))
+            else if (!UpdateCacheSizeExceedsCapacity(entry, priorEntry, coherentState))
             {
                 bool entryAdded;
                 if (priorEntry == null)
@@ -498,7 +498,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <see langword="true" /> if increasing the cache size would
         /// cause it to exceed the size limit; otherwise, <see langword="false" />.
         /// </returns>
-        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
+        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CacheEntry? priorEntry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
             if (sizeLimit < 0)
@@ -506,21 +506,27 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            long priorSize = priorEntry?.Size ?? 0;
             long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                // Only the new entry's size is committed here. The prior entry's size (for a replace)
-                // is decremented by the caller, atomically with the actual dictionary swap, so that it
-                // cannot race with a concurrent removal of the prior entry and be subtracted twice.
-                long newSize = sizeRead + entry.Size;
+                // The capacity decision still accounts for the prior entry being replaced (its size is
+                // freed by the replace), so a same-or-smaller replacement at the size limit is admitted.
+                // However, only the new entry's size is committed to _cacheSize here. The prior entry's
+                // size is decremented by the caller, atomically with the dictionary swap that actually
+                // removes it. Decrementing the prior size here (before the swap) races with a concurrent
+                // RemoveEntry of the same prior entry and double-counts the decrement, drifting
+                // _cacheSize negative and permanently blocking all future inserts.
+                long sizeAfterReplace = sizeRead + entry.Size - priorSize;
 
-                if ((ulong)newSize > (ulong)sizeLimit)
+                if ((ulong)sizeAfterReplace > (ulong)sizeLimit)
                 {
-                    // Overflow occurred, return true without updating the cache size
+                    // Exceeds the limit (or overflow); return true without updating the cache size.
                     return true;
                 }
 
-                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
+                long committedSize = sizeRead + entry.Size;
+                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, committedSize, sizeRead);
                 if (sizeRead == original)
                 {
                     return false;
