@@ -264,7 +264,10 @@ namespace System.Net.Mail
             }
             else
             {
-                return "\"" + DisplayName.Replace("\"", "\\\"") + "\" " + SmtpAddress;
+                // Escape backslashes first, then quotes, so the display name forms
+                // a valid RFC 5322 quoted-string. Order matters: escaping quotes
+                // first would also escape the backslashes introduced by it.
+                return "\"" + DisplayName.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\" " + SmtpAddress;
             }
         }
 
@@ -299,9 +302,12 @@ namespace System.Net.Mail
                 //be appended.
                 if (MimeBasePart.IsAscii(_displayName, false) || allowUnicode)
                 {
-                    // Escape any embedded quotes so the display name forms a valid
-                    // RFC 5322 quoted-string (e.g. Henry "The Fonz" Winkler).
-                    encodedAddress = "\"" + _displayName.Replace("\"", "\\\"") + "\"";
+                    // Escape backslashes and embedded quotes so the display name
+                    // forms a valid RFC 5322 quoted-string (e.g. Henry "The Fonz"
+                    // Winkler or a name containing '\'). Order matters: escaping
+                    // quotes first would also escape the backslashes introduced
+                    // by it.
+                    encodedAddress = "\"" + _displayName.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
                 }
                 else
                 {
