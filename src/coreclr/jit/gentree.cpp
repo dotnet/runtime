@@ -34667,6 +34667,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case NI_Vector128_WithUpper:
                     {
                         NYI_WASM_SIMD("gtFoldExprHWIntrinsic: WithUpper");
+                        break;
                     }
 #endif
 
