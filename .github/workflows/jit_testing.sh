@@ -31,6 +31,39 @@ setup() {
   git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
   cd runtime
   git checkout ppc64le_coreclr_jit
+
+  # =========================================================
+  #   Auto-clean disabled NuGet feeds
+  # =========================================================
+  echo "Cleaning NuGet feeds..."
+
+  for CONFIG in NuGet.config eng/NuGet.config; do
+    if [ -f "$CONFIG" ]; then
+      echo "Processing $CONFIG"
+
+      cp "$CONFIG" "$CONFIG.bkp"
+
+      grep 'value="https://pkgs.dev.azure.com' "$CONFIG" | while read -r line
+      do
+        FEED_URL=$(echo "$line" | sed -n 's/.*value="\([^"]*\)".*/\1/p')
+
+        echo "Checking: $FEED_URL"
+
+        HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" "$FEED_URL" || echo "000")
+
+        if [ "$HTTP_CODE" = "404" ]; then
+          echo "Removing disabled feed: $FEED_URL"
+
+          ESCAPED=$(printf '%s\n' "$FEED_URL" | sed 's/[\/&]/\\&/g')
+
+          sed -i "\|$ESCAPED|d" "$CONFIG"
+        fi
+      done
+    fi
+  done
+
+  echo "NuGet cleanup done"
+
   cd ..
 
   echo "Setting up .NET SDK..."
