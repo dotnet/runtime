@@ -2416,10 +2416,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
                 case TYP_SIMD:
                 {
-                    simdscalable_t simdVal  = vecCon->gtSimdScalableVal;
-                    var_types      baseType = simdVal.gtSimdScalableBaseType;
-                    insOpts        opt      = emitter::optGetSveInsOpt(emitTypeSize(baseType));
-                    emitAttr       emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                    simdscalable_t             simdVal  = vecCon->gtSimdScalableVal;
+                    Arm64SimdScalableConstInfo info     = Arm64SimdScalableConstInfo::Decode(simdVal);
+                    var_types                  baseType = info.baseType;
+                    insOpts                    opt      = emitter::optGetSveInsOpt(emitTypeSize(baseType));
+                    emitAttr                   emitSize = info.Has64BitElements() ? EA_8BYTE : EA_4BYTE;
+
+                    auto loadConstantHelper = [&](regNumber addrReg, uint64_t constValue) {
+                        UNATIVE_OFFSET cnum =
+                            emit->emitDataConst(&constValue, sizeof(constValue), sizeof(constValue), TYP_LONG);
+                        CORINFO_FIELD_HANDLE hnd = m_compiler->eeFindJitDataOffs(cnum);
+                        emit->emitIns_R_C(INS_ldr, emitSize, addrReg, addrReg, hnd, 0);
+                    };
 
                     if (vecCon->IsZero())
                     {
@@ -2429,245 +2437,112 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     {
                         emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, -1, opt);
                     }
-
-                    auto loadConstantHelper = [&](uint64_t constValue) -> regNumber {
-                        // Get a temp integer register to compute long address. Use Extract so multiple calls
-                        // (index + step) get distinct temps when LSRA reserved more than one.
-                        regNumber addrReg = internalRegisters.Extract(tree, RBM_ALLINT);
-
-                        // Store the constant to memory
-                        UNATIVE_OFFSET cnum =
-                            emit->emitDataConst(&constValue, sizeof(constValue), sizeof(constValue), TYP_LONG);
-                        CORINFO_FIELD_HANDLE hnd = m_compiler->eeFindJitDataOffs(cnum);
-
-                        // Load the constant
-                        emit->emitIns_R_C(INS_ldr, emitSize, addrReg, addrReg, hnd, 0);
-
-                        return addrReg;
-                    };
-
-                    ssize_t  indexImm    = -1;
-                    ssize_t  stepImm     = -1;
-                    bool     indexHasImm = true;
-                    bool     stepHasImm  = true;
-                    uint64_t indexVal    = 0;
-                    uint64_t stepVal     = 0;
-                    switch (baseType)
+                    else
                     {
-                        case TYP_BYTE:
+                        switch (simdVal.gtSimdScalableKind)
                         {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI8[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI8[0]);
-                            indexVal = static_cast<uint64_t>(static_cast<int64_t>(indexImm));
-                            stepVal  = static_cast<uint64_t>(static_cast<int64_t>(stepImm));
-                            break;
+                            case SimdScalableRepeated:
+                            {
+                                if (info.CanEncodeRepeated<emitter>(simdVal))
+                                {
+                                    if (varTypeIsIntegral(baseType))
+                                    {
+                                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, info.indexImm, opt);
+                                    }
+                                    else if (baseType == TYP_FLOAT)
+                                    {
+                                        emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                          simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
+                                    }
+                                    else
+                                    {
+                                        assert(baseType == TYP_DOUBLE);
+                                        emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                          simdVal.gtSimdScalableIndexF64[0], INS_OPTS_SCALABLE_D);
+                                    }
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
+                                }
+
+                                break;
+                            }
+
+                            case SimdScalableSequence:
+                            {
+                                // FP sequences should have been imported into a set of nodes
+                                assert(varTypeIsIntegral(baseType));
+
+                                if (info.CanEncodeSequence<emitter>())
+                                {
+                                    emit->emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, info.indexImm,
+                                                           info.stepImm, opt);
+                                }
+                                else if (info.CanEncodeSequenceIndex<emitter>())
+                                {
+                                    regNumber stepReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(stepReg, info.stepVal);
+                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg, info.indexImm,
+                                                           opt, INS_SCALABLE_OPTS_IMM_FIRST);
+                                }
+                                else if (info.CanEncodeSequenceStep<emitter>())
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg, info.stepImm,
+                                                           opt);
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    regNumber stepReg  = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    loadConstantHelper(stepReg, info.stepVal);
+                                    emit->emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg, stepReg, opt);
+                                }
+                                break;
+                            }
+
+                            case SimdScalableScalar:
+                            {
+                                // Clear the entire target register
+                                emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+
+                                // Use NEON instructions to load the constant (to avoid using predicates)
+                                if (info.CanEncodeScalar<emitter>(simdVal, emitSize))
+                                {
+                                    if (varTypeIsIntegral(baseType))
+                                    {
+                                        emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, info.indexImm);
+                                    }
+                                    else if (baseType == TYP_FLOAT)
+                                    {
+                                        emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                                          static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
+                                    }
+                                    else
+                                    {
+                                        assert(baseType == TYP_DOUBLE);
+                                        emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                                          simdVal.gtSimdScalableIndexF64[0]);
+                                    }
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitIns_R_R(INS_ins, emitSize, targetReg, indexReg, INS_OPTS_16B);
+                                }
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                                break;
                         }
-
-                        case TYP_SHORT:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI16[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI16[0]);
-                            indexVal = static_cast<uint64_t>(static_cast<int64_t>(indexImm));
-                            stepVal  = static_cast<uint64_t>(static_cast<int64_t>(stepImm));
-                            break;
-                        }
-
-                        case TYP_INT:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI32[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI32[0]);
-                            indexVal = static_cast<uint64_t>(static_cast<int64_t>(indexImm));
-                            stepVal  = static_cast<uint64_t>(static_cast<int64_t>(stepImm));
-                            break;
-                        }
-
-                        case TYP_LONG:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI64[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI64[0]);
-                            indexVal = static_cast<uint64_t>(simdVal.gtSimdScalableIndexI64[0]);
-                            stepVal  = static_cast<uint64_t>(simdVal.gtSimdScalableStepI64[0]);
-                            break;
-                        }
-
-                        case TYP_UBYTE:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU8[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU8[0]);
-                            indexVal = simdVal.gtSimdScalableIndexU8[0];
-                            stepVal  = simdVal.gtSimdScalableStepU8[0];
-                            break;
-                        }
-
-                        case TYP_USHORT:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU16[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU16[0]);
-                            indexVal = simdVal.gtSimdScalableIndexU16[0];
-                            stepVal  = simdVal.gtSimdScalableStepU16[0];
-                            break;
-                        }
-
-                        case TYP_UINT:
-                        {
-                            indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU32[0]);
-                            stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU32[0]);
-                            indexVal = simdVal.gtSimdScalableIndexU32[0];
-                            stepVal  = simdVal.gtSimdScalableStepU32[0];
-                            break;
-                        }
-
-                        case TYP_ULONG:
-                        {
-                            indexVal = simdVal.gtSimdScalableIndexU64[0];
-                            stepVal  = simdVal.gtSimdScalableStepU64[0];
-                            if (indexVal <= static_cast<uint64_t>(INT64_MAX))
-                            {
-                                indexImm = static_cast<ssize_t>(indexVal);
-                            }
-                            else
-                            {
-                                indexHasImm = false;
-                            }
-
-                            if (stepVal <= static_cast<uint64_t>(INT64_MAX))
-                            {
-                                stepImm = static_cast<ssize_t>(stepVal);
-                            }
-                            else
-                            {
-                                stepHasImm = false;
-                            }
-                            break;
-                        }
-
-                        case TYP_FLOAT:
-                        {
-                            uint32_t indexBits = 0;
-                            uint32_t stepBits  = 0;
-                            memcpy(&indexBits, &simdVal.gtSimdScalableIndexF32[0], sizeof(indexBits));
-                            memcpy(&stepBits, &simdVal.gtSimdScalableStepF32[0], sizeof(stepBits));
-                            indexVal    = indexBits;
-                            stepVal     = stepBits;
-                            indexHasImm = false;
-                            stepHasImm  = false;
-                            break;
-                        }
-                        case TYP_DOUBLE:
-                        {
-                            uint64_t indexBits = 0;
-                            uint64_t stepBits  = 0;
-                            memcpy(&indexBits, &simdVal.gtSimdScalableIndexF64[0], sizeof(indexBits));
-                            memcpy(&stepBits, &simdVal.gtSimdScalableStepF64[0], sizeof(stepBits));
-                            indexVal    = indexBits;
-                            stepVal     = stepBits;
-                            indexHasImm = false;
-                            stepHasImm  = false;
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
-                        }
-                    }
-
-                    switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
-                    {
-                        case SimdScalableRepeated:
-                        {
-                            if (varTypeIsIntegral(baseType) && indexHasImm &&
-                                (emitter::isValidSimm<8>(indexImm) ||
-                                 emitter::isValidSimm_MultipleOf<8, 256>(indexImm)))
-                            {
-                                emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, indexImm, opt);
-                            }
-                            else if ((baseType == TYP_FLOAT) &&
-                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]))
-                            {
-                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                  simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
-                            }
-                            else if ((baseType == TYP_DOUBLE) &&
-                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
-                            {
-                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                  static_cast<double>(simdVal.gtSimdScalableIndexF64[0]),
-                                                  INS_OPTS_SCALABLE_D);
-                            }
-                            else
-                            {
-                                regNumber indexReg = loadConstantHelper(indexVal);
-                                emit->emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
-                            }
-
-                            break;
-                        }
-
-                        case SimdScalableSequence:
-                        {
-                            // FP sequences should have been imported into a set of nodes
-                            assert(varTypeIsIntegral(baseType));
-
-                            if (indexHasImm && stepHasImm && emitter::isValidSimm<5>(indexImm) &&
-                                emitter::isValidSimm<5>(stepImm))
-                            {
-                                emit->emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, indexImm, stepImm, opt);
-                            }
-                            else if (indexHasImm && emitter::isValidSimm<5>(indexImm))
-                            {
-                                regNumber stepReg = loadConstantHelper(stepVal);
-                                emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg, indexImm, opt,
-                                                       INS_SCALABLE_OPTS_IMM_FIRST);
-                            }
-                            else if (stepHasImm && emitter::isValidSimm<5>(stepImm))
-                            {
-                                regNumber indexReg = loadConstantHelper(indexVal);
-                                emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg, stepImm, opt);
-                            }
-                            else
-                            {
-                                regNumber indexReg = loadConstantHelper(indexVal);
-                                regNumber stepReg  = loadConstantHelper(stepVal);
-                                emit->emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg, stepReg, opt);
-                            }
-                            break;
-                        }
-
-                        case SimdScalableScalar:
-                        {
-                            // Clear the entire target register
-                            emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
-
-                            // Use NEON instructions to load the constant (to avoid using predicates)
-
-                            if (varTypeIsIntegral(baseType) && indexHasImm &&
-                                emitter::emitIns_valid_imm_for_mov(indexImm, emitSize))
-                            {
-                                emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, indexImm);
-                            }
-                            else if ((baseType == TYP_FLOAT) &&
-                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]))
-                            {
-                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
-                                                  static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
-                            }
-                            else if ((baseType == TYP_DOUBLE) &&
-                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
-                            {
-                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);
-                            }
-                            else
-                            {
-                                regNumber indexReg = loadConstantHelper(indexVal);
-                                emit->emitIns_R_R(INS_ins, emitSize, targetReg, indexReg, INS_OPTS_16B);
-                            }
-                            break;
-                        }
-
-                        default:
-                            unreached();
-                            break;
                     }
                 }
                 break;

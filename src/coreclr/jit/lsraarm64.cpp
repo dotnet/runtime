@@ -751,116 +751,15 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             else if (vecCon->TypeIs(TYP_SIMD))
             {
-                simdscalable_t simdVal         = vecCon->gtSimdScalableVal;
-                var_types      baseType        = simdVal.gtSimdScalableBaseType;
-                bool           canEncodeScalar = false;
-
-                ssize_t index       = -1;
-                ssize_t step        = -1;
-                bool    indexHasImm = true;
-                bool    stepHasImm  = true;
-                switch (simdVal.gtSimdScalableBaseType)
-                {
-                    case TYP_BYTE:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI8[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI8[0]);
-                        break;
-                    }
-
-                    case TYP_SHORT:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI16[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI16[0]);
-                        break;
-                    }
-
-                    case TYP_INT:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI32[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI32[0]);
-                        break;
-                    }
-
-                    case TYP_LONG:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI64[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI64[0]);
-                        break;
-                    }
-
-                    case TYP_UBYTE:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU8[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU8[0]);
-                        break;
-                    }
-
-                    case TYP_USHORT:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU16[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU16[0]);
-                        break;
-                    }
-
-                    case TYP_UINT:
-                    {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU32[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU32[0]);
-                        break;
-                    }
-
-                    case TYP_ULONG:
-                    {
-                        const uint64_t indexVal = simdVal.gtSimdScalableIndexU64[0];
-                        const uint64_t stepVal  = simdVal.gtSimdScalableStepU64[0];
-                        if (indexVal <= static_cast<uint64_t>(INT64_MAX))
-                        {
-                            index = static_cast<ssize_t>(indexVal);
-                        }
-                        else
-                        {
-                            indexHasImm = false;
-                        }
-
-                        if (stepVal <= static_cast<uint64_t>(INT64_MAX))
-                        {
-                            step = static_cast<ssize_t>(stepVal);
-                        }
-                        else
-                        {
-                            stepHasImm = false;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        break;
-                    }
-                }
+                simdscalable_t             simdVal = vecCon->gtSimdScalableVal;
+                Arm64SimdScalableConstInfo info    = Arm64SimdScalableConstInfo::Decode(simdVal);
 
                 // If the constant doesn't fit into the instructions, then temps will be required
-                switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
+                switch (simdVal.gtSimdScalableKind)
                 {
                     case SimdScalableRepeated:
                     {
-                        if (varTypeIsIntegral(baseType))
-                        {
-                            canEncodeScalar = indexHasImm && (emitter::isValidSimm<8>(index) ||
-                                                              emitter::isValidSimm_MultipleOf<8, 256>(index));
-                        }
-                        else if (baseType == TYP_FLOAT)
-                        {
-                            canEncodeScalar = emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]);
-                        }
-                        else
-                        {
-                            assert(baseType == TYP_DOUBLE);
-                            canEncodeScalar = emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]);
-                        }
-
-                        if (!canEncodeScalar)
+                        if (!info.CanEncodeRepeated<emitter>(simdVal))
                         {
                             buildInternalIntRegisterDefForNode(tree);
                             buildInternalRegisterUses();
@@ -870,21 +769,20 @@ int LinearScan::BuildNode(GenTree* tree)
 
                     case SimdScalableSequence:
                     {
-                        canEncodeScalar = true;
+                        const bool indexNeedsReg = info.IndexNeedsSequenceReg<emitter>();
+                        const bool stepNeedsReg  = info.StepNeedsSequenceReg<emitter>();
 
-                        if (!indexHasImm || !emitter::isValidSimm<5>(index))
+                        if (indexNeedsReg)
                         {
-                            canEncodeScalar = false;
                             buildInternalIntRegisterDefForNode(tree);
                         }
 
-                        if (!stepHasImm || !emitter::isValidSimm<5>(step))
+                        if (stepNeedsReg)
                         {
-                            canEncodeScalar = false;
                             buildInternalIntRegisterDefForNode(tree);
                         }
 
-                        if (!canEncodeScalar)
+                        if (indexNeedsReg || stepNeedsReg)
                         {
                             buildInternalRegisterUses();
                         }
@@ -893,22 +791,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                     case SimdScalableScalar:
                     {
-                        if (varTypeIsIntegral(baseType))
-                        {
-                            canEncodeScalar =
-                                indexHasImm && emitter::emitIns_valid_imm_for_mov(index, emitActualTypeSize(baseType));
-                        }
-                        else if (baseType == TYP_FLOAT)
-                        {
-                            canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]);
-                        }
-                        else
-                        {
-                            assert(baseType == TYP_DOUBLE);
-                            canEncodeScalar = emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]);
-                        }
-
-                        if (!canEncodeScalar)
+                        if (!info.CanEncodeScalar<emitter>(simdVal, emitActualTypeSize(info.baseType)))
                         {
                             buildInternalIntRegisterDefForNode(tree);
                             buildInternalRegisterUses();

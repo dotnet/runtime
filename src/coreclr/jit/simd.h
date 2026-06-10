@@ -2513,6 +2513,228 @@ void NarrowAndDuplicateSimdLong(var_types baseType, TSimd* result, const TSimd& 
 
 #ifdef FEATURE_SIMD
 
+#ifdef TARGET_ARM64
+
+struct Arm64SimdScalableConstInfo
+{
+    var_types baseType;
+
+    ssize_t indexImm;
+    ssize_t stepImm;
+    bool    indexHasImm;
+    bool    stepHasImm;
+
+    uint64_t indexVal;
+    uint64_t stepVal;
+
+    static Arm64SimdScalableConstInfo Decode(const simdscalable_t& simdVal)
+    {
+        Arm64SimdScalableConstInfo info;
+        info.baseType    = simdVal.gtSimdScalableBaseType;
+        info.indexImm    = -1;
+        info.stepImm     = -1;
+        info.indexHasImm = true;
+        info.stepHasImm  = true;
+        info.indexVal    = 0;
+        info.stepVal     = 0;
+
+        switch (info.baseType)
+        {
+            case TYP_BYTE:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI8[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI8[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI16[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI16[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_INT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI32[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI32[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_LONG:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI64[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI64[0]);
+                info.indexVal = static_cast<uint64_t>(simdVal.gtSimdScalableIndexI64[0]);
+                info.stepVal  = static_cast<uint64_t>(simdVal.gtSimdScalableStepI64[0]);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU8[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU8[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU8[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU8[0];
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU16[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU16[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU16[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU16[0];
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU32[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU32[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU32[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU32[0];
+                break;
+            }
+
+            case TYP_ULONG:
+            {
+                info.indexVal = simdVal.gtSimdScalableIndexU64[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU64[0];
+                if (info.indexVal <= static_cast<uint64_t>(INT64_MAX))
+                {
+                    info.indexImm = static_cast<ssize_t>(info.indexVal);
+                }
+                else
+                {
+                    info.indexHasImm = false;
+                }
+
+                if (info.stepVal <= static_cast<uint64_t>(INT64_MAX))
+                {
+                    info.stepImm = static_cast<ssize_t>(info.stepVal);
+                }
+                else
+                {
+                    info.stepHasImm = false;
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                uint32_t indexBits = 0;
+                uint32_t stepBits  = 0;
+                memcpy(&indexBits, &simdVal.gtSimdScalableIndexF32[0], sizeof(indexBits));
+                memcpy(&stepBits, &simdVal.gtSimdScalableStepF32[0], sizeof(stepBits));
+                info.indexVal    = indexBits;
+                info.stepVal     = stepBits;
+                info.indexHasImm = false;
+                info.stepHasImm  = false;
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                uint64_t indexBits = 0;
+                uint64_t stepBits  = 0;
+                memcpy(&indexBits, &simdVal.gtSimdScalableIndexF64[0], sizeof(indexBits));
+                memcpy(&stepBits, &simdVal.gtSimdScalableStepF64[0], sizeof(stepBits));
+                info.indexVal    = indexBits;
+                info.stepVal     = stepBits;
+                info.indexHasImm = false;
+                info.stepHasImm  = false;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return info;
+    }
+
+    bool Has64BitElements() const
+    {
+        return (baseType == TYP_LONG) || (baseType == TYP_ULONG) || (baseType == TYP_DOUBLE);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeRepeated(const simdscalable_t& simdVal) const
+    {
+        if (varTypeIsIntegral(baseType))
+        {
+            return indexHasImm && (TEmitter::template isValidSimm<8>(indexImm) ||
+                                   TEmitter::template isValidSimm_MultipleOf<8, 256>(indexImm));
+        }
+
+        if (baseType == TYP_FLOAT)
+        {
+            return TEmitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]);
+        }
+
+        assert(baseType == TYP_DOUBLE);
+        return TEmitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequenceIndex() const
+    {
+        return indexHasImm && TEmitter::template isValidSimm<5>(indexImm);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequenceStep() const
+    {
+        return stepHasImm && TEmitter::template isValidSimm<5>(stepImm);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequence() const
+    {
+        return CanEncodeSequenceIndex<TEmitter>() && CanEncodeSequenceStep<TEmitter>();
+    }
+
+    template <typename TEmitter>
+    bool IndexNeedsSequenceReg() const
+    {
+        return !CanEncodeSequenceIndex<TEmitter>();
+    }
+
+    template <typename TEmitter>
+    bool StepNeedsSequenceReg() const
+    {
+        return !CanEncodeSequenceStep<TEmitter>();
+    }
+
+    template <typename TEmitter, typename TEmitAttr>
+    bool CanEncodeScalar(const simdscalable_t& simdVal, TEmitAttr emitSize) const
+    {
+        if (varTypeIsIntegral(baseType))
+        {
+            return indexHasImm && TEmitter::emitIns_valid_imm_for_mov(indexImm, emitSize);
+        }
+
+        if (baseType == TYP_FLOAT)
+        {
+            return TEmitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]);
+        }
+
+        assert(baseType == TYP_DOUBLE);
+        return TEmitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]);
+    }
+};
+
+#endif // TARGET_ARM64
+
 #ifdef TARGET_XARCH
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
 // These correspond to shuffle immediate byte in shufps SSE2 instruction.
