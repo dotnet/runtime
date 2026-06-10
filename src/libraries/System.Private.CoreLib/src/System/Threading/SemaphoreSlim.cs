@@ -407,7 +407,7 @@ namespace System.Threading
                             }
 
                             // Prepare for the main wait...
-                            // wait until the count become greater than zero or the timeout is expired
+                            // wait until the count becomes greater than zero or the timeout is expired
                             try
                             {
                                 timedOut = !WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
@@ -907,32 +907,33 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
-                // Validate against m_maxCount and apply the released permits in one atomic step. A lock-free
-                // WaitAsync fast path can decrement m_currentCount concurrently (it bypasses this lock), so a
-                // plain read-then-check could observe a stale, too-high count and throw SemaphoreFullException
-                // spuriously. The CAS loop re-observes the live count on each attempt, making the max-count
-                // check linearizable with the increment. No other thread can increment concurrently (every
-                // increment path holds this lock), so the loop only retries on a racing fast-path decrement.
+                // Snapshot the live count. A lock-free WaitAsync fast path can decrement m_currentCount
+                // concurrently (it bypasses this lock); nothing increments it concurrently (every increment
+                // path holds this lock). So the real count can only be <= this snapshot until we update it.
                 int observed = m_currentCount;
-                while (true)
+
+                // Validate against m_maxCount. Re-read on a mismatch so a racing fast-path decrement (which
+                // only lowers the real count) can't make us throw SemaphoreFullException spuriously off a
+                // stale, too-high snapshot. Because only decrements race, once observed + releaseCount <=
+                // m_maxCount holds for a snapshot >= the real count, the real count + releaseCount can't
+                // exceed m_maxCount either, so the bound we enforce on the atomic add below still holds.
+                while (m_maxCount - observed < releaseCount)
                 {
-                    if (m_maxCount - observed < releaseCount)
+                    int reread = m_currentCount;
+                    if (reread == observed)
                     {
                         throw new SemaphoreFullException();
                     }
-
-                    int prev = Interlocked.CompareExchange(ref m_currentCount, observed + releaseCount, observed);
-                    if (prev == observed)
-                    {
-                        break;
-                    }
-                    observed = prev;
+                    observed = reread;
                 }
                 returnCount = observed;
 
-                // m_currentCount now reflects the full releaseCount. Permits handed directly to async waiters
-                // below are subtracted from it again; the transient bump is invisible to the lock-free fast
-                // path, which is excluded whenever waiters are present (it gates on no async/sync waiters).
+                // Compute the post-release count in a LOCAL only. We must never store this inflated value into
+                // m_currentCount: it includes permits earmarked for the waiters released below, and the
+                // lock-free fast path (which reads m_currentCount without the lock) would observe and steal
+                // them in the window before we corrected the count. Instead we apply only the net delta once,
+                // atomically, at the end. Whenever waiters are present the count is 0 and no fast path can be
+                // racing (it requires count > 0 and no waiters), so this snapshot is stable here.
                 int currentCount = observed + releaseCount;
 
                 // Signal synchronous waiters, accounting for those already pulsed but not yet woken.
@@ -963,11 +964,13 @@ namespace System.Threading
                 // asynchronous waiters, we assume that all synchronous waiters will eventually
                 // acquire the semaphore.  That could be a faulty assumption if those synchronous
                 // waits are canceled, but the wait code path will handle that.
+                // Permits handed to async waiters go straight to their tasks rather than into
+                // m_currentCount, so they're excluded from the net delta applied below.
+                int asyncReleased = 0;
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't null");
                     int maxAsyncToRelease = currentCount - waitCount;
-                    int asyncReleased = 0;
                     while (asyncReleased < maxAsyncToRelease && m_asyncHead is not null)
                     {
                         ++asyncReleased;
@@ -976,17 +979,18 @@ namespace System.Threading
                         RemoveAsyncWaiter(waiterTask); // ensures waiterTask.Next/Prev are null
                         waiterTask.TrySetResult(result: true);
                     }
-
-                    if (asyncReleased > 0)
-                    {
-                        // Subtract the permits handed straight to async waiters. Use Interlocked.Add (not an
-                        // absolute store) because once the async list drains the fast path may re-engage and
-                        // decrement m_currentCount concurrently; its return value is the live post-subtract count.
-                        currentCount = Interlocked.Add(ref m_currentCount, -asyncReleased);
-                    }
+                    currentCount -= asyncReleased;
                 }
 
-                if (m_waitHandle is not null && observed == 0 && currentCount > 0)
+                // Apply the net change (permits released minus those handed straight to async waiters) in a
+                // single atomic add. A relative add (not an absolute store) folds in any fast-path decrements
+                // that raced since we snapshotted, and we never publish a count above the number of genuinely
+                // free permits, so the fast path can never observe a permit reserved for a waiter. The
+                // pre-validated snapshot bounds the result at or below m_maxCount.
+                int delta = releaseCount - asyncReleased;
+                int newCount = delta != 0 ? Interlocked.Add(ref m_currentCount, delta) : observed;
+
+                if (m_waitHandle is not null && observed == 0 && newCount > 0)
                 {
                     m_waitHandle.Set();
                 }
