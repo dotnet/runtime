@@ -532,6 +532,7 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
+      <!-- Use Condition="'$(InvariantGlobalization)' != 'true'" after fix for https://github.com/dotnet/runtime/issues/129242 -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
