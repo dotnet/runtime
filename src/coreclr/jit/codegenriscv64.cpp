@@ -3151,6 +3151,61 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForSelect: Produce branch-free code for a GT_SELECT node using Zicond.
+//
+//   SELECT(cond, trueVal, falseVal) =>
+//     czero.nez tmp,   falseVal, cond   ; tmp     = (cond != 0) ? 0 : falseVal
+//     czero.eqz dst,   trueVal,  cond   ; dst     = (cond == 0) ? 0 : trueVal
+//     or        dst,   dst,      tmp
+//
+// Degenerate cases (one operand is the zero register) collapse to a single czero.
+//
+// Arguments:
+//    tree - the GT_SELECT node
+//
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_SELECT));
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(tree));
+
+    GenTreeConditional* sel      = tree->AsConditional();
+    GenTree*            cond     = sel->gtCond;
+    GenTree*            trueVal  = sel->gtOp1;
+    GenTree*            falseVal = sel->gtOp2;
+
+    genConsumeRegs(cond);
+    genConsumeRegs(trueVal);
+    genConsumeRegs(falseVal);
+
+    regNumber targetReg = tree->GetRegNum();
+    regNumber condReg   = cond->GetRegNum();
+    regNumber trueReg   = trueVal->isContained() ? REG_ZERO : trueVal->GetRegNum();
+    regNumber falseReg  = falseVal->isContained() ? REG_ZERO : falseVal->GetRegNum();
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitActualTypeSize(tree);
+
+    if (falseReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+    }
+    else if (trueReg == REG_ZERO)
+    {
+        emit->emitIns_R_R_R(INS_czero_nez, attr, targetReg, falseReg, condReg);
+    }
+    else
+    {
+        regNumber tmpReg = internalRegisters.GetSingle(tree);
+        emit->emitIns_R_R_R(INS_czero_nez, attr, tmpReg, falseReg, condReg);
+        emit->emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, condReg);
+        emit->emitIns_R_R_R(INS_add, attr, targetReg, targetReg, tmpReg);
+    }
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created when a comparison and conditional branch
@@ -3938,6 +3993,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GT:
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
+            break;
+
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
             break;
 
         case GT_JCMP:

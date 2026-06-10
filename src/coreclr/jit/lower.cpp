@@ -4809,8 +4809,9 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
     // we could do this on x86. We currently disable if-conversion for TYP_LONG
     // on 32-bit architectures because of this.
-    GenCondition selectCond;
     GenTreeOpCC* newSelect = nullptr;
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    GenCondition selectCond;
     if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
         select->SetOper(GT_SELECTCC);
@@ -4822,6 +4823,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         JITDUMP("\n");
     }
     else
+#endif
     {
         ContainCheckSelect(select);
     }
