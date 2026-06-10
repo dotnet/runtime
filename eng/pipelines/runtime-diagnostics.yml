@@ -279,6 +279,30 @@ extends:
               condition: failed()
 
     #
+    # cDAC Unit Tests + DataGenerator Tests — managed-side tests that don't need a
+    # real runtime. Independent stage; runs on linux_x64 Checked on every trigger
+    # (PR/manual/schedule).
+    #
+    - stage: CdacUnitTests
+      dependsOn: []
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          jobParameters:
+            nameSuffix: CdacUnitTests
+            # tools.cdactests builds + tests both the cDAC UnitTests project
+            # and the DataGeneratorTests project (both wired under that subset
+            # in eng/Subsets.props).
+            buildArgs: -s clr.aot+clr.iltools+clr.corelib+clr.nativecorelib+libs.sfx+clr.toolstests+tools.cdac+tools.cdactests -c $(_BuildConfig) -test
+            timeoutInMinutes: 120
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+
+    #
     # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)
     #
     - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
