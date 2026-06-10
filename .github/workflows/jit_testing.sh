@@ -102,7 +102,7 @@ build_runtime() {
   export UseInstalledDotNetCli=true
 
   ./build.sh clr+clr.hosts \
-  -skipmanagedtools \
+  /p:SkipManagedTools=true \
   /p:PrimaryRuntimeFlavor=CoreCLR \
   /p:PublishAot=false \
   /p:SupportsNativeAotComponents=false \
