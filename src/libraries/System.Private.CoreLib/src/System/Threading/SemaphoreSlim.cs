@@ -907,24 +907,38 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
-                // m_currentCount is declared volatile; this read sees any decrement by the lock-free WaitAsync fast path.
-                // The snapshot is an upper bound on the count for the duration of this method (a concurrent fast path
-                // may decrement, but no other thread can increment since Release holds the lock); the SemaphoreFullException
-                // check below uses it intentionally to honor the caller's view of the count at entry.
-                int snapshot = m_currentCount;
-                returnCount = snapshot;
-
-                if (m_maxCount - snapshot < releaseCount)
+                // Validate against m_maxCount and apply the released permits in one atomic step. A lock-free
+                // WaitAsync fast path can decrement m_currentCount concurrently (it bypasses this lock), so a
+                // plain read-then-check could observe a stale, too-high count and throw SemaphoreFullException
+                // spuriously. The CAS loop re-observes the live count on each attempt, making the max-count
+                // check linearizable with the increment. No other thread can increment concurrently (every
+                // increment path holds this lock), so the loop only retries on a racing fast-path decrement.
+                int observed = m_currentCount;
+                while (true)
                 {
-                    throw new SemaphoreFullException();
-                }
+                    if (m_maxCount - observed < releaseCount)
+                    {
+                        throw new SemaphoreFullException();
+                    }
 
-                int netCount = snapshot + releaseCount;
+                    int prev = Interlocked.CompareExchange(ref m_currentCount, observed + releaseCount, observed);
+                    if (prev == observed)
+                    {
+                        break;
+                    }
+                    observed = prev;
+                }
+                returnCount = observed;
+
+                // m_currentCount now reflects the full releaseCount. Permits handed directly to async waiters
+                // below are subtracted from it again; the transient bump is invisible to the lock-free fast
+                // path, which is excluded whenever waiters are present (it gates on no async/sync waiters).
+                int currentCount = observed + releaseCount;
 
                 // Signal synchronous waiters, accounting for those already pulsed but not yet woken.
                 int waitCount = m_waitCount;
                 Debug.Assert(m_countOfWaitersPulsedToWake <= waitCount);
-                int waitersToNotify = Math.Min(netCount, waitCount) - m_countOfWaitersPulsedToWake;
+                int waitersToNotify = Math.Min(currentCount, waitCount) - m_countOfWaitersPulsedToWake;
                 if (waitersToNotify > 0)
                 {
                     // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but
@@ -952,23 +966,28 @@ namespace System.Threading
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't null");
-                    int maxAsyncToRelease = netCount - waitCount;
+                    int maxAsyncToRelease = currentCount - waitCount;
+                    int asyncReleased = 0;
                     while (maxAsyncToRelease > 0 && m_asyncHead is not null)
                     {
-                        --netCount;
                         --maxAsyncToRelease;
+                        ++asyncReleased;
 
                         TaskNode waiterTask = m_asyncHead;
                         RemoveAsyncWaiter(waiterTask); // ensures waiterTask.Next/Prev are null
                         waiterTask.TrySetResult(result: true);
                     }
-                }
-                // Use Interlocked.Add (not an absolute store) because a lock-free WaitAsync CAS may have
-                // decremented m_currentCount during this method; use its return value for the Set sentinel
-                // so a racing fast-path decrement after the Add can't mask the 0 -> positive transition.
-                int afterAdd = Interlocked.Add(ref m_currentCount, netCount - snapshot);
 
-                if (m_waitHandle is not null && snapshot == 0 && afterAdd > 0)
+                    if (asyncReleased > 0)
+                    {
+                        // Subtract the permits handed straight to async waiters. Use Interlocked.Add (not an
+                        // absolute store) because once the async list drains the fast path may re-engage and
+                        // decrement m_currentCount concurrently; its return value is the live post-subtract count.
+                        currentCount = Interlocked.Add(ref m_currentCount, -asyncReleased);
+                    }
+                }
+
+                if (m_waitHandle is not null && observed == 0 && currentCount > 0)
                 {
                     m_waitHandle.Set();
                 }

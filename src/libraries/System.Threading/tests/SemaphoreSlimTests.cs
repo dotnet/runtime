@@ -647,7 +647,7 @@ namespace System.Threading.Tests
         public static async Task WaitAsync_ConcurrentFastPath_NeverUnderflows()
         {
             const int Threads = 16, Iterations = 1_000;
-            var sem = new SemaphoreSlim(1, 1);
+            using var sem = new SemaphoreSlim(1, 1);
 
             await Task.WhenAll(Enumerable.Range(0, Threads).Select(_ => Task.Run(async () =>
             {
@@ -668,7 +668,7 @@ namespace System.Threading.Tests
             // Stresses the CAS loop in WaitCore, which exists because the lock-free WaitAsync
             // fast path can decrement m_currentCount without holding the lock.
             const int Workers = 8, Iterations = 500;
-            var sem = new SemaphoreSlim(1, 1);
+            using var sem = new SemaphoreSlim(1, 1);
             var tasks = new Task[Workers * 2];
 
             for (int i = 0; i < Workers; i++)
@@ -703,7 +703,7 @@ namespace System.Threading.Tests
         {
             const int Workers = 8, Iterations = 500;
             const int TotalPermits = Workers * Iterations;
-            var sem = new SemaphoreSlim(0);
+            using var sem = new SemaphoreSlim(0);
 
             Task[] consumers = Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
             {
@@ -733,20 +733,39 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public static async Task WaitAsync_CancellationDuringFastPath_NoCountCorruption()
+        public static async Task WaitAsync_CancellationRacingAcquire_NoCountCorruption()
         {
-            const int Iterations = 10_000;
-            var sem = new SemaphoreSlim(1, 1);
+            // Race cancellation against concurrent WaitAsync acquisitions on a shared semaphore. Multiple
+            // workers contend for a single permit while each token is cancelled from a separate thread, so
+            // the cancellation genuinely races the wait instead of always preceding it (which, uncontended,
+            // would let the fast path complete synchronously before the cancel and never exercise the race).
+            // Every wait either acquires the permit (and releases it) or is canceled, so the count must
+            // never be corrupted regardless of which outcome wins the race.
+            const int Workers = 8, Iterations = 1_000;
+            using var sem = new SemaphoreSlim(1, 1);
 
-            for (int i = 0; i < Iterations; i++)
+            await Task.WhenAll(Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
             {
-                using var cts = new CancellationTokenSource();
-                Task t = sem.WaitAsync(cts.Token);
-                cts.Cancel();
-                try { await t; sem.Release(); }
-                catch (OperationCanceledException) { }
-            }
+                for (int i = 0; i < Iterations; i++)
+                {
+                    using var cts = new CancellationTokenSource();
 
+                    // Cancel from another thread so it races the WaitAsync below.
+                    Task canceller = Task.Run(cts.Cancel);
+
+                    try
+                    {
+                        // Completes (acquires the permit) on success, throws on cancellation.
+                        await sem.WaitAsync(cts.Token);
+                        sem.Release();
+                    }
+                    catch (OperationCanceledException) { }
+
+                    await canceller;
+                }
+            })));
+
+            // No acquire was leaked or double-counted, so the single permit is back.
             Assert.Equal(1, sem.CurrentCount);
         }
 
