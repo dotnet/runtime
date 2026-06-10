@@ -4745,6 +4745,22 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
     return pNativeCode;
 } // CordbNativeCode::LookupOrCreateFromJITData
 
+// Doubles the array capacity when full, then appends the item.
+template<typename T>
+static void GrowAndAppend(NewArrayHolder<T>& pArray, ULONG32& count, ULONG32& capacity, const T* pItem)
+{
+    if (count >= capacity)
+    {
+        ULONG32 newCapacity = (capacity == 0) ? 32 : capacity * 2;
+        T *pNew = new T[newCapacity];
+        if (count > 0)
+            memcpy(pNew, pArray.GetValue(), count * sizeof(T));
+        pArray = pNew;
+        capacity = newCapacity;
+    }
+    pArray[count++] = *pItem;
+}
+
 // LoadNativeInfo loads from the left side any native variable info
 // from the JIT.
 //
@@ -4771,11 +4787,48 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
-                                                                  GetAddress(),
-                                                                  m_fCodeAvailable,
-                                                                  &m_nativeVarData,
-                                                                  &m_sequencePoints));
+
+        struct CallbackData
+        {
+            NewArrayHolder<ICorDebugInfo::NativeVarInfo> pVarInfos;
+            ULONG32 varInfoCount;
+            ULONG32 varInfoCapacity;
+            NewArrayHolder<ICorDebugInfo::OffsetMapping> pSeqPoints;
+            ULONG32 seqPointCount;
+            ULONG32 seqPointCapacity;
+
+            CallbackData() : varInfoCount(0), varInfoCapacity(0), seqPointCount(0), seqPointCapacity(0) {}
+        };
+
+        CallbackData data;
+
+        ULONG32 fixedArgCount = 0;
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(
+            GetVMNativeCodeMethodDescToken(),
+            GetAddress(),
+            m_fCodeAvailable,
+            &fixedArgCount,
+            [](ICorDebugInfo::NativeVarInfo *pVarInfo, void *pUserData)
+            {
+                CallbackData *pData = static_cast<CallbackData *>(pUserData);
+                GrowAndAppend(pData->pVarInfos, pData->varInfoCount, pData->varInfoCapacity, pVarInfo);
+            },
+            [](ICorDebugInfo::OffsetMapping *pMapping, void *pUserData)
+            {
+                CallbackData *pData = static_cast<CallbackData *>(pUserData);
+                GrowAndAppend(pData->pSeqPoints, pData->seqPointCount, pData->seqPointCapacity, pMapping);
+            },
+            &data));
+
+        // Initialize native var data from collected entries
+        m_nativeVarData.InitVarDataList(data.pVarInfos, (int)fixedArgCount, (int)data.varInfoCount);
+
+        // Initialize sequence points from collected entries
+        m_sequencePoints.InitSequencePoints(data.seqPointCount);
+        if (data.seqPointCount > 0)
+        {
+            m_sequencePoints.CopyAndSortSequencePoints(data.pSeqPoints);
+        }
     }
 
 } // CordbNativeCode::LoadNativeInfo

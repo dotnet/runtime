@@ -44,6 +44,89 @@ public struct FieldData
     public ulong m_vmFieldDesc;
 }
 
+public enum VarLocType
+{
+    VLT_REG,
+    VLT_REG_BYREF,
+    VLT_REG_FP,
+    VLT_STK,
+    VLT_STK_BYREF,
+    VLT_REG_REG,
+    VLT_REG_STK,
+    VLT_STK_REG,
+    VLT_STK2,
+    VLT_FPSTK,
+    VLT_FIXED_VA,
+    VLT_COUNT,
+    VLT_INVALID,
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct VarLoc
+{
+    [FieldOffset(0)]
+    public VarLocType vlType;
+
+    // vlReg
+    [FieldOffset(4)]
+    public uint vlrReg;
+
+    // vlStk
+    [FieldOffset(4)]
+    public uint vlsBaseReg;
+    [FieldOffset(8)]
+    public int vlsOffset;
+
+    // vlRegReg
+    [FieldOffset(4)]
+    public uint vlrrReg1;
+    [FieldOffset(8)]
+    public uint vlrrReg2;
+
+    // vlRegStk
+    [FieldOffset(4)]
+    public uint vlrsReg;
+    [FieldOffset(8)]
+    public uint vlrssBaseReg;
+    [FieldOffset(12)]
+    public int vlrssOffset;
+
+    // vlStkReg
+    [FieldOffset(4)]
+    public uint vlsrsBaseReg;
+    [FieldOffset(8)]
+    public int vlsrsOffset;
+    [FieldOffset(12)]
+    public uint vlsrReg;
+
+    // vlStk2 (same layout as vlStk)
+
+    // vlFPstk
+    [FieldOffset(4)]
+    public uint vlfReg;
+
+    // vlFixedVarArg
+    [FieldOffset(4)]
+    public uint vlfvOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NativeVarInfo
+{
+    public uint startOffset;
+    public uint endOffset;
+    public uint varNumber;
+    public VarLoc loc;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbiOffsetMapping
+{
+    public uint nativeOffset;
+    public uint ilOffset;
+    public uint source; // ICorDebugInfo::SourceTypes
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -481,7 +564,7 @@ public unsafe partial interface IDacDbiInterface
     int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal);
 
     [PreserveSig]
-    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
+    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, uint* pFixedArgCount, delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback, delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback, nint pUserData);
 
     [PreserveSig]
     int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal);
