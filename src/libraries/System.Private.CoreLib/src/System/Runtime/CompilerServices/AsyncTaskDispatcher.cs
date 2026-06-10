@@ -221,6 +221,12 @@ namespace System.Runtime.CompilerServices
                 }
 
                 refCurrent = dispatcherInfo.Next;
+
+                if (IsCompleted)
+                {
+                    _current = null;
+                    LastContinuation = null;
+                }
             }
         }
 

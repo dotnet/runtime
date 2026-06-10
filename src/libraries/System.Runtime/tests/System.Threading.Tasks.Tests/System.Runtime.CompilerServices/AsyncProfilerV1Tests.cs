@@ -1223,14 +1223,23 @@ namespace System.Threading.Tasks.Tests
                 RunScenarioAndFlush(() => TaskAsync_WaitThenYield_BalancesResumeAndComplete_Marker());
             });
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            int createCount = stream.OfType(AsyncEventID.CreateAsyncContext).Count();
-            int completeCount = stream.OfType(AsyncEventID.CompleteAsyncContext).Count();
-            int resumeCount = stream.OfType(AsyncEventID.ResumeAsyncContext).Count();
-            int suspendCount = stream.OfType(AsyncEventID.SuspendAsyncContext).Count();
+            // Locate the marker's logical TaskId so the balance check is scoped to this scenario's
+            // chain and not polluted by unrelated dispatcher activity from other threads (e.g. the
+            // xunit runner's RunAsync state machine being replayed by ResetAsyncThreadContext and
+            // completing while this test's listener is still active).
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(TaskAsync_WaitThenYield_BalancesResumeAndComplete_Marker));
+            Assert.NotEmpty(markerCallstacks);
+            ulong markerTaskId = markerCallstacks[0].TaskId;
+
+            var taskEvents = stream.ForTask(markerTaskId);
+            int createCount = taskEvents.Count(e => e.EventId == AsyncEventID.CreateAsyncContext);
+            int completeCount = taskEvents.Count(e => e.EventId == AsyncEventID.CompleteAsyncContext);
+            int resumeCount = taskEvents.Count(e => e.EventId == AsyncEventID.ResumeAsyncContext);
+            int suspendCount = taskEvents.Count(e => e.EventId == AsyncEventID.SuspendAsyncContext);
 
             // At least one root Create event.
             Assert.True(createCount >= 1,
@@ -1244,9 +1253,6 @@ namespace System.Threading.Tasks.Tests
 
             Assert.True(createCount >= 3,
                 $"Expected fan-out chain to produce at least 3 CreateAsyncContext events (root + 2 child wraps), got {createCount}");
-
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, nameof(TaskAsync_WaitThenYield_BalancesResumeAndComplete_Marker));
-            Assert.NotEmpty(markerCallstacks);
         }
 
         [RuntimeAsyncMethodGeneration(false)]
