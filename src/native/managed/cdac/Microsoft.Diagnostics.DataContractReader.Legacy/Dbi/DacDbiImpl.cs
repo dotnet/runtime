@@ -2663,8 +2663,114 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, pFieldData, pfStatic) : HResults.E_NOTIMPL;
+    public int GetEnCHangingFieldInfo(EnCHangingFieldInfo* pEnCFieldInfo, FieldData* pFieldData, Interop.BOOL* pfStatic)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            IRuntimeMutableTypeSystem mrts = _target.Contracts.RuntimeMutableTypeSystem;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+
+            // Resolve the assembly and module
+            ulong vmAssembly = ReadLittleEndian(pEnCFieldInfo->objectTypeData.vmAssembly);
+            uint metadataToken = ReadLittleEndian(pEnCFieldInfo->objectTypeData.metadataToken);
+            uint fldToken = pEnCFieldInfo->fldToken;
+
+            // Look up the type to confirm class is loaded (throws CORDBG_E_CLASS_NOT_LOADED if not)
+            _ = LookupTypeDefOrRefInAssembly(rts, vmAssembly, metadataToken);
+
+            // Find the FieldDesc by token via the module's FieldDefToDesc map
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+            TargetPointer fieldDescPointer = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, fldToken, out _);
+            if (fieldDescPointer == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_ENC_HANGING_FIELD)!;
+
+            // Verify it's an EnC new field
+            System.Diagnostics.Debug.Assert(mrts.IsFieldDescEnCNew(fieldDescPointer));
+
+            // Check if it still needs fixup
+            if (mrts.DoesEnCFieldDescNeedFixup(fieldDescPointer))
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_ENC_HANGING_FIELD)!;
+
+            // Get the field address
+            bool isStatic = rts.IsFieldDescStatic(fieldDescPointer);
+            TargetPointer fieldAddress;
+
+            if (isStatic)
+            {
+                fieldAddress = mrts.GetEnCStaticFieldDataAddress(fieldDescPointer);
+            }
+            else
+            {
+                TargetPointer objectPointer = new TargetPointer(pEnCFieldInfo->vmObject);
+                fieldAddress = mrts.GetEnCInstanceFieldAddress(objectPointer, fieldDescPointer);
+            }
+
+            if (fieldAddress == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_ENC_HANGING_FIELD)!;
+
+            // Fill the FieldData output struct
+            *pFieldData = default;
+            pFieldData->m_fldMetadataToken = fldToken;
+            pFieldData->m_fFldStorageAvailable = Interop.BOOL.TRUE;
+            pFieldData->m_fFldIsStatic = isStatic ? (byte)1 : (byte)0;
+            pFieldData->m_vmFieldDesc = fieldDescPointer.Value;
+
+            if (isStatic)
+            {
+                pFieldData->m_pFldStaticAddress = fieldAddress.Value;
+            }
+            else
+            {
+                // Instance offset is: fieldAddress - (objectAddress + offsetToVars)
+                ulong objectAddr = pEnCFieldInfo->vmObject;
+                ulong offsetToVars = pEnCFieldInfo->offsetToVars;
+                pFieldData->m_fldInstanceOffset = fieldAddress.Value - (objectAddr + offsetToVars);
+            }
+
+            *pfStatic = isStatic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            FieldData fieldDataLocal;
+            Interop.BOOL fStaticLocal;
+            int hrLocal = _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, &fieldDataLocal, &fStaticLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pfStatic == fStaticLocal, $"cDAC pfStatic: {*pfStatic}, DAC: {fStaticLocal}");
+                Debug.Assert(pFieldData->m_fldMetadataToken == fieldDataLocal.m_fldMetadataToken,
+                    $"cDAC m_fldMetadataToken: {pFieldData->m_fldMetadataToken:X}, DAC: {fieldDataLocal.m_fldMetadataToken:X}");
+                Debug.Assert(pFieldData->m_fFldStorageAvailable == fieldDataLocal.m_fFldStorageAvailable,
+                    $"cDAC m_fFldStorageAvailable: {pFieldData->m_fFldStorageAvailable}, DAC: {fieldDataLocal.m_fFldStorageAvailable}");
+                Debug.Assert(pFieldData->m_fFldIsStatic == fieldDataLocal.m_fFldIsStatic,
+                    $"cDAC m_fFldIsStatic: {pFieldData->m_fFldIsStatic}, DAC: {fieldDataLocal.m_fFldIsStatic}");
+                Debug.Assert(pFieldData->m_fFldIsRVA == fieldDataLocal.m_fFldIsRVA,
+                    $"cDAC m_fFldIsRVA: {pFieldData->m_fFldIsRVA}, DAC: {fieldDataLocal.m_fFldIsRVA}");
+                Debug.Assert(pFieldData->m_fFldIsTLS == fieldDataLocal.m_fFldIsTLS,
+                    $"cDAC m_fFldIsTLS: {pFieldData->m_fFldIsTLS}, DAC: {fieldDataLocal.m_fFldIsTLS}");
+                Debug.Assert(pFieldData->m_fFldIsCollectibleStatic == fieldDataLocal.m_fFldIsCollectibleStatic,
+                    $"cDAC m_fFldIsCollectibleStatic: {pFieldData->m_fFldIsCollectibleStatic}, DAC: {fieldDataLocal.m_fFldIsCollectibleStatic}");
+                Debug.Assert(pFieldData->m_vmFieldDesc == fieldDataLocal.m_vmFieldDesc,
+                    $"cDAC m_vmFieldDesc: {pFieldData->m_vmFieldDesc:X}, DAC: {fieldDataLocal.m_vmFieldDesc:X}");
+                if (pFieldData->m_fFldIsStatic != 0)
+                    Debug.Assert(pFieldData->m_pFldStaticAddress == fieldDataLocal.m_pFldStaticAddress,
+                        $"cDAC static addr: {pFieldData->m_pFldStaticAddress:X}, DAC: {fieldDataLocal.m_pFldStaticAddress:X}");
+                else
+                    Debug.Assert(pFieldData->m_fldInstanceOffset == fieldDataLocal.m_fldInstanceOffset,
+                        $"cDAC instance offset: {pFieldData->m_fldInstanceOffset:X}, DAC: {fieldDataLocal.m_fldInstanceOffset:X}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int EnumerateTypeHandleParams(ulong vmTypeHandle,
         delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData)

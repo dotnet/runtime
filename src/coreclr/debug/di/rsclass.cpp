@@ -1057,8 +1057,8 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
 
     if (HasTypeParams())
     {
-        _ASSERTE(!"EnC hanging field not yet implemented on constructed types!");
-        return E_FAIL;
+        // _ASSERTE(!"EnC hanging field not yet implemented on constructed types!");
+        // return E_FAIL;
     }
 
     // This must be a static field if no object was supplied
