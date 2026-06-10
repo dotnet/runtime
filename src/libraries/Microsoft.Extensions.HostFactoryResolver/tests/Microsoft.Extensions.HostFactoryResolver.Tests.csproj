@@ -25,6 +25,7 @@
     <ProjectReference Include="CreateHostBuilderPatternTestSite\CreateHostBuilderPatternTestSite.csproj" />
     <ProjectReference Include="CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
     <ProjectReference Include="CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
+    <ProjectReference Include="ArbitraryDiagnosticEventPatternTestSite\ArbitraryDiagnosticEventPatternTestSite.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPattern\NoSpecialEntryPointPattern.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternBuildsThenThrows\NoSpecialEntryPointPatternBuildsThenThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternThrows\NoSpecialEntryPointPatternThrows.csproj" />

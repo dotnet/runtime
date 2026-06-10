@@ -802,7 +802,9 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchManagedException(oref, exceptionFrame.GetContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -830,7 +832,9 @@ EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 
     FC_CAN_TRIGGER_GC();
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchRethrownManagedException(exceptionFrame.GetContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -862,7 +866,9 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
 
     FC_CAN_TRIGGER_GC();
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();

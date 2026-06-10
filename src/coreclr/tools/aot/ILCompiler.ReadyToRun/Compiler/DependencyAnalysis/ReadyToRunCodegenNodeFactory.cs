@@ -1277,6 +1277,15 @@ namespace ILCompiler.DependencyAnalysis
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
+        public bool CanBeInGenericCycle(MethodDesc method)
+        {
+            if (_genericCycleDetector is null)
+                return false;
+
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
+        }
+
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
