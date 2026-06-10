@@ -123,7 +123,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask);
+    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask);
     HRESULT STDMETHODCALLTYPE DeleteRefWalk(RefWalkHandle handle);
     HRESULT STDMETHODCALLTYPE WalkRefs(RefWalkHandle handle, ULONG count, OUT DacGcReference * objects, OUT ULONG *pFetched);
 
@@ -964,7 +964,7 @@ protected:
 class DacRefWalker
 {
 public:
-    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers);
+    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
 
     HRESULT Init();
@@ -977,7 +977,7 @@ private:
 
 private:
     ClrDataAccess *mDac;
-    BOOL mWalkStacks, mWalkFQ;
+    BOOL mWalkStacks;
     UINT32 mHandleMask;
 
     // Stacks

@@ -2012,13 +2012,12 @@ public:
     //  Parameters:
     //      pHandle - out - the reference walk handle to create
     //      walkStacks - in - whether or not to report stack references
-    //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
     //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Returns an HRESULT indicating success or failure.
-    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask) = 0;
 
     // Deletes a reference walk.
     // Parameters:
