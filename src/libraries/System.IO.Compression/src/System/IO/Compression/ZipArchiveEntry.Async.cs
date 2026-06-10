@@ -115,9 +115,11 @@ public partial class ZipArchiveEntry
         {
             // this means we have never opened it before
 
-            // ThrowIfNotOpenableAsync has already verified that _uncompressedSize fits in
-            // [0, Array.MaxLength], so the (int) cast is safe and the capacity hint
-            // is bounded by MemoryStream's maximum.
+            // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+            // Validate up front before attempting the (int) cast.
+            if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
             if (_originallyInArchive)
@@ -308,7 +310,7 @@ public partial class ZipArchiveEntry
 
         // when this property gets called, some duplicated work
         long offsetOfCompressedData = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
-        if (!IsOpenableFinalVerifications(needToUncompress, needToLoadIntoMemory, offsetOfCompressedData, out message))
+        if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
         {
             return (false, message);
         }

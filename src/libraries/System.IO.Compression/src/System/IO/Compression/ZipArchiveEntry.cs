@@ -481,9 +481,11 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // ThrowIfNotOpenable has already verified that _uncompressedSize fits in
-                // [0, Array.MaxLength], so the (int) cast is safe and the capacity hint
-                // is bounded by MemoryStream's maximum.
+                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+                // Validate up front before attempting the (int) cast.
+                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                    throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)
@@ -940,7 +942,7 @@ namespace System.IO.Compression
 
                 // when this property gets called, some duplicated work
                 long offsetOfCompressedData = GetOffsetOfCompressedData();
-                if (!IsOpenableFinalVerifications(needToUncompress, needToLoadIntoMemory, offsetOfCompressedData, out message))
+                if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
                 {
                     return false;
                 }
@@ -979,7 +981,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        private bool IsOpenableFinalVerifications(bool needToUncompress, bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
+        private bool IsOpenableFinalVerifications(bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
         {
             message = null;
             if (offsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
@@ -1000,16 +1002,6 @@ namespace System.IO.Compression
                         message = SR.EntryTooLarge;
                         return false;
                     }
-                }
-
-                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
-                // Only check this when needToUncompress is true (i.e., we're about to decompress
-                // and load the data into a MemoryStream), not during archive construction where
-                // the entry might never be opened.
-                if (needToUncompress && (ulong)_uncompressedSize > (ulong)Array.MaxLength)
-                {
-                    message = SR.EntryUncompressedSizeTooLargeForUpdateMode;
-                    return false;
                 }
             }
 
