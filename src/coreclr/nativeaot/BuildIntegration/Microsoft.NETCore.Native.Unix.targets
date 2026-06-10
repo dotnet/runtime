@@ -64,7 +64,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' != '0'">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' == '0'">$(CrossCompileArch)-alpine-linux-$(CrossCompileAbi)</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd14</TargetTriple>
 
       <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
 
