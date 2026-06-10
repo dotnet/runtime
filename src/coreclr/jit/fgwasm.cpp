@@ -1749,9 +1749,9 @@ PhaseStatus Compiler::WasmSpillRefs()
                         GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
                         LIR::Use       use;
                         noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
-                        use.ReplaceWith(reload);
                         LIR::AsRange(block).InsertAfter(def, spill);
                         LIR::AsRange(block).InsertAfter(spill, reload);
+                        use.ReplaceWith(reload);
 
                         // The user will expect to have child nodes that have the multiply-used flag set, so when
                         //  we replace the expression with the reload node, we need to transfer the flag

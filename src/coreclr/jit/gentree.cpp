@@ -13126,7 +13126,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     const char* ilName = nullptr;
 
     unsigned ilNum = compMap2ILvarNum(lclNum);
-#if TARGET_WASM
+#if defined(TARGET_WASM)
     int wasmSpillSlotIndex = -1;
     if (m_wasmSpillSlots != nullptr)
     {
