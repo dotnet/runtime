@@ -197,22 +197,15 @@ internal sealed class MockRegisterSet : TypedView
     public const string CalleeSavedRegisterName = "rbx";
     public const string ArgumentRegisterName = "rcx";
 
-    private readonly string _fieldName;
-
-    private MockRegisterSet(string fieldName)
-    {
-        _fieldName = fieldName;
-    }
-
     public static Layout<MockRegisterSet> CreateLayout(MockTarget.Architecture architecture, string name)
         => new SequentialLayoutBuilder(name, architecture)
             .AddPointerField(name)
-            .Build<MockRegisterSet>(() => new MockRegisterSet(name));
+            .Build<MockRegisterSet>();
 
     public ulong Register
     {
-        get => ReadPointerField(_fieldName);
-        set => WritePointerField(_fieldName, value);
+        get => ReadPointerField(Layout.Name);
+        set => WritePointerField(Layout.Name, value);
     }
 }
 

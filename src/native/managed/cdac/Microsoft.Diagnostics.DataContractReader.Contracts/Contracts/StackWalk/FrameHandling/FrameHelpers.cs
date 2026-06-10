@@ -332,7 +332,6 @@ internal sealed class FrameHelpers
             case FrameType.PInvokeCalliFrame:
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
-            case FrameType.ResolveHelperFrame:
             case FrameType.InterpreterFrame:
                 return InternalFrameType.M2U;
 
