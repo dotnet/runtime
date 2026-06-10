@@ -3433,7 +3433,6 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
     bgc_verify_mark_array_cleared (seg);
 }
 
-//inline
 BOOL gc_heap::fgc_should_consider_object (uint8_t* o,
                                           heap_segment* seg,
                                           BOOL consider_bgc_mark_p,

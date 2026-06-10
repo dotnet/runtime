@@ -414,7 +414,6 @@ const int32_t lock_decommissioned = 1;
 
 
 // If our heap got decommissioned, we need to try an existing heap.
-//inline
 bool gc_heap::should_move_heap (GCSpinLock* msl)
 {
 #ifdef MULTIPLE_HEAPS
@@ -2425,8 +2424,6 @@ extern "C" uint64_t __rdtsc();
     }
 #endif //TARGET_X86
 
-// We may not be on contiguous numa nodes so need to store
-// the node index as well.
 uint8_t* heap_select::sniff_buffer;
 unsigned heap_select::n_sniff_buffers;
 unsigned heap_select::cur_sniff_index;
