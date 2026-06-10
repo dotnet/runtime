@@ -8451,7 +8451,6 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
 }
 
 static void getEHinfoHelper(
-    CORINFO_METHOD_HANDLE   ftnHnd,
     unsigned                EHnumber,
     CORINFO_EH_CLAUSE*      clause,
     COR_ILMETHOD_DECODER*   pILHeader)
@@ -8500,7 +8499,7 @@ void CEEInfo::getEHinfo(
     else
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
-        getEHinfoHelper(ftnHnd, EHnumber, clause, &header);
+        getEHinfoHelper(EHnumber, clause, &header);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13239,19 +13238,27 @@ void CEECodeGenInfo::getEHinfo(
 
     MethodDesc* pMD = GetMethod(ftn);
 
+    bool isMethodBeingCompiled = pMD == m_pMethodBeingCompiled;
+
+    if (pMD->SupportsAsyncVersionCodegen())
+    {
+        // Get the EH info from the ordinary variant.
+        pMD = pMD->GetOrdinaryVariant();
+    }
+
     COR_ILMETHOD* pILHeader;
-    if (IsDynamicMethodHandle(ftn))
+    if (pMD->IsDynamicMethod())
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
-    else if (pMD == m_pMethodBeingCompiled)
+    else if (isMethodBeingCompiled)
     {
-        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+        getEHinfoHelper(EHnumber, clause, m_ILHeader);
     }
     else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
         COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
-        getEHinfoHelper(ftn, EHnumber, clause, &header);
+        getEHinfoHelper(EHnumber, clause, &header);
     }
     else if (pMD->IsIL())
     {
@@ -13261,7 +13268,7 @@ void CEECodeGenInfo::getEHinfo(
             _ASSERTE(!"Expected to be able to find transient method details in getEHinfo");
         }
 
-        getEHinfoHelper(ftn, EHnumber, clause, details->Header);
+        getEHinfoHelper(EHnumber, clause, details->Header);
     }
     else
     {
