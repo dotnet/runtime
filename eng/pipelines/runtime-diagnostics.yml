@@ -316,7 +316,8 @@ extends:
     #
     - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
       - stage: CdacDumpTests
-        dependsOn: []
+        dependsOn:
+        - CdacBuild
         jobs:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -326,10 +327,24 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              # Tiny rebuild that triggers .dotnet init; coreclr+libs+tools.cdac
+              # come from CdacBuildArtifacts. prepare-cdac-helix-steps below
+              # rebuilds the cDAC managed assemblies at Debug for the dump tests.
+              buildArgs: -s tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
+              dependsOnGlobalBuilds:
+              - nameSuffix: CdacBuild
+              preBuildSteps:
+                - template: /eng/pipelines/common/download-artifact-step.yml
+                  parameters:
+                    artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                    artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+                    unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                    displayName: 'cDAC Shared Build Artifacts'
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
+                parameters:
+                  cdacTestConfig: Debug
               - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
                 parameters:
                   displayName: 'Send cDAC Dump Tests to Helix'
@@ -360,7 +375,8 @@ extends:
     #
     - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
       - stage: CdacStressTests
-        dependsOn: []
+        dependsOn:
+        - CdacBuild
         jobs:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -370,8 +386,19 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacStressTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
+              # Tiny rebuild that triggers .dotnet init; coreclr+libs+tools.cdac
+              # come from CdacBuildArtifacts and aren't rebuilt.
+              buildArgs: -s tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
               timeoutInMinutes: 180
+              dependsOnGlobalBuilds:
+              - nameSuffix: CdacBuild
+              preBuildSteps:
+                - template: /eng/pipelines/common/download-artifact-step.yml
+                  parameters:
+                    artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                    artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+                    unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                    displayName: 'cDAC Shared Build Artifacts'
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-stress-helix-steps.yml
               - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
@@ -408,7 +435,8 @@ extends:
     #
     - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
       - stage: CdacXPlatDumpGen
-        dependsOn: []
+        dependsOn:
+        - CdacBuild
         jobs:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -418,10 +446,21 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpGen
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
+              dependsOnGlobalBuilds:
+              - nameSuffix: CdacBuild
+              preBuildSteps:
+                - template: /eng/pipelines/common/download-artifact-step.yml
+                  parameters:
+                    artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                    artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+                    unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                    displayName: 'cDAC Shared Build Artifacts'
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
+                parameters:
+                  cdacTestConfig: Debug
               - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
                 parameters:
                   displayName: 'Send cDAC Dump Gen to Helix'
@@ -455,6 +494,7 @@ extends:
 
       - stage: CdacXPlatDumpTests
         dependsOn:
+        - CdacBuild
         - CdacXPlatDumpGen
         jobs:
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -465,10 +505,23 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
+              dependsOnGlobalBuilds:
+              - nameSuffix: CdacBuild
+              preBuildSteps:
+                - template: /eng/pipelines/common/download-artifact-step.yml
+                  parameters:
+                    artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                    artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+                    unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                    displayName: 'cDAC Shared Build Artifacts'
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
+                parameters:
+                  buildDebuggees: false
+                  skipDebuggeeCopy: true
+                  cdacTestConfig: Debug
                 parameters:
                   buildDebuggees: false
                   skipDebuggeeCopy: true

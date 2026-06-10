@@ -7,13 +7,18 @@ parameters:
   buildDebuggees: true
   skipDebuggeeCopy: false
   runtimeConfiguration: 'Checked'
+  # Configuration used to rebuild the cDAC managed assemblies + DumpTests
+  # csproj during payload prep. The dump tests load the managed cDAC
+  # directly, so we ship Debug binaries here even when the rest of the
+  # build is Release. Defaults to $(_BuildConfig) for backward compatibility.
+  cdacTestConfig: '$(_BuildConfig)'
 
 steps:
 - ${{ if parameters.buildDebuggees }}:
   - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
       $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
       /t:BuildDebuggeesOnly
-      /p:Configuration=$(_BuildConfig)
+      /p:Configuration=${{ parameters.cdacTestConfig }}
       /p:TargetArchitecture=$(archType)
       /p:RuntimeConfiguration=${{ parameters.runtimeConfiguration }}
       -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
@@ -23,7 +28,7 @@ steps:
     $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
     /p:PrepareHelixPayload=true
     /p:SkipDebuggeeCopy=${{ parameters.skipDebuggeeCopy }}
-    /p:Configuration=$(_BuildConfig)
+    /p:Configuration=${{ parameters.cdacTestConfig }}
     /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
     /p:SkipDumpVersions=net10.0
     -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
