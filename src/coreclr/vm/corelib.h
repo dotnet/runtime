@@ -629,6 +629,7 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
+DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
@@ -636,7 +637,6 @@ DEFINE_CLASS(LOCK,                  Threading,              Lock)
 DEFINE_FIELD(LOCK,                  OWNING_THREAD_ID,       _owningThreadId)
 DEFINE_FIELD(LOCK,                  STATE,                  _state)
 DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
-DEFINE_FIELD(LOCK,                  WAIT_EVENT_OR_CONDITION,_waitEventOrCondition)
 DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                IM_RetVoid)
 DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR, InitializeForMonitor, SM_PtrLock_Int_UInt_PtrException_RetVoid)
 

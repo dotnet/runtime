@@ -78,6 +78,13 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
+        #region Object->Condition mapping
+#pragma warning disable CA1823 // Avoid unused private fields
+        // TODO: this is unused, except in DacDbiInterfaceImpl::EnumerateMonitorEventWaitList, fix that and remove
+        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
+#pragma warning restore CA1823 // Avoid unused private fields
+        #endregion
+
         #region Public Wait/Pulse methods
 
         [UnsupportedOSPlatform("browser")]
