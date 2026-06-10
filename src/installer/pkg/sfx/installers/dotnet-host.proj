@@ -57,7 +57,7 @@
           DestinationFiles="%(FilesToPublish.Destination)" />
 
     <Exec Command="chmod 755 &quot;$(OutputPath)dnx&quot;"
-          Condition="'$(TargetsUnix)' == 'true'" />
+          Condition="'$(TargetsUnix)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))" />
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
