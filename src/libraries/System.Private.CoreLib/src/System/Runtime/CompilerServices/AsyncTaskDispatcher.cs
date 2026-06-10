@@ -5,8 +5,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Runtime.CompilerServices.AsyncInstrumentation;
-using static System.Runtime.CompilerServices.AsyncProfiler;
 
 namespace System.Runtime.CompilerServices
 {
@@ -72,7 +70,7 @@ namespace System.Runtime.CompilerServices
 
             activeDispatcher.CurrentContinuation = box;
 
-            SyncPoint.Check(ref current->AsyncProfilerInfo);
+            AsyncProfiler.SyncPoint.Check(ref current->AsyncProfilerInfo);
 
             bool methodEventEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags);
             bool callstackEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags);
@@ -113,48 +111,21 @@ namespace System.Runtime.CompilerServices
     internal sealed class AsyncTaskDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
-        private IAsyncStateMachineBox? _current;
         private Action? _moveNextAction;
-        private ulong _contextId;
 
-        internal IAsyncStateMachineBox? CurrentContinuation
-        {
-            get { return _current; }
-            set { _current = value; }
-        }
+        internal IAsyncStateMachineBox? CurrentContinuation;
 
         internal Task? LastContinuation;
 
         internal bool ReachedLastContinuation;
 
+        internal bool ContinuationChainChanged => LastContinuation?.ContinuationForDiagnostics != null;
+
         internal AsyncTaskDispatcher(IAsyncStateMachineBox inner) : base()
         {
             _inner = inner;
-            _current = inner;
-            _contextId = 0;
+            CurrentContinuation = inner;
         }
-
-        internal AsyncTaskDispatcher(IAsyncStateMachineBox inner, AsyncTaskDispatcher parent) : base()
-        {
-            _inner = inner;
-            _current = inner;
-            _contextId = parent.ContextId;
-        }
-
-        internal ulong ContextId
-        {
-            get
-            {
-                if (_contextId == 0)
-                {
-                    return (ulong)this.Id;
-                }
-
-                return _contextId;
-            }
-        }
-
-        internal bool ContinuationChainChanged => LastContinuation?.ContinuationForDiagnostics != null;
 
         internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
@@ -165,18 +136,22 @@ namespace System.Runtime.CompilerServices
 
             AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
             AsyncTaskDispatcher? activeDispatcher = current != null ? current->Dispatcher : null;
-            AsyncTaskDispatcher dispatcher = activeDispatcher != null ? new AsyncTaskDispatcher(box, activeDispatcher) : new AsyncTaskDispatcher(box);
+
+            AsyncTaskDispatcher dispatcher = new AsyncTaskDispatcher(box);
 
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
+                ulong parentDispatcherId = AsyncProfiler.CaptureParentDispatcherId();
+                ulong dispatcherId = AsyncProfiler.TaskAsyncIds.GetDispatcherId(dispatcher);
+
                 if (activeDispatcher != null)
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref current->AsyncProfilerInfo, (ulong)dispatcher.ContextId);
+                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref current->AsyncProfilerInfo, parentDispatcherId, dispatcherId);
                 }
                 else
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(dispatcher);
+                    AsyncProfiler.CreateAsyncContext.Create(parentDispatcherId, dispatcherId);
                 }
             }
 
@@ -224,7 +199,7 @@ namespace System.Runtime.CompilerServices
 
                 if (IsCompleted)
                 {
-                    _current = null;
+                    CurrentContinuation = null;
                     LastContinuation = null;
                 }
             }

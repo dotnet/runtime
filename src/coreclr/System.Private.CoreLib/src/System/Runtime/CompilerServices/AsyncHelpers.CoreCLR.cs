@@ -1179,7 +1179,7 @@ namespace System.Runtime.CompilerServices
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
                     if (nextContinuation != null)
                     {
-                        AsyncProfiler.CreateAsyncContext.Create((ulong)task.Id, nextContinuation);
+                        AsyncProfiler.CreateAsyncContext.Create(task, nextContinuation);
                     }
                 }
 

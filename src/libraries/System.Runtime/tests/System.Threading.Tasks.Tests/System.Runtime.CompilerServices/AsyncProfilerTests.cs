@@ -290,11 +290,16 @@ namespace System.Threading.Tasks.Tests
             switch (eventId)
             {
                 case AsyncEventID.RuntimeAsync_CreateAsyncContext:
-                case AsyncEventID.RuntimeAsync_ResumeAsyncContext:
                 case AsyncEventID.TaskAsync_CreateAsyncContext:
+                {
+                    ReadCompressedUInt64(buffer, ref index); // parentDispatcherId
+                    ReadCompressedUInt64(buffer, ref index); // dispatcherId
+                    return true;
+                }
+                case AsyncEventID.RuntimeAsync_ResumeAsyncContext:
                 case AsyncEventID.TaskAsync_ResumeAsyncContext:
                 {
-                    ReadCompressedUInt64(buffer, ref index);
+                    ReadCompressedUInt64(buffer, ref index); // dispatcherId
                     return true;
                 }
                 case AsyncEventID.RuntimeAsync_SuspendAsyncContext:
@@ -322,7 +327,7 @@ namespace System.Threading.Tasks.Tests
                 case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
                 case AsyncEventID.TaskAsync_AppendAsyncCallstack:
                 {
-                    SkipCallstackPayload(buffer, ref index, CallstackTypeFromEventId(eventId));
+                    SkipCallstackPayload(buffer, ref index, eventId, CallstackTypeFromEventId(eventId));
                     return true;
                 }
                 case AsyncEventID.AsyncProfilerMetadata:
@@ -355,24 +360,28 @@ namespace System.Threading.Tasks.Tests
             return value;
         }
 
-        private static void SkipCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncCallstackType callstackType)
+        private static void SkipCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncEventID eventId, AsyncCallstackType callstackType)
         {
-            ReadCallstackPayload(buffer, ref index, callstackType, out _, out _, out _, out _);
+            ReadCallstackPayload(buffer, ref index, eventId, callstackType, out _, out _, out _, out _, out _);
         }
 
-        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
+        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncEventID eventId,
             out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            ReadCallstackPayload(buffer, ref index, AsyncCallstackType.Runtime, out _, out _, out frameCount, out frames);
+            ReadCallstackPayload(buffer, ref index, eventId, AsyncCallstackType.Runtime, out _, out _, out _, out frameCount, out frames);
         }
 
-        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncCallstackType callstackType,
-            out ulong taskId, out byte continuationIndex, out byte frameCount, out List<(ulong MethodId, int State)> frames)
+        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncEventID eventId, AsyncCallstackType callstackType,
+            out ulong parentDispatcherId, out ulong dispatcherId, out byte continuationIndex, out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
             index++; // Reserved callstack ID (for future callstack interning).
             continuationIndex = buffer[index++];
             frameCount = buffer[index++];
-            taskId = ReadCompressedUInt64(buffer, ref index);
+            // parentDispatcherId is only present on RuntimeAsync_CreateAsyncCallstack.
+            parentDispatcherId = eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack
+                ? ReadCompressedUInt64(buffer, ref index)
+                : 0;
+            dispatcherId = ReadCompressedUInt64(buffer, ref index);
             frames = new List<(ulong, int)>(frameCount);
 
             if (frameCount == 0)
@@ -445,13 +454,13 @@ namespace System.Threading.Tasks.Tests
 
             int index = 1;
             Deserializer.ReadUInt32(buffer, ref index, out uint totalSize);
-            Deserializer.ReadUInt32(buffer, ref index, out uint contextId);
+            Deserializer.ReadUInt32(buffer, ref index, out uint asyncThreadContextId);
             Deserializer.ReadUInt64(buffer, ref index, out ulong threadId);
             Deserializer.ReadUInt32(buffer, ref index, out uint eventCount);
             Deserializer.ReadUInt64(buffer, ref index, out ulong startTs);
             Deserializer.ReadUInt64(buffer, ref index, out ulong endTs);
 
-            return new EventBufferHeader(buffer[0], totalSize, contextId, threadId, eventCount, startTs, endTs);
+            return new EventBufferHeader(buffer[0], totalSize, asyncThreadContextId, threadId, eventCount, startTs, endTs);
         }
 
         private sealed class ParsedEvent
@@ -460,7 +469,9 @@ namespace System.Threading.Tasks.Tests
             public long Timestamp { get; init; }
             public ulong OsThreadId { get; init; }
 
-            public ulong TaskId { get; init; }
+            public ulong ParentDispatcherId { get; init; }
+
+            public ulong DispatcherId { get; init; }
 
             public AsyncCallstackType CallstackType { get; init; }
             public byte ContinuationIndex { get; init; }
@@ -497,7 +508,9 @@ namespace System.Threading.Tasks.Tests
         private sealed class ParsedEventStream
         {
             private readonly List<ParsedEvent> _events;
-            private Dictionary<ulong, List<ParsedEvent>>? _byTaskId;
+            private Dictionary<ulong, List<ParsedEvent>>? _byDispatcherId;
+            private Dictionary<ulong, ulong>? _parentOfDispatcher;
+            private Dictionary<ulong, List<ulong>>? _childrenOfDispatcher;
 
             public ParsedEventStream(List<ParsedEvent> events)
             {
@@ -522,37 +535,154 @@ namespace System.Threading.Tasks.Tests
                 return _events.Where(e => set.Contains(e.EventId));
             }
 
-            // Get events grouped by Task.Id, each group in timestamp order.
-            public Dictionary<ulong, List<ParsedEvent>> ByTaskId()
+            // Get events grouped by DispatcherId (the dispatcher that produced the event), each group in timestamp order.
+            public Dictionary<ulong, List<ParsedEvent>> ByDispatcherId()
             {
-                if (_byTaskId is not null)
+                if (_byDispatcherId is not null)
                 {
-                    return _byTaskId;
+                    return _byDispatcherId;
                 }
 
-                _byTaskId = new Dictionary<ulong, List<ParsedEvent>>();
+                _byDispatcherId = new Dictionary<ulong, List<ParsedEvent>>();
                 foreach (var evt in _events)
                 {
-                    if (evt.TaskId == 0)
+                    if (evt.DispatcherId == 0)
                     {
                         continue;
                     }
 
-                    if (!_byTaskId.TryGetValue(evt.TaskId, out var list))
+                    if (!_byDispatcherId.TryGetValue(evt.DispatcherId, out var list))
                     {
                         list = new List<ParsedEvent>();
-                        _byTaskId[evt.TaskId] = list;
+                        _byDispatcherId[evt.DispatcherId] = list;
                     }
 
                     list.Add(evt);
                 }
 
-                return _byTaskId;
+                return _byDispatcherId;
             }
 
-            // Get events for a specific Task.Id in timestamp order.
-            public List<ParsedEvent> ForTask(ulong taskId) =>
-                ByTaskId().TryGetValue(taskId, out var list) ? list : new List<ParsedEvent>();
+            // Get events for a specific DispatcherId in timestamp order.
+            public List<ParsedEvent> ForDispatcher(ulong dispatcherId) =>
+                ByDispatcherId().TryGetValue(dispatcherId, out var list) ? list : new List<ParsedEvent>();
+
+            // Walks Create events to build a dispatcher tree (parent and children maps).
+            // A parent edge is recorded only when the parent dispatcher itself has an observed
+            // Create event. If the parent was created before profiler attach (or otherwise not
+            // observed), the dispatcher is treated as a root: this prevents unrelated dispatchers
+            // that share an unobserved ancestor (e.g., the test harness) from being merged into
+            // one tree.
+            private void EnsureDispatcherTree()
+            {
+                if (_parentOfDispatcher is not null)
+                {
+                    return;
+                }
+
+                _parentOfDispatcher = new Dictionary<ulong, ulong>();
+                _childrenOfDispatcher = new Dictionary<ulong, List<ulong>>();
+
+                HashSet<ulong> dispatchersWithCreate = new HashSet<ulong>();
+                foreach (var evt in _events)
+                {
+                    bool isCreate = evt.EventId is
+                        AsyncEventID.TaskAsync_CreateAsyncContext or
+                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
+                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack;
+
+                    if (isCreate && evt.DispatcherId != 0)
+                    {
+                        dispatchersWithCreate.Add(evt.DispatcherId);
+                    }
+                }
+
+                foreach (var evt in _events)
+                {
+                    bool isCreate = evt.EventId is
+                        AsyncEventID.TaskAsync_CreateAsyncContext or
+                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
+                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack;
+
+                    if (!isCreate || evt.DispatcherId == 0)
+                    {
+                        continue;
+                    }
+
+                    ulong parent = evt.ParentDispatcherId;
+                    if (parent == 0 || !dispatchersWithCreate.Contains(parent))
+                    {
+                        // Parent not observed in this stream; treat this dispatcher as a root.
+                        _parentOfDispatcher[evt.DispatcherId] = 0;
+                        continue;
+                    }
+
+                    _parentOfDispatcher[evt.DispatcherId] = parent;
+
+                    if (!_childrenOfDispatcher.TryGetValue(parent, out var kids))
+                    {
+                        kids = new List<ulong>();
+                        _childrenOfDispatcher[parent] = kids;
+                    }
+
+                    if (!kids.Contains(evt.DispatcherId))
+                    {
+                        kids.Add(evt.DispatcherId);
+                    }
+                }
+            }
+
+            // Returns the root DispatcherId for the chain containing dispatcherId, by walking parent pointers.
+            // If no parent information is found (no Create event), returns dispatcherId itself.
+            public ulong RootOfDispatcher(ulong dispatcherId)
+            {
+                EnsureDispatcherTree();
+
+                ulong current = dispatcherId;
+                while (_parentOfDispatcher!.TryGetValue(current, out ulong parent) && parent != 0)
+                {
+                    current = parent;
+                }
+
+                return current;
+            }
+
+            // Returns the set of all dispatcher ids in the same chain (connected component) as dispatcherId.
+            // Walks up to the root via parent pointers, then collects all descendants via BFS.
+            public HashSet<ulong> ChainDispatcherIds(ulong dispatcherId)
+            {
+                EnsureDispatcherTree();
+
+                ulong root = RootOfDispatcher(dispatcherId);
+
+                var chain = new HashSet<ulong> { root };
+                var queue = new Queue<ulong>();
+                queue.Enqueue(root);
+
+                while (queue.Count > 0)
+                {
+                    ulong cur = queue.Dequeue();
+                    if (_childrenOfDispatcher!.TryGetValue(cur, out var kids))
+                    {
+                        foreach (var kid in kids)
+                        {
+                            if (chain.Add(kid))
+                            {
+                                queue.Enqueue(kid);
+                            }
+                        }
+                    }
+                }
+
+                return chain;
+            }
+
+            // Returns all events whose DispatcherId is in the same chain as dispatcherId, in timestamp order.
+            public List<ParsedEvent> ChainEventsFromDispatcher(ulong dispatcherId)
+            {
+                HashSet<ulong> chain = ChainDispatcherIds(dispatcherId);
+                return _events.Where(e => chain.Contains(e.DispatcherId)).ToList();
+            }
 
             // Get callstack events (of specified type) that contain the marker method in their frames.
             // Results are in timestamp order.
@@ -572,7 +702,7 @@ namespace System.Threading.Tasks.Tests
             public List<ParsedEvent> MergedResumeCallstacks()
             {
                 var result = new List<ParsedEvent>();
-                var openByTaskId = new Dictionary<ulong, int>();
+                var openByDispatcherId = new Dictionary<ulong, int>();
 
                 foreach (var evt in _events)
                 {
@@ -583,7 +713,7 @@ namespace System.Threading.Tasks.Tests
                         case AsyncEventID.TaskAsync_SuspendAsyncContext:
                         case AsyncEventID.TaskAsync_CompleteAsyncContext:
                         {
-                            openByTaskId.Remove(evt.TaskId);
+                            openByDispatcherId.Remove(evt.DispatcherId);
                             break;
                         }
                         case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
@@ -594,21 +724,22 @@ namespace System.Threading.Tasks.Tests
                                 EventId = evt.EventId,
                                 Timestamp = evt.Timestamp,
                                 OsThreadId = evt.OsThreadId,
-                                TaskId = evt.TaskId,
+                                ParentDispatcherId = evt.ParentDispatcherId,
+                                DispatcherId = evt.DispatcherId,
                                 CallstackType = evt.CallstackType,
                                 ContinuationIndex = evt.ContinuationIndex,
                                 FrameCount = evt.FrameCount,
                                 Frames = new List<(ulong MethodId, int State)>(evt.Frames),
                             };
 
-                            openByTaskId[evt.TaskId] = result.Count;
+                            openByDispatcherId[evt.DispatcherId] = result.Count;
                             result.Add(merged);
 
                             break;
                         }
                         case AsyncEventID.TaskAsync_AppendAsyncCallstack:
                         {
-                            if (openByTaskId.TryGetValue(evt.TaskId, out int idx))
+                            if (openByDispatcherId.TryGetValue(evt.DispatcherId, out int idx))
                             {
                                 ParsedEvent existing = result[idx];
                                 var combinedFrames = new List<(ulong MethodId, int State)>(existing.Frames);
@@ -619,7 +750,8 @@ namespace System.Threading.Tasks.Tests
                                     EventId = existing.EventId,
                                     Timestamp = existing.Timestamp,
                                     OsThreadId = existing.OsThreadId,
-                                    TaskId = existing.TaskId,
+                                    ParentDispatcherId = existing.ParentDispatcherId,
+                                    DispatcherId = existing.DispatcherId,
                                     CallstackType = existing.CallstackType,
                                     ContinuationIndex = existing.ContinuationIndex,
                                     FrameCount = (byte)Math.Min(combinedFrames.Count, byte.MaxValue),
@@ -639,25 +771,6 @@ namespace System.Threading.Tasks.Tests
             // in any of their merged frames.
             public List<ParsedEvent> MergedResumeCallstacksWithMarker(string markerMethodName) =>
                 MergedResumeCallstacks().Where(e => e.HasMarkerFrame(markerMethodName)).ToList();
-
-            // Get callstack events (of specified type) that contain the marker method,
-            // taking only the first match per Task.Id (deepest chain by timestamp).
-            public List<ParsedEvent> CallstacksWithMarkerFirstPerTask(AsyncEventID callstackEventId, string markerMethodName)
-            {
-                List<ParsedEvent> matched = CallstacksWithMarker(callstackEventId, markerMethodName);
-                var seen = new HashSet<ulong>();
-                var result = new List<ParsedEvent>();
-
-                foreach (var evt in matched)
-                {
-                    if (evt.TaskId != 0 && seen.Add(evt.TaskId))
-                    {
-                        result.Add(evt);
-                    }
-                }
-
-                return result;
-            }
 
             // Get all metadata events.
             public List<MetadataFromBuffer> MetadataEvents =>
@@ -680,8 +793,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ulong osThreadId = header.Value.OsThreadId;
-                ulong currentTaskId = 0;
-                var taskIdStack = new Stack<ulong>();
+                ulong currentDispatcherId = 0;
+                ulong currentParentDispatcherId = 0;
+                var dispatcherStack = new Stack<(ulong DispatcherId, ulong ParentDispatcherId)>();
                 int index = HeaderSize;
                 long baseTimestamp = (long)header.Value.StartTimestamp;
 
@@ -698,43 +812,48 @@ namespace System.Threading.Tasks.Tests
 
                     ParsedEvent evt = eventId switch
                     {
-                        AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.RuntimeAsync_ResumeAsyncContext or
-                        AsyncEventID.TaskAsync_CreateAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext =>
-                            ParseContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
+                        AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext =>
+                            ParseCreateContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
-                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext =>
-                            ParseCompleteContextEvent(eventId, baseTimestamp, osThreadId, ref currentTaskId, taskIdStack),
+                        AsyncEventID.RuntimeAsync_ResumeAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext =>
+                            ParseResumeContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index,
+                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_SuspendAsyncContext or
+                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext or
+                        AsyncEventID.RuntimeAsync_SuspendAsyncContext or AsyncEventID.TaskAsync_SuspendAsyncContext =>
+                            ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
+                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
+
                         AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod or
-                        AsyncEventID.TaskAsync_SuspendAsyncContext or
                         AsyncEventID.TaskAsync_ResumeAsyncMethod or AsyncEventID.TaskAsync_CompleteAsyncMethod =>
                             new ParsedEvent
                             {
                                 EventId = eventId,
                                 Timestamp = baseTimestamp,
                                 OsThreadId = osThreadId,
-                                TaskId = currentTaskId
+                                ParentDispatcherId = currentParentDispatcherId,
+                                DispatcherId = currentDispatcherId,
                             },
 
                         AsyncEventID.ResetAsyncThreadContext or AsyncEventID.ResetAsyncContinuationWrapperIndex =>
-                            ParseResetEvent(eventId, baseTimestamp, osThreadId, ref currentTaskId),
+                            ParseResetEvent(eventId, baseTimestamp, osThreadId,
+                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
 
                         AsyncEventID.RuntimeAsync_CreateAsyncCallstack or AsyncEventID.RuntimeAsync_ResumeAsyncCallstack or
                         AsyncEventID.RuntimeAsync_SuspendAsyncCallstack or
                         AsyncEventID.TaskAsync_ResumeAsyncCallstack or AsyncEventID.TaskAsync_AppendAsyncCallstack =>
-                            ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
+                            ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
                         AsyncEventID.RuntimeAsync_UnwindAsyncException or AsyncEventID.TaskAsync_UnwindAsyncException =>
-                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
+                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerMetadata =>
-                            ParseMetadataEvent(baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
+                            ParseMetadataEvent(baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerSyncClock =>
-                            ParseSyncClockEvent(baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
+                            ParseSyncClockEvent(baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
 
-                        _ => ParseUnknownEvent(eventId, baseTimestamp, osThreadId, currentTaskId, buffer, ref index)
+                        _ => ParseUnknownEvent(eventId, baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index)
                     };
 
                     allEvents.Add(evt);
@@ -743,48 +862,82 @@ namespace System.Threading.Tasks.Tests
 
             return new ParsedEventStream(allEvents);
 
-            static ParsedEvent ParseContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
+            static ParsedEvent ParseCreateContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
+                ReadOnlySpan<byte> buffer, ref int index)
             {
-                ulong id = ReadCompressedUInt64(buffer, ref index);
-                bool isResume = eventId is AsyncEventID.RuntimeAsync_ResumeAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext;
-                if (isResume && id != currentTaskId)
+                ulong parentDispatcherId = ReadCompressedUInt64(buffer, ref index);
+                ulong dispatcherId = ReadCompressedUInt64(buffer, ref index);
+                return new ParsedEvent
                 {
-                    taskIdStack.Push(currentTaskId);
+                    EventId = eventId,
+                    Timestamp = timestamp,
+                    OsThreadId = osThreadId,
+                    ParentDispatcherId = parentDispatcherId,
+                    DispatcherId = dispatcherId,
+                };
+            }
+
+            static ParsedEvent ParseResumeContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
+                ReadOnlySpan<byte> buffer, ref int index,
+                ref ulong currentDispatcherId, ref ulong currentParentDispatcherId,
+                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> dispatcherStack)
+            {
+                ulong dispatcherId = ReadCompressedUInt64(buffer, ref index);
+
+                dispatcherStack.Push((currentDispatcherId, currentParentDispatcherId));
+                currentDispatcherId = dispatcherId;
+                currentParentDispatcherId = 0;
+
+                return new ParsedEvent
+                {
+                    EventId = eventId,
+                    Timestamp = timestamp,
+                    OsThreadId = osThreadId,
+                    ParentDispatcherId = 0,
+                    DispatcherId = dispatcherId,
+                };
+            }
+
+            static ParsedEvent ParseEndContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
+                ref ulong currentDispatcherId, ref ulong currentParentDispatcherId,
+                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> dispatcherStack)
+            {
+                ulong endingDispatcherId = currentDispatcherId;
+                ulong endingParentDispatcherId = currentParentDispatcherId;
+
+                if (dispatcherStack.Count > 0)
+                {
+                    var top = dispatcherStack.Pop();
+                    currentDispatcherId = top.DispatcherId;
+                    currentParentDispatcherId = top.ParentDispatcherId;
+                }
+                else
+                {
+                    currentDispatcherId = 0;
+                    currentParentDispatcherId = 0;
                 }
 
-                currentTaskId = id;
-
                 return new ParsedEvent
                 {
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = id
+                    ParentDispatcherId = endingParentDispatcherId,
+                    DispatcherId = endingDispatcherId,
                 };
             }
 
-            static ParsedEvent ParseCompleteContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ref ulong currentTaskId, Stack<ulong> taskIdStack)
+            static ParsedEvent ParseResetEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
+                ref ulong currentDispatcherId, ref ulong currentParentDispatcherId,
+                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> dispatcherStack)
             {
-                ulong completedTaskId = currentTaskId;
-                currentTaskId = taskIdStack.Count > 0 ? taskIdStack.Pop() : 0;
-
-                return new ParsedEvent
-                {
-                    EventId = eventId,
-                    Timestamp = timestamp,
-                    OsThreadId = osThreadId,
-                    TaskId = completedTaskId
-                };
-            }
-
-            static ParsedEvent ParseResetEvent(AsyncEventID eventId, long timestamp, ulong osThreadId, ref ulong currentTaskId)
-            {
-                ulong prevTaskId = currentTaskId;
+                ulong prevDispatcherId = currentDispatcherId;
+                ulong prevParentDispatcherId = currentParentDispatcherId;
                 if (eventId == AsyncEventID.ResetAsyncThreadContext)
                 {
-                    currentTaskId = 0;
+                    dispatcherStack.Clear();
+                    currentDispatcherId = 0;
+                    currentParentDispatcherId = 0;
                 }
 
                 return new ParsedEvent
@@ -792,27 +945,24 @@ namespace System.Threading.Tasks.Tests
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = prevTaskId
+                    ParentDispatcherId = prevParentDispatcherId,
+                    DispatcherId = prevDispatcherId,
                 };
             }
 
             static ParsedEvent ParseCallstackEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
+                ReadOnlySpan<byte> buffer, ref int index)
             {
                 AsyncCallstackType callstackType = CallstackTypeFromEventId(eventId);
-                ReadCallstackPayload(buffer, ref index, callstackType, out ulong taskId, out byte continuationIndex, out byte frameCount, out var frames);
-                if (taskId != currentTaskId)
-                {
-                    taskIdStack.Push(currentTaskId);
-                    currentTaskId = taskId;
-                }
+                ReadCallstackPayload(buffer, ref index, eventId, callstackType, out ulong parentDispatcherId, out ulong dispatcherId, out byte continuationIndex, out byte frameCount, out var frames);
 
                 return new ParsedEvent
                 {
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = taskId,
+                    ParentDispatcherId = parentDispatcherId,
+                    DispatcherId = dispatcherId,
                     CallstackType = callstackType,
                     ContinuationIndex = continuationIndex,
                     FrameCount = frameCount,
@@ -820,7 +970,8 @@ namespace System.Threading.Tasks.Tests
                 };
             }
 
-            static ParsedEvent ParseUnwindEvent(AsyncEventID eventId, long timestamp, ulong osThreadId, ulong currentTaskId,
+            static ParsedEvent ParseUnwindEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
+                ulong currentDispatcherId, ulong currentParentDispatcherId,
                 ReadOnlySpan<byte> buffer, ref int index)
             {
                 uint unwindCount = ReadCompressedUInt32(buffer, ref index);
@@ -830,12 +981,14 @@ namespace System.Threading.Tasks.Tests
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = currentTaskId,
+                    ParentDispatcherId = currentParentDispatcherId,
+                    DispatcherId = currentDispatcherId,
                     UnwindFrameCount = unwindCount
                 };
             }
 
-            static ParsedEvent ParseMetadataEvent(long timestamp, ulong osThreadId, ulong currentTaskId,
+            static ParsedEvent ParseMetadataEvent(long timestamp, ulong osThreadId,
+                ulong currentDispatcherId, ulong currentParentDispatcherId,
                 ReadOnlySpan<byte> buffer, ref int index)
             {
                 ReadMetadataPayload(buffer, ref index, out ulong freq, out ulong qpcSync, out ulong utcSync, out uint bufSize, out byte wrapperCount);
@@ -845,12 +998,14 @@ namespace System.Threading.Tasks.Tests
                     EventId = AsyncEventID.AsyncProfilerMetadata,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = currentTaskId,
+                    ParentDispatcherId = currentParentDispatcherId,
+                    DispatcherId = currentDispatcherId,
                     Metadata = new MetadataFromBuffer(freq, qpcSync, utcSync, bufSize, wrapperCount)
                 };
             }
 
-            static ParsedEvent ParseSyncClockEvent(long timestamp, ulong osThreadId, ulong currentTaskId,
+            static ParsedEvent ParseSyncClockEvent(long timestamp, ulong osThreadId,
+                ulong currentDispatcherId, ulong currentParentDispatcherId,
                 ReadOnlySpan<byte> buffer, ref int index)
             {
                 ulong qpcSync = ReadCompressedUInt64(buffer, ref index);
@@ -861,14 +1016,16 @@ namespace System.Threading.Tasks.Tests
                     EventId = AsyncEventID.AsyncProfilerSyncClock,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = currentTaskId,
+                    ParentDispatcherId = currentParentDispatcherId,
+                    DispatcherId = currentDispatcherId,
                     SyncClockQpc = qpcSync,
                     SyncClockUtc = utcSync
                 };
             }
 
             static ParsedEvent ParseUnknownEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ulong currentTaskId, ReadOnlySpan<byte> buffer, ref int index)
+                ulong currentDispatcherId, ulong currentParentDispatcherId,
+                ReadOnlySpan<byte> buffer, ref int index)
             {
                 SkipEventPayload(eventId, buffer, ref index);
 
@@ -877,7 +1034,8 @@ namespace System.Threading.Tasks.Tests
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    TaskId = currentTaskId
+                    ParentDispatcherId = currentParentDispatcherId,
+                    DispatcherId = currentDispatcherId,
                 };
             }
         }
@@ -1053,9 +1211,9 @@ namespace System.Threading.Tasks.Tests
             }
             Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{markerMethodName}'");
 
-            ulong taskId = resumeStacks[0].TaskId;
+            ulong dispatcherId = resumeStacks[0].DispatcherId;
 
-            var sequence = stream.ForTask(taskId);
+            var sequence = stream.ChainEventsFromDispatcher(dispatcherId);
             int stackDepth = 0;
 
             foreach (var evt in sequence)
@@ -1090,25 +1248,25 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, stackDepth);
         }
 
-        private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong taskId, string chainName)
+        private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id is AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext);
             int completes = ids.Count(id => id is AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext);
-            Assert.True(creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
-            Assert.True(completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (TaskId {taskId}), got {completes}");
+            Assert.True(creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            Assert.True(completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
         }
 
         // V1-friendly variant: V1's per-MoveNext dispatcher model emits one Create per await
-        // suspension, so a method with N awaits produces N dispatchers / N Creates on the same
-        // TaskId. The invariant we can still assert is creates == completes (both >= 1).
-        private static void AssertCreateEqualsCompleteForTask(ParsedEventStream stream, ulong taskId, string chainName)
+        // suspension, so a method with N awaits produces N dispatchers / N Creates within the
+        // same dispatcher tree. The invariant we can still assert is creates == completes (both >= 1).
+        private static void AssertCreateEqualsCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id == AsyncEventID.TaskAsync_CreateAsyncContext);
             int completes = ids.Count(id => id == AsyncEventID.TaskAsync_CompleteAsyncContext);
-            Assert.True(creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
-            Assert.True(creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (TaskId {taskId}), got {creates} creates and {completes} completes");
+            Assert.True(creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            Assert.True(creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext
@@ -1246,14 +1404,14 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 Deserializer.ReadUInt32(buffer, ref index, out uint totalSize);
-                Deserializer.ReadUInt32(buffer, ref index, out uint contextId);
+                Deserializer.ReadUInt32(buffer, ref index, out uint asyncThreadContextId);
                 Deserializer.ReadUInt64(buffer, ref index, out ulong osThreadId);
                 Deserializer.ReadUInt32(buffer, ref index, out uint totalEventCount);
                 Deserializer.ReadUInt64(buffer, ref index, out ulong startTimestamp);
                 Deserializer.ReadUInt64(buffer, ref index, out ulong endTimestamp);
 
                 Console.WriteLine($"TotalSize: {totalSize}");
-                Console.WriteLine($"AsyncThreadContextId: {contextId}");
+                Console.WriteLine($"AsyncThreadContextId: {asyncThreadContextId}");
                 Console.WriteLine($"OSThreadId: {osThreadId}");
                 Console.WriteLine($"TotalEventCount: {totalEventCount}");
                 Console.WriteLine($"StartTimestamp: 0x{startTimestamp:X16}");
@@ -1351,16 +1509,18 @@ namespace System.Threading.Tasks.Tests
             private static int OutputCreateAsyncContextEvent(ReadOnlySpan<byte> buffer)
             {
                 int index = 0;
-                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong id);
-                Console.WriteLine($"  ID: {id}");
+                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong parentDispatcherId);
+                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong dispatcherId);
+                Console.WriteLine($"  ParentDispatcherId: {parentDispatcherId}");
+                Console.WriteLine($"  DispatcherId: {dispatcherId}");
                 return index;
             }
 
             private static int OutputResumeAsyncContextEvent(ReadOnlySpan<byte> buffer)
             {
                 int index = 0;
-                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong id);
-                Console.WriteLine($"  ID: {id}");
+                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong dispatcherId);
+                Console.WriteLine($"  DispatcherId: {dispatcherId}");
                 return index;
             }
 
@@ -1448,7 +1608,8 @@ namespace System.Threading.Tasks.Tests
 
             private static int OutputAsyncCallstackEvent(AsyncEventID eventId, ReadOnlySpan<byte> buffer)
             {
-                ulong id;
+                ulong parentDispatcherId = 0;
+                ulong dispatcherId;
                 byte callstackId;
                 byte continuationIndex;
                 byte asyncCallstackLength;
@@ -1461,9 +1622,17 @@ namespace System.Threading.Tasks.Tests
                 callstackId = buffer[index++];
                 continuationIndex = buffer[index++];
                 asyncCallstackLength = buffer[index++];
-                Deserializer.ReadCompressedUInt64(buffer, ref index, out id);
+                if (eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack)
+                {
+                    Deserializer.ReadCompressedUInt64(buffer, ref index, out parentDispatcherId);
+                }
+                Deserializer.ReadCompressedUInt64(buffer, ref index, out dispatcherId);
 
-                Console.WriteLine($"  ID: {id}");
+                if (eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack)
+                {
+                    Console.WriteLine($"  ParentDispatcherId: {parentDispatcherId}");
+                }
+                Console.WriteLine($"  DispatcherId: {dispatcherId}");
                 Console.WriteLine($"  CallstackId: {callstackId}");
                 Console.WriteLine($"  ContinuationIndex: {continuationIndex}");
                 Console.WriteLine($"  Length: {asyncCallstackLength}");
