@@ -272,73 +272,15 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
-    GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-    m_preferredBound          = m_compiler->vnStore->VNConservativeNormalValue(bndsChk->GetArrayLength()->gtVNPair);
-    GenTree* treeIndex        = bndsChk->GetIndex();
+    GenTree*          comma     = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
+    GenTreeBoundsChk* bndsChk   = tree->AsBoundsChk();
+    GenTree*          treeIndex = bndsChk->GetIndex();
 
     // Take care of constant index first, like a[2], for example.
-    ValueNum idxVn    = m_compiler->vnStore->VNConservativeNormalValue(treeIndex->gtVNPair);
-    ValueNum arrLenVn = m_compiler->vnStore->VNConservativeNormalValue(bndsChk->GetArrayLength()->gtVNPair);
-    int      arrSize  = 0;
+    ValueNum idxVn    = m_compiler->optConservativeNormalVN(treeIndex);
+    ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
 
-    if (m_compiler->vnStore->IsVNConstant(arrLenVn))
-    {
-        ssize_t      constVal  = -1;
-        GenTreeFlags iconFlags = GTF_EMPTY;
-
-        if (m_compiler->optIsTreeKnownIntValue(true, bndsChk->GetArrayLength(), &constVal, &iconFlags))
-        {
-            arrSize = (int)constVal;
-        }
-    }
-    else
-    {
-        arrSize = GetArrLength(arrLenVn);
-
-        // if we can't find the array length, see if there
-        // are any assertions about the array size we can use to get a minimum length
-        if (arrSize <= 0)
-        {
-            JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
-            Range arrLength = Range(Limit(Limit::keDependent));
-            MergeEdgeAssertions(m_compiler, arrLenVn, arrLenVn, block->bbAssertionIn, &arrLength);
-            if (arrLength.lLimit.IsConstant())
-            {
-                arrSize = arrLength.lLimit.GetConstant();
-            }
-            else
-            {
-                // Fast path didn't find anything - do the slow SSA-based search.
-                arrLength = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
-                if (arrLength.lLimit.IsConstant())
-                {
-                    arrSize = arrLength.lLimit.GetConstant();
-                }
-            }
-        }
-    }
-
-    JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
-    if (m_compiler->vnStore->IsVNConstant(idxVn) && (arrSize > 0))
-    {
-        ssize_t      idxVal    = -1;
-        GenTreeFlags iconFlags = GTF_EMPTY;
-        if (!m_compiler->optIsTreeKnownIntValue(true, treeIndex, &idxVal, &iconFlags))
-        {
-            return;
-        }
-
-        JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %d in <0, arrLenVn " FMT_VN " sz:%d>.\n", idxVal, arrLenVn,
-                arrSize);
-        if ((idxVal < arrSize) && (idxVal >= 0))
-        {
-            JITDUMP("Removing range check\n");
-            m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-            m_updateStmt = true;
-            return;
-        }
-    }
+    m_preferredBound = arrLenVn;
 
     // Special case: arr[arr.Length - CNS] if we know that arr.Length >= CNS
     // We assume that SUB(x, CNS) is canonized into ADD(x, -CNS)
@@ -427,6 +369,9 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     {
         return;
     }
+
+    Range arrSizeRng = GetRangeFromAssertions(m_compiler, arrLenVn, block->bbAssertionIn);
+    int   arrSize    = arrSizeRng.LowerLimit().GetConstant();
 
     // Is the range between the lower and upper bound values.
     if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
