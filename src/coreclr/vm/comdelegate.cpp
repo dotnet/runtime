@@ -2798,7 +2798,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
     // that has the LoaderAllocator of the collectible assembly associated with the instantiation
-    // stored in the MethodInfo cache.
+    // stored in the _invocationList field.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
     if (isStatic)
@@ -2882,7 +2882,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     //
     // 7 - Needs special handling
     //
-    // With collectible types, we need to fill the _methodBase field in with a value that represents the LoaderAllocator of the target method
+    // With collectible types, we need to fill the _invocationList field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
     //
     // There are two techniques that will work for this.

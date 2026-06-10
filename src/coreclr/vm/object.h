@@ -1759,7 +1759,7 @@ public:
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
 
     MethodDesc* GetMethodDesc() { LIMITED_METHOD_CONTRACT; return _methodDesc; }
-    void SetMethodDesc(MethodDesc* methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodDesc = methodPtrAux; }
+    void SetMethodDesc(MethodDesc* methodDesc) { LIMITED_METHOD_CONTRACT; _methodDesc = methodDesc; }
     static int GetOffsetOfMethodDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
 
     PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }

@@ -17,10 +17,11 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
-        // This is set under 3 circumstances
+        // This is set under 4 circumstances
         // 1. Multicast delegate
         // 2. Wrapper delegate
         // 3. DynamicMethods
+        // 4. Collectible delegates
         private object? _invocationList; // Initialized by VM as needed
         private nint _invocationCount;
 
