@@ -135,7 +135,8 @@ class ObjectAllocator final : public Phase
         OAT_NONE,
         OAT_NEWOBJ,
         OAT_NEWOBJ_HEAP,
-        OAT_NEWARR
+        OAT_NEWARR,
+        OAT_NEWSTR
     };
 
     struct AllocationCandidate
@@ -252,6 +253,7 @@ private:
     void         MorphAllocObjNode(AllocationCandidate& candidate);
     bool         MorphAllocObjNodeHelper(AllocationCandidate& candidate);
     bool         MorphAllocObjNodeHelperArr(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperStr(AllocationCandidate& candidate);
     bool         MorphAllocObjNodeHelperObj(AllocationCandidate& candidate);
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
