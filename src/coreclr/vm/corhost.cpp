@@ -564,6 +564,11 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
         UnmanagedCallersOnlyCaller setup(METHOD__APPCONTEXT__SETUP);
         setup.InvokeThrowing(pPropertyNames, pPropertyValues, nProperties);
+
+        // Initialize the InvariantCulture such that it can be safely used when creating
+        // stack traces under high memory pressure. This must happen after AppContext.Setup
+        // so that GlobalizationMode can read configuration switches from runtimeconfig.json.
+        CoreLibBinder::GetClass(CLASS__CULTURE_INFO)->CheckRunClassInitThrowing();
     }
 
     LPCWSTR pwzNativeDllSearchDirectories = NULL;

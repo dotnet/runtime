@@ -2767,10 +2767,6 @@ void AppDomain::SetupSharedStatics()
     OBJECTREF* pEmptyStringHandle = (OBJECTREF*)
         ((TADDR)g_pStringClass->GetDynamicStaticsInfo()->GetGCStaticsPointer()+pEmptyStringFD->GetOffset());
     SetObjectReference( pEmptyStringHandle, StringObject::GetEmptyString());
-
-    // Initialize the InvariantCulture such that it can be safely used when creating
-    // stack traces under high memory pressure.
-    CoreLibBinder::GetClass(CLASS__CULTURE_INFO)->CheckRunClassInitThrowing();
 }
 
 Assembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions options/* = FindAssemblyOptions_None*/)
