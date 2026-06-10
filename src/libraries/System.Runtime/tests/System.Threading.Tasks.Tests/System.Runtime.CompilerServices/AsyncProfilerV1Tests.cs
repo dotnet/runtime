@@ -1147,7 +1147,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void TaskAsync_CallstackStressWithVaryingDepths()
         {
-            const int iterations = 50;
+            const int iterations = 100;
             int[] depths = new int[iterations];
             var rng = new Random(42);
             for (int i = 0; i < iterations; i++)
@@ -1223,7 +1223,7 @@ namespace System.Threading.Tasks.Tests
                 RunScenarioAndFlush(() => TaskAsync_WaitThenYield_BalancesResumeAndComplete_Marker());
             });
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
