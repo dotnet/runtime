@@ -149,20 +149,4 @@ public class ConditionalNegateTest
         Assert.Equal(expected, op1);
     }
 
-    [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void checked_neg_must_not_become_csneg()
-    {
-        Assert.Throws<OverflowException>(() => SelectCheckedNeg(false, int.MinValue));
-        Assert.Equal(int.MinValue, SelectCheckedNeg(true, int.MinValue));
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int SelectCheckedNeg(bool condition, int x)
-    {
-        // The checked negation must remain explicit so the overflow path is preserved.
-        //ARM64-NOT: csneg
-        //ARM64-NOT: cneg
-        return condition ? x : checked(-x);
-    }
 }

@@ -3395,7 +3395,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         var_types lclType    = genActualType(lclNode);
         var_types selectType = genActualType(select);
 
-        if (genTypeSize(lclType) != genTypeSize(selectType))
+        if (lclType != selectType)
         {
             return;
         }
