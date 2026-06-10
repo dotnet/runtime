@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     coherentState.RemoveEntry(priorEntry, _options);
                 }
             }
-            else if (!UpdateCacheSizeExceedsCapacity(entry, priorEntry, coherentState))
+            else if (!UpdateCacheSizeExceedsCapacity(entry, coherentState))
             {
                 bool entryAdded;
                 if (priorEntry == null)
@@ -177,11 +177,25 @@ namespace Microsoft.Extensions.Caching.Memory
                     // Try to update with the new entry if a previous entries exist.
                     entryAdded = coherentState.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (!entryAdded)
+                    if (entryAdded)
+                    {
+                        if (_options.HasSizeLimit)
+                        {
+                            // The prior entry was atomically replaced by this entry via TryUpdate, so
+                            // no other path can also remove (and decrement) it. Decrement its size here
+                            // exactly once, tied to the swap we performed. Doing this speculatively
+                            // inside UpdateCacheSizeExceedsCapacity (before the swap) races with a
+                            // concurrent RemoveEntry of the prior entry and double-counts the decrement,
+                            // drifting _cacheSize negative and permanently blocking all future inserts.
+                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
+                        }
+                    }
+                    else
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
+                        // The prior entry's size is decremented by whichever path removed it, not here.
                         entryAdded = coherentState.TryAdd(entry.Key, entry);
                     }
                 }
@@ -194,8 +208,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (_options.HasSizeLimit)
                     {
-                        // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
+                        // Entry could not be added, roll back the size increment for this entry only.
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -526,7 +540,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <see langword="true" /> if increasing the cache size would
         /// cause it to exceed the size limit; otherwise, <see langword="false" />.
         /// </returns>
-        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CacheEntry? priorEntry, CoherentState coherentState)
+        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
             if (sizeLimit < 0)
@@ -537,12 +551,10 @@ namespace Microsoft.Extensions.Caching.Memory
             long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
+                // Only the new entry's size is committed here. The prior entry's size (for a replace)
+                // is decremented by the caller, atomically with the actual dictionary swap, so that it
+                // cannot race with a concurrent removal of the prior entry and be subtracted twice.
                 long newSize = sizeRead + entry.Size;
-                if (priorEntry != null)
-                {
-                    Debug.Assert(entry.Key == priorEntry.Key);
-                    newSize -= priorEntry.Size;
-                }
 
                 if ((ulong)newSize > (ulong)sizeLimit)
                 {
