@@ -37,11 +37,19 @@
 
 #include <minipal/guid.h>
 
+<<<<<<< wasm_eh_infra
 constexpr GUID JITEEVersionIdentifier = { /* 61e50dd4-fda2-4184-a348-f64e501d6c60 */
     0x61e50dd4,
     0xfda2,
     0x4184,
     {0xa3, 0x48, 0xf6, 0x4e, 0x50, 0x1d, 0x6c, 0x60}
+=======
+constexpr GUID JITEEVersionIdentifier = { /* 59df85b8-c0fd-4e40-aea1-68cb2cd916cc */
+    0x59df85b8,
+    0xc0fd,
+    0x4e40,
+    {0xae, 0xa1, 0x68, 0xcb, 0x2c, 0xd9, 0x16, 0xcc}
+>>>>>>> main
   };
 
 #endif // JIT_EE_VERSIONING_GUID_H
