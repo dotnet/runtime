@@ -2361,7 +2361,7 @@ namespace System.Threading.Tasks.Tests
             await innerDone.Task;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public async Task RuntimeAsync_ResetContext_ReplaysMultipleDispatchers()
         {
             var events = await CollectEventsAsync(AllKeywords, async () =>

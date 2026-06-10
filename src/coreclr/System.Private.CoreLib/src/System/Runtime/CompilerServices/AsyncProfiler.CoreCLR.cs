@@ -408,8 +408,11 @@ namespace System.Runtime.CompilerServices
         {
             private static unsafe void ResumeAsyncCallstacks(AsyncThreadContext context)
             {
-                //Write recursively all the resume async callstack events for both AsyncDispatcherInfo (V2) and AsyncTaskDispatcherInfo (V1).
-                //Ordered by their stack location, largest address first (assumes stack grow downwards).
+                // Replay suspended dispatchers in original execution (push) order. Both TLS chains
+                // (V2 AsyncDispatcherInfo and V1 AsyncTaskDispatcherInfo) are linked head=most-recent,
+                // so head has the smallest stack address (downward-growing stacks). The walker
+                // recurses to Next BEFORE emitting, producing oldest-first emission, and merges the
+                // two chains by always recursing on the smaller-address node first.
                 AsyncDispatcherInfo* runtimeAsyncInfo = AsyncDispatcherInfo.t_current;
                 AsyncTaskDispatcherInfo* taskAsyncInfo = AsyncTaskDispatcherInfo.t_current;
 
