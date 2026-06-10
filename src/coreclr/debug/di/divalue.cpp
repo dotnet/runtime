@@ -1117,7 +1117,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
             else
             {
                 RSSmartPtr<CordbObjectValue> pObj;
-                TargetBuffer remoteValue(PTR_TO_CORDB_ADDRESS(pInfo->objRef), (ULONG)pInfo->objSize);
+                TargetBuffer remoteValue(pInfo->objRef, (ULONG)pInfo->objSize);
                 // Note: we call Init() by default when we create (or refresh) a reference value, so we
                 // never have to do it again.
                 EX_TRY
