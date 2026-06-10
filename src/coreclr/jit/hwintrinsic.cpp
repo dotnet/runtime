@@ -1047,6 +1047,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #elif defined(TARGET_WASM)
+    { NI_Illegal, NI_Illegal },                                 //      WasmBase
+    { NI_Illegal, NI_Illegal },                                 //      PackedSimd
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
     // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
@@ -1094,9 +1096,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
 
 static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntrinsicIsaRange& isaRange)
 {
-#ifdef TARGET_WASM
-    NYI_WASM_SIMD("ValidateHWIntrinsicIsaRange");
-#endif
+    // Wasm: keep validation enabled once ISA ranges and lists are properly defined/sorted.
     // Both entries should be illegal if either is
     if (isaRange.FirstId == NI_Illegal)
     {
