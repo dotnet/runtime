@@ -147,9 +147,16 @@ namespace System.Net.Sockets
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
 
+            // _currentOutgoingConnectAttempts tracks managed Connect calls. A non-blocking Connect call
+            // can return WouldBlock (Windows) or InProgress (Unix) while the OS connect attempt remains
+            // pending after this method decrements that counter; its eventual outcome is not observable
+            // here. Don't report these pending results as failures.
+            // See https://github.com/dotnet/runtime/issues/129252
+            bool connectPending = error is SocketError.WouldBlock or SocketError.InProgress;
+
             if (activity is not null)
             {
-                if (error != SocketError.Success)
+                if (error != SocketError.Success && !connectPending)
                 {
                     activity.SetStatus(ActivityStatusCode.Error);
                     activity.SetTag("error.type", GetErrorType(error));
@@ -163,7 +170,7 @@ namespace System.Net.Sockets
                 Debug.Assert(exceptionMessage is null);
                 Interlocked.Increment(ref _outgoingConnectionsEstablished);
             }
-            else
+            else if (!connectPending)
             {
                 ConnectFailed(error, exceptionMessage);
             }
