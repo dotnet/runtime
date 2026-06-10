@@ -373,6 +373,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129228")]
         public void StructureToPtr_ByValTStr_MultiByte_Overflow()
         {
             // ByValTStr uses UTF-8 on Unix. € is 3 bytes, so the string exceeds the specified SizeConst
