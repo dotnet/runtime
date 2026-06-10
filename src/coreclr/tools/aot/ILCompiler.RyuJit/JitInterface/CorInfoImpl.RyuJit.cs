@@ -2346,15 +2346,13 @@ namespace Internal.JitInterface
                         .GetPreinitializationInfo(owningType).GetFieldValue(field);
 
                     int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
-                    bool isObjectHandleBuffer =
-                        (valueOffset == 0) && ((bufferSize == targetPtrSize) || (bufferSize == sizeof(nint)));
 
                     if (value == null)
                     {
-                        if (isObjectHandleBuffer)
+                        if ((valueOffset == 0) && (bufferSize == targetPtrSize))
                         {
                             // Write "null" to buffer
-                            new Span<byte>(buffer, bufferSize).Clear();
+                            new Span<byte>(buffer, targetPtrSize).Clear();
                             return true;
                         }
                         else
@@ -2376,13 +2374,11 @@ namespace Internal.JitInterface
                                 return false;
 
                             case FrozenObjectNode:
-                                if (isObjectHandleBuffer)
+                                if ((valueOffset == 0) && (bufferSize == targetPtrSize))
                                 {
                                     // save handle's value to buffer
                                     nint handle = ObjectToHandle(data);
-                                    Span<byte> destination = new Span<byte>(buffer, bufferSize);
-                                    destination.Clear();
-                                    new ReadOnlySpan<byte>(&handle, Math.Min(sizeof(nint), bufferSize)).CopyTo(destination);
+                                    new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
                                     return true;
                                 }
                                 return false;

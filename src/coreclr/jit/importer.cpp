@@ -3983,9 +3983,8 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     uint8_t   buffer[bufferSize] = {0};
     if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType == TYP_REF))
     {
-        const int fieldValueSize = (fieldType == TYP_REF) ? (int)sizeof(ssize_t) : genTypeSize(fieldType);
-        assert(bufferSize >= fieldValueSize);
-        if (info.compCompHnd->getStaticFieldContent(field, buffer, fieldValueSize))
+        assert(bufferSize >= genTypeSize(fieldType));
+        if (info.compCompHnd->getStaticFieldContent(field, buffer, genTypeSize(fieldType)))
         {
             GenTree* cnsValue = gtNewGenericCon(fieldType, buffer);
             if (cnsValue != nullptr)

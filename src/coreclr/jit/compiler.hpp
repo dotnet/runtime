@@ -2095,7 +2095,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             assert(type != TYP_LONG);
 #endif
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
-            if (!varTypeIsGC(type) && (genTypeSize(type) <= genTypeSize(TYP_INT)))
+            if (genTypeSize(type) <= genTypeSize(TYP_INT))
             {
                 assert(FitsIn<int32_t>(value));
             }
