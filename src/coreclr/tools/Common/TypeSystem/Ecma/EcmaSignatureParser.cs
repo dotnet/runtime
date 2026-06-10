@@ -612,6 +612,18 @@ namespace Internal.TypeSystem.Ecma
                         }
                     }
                     break;
+                case NativeTypeKind.IUnknown:
+                case NativeTypeKind.IDispatch:
+                case NativeTypeKind.Intf:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            // There's nobody to consume COM marshalling, so let's just parse the data
+                            // to avoid asserting later.
+                            _reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
                 case NativeTypeKind.CustomMarshaler:
                     {
                         // Read typelib guid

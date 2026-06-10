@@ -629,17 +629,33 @@ public:
                 BasicBlock* const header = m_dfsTree->GetPostOrder(poHeaderNumber);
                 if (dispatcher == nullptr)
                 {
-                    if ((EnclosingTryIndex() > 0) || (EnclosingHndIndex() > 0))
+                    // If one of the SCC headers is also a Wasm try entry, the dispatcher must go
+                    // inside that try region. Otherwise the dispatcher's case branch to the try
+                    // body would enter the try at a non-ebdTryBeg block, which FlowGraphTryRegions::Build
+                    // rejects as a "middle-entry".
+                    //
+                    unsigned    dispatchTryIndex = EnclosingTryIndex();
+                    unsigned    dispatchHndIndex = EnclosingHndIndex();
+                    BasicBlock* nearBlk          = nullptr;
+
+                    if (wasmTryHeader != nullptr)
                     {
-                        const bool inTry = ((EnclosingTryIndex() != 0) && (EnclosingHndIndex() == 0)) ||
-                                           (EnclosingTryIndex() < EnclosingHndIndex());
+                        dispatchTryIndex = wasmTryHeader->bbTryIndex;
+                        dispatchHndIndex = wasmTryHeader->bbHndIndex;
+                        nearBlk          = wasmTryHeader;
+                    }
+
+                    if ((dispatchTryIndex > 0) || (dispatchHndIndex > 0))
+                    {
+                        const bool inTry = ((dispatchTryIndex != 0) && (dispatchHndIndex == 0)) ||
+                                           (dispatchTryIndex < dispatchHndIndex);
                         if (inTry)
                         {
-                            JITDUMP("Dispatch header needs to go in try of EH#%02u ...\n", EnclosingTryIndex() - 1);
+                            JITDUMP("Dispatch header needs to go in try of EH#%02u ...\n", dispatchTryIndex - 1);
                         }
                         else
                         {
-                            JITDUMP("Dispatch header needs to go in handler of EH#%02u ...\n", EnclosingHndIndex() - 1);
+                            JITDUMP("Dispatch header needs to go in handler of EH#%02u ...\n", dispatchHndIndex - 1);
                         }
                     }
                     else
@@ -647,8 +663,7 @@ public:
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
 
-                    dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
-                                                             /* nearBlk */ nullptr);
+                    dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, dispatchTryIndex, dispatchHndIndex, nearBlk);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
@@ -658,21 +673,28 @@ public:
                 //
                 BasicBlock* inboundTarget = dispatcher;
 
-                // But if the header X is a in Wasm try region, and some other header T is the entry
-                // of that try region, we need to handle flow to X specially. It must route
-                // through T, and then to the dispatcher, and then to X.
+                // With the dispatcher inside the Wasm try region, every external pred must enter
+                // the try via its ebdTryBeg (the Wasm try header) before reaching the dispatcher.
+                // For headers other than the Wasm try header itself, redirect preds to the Wasm
+                // try header; the dispatcher then branches back out to the chosen header. When
+                // header == wasmTryHeader, inboundTarget == header so no rewrite happens.
                 //
-                // TODO: verify we don't have cross-jumping from sibling trys. In other words
-                // all the edges incident on the wasm try header should either be from blocks in enclosing
-                // trys or from blocks enclosed in this try, not from within some sibling try
-                //
-                // We can likely rule that case out earlier when we build try regions.
-                //
-                if (header->hasTryIndex() && (wasmTryHeader != nullptr) &&
-                    (header->getTryIndex() == wasmTryHeader->getTryIndex()))
+                if (wasmTryHeader != nullptr)
                 {
-                    JITDUMP("Will route flow to " FMT_BB " via Wasm try header " FMT_BB "\n", header->bbNum,
-                            wasmTryHeader->bbNum);
+                    // The dispatcher (inside the Wasm try) can only safely branch to headers in
+                    // a try region that encloses the Wasm try region. A header in a sibling or
+                    // deeper-nested try would force a middle-entry edge on its boundary.
+                    //
+                    if (header->hasTryIndex() && !m_compiler->bbInTryRegions(header->getTryIndex(), wasmTryHeader))
+                    {
+                        NYI_WASM("SCC entry header in a try region that does not enclose the Wasm try header");
+                    }
+
+                    if (header != wasmTryHeader)
+                    {
+                        JITDUMP("Will route flow to " FMT_BB " via Wasm try header " FMT_BB "\n", header->bbNum,
+                                wasmTryHeader->bbNum);
+                    }
                     inboundTarget = wasmTryHeader;
                 }
 
@@ -2585,6 +2607,16 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
     for (FuncInfoDsc* const func : Funcs())
     {
+        func->startVirtualIP = virtualIP;
+
+        if (func->IsMethod())
+        {
+            // We use Virtual IP as length, and need a value to represent
+            // the prolog, so bump by 1 before we get to any EH or GC point.
+            //
+            virtualIP += 1;
+        }
+
         for (BasicBlock* const block : func->Blocks(this))
         {
             EHblkDsc* const hndDsc = ehGetBlockHndDsc(block);
@@ -2687,6 +2719,13 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 virtualIP++;
             }
         }
+
+        if (func->IsMethod())
+        {
+            virtualIP += 1;
+        }
+
+        func->endVirtualIP = virtualIP;
     }
 
 #ifdef DEBUG
@@ -2711,6 +2750,22 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
             JITDUMP(" Handler [%04u..%04u)\n", clauses[clauseIndex].clause.HandlerOffset,
                     clauses[clauseIndex].clause.HandlerLength);
+        }
+
+        // Verify that funclet Virtual IP ranges are disjoint.
+        //
+        for (FuncInfoDsc* const func1 : Funcs())
+        {
+            for (FuncInfoDsc* const func2 : Funcs())
+            {
+                if (func1 == func2)
+                {
+                    break;
+                }
+
+                assert((func1->endVirtualIP <= func2->startVirtualIP) ||
+                       (func2->endVirtualIP <= func1->startVirtualIP));
+            }
         }
     }
 #endif // DEBUG

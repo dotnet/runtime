@@ -124,7 +124,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void SymbolMapFileEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
 

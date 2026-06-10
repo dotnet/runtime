@@ -194,14 +194,6 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
     }
 }
 
-#ifdef TARGET_WASM
-// Unused on WASM
-#define SAVE_THE_LOWEST_SP do {} while (0)
-#else
-// Save the lowest SP in the current method so that we can identify it by that during stackwalk
-#define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
-#endif // !TARGET_WASM
-
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(ManagedMethodParam *pParam);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
@@ -1333,6 +1325,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
+    TADDR resumeSP = 0;
+    TADDR resumeIP = 0;
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -1381,8 +1376,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
     uint32_t opcode;
-
-    SAVE_THE_LOWEST_SP;
 
 MAIN_LOOP:
     try
@@ -3342,7 +3335,6 @@ SWITCH_OPCODE:
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                     pChildFrame->pNext = NULL;
                                     pFrame->pNext = pChildFrame;
-                                    SAVE_THE_LOWEST_SP;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -3443,7 +3435,6 @@ CALL_INTERP_METHOD:
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
-                                SAVE_THE_LOWEST_SP;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -4277,7 +4268,6 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
-                            SAVE_THE_LOWEST_SP;
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
@@ -4581,7 +4571,7 @@ do                                                                      \
 
                     // Explicitly copy the return value from the continuation's result storage
                     // to the interpreter stack.
-                    if (pAsyncSuspendData->returnValueContinuationDataSize > 0)
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
                     {
                         memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
                                continuation->GetResultStorage(),
@@ -4637,8 +4627,7 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        TADDR resumeSP;
-        TADDR resumeIP;
+        GCX_COOP_NO_DTOR();
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
@@ -4652,7 +4641,9 @@ do                                                                      \
                 // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
                 // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
                 // Thus, we need to rethrow it to let it propagate further.
-                throw;
+                // We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating,
+                // tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295
+                goto RETHROW_RESUME_AFTER_CATCH;
             }
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
@@ -4704,6 +4695,11 @@ EXIT_FRAME:
     }
 
     pThreadContext->pStackPointer = pFrame->pStack;
+    return;
+
+RETHROW_RESUME_AFTER_CATCH:
+    // Rethrow the exception to let it propagate to the correct resume frame
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #endif // FEATURE_INTERPRETER

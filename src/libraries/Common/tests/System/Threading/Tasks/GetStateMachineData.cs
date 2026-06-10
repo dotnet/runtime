@@ -54,7 +54,9 @@ namespace System.Threading.Tasks
 
                 // Try to get the StateMachine field from the AsyncStateMachineBox<>.  If we can't,
                 // just print out the details we can and bail.
+#pragma warning disable IL2075 // This is dead code after runtime async.
                 FieldInfo stateMachineField = box.GetType().GetField("StateMachine", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+#pragma warning restore IL2075
                 if (stateMachineField is null)
                 {
                     sb.Append(indent).AppendLine($"(Couldn't get state machine field from {box}.)");
@@ -75,7 +77,9 @@ namespace System.Threading.Tasks
                 sb.Append(indent).AppendLine(stateMachineType.FullName);
 
                 // Get all of the fields on the state machine, and print them all out.
+#pragma warning disable IL2075 // This is dead code after runtime async.
                 FieldInfo[] fields = stateMachineType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+#pragma warning restore IL2075
                 foreach (FieldInfo fi in fields)
                 {
                     // Print out the field name and its value.
@@ -85,7 +89,9 @@ namespace System.Threading.Tasks
                     // If the field is an awaiter, recursively examine any tasks it directly references.
                     if (fiValue is ICriticalNotifyCompletion)
                     {
+#pragma warning disable IL2075 // This is dead code after runtime async.
                         foreach (FieldInfo possibleTask in fiValue.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+#pragma warning restore IL2075
                         {
                             if (possibleTask.GetValue(fiValue) is Task awaitedTask)
                             {

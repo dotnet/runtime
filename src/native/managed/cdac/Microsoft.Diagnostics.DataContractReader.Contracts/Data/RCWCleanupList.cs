@@ -3,15 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RCWCleanupList : IData<RCWCleanupList>
+[CdacType(nameof(DataType.RCWCleanupList))]
+internal sealed partial class RCWCleanupList : IData<RCWCleanupList>
 {
-    static RCWCleanupList IData<RCWCleanupList>.Create(Target target, TargetPointer address) => new RCWCleanupList(target, address);
-    public RCWCleanupList(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.RCWCleanupList);
-
-        FirstBucket = target.ReadPointerField(address, type, nameof(FirstBucket));
-    }
-
-    public TargetPointer FirstBucket { get; init; }
+    [Field] public TargetPointer FirstBucket { get; }
 }

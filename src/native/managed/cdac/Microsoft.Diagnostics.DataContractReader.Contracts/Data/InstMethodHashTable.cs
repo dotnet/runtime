@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class InstMethodHashTable : IData<InstMethodHashTable>
+[CdacType(nameof(DataType.InstMethodHashTable))]
+internal sealed partial class InstMethodHashTable : IData<InstMethodHashTable>
 {
     private const ulong FLAG_MASK = 0x3ul;
 
-    static InstMethodHashTable IData<InstMethodHashTable>.Create(Target target, TargetPointer address) => new InstMethodHashTable(target, address);
-    public InstMethodHashTable(Target target, TargetPointer address)
+    public IReadOnlyList<Entry> Entries { get; private set; }
+
+    [MemberNotNull(nameof(Entries))]
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InstMethodHashTable);
-
         DacEnumerableHash baseHashTable = new(target, address, type);
 
         List<Entry> entries = [];
@@ -25,8 +27,6 @@ internal sealed class InstMethodHashTable : IData<InstMethodHashTable>
         }
         Entries = entries;
     }
-
-    public IReadOnlyList<Entry> Entries { get; init; }
 
     public readonly struct Entry(TargetPointer value)
     {

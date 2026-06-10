@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <!-- Unable to compile a project with the Library output type for apple mobile devices -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Unable to build a library project with native dependencies for android mobile devices:
+         https://github.com/dotnet/runtime/issues/121210 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestIsHosted>false</CLRTestIsHosted>
+    <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native/ValidatorExe.exe</CLRTestRunFile>
+    <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/ValidatorExe</CLRTestRunFile>
+    <SkipInferOutputType>true</SkipInferOutputType>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <!-- warning CS2008: No source files specified -->
+    <NoWarn>$(NoWarn);CS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="HelloExe\HelloExe.csproj" IncludeInAggregateExecutable="true" />
+    <ProjectReference Include="ValidatorExe\ValidatorExe.csproj" IncludeInAggregateExecutable="true" />
+  </ItemGroup>
+
+  <Target Name="OverrideTestEntryPointToValidator" BeforeTargets="GenerateBatchExecutionScript;GenerateBashExecutionScript">
+    <PropertyGroup>
+      <InputAssemblyName>ValidatorExe.dll</InputAssemblyName>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="WriteHelixExtraExecutablesList" AfterTargets="NativeCompile" Condition="'$(TargetsWindows)' != 'true'">
+    <PropertyGroup>
+      <_HelloExeRelative>$(BuildProjectRelativeDir)native/HelloExe</_HelloExeRelative>
+      <_HelloExeRelative Condition="'$(BuildProjectRelativeDir)' == ''">$([System.IO.Path]::GetRelativePath('$(TestBinDir)', '$(TargetDir)native/HelloExe'))</_HelloExeRelative>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(TargetDir)helix-extra-executables.list" Lines="$(_HelloExeRelative)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

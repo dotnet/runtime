@@ -118,11 +118,7 @@ namespace System.Resources
         ResourceReader(Stream stream)
 #endif
         {
-#if RESOURCES_EXTENSIONS
             ArgumentNullException.ThrowIfNull(stream);
-#else
-            ArgumentNullException.ThrowIfNull(stream);
-#endif
 
             if (!stream.CanRead)
             {
@@ -554,7 +550,7 @@ namespace System.Resources
             }
         }
 
-        private unsafe object? _LoadObjectV1(int pos)
+        private object? _LoadObjectV1(int pos)
         {
             Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
@@ -602,7 +598,7 @@ namespace System.Resources
 #if RESOURCES_EXTENSIONS
                 int[] bits = new int[4];
 #else
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
 #endif
                 for (int i = 0; i < bits.Length; i++)
                     bits[i] = _store.ReadInt32();

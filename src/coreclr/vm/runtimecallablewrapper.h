@@ -272,27 +272,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    void GetCachedInterfacePointers(BOOL bIInspectableOnly,
-                        SArray<TADDR> * rgItfPtrs)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (it.Next())
-        {
-            PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL &&
-                (!bIInspectableOnly))
-            {
-                TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
-                if (taUnk != NULL)
-                {
-                    rgItfPtrs->Append(taUnk);
-                }
-            }
-        }
-    }
-
     LPVOID     GetVTablePtr() { LIMITED_METHOD_CONTRACT; return m_vtablePtr; }
 
     // Remoting aware QI that will attempt to re-unmarshal on object disconnect.

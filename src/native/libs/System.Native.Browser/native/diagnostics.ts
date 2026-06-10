@@ -23,3 +23,7 @@ export function ds_rt_websocket_recv(clientSocket: number, buffer: VoidPtr, byte
 export function ds_rt_websocket_close(clientSocket: number): number {
     return dotnetDiagnosticsExports.ds_rt_websocket_close(clientSocket);
 }
+
+export function ds_rt_browser_performance_measure(namePtr: CharPtr, start: number): void {
+    return dotnetDiagnosticsExports.ds_rt_browser_performance_measure(namePtr, start);
+}

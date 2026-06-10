@@ -137,7 +137,7 @@ internal sealed class FrameHelpers
     /// <summary>
     /// Updates <paramref name="context"/> based on <paramref name="frame"/>'s type, replicating
     /// the per-frame context update performed by the native stack walker before it yields a
-    /// SW_FRAME (or transitions to SW_FRAMELESS for InterpreterFrame).
+    /// Frame (or transitions to Frameless for InterpreterFrame).
     /// </summary>
     public void UpdateContextFromFrame(Data.Frame frame, IPlatformAgnosticContext context)
     {
@@ -170,7 +170,7 @@ internal sealed class FrameHelpers
                 {
                     // Mirrors native InterpreterFrame::SetContextToInterpMethodContextFrame
                     // (frames.cpp). Sets context to the top InterpMethodContextFrame so the
-                    // walker transitions to SW_FRAMELESS and yields each interpreted method
+                    // walker transitions to Frameless and yields each interpreted method
                     // individually via virtual unwind.
                     Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frame.Address);
                     SetContextToInterpMethodContextFrame(context, interpreterFrame);

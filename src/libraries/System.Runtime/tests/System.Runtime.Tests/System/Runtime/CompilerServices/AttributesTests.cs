@@ -421,6 +421,12 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void IsClosedTypeAttributeTests()
+        {
+            new IsClosedTypeAttribute();
+        }
+
+        [Fact]
         public static void OverloadResolutionPriorityAttributeTests()
         {
             var attr = new OverloadResolutionPriorityAttribute(42);

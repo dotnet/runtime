@@ -2447,7 +2447,7 @@ inline BOOL HasRetBuffArgUnmanagedFixup(MetaSig * pSig)
 {
     WRAPPER_NO_CONTRACT;
     // We cannot just pSig->GetReturnType() here since it will return ELEMENT_TYPE_VALUETYPE for enums
-    CorElementType type = pSig->GetRetTypeHandleThrowing().GetVerifierCorElementType();
+    CorElementType type = pSig->GetRetTypeHandleThrowing().GetInternalCorElementType();
     return type == ELEMENT_TYPE_VALUETYPE;
 }
 #endif

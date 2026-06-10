@@ -11,7 +11,7 @@ export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_MarkAsyncMain, SystemJS_ConsoleClear } from "./main";
 export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization, SystemJS_ScheduleDiagnosticServer } from "./scheduling";
-export { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "./diagnostics";
+export { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send, ds_rt_browser_performance_measure } from "./diagnostics";
 
 
 export const gitHash = GitHash;

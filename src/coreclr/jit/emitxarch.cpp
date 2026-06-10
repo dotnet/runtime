@@ -669,6 +669,18 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
 }
 
+// Returns true if the AVX instruction has op1/op2 being commutative
+bool emitter::IsAvxCommutative(instruction ins) const
+{
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsAvxCommutative) != 0;
+}
+
 //------------------------------------------------------------------------
 // HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
 // byte-sized version of an instruction has the lowest bit of the opcode cleared
@@ -1665,6 +1677,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
     return !UseVEXEncoding() && EncodedBySSE38orSSE3A(ins);
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // isLowSIMDReg: Checks if a register is a register supported by any SIMD encoding
 //
@@ -1681,6 +1694,7 @@ static bool isLowSimdReg(regNumber reg)
     return (reg >= REG_XMM0) && (reg <= REG_XMM7);
 #endif
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // GetEmbRoundingMode: Get the rounding mode for embedded rounding
@@ -2715,7 +2729,7 @@ regNumber AbsRegNumber(regNumber reg)
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
 // instruction in question is AVX.
-bool IsExtendedReg(regNumber reg)
+bool emitter::IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
     return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
@@ -2747,7 +2761,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
 }
 
 // Returns true if using this register, for the given EA_SIZE(attr), will require a REX.* prefix
-bool IsExtendedReg(regNumber reg, emitAttr attr)
+bool emitter::IsExtendedReg(regNumber reg, emitAttr attr)
 {
 #ifdef TARGET_AMD64
     // Not a register, so doesn't need a prefix
@@ -10022,6 +10036,16 @@ void emitter::emitIns_SIMD_R_R_R(
 {
     if (UseSimdEncoding())
     {
+        if (IsAvxCommutative(ins) && (instOptions == INS_OPTS_NONE))
+        {
+            if (!IsExtendedReg(op1Reg) && IsExtendedReg(op2Reg))
+            {
+                // We have a VEX encoded commutative instruction in which
+                // case we want to try to put the non-extended register as
+                // op2 since this may allow the 2-byte VEX prefix to be used.
+                std::swap(op1Reg, op2Reg);
+            }
+        }
         emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else

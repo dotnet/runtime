@@ -633,7 +633,8 @@ private:
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
 private:
-    void FlushPendingEntries();
+    void FlushPendingEntries(LONG waitForSeq);
+    LONG FlushPendingEntriesUnderGate();
 
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
@@ -649,6 +650,26 @@ private:
     static const ULONG  cPendingMaxCount = 32;
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
+
+    // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
+    // independent RangeSections can publish/unpublish concurrently.
+    Crst                m_publishLock; // Protects the main table and OS registration.
+    Crst                m_pendingLock; // Protects the pending table only.
+
+    Volatile<LONG>      m_flushInProgress;
+
+    // Sequence counters used to ensure callers wait until their entries are
+    // published to the OS before returning.
+    // m_flushLock + m_flushCV form a lightweight condition variable pair.
+    Volatile<LONG>      m_pendingSeq;
+    LONG                m_publishedSeq;   // Protected by m_flushLock.
+    SRWLOCK             m_flushLock;
+    CONDITION_VARIABLE  m_flushCV;
+
+    // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
+    // We cannot just check if hHandle is null because it's temporarily set to NULL
+    // during the flusher's merge path.
+    Volatile<bool>      m_registrationFailed;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
@@ -713,6 +734,7 @@ struct RangeSection
         RANGE_SECTION_CODEHEAP      = 0x2,
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
+        RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
     };
 
 #ifdef FEATURE_READYTORUN
@@ -1042,11 +1064,7 @@ class RangeSectionMap
         bool isCollectibleRangeSectionFragment; // RangeSectionFragments
     };
 
-#ifdef TARGET_64BIT
     static constexpr uintptr_t entriesPerMapLevel = 256;
-#else
-    static constexpr uintptr_t entriesPerMapLevel = 256;
-#endif
 
     typedef RangeSectionFragmentPointer RangeSectionList;
     typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
@@ -1768,7 +1786,8 @@ public:
         return GetGCInfoToken(MethodToken).Info;
     }
 
-    TADDR JitTokenToModuleBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleFunctionsBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleRVABase(const METHODTOKEN& MethodToken);
 
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo) = 0;
 
@@ -2316,6 +2335,45 @@ struct cdac_data<LoaderCodeHeap>
 
 //*****************************************************************************
 //
+// VirtualIPRangeSection: a linked list node tracking a range of virtual IPs
+// registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+#ifdef TARGET_WASM
+struct VirtualIPRangeSection
+{
+    VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
+    {
+    }
+
+    RangeSection        rangeSection;       // Synthetic RangeSection for compatibility with existing APIs
+    VirtualIPRangeSection* pNext;           // Next entry in the linked list
+};
+
+//*****************************************************************************
+//
+// FunctionTableIndexRangeSection: a linked list node tracking a range of
+// function table indices registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+struct FunctionTableIndexRangeSection
+{
+    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_Module pModule)
+        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RModule(pModule), pNext(nullptr)
+    {
+    }
+
+    DWORD               minFunctionTableIndex;  // Start of the function table index range
+    DWORD               numRuntimeFunctions;    // Number of RUNTIME_FUNCTION entries
+    PTR_Module          pR2RModule;             // Module owning this range
+    FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
+};
+#endif // TARGET_WASM
+
+//*****************************************************************************
+//
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
 // members.  It should never be constructed.
 //
@@ -2452,6 +2510,40 @@ public:
                                        RangeSection::RangeSectionFlags flags,
                                        PTR_Module pModule);
 
+#ifdef TARGET_WASM
+    // Register a virtual IP range for a WASM R2R module.
+    // Returns the start virtual IP assigned to this module.
+    static TADDR         AddVirtualIPRange(UINT32 numVirtualIPs,
+                                            IJitManager* pJit,
+                                            PTR_Module pModule);
+
+    // Find the VirtualIPRangeSection for a given virtual IP.
+    static VirtualIPRangeSection* FindVirtualIPRangeSection(TADDR virtualIP);
+
+    // Returns true if the given PCODE is a virtual IP encoding (both low and high bits set).
+    static bool           IsVirtualIP(PCODE pc)
+    {
+#ifdef TARGET_64BIT
+        return (pc & 0x8000000000000001ULL) == 0x8000000000000001ULL;
+#else
+        return (pc & 0x80000001) == 0x80000001;
+#endif
+    }
+
+    // Register a function table index range for a WASM R2R module.
+    static void           AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
+                                                     DWORD numRuntimeFunctions,
+                                                     PTR_Module pModule);
+
+    // Find the FunctionTableIndexRangeSection for a given function table index.
+    static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
+
+    // Given a function table index, look up the corresponding Module and RUNTIME_FUNCTION,
+    // then compute and return the virtual IP for that the entrypoint for that function
+    // (which may require a walk back to find the main function if functionIndex represents a funclet)
+    static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
+#endif // TARGET_WASM
+
     static void           DeleteRange(TADDR StartRange);
 
     static void           CleanupCodeHeaps();
@@ -2498,6 +2590,11 @@ private:
     SPTR_DECL(InterpreterJitManager, m_pInterpreterJitManager);
     SPTR_DECL(InterpreterCodeManager, m_pInterpreterCodeMan);
 #endif
+
+#ifdef TARGET_WASM
+    static VirtualIPRangeSection* s_pVirtualIPRangeList;
+    static FunctionTableIndexRangeSection* s_pFunctionTableIndexRangeList;
+#endif // TARGET_WASM
 
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
@@ -2695,6 +2792,7 @@ public:
                                          int EndIndex);
 };
 
+#ifdef FEATURE_COLD_R2R_CODE
 class HotColdMappingLookupTable
 {
 public:
@@ -2707,6 +2805,7 @@ public:
     //
     static int LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex);
 };
+#endif // FEATURE_COLD_R2R_CODE
 
 #endif // FEATURE_READYTORUN
 
@@ -3067,7 +3166,13 @@ public:
     TADDR       GetModuleBase()
     {
         WRAPPER_NO_CONTRACT;
-        return GetJitManager()->JitTokenToModuleBase(GetMethodToken());
+        return GetJitManager()->JitTokenToModuleRVABase(GetMethodToken());
+    }
+
+    TADDR       GetModuleFunctionsBase()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetJitManager()->JitTokenToModuleFunctionsBase(GetMethodToken());
     }
 
     PTR_RUNTIME_FUNCTION GetFunctionEntry();

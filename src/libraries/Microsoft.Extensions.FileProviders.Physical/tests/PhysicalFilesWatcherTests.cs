@@ -69,6 +69,140 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
+        [Theory]
+        [InlineData(new[] { "appsettings.json" }, false)]
+        [InlineData(new[] { "appsettings.json", "appsettings.Production.json" }, false)]
+        [InlineData(new[] { "*.json" }, false)]
+        [InlineData(new[] { "*" }, false)]
+        [InlineData(new[] { "sub/file.json" }, true)]
+        [InlineData(new[] { "sub/*.json" }, true)]
+        [InlineData(new[] { "**/appsettings.json" }, true)]
+        [InlineData(new[] { "**" }, true)]
+        [InlineData(new[] { "sub/" }, true)]
+        [InlineData(new[] { "appsettings.json", "sub/file.json" }, true)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_OnlyEnabledWhenAPatternRequiresIt(string[] patterns, bool expectedIncludeSubdirectories)
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            foreach (string pattern in patterns)
+            {
+                physicalFilesWatcher.CreateFileChangeToken(pattern);
+            }
+
+            Assert.Equal(expectedIncludeSubdirectories, fileSystemWatcher.IncludeSubdirectories);
+            Assert.True(fileSystemWatcher.EnableRaisingEvents);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_UpgradedWhenSubdirectoryPatternAddedLater()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            Assert.False(fileSystemWatcher.IncludeSubdirectories);
+
+            physicalFilesWatcher.CreateFileChangeToken("sub/file.json");
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_DowngradedWhenSubdirectoryPatternRemoved()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            physicalFilesWatcher.CreateFileChangeToken("sub/file.json");
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+
+            // Fire an event matching the subdirectory token to remove it from the lookup.
+            // The remaining root-only token does not require subdirectory watching, IncludeSubdirectories should be downgraded.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "sub/file.json"));
+            Assert.False(fileSystemWatcher.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_NotDowngradedWhileSubdirectoryPatternRemains()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("sub/file.json");
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+
+            // Remove only the root-level token; the subdirectory token must keep subdirectories enabled.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "appsettings.json"));
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_NotDowngradedWhenWildcardSubdirectoryPatternRemains()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("sub/*.json");
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+
+            // Remove the root-level token; the recursive wildcard token must keep subdirectories enabled.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "appsettings.json"));
+            Assert.True(fileSystemWatcher.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void IncludeSubdirectories_AlwaysTrueWhenWatcherIsAboveRoot()
+        {
+            using var tempDir = new TempDirectory(GetTestFilePath());
+            string rootDir = Path.Combine(tempDir.Path, "rootDir");
+            Directory.CreateDirectory(rootDir);
+
+            using var fsw = new FileSystemWatcher(tempDir.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(rootDir, fsw, pollForChanges: false);
+
+            // Even with only a root-only pattern, IncludeSubdirectories must be true because
+            // the FSW watches an ancestor of _root.
+            physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            Assert.True(fsw.IncludeSubdirectories);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task IncludeSubdirectories_StarPatternIsNotRecursive_DoesNotMatchSubdirectoryFile()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("*.json");
+            Assert.False(fileSystemWatcher.IncludeSubdirectories);
+
+            Task changed = WhenChanged(token);
+
+            // A '*' pattern should not match files in subdirectories.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "sub/foo.json"));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(changed.IsCompleted, "Token must not fire for an event in a subdirectory.");
+
+            // Sanity check: a root-level event does fire the token.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "foo.json"));
+            await changed;
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
