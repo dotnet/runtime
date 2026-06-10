@@ -7539,10 +7539,26 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     /* Grab information from the IL header */
     SigPointer localSig{};
 
+    MethodDesc* ilFtn = ftn;
+    COR_ILMETHOD_DECODER ilHeader;
+    // For async versions we get the IL of the ordinary variant and pass the
+    // JIT a flag indicating that.
+    if (ftn->SupportsAsyncVersionCodegen())
+    {
+        _ASSERTE(header == NULL);
+        ilFtn = ftn->GetOrdinaryVariant();
+        COR_ILMETHOD* pILFuncHeader;
+        if (ilFtn->MayHaveILHeader() && (pILFuncHeader = ilFtn->GetILHeader()) != NULL)
+        {
+            ilHeader = COR_ILMETHOD_DECODER(pILFuncHeader, ilFtn->GetMDImport(), NULL);
+            header = &ilHeader;
+        }
+    }
+
     MethodInfoWorkerContext cxt{ ftn, header };
 
     TransientMethodDetails* detailsMaybe = NULL;
-    if (FindTransientMethodDetails(ftn, &detailsMaybe))
+    if (FindTransientMethodDetails(ilFtn, &detailsMaybe))
     {
         cxt.UpdateWith(*detailsMaybe);
         scopeHnd = cxt.CreateScopeHandle();
@@ -7600,16 +7616,10 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
             localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
-
-        if (ftn->IsAsyncVariantMethod() && ftn->IsAsyncThunkMethod())
-        {
-            // This is an async version and the IL belongs to the sync version.
-            methInfo->options = (CorInfoOptions)(methInfo->options | CORINFO_ASYNC_VERSION);
-        }
     }
-    else if (ftn->IsDynamicMethod())
+    else if (ilFtn->IsDynamicMethod())
     {
-        DynamicResolver* pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
+        DynamicResolver* pResolver = ilFtn->AsDynamicMethodDesc()->GetResolver();
         scopeHnd = MakeDynamicScope(pResolver);
 
         unsigned int EHCount;
@@ -7620,7 +7630,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         methInfo->EHcount = (unsigned short)EHCount;
         localSig = pResolver->GetLocalSig();
     }
-    else if (ftn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
+    else if (ilFtn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
     {
         scopeHnd = cxt.CreateScopeHandle();
 
@@ -7630,7 +7640,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     }
     else
     {
-        _ASSERTE(!ftn->IsIntrinsic() && "Non-implementable intrinsic methods should have a throwing body");
+        _ASSERTE(!ilFtn->IsIntrinsic() && "Non-implementable intrinsic methods should have a throwing body");
         ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
@@ -7640,7 +7650,9 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
                     ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
                         (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                         (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0) |
-                        (ftn->RequiresAsyncContextSaveAndRestore() ? CORINFO_ASYNC_SAVE_CONTEXTS : 0)));
+                        (ftn->RequiresAsyncContextSaveAndRestore() ? CORINFO_ASYNC_SAVE_CONTEXTS : 0) |
+                        (ilFtn != ftn ? CORINFO_ASYNC_VERSION : 0)));
+
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
@@ -7711,7 +7723,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
-    COR_ILMETHOD_DECODER* ilHeader = cxt.Header;
+    COR_ILMETHOD_DECODER* pILHeader = cxt.Header;
 
     // If we have transient method details we need to handle
     // the lifetime of the details.
@@ -7727,7 +7739,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         cxt.UpdateWith({});
     }
 
-    return ilHeader;
+    return pILHeader;
 } // getMethodInfoWorker
 
 //---------------------------------------------------------------------------------------

@@ -689,6 +689,7 @@ namespace
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
         if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
+            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 

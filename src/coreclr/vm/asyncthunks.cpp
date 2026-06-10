@@ -31,17 +31,12 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         // a non-async thunk is implemented in terms of the async variant which has user code
         pAsyncOtherVariant = this->GetAsyncVariant();
     }
-    else if (IsReturnDroppingThunk())
+    else
     {
+        _ASSERTE(IsReturnDroppingThunk());
         // this is a special void-returning async variant that calls
         // the normal async variant and drops the result
         pAsyncOtherVariant = this->GetAsyncVariant();
-    }
-    else
-    {
-        // Async variant of something else, like an unsafe accessor. Leave it
-        // up to the unsafe accessor to create these.
-        return false;
     }
 
     _ASSERTE(!IsWrapperStub() && !pAsyncOtherVariant->IsWrapperStub());
