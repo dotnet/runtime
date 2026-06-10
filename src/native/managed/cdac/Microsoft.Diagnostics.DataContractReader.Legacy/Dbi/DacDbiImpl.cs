@@ -3179,8 +3179,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => HResults.E_NOTIMPL;
 
     public int GetAttachStateFlags(int* pRetVal)
     {
