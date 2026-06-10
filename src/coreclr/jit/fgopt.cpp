@@ -5146,7 +5146,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         // Note we check this rather than countOfInEdges because we don't care
         // about dups, just the number of unique pred blocks.
         //
-        if (predInfo.Height() > mergeLimit)
+        // This cap only applies to common-successor tail merging. The terminal
+        // block (return/throw) merging below subsumes the old fgTailMergeThrows
+        // phase and routinely sees throw-heavy methods that exceed the per-block
+        // cap, so it uses a larger limit. 4x was empirically the smallest
+        // multiple that avoids code-size regressions (measured via SPMI asmdiffs).
+        //
+        const int effectiveLimit = (commSucc != nullptr) ? mergeLimit : (4 * mergeLimit);
+        if (predInfo.Height() > effectiveLimit)
         {
             // Too many preds to consider
             return false;
@@ -5492,13 +5499,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
-
-    tailMergePreds(nullptr);
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+        {
+            // If this block was already merged, skip it
+            //
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
+            {
+                continue;
+            }
+            predInfo.Push(PredInfo(block, block->lastStmt()));
+        }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //

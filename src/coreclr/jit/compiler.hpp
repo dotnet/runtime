@@ -4364,6 +4364,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         // Below conditions guarantee block initialization, which will initialize
         // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
         // changes, these conditions need to be updated.
+#ifdef TARGET_WASM
+        // On WASM the prolog always uses a single memory.fill to zero any
+        // locals that need initialization, regardless of size.
+        return false;
+#else // !TARGET_WASM
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4379,6 +4384,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         {
             return false;
         }
+#endif // !TARGET_WASM
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());

@@ -236,18 +236,28 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        case GT_CNS_LNG:
         {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
 
-            int64_t constValue = node->AsIntCon()->IntegralValue();
+            int64_t constValue = node->AsIntConCommon()->IntegralValue();
+
+            if (FitsIn<int32_t>(constValue))
+            {
+                rangeType = TYP_INT;
+            }
+            else if (FitsIn<uint32_t>(constValue))
+            {
+                rangeType = TYP_UINT;
+            }
+
             if (constValue >= 0)
             {
                 return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
             }
-
             break;
         }
 
@@ -260,93 +270,108 @@ bool IntegralRange::Contains(int64_t value) const
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+            NamedIntrinsic      id          = hwintrinsic->GetHWIntrinsicId();
+
+            if (HWIntrinsicInfo::ReturnsBoolean(id))
+            {
+                // A boolean [0, 1]
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            }
+
+            if (HWIntrinsicInfo::ReturnsScalarT(id))
+            {
+                // We are extracting a value of the base types width and sign
+                var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    rangeType = simdBaseType;
+                }
+                break;
+            }
+
+            switch (id)
             {
 #if defined(TARGET_XARCH)
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-                case NI_X86Base_CompareScalarOrderedEqual:
-                case NI_X86Base_CompareScalarOrderedNotEqual:
-                case NI_X86Base_CompareScalarOrderedLessThan:
-                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarOrderedGreaterThan:
-                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedEqual:
-                case NI_X86Base_CompareScalarUnorderedNotEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThan:
-                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_X86Base_TestC:
-                case NI_X86Base_TestZ:
-                case NI_X86Base_TestNotZAndNotC:
-                case NI_AVX_TestC:
-                case NI_AVX_TestZ:
-                case NI_AVX_TestNotZAndNotC:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                case NI_Vector256_ExtractMostSignificantBits:
+                case NI_Vector512_ExtractMostSignificantBits:
+                case NI_X86Base_MoveMask:
+                case NI_AVX_MoveMask:
+                case NI_AVX2_MoveMask:
+                case NI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+                case NI_Vector64_ExtractMostSignificantBits:
+#endif
+                case NI_Vector128_ExtractMostSignificantBits:
+                {
+                    // We have 1 bit per element, remaining upper bits are 0
 
-                case NI_X86Base_Extract:
-                case NI_X86Base_X64_Extract:
-                case NI_Vector128_ToScalar:
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_ToScalar:
-                case NI_Vector128_GetElement:
-                case NI_Vector256_GetElement:
-                case NI_Vector512_GetElement:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    size_t elementSize  = genTypeSize(hwintrinsic->GetSimdBaseType());
+                    size_t elementCount = hwintrinsic->GetSimdSize() / elementSize;
+
+                    if (elementCount <= 8)
                     {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                        rangeType = TYP_UBYTE;
+                    }
+                    else if (elementCount <= 16)
+                    {
+                        rangeType = TYP_USHORT;
                     }
                     break;
+                }
 
+#if defined(TARGET_XARCH)
                 case NI_AVX2_LeadingZeroCount:
                 case NI_AVX2_TrailingZeroCount:
                 case NI_AVX2_X64_LeadingZeroCount:
                 case NI_AVX2_X64_TrailingZeroCount:
                 case NI_X86Base_PopCount:
                 case NI_X86Base_X64_PopCount:
-                    // Note: No advantage in using a precise range for IntegralRange.
-                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-
-                case NI_AdvSimd_Extract:
-                case NI_Vector64_ToScalar:
-                case NI_Vector128_ToScalar:
-                case NI_Vector64_GetElement:
-                case NI_Vector128_GetElement:
-                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
-                    {
-                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
-                    }
-                    break;
-
-                case NI_AdvSimd_PopCount:
-                case NI_AdvSimd_LeadingZeroCount:
-                case NI_AdvSimd_LeadingSignCount:
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-                    // Note: No advantage in using a precise range for IntegralRange.
-                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
 #endif
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                }
+
+                    // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
                 default:
                     break;
             }
             break;
+        }
 #endif // defined(FEATURE_HW_INTRINSICS)
+
+        case GT_INTRINSIC:
+        {
+            switch (node->AsIntrinsic()->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+                }
+
+                default:
+                    break;
+            }
+            break;
+        }
 
         default:
             break;
@@ -746,10 +771,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
     optCanPropLclVar       = false;
-    optCanPropEqual        = false;
-    optCanPropNonNull      = false;
-    optCanPropBndsChk      = false;
-    optCanPropSubRange     = false;
 }
 
 #ifdef DEBUG
@@ -1459,10 +1480,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 
     // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion.CanPropLclVar();
-    optCanPropEqual |= newAssertion.CanPropEqualOrNotEqual();
-    optCanPropNonNull |= newAssertion.CanPropNonNull();
-    optCanPropSubRange |= newAssertion.CanPropSubRange();
-    optCanPropBndsChk |= newAssertion.CanPropBndsCheck();
 
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
@@ -2363,10 +2380,6 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
     assert(optLocalAssertionProp); // Subrange assertions are local only.
-    if (!optCanPropSubRange)
-    {
-        return NO_ASSERTION_INDEX;
-    }
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
@@ -4231,7 +4244,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 //
 AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
@@ -5016,11 +5029,6 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
-    {
-        return false;
-    }
-
     op = op->gtEffectiveVal();
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -5035,6 +5043,11 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     }
     else
     {
+        if (BitVecOps::MayBeUninit(assertions))
+        {
+            return false;
+        }
+
         // Find live assertions related to lclNum
         //
         unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
@@ -5089,18 +5102,24 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
 
-    // Check each assertion to find if we have a vn != null assertion.
+    // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
+    // may be uninit here (e.g. when the current block has no live assertions); in that case we
+    // skip the iteration and fall through to the reaching-assertions walk below, which can still
+    // prove non-null via predecessor-edge assertions (e.g. across PHIs).
     //
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
-        AssertionIndex      assertionIndex = GetAssertionIndex(index);
-        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-        if (curAssertion.CanPropNonNull() &&
-            ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            return true;
+            AssertionIndex      assertionIndex = GetAssertionIndex(index);
+            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+            if (curAssertion.CanPropNonNull() &&
+                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+            {
+                return true;
+            }
         }
     }
 
@@ -5436,7 +5455,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  */
 GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optLocalAssertionProp || !optCanPropBndsChk)
+    if (optLocalAssertionProp)
     {
         return nullptr;
     }
@@ -6591,6 +6610,15 @@ PhaseStatus Compiler::optAssertionPropMain()
 
     noway_assert(optAssertionCount == 0);
     bool madeChanges = false;
+
+    // Reset any bbAssertionOut left over from earlier phases (e.g. morph's cross-block
+    // local AP writes them with a different apTraits). Until dataflow re-initializes
+    // them, MayBeUninit guards in optGetEdgeAssertions / optAssertionVNIsNonNull will
+    // skip iteration that would otherwise see stale (out-of-range) bits.
+    for (BasicBlock* const block : Blocks())
+    {
+        block->bbAssertionOut = BitVecOps::UninitVal();
+    }
 
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);

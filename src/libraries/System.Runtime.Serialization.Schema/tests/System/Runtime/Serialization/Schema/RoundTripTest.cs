@@ -56,15 +56,22 @@ namespace System.Runtime.Serialization.Schema.Tests
             Assert.Contains(@"public System.Nullable<System.Runtime.Serialization.Schema.Tests.RoundTripTestDataContractStruct> NullableDataContractStruct2", code);
             Assert.Contains(@"[System.Runtime.Serialization.DataContractAttribute(Name=""RoundTripTest.EncodingMismatchClass"", Namespace=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Schema.Tests""", code);
             Assert.Contains(@"public partial class RoundTripTestEncodingMismatchClass : object, System.Runtime.Serialization.IExtensibleDataObject", code);
+            Assert.Contains(@"public int[][] intLists", code);
+            Assert.Contains(@"public System.Nullable<int>[] listOfNullableInt", code);
             Assert.Contains(@"public enum RoundTripTestMyEnum : int", code);
             Assert.Contains(@"TwoHundred = 200", code);
             Assert.Contains(@"public enum RoundTripTestMyFlagsEnum : int", code);
             Assert.Contains(@"Four = 4,", code);
-            Assert.Contains(@"public class ArrayOfNullableOfRoundTripTestMyEnumho3BZmza : System.Collections.Generic.List<System.Runtime.Serialization.Schema.Tests.RoundTripTestMyEnum>", code);
-            Assert.Contains(@"namespace schemas.microsoft.com._2003._10.Serialization.Arrays", code);
-            Assert.Contains(@"public partial class ArrayOfKeyValueOfintArrayOfstringty7Ep6D1 : object, System.Xml.Serialization.IXmlSerializable", code);
-            Assert.Contains(@"private static System.Xml.XmlQualifiedName typeName = new System.Xml.XmlQualifiedName(""ArrayOfKeyValueOfintArrayOfstringty7Ep6D1"", ""http://schemas.microsoft.com/2003/10/Serialization/Arrays"");", code);
-            Assert.Contains(@"public partial class ArrayOfKeyValueOfNullableOfunsignedByteNullableOfunsignedByte_ShTDFhl_P : object, System.Xml.Serialization.IXmlSerializable", code);
+            Assert.Contains(@"public System.Runtime.Serialization.Schema.Tests.RoundTripTestDataContractStruct[] arrayOfDataContractStruct", code);
+            Assert.Contains(@"public System.Nullable<System.Runtime.Serialization.Schema.Tests.RoundTripTestMyEnum>[] arrayOfNullableOfMyEnum", code);
+            Assert.Contains(@"public System.Collections.Generic.Dictionary<int, string[]>[] dictionaries", code);
+            Assert.Contains(@"public System.Collections.Generic.Dictionary<System.Nullable<byte>, System.Nullable<byte>> nullableKeyAndValues", code);
+            Assert.Contains(@"public System.Collections.Generic.Dictionary<string, System.Nullable<int>> nullableValues", code);
+            // Schema import when re-introduced in net7.0 did not correctly handle some collections, and we were generating a different code shape than NetFx. These redirection types shouldn't get created.
+            Assert.DoesNotContain(@"namespace schemas.microsoft.com._2003._10.Serialization.Arrays", code);
+            Assert.DoesNotContain(@"class ArrayOfNullableOfRoundTripTestMyEnum", code);
+            Assert.DoesNotContain(@"class ArrayOfKeyValueOfintArrayOfstringty", code);
+            Assert.DoesNotContain(@"class ArrayOfKeyValueOfNullableOfunsignedByteNullableOfunsignedByte", code);
 
             if (autoImportKVP)
             {
@@ -113,7 +120,6 @@ namespace System.Runtime.Serialization.Schema.Tests
             Assert.True(code.Length > 616);
         }
 
-
 #pragma warning disable CS0169, CS0414, IDE0051, IDE1006
         #region RoundTripTest DataContracts
         [DataContract]
@@ -134,6 +140,7 @@ namespace System.Runtime.Serialization.Schema.Tests
             [DataMember] DataContractStruct?[] arrayOfNullableOfDataContractStruct;
             [DataMember] DataSet dataSet;
             [DataMember] IList<IList<int>> intLists;
+            [DataMember] IList<int?> listOfNullableInt;
             [DataMember] IList<IDictionary<int, IEnumerable<string>>> dictionaries;
             [DataMember] IDictionary<string, int?> nullableValues;
             [DataMember] IDictionary<byte?, byte?> nullableKeyAndValues;

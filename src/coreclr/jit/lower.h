@@ -458,6 +458,7 @@ private:
     static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
     GenTree*    LowerNeg(GenTreeOp* node);
     void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void        LowerCkfinite(GenTreeOp* node);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);

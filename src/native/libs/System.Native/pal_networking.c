@@ -3461,32 +3461,111 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 #endif  // !HAVE_KQUEUE !HAVE_EPOLL
 
 #if defined(TARGET_WASI)
-// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
-bool descriptor_table_get_ref(int fd, void **entry);
+// from https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/descriptor_table.h
+// The descriptor table entry is a "fat pointer":
+//   typedef struct { void* data; descriptor_vtable_t* vtable; } descriptor_table_entry_t;
+// where `data` points to the descriptor-specific state (a tcp_socket_t* or udp_socket_t*).
+void* descriptor_table_get_ref(int fd);
 
 // this method is invading private implementation details of wasi-libc
 // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
 // or after WASIp3 promises are implemented, whatever comes first
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+//
+// Returns the descriptor-specific `data` pointer in *entry and the kind of socket in
+// *socketType (1 = TCP/stream, 2 = UDP/datagram, 0 = unknown). The vtable that identifies
+// the socket kind is a private static symbol in wasi-libc, so we discriminate via SO_TYPE.
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
-    if (entry == NULL)
+    if (entry == NULL || socketType == NULL)
     {
         return Error_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
-    if(!descriptor_table_get_ref(fd, entry))
+    // The returned pointer is a descriptor_table_entry_t*; its first word is the `data` pointer.
+    void** ref = (void**)descriptor_table_get_ref(fd);
+    if (ref == NULL)
     {
-        return Error_EFAULT;
+        // The fd is not present in the descriptor table (e.g. closed or not a socket).
+        return Error_EBADF;
     }
+    *entry = ref[0];
+
+    int type = 0;
+    socklen_t length = sizeof(type);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    if (type == SOCK_STREAM)
+    {
+        *socketType = 1;
+    }
+    else if (type == SOCK_DGRAM)
+    {
+        *socketType = 2;
+    }
+    else
+    {
+        *socketType = 0;
+    }
+
     return Error_SUCCESS;
 }
+
+// In the new wasi-libc descriptor-table design, the pollables embedded in the socket state
+// (socket_pollable / input_pollable / output_pollable / incoming_pollable / outgoing_pollable)
+// are created lazily: their handle is 0 until the corresponding `subscribe` import is called.
+// The managed event loop needs the actual pollable handle to merge it into wasi:io/poll.poll,
+// so it asks us to lazily subscribe when it observes a 0 handle.
+//
+// All of the wasi component-model handle types are ABI-identical: a struct wrapping a single
+// int32_t handle, passed and returned directly. We mirror that with WasiPollHandle_t so we can
+// call the (private) wasi-libc subscribe imports without pulling in the generated headers.
+typedef struct { int32_t __handle; } WasiPollHandle_t;
+extern WasiPollHandle_t streams_method_input_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t streams_method_output_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t tcp_method_tcp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_udp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_incoming_datagram_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_outgoing_datagram_stream_subscribe(WasiPollHandle_t self);
+
+// kind: 0 = input-stream, 1 = output-stream, 2 = tcp-socket, 3 = udp-socket,
+//       4 = incoming-datagram-stream, 5 = outgoing-datagram-stream
+// `handle` is the borrowed stream/socket handle read from the socket state. Returns the newly
+// created pollable handle (the caller stores it back into the socket state so wasi-libc owns
+// and eventually drops it), or 0 for an unknown kind.
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    WasiPollHandle_t self = { handle };
+    WasiPollHandle_t pollable;
+    switch (kind)
+    {
+        case 0: pollable = streams_method_input_stream_subscribe(self); break;
+        case 1: pollable = streams_method_output_stream_subscribe(self); break;
+        case 2: pollable = tcp_method_tcp_socket_subscribe(self); break;
+        case 3: pollable = udp_method_udp_socket_subscribe(self); break;
+        case 4: pollable = udp_method_incoming_datagram_stream_subscribe(self); break;
+        case 5: pollable = udp_method_outgoing_datagram_stream_subscribe(self); break;
+        default: return 0;
+    }
+    return pollable.__handle;
+}
 #else
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
     (void)socket;
     (void)entry;
+    (void)socketType;
     return Error_ENOSYS;
+}
+
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    (void)kind;
+    (void)handle;
+    return 0;
 }
 #endif  // TARGET_WASI
 

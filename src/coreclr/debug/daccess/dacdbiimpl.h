@@ -233,11 +233,19 @@ public:
     // Determine if a type has generic parameters
     HRESULT STDMETHODCALLTYPE HasTypeParams(VMPTR_TypeHandle th, OUT BOOL * pResult);
 
-    // Get type information for a class
-    HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData);
+    // Enumerate the FieldData entries for a class.
+    HRESULT STDMETHODCALLTYPE EnumerateClassFields(VMPTR_TypeHandle thExact,
+                                                   OUT SIZE_T *pObjectSize,
+                                                   FP_FIELDDATA_CALLBACK fpCallback,
+                                                   CALLBACK_DATA pUserData);
 
-    // get field information and object size for an instantiated generic type
-    HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize);
+    // Enumerate the FieldData entries for an instantiated generic type.
+    HRESULT STDMETHODCALLTYPE EnumerateInstantiationFields(VMPTR_Assembly vmAssembly,
+                                                           VMPTR_TypeHandle vmThExact,
+                                                           VMPTR_TypeHandle vmThApprox,
+                                                           OUT SIZE_T *pObjectSize,
+                                                           FP_FIELDDATA_CALLBACK fpCallback,
+                                                           CALLBACK_DATA pUserData);
 
 
     HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
@@ -291,19 +299,14 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType);
-
     HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain);
+        OUT VMPTR_Object *ppTargetObj);
 
     HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
@@ -334,15 +337,6 @@ private:
                         TypeHandle *      pThExact,
                         TypeHandle *      pThApprox);
 
-    // Gets the total number of fields for a type.
-    unsigned int GetTotalFieldCount(TypeHandle thApprox);
-
-    // initializes various values of the ClassInfo data structure, including the
-    // field count, generic args count, size and value class flag
-    void InitClassData(TypeHandle  thApprox,
-                       BOOL        fIsInstantiatedType,
-                       ClassInfo * pData);
-
     // Gets the base table addresses for both GC and non-GC statics
     void GetStaticsBases(TypeHandle  thExact,
                          PTR_BYTE *  ppGCStaticsBase,
@@ -354,10 +348,11 @@ private:
                           PTR_BYTE    pNonGCStaticsBase,
                           FieldData * pCurrentFieldData);
 
-    // Gets information for all the fields for a given type
-    void CollectFields(TypeHandle                   thExact,
-                       TypeHandle                   thApprox,
-                       DacDbiArrayList<FieldData> * pFieldList);
+    // Reports per-field FieldData entries for a given type to the supplied callback.
+    void CollectFields(TypeHandle           thExact,
+                       TypeHandle           thApprox,
+                       FP_FIELDDATA_CALLBACK fpCallback,
+                       CALLBACK_DATA        pUserData);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_ARRAY
     void GetArrayTypeInfo(TypeHandle                      typeHandle,
@@ -408,6 +403,15 @@ private:
                                               DWORD        nTypeArgs,
                                               TypeHandle * pInst);
 
+
+    typedef enum
+    {
+        kUnknownDelegateType,
+        kClosedDelegate,
+        kOpenDelegate,
+    } DelegateType;
+
+    static DelegateType GetDelegateType(VMPTR_Object delegateObject);
 
     // TypeDataWalk
     // This class provides functionality to allow us to read type handles for generic type parameters or the
@@ -818,9 +822,6 @@ protected:
 
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
     HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal);
-
-    // Gets the target address of an VMPTR of an Object
-    HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal);
 
     // Create a VMPTR_OBJECTHANDLE from a CORDB_ADDRESS pointing to an object handle
     HRESULT STDMETHODCALLTYPE GetVmObjectHandle(CORDB_ADDRESS handleAddress, OUT VMPTR_OBJECTHANDLE * pRetVal);
