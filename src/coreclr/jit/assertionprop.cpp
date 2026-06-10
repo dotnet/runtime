@@ -5448,31 +5448,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         return optAssertionProp_Update(newTree, arrBndsChk, stmt);
     };
 
-    // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
-    ValueNum add0, add1;
-    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &add0, &add1))
-    {
-        if (!vnStore->IsVNInt32Constant(add1))
-        {
-            // Normalize constants to be on the right side
-            std::swap(add0, add1);
-        }
-
-        if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
-        {
-            Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
-            // Lower known limit of ArrLen:
-            const int lenLowerLimit = rng.LowerLimit().GetConstant();
-
-            // Negative delta in the array access (ArrLen + -CNS)
-            const int delta = vnStore->GetConstantInt32(add1);
-            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
-            {
-                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
-            }
-        }
-    }
-
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -5553,6 +5528,41 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
+    }
+
+    // Some value number shapes of the index guarantee it stays within [0, len) by construction:
+    //
+    //   arr[arr.Length - cns]  is in bounds when arr.Length is known to be >= cns
+    //   arr[X u% arr.Length]   is always in bounds (unsigned remainder is in [0, arr.Length))
+    //
+    ValueNum idxOp0, idxOp1;
+    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &idxOp0, &idxOp1))
+    {
+        if (!vnStore->IsVNInt32Constant(idxOp1))
+        {
+            // Normalize constants to be on the right side
+            std::swap(idxOp0, idxOp1);
+        }
+
+        if ((idxOp0 == vnCurLen) && vnStore->IsVNInt32Constant(idxOp1))
+        {
+            Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+            // Lower known limit of ArrLen:
+            const int lenLowerLimit = rng.LowerLimit().GetConstant();
+
+            // Negative delta in the array access (ArrLen + -CNS)
+            const int delta = vnStore->GetConstantInt32(idxOp1);
+            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+            }
+        }
+    }
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
+    {
+        // If arr.Length is 0 we technically should keep the bounds check, but since the expression
+        // has to throw DivideByZeroException anyway - no special handling needed.
+        return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
 
     // Let's see if we can remove the bounds check based on the ranges.
