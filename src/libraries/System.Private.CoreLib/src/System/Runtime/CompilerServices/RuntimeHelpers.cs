@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
@@ -162,6 +164,19 @@ namespace System.Runtime.CompilerServices
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 #endif
 
+        private static class DelegateCache
+        {
+            internal static readonly ConcurrentDictionary<(nint, RuntimeType), Delegate> s_cache = new();
+        }
+
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
+        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method) where TDelegate : Delegate
+        {
+            return DelegateCache.s_cache.TryGetValue((method, Unsafe.As<RuntimeType>(typeof(TDelegate))), out Delegate? value) ? Unsafe.As<TDelegate>(value) : CreateSharedDelegate<TDelegate>(method);
+        }
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand

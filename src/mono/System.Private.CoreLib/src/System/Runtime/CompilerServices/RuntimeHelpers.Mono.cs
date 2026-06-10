@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -130,6 +131,17 @@ namespace System.Runtime.CompilerServices
                     GC.KeepAlive(instantiation);
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static TDelegate CreateSharedDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method) where TDelegate : Delegate
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
+
+            TDelegate newDelegate = Delegate.CreateShared<TDelegate>(method);
+            return DelegateCache.s_cache.TryAdd((method, Unsafe.As<RuntimeType>(typeof(TDelegate))), newDelegate) ? newDelegate : Unsafe.As<TDelegate>(DelegateCache.s_cache[(method, Unsafe.As<RuntimeType>(typeof(TDelegate)))]);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)

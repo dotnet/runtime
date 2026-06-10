@@ -592,6 +592,46 @@ namespace Internal.IL
                     return;
                 }
 
+                if (IsRuntimeHelpersGetDelegate(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
+                    }
+
+                    // Is this a verifiable delegate creation sequence?
+                    if (_currentOffset >= 11
+                        && _basicBlocks[_currentOffset] == null
+                        && _ilBytes[_currentOffset - 11] == (byte)ILOpcode.prefix1
+                        && (_ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldftn) ||
+                            _ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldvirtftn)))
+                    {
+                        int targetToken = ReadILTokenAt(_currentOffset - 9);
+                        var delegateMethod = (MethodDesc)_methodIL.GetObject(targetToken);
+                        if (!delegateMethod.Signature.IsStatic)
+                        {
+                            var owningType = delegateMethod.OwningType;
+                            if (owningType.IsRuntimeDeterminedSubtype)
+                            {
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
+                            }
+                            else
+                            {
+                                _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
+                            }
+                        }
+                    }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetDelegate), reason);
+                    // do not return here, we want the method itself rooted too
+                }
+
                 if (opcode != ILOpcode.ldftn)
                 {
                     if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
@@ -1679,6 +1719,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "MethodTable"u8 && owningType.Namespace == "Internal.Runtime"u8;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsRuntimeHelpersGetDelegate(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "GetDelegate"u8 && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "RuntimeHelpers"u8 && owningType.Namespace == "System.Runtime.CompilerServices"u8;
                 }
             }
 

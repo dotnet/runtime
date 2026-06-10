@@ -232,6 +232,30 @@ namespace System.Runtime.CompilerServices
             PrepareDelegate(ObjectHandleOnStack.Create(ref d));
         }
 
+        [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
+        private static unsafe partial void CreateDelegate(nint method, MethodTable* pMT, ObjectHandleOnStack objHandle);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method) where TDelegate : Delegate
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(typeof(TDelegate) is RuntimeType);
+            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
+
+            MethodTable* methodTable = ((RuntimeType)typeof(TDelegate)).GetNativeTypeHandle().AsMethodTable();
+
+            TDelegate? newDelegate = null;
+            CreateDelegate(method, methodTable, ObjectHandleOnStack.Create(ref newDelegate));
+
+            if (newDelegate is null)
+            {
+                throw new NotSupportedException();
+            }
+
+            return DelegateCache.s_cache.TryAdd((method, Unsafe.As<RuntimeType>(typeof(TDelegate))), newDelegate) ? newDelegate : Unsafe.As<TDelegate>(DelegateCache.s_cache[(method, Unsafe.As<RuntimeType>(typeof(TDelegate)))]);
+        }
+
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.

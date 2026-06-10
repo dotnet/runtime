@@ -1771,6 +1771,11 @@ void HelperCallProperties::init()
                 isAllocator = true;
                 break;
 
+            case CORINFO_HELP_NATIVEAOT_GET_DELEGATE:
+                mutatesHeap   = true;
+                nonNullReturn = true;
+                break;
+
             default:
                 // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;

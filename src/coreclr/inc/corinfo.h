@@ -590,6 +590,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    CORINFO_HELP_NATIVEAOT_GET_DELEGATE,
+
     CORINFO_HELP_COUNT,
 };
 
@@ -3419,6 +3421,12 @@ public:
             CORINFO_MODULE_HANDLE   module,
             mdToken                 metaTok,
             void                  **ppValue
+            ) = 0;
+
+    // Allocate a delagate literal on the Non-GC heap and return a handle to it
+    virtual CORINFO_OBJECT_HANDLE constructDelegateLiteral(
+            CORINFO_METHOD_HANDLE   method,
+            CORINFO_CLASS_HANDLE    delegateType
             ) = 0;
 
     virtual InfoAccessType emptyStringLiteral(
