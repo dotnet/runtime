@@ -15,9 +15,6 @@ internal static partial class Interop
         internal static void EnsureInitialized()
         {
             // No volatile needed here. Reading stale information is just going to cause a harmless extra startup.
-            // We cannot just exchange s_initialized to true and exit if it was already set to avoid the case when
-            // the second coming thread exits and starts working with network
-            // while the first thread hasn't done initialization yet
             if (!s_initialized)
                 Initialize();
 
