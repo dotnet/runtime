@@ -7,6 +7,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
 
+public enum HijackKind
+{
+    None,
+    UnhandledException,
+    Other,
+}
+
 public interface IDebugger : IContract
 {
     static string IContract.Name { get; } = nameof(Debugger);
@@ -20,7 +27,7 @@ public interface IDebugger : IContract
     void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC) => throw new NotImplementedException();
     TargetPointer GetDebuggerControlBlockAddress() => throw new NotImplementedException();
     void EnableGCNotificationEvents(bool fEnable) => throw new NotImplementedException();
-    bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException) => throw new NotImplementedException();
+    HijackKind GetHijackKind(TargetCodePointer controlPC) => throw new NotImplementedException();
 }
 
 public readonly struct Debugger : IDebugger

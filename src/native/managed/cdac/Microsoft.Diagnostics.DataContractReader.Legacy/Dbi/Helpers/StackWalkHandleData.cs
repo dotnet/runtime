@@ -27,7 +27,6 @@ internal sealed class StackWalkHandleData
     [MemberNotNullWhen(true, nameof(Current))]
     public bool IsValid => Current is not null;
     public nuint LegacyHandle { get; set; }
-    public long PendingStackPointerDelta { get; set; }
     public void Reset(byte[] contextBuffer, bool isFirst)
     {
         _enumerator?.Dispose();
@@ -35,7 +34,6 @@ internal sealed class StackWalkHandleData
             .CreateStackWalk(_threadData, contextBuffer, isFirst)
             .Where(h => h.State is not (StackWalkState.Frame or StackWalkState.SkippedFrame))
             .GetEnumerator();
-        PendingStackPointerDelta = 0;
         Current = _enumerator is not null && _enumerator.MoveNext() ? _enumerator.Current : null;
         if (Current is null)
             throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
@@ -43,7 +41,6 @@ internal sealed class StackWalkHandleData
 
     public void Advance()
     {
-        PendingStackPointerDelta = 0;
         Current = _enumerator is not null && _enumerator.MoveNext() ? _enumerator.Current : null;
     }
 

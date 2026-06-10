@@ -45,11 +45,17 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+// `flags` lets the caller request platform-specific shaping of the returned context.
+byte[] GetRawContext(
+    IStackDataFrameHandle stackDataFrameHandle,
+    StackwalkFlag flags = StackwalkFlag.Default);
 
-// Recovers the pre-hijack thread CONTEXT saved by a runtime redirection stub when
-// the walker is currently stopped inside one of those stubs.
-byte[] RetrieveHijackedContext(IStackDataFrameHandle stackDataFrameHandle, bool isUnhandledException);
+[Flags]
+enum StackwalkFlag
+{
+    Default = 0,
+    X86ESPIgnoresCalleePoppedArgs = 0x1,
+}
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
@@ -83,9 +89,8 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 
 // Fills a context for the thread, trying (in order): the debugger filter context,
 // the OS thread context, or a context derived from the explicit Frame chain. The caller
-// owns the buffer and must ensure it is at least sizeof(CONTEXT) bytes and aligned to
-// IPlatformAgnosticContext.ContextAlignment (16).
-CdacHResults GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
+// owns the buffer and must ensure it is at least sizeof(CONTEXT) bytes.
+void GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
@@ -175,7 +180,6 @@ Constants used:
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
 | `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
-| `Debugger::s_hijackFunction` (`debugger.h`) | `UnhandledExceptionHijackIndex` | `0` | Index of the unhandled-exception hijack entry in the runtime's hijack-function table. Used by `RetrieveHijackedContext` to choose between the SP-based and FP/SP-offset-based CONTEXT recovery paths, and by `IDebugger.IsRuntimeUnwindableStub` to set its `isUnhandledException` out parameter. |
 
 Contracts used:
 | Contract Name |
@@ -474,8 +478,13 @@ The rest of the APIs convey state about the stack walk at a given point which fa
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+byte[] GetRawContext(
+    IStackDataFrameHandle stackDataFrameHandle,
+    StackwalkFlag flags = StackwalkFlag.Default);
 ```
+
+##### `StackwalkFlag.X86ESPIgnoresCalleePoppedArgs`
+See [text](https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
 
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -606,31 +615,36 @@ The implementation uses the same stack walk algorithm as `CreateStackWalk`, but 
 
 If no Frame in the chain produces a usable context (thread is not running managed code), the destination is left zero-initialized (it is cleared by `GetContext` before any source writes into it).
 
-The caller owns the buffer and must ensure it is at least `IPlatformAgnosticContext.Size` bytes and aligned to `IPlatformAgnosticContext.ContextAlignment`.
+The caller owns the buffer and must ensure it is at least `IPlatformAgnosticContext.Size` bytes.
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
 #### CreateStackWalk with a caller-provided CONTEXT
 
-`CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is propagated to the first yielded `StackWalkData` as its `IsFirst` value.
+`CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is used to determine whether the walker starts with internal state `isFirst` set to true.
 
 1. Compute the caller SP by cloning the seed context and unwinding the clone.
-2. Iterate the explicit Frame chain; stop at the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check (on x86, where an external OS unwind can produce a slightly wrong SP — see `stackwalk.cpp:1240-1241`).
+2. Iterate the explicit Frame chain; update context from the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check See [text](https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238). Do not update if no Frame meets these criteria.
 3. For every Frame whose `GetCurrentReturnAddress() == seedIP`, rewrite the seed context via `UpdateContextFromCurrentFrame` and record the matched Frame type.
-4. After the loop, if a match was found, override the first yielded frame's `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
 
-The frame iterator is left positioned at the first Frame `>= callerSP`, so the rest of the walk picks up from the same logical position as the native iterator.
+The frame iterator is left positioned at the first Frame `>= callerSP`, if such a frame exists.
 
-#### RetrieveHijackedContext
+#### Hijack-stub recovery in `Next()`
 
-`RetrieveHijackedContext(handle, isUnhandledException)` returned byte buffer is the pre-hijack thread CONTEXT that the stub stashed on the stack at entry, and is used to re-seed the walker.
+The runtime installs a small set of redirect/hijack stubs whose code blocks are tracked in `Debugger::s_hijackFunction`. When the walker is stopped at one of these stubs (state is `InitialNativeContext` or `NativeMarker` and the IP falls inside one of the tracked ranges), the on-thread CONTEXT does not represent the real pre-hijack execution state — the real CONTEXT was stashed on the stack by the stub at entry. `Next()` recovers it before continuing.
 
-The location of the saved `PT_CONTEXT*` differs by stub kind and by architecture:
+The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
 
-* `isUnhandledException == true` (the `ExceptionHijack` stub): the pointer is at `*SP` — the stub pushes it directly. The implementation reads `*context.StackPointer`.
-* `isUnhandledException == false` (the `RedirectedHandledJITCaseFor*` stubs): the pointer is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_{SP,EBP,RBP}_OFFSET_CONTEXT` constants in `src/coreclr/vm/{arch}/asmconstants.h`:
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special.
+* `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
+* `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_{SP,EBP,RBP}_OFFSET_CONTEXT` constants in `src/coreclr/vm/{arch}/asmconstants.h`.
 
-The implementation reads the pointer from that slot via `Target.ReadPointer`, then materializes a fresh `IPlatformAgnosticContext` from the target memory at the resulting address and returns its raw bytes.
+When a non-`None` `HijackKind` is returned, the walker:
+
+1. Reads the saved CONTEXT pointer from the appropriate stack slot, then materializes a fresh `IPlatformAgnosticContext` from target memory at that address.
+2. Reclassifies the walker state from the recovered IP.
+3. Re-runs the CONTEXT/Frame-chain reconciliation step (see [CreateStackWalk with a caller-provided CONTEXT](#createstackwalk-with-a-caller-provided-context)) against the freshly created `FrameIterator`, then writes back the updated walker state.
 
 ### GC Stack Reference Scanning
 

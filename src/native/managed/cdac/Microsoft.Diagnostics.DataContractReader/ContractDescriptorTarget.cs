@@ -54,10 +54,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override ContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
 
-    public delegate CdacHResults ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
-    public delegate CdacHResults WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
-    public delegate CdacHResults GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
-    public delegate CdacHResults AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    public delegate int AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
 
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
@@ -330,7 +330,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-        if (dataTargetDelegates.ReadFromTarget(address, buffer).IsFailure())
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
             return false;
 
         address += sizeof(ulong);
@@ -380,7 +380,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
             ? stackalloc byte[(int)descriptorSize]
             : new byte[(int)descriptorSize];
-        if (dataTargetDelegates.ReadFromTarget(descriptorAddr.Value, descriptorBuffer).IsFailure())
+        if (dataTargetDelegates.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
             return false;
 
         ContractDescriptorParser.ContractDescriptor? contractDescriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
@@ -408,10 +408,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
 
-    public override CdacHResults TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
-        return _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        return hr == 0;
     }
 
     /// <summary>
@@ -463,7 +464,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
-        if (dataTargetDelegates.ReadFromTarget(address, buffer).IsFailure())
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
             return false;
 
         return isLittleEndian
@@ -505,7 +506,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         bool success = isLittleEndian
             ? value.TryWriteLittleEndian(buffer, out bytesWritten)
             : value.TryWriteBigEndian(buffer, out bytesWritten);
-        if (!success || bytesWritten != buffer.Length || dataTargetDelegates.WriteToTarget(address, buffer).IsFailure())
+        if (!success || bytesWritten != buffer.Length || dataTargetDelegates.WriteToTarget(address, buffer) < 0)
             return false;
 
         return true;
@@ -536,7 +537,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private bool TryReadBuffer(ulong address, Span<byte> buffer)
     {
-        return _dataTargetDelegates.ReadFromTarget(address, buffer).IsSuccess();
+        return _dataTargetDelegates.ReadFromTarget(address, buffer) >= 0;
     }
 
     public override void WriteBuffer(ulong address, Span<byte> buffer)
@@ -547,8 +548,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override TargetPointer AllocateMemory(uint size)
     {
-        CdacHResults hr = _dataTargetDelegates.AllocVirtual(size, out ulong allocatedAddress);
-        if (hr.IsFailure())
+        int hr = _dataTargetDelegates.AllocVirtual(size, out ulong allocatedAddress);
+        if (hr < 0)
             throw Marshal.GetExceptionForHR((int)hr) ?? new InvalidOperationException($"Failed to allocate {size} bytes in the target process (HRESULT: 0x{(int)hr:x8}).");
         if (allocatedAddress == 0)
             throw new OutOfMemoryException($"Failed to allocate {size} bytes in the target process (AllocVirtual returned S_OK but no address).");
@@ -558,7 +559,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private bool TryWriteBuffer(ulong address, Span<byte> buffer)
     {
-        return _dataTargetDelegates.WriteToTarget(address, buffer).IsSuccess();
+        return _dataTargetDelegates.WriteToTarget(address, buffer) >= 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -933,23 +934,23 @@ public sealed unsafe class ContractDescriptorTarget : Target
         GetTargetThreadContextDelegate getThreadContext,
         AllocVirtualDelegate allocVirtual)
     {
-        public CdacHResults ReadFromTarget(ulong address, Span<byte> buffer)
+        public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
             return readFromTarget(address, buffer);
         }
 
-        public CdacHResults ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
+        public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
 
-        public CdacHResults GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
+        public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
             return getThreadContext(threadId, contextFlags, buffer);
         }
-        public CdacHResults WriteToTarget(ulong address, Span<byte> buffer)
+        public int WriteToTarget(ulong address, Span<byte> buffer)
         {
             return writeToTarget(address, buffer);
         }
-        public CdacHResults AllocVirtual(ulong size, out ulong allocatedAddress)
+        public int AllocVirtual(ulong size, out ulong allocatedAddress)
         {
             return allocVirtual(size, out allocatedAddress);
         }

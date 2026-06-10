@@ -111,7 +111,7 @@ public abstract class DumpTestBase : IDisposable
         bool created = ContractDescriptorTarget.TryCreate(
             contractDescriptor,
             _host.ReadFromTarget,
-            writeToTarget: static (_, _) => CdacHResults.E_FAIL,
+            writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
             [Contracts.CoreCLRContracts.Register],
@@ -136,7 +136,7 @@ public abstract class DumpTestBase : IDisposable
         bool created = ContractDescriptorTarget.TryCreate(
             contractDescriptor,
             _host.ReadFromTarget,
-            writeToTarget: static (_, _) => CdacHResults.E_FAIL,
+            writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
             [Contracts.CoreCLRContracts.Register],

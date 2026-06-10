@@ -405,7 +405,7 @@ public class DebuggerTests
     }
 
     // -----------------------------------------------------------------------
-    // IsRuntimeUnwindableStub
+    // GetHijackKind
     // -----------------------------------------------------------------------
 
     private static TargetTestHelpers.LayoutResult GetMemoryRangeLayout(TargetTestHelpers helpers)
@@ -475,7 +475,7 @@ public class DebuggerTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsRuntimeUnwindableStub_DetectsUnhandledExceptionHijack(MockTarget.Architecture arch)
+    public void GetHijackKind_DetectsUnhandledExceptionHijack(MockTarget.Architecture arch)
     {
         // Index 0 is the unhandled-exception hijack; index 1 is any other redirect stub.
         (ulong Start, ulong Size)[] ranges =
@@ -486,16 +486,13 @@ public class DebuggerTests
         Target target = BuildTargetWithHijackTable(arch, ranges);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.True(debugger.IsRuntimeUnwindableStub(new TargetPointer(0x10_0080), out bool isUnhandled));
-        Assert.True(isUnhandled);
-
-        Assert.True(debugger.IsRuntimeUnwindableStub(new TargetPointer(0x20_0010), out isUnhandled));
-        Assert.False(isUnhandled);
+        Assert.Equal(HijackKind.UnhandledException, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
+        Assert.Equal(HijackKind.Other, debugger.GetHijackKind(new TargetCodePointer(0x20_0010)));
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsRuntimeUnwindableStub_ReturnsFalseForUnmatchedPC(MockTarget.Architecture arch)
+    public void GetHijackKind_ReturnsNoneForUnmatchedPC(MockTarget.Architecture arch)
     {
         (ulong Start, ulong Size)[] ranges =
         [
@@ -505,23 +502,20 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         // Just outside the range (end is exclusive).
-        Assert.False(debugger.IsRuntimeUnwindableStub(new TargetPointer(0x10_0100), out bool isUnhandled));
-        Assert.False(isUnhandled);
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0100)));
 
         // Well outside any range.
-        Assert.False(debugger.IsRuntimeUnwindableStub(new TargetPointer(0xDEAD_BEEF), out isUnhandled));
-        Assert.False(isUnhandled);
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0xDEAD_BEEF)));
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsRuntimeUnwindableStub_ReturnsFalseWhenTableEmpty(MockTarget.Architecture arch)
+    public void GetHijackKind_ReturnsNoneWhenTableEmpty(MockTarget.Architecture arch)
     {
         // FEATURE_HIJACK off / uninitialized: MaxHijackFunctions == 0.
         Target target = BuildTargetWithHijackTable(arch, []);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.False(debugger.IsRuntimeUnwindableStub(new TargetPointer(0x10_0080), out bool isUnhandled));
-        Assert.False(isUnhandled);
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
     }
 }

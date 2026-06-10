@@ -1298,9 +1298,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint allFlags = ctx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
             Span<byte> seedSpan = new(pInternalContextBuffer, (int)ctx.Size);
-            CdacHResults result = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, seedSpan);
-            if (result.IsFailure())
-                throw Marshal.GetExceptionForHR((int)result)!;
+            _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, seedSpan);
 
             handleData = new StackWalkHandleData(_target.Contracts.StackWalk, threadData);
             SeedHandleFromNativeContext(handleData, pInternalContextBuffer, isFirst: true);
@@ -1395,18 +1393,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (handleData.IsValid)
             {
                 IStackWalk sw = _target.Contracts.StackWalk;
-                byte[] context = sw.GetRawContext(handleData.Current);
+                StackwalkFlag flags = (handleData.Current.State == StackWalkState.NativeMarker)
+                    ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
+                    : StackwalkFlag.Default;
+                byte[] context = sw.GetRawContext(handleData.Current, flags);
 
-                // Apply any pending SP adjustment (x86 M2U adjustment after UnwindStackWalkFrame).
-                if (handleData.PendingStackPointerDelta != 0)
-                {
-                    IPlatformAgnosticContext adjusted = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    adjusted.FillFromBuffer(context);
-                    adjusted.StackPointer = new TargetPointer(unchecked(adjusted.StackPointer.Value + (ulong)handleData.PendingStackPointerDelta));
-                    context = adjusted.GetBytes();
-                }
-
-                // Mirror dacdbiimplstackwalk.cpp:184-186: strip CONTEXT_XSTATE on x86/amd64
+                // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
                 RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
                 if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
                 {
@@ -1509,62 +1501,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             else
             {
-                IStackWalk sw = _target.Contracts.StackWalk;
-                IExecutionManager eman = _target.Contracts.ExecutionManager;
+                handleData.Advance();
 
-                // Step 1: if we're sitting on the initial native context
-                // or a U2M native marker AND the control PC is inside a runtime hijack stub,
-                // recover the saved CONTEXT and re-seed the walker.
-                IStackDataFrameHandle currentFrame = handleData.Current;
-                StackWalkState state = currentFrame.State;
-                bool handled = false;
-                if (state is StackWalkState.InitialNativeContext or StackWalkState.NativeMarker)
-                {
-                    TargetPointer controlPC = sw.GetInstructionPointer(currentFrame);
-                    if (_target.Contracts.Debugger.IsRuntimeUnwindableStub(controlPC, out bool isUnhandled))
-                    {
-                        byte[] recoveredContext = sw.RetrieveHijackedContext(currentFrame, isUnhandled);
-                        handleData.Reset(recoveredContext, isFirst: true);
-                        if (!handleData.IsValid)
-                        {
-                            throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-                        }
-                        *pResult = Interop.BOOL.TRUE;
-                        handled = true;
-                    }
-                }
-
-                if (!handled)
-                {
-                    // Step 2: on x86 we need to remember the
-                    // callee's stack-parameter size before unwinding, so we can adjust SP after
-                    // the unwind lands on an M2U NativeMarker.
-                    uint cbStackParameterSize = 0;
-                    if (state == StackWalkState.Frameless)
-                    {
-                        TargetPointer controlPC = sw.GetInstructionPointer(currentFrame);
-                        if (eman.GetCodeBlockHandle(new TargetCodePointer(controlPC)) is CodeBlockHandle cbh)
-                        {
-                            cbStackParameterSize = eman.GetStackParameterSize(cbh);
-                        }
-                    }
-
-                    // Step 3: advance past Frame/SkippedFrame entries.
-                    handleData.Advance();
-
-                    bool atEndOfStack = !handleData.IsValid;
-
-                    // Step 4: if the unwind landed on a NativeMarker (M2U transition),
-                    // apply the saved stack-parameter-size adjustment on x86.
-                    if (!atEndOfStack && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86 && handleData.IsValid)
-                    {
-                        if (handleData.Current.State == StackWalkState.NativeMarker)
-                        {
-                            handleData.PendingStackPointerDelta = -(long)cbStackParameterSize;
-                        }
-                    }
-                    *pResult = atEndOfStack ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
-                }
+                bool atEndOfStack = !handleData.IsValid;
+                *pResult = atEndOfStack ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
             }
         }
         catch (System.Exception ex)
@@ -1874,9 +1814,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             try
             {
                 Span<byte> leafBuffer = new(pLeaf, (int)leafCtx.Size);
-                CdacHResults hrLeaf = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags, leafBuffer);
-                if (hrLeaf.IsFailure())
-                    throw Marshal.GetExceptionForHR((int)hrLeaf)!;
+                _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags, leafBuffer);
                 leafCtx.FillFromBuffer(leafBuffer);
             }
             finally
@@ -1918,9 +1856,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint allFlags = ctx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
             Span<byte> destination = new(pContextBuffer, (int)ctx.Size);
-            CdacHResults result = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, destination);
-            if (result.IsFailure())
-                throw Marshal.GetExceptionForHR((int)result)!;
+            _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, destination);
         }
         catch (System.Exception ex)
         {

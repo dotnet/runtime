@@ -22,7 +22,7 @@ namespace StressLogAnalyzer;
 
 public static class Program
 {
-    private static unsafe CdacHResults ReadFromMemoryMappedLog(ulong address, Span<byte> buffer, StressLogHeader* header)
+    private static unsafe int ReadFromMemoryMappedLog(ulong address, Span<byte> buffer, StressLogHeader* header)
     {
         // First look at module data. This will translate all addresses that point to static data (like string literals).
         ulong cumulativeSize = 0;
@@ -35,7 +35,7 @@ public static class Program
                 Debug.Assert(cumulativeSize + moduleOffset < (ulong)moduleImageData.Length, "Address is out of bounds");
                 ulong bytesToCopy = ulong.Min((uint)buffer.Length, module.size - moduleOffset);
                 moduleImageData.Slice((int)(cumulativeSize + moduleOffset), (int)bytesToCopy).CopyTo(buffer);
-                return (CdacHResults)bytesToCopy;
+                return (int)bytesToCopy;
             }
             else
             {
@@ -48,10 +48,10 @@ public static class Program
         {
             ulong offset = address - header->memoryBase;
             new Span<byte>((byte*)header + offset, buffer.Length).CopyTo(buffer);
-            return (CdacHResults)buffer.Length;
+            return buffer.Length;
         }
 
-        return CdacHResults.E_FAIL;
+        return -1;
     }
 
     public static async Task<int> Main(string[] args)

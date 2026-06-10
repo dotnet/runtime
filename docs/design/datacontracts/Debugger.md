@@ -18,7 +18,13 @@ void RequestSyncAtEvent();
 void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
-bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException);
+enum HijackKind
+{
+   None,
+   UnhandledException,
+   Other
+}
+HijackKind GetHijackKind(TargetCodePointer controlPC);
 ```
 
 ## Version 1
@@ -145,21 +151,19 @@ void EnableGCNotificationEvents(bool fEnable)
         fEnable ? 1 : 0);
 }
 
-bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException)
+HijackKind GetHijackKind(TargetCodePointer controlPC)
 {
-    isUnhandledException = false;
-
     if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
-        return false;
+        return HijackKind.None;
 
     TargetPointer rgHijack = target.ReadPointer(
         debuggerAddress + /* Debugger::RgHijackFunction offset */);
     if (rgHijack == TargetPointer.Null)
-        return false;
+        return HijackKind.None;
 
     uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
     if (maxHijackFunctions == 0)
-        return false;
+        return HijackKind.None;
 
     uint stride = // Size of one MemoryRange entry
 
@@ -174,10 +178,11 @@ bool IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledExcept
         ulong end = start.Value + size.Value;
         if (controlPC.Value >= start.Value && controlPC.Value < end)
         {
-            isUnhandledException = (i == UnhandledExceptionHijackIndex);
-            return true;
+            return (i == UnhandledExceptionHijackIndex)
+                ? HijackKind.UnhandledException
+                : HijackKind.Other;
         }
     }
-    return false;
+    return HijackKind.None;
 }
 ```

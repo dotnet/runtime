@@ -23,8 +23,8 @@ public class TestPlaceholderTarget : Target
     private readonly (string Name, ulong Value)[] _globals;
     private readonly (string Name, string Value)[] _globalStrings;
 
-    public delegate CdacHResults ReadFromTargetDelegate(ulong address, Span<byte> buffer);
-    public delegate CdacHResults WriteToTargetDelegate(ulong address, Span<byte> buffer);
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
+    public delegate int WriteToTargetDelegate(ulong address, Span<byte> buffer);
     public delegate TargetPointer AllocateMemoryDelegate(uint size);
 
     private readonly ReadFromTargetDelegate _dataReader;
@@ -226,14 +226,14 @@ public class TestPlaceholderTarget : Target
     }
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
-        if (_dataReader(address, buffer).IsFailure())
+        if (_dataReader(address, buffer) < 0)
             throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataWriter is null)
             throw new NotImplementedException();
-        if (_dataWriter(address, buffer).IsFailure())
+        if (_dataWriter(address, buffer) < 0)
             throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
     }
 
@@ -346,7 +346,7 @@ public class TestPlaceholderTarget : Target
         unsafe
         {
             Span<byte> buffer = stackalloc byte[sizeof(T)];
-            if (_dataReader(address, buffer).IsFailure())
+            if (_dataReader(address, buffer) < 0)
                 throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
             T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
@@ -403,7 +403,7 @@ public class TestPlaceholderTarget : Target
     {
         value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
-        if (_dataReader(address, buffer).IsFailure())
+        if (_dataReader(address, buffer) < 0)
             return false;
 
         value = ReadFromSpan<T>(buffer, IsLittleEndian);
@@ -546,7 +546,7 @@ public class TestPlaceholderTarget : Target
     public override bool TryGetTypeInfo(string typeName, out Target.TypeInfo info)
         => _typeInfoCache.TryGetValue(typeName, out info);
 
-    public override CdacHResults TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;

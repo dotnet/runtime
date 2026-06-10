@@ -32,7 +32,7 @@ internal static class Entrypoints
             ContractDescriptorTarget.AllocVirtualDelegate allocDelegate = (ulong size, out ulong allocatedAddress) =>
             {
                 allocatedAddress = 0;
-                return CdacHResults.E_NOTIMPL;
+                return HResults.E_NOTIMPL;
             };
 
             if (allocVirtual != null)
@@ -42,12 +42,12 @@ internal static class Entrypoints
                     if (size > uint.MaxValue)
                     {
                         allocatedAddress = 0;
-                        return CdacHResults.E_INVALIDARG;
+                        return HResults.E_INVALIDARG;
                     }
 
                     fixed (ulong* addrPtr = &allocatedAddress)
                     {
-                        return (CdacHResults)allocVirtual((uint)size, addrPtr, delegateContext);
+                        return allocVirtual((uint)size, addrPtr, delegateContext);
                     }
                 };
             }
@@ -59,21 +59,40 @@ internal static class Entrypoints
                 {
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return (CdacHResults)readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                        return readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
                     }
                 },
                 (address, buffer) =>
                 {
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return (CdacHResults)writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                        return writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
                     }
                 },
                 (threadId, contextFlags, buffer) =>
                 {
+                    const nuint RequiredAlignment = 16;
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return (CdacHResults)readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        if (((nuint)bufferPtr & (RequiredAlignment - 1)) == 0)
+                        {
+                            return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, RequiredAlignment);
+                        try
+                        {
+                            int hr = readThreadContext(threadId, contextFlags, (uint)buffer.Length, alignedBuffer, delegateContext);
+                            if (hr >= 0)
+                            {
+                                new ReadOnlySpan<byte>(alignedBuffer, buffer.Length).CopyTo(buffer);
+                            }
+                            return hr;
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
                     }
                 },
                 allocDelegate,
@@ -251,7 +270,7 @@ internal static class Entrypoints
         ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
         {
             allocatedAddress = 0;
-            return CdacHResults.E_NOTIMPL;
+            return HResults.E_NOTIMPL;
         };
 
         if (dataTarget2 is not null)
@@ -265,7 +284,7 @@ internal static class Entrypoints
                 ClrDataAddress addr;
                 int result = dataTarget2.AllocVirtual(0, (uint)size, MEM_COMMIT, PAGE_READWRITE, &addr);
                 allocatedAddress = (ulong)addr;
-                return (CdacHResults)result;
+                return result;
             };
         }
 
@@ -276,7 +295,7 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     uint bytesRead;
-                    return (CdacHResults)dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
                 }
             },
             (address, buffer) =>
@@ -284,14 +303,14 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     uint bytesWritten;
-                    return (CdacHResults)dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
+                    return dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
                 }
             },
             (threadId, contextFlags, bufferToFill) =>
             {
                 fixed (byte* bufferPtr = bufferToFill)
                 {
-                    return (CdacHResults)dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
             allocVirtual,

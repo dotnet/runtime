@@ -119,20 +119,18 @@ internal readonly struct Debugger_1 : IDebugger
         debugger.WriteGCNotificationEventsEnabled(fEnable ? 1 : 0);
     }
 
-    bool IDebugger.IsRuntimeUnwindableStub(TargetPointer controlPC, out bool isUnhandledException)
+    HijackKind IDebugger.GetHijackKind(TargetCodePointer controlPC)
     {
-        isUnhandledException = false;
-
         if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
-            return false;
+            return HijackKind.None;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
         if (debugger.RgHijackFunction == TargetPointer.Null)
-            return false;
+            return HijackKind.None;
 
         uint maxHijackFunctions = _target.ReadGlobal<uint>(Constants.Globals.MaxHijackFunctions);
         if (maxHijackFunctions == 0)
-            return false;
+            return HijackKind.None;
 
         Target.TypeInfo memoryRangeTypeInfo = _target.GetTypeInfo(DataType.MemoryRange);
         uint stride = memoryRangeTypeInfo.Size!.Value;
@@ -146,10 +144,9 @@ internal readonly struct Debugger_1 : IDebugger
             ulong end = start + entry.Size.Value;
             if (controlPC.Value >= start && controlPC.Value < end)
             {
-                isUnhandledException = i == UnhandledExceptionHijackIndex;
-                return true;
+                return i == UnhandledExceptionHijackIndex ? HijackKind.UnhandledException : HijackKind.Other;
             }
         }
-        return false;
+        return HijackKind.None;
     }
 }

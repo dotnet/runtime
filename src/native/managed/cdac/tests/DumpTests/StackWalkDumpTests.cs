@@ -352,9 +352,7 @@ public class StackWalkDumpTests : DumpTestBase
         try
         {
             Span<byte> context = new(pContext, (int)ctx.Size);
-            int hr = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, context);
-
-            Assert.Equal(System.HResults.S_OK, hr);
+            Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, context);
             ctx.FillFromBuffer(context);
             Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
         }

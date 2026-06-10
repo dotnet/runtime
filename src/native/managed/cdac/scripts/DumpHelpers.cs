@@ -50,11 +50,10 @@ internal static class DumpHelpers
 
         if (!ContractDescriptorTarget.TryCreate(
                 contractAddr,
-                (ulong address, Span<byte> buffer) => dt.DataReader.Read(address, buffer) == buffer.Length ? CdacHResults.S_OK : CdacHResults.E_FAIL,
-                (ulong address, Span<byte> buffer) => CdacHResults.E_FAIL,
+                (ulong address, Span<byte> buffer) => dt.DataReader.Read(address, buffer) == buffer.Length ? 0 : -1,
+                (ulong address, Span<byte> buffer) => -1,
                 (uint threadId, uint contextFlags, Span<byte> buffer) =>
-                    dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? CdacHResults.S_OK : CdacHResults.E_FAIL,
-                (ulong size, out ulong allocatedAddress) => { allocatedAddress = 0; return CdacHResults.E_NOTIMPL; },
+                    dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
                 [CoreCLRContracts.Register],
                 out ContractDescriptorTarget? target))
         {

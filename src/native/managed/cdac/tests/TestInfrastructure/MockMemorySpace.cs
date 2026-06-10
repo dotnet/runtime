@@ -139,13 +139,13 @@ public static unsafe partial class MockMemorySpace
     {
         public IList<HeapFragment> HeapFragments { get; init; } = [];
 
-        public CdacHResults ReadFromTarget(ulong address, Span<byte> buffer)
+        public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
             if (buffer.Length == 0)
-                return CdacHResults.S_OK;
+                return 0;
 
             if (address == 0)
-                return CdacHResults.E_FAIL;
+                return -1;
 
             bool partialReadOcurred = false;
             HeapFragment lastHeapFragment = default;
@@ -162,7 +162,7 @@ public static unsafe partial class MockMemorySpace
                         if (availableLength >= buffer.Length)
                         {
                             fragment.Data.AsSpan(offset, buffer.Length).CopyTo(buffer);
-                            return CdacHResults.S_OK;
+                            return 0;
                         }
                         else
                         {
@@ -182,16 +182,16 @@ public static unsafe partial class MockMemorySpace
 
             if (partialReadOcurred)
                 throw new InvalidOperationException($"Not enough data in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
-            return CdacHResults.E_FAIL;
+            return -1;
         }
 
-        public CdacHResults WriteToTarget(ulong address, Span<byte> buffer)
+        public int WriteToTarget(ulong address, Span<byte> buffer)
         {
             if (buffer.Length == 0)
-                return CdacHResults.S_OK;
+                return 0;
 
             if (address == 0)
-                return CdacHResults.E_FAIL;
+                return -1;
 
             bool partialWriteOccurred = false;
             HeapFragment lastHeapFragment = default;
@@ -210,7 +210,7 @@ public static unsafe partial class MockMemorySpace
                         {
                             buffer.CopyTo(fragment.Data.AsSpan(offset, buffer.Length));
                             HeapFragments[i] = fragment; // Update the fragment in the list
-                            return CdacHResults.S_OK;
+                            return 0;
                         }
                         else
                         {
@@ -231,7 +231,7 @@ public static unsafe partial class MockMemorySpace
 
             if (partialWriteOccurred)
                 throw new InvalidOperationException($"Not enough space in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to write {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
-            return CdacHResults.E_FAIL;
+            return -1;
         }
     }
 }
