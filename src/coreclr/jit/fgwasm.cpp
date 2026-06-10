@@ -1703,8 +1703,8 @@ PhaseStatus Compiler::WasmSpillRefs()
                 {
                     if (m_wasmSpillSlots == nullptr)
                     {
-                        m_wasmSpillSlots =
-                            new (this, CMK_WasmSpillRefs) jitstd::vector<WasmSpillSlot>(getAllocator(CMK_WasmSpillRefs));
+                        m_wasmSpillSlots = new (this, CMK_WasmSpillRefs)
+                            jitstd::vector<WasmSpillSlot>(getAllocator(CMK_WasmSpillRefs));
                     }
 
                     JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
@@ -1724,7 +1724,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                             if (slot->byRef != def->TypeIs(TYP_BYREF))
                                 continue;
 
-                            spillSlot = slot->lclNum;
+                            spillSlot   = slot->lclNum;
                             slot->inUse = true;
                             break;
                         }
@@ -1732,16 +1732,16 @@ PhaseStatus Compiler::WasmSpillRefs()
                         // We didn't find an available spill slot so make a new one
                         if (spillSlot == -1)
                         {
-                            spillSlot                      = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
-                            LclVarDsc* const varDsc        = lvaGetDesc(spillSlot);
-                            varDsc->lvType                 = def->TypeGet();
-                            varDsc->lvPinned               = true;
-                            varDsc->lvMustInit             = true;
+                            spillSlot               = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+                            LclVarDsc* const varDsc = lvaGetDesc(spillSlot);
+                            varDsc->lvType          = def->TypeGet();
+                            varDsc->lvPinned        = true;
+                            varDsc->lvMustInit      = true;
                             lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
                             WasmSpillSlot slotDesc;
                             slotDesc.lclNum = spillSlot;
-                            slotDesc.byRef = def->TypeIs(TYP_BYREF);
-                            slotDesc.inUse = true;
+                            slotDesc.byRef  = def->TypeIs(TYP_BYREF);
+                            slotDesc.inUse  = true;
                             m_wasmSpillSlots->push_back(slotDesc);
                         }
 
@@ -1809,7 +1809,7 @@ PhaseStatus Compiler::WasmSpillRefs()
             if (tree->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
-                LclVarDsc* dsc = lvaGetDesc(lclVar);
+                LclVarDsc*           dsc    = lvaGetDesc(lclVar);
                 if (!dsc->IsAddressExposed())
                 {
                     continue;
