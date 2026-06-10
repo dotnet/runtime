@@ -1323,8 +1323,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         {
             zeroTripOp = iterInfo->IsIncreasingLoop() ? GT_LT : GT_GT;
         }
-        LC_Condition zeroTrip(zeroTripOp, LC_Expr(initIdent), LC_Expr(limitIdent),
-                              iterInfo->TestTree->IsUnsigned());
+        LC_Condition zeroTrip(zeroTripOp, LC_Expr(initIdent), LC_Expr(limitIdent), iterInfo->TestTree->IsUnsigned());
         context->EnsureConditions(loop->GetIndex())->Push(zeroTrip);
         JITDUMP("Added zero-trip guard cloning condition\n");
     }
@@ -1438,8 +1437,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // GT_LE loop test: (start <= end) ==> (end < arrLen)
     //
     // GT_NE loop test (stride = +/-1; see IsIncreasing/DecreasingLoop):
-    //   For increasing: visited indices are [init..end-1] => guard end <= arrLen (same as LT)
-    //   For decreasing: visited indices are [end+1..init] => guard end < arrLen (same as GT)
+    //   For increasing: visited indices are [init..end-1] => guard end <= arrLen (same as LT).
+    //     `ident` is the loop's end value, so the per-access condition is (end <= arrLen).
+    //   For decreasing: visited indices are [end+1..init] => guard init < arrLen (same as GT).
+    //     `ident` is the loop's init value (set in the init-conditions section above and not
+    //     overwritten by the GT_NE limit branch), so the per-access condition is
+    //     (init < arrLen). This is why the switch below maps decreasing GT_NE to GT_LT.
     //
     // Decreasing loops
     // Always check if iter var is less than array length.
@@ -1555,7 +1558,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
 
         const genTreeOps cmpOp = isIncreasingLoop ? GT_LE : GT_GE;
-        LC_Condition initLimitCond(cmpOp, LC_Expr(neInitIdent), LC_Expr(neLimitIdent));
+        LC_Condition     initLimitCond(cmpOp, LC_Expr(neInitIdent), LC_Expr(neLimitIdent));
         context->EnsureConditions(loop->GetIndex())->Push(initLimitCond);
         JITDUMP("Added NE init-vs-limit cloning condition\n");
     }

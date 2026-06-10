@@ -1341,11 +1341,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // where BoundVN is a length-like checked bound (e.g. an array length). These are
         // generated from loop exit tests written as "i != arr.Length"; we can tighten the
         // induction variable's range when its current upper/lower limit equals the bound.
-        else if (canUseCheckedBounds &&
-                 curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
+        else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
-                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
-                 (curAssertion.GetOp2().GetCns() == 0) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
                  comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
         {
             const ValueNum boundVN = curAssertion.GetOp2().GetVN();
