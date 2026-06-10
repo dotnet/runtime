@@ -1310,7 +1310,6 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 //
 ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* tree)
 {
-    ObjectAllocationType allocType = OAT_NONE;
     if (tree->OperIs(GT_ALLOCOBJ))
     {
         GenTreeAllocObj* const allocObj = tree->AsAllocObj();
@@ -1318,54 +1317,60 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         assert(clsHnd != NO_CLASS_HANDLE);
         const bool isValueClass = m_compiler->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
-        allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+        return canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+
+    // Arrays and strings are both modelled as a call whose second user arg is the
+    // element/char count, and can only be stack allocated when that count is a
+    // compile-time constant. Arrays are newarr helper calls; strings are the
+    // FastAllocateString special intrinsic. Neither is supported under R2R yet.
+    //
+    if (m_isR2R || !tree->IsCall())
     {
-        GenTreeCall* const call = tree->AsCall();
+        return OAT_NONE;
+    }
+
+    GenTreeCall* const   call      = tree->AsCall();
+    ObjectAllocationType allocType = OAT_NONE;
+
+    if (call->IsHelperCall())
+    {
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
-            {
-                if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
-                {
-                    allocType = OAT_NEWARR;
-                }
+                allocType = OAT_NEWARR;
                 break;
-            }
-
             default:
-            {
-                break;
-            }
+                return OAT_NONE;
         }
     }
-    else if (!m_isR2R && tree->IsCall() &&
-             tree->AsCall()->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString))
+    else if (call->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString))
     {
-        // Strings are modelled as FastAllocateString(pMT, length). Like arrays, they can
-        // only be stack allocated when the length is a compile-time constant.
-        //
-        GenTreeCall* const call = tree->AsCall();
-        if (call->gtArgs.CountUserArgs() == 2)
-        {
-            GenTree* len = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            if (len->OperIs(GT_CAST))
-            {
-                len = len->AsCast()->CastOp();
-            }
-
-            if (len->IsCnsIntOrI())
-            {
-                allocType = OAT_NEWSTR;
-            }
-        }
+        allocType = OAT_NEWSTR;
+    }
+    else
+    {
+        return OAT_NONE;
     }
 
-    return allocType;
+    if (call->gtArgs.CountUserArgs() != 2)
+    {
+        return OAT_NONE;
+    }
+
+    // Strings may carry a widening cast over the length that has not been folded yet;
+    // arrays always have a direct constant here.
+    //
+    GenTree* len = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    if ((allocType == OAT_NEWSTR) && len->OperIs(GT_CAST))
+    {
+        len = len->AsCast()->CastOp();
+    }
+
+    return len->IsCnsIntOrI() ? allocType : OAT_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -1594,9 +1599,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
-            return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWSTR:
-            return MorphAllocObjNodeHelperStr(candidate);
+            return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
         case OAT_NEWOBJ_HEAP:
@@ -1608,128 +1612,74 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 }
 
 //------------------------------------------------------------------------
-// MorphAllocObjNodeHelperArr: See if we can stack allocate a GT_NEWARR
+// MorphAllocObjNodeHelperArr: See if we can stack allocate a GT_NEWARR helper call
+//    or a String.FastAllocateString call.
 //
 // Arguments:
-//    candidate -- allocation candidate
-//
-// Return Value:
-//    True if candidate was stack allocated
-//    If false, candidate reason is updated to explain why not
-//
-bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
-{
-    assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
-
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
-
-    GenTree* const data = candidate.m_tree->AsLclVar()->Data();
-
-    //------------------------------------------------------------------------
-    // We expect the following expression tree at this point
-    // For non-ReadyToRun:
-    //  STMTx (IL 0x... ???)
-    //    * STORE_LCL_VAR   ref
-    //    \--*  CALL help  ref
-    //       +--*  CNS_INT(h) long
-    //       \--*  CNS_INT long
-    // For ReadyToRun:
-    //  STMTx (IL 0x... ???)
-    //    * STORE_LCL_VAR   ref
-    //    \--*  CALL help  ref
-    //       \--*  CNS_INT long
-    //------------------------------------------------------------------------
-
-    bool                 isExact   = false;
-    bool                 isNonNull = false;
-    CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-    assert(len != nullptr);
-
-    unsigned int blockSize = 0;
-    m_compiler->Metrics.NewArrayHelperCalls++;
-
-    if (!isExact || !isNonNull)
-    {
-        candidate.m_onHeapReason = "[array type is either non-exact or null]";
-        return false;
-    }
-
-    if (!len->IsCnsIntOrI())
-    {
-        candidate.m_onHeapReason = "[non-constant array size]";
-        return false;
-    }
-
-    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, len->AsIntCon()->IconValue(),
-                                  &blockSize, &candidate.m_onHeapReason))
-    {
-        // reason set by the call
-        return false;
-    }
-
-    JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
-    const unsigned int stackLclNum =
-        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
-                                      candidate.m_block, candidate.m_statement);
-
-    // Keep track of this new local for later type updates.
-    //
-    m_HeapLocalToStackArrLocalMap.AddOrUpdate(candidate.m_lclNum, stackLclNum);
-    m_compiler->Metrics.StackAllocatedArrays++;
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// MorphAllocObjNodeHelperStr: See if we can stack allocate a String.FastAllocateString call
-//
-// Arguments:
-//    candidate -- allocation candidate
+//    candidate -- allocation candidate (OAT_NEWARR or OAT_NEWSTR)
 //
 // Return Value:
 //    True if candidate was stack allocated
 //    If false, candidate reason is updated to explain why not
 //
 // Notes:
-//    Strings are very similar to single-dimensional arrays of char and reuse the same
-//    stack allocation machinery (see MorphNewArrNodeIntoStackAlloc and
-//    fgExpandStackArrayAllocations). The allocation site is modelled at this point as
-//    String.FastAllocateString(pMT, length).
+//    Strings are modelled as FastAllocateString(pMT, length) and are treated like
+//    single-dimensional arrays of char: both are a call whose second user arg is the
+//    element/char count, and both share the same stack allocation machinery (see
+//    MorphNewArrNodeIntoStackAlloc and fgExpandStackArrayAllocations). The only
+//    differences are how the object type is determined and which metrics are bumped.
 //
-bool ObjectAllocator::MorphAllocObjNodeHelperStr(AllocationCandidate& candidate)
+bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
+    const bool isString = candidate.m_allocType == OAT_NEWSTR;
+
+    assert(isString || candidate.m_block->HasFlag(BBF_HAS_NEWARR));
+
     // R2R not yet supported
     //
     if (m_isR2R)
     {
-        candidate.m_onHeapReason = "[R2R string not yet supported]";
+        candidate.m_onHeapReason = isString ? "[R2R string not yet supported]" : "[R2R array not yet supported]";
         return false;
     }
 
     //------------------------------------------------------------------------
-    // We expect the following expression tree at this point
+    // We expect the following expression tree at this point (a newarr helper call or
+    // String.FastAllocateString, whose second user arg is the element/char count):
     //    * STORE_LCL_VAR   ref
-    //    \--*  CALL ref     System.String.FastAllocateString
-    //       +--*  CNS_INT(h) long   <string method table>
+    //    \--*  CALL  ref
+    //       +--*  CNS_INT(h) long   <method table>
     //       \--*  <length>   long
     //------------------------------------------------------------------------
 
     GenTreeCall* const call = candidate.m_tree->AsLclVar()->Data()->AsCall();
-    assert(call->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString));
     assert(call->gtArgs.CountUserArgs() == 2);
 
-    m_compiler->Metrics.NewStringAllocations++;
+    // Strings always have a known exact type (System.String); for arrays we must verify
+    // the helper call's type is exact and non-null.
+    //
+    CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+    if (isString)
+    {
+        assert(call->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString));
+        m_compiler->Metrics.NewStringAllocations++;
+    }
+    else
+    {
+        bool isExact   = false;
+        bool isNonNull = false;
+        clsHnd         = m_compiler->gtGetHelperCallClassHandle(call, &isExact, &isNonNull);
+        m_compiler->Metrics.NewArrayHelperCalls++;
 
-    // The length is the second user arg (native int). Unwrap a widening cast so we can
-    // recognize a constant length that has not been folded yet.
+        if (!isExact || !isNonNull)
+        {
+            candidate.m_onHeapReason = "[array type is either non-exact or null]";
+            return false;
+        }
+    }
+
+    // The element/char count is the second user arg. Unwrap a widening cast so we can
+    // recognize a constant that has not been folded yet.
     //
     GenTree* len = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (len->OperIs(GT_CAST))
@@ -1739,14 +1689,14 @@ bool ObjectAllocator::MorphAllocObjNodeHelperStr(AllocationCandidate& candidate)
 
     if (!len->IsCnsIntOrI())
     {
-        candidate.m_onHeapReason = "[non-constant string length]";
+        candidate.m_onHeapReason = isString ? "[non-constant string length]" : "[non-constant array size]";
         return false;
     }
 
     const ssize_t length = len->AsIntCon()->IconValue();
 
     unsigned int blockSize = 0;
-    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, NO_CLASS_HANDLE, candidate.m_allocType, length, &blockSize,
+    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, length, &blockSize,
                                   &candidate.m_onHeapReason))
     {
         // reason set by the call
@@ -1754,13 +1704,20 @@ bool ObjectAllocator::MorphAllocObjNodeHelperStr(AllocationCandidate& candidate)
     }
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
-    const unsigned int stackLclNum = MorphNewArrNodeIntoStackAlloc(call, NO_CLASS_HANDLE, (unsigned int)length,
-                                                                   blockSize, candidate.m_block, candidate.m_statement);
+    const unsigned int stackLclNum = MorphNewArrNodeIntoStackAlloc(call, clsHnd, (unsigned int)length, blockSize,
+                                                                   candidate.m_block, candidate.m_statement);
 
     // Keep track of this new local for later type updates.
     //
     m_HeapLocalToStackArrLocalMap.AddOrUpdate(candidate.m_lclNum, stackLclNum);
-    m_compiler->Metrics.StackAllocatedStrings++;
+    if (isString)
+    {
+        m_compiler->Metrics.StackAllocatedStrings++;
+    }
+    else
+    {
+        m_compiler->Metrics.StackAllocatedArrays++;
+    }
 
     return true;
 }
