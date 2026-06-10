@@ -1588,7 +1588,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        AsyncProfiler.CompleteAsyncContext.Complete(ref info.AsyncProfilerInfo);
+                        AsyncProfiler.CompleteAsyncContext.Complete(ref info);
                     }
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
@@ -1609,7 +1609,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        AsyncProfiler.AsyncMethodException.Unhandled(ref info.AsyncProfilerInfo, unwindedFrames);
+                        AsyncProfiler.AsyncMethodException.Unhandled(ref info, unwindedFrames);
                     }
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
@@ -1630,7 +1630,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        AsyncProfiler.AsyncMethodException.Handled(ref info.AsyncProfilerInfo, unwindedFrames);
+                        AsyncProfiler.AsyncMethodException.Handled(ref info, unwindedFrames);
                     }
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
@@ -1647,7 +1647,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        AsyncProfiler.ResumeAsyncMethod.Resume(ref info.AsyncProfilerInfo);
+                        AsyncProfiler.ResumeAsyncMethod.Resume(ref info);
                     }
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
@@ -1664,7 +1664,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(flags))
                     {
-                        AsyncProfiler.CompleteAsyncMethod.Complete(ref info.AsyncProfilerInfo);
+                        AsyncProfiler.CompleteAsyncMethod.Complete(ref info);
                     }
 
                     AsyncProfiler.ContinuationWrapper.IncrementIndex(ref info.AsyncProfilerInfo);

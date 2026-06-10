@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
             AsyncTaskDispatcherInfo* current = t_current;
             if (current != null)
             {
-                AsyncProfiler.AsyncMethodException.UnwindFrames(ref current->AsyncProfilerInfo, 1);
+                AsyncProfiler.AsyncMethodException.UnwindFrames(ref *current, 1);
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Runtime.CompilerServices
             AsyncTaskDispatcherInfo* current = t_current;
             if (current != null)
             {
-                AsyncProfiler.CompleteAsyncMethod.Complete(ref current->AsyncProfilerInfo);
+                AsyncProfiler.CompleteAsyncMethod.Complete(ref *current);
             }
         }
     }
@@ -176,7 +176,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    AsyncProfiler.CreateAsyncContext.Create((ulong)dispatcher.ContextId);
+                    AsyncProfiler.CreateAsyncContext.Create(dispatcher);
                 }
             }
 

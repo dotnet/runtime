@@ -16,29 +16,40 @@ namespace System.Threading.Tasks.Tests
     // Mirrors AsyncProfiler.AsyncEventID from the runtime (which is internal and inaccessible from tests).
     public enum AsyncEventID : byte
     {
-        CreateAsyncContext = 1,
-        ResumeAsyncContext = 2,
-        SuspendAsyncContext = 3,
-        CompleteAsyncContext = 4,
-        UnwindAsyncException = 5,
-        CreateAsyncCallstack = 6,
-        ResumeAsyncCallstack = 7,
-        SuspendAsyncCallstack = 8,
-        ResumeAsyncMethod = 9,
-        CompleteAsyncMethod = 10,
-        ResetAsyncThreadContext = 11,
-        ResetAsyncContinuationWrapperIndex = 12,
-        AsyncProfilerMetadata = 13,
-        AsyncProfilerSyncClock = 14,
-        AppendAsyncCallstack = 15,
+        // V2 (RuntimeAsync) events.
+        RuntimeAsync_CreateAsyncContext = 1,
+        RuntimeAsync_ResumeAsyncContext = 2,
+        RuntimeAsync_SuspendAsyncContext = 3,
+        RuntimeAsync_CompleteAsyncContext = 4,
+        RuntimeAsync_UnwindAsyncException = 5,
+        RuntimeAsync_CreateAsyncCallstack = 6,
+        RuntimeAsync_ResumeAsyncCallstack = 7,
+        RuntimeAsync_SuspendAsyncCallstack = 8,
+        RuntimeAsync_ResumeAsyncMethod = 9,
+        RuntimeAsync_CompleteAsyncMethod = 10,
+
+        // V1 (TaskAsync) events.
+        TaskAsync_CreateAsyncContext = 11,
+        TaskAsync_ResumeAsyncContext = 12,
+        TaskAsync_SuspendAsyncContext = 13,
+        TaskAsync_CompleteAsyncContext = 14,
+        TaskAsync_UnwindAsyncException = 15,
+        TaskAsync_ResumeAsyncCallstack = 16,
+        TaskAsync_ResumeAsyncMethod = 17,
+        TaskAsync_CompleteAsyncMethod = 18,
+        TaskAsync_AppendAsyncCallstack = 19,
+
+        // Neutral profiler events.
+        ResetAsyncThreadContext = 20,
+        ResetAsyncContinuationWrapperIndex = 21,
+        AsyncProfilerMetadata = 22,
+        AsyncProfilerSyncClock = 23,
     }
 
-    //Mirrors AsyncProfiler.AsyncCallstackType from the runtime (which is internal and inaccessible from tests).
     public enum AsyncCallstackType : byte
     {
         Compiler = 0x1,
         Runtime = 0x2,
-        Cached = 0x80
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127951", TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
@@ -278,19 +289,40 @@ namespace System.Threading.Tasks.Tests
         {
             switch (eventId)
             {
-                case AsyncEventID.CreateAsyncContext:
-                case AsyncEventID.ResumeAsyncContext:
+                case AsyncEventID.RuntimeAsync_CreateAsyncContext:
+                case AsyncEventID.RuntimeAsync_ResumeAsyncContext:
+                case AsyncEventID.TaskAsync_CreateAsyncContext:
+                case AsyncEventID.TaskAsync_ResumeAsyncContext:
                 {
                     ReadCompressedUInt64(buffer, ref index);
                     return true;
                 }
-                case AsyncEventID.SuspendAsyncContext:
-                case AsyncEventID.CompleteAsyncContext:
-                case AsyncEventID.ResumeAsyncMethod:
-                case AsyncEventID.CompleteAsyncMethod:
+                case AsyncEventID.RuntimeAsync_SuspendAsyncContext:
+                case AsyncEventID.RuntimeAsync_CompleteAsyncContext:
+                case AsyncEventID.RuntimeAsync_ResumeAsyncMethod:
+                case AsyncEventID.RuntimeAsync_CompleteAsyncMethod:
+                case AsyncEventID.TaskAsync_SuspendAsyncContext:
+                case AsyncEventID.TaskAsync_CompleteAsyncContext:
+                case AsyncEventID.TaskAsync_ResumeAsyncMethod:
+                case AsyncEventID.TaskAsync_CompleteAsyncMethod:
                 case AsyncEventID.ResetAsyncThreadContext:
                 case AsyncEventID.ResetAsyncContinuationWrapperIndex:
                 {
+                    return true;
+                }
+                case AsyncEventID.RuntimeAsync_UnwindAsyncException:
+                case AsyncEventID.TaskAsync_UnwindAsyncException:
+                {
+                    ReadCompressedUInt32(buffer, ref index);
+                    return true;
+                }
+                case AsyncEventID.RuntimeAsync_CreateAsyncCallstack:
+                case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
+                case AsyncEventID.RuntimeAsync_SuspendAsyncCallstack:
+                case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
+                case AsyncEventID.TaskAsync_AppendAsyncCallstack:
+                {
+                    SkipCallstackPayload(buffer, ref index, CallstackTypeFromEventId(eventId));
                     return true;
                 }
                 case AsyncEventID.AsyncProfilerMetadata:
@@ -302,19 +334,6 @@ namespace System.Threading.Tasks.Tests
                 {
                     ReadCompressedUInt64(buffer, ref index); // qpcSync
                     ReadCompressedUInt64(buffer, ref index); // utcSync
-                    return true;
-                }
-                case AsyncEventID.UnwindAsyncException:
-                {
-                    ReadCompressedUInt32(buffer, ref index);
-                    return true;
-                }
-                case AsyncEventID.CreateAsyncCallstack:
-                case AsyncEventID.ResumeAsyncCallstack:
-                case AsyncEventID.SuspendAsyncCallstack:
-                case AsyncEventID.AppendAsyncCallstack:
-                {
-                    SkipCallstackPayload(buffer, ref index);
                     return true;
                 }
                 default:
@@ -336,21 +355,20 @@ namespace System.Threading.Tasks.Tests
             return value;
         }
 
-        private static void SkipCallstackPayload(ReadOnlySpan<byte> buffer, ref int index)
+        private static void SkipCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncCallstackType callstackType)
         {
-            ReadCallstackPayload(buffer, ref index, out _, out _);
+            ReadCallstackPayload(buffer, ref index, callstackType, out _, out _, out _, out _);
         }
 
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
             out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            ReadCallstackPayload(buffer, ref index, out _, out _, out _, out frameCount, out frames);
+            ReadCallstackPayload(buffer, ref index, AsyncCallstackType.Runtime, out _, out _, out frameCount, out frames);
         }
 
-        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out ulong taskId, out AsyncCallstackType callstackType, out byte continuationIndex, out byte frameCount, out List<(ulong MethodId, int State)> frames)
+        private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index, AsyncCallstackType callstackType,
+            out ulong taskId, out byte continuationIndex, out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            callstackType = (AsyncCallstackType)buffer[index++];
             index++; // Reserved callstack ID (for future callstack interning).
             continuationIndex = buffer[index++];
             frameCount = buffer[index++];
@@ -359,6 +377,7 @@ namespace System.Threading.Tasks.Tests
 
             if (frameCount == 0)
             {
+                // Cached callstack reference (frame data resolved out-of-band by callstack id).
                 return;
             }
 
@@ -376,6 +395,15 @@ namespace System.Threading.Tasks.Tests
                 frames.Add((currentMethodId, state));
             }
         }
+
+        // Derive callstack type from the event id:
+        // V1 (TaskAsync_*) events carry compiler-built state machine frames;
+        // V2 (RuntimeAsync_*) events carry runtime-async frames.
+        private static AsyncCallstackType CallstackTypeFromEventId(AsyncEventID eventId)
+            => eventId is AsyncEventID.TaskAsync_ResumeAsyncCallstack
+                       or AsyncEventID.TaskAsync_AppendAsyncCallstack
+                ? AsyncCallstackType.Compiler
+                : AsyncCallstackType.Runtime;
 
         private static int ReadCompressedInt32(ReadOnlySpan<byte> buffer, ref int index)
         {
@@ -550,7 +578,16 @@ namespace System.Threading.Tasks.Tests
                 {
                     switch (evt.EventId)
                     {
-                        case AsyncEventID.ResumeAsyncCallstack:
+                        case AsyncEventID.RuntimeAsync_SuspendAsyncContext:
+                        case AsyncEventID.RuntimeAsync_CompleteAsyncContext:
+                        case AsyncEventID.TaskAsync_SuspendAsyncContext:
+                        case AsyncEventID.TaskAsync_CompleteAsyncContext:
+                        {
+                            openByTaskId.Remove(evt.TaskId);
+                            break;
+                        }
+                        case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
+                        case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
                         {
                             var merged = new ParsedEvent
                             {
@@ -569,7 +606,7 @@ namespace System.Threading.Tasks.Tests
 
                             break;
                         }
-                        case AsyncEventID.AppendAsyncCallstack:
+                        case AsyncEventID.TaskAsync_AppendAsyncCallstack:
                         {
                             if (openByTaskId.TryGetValue(evt.TaskId, out int idx))
                             {
@@ -590,12 +627,6 @@ namespace System.Threading.Tasks.Tests
                                 };
                             }
 
-                            break;
-                        }
-                        case AsyncEventID.SuspendAsyncContext:
-                        case AsyncEventID.CompleteAsyncContext:
-                        {
-                            openByTaskId.Remove(evt.TaskId);
                             break;
                         }
                     }
@@ -667,14 +698,17 @@ namespace System.Threading.Tasks.Tests
 
                     ParsedEvent evt = eventId switch
                     {
-                        AsyncEventID.CreateAsyncContext or AsyncEventID.ResumeAsyncContext =>
+                        AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.RuntimeAsync_ResumeAsyncContext or
+                        AsyncEventID.TaskAsync_CreateAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext =>
                             ParseContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
 
-                        AsyncEventID.CompleteAsyncContext =>
-                            ParseCompleteContextEvent(baseTimestamp, osThreadId, ref currentTaskId, taskIdStack),
+                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext =>
+                            ParseCompleteContextEvent(eventId, baseTimestamp, osThreadId, ref currentTaskId, taskIdStack),
 
-                        AsyncEventID.SuspendAsyncContext or
-                        AsyncEventID.ResumeAsyncMethod or AsyncEventID.CompleteAsyncMethod =>
+                        AsyncEventID.RuntimeAsync_SuspendAsyncContext or
+                        AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod or
+                        AsyncEventID.TaskAsync_SuspendAsyncContext or
+                        AsyncEventID.TaskAsync_ResumeAsyncMethod or AsyncEventID.TaskAsync_CompleteAsyncMethod =>
                             new ParsedEvent
                             {
                                 EventId = eventId,
@@ -686,12 +720,13 @@ namespace System.Threading.Tasks.Tests
                         AsyncEventID.ResetAsyncThreadContext or AsyncEventID.ResetAsyncContinuationWrapperIndex =>
                             ParseResetEvent(eventId, baseTimestamp, osThreadId, ref currentTaskId),
 
-                        AsyncEventID.CreateAsyncCallstack or AsyncEventID.ResumeAsyncCallstack or
-                        AsyncEventID.SuspendAsyncCallstack or AsyncEventID.AppendAsyncCallstack =>
+                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack or AsyncEventID.RuntimeAsync_ResumeAsyncCallstack or
+                        AsyncEventID.RuntimeAsync_SuspendAsyncCallstack or
+                        AsyncEventID.TaskAsync_ResumeAsyncCallstack or AsyncEventID.TaskAsync_AppendAsyncCallstack =>
                             ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
 
-                        AsyncEventID.UnwindAsyncException =>
-                            ParseUnwindEvent(baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
+                        AsyncEventID.RuntimeAsync_UnwindAsyncException or AsyncEventID.TaskAsync_UnwindAsyncException =>
+                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerMetadata =>
                             ParseMetadataEvent(baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
@@ -712,7 +747,8 @@ namespace System.Threading.Tasks.Tests
                 ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
                 ulong id = ReadCompressedUInt64(buffer, ref index);
-                if (eventId == AsyncEventID.ResumeAsyncContext && id != currentTaskId)
+                bool isResume = eventId is AsyncEventID.RuntimeAsync_ResumeAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext;
+                if (isResume && id != currentTaskId)
                 {
                     taskIdStack.Push(currentTaskId);
                 }
@@ -728,7 +764,7 @@ namespace System.Threading.Tasks.Tests
                 };
             }
 
-            static ParsedEvent ParseCompleteContextEvent(long timestamp, ulong osThreadId,
+            static ParsedEvent ParseCompleteContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
                 ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
                 ulong completedTaskId = currentTaskId;
@@ -736,7 +772,7 @@ namespace System.Threading.Tasks.Tests
 
                 return new ParsedEvent
                 {
-                    EventId = AsyncEventID.CompleteAsyncContext,
+                    EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
                     TaskId = completedTaskId
@@ -763,7 +799,8 @@ namespace System.Threading.Tasks.Tests
             static ParsedEvent ParseCallstackEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
                 ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
-                ReadCallstackPayload(buffer, ref index, out ulong taskId, out AsyncCallstackType callstackType, out byte continuationIndex, out byte frameCount, out var frames);
+                AsyncCallstackType callstackType = CallstackTypeFromEventId(eventId);
+                ReadCallstackPayload(buffer, ref index, callstackType, out ulong taskId, out byte continuationIndex, out byte frameCount, out var frames);
                 if (taskId != currentTaskId)
                 {
                     taskIdStack.Push(currentTaskId);
@@ -783,14 +820,14 @@ namespace System.Threading.Tasks.Tests
                 };
             }
 
-            static ParsedEvent ParseUnwindEvent(long timestamp, ulong osThreadId, ulong currentTaskId,
+            static ParsedEvent ParseUnwindEvent(AsyncEventID eventId, long timestamp, ulong osThreadId, ulong currentTaskId,
                 ReadOnlySpan<byte> buffer, ref int index)
             {
                 uint unwindCount = ReadCompressedUInt32(buffer, ref index);
 
                 return new ParsedEvent
                 {
-                    EventId = AsyncEventID.UnwindAsyncException,
+                    EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
                     TaskId = currentTaskId,
@@ -1006,9 +1043,14 @@ namespace System.Threading.Tasks.Tests
         // For a given context, simulates the async callstack depth by walking events in order:
         // ResumeAsyncCallstack sets the depth to frame count, CompleteAsyncMethod decrements,
         // UnwindAsyncException subtracts unwound frames. Asserts depth reaches zero.
+        // Handles both V1 (TaskAsync_*) and V2 (RuntimeAsync) event ids.
         private static void AssertCallstackSimulationReachesZero(ParsedEventStream stream, string markerMethodName)
         {
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeAsyncCallstack, markerMethodName);
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, markerMethodName);
+            if (resumeStacks.Count == 0)
+            {
+                resumeStacks = stream.CallstacksWithMarker(AsyncEventID.TaskAsync_ResumeAsyncCallstack, markerMethodName);
+            }
             Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{markerMethodName}'");
 
             ulong taskId = resumeStacks[0].TaskId;
@@ -1020,12 +1062,14 @@ namespace System.Threading.Tasks.Tests
             {
                 switch (evt.EventId)
                 {
-                    case AsyncEventID.ResumeAsyncCallstack:
+                    case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
+                    case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
                     {
                         stackDepth = (int)evt.FrameCount;
                         break;
                     }
-                    case AsyncEventID.CompleteAsyncMethod:
+                    case AsyncEventID.RuntimeAsync_CompleteAsyncMethod:
+                    case AsyncEventID.TaskAsync_CompleteAsyncMethod:
                     {
                         if (stackDepth > 0)
                         {
@@ -1034,7 +1078,8 @@ namespace System.Threading.Tasks.Tests
 
                         break;
                     }
-                    case AsyncEventID.UnwindAsyncException:
+                    case AsyncEventID.RuntimeAsync_UnwindAsyncException:
+                    case AsyncEventID.TaskAsync_UnwindAsyncException:
                     {
                         stackDepth = Math.Max(0, stackDepth - (int)evt.UnwindFrameCount);
                         break;
@@ -1048,8 +1093,8 @@ namespace System.Threading.Tasks.Tests
         private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong taskId, string chainName)
         {
             var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
-            int creates = ids.Count(id => id == AsyncEventID.CreateAsyncContext);
-            int completes = ids.Count(id => id == AsyncEventID.CompleteAsyncContext);
+            int creates = ids.Count(id => id is AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext);
+            int completes = ids.Count(id => id is AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext);
             Assert.True(creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
             Assert.True(completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (TaskId {taskId}), got {completes}");
         }
@@ -1060,10 +1105,10 @@ namespace System.Threading.Tasks.Tests
         private static void AssertCreateEqualsCompleteForTask(ParsedEventStream stream, ulong taskId, string chainName)
         {
             var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
-            int creates = ids.Count(id => id == AsyncEventID.CreateAsyncContext);
-            int completes = ids.Count(id => id == AsyncEventID.CompleteAsyncContext);
-            Assert.True(creates >= 1, $"Expected at least 1 CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
-            Assert.True(creates == completes, $"Expected CreateAsyncContext count == CompleteAsyncContext count for {chainName} (TaskId {taskId}), got {creates} creates and {completes} completes");
+            int creates = ids.Count(id => id == AsyncEventID.TaskAsync_CreateAsyncContext);
+            int completes = ids.Count(id => id == AsyncEventID.TaskAsync_CompleteAsyncContext);
+            Assert.True(creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (TaskId {taskId}), got {creates}");
+            Assert.True(creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (TaskId {taskId}), got {creates} creates and {completes} completes");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext
@@ -1237,21 +1282,32 @@ namespace System.Threading.Tasks.Tests
                     {
                         index += eventId switch
                         {
-                            AsyncEventID.CreateAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.ResumeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.SuspendAsyncContext => OutputSuspendAsyncContextEvent(),
-                            AsyncEventID.CompleteAsyncContext => OutputCompleteAsyncContextEvent(),
-                            AsyncEventID.UnwindAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
-                            AsyncEventID.CreateAsyncCallstack => OutputAsyncCallstackEvent(buffer.Slice(index)),
-                            AsyncEventID.ResumeAsyncCallstack => OutputAsyncCallstackEvent(buffer.Slice(index)),
-                            AsyncEventID.SuspendAsyncCallstack => OutputAsyncCallstackEvent(buffer.Slice(index)),
-                            AsyncEventID.AppendAsyncCallstack => OutputAsyncCallstackEvent(buffer.Slice(index)),
-                            AsyncEventID.ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
-                            AsyncEventID.CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
+                            AsyncEventID.RuntimeAsync_CreateAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_ResumeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_SuspendAsyncContext => OutputSuspendAsyncContextEvent(),
+                            AsyncEventID.RuntimeAsync_CompleteAsyncContext => OutputCompleteAsyncContextEvent(),
+                            AsyncEventID.RuntimeAsync_UnwindAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_CreateAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_ResumeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_SuspendAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.RuntimeAsync_ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
+                            AsyncEventID.RuntimeAsync_CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
+
+                            AsyncEventID.TaskAsync_CreateAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.TaskAsync_ResumeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.TaskAsync_SuspendAsyncContext => OutputSuspendAsyncContextEvent(),
+                            AsyncEventID.TaskAsync_CompleteAsyncContext => OutputCompleteAsyncContextEvent(),
+                            AsyncEventID.TaskAsync_UnwindAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
+                            AsyncEventID.TaskAsync_ResumeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.TaskAsync_ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
+                            AsyncEventID.TaskAsync_CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
+                            AsyncEventID.TaskAsync_AppendAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+
                             AsyncEventID.ResetAsyncThreadContext => OutputResetAsyncThreadContextEvent(),
                             AsyncEventID.ResetAsyncContinuationWrapperIndex => OutputResetAsyncContinuationWrapperIndexEvent(),
                             AsyncEventID.AsyncProfilerMetadata => OutputAsyncProfilerMetadataEvent(buffer.Slice(index)),
                             AsyncEventID.AsyncProfilerSyncClock => OutputAsyncProfilerSyncClockEvent(buffer.Slice(index)),
+
                             _ => throw new InvalidOperationException($"Unknown eventId {eventId}."),
                         };
                     }
@@ -1390,23 +1446,24 @@ namespace System.Threading.Tasks.Tests
                 return index;
             }
 
-            private static int OutputAsyncCallstackEvent(ReadOnlySpan<byte> buffer)
+            private static int OutputAsyncCallstackEvent(AsyncEventID eventId, ReadOnlySpan<byte> buffer)
             {
                 ulong id;
-                byte type;
                 byte callstackId;
                 byte continuationIndex;
                 byte asyncCallstackLength;
                 int index = 0;
 
-                type = buffer[index++];
+                AsyncCallstackType type = (eventId is AsyncEventID.TaskAsync_ResumeAsyncCallstack
+                                                   or AsyncEventID.TaskAsync_AppendAsyncCallstack)
+                    ? AsyncCallstackType.Compiler
+                    : AsyncCallstackType.Runtime;
                 callstackId = buffer[index++];
                 continuationIndex = buffer[index++];
                 asyncCallstackLength = buffer[index++];
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out id);
 
                 Console.WriteLine($"  ID: {id}");
-                Console.WriteLine($"  Type: {type}");
                 Console.WriteLine($"  CallstackId: {callstackId}");
                 Console.WriteLine($"  ContinuationIndex: {continuationIndex}");
                 Console.WriteLine($"  Length: {asyncCallstackLength}");
@@ -1420,7 +1477,7 @@ namespace System.Threading.Tasks.Tests
                 ulong currentMethodId;
                 int state = 0;
 
-                bool readState = (AsyncCallstackType)type == AsyncCallstackType.Compiler;
+                bool readState = type == AsyncCallstackType.Compiler;
 
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out currentMethodId);
                 if (readState)
@@ -1428,7 +1485,7 @@ namespace System.Threading.Tasks.Tests
                     Deserializer.ReadCompressedInt32(buffer, ref index, out state);
                 }
 
-                OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, 0);
+                OutputAsyncFrame(type, currentMethodId, state, 0);
 
                 for (int i = 1; i < asyncCallstackLength; i++)
                 {
@@ -1439,7 +1496,7 @@ namespace System.Threading.Tasks.Tests
                         Deserializer.ReadCompressedInt32(buffer, ref index, out state);
                     }
                     currentMethodId = previousMethodId + (ulong)methodIdDelta;
-                    OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, i);
+                    OutputAsyncFrame(type, currentMethodId, state, i);
                 }
 
                 return index;
