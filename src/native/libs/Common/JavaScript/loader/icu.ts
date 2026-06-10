@@ -9,6 +9,10 @@ export function getIcuResourceName(): string | null {
             loaderConfig.applicationCulture = culture;
         }
 
+        if (culture) {
+            loaderConfig.environmentVariables!["LANG"] = `${culture}.UTF-8`;
+        }
+
         const icuFiles = loaderConfig.resources.icu;
         let icuFile = null;
         if (loaderConfig.globalizationMode === GlobalizationMode.Custom) {
