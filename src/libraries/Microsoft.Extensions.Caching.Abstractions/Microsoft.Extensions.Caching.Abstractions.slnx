@@ -11,6 +11,9 @@
     <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj" />
     <Project Path="src/Microsoft.Extensions.Caching.Abstractions.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Microsoft.Extensions.Caching.Abstractions.Tests.csproj" />
+  </Folder>
   <Folder Name="/tools/" />
   <Folder Name="/tools/gen/">
     <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
