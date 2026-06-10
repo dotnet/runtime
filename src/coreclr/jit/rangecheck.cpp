@@ -269,27 +269,6 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    assert(range.IsValid());
-
-    // If upper or lower limit is found to be unknown (top), or it was found to
-    // be unknown because of over budget or a deep search, then return early.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
-    {
-        // Note: If we had stack depth too deep in the GetRangeWorker call, we'd be
-        // too deep even in the ComputeDoesOverflow call. So return early.
-        return;
-    }
-
-    JITDUMP("Range value %s\n", range.ToString(m_compiler));
-    ClearSearchPath();
-    Widen(block, treeIndex, &range);
-
-    // If upper or lower limit is unknown, then return.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
-    {
-        return;
-    }
-
     Range arrSizeRng = GetRangeFromAssertions(m_compiler, arrLenVn, block->bbAssertionIn);
     int   arrSize    = arrSizeRng.LowerLimit().GetConstant();
 
@@ -2236,6 +2215,27 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
     if (ComputeDoesOverflow(block, expr, range))
     {
         JITDUMP("Range determined to overflow.\n");
+        return false;
+    }
+
+    assert(range.IsValid());
+
+    // If upper or lower limit is found to be unknown (top), or it was found to
+    // be unknown because of over budget or a deep search, then return early.
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
+        // Note: If we had stack depth too deep in the GetRangeWorker call, we'd be
+        // too deep even in the ComputeDoesOverflow call. So return early.
+        return false;
+    }
+
+    JITDUMP("Range value %s\n", range.ToString(m_compiler));
+    ClearSearchPath();
+    Widen(block, expr, &range);
+
+    // If upper or lower limit is unknown, then return.
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
         return false;
     }
 
