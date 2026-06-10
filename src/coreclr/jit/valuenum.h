@@ -182,9 +182,36 @@ VNFunc GetVNFuncForNode(GenTree* node);
 // "m_func" to the first "m_arity" (<= 4) argument values in "m_args."
 struct VNFuncApp
 {
+private:
     VNFunc    m_func;
     unsigned  m_arity;
     ValueNum* m_args;
+
+    friend class ValueNumStore;
+
+public:
+    VNFuncApp(VNFunc func = VNF_COUNT)
+        : m_func(func)
+        , m_arity(0)
+        , m_args(nullptr)
+    {
+    }
+
+    VNFunc GetFunc() const
+    {
+        return m_func;
+    }
+
+    unsigned GetArity() const
+    {
+        return m_arity;
+    }
+
+    ValueNum GetArg(unsigned index) const
+    {
+        assert(index < m_arity);
+        return m_args[index];
+    }
 
     bool FuncIs(VNFunc func) const
     {
@@ -197,7 +224,7 @@ struct VNFuncApp
         return FuncIs(func) || FuncIs(rest...);
     }
 
-    bool Equals(const VNFuncApp& funcApp)
+    bool Equals(const VNFuncApp& funcApp) const
     {
         if (m_func != funcApp.m_func)
         {
@@ -387,6 +414,7 @@ public:
     float  GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
+    simd_t   GetConstantSimd(ValueNum argVN);
     simd8_t  GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
@@ -754,7 +782,7 @@ public:
     bool VNHasExc(ValueNum vn)
     {
         VNFuncApp funcApp;
-        return GetVNFunc(vn, &funcApp) && funcApp.m_func == VNF_ValWithExc;
+        return GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_ValWithExc);
     }
 
     // If vn "excSet" is "VNForEmptyExcSet()" we just return "vn"
@@ -1132,8 +1160,23 @@ public:
     // Returns true iff the VN represents a Type handle constant.
     bool IsVNTypeHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a Type handle constant. If so,
+    // *pCls is set to the resolved compile-time class handle (looked up
+    // through the embedded-handle map so AOT/R2R-encoded handles are
+    // mapped back). On failure *pCls is set to NO_CLASS_HANDLE.
+    bool IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls);
+
     // Returns true iff the VN represents a relop
-    bool IsVNRelop(ValueNum vn);
+    bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
+
+    // Map this VNFunc back to a gen tree op (relops only). Returns GT_NONE for
+    // any non-relop VNFunc. `isUnsigned` is set to true for VNF_*_UN variants.
+    //
+    // Note: VNF_*_UN is also used to represent unordered floating-point relops
+    // (see `GetVNFuncForNode`). Callers that propagate `isUnsigned` into a
+    // GTF_UNSIGNED flag must ensure the operands are integral; this helper
+    // cannot distinguish the two cases from a VNFunc alone.
+    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned);
 
     enum class VN_RELATION_KIND
     {
@@ -1274,7 +1317,7 @@ public:
             *value = 0;
             return false;
         }
-        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        int64_t val = CoercedConstantValue<int64_t>(vn);
         if (FitsIn<T>(val))
         {
             *value = static_cast<T>(val);
@@ -1323,6 +1366,8 @@ public:
                                        ValueNum            arg1VN,
                                        ValueNum            arg2VN,
                                        ValueNum            resultTypeVN);
+
+    bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, unsigned simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" represents a function application.
@@ -1336,10 +1381,12 @@ public:
     bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
 
     // Returns "true" iff "vn" is a function application for a HWIntrinsic
-    bool IsVNHWIntrinsicFunc(ValueNum        vn,
-                             NamedIntrinsic* intrinsicId,
-                             unsigned*       simdSize,
-                             CorInfoType*    simdBaseJitType);
+    bool IsVNHWIntrinsicFunc(
+        ValueNum vn, VNFuncApp* funcApp, NamedIntrinsic* intrinsicId, unsigned* simdSize, var_types* simdBaseType);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    uint32_t GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType);
+#endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.
@@ -1540,6 +1587,10 @@ private:
         var_types         m_typ;
         ChunkExtraAttribs m_attribs;
 
+        // Precomputed element size for func-app chunks (sizeof(VNFunc) + sizeof(ValueNum) * arity).
+        // Zero for non-func chunks.
+        unsigned m_funcAppElemSize;
+
         // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
         Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
@@ -1556,9 +1607,8 @@ private:
         {
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
-            static_assert(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
-            return reinterpret_cast<VNDefFuncAppFlexible*>(
-                (char*)m_defs + offsetWithinChunk * (sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs));
+            assert(m_funcAppElemSize == sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs);
+            return reinterpret_cast<VNDefFuncAppFlexible*>((char*)m_defs + offsetWithinChunk * m_funcAppElemSize);
         }
 
         template <int N>

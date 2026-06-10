@@ -904,13 +904,19 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                             // Write the ImageBase-relative value to be relocated at load time.
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + imageBase + addend);
-                        break;
+                            break;
                         case RelocType.IMAGE_REL_BASED_ADDR32NB:
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + relocLength) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
+                            Relocation.WriteValue(reloc.Type, pData, (long)(symbolImageOffset & ~1u) - (long)(relocOffset + relocLength) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                            Relocation.WriteValue(reloc.Type, pData, (long)symbolImageOffset - (long)relocOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                             long fileOffset = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;

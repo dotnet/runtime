@@ -386,14 +386,10 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
     {
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || comp->bbIsTryBeg(block))
         {
             Compiler::AcdKeyDesignator dsg;
             const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
-
-            // We do not expect any ACDs to be mapped to try regions (only method/handler/filter)
-            //
-            assert(dsg != Compiler::AcdKeyDesignator::KD_TRY);
 
             for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
             {

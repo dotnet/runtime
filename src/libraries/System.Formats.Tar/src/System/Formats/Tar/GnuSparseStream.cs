@@ -286,6 +286,108 @@ namespace System.Formats.Tar
         // Exposes the underlying raw stream for callers that need to access the condensed data.
         internal Stream BaseStream => _rawStream;
 
+        // Copies only the populated segments of this sparse entry to the given destination FileStream,
+        // seeking over holes so they remain unwritten. On file systems that support sparse files (most
+        // modern Unix file systems and NTFS when the file has been marked sparse via FSCTL_SET_SPARSE),
+        // the holes will not consume disk space. On file systems without sparse support, the OS will
+        // zero-fill the holes when SetLength is called below, producing an equivalent on-disk result
+        // to a plain CopyTo (just without the up-front PreallocationSize reservation).
+        //
+        // The destination must be writable and seekable. The destination's final length will equal
+        // the entry's real (expanded) size.
+        internal void CopyPopulatedDataTo(FileStream destination)
+        {
+            ThrowIfDisposed();
+            EnsureInitialized();
+            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+            try
+            {
+                for (int i = 0; i < _segments.Length; i++)
+                {
+                    (long virtualOffset, long segmentLength) = _segments[i];
+                    if (segmentLength == 0)
+                    {
+                        continue;
+                    }
+
+                    destination.Position = virtualOffset;
+                    long written = 0;
+                    while (written < segmentLength)
+                    {
+                        int toRead = (int)Math.Min(segmentLength - written, buffer.Length);
+                        int bytesRead = ReadFromPackedData(buffer.AsSpan(0, toRead), _packedStartOffsets[i] + written);
+                        if (bytesRead == 0)
+                        {
+                            throw new EndOfStreamException();
+                        }
+                        destination.Write(buffer, 0, bytesRead);
+                        written += bytesRead;
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            // Extend the destination to the full real size so any trailing hole is materialized
+            // (as an unallocated extent on sparse-capable file systems, or as zeros otherwise).
+            if (destination.Length < _realSize)
+            {
+                destination.SetLength(_realSize);
+            }
+
+            _virtualPosition = _realSize;
+        }
+
+        // Async counterpart to CopyPopulatedDataTo.
+        internal async ValueTask CopyPopulatedDataToAsync(FileStream destination, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+            try
+            {
+                for (int i = 0; i < _segments.Length; i++)
+                {
+                    (long virtualOffset, long segmentLength) = _segments[i];
+                    if (segmentLength == 0)
+                    {
+                        continue;
+                    }
+
+                    destination.Position = virtualOffset;
+                    long written = 0;
+                    while (written < segmentLength)
+                    {
+                        int toRead = (int)Math.Min(segmentLength - written, buffer.Length);
+                        int bytesRead = await ReadFromPackedDataAsync(buffer.AsMemory(0, toRead), _packedStartOffsets[i] + written, cancellationToken).ConfigureAwait(false);
+                        if (bytesRead == 0)
+                        {
+                            throw new EndOfStreamException();
+                        }
+                        await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        written += bytesRead;
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            if (destination.Length < _realSize)
+            {
+                destination.SetLength(_realSize);
+            }
+
+            _virtualPosition = _realSize;
+        }
+
         // Reads from the packed data at the given packedOffset.
         // After EnsureInitialized, the raw stream is positioned at _dataStart and
         // _nextPackedOffset tracks how far into the packed data we've read.

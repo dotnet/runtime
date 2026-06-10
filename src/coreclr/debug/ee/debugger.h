@@ -46,6 +46,7 @@
 #include "dllimportcallback.h"
 
 #include "canary.h"
+#include "cdacdata.h"
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -438,7 +439,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly);
+    DebuggerModule(Module * pRuntimeModule, Assembly * pAssembly);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -454,10 +455,10 @@ class DebuggerModule
 
     Module * GetRuntimeModule();
 
-    DomainAssembly * GetDomainAssembly()
+    Assembly * GetAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainAssembly;
+        return m_pRuntimeAssembly;
     }
 
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
@@ -466,7 +467,7 @@ class DebuggerModule
     BOOL            m_enableClassLoadCallbacks;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainAssembly m_pRuntimeDomainAssembly;
+    PTR_Assembly   m_pRuntimeAssembly;
 
     // Can we change jit flags on the module?
     // This is true during the Module creation
@@ -490,7 +491,7 @@ typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
  * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
  * ------------------------------------------------------------------------ */
 #ifndef DACCESS_COMPILE
-class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
+class EMPTY_BASES ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
 {
     public:
         typedef OBJECTHANDLE element_t;
@@ -581,7 +582,7 @@ public:
     }
 };
 
-class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
+class EMPTY_BASES CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
 {
     public:
         typedef TypeInModule element_t;
@@ -775,8 +776,6 @@ public:
 #endif
 
         _ASSERTE(m_pDCB != NULL);
-        // In case this turns into a continuation event
-        GetRCThreadSendBuffer()->next = NULL;
         LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
@@ -901,6 +900,7 @@ private:
 
 
     friend class Debugger;
+    friend struct ::cdac_data<DebuggerRCThread>;
     Debugger*                       m_debugger;
 
     // IPC_TARGET_* define default targets - if we ever want to do
@@ -1502,8 +1502,6 @@ protected:
     ULONG                    m_lastIL;
     PTR_DebuggerILToNativeMap m_sequenceMap;
     unsigned int             m_sequenceMapCount;
-    PTR_DebuggerILToNativeMap m_callsiteMap;
-    unsigned int             m_callsiteMapCount;
     bool                     m_sequenceMapSorted;
 
     PTR_NativeVarInfo        m_varNativeInfo;
@@ -1532,10 +1530,9 @@ public:
             "                 m_addrOfCode: %p\n"
             "                 m_sizeOfCode: 0x%zx\n"
             "                     m_lastIL: 0x%x\n"
-            "           m_sequenceMapCount: %u\n"
-            "           m_callsiteMapCount: %u\n",
+            "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1554,22 +1551,6 @@ public:
 
         LazyInitBounds();
         return m_sequenceMap;
-    }
-
-    unsigned int GetCallsiteMapCount()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMapCount;
-    }
-
-    PTR_DebuggerILToNativeMap GetCallSiteMap()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMap;
     }
 
     PTR_NativeVarInfo GetVarNativeInfo()
@@ -1890,9 +1871,6 @@ public:
     SVAL_DECL(BOOL, s_fCanChangeNgenFlags);
 
     friend class DebuggerLazyInit;
-#ifdef TEST_DATA_CONSISTENCY
-    friend class DataTest;
-#endif
 
     // Checks if the JitInfos table has been allocated, and if not does so.
     HRESULT inline CheckInitMethodInfoTable();
@@ -1955,9 +1933,8 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * AddDebuggerModule(Assembly * pAssembly);
 
     void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
@@ -1984,7 +1961,7 @@ public:
 
     BOOL ShouldSendCatchHandlerFound(Thread* pThread);
 
-    BOOL ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef);
+    BOOL ShouldSendCustomNotification(Assembly *pAssembly, mdTypeDef typeDef);
 
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
@@ -2130,20 +2107,10 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
-
-    //HRESULT GetAndSendJITFunctionData(DebuggerRCThread* rcThread,
-    //                               mdMethodDef methodToken,
-    //                               void* functionModuleToken);
-    HRESULT GetFuncData(mdMethodDef funcMetadataToken,
-                        DebuggerModule* pDebuggerModule,
-                        SIZE_T nVersion,
-                        DebuggerIPCE_FuncData *data);
-
 
     // The following four functions convert between type handles and the data that is
     // shipped for types to and from the right-side.
@@ -2202,12 +2169,6 @@ public:
         DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
 
     };
-
-
-
-    HRESULT GetMethodDescData(MethodDesc *pFD,
-                              DebuggerJitInfo *pJITInfo,
-                              DebuggerIPCE_JITFuncData *data);
 
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
@@ -2487,11 +2448,6 @@ public:
                          SString * pSwitchName,
                          SString * pMessage);
 
-    void SendLogSwitchSetting (int iLevel,
-                               int iReason,
-                               _In_z_ LPCWSTR pLogSwitchName,
-                               _In_z_ LPCWSTR pParentSwitchName);
-
     bool IsLoggingEnabled (void)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2502,7 +2458,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken);
 
 
     void EnableLogMessages (bool fOnOff) {LIMITED_METHOD_CONTRACT;  m_LoggingEnabled = fOnOff;}
@@ -2561,11 +2517,6 @@ public:
 
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
-    // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
-    void DestroyConnection(CONNID dwConnectionId);
-    void ChangeConnection(CONNID dwConnectionId);
-
     //
     // This function is used to identify the helper thread.
     //
@@ -2588,7 +2539,7 @@ public:
     void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
-    void UnloadAssembly(DomainAssembly * pDomainAssembly);
+    void UnloadAssembly(Assembly * pAssembly);
 
     HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);
@@ -2754,9 +2705,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-        _ASSERTE((type == DB_IPCE_SYNC_COMPLETE) ||
-                 (type == DB_IPCE_TEST_CRST) ||
-                 (type == DB_IPCE_TEST_RWLOCK));
+        _ASSERTE(type == DB_IPCE_SYNC_COMPLETE);
 
         Thread *pThread = g_pEEInterface->GetThread();
         InitIPCEvent(ipce,
@@ -2894,6 +2843,7 @@ private:
 
     // DacDbiInterfaceImpl needs to be able to write to private fields in the debugger class.
     friend class DacDbiInterfaceImpl;
+    friend struct ::cdac_data<Debugger>;
 
     // Set OOP by RS to request a sync after a debug event.
     // Clear by LS when we sync.
@@ -3466,6 +3416,7 @@ public:
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
     Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?
@@ -3482,15 +3433,18 @@ public:
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
-    bool                               m_evalDuringException;
+    bool                               m_evalUsesHijack;
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
-    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
+    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     bool Init()
     {
+        if (m_bpInfoSegment == NULL)
+            return true;
+
         _ASSERTE(DbgIsExecutable(&m_bpInfoSegment->m_breakpointInstruction, sizeof(m_bpInfoSegment->m_breakpointInstruction)));
         return true;
     }
@@ -3526,10 +3480,10 @@ public:
         DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
         for (unsigned int i = 0; i < m_argCount; i++)
         {
-            if (argData[i].fullArgType != NULL)
+            if (argData[i].fullArgType != (CORDB_ADDRESS)0)
             {
                 _ASSERTE(g_pDebugger != NULL);
-                g_pDebugger->ReleaseRemoteBuffer((BYTE*)argData[i].fullArgType, true);
+                g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
             }
         }
 
@@ -3795,7 +3749,7 @@ HANDLE OpenWin32EventOrThrow(
         ThreadStoreLockHolderWithSuspendReason tsld(ThreadSuspend::SUSPEND_FOR_DEBUGGER); \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
-        if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
+        if (thread != NULL && thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)) \
         {                                                                                 \
             /* Just leave the lock and retry (see comment above for explanation */        \
         }                                                                                 \
@@ -3885,6 +3839,21 @@ HANDLE OpenWin32EventOrThrow(
 
 // Include all of the inline stuff now.
 #include "debugger.inl"
+
+template<>
+struct cdac_data<Debugger>
+{
+    static constexpr size_t RCThread = offsetof(Debugger, m_pRCThread);
+    static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
+    static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
+    static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+};
+
+template<>
+struct cdac_data<DebuggerRCThread>
+{
+    static constexpr size_t DCB = offsetof(DebuggerRCThread, m_pDCB);
+};
 
 
 //

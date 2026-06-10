@@ -3,16 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ExceptionLookupTableEntry : IData<ExceptionLookupTableEntry>
+[CdacType(nameof(DataType.ExceptionLookupTableEntry))]
+internal sealed partial class ExceptionLookupTableEntry : IData<ExceptionLookupTableEntry>
 {
-    static ExceptionLookupTableEntry IData<ExceptionLookupTableEntry>.Create(Target target, TargetPointer address) => new ExceptionLookupTableEntry(target, address);
-    public ExceptionLookupTableEntry(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionLookupTableEntry);
-        MethodStartRVA = target.ReadField<uint>(address, type, nameof(MethodStartRVA));
-        ExceptionInfoRVA = target.ReadField<uint>(address, type, nameof(ExceptionInfoRVA));
-    }
-
-    public uint MethodStartRVA { get; init; }
-    public uint ExceptionInfoRVA { get; init; }
+    [Field] public uint MethodStartRVA { get; }
+    [Field] public uint ExceptionInfoRVA { get; }
 }

@@ -27,7 +27,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         return data.Select(d => new object[] { d, data });
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("no-fingerprinting")]
+    [Theory, TestCategory("no-fingerprinting")]
     [MemberData(nameof(LoadLazyAssemblyBeforeItIsNeededData))]
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {

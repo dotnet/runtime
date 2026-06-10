@@ -143,15 +143,6 @@ EEStringData *EEUnicodeHashTableHelper::GetKey(EEHashEntry_t *pEntry)
     return (EEStringData*)pEntry->Key;
 }
 
-void EEUnicodeHashTableHelper::ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ((EEStringData*)pEntry->Key)->SetStringBuffer (pNewKey->GetStringBuffer());
-    ((EEStringData*)pEntry->Key)->SetCharCount (pNewKey->GetCharCount());
-    ((EEStringData*)pEntry->Key)->SetIsOnlyLowChars (pNewKey->GetIsOnlyLowChars());
-}
-
 // ============================================================================
 // Unicode stringliteral hash table helper.
 // ============================================================================

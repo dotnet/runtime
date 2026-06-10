@@ -254,7 +254,11 @@ export class PromiseHolder extends ManagedObject {
             // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
             completeTask(this.gc_handle, reason, data, this.res_converter);
         } catch (ex) {
-            // there is no point to propagate the exception into the unhandled promise rejection
+            try {
+                dotnetLoaderExports.exit(1, ex);
+            } catch {
+                // there is no point to propagate the exception into the unhandled promise rejection
+            }
         }
     }
 }

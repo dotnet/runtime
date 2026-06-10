@@ -56,8 +56,11 @@
     <Compile Include="..\Common\JsonSnakeCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
+    <Compile Include="..\src\System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
     <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
+    <Compile Include="..\src\System\Text\Json\JsonTokenType.cs" Link="Common\System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="..\src\System\Text\Json\Serialization\JsonValueType.cs" Link="Common\System\Text\Json\Serialization\JsonValueType.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="Helpers\SourceGeneratorHelpers.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
@@ -70,12 +73,15 @@
     <Compile Include="Model\ClassType.cs" />
     <Compile Include="Model\CollectionType.cs" />
     <Compile Include="Model\ContextGenerationSpec.cs" />
+    <Compile Include="Model\DerivedTypeSpec.cs" />
     <Compile Include="Model\JsonPrimitiveTypeKind.cs" />
     <Compile Include="Model\ObjectConstructionStrategy.cs" />
     <Compile Include="Model\ParameterGenerationSpec.cs" />
+    <Compile Include="Model\PolymorphismOptionsSpec.cs" />
     <Compile Include="Model\PropertyGenerationSpec.cs" />
     <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
     <Compile Include="Model\SourceGenerationOptionsSpec.cs" />
     <Compile Include="Model\TypeGenerationSpec.cs" />
+    <Compile Include="Model\UnionCaseSpec.cs" />
   </ItemGroup>
 </Project>

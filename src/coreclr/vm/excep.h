@@ -29,7 +29,6 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
-
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums
@@ -45,7 +44,7 @@ enum LFH {
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
+#define NULL_AREA_SIZE   minipal_getpagesize()
 #endif // !TARGET_UNIX
 
 class IJitManager;

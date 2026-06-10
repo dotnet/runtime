@@ -147,7 +147,6 @@
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
@@ -176,6 +175,10 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#include "pregeneratedstringthunks.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -206,6 +209,10 @@
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #include "genanalysis.h"
 
@@ -674,6 +681,16 @@ void EEStartupHelper()
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
 
+        InitializePregeneratedStringThunkHash();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
+
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
 #else
@@ -699,9 +716,13 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
-#endif // HOST_ANDROID
+#endif
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
@@ -967,10 +988,9 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
-        if (CdacStress::IsEnabled())
-        {
-            CdacStress::Initialize();
-        }
+#endif
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Initialize();
 #endif
 
         Assembly::Initialize();
@@ -997,8 +1017,8 @@ void EEStartupHelper()
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
-        // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
+        // align up to minipal_getpagesize(), with a maximum of 1 MB
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, minipal_getpagesize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
@@ -1093,7 +1113,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
@@ -1252,8 +1272,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
-#ifdef HAVE_GCCOVER
-        CdacStress::Shutdown();
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Shutdown();
 #endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)

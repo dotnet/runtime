@@ -9,7 +9,7 @@ namespace System.Net
     // The idea is to stay with static helper methods and strings
     internal static partial class IPv6AddressHelper
     {
-        internal static string ParseCanonicalName(ReadOnlySpan<char> str, ref bool isLoopback, out ReadOnlySpan<char> scopeId)
+        internal static unsafe string ParseCanonicalName(ReadOnlySpan<char> str, ref bool isLoopback, out ReadOnlySpan<char> scopeId)
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
             numbers.Clear();

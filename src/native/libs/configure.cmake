@@ -197,6 +197,11 @@ check_symbol_exists(
     HAVE_VFORK)
 
 check_symbol_exists(
+    PR_SET_PDEATHSIG
+    "sys/prctl.h"
+    HAVE_PR_SET_PDEATHSIG)
+
+check_symbol_exists(
     pipe
     unistd.h
     HAVE_PIPE)
@@ -574,19 +579,7 @@ check_symbol_exists(
     stdlib.h
     HAVE_POSIX_MEMALIGN)
 
-if(CLR_CMAKE_TARGET_IOS)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
@@ -600,6 +593,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
     unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+    unset(HAVE_GETHOSTNAME) # WASI sysroot declares gethostname in unistd.h but libc.a has no definition
 elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
@@ -928,7 +922,7 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
     set(HAVE_IOS_NETINET_TCPFSM_H 1)
