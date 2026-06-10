@@ -40,8 +40,10 @@ namespace ILCompiler
         public override Utf8String SanitizeName(Utf8String s)
             => SanitizeName(s.AsSpan());
 
-        private static Utf8String SanitizeName(ReadOnlySpan<byte> s)
+        private static Utf8String SanitizeName(Utf8Span n)
         {
+            ReadOnlySpan<byte> s = n.AsSpan();
+
             Utf8StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)
             {
@@ -98,7 +100,7 @@ namespace ILCompiler
             return bytes.IndexOf(replacementCharacter) >= 0;
         }
 
-        private Utf8String SanitizeNameWithHash(Utf8String literal, byte[] hash = null)
+        private static Utf8String SanitizeNameWithHash(Utf8String literal, byte[] hash = null)
         {
             Utf8String mangledName = SanitizeName(literal);
 
@@ -242,7 +244,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    ReadOnlySpan<byte> ns = t.Namespace;
+                                    Utf8Span ns = t.Namespace;
                                     if (ns.Length > 0)
                                         sb.Append(SanitizeName(ns)).Append('_');
                                 }

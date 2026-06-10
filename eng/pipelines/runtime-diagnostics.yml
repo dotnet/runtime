@@ -37,6 +37,14 @@ parameters:
   values:
     - single-leg
     - xplat
+- name: cdacStressPlatforms
+  displayName: cDAC Stress Test Platforms
+  type: object
+  default:
+    - windows_x64
+    - linux_x64
+    - windows_arm64
+    - linux_arm64
 
 resources:
   repositories:
@@ -311,6 +319,54 @@ extends:
                   }
                 displayName: 'Fail on test errors'
                 condition: always()
+
+    #
+    # cDAC GC Stress Tests — runs in-process cDAC vs runtime stack-ref
+    # verification at GC stress points. Independent stage with its own build
+    # so its status/failures don't get conflated with the dump tests.
+    #
+    - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
+      - stage: CdacStressTests
+        dependsOn: []
+        jobs:
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
+            platforms: ${{ parameters.cdacStressPlatforms }}
+            shouldContinueOnError: true
+            jobParameters:
+              nameSuffix: CdacStressTest
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
+              timeoutInMinutes: 180
+              postBuildSteps:
+              - template: /eng/pipelines/cdac/prepare-cdac-stress-helix-steps.yml
+              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+                parameters:
+                  displayName: 'Send cDAC Stress Tests to Helix'
+                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
+                  environment:
+                    _Creator: dotnet-bot
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+              - pwsh: |
+                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
+                    Write-Error "One or more cDAC stress test failures were detected. Failing the job."
+                    exit 1
+                  }
+                displayName: 'Fail on test errors'
+                condition: always()
+              # On failure, publish the binaries needed to symbolicate the
+              # core dumps Helix collects automatically. Without these the
+              # dumps are unreadable -- libcoreclr.so, mscordaccore_universal,
+              # corerun and their .dbg/.pdb side files are required.
+              - task: PublishPipelineArtifact@1
+                inputs:
+                  targetPath: '$(StressTestHostRootDir)'
+                  artifactName: 'TestHost_CdacStress_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+                displayName: 'Publish TestHost for crash dump symbolication'
+                continueOnError: true
+                condition: failed()
 
     #
     # cDAC X-Plat Dump Generation and Testing — Two-stage flow:
