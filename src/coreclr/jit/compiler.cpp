@@ -3141,7 +3141,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         if (compIsAsyncVersion())
         {
-            printf("OPTIONS: compilation IL belongs to synchronous version\n");
+            printf("OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
         }
     }
 #endif
