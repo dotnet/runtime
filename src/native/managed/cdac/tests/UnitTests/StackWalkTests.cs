@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -31,6 +32,7 @@ public unsafe class StackWalkTests
 
         targetBuilder
             .AddTypes(CreateThreadTypes(threadBuilder))
+            .AddGlobalStrings((Constants.Globals.Architecture, GetRuntimeInfoArchitecture(arch).ToString().ToLowerInvariant()))
             .AddGlobals(
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
@@ -56,15 +58,18 @@ public unsafe class StackWalkTests
 
         return targetBuilder
             .AddContract<IThread>(version: "c1")
+            .AddContract<IRuntimeInfo>(version: "c1")
             .AddContract<IStackWalk>(version: "c1")
             // StackWalk_1's constructor reads these contracts via target.Contracts.{ExecutionManager,GCInfo}
-            // when constructing its GcScanner. Our tests only exercise GetFrames /
-            // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
-            // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
+            // when constructing its GcScanner. These tests don't enumerate GC references,
+            // so empty mocks satisfy construction.
             .AddMockContract(Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .Build();
     }
+
+    private static RuntimeInfoArchitecture GetRuntimeInfoArchitecture(MockTarget.Architecture arch)
+        => arch.Is64Bit ? RuntimeInfoArchitecture.X64 : RuntimeInfoArchitecture.X86;
 
     private static Dictionary<DataType, Target.TypeInfo> CreateThreadTypes(MockThreadBuilder threadBuilder)
         => new()
@@ -194,7 +199,7 @@ public unsafe class StackWalkTests
         Assert.Equal(InternalFrameType.None, frames[8].InternalFrameType);
 
         Assert.Equal(resolveHelperAddr, frames[9].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.M2U, frames[9].InternalFrameType);
+        Assert.Equal(InternalFrameType.None, frames[9].InternalFrameType);
     }
 
     [Fact]
@@ -219,7 +224,7 @@ public unsafe class StackWalkTests
             });
 
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
-        byte[] contextBytes = target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Default, 0);
+        byte[] contextBytes = target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, 0);
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
         context.FillFromBuffer(contextBytes);
 

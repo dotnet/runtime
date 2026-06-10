@@ -546,7 +546,7 @@ public class TestPlaceholderTarget : Target
     public override bool TryGetTypeInfo(string typeName, out Target.TypeInfo info)
         => _typeInfoCache.TryGetValue(typeName, out info);
 
-    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => false;
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;
