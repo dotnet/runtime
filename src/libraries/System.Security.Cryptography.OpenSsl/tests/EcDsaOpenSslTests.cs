@@ -389,12 +389,28 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
+        private const string ECDSA_WTLS7_OID_VALUE = "2.23.43.1.4.7";
+
+        private static bool IsWtls7Available => ECDsaFactory.IsCurveValid(new Oid(ECDSA_WTLS7_OID_VALUE));
+
         [Theory]
         [InlineData(ECDSA_P256_OID_VALUE, 256)]
         [InlineData(ECDSA_P384_OID_VALUE, 384)]
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
-        [InlineData("2.23.43.1.4.7", 160)] // wap-wsg-idm-ecid-wtls7: field=160 bits, order=161 bits
         public void CtorEcKeyNamedCurveExportIsCorrect(string oid, int expectedKeySize)
+        {
+            VerifyCtorEcKeyNamedCurveExport(oid, expectedKeySize);
+        }
+
+        [ConditionalFact(nameof(IsWtls7Available))]
+        public void CtorEcKeyFieldDegreeNotEqualOrderBits()
+        {
+            // wap-wsg-idm-ecid-wtls7 has field=160 bits but order=161 bits.
+            // Verify KeySize uses field degree (160), not EVP_PKEY_bits (161).
+            VerifyCtorEcKeyNamedCurveExport(ECDSA_WTLS7_OID_VALUE, 160);
+        }
+
+        private static void VerifyCtorEcKeyNamedCurveExport(string oid, int expectedKeySize)
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, ecKey);

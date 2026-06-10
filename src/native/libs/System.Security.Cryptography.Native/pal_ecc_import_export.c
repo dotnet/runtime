@@ -508,7 +508,7 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nidName)
     if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
         return 0;
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(EVP_PKEY_get_utf8_string_param))
 #endif
@@ -527,7 +527,7 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nidName)
     }
 #endif
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
     EC_KEY* ecKey = EVP_PKEY_get1_EC_KEY(pkey);
     if (!ecKey)
         return 0;
@@ -540,7 +540,9 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nidName)
 
     EC_KEY_free(ecKey);
     return (*nidName != NID_undef) ? 1 : 0;
-#else
+#endif
+
+#if !defined(NEED_OPENSSL_1_1) && !defined(NEED_OPENSSL_3_0)
     return 0;
 #endif
 }
@@ -550,7 +552,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
     if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
         return -1;
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(EVP_PKEY_get_utf8_string_param))
 #endif
@@ -558,12 +560,12 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
         char encoding[32] = {0};
         if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_ENCODING, encoding, sizeof(encoding), NULL))
             return 0;
-
+        
         return (strcmp(encoding, OSSL_PKEY_EC_ENCODING_EXPLICIT) == 0) ? 1 : 0;
     }
 #endif
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
     EC_KEY* ecKey = EVP_PKEY_get1_EC_KEY(pkey);
     if (!ecKey)
         return -1;
@@ -573,7 +575,9 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
     EC_KEY_free(ecKey);
 
     return (nid == NID_undef) ? 1 : 0;
-#else
+#endif
+
+#if !defined(NEED_OPENSSL_1_1) && !defined(NEED_OPENSSL_3_0)
     return -1;
 #endif
 }
@@ -1005,7 +1009,7 @@ static ECCurveType NIDToCurveType(int fieldType)
     return Unspecified;
 }
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 // Extracts EC curve parameters from a legacy EC_KEY-backed EVP_PKEY by getting
 // the EC_KEY and delegating to CryptoNative_GetECCurveParameters.
 // On success, the caller owns the returned BIGNUMs and must free them.
@@ -1359,7 +1363,7 @@ exit:
 #endif
 }
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
 // Returns 1 on success, 2 if OID not recognized, and 0 on failure.
 static int32_t EvpPKeyGenerateByEcCurveOid_Legacy(
     EVP_PKEY** pkey,
@@ -1412,7 +1416,7 @@ exit:
 }
 #endif
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 // Returns 1 on success, 2 if OID not recognized, 3 if the required OSSL 3.0+ APIs aren't present, and 0 on failure.
 static int32_t EvpPKeyGenerateByEcCurveOid(
     EVP_PKEY** pkey,
@@ -1501,11 +1505,11 @@ int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
 
     int rc = 0;
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
     rc = EvpPKeyGenerateByEcCurveOid(pkey, oid, keySize);
 #endif
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
 #if FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
@@ -1518,7 +1522,7 @@ int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
     return rc;
 }
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
 static int32_t EvpPKeyCreateByEcParameters_Legacy(
     EVP_PKEY** pkey,
     const char* oid,
@@ -1573,7 +1577,7 @@ exit:
 }
 #endif
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 // Returns 1 on success, 2 if OID not recognized, 3 if the required OSSL 3.0+ APIs aren't present, and 0 on failure.
 static int32_t EvpPKeyCreateByEcParameters(
     EVP_PKEY** pkey,
@@ -1708,11 +1712,11 @@ int32_t CryptoNative_EvpPKeyCreateByEcParameters(
 
     int rc = 0;
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
     rc = EvpPKeyCreateByEcParameters(pkey, oid, qx, qxLength, qy, qyLength, d, dLength, keySize);
 #endif
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
 #if FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
@@ -1725,7 +1729,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcParameters(
     return rc;
 }
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
 static int32_t EvpPKeyCreateByEcExplicitParameters_Legacy(
     ECCurveType curveType,
     const uint8_t* qx, int32_t qxLength,
@@ -1797,7 +1801,7 @@ exit:
 }
 #endif
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
 // Returns 1 on success, 3 if the required OSSL 3.0+ APIs aren't present, and 0 on failure.
 static int32_t EvpPKeyCreateByEcExplicitParameters(
     ECCurveType curveType,
@@ -2070,7 +2074,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
     int rc = 0;
 
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
     rc = EvpPKeyCreateByEcExplicitParameters(
         curveType, qx, qxLength, qy, qyLength, d, dLength,
         p, pLength, a, aLength, b, bLength,
@@ -2079,7 +2083,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         pkey, keySize);
 #endif
 
-#if NEED_OPENSSL_1_1
+#ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
 #if FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
