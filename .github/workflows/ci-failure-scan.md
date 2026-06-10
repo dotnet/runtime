@@ -243,9 +243,10 @@ printf '%s\t%s\n' "$xkey" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv               
 Follow exactly these sections from `.github/workflows/shared/create-kbe.instructions.md`, in this order:
 
 1. `<a id="search-existing-kbe"></a>` / `## Search for an existing KBE`
-2. `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`
-3. `<a id="search-existing-prs"></a>` / `## Search for existing PRs already handling the failure`
-4. `<a id="verify-embedded-issues"></a>` / `## Verify every embedded issue number exists`
+2. `<a id="search-recently-closed-kbe"></a>` / `## Search recently-closed KBEs (open-only dedup gap)`
+3. `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`
+4. `<a id="search-existing-prs"></a>` / `## Search for existing PRs already handling the failure`
+5. `<a id="verify-embedded-issues"></a>` / `## Verify every embedded issue number exists`
 
 When searching, account for the fact that the same signature can be filed in
 different `ErrorMessage` representations. A KBE recorded in `<a id="kbe-array-form"></a>`
@@ -261,6 +262,7 @@ Record the same outcomes described there:
 - `existing-kbe #<n>`
 - `linked-tracker #<n>`
 - `existing-PR #<n>`
+- `skipped: recently-closed dup #<n>, needs human review`
 - `skipped: integrity-filtered candidate, needs human review`
 
 #### Step 4.7 — Verify the candidate KBE actually matches
