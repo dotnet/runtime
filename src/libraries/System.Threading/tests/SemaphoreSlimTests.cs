@@ -733,6 +733,45 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task Release_AsyncWaiterHandoff_RacingFastPath_NeverExceedsMaxCount()
+        {
+            // Regression test for the lock-free fast path racing Release's async-waiter handoff.
+            // Release hands permits to async waiters directly, removing each from the waiter list. If the
+            // released count is briefly published into m_currentCount before being reconciled, the lock-free
+            // WaitAsync fast path (which reads m_currentCount without the lock) can steal a permit already
+            // earmarked for a waiter in that window, double-acquiring and corrupting the count until a later
+            // Release overshoots and throws SemaphoreFullException. Every acquire here is paired with a
+            // Release, so the single permit must round-trip cleanly with no exception and a final count of 1.
+            const int Workers = 8, Iterations = 2_000;
+            using var sem = new SemaphoreSlim(1, 1);
+
+            // Blocking acquires: when several land while the permit is held they queue as async waiters,
+            // exercising Release's direct async-waiter handoff path.
+            Task[] waiters = Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    await sem.WaitAsync();
+                    sem.Release();
+                }
+            })).ToArray();
+
+            // Non-blocking acquires hammer the fast path, racing the handoff window above.
+            Task[] pollers = Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    if (await sem.WaitAsync(0))
+                        sem.Release();
+                }
+            })).ToArray();
+
+            // A SemaphoreFullException from any worker propagates through Task.WhenAll and fails the test.
+            await Task.WhenAll(waiters.Concat(pollers));
+            Assert.Equal(1, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task WaitAsync_CancellationRacingAcquire_NoCountCorruption()
         {
             // Race cancellation against concurrent WaitAsync acquisitions on a shared semaphore. Multiple
@@ -748,10 +787,11 @@ namespace System.Threading.Tests
             {
                 for (int i = 0; i < Iterations; i++)
                 {
-                    using var cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
 
-                    // Cancel from another thread so it races the WaitAsync below.
-                    Task canceller = Task.Run(cts.Cancel);
+                    // Cancel from the thread pool (no per-iteration Task allocation) so it races the
+                    // WaitAsync below rather than always preceding it.
+                    ThreadPool.UnsafeQueueUserWorkItem(static s => ((CancellationTokenSource)s).Cancel(), cts);
 
                     try
                     {
@@ -760,8 +800,6 @@ namespace System.Threading.Tests
                         sem.Release();
                     }
                     catch (OperationCanceledException) { }
-
-                    await canceller;
                 }
             })));
 
