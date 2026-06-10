@@ -679,12 +679,9 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.EnableGenericCycleDetection))
-                    {
-                        builder.UseGenericCycleDetection(
-                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-                    }
+                    builder.UseGenericCycleDetection(
+                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 

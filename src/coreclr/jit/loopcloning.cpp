@@ -1406,7 +1406,16 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     else if (iterInfo->HasArrayLengthLimit)
     {
         assert(limitArrIndex != nullptr);
-        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+        if (isIncreasingLoop)
+        {
+            // For increasing loops the limit value is used as the per-access bound, so it
+            // must be compared against the indexed array length. For decreasing loops the
+            // upper end of the IV's range is the init value (already set as `ident` in the
+            // init-conditions section above) -- overwriting it with the loop test's limit
+            // array length would let the fast clone access an unrelated array out of bounds
+            // when init > accessArr.Length (see https://github.com/dotnet/runtime/issues/129176).
+            ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+        }
     }
     else
     {

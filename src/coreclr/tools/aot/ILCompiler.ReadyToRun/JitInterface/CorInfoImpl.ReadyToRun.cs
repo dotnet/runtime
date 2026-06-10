@@ -2682,7 +2682,10 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        Debug.Assert(!pResult->sig.hasTypeArg());
+                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
+                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
+                        // is set up by the post-switch block below.
+                        Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;
 

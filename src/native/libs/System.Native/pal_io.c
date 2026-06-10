@@ -198,6 +198,7 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 

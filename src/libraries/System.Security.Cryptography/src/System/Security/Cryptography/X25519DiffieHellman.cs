@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public abstract class X25519DiffieHellman : IDisposable
     {
-        private static readonly string[] s_knownOids = [Oids.X25519];
+        private protected static readonly string[] s_knownOids = [Oids.X25519];
 
         private bool _disposed;
 
@@ -41,8 +41,11 @@ namespace System.Security.Cryptography
         /// </summary>
         public const int PublicKeySizeInBytes = 32;
 
+        // Pre-encoded PKCS#8 for X25519 is 48 bytes: 16 byte preamble + 32 byte private key.
+        private protected const int Pkcs8SizeInBytes = 16 + PrivateKeySizeInBytes;
+
         // Pre-encoded SPKI for X25519 is 44 bytes: 12 byte preamble + 32 byte public key.
-        private const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
+        private protected const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -1427,7 +1430,12 @@ namespace System.Security.Cryptography
         {
         }
 
-        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        private protected static bool TryWriteSubjectPublicKeyInfo<TState>(
+            Span<byte> destination,
+            TState state,
+            Action<TState, Span<byte>> writer,
+            out int bytesWritten)
+            where TState : allows ref struct
         {
             // Pre-encoded SubjectPublicKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> spkiPreamble =
@@ -1446,9 +1454,18 @@ namespace System.Security.Cryptography
             }
 
             spkiPreamble.CopyTo(destination);
-            ExportPublicKeyCore(destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
+            writer(state, destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
             bytesWritten = SpkiSizeInBytes;
             return true;
+        }
+
+        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        {
+            return TryWriteSubjectPublicKeyInfo(
+                destination,
+                this,
+                static (self, buffer) => self.ExportPublicKeyCore(buffer),
+                out bytesWritten);
         }
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)
@@ -1480,6 +1497,20 @@ namespace System.Security.Cryptography
 
         private protected bool TryExportPkcs8PrivateKeyImpl(Span<byte> destination, out int bytesWritten)
         {
+            return TryWritePkcs8PrivateKey(
+                destination,
+                this,
+                static (self, buffer) => self.ExportPrivateKeyCore(buffer),
+                out bytesWritten);
+        }
+
+        private protected static bool TryWritePkcs8PrivateKey<TState>(
+            Span<byte> destination,
+            TState state,
+            Action<TState, Span<byte>> writer,
+            out int bytesWritten)
+            where TState : allows ref struct
+        {
             // Pre-encoded PKCS#8 PrivateKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> pkcs8Preamble =
             [
@@ -1490,9 +1521,9 @@ namespace System.Security.Cryptography
                 0x04, 0x20,                         // OCTET STRING (32 bytes)
             ];
 
-            int pkcs8SizeInBytes = pkcs8Preamble.Length + PrivateKeySizeInBytes;
+            Debug.Assert(pkcs8Preamble.Length + PrivateKeySizeInBytes == Pkcs8SizeInBytes);
 
-            if (destination.Length < pkcs8SizeInBytes)
+            if (destination.Length < Pkcs8SizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
@@ -1503,8 +1534,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                ExportPrivateKey(privateKeyBuffer);
-                bytesWritten = pkcs8SizeInBytes;
+                writer(state, privateKeyBuffer);
+                bytesWritten = Pkcs8SizeInBytes;
                 return true;
             }
             catch
