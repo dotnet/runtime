@@ -9545,19 +9545,22 @@ public:
 
     void eeGetVars();
 
-    unsigned eeVarsCount;
+    unsigned eeVarsCount    = 0;
+    unsigned eeVarsCapacity = 0;
 
     struct VarResultInfo
     {
         UNATIVE_OFFSET             startOffset;
         UNATIVE_OFFSET             endOffset;
+        uint32_t                   callReturnValueILOffset;
         DWORD                      varNumber;
         CodeGenInterface::siVarLoc loc;
     }*   eeVars;
-    void eeSetLVcount(unsigned count);
+    void eeAllocateLVs(unsigned count);
     void eeSetLVinfo(unsigned                          which,
                      UNATIVE_OFFSET                    startOffs,
-                     UNATIVE_OFFSET                    length,
+                     UNATIVE_OFFSET                    endOffs,
+                     uint32_t                          callReturnValILOffs,
                      unsigned                          varNum,
                      const CodeGenInterface::siVarLoc& loc);
     void eeSetLVdone();
