@@ -13,6 +13,8 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 {
     public class EcDsaOpenSslTests : ECDsaTestsBase
     {
+        public static bool SupportsExplicitCurves => ECDsaFactory.ExplicitCurvesSupported || ECDsaFactory.ExplicitCurvesSupportFailOnUseOnly;
+
         [Fact]
         public void DefaultCtor()
         {
@@ -679,7 +681,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsExplicitCurves))]
         public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
@@ -698,7 +700,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public void ExplicitCurveImportAndOriginalSignVerifyCrossCompatible()
         {
             byte[] data = ByteUtils.RepeatByte(0x42, 64);

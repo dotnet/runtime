@@ -1450,10 +1450,16 @@ static int32_t EvpPKeyGenerateByEcCurveOid(
         goto error;
 
     if (EVP_PKEY_CTX_set_group_name(ctx, groupName) <= 0)
+    {
+        rc = 2;
         goto error;
+    }
 
     if (EVP_PKEY_keygen(ctx, pkey) <= 0)
+    {
+        rc = 2;
         goto error;
+    }
 
     if (keySize != NULL)
     {

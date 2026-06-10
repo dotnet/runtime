@@ -10,6 +10,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 {
     public class EcDiffieHellmanOpenSslTests : ECDiffieHellmanTests
     {
+        public static bool ECExplicitCurvesSupported => ECDiffieHellmanFactory.ExplicitCurvesSupported;
+        public static bool SupportsExplicitCurves => ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly;
+
         [Fact]
         public void DefaultCtor()
         {
@@ -443,7 +446,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsExplicitCurves))]
         public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
@@ -462,7 +465,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
