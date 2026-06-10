@@ -67,49 +67,44 @@ jobs:
       # ======================================
       - name: Setup Environment
         run: |
-          docker exec gha bash -c "
+          docker exec gha bash -c '
             set -euo pipefail
-            /jit_testing.sh setup | tee /tmp/setup.log
-             exit ${PIPESTATUS[0]}
-          "
+            /jit_testing.sh setup 2>&1 | tee /tmp/setup.log
+          '
 
       # ======================================
       # BUILD STAGES
       # ======================================
       - name: Build Runtime
         run: |
-          docker exec gha bash -c "
+          docker exec gha bash -c '
             set -euo pipefail
-            /jit_testing.sh build_runtime | tee /tmp/build_runtime.log
-             exit ${PIPESTATUS[0]}
-          "
+            /jit_testing.sh build_runtime 2>&1 | tee /tmp/build_runtime.log
+          '
 
       - name: Build Libraries
         run: |
-          docker exec gha bash -c "
+          docker exec gha bash -c '
             set -euo pipefail
-            /jit_testing.sh build_libs | tee /tmp/build_libs.log
-             exit ${PIPESTATUS[0]}
-          "
+            /jit_testing.sh build_libs 2>&1 | tee /tmp/build_libs.log
+          '
 
       - name: Build Tests
         run: |
-          docker exec gha bash -c "
+          docker exec gha bash -c '
             set -euo pipefail
-            /jit_testing.sh build_tests | tee /tmp/build_tests.log
-             exit ${PIPESTATUS[0]}
-          "
+            /jit_testing.sh build_tests 2>&1 | tee /tmp/build_tests.log
+          '
 
       # ======================================
       # TEST STAGE
       # ======================================
       - name: Run JIT Tests
         run: |
-          docker exec gha bash -c "
+          docker exec gha bash -c '
             set -euo pipefail
-            /jit_testing.sh run_tests | tee /tmp/jit_tests.log
-            exit ${PIPESTATUS[0]}
-          "
+            /jit_testing.sh run_tests 2>&1 | tee /tmp/jit_tests.log
+          '
 
       # ======================================
       # COPY LOGS
