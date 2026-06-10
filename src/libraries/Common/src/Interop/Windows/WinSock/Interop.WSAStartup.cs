@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,7 +14,11 @@ internal static partial class Interop
 
         internal static void EnsureInitialized()
         {
-            if (!Interlocked.Exchange(ref s_initialized, true))
+            // No volatile needed here. Reading stale information is just going to cause a harmless extra startup.
+            // We cannot just exchange s_initialized to true and exit if it was already set to avoid the case when
+            // the second coming thread exits and starts working with network
+            // while the first thread hasn't done initialization yet
+            if (!s_initialized)
                 Initialize();
 
             static unsafe void Initialize()
@@ -26,11 +31,22 @@ internal static partial class Interop
                     // WSAStartup does not set LastWin32Error
                     throw new SocketException((int)errorCode);
                 }
+
+                if (Interlocked.Exchange(ref s_initialized, true))
+                {
+                    // Keep the winsock initialization count balanced if other thread beats us to finish the initialization.
+                    // This cleanup is just for good hygiene. A few extra startups would not matter.
+                    errorCode = WSACleanup();
+                    Debug.Assert(errorCode == SocketError.Success);
+                }
             }
         }
 
         [LibraryImport(Libraries.Ws2_32)]
         private static unsafe partial SocketError WSAStartup(short wVersionRequested, WSAData* lpWSAData);
+
+        [LibraryImport(Libraries.Ws2_32)]
+        private static partial SocketError WSACleanup();
 
         [StructLayout(LayoutKind.Sequential, Size = 408)]
         private struct WSAData
