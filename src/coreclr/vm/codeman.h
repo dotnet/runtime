@@ -2542,7 +2542,7 @@ public:
     // then compute and return the virtual IP for that the entrypoint for that function
     // (which may require a walk back to find the main function if functionIndex represents a funclet)
     static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
-    static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR functionIndex);
+    static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
 #endif // TARGET_WASM
 
     static void           DeleteRange(TADDR StartRange);

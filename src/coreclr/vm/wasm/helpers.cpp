@@ -11,6 +11,9 @@
 #include "cgensys.h"
 #include "readytorun.h"
 
+#define WASM_STRINGIFY_HELPER(value) #value
+#define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
+
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
 // -------------------------------------------------
@@ -531,7 +534,7 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
 
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "local.get       3\n"               // Get the stack pointer
-         "i32.const       2\n"
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
          "i32.store       0\n"               // And save a terminator to the stack frame.
 
          "local.get       3\n"               // Get the stack pointer
@@ -559,7 +562,7 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
 
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "local.get       2\n"               // Get the stack pointer
-         "i32.const       2\n"
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
          "i32.store       0\n"               // And save a terminator to the stack frame.
 
          "local.get       2\n"               // Get the stack pointer
