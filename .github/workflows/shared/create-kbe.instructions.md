@@ -87,18 +87,16 @@ it does not end the inspection.
 
 <a id="search-recently-closed-kbe"></a>
 
-## Search recently-closed KBEs (open-only dedup gap)
+## Search recently-closed KBEs
 
-The existing-KBE search above is open-only. A `[ci-scan]` KBE that was already
-closed (as fixed, duplicate, or stale) is invisible to it, so a recurring
-signature gets re-filed from scratch the next time it surfaces — the exact churn
-that produced several closed KBEs for one failure
-(`X509Certificate2CollectionRemoveRangeArray`, `crossgen2_comparison.py`). After
-the open search misses, also scan recently-closed candidates:
+The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
+as fixed, duplicate, or stale is invisible and a recurring signature gets
+re-filed from scratch. After the open search misses, also scan recently-closed
+candidates:
 
 - `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
-- `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` — catches a
-  closed `[ci-scan]` predecessor and a human-filed report that never carried the
+- `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
+  closed `[ci-scan]` predecessor or a human-filed report that never carried the
   KBE label.
 
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
