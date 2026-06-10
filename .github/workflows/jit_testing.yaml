@@ -20,24 +20,31 @@ jobs:
     runs-on: ubuntu-24.04-ppc64le-p10
 
     steps:
-      #  Ensure correct branch
+      # ======================================
+      # Ensure correct branch
+      # ======================================
       - name: Fail if not correct branch
         if: github.ref != 'refs/heads/ppc64le_coreclr_jit'
         run: |
           echo "This workflow is only allowed on ppc64le_coreclr_jit branch"
           exit 1
 
-      #  Checkout code
+      # ======================================
+      # Checkout
+      # ======================================
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      #  Clean old container
+      # ======================================
+      # Clean old container
+      # ======================================
       - name: Stop and Remove Existing Container
-        run: |
-          docker rm -f gha 2>/dev/null || true
+        run: docker rm -f gha 2>/dev/null || true
         continue-on-error: true
 
-      #  Start container
+      # ======================================
+      # Start container
+      # ======================================
       - name: Start Container
         run: |
           docker run -dit \
@@ -47,39 +54,81 @@ jobs:
             --name gha \
             ubuntu:22.04
 
-      #  Copy script inside container
+      # ======================================
+      # Copy script
+      # ======================================
       - name: Copy Script
         run: |
           docker cp .github/workflows/jit_testing.sh gha:/jit_testing.sh
           docker exec gha chmod +x /jit_testing.sh
 
-      #  MAIN FIX: correct failure handling
-      - name: Run Build + Test
+      # ======================================
+      # INSTALL + SETUP (runs once)
+      # ======================================
+      - name: Setup Environment
         run: |
           docker exec gha bash -c "
             set -euo pipefail
-            /jit_testing.sh | tee /tmp/jit.log
+            /jit_testing.sh setup | tee /tmp/setup.log
           "
 
-      #  Always copy logs
+      # ======================================
+      # BUILD STAGES
+      # ======================================
+      - name: Build Runtime
+        run: |
+          docker exec gha bash -c "
+            set -euo pipefail
+            /jit_testing.sh build_runtime | tee /tmp/build_runtime.log
+          "
+
+      - name: Build Libraries
+        run: |
+          docker exec gha bash -c "
+            set -euo pipefail
+            /jit_testing.sh build_libs | tee /tmp/build_libs.log
+          "
+
+      - name: Build Tests
+        run: |
+          docker exec gha bash -c "
+            set -euo pipefail
+            /jit_testing.sh build_tests | tee /tmp/build_tests.log
+          "
+
+      # ======================================
+      # TEST STAGE
+      # ======================================
+      - name: Run JIT Tests
+        run: |
+          docker exec gha bash -c "
+            set -euo pipefail
+            /jit_testing.sh run_tests | tee /tmp/jit_tests.log
+          "
+
+      # ======================================
+      # COPY LOGS
+      # ======================================
       - name: Copy Logs
         if: always()
         run: |
-          docker cp gha:/tmp/jit.log ./jit.log 2>/dev/null || echo "No log file found"
+          docker cp gha:/tmp ./logs 2>/dev/null || echo "No logs found"
         continue-on-error: true
 
-      #  Upload logs
+      # ======================================
+      # UPLOAD LOGS
+      # ======================================
       - name: Upload Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jit-log-${{ github.run_number }}
-          path: |
-            jit.log
-            **/build.log
+          name: jit-logs-${{ github.run_number }}
+          path: logs/
           retention-days: 7
 
-      #  Cleanup container
+      # ======================================
+      # CLEANUP
+      # ======================================
       - name: Cleanup Container
         if: always()
         run: |
