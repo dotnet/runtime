@@ -265,8 +265,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_SuspendResumeCompleteEvents_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            var taskEvts = stream.ForTask(taskId);
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
             Assert.Contains(AsyncEventID.RuntimeAsync_ResumeAsyncContext, ids);
@@ -296,10 +296,10 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ContextEventIdLifecycle_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            Assert.True(taskId > 0, "Context ID should be non-zero");
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            Assert.True(dispatcherId > 0, "DispatcherId should be non-zero");
 
-            var taskEvts = stream.ForTask(taskId);
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
@@ -342,8 +342,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_EventSequenceOrder_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            var taskEvts = stream.ForTask(taskId);
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
             // Verify the expected lifecycle sequence exists in order.
@@ -392,7 +392,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(createCallstacks, cs =>
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in create callstack");
-                Assert.True(cs.TaskId != 0, "Expected non-zero task ID in create callstack");
+                Assert.True(cs.DispatcherId != 0, "Expected non-zero dispatcher ID in create callstack");
                 Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
@@ -446,7 +446,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(suspendCallstacks, cs =>
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in suspend callstack");
-                Assert.True(cs.TaskId != 0, "Expected non-zero task ID in suspend callstack");
+                Assert.True(cs.DispatcherId != 0, "Expected non-zero dispatcher ID in suspend callstack");
                 Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
@@ -499,10 +499,10 @@ namespace System.Threading.Tasks.Tests
             var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackPrecedesComplete_Marker));
             Assert.NotEmpty(suspendStacks);
 
-            ulong taskId = suspendStacks[0].TaskId;
-            Assert.True(taskId > 0, "Expected non-zero context ID");
+            ulong dispatcherId = suspendStacks[0].DispatcherId;
+            Assert.True(dispatcherId > 0, "Expected non-zero dispatcher ID");
 
-            var taskEvts = stream.ForTask(taskId);
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
             int suspendIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack);
@@ -568,12 +568,12 @@ namespace System.Threading.Tasks.Tests
             int matchedPairs = 0;
             foreach (var create in createStacks)
             {
-                var matchingResume = resumeStacks.FirstOrDefault(r => r.TaskId == create.TaskId);
+                var matchingResume = resumeStacks.FirstOrDefault(r => r.DispatcherId == create.DispatcherId);
                 if (matchingResume is null)
                     continue;
 
                 matchedPairs++;
-                Assert.True(create.Timestamp <= matchingResume.Timestamp, $"For task {create.TaskId}: CreateAsyncCallstack (ts {create.Timestamp}) should precede ResumeAsyncCallstack (ts {matchingResume.Timestamp})");
+                Assert.True(create.Timestamp <= matchingResume.Timestamp, $"For dispatcher {create.DispatcherId}: CreateAsyncCallstack (ts {create.Timestamp}) should precede ResumeAsyncCallstack (ts {matchingResume.Timestamp})");
             }
 
             Assert.True(matchedPairs >= 1, $"Expected at least one matching Create/Resume callstack pair, but found {matchedPairs}");
@@ -601,11 +601,11 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(createStacks);
             Assert.NotEmpty(resumeStacks);
 
-            // For each create callstack, find the first resume with the same task ID and verify frames match.
+            // For each create callstack, find the first resume with the same dispatcher ID and verify frames match.
             int matchedPairs = 0;
             foreach (var create in createStacks)
             {
-                var matchingResume = resumeStacks.FirstOrDefault(r => r.TaskId == create.TaskId);
+                var matchingResume = resumeStacks.FirstOrDefault(r => r.DispatcherId == create.DispatcherId);
                 if (matchingResume is null)
                     continue;
 
@@ -642,7 +642,7 @@ namespace System.Threading.Tasks.Tests
             Assert.All(callstacks, cs =>
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in callstack");
-                Assert.True(cs.TaskId != 0, "Expected non-zero task ID in resume callstack");
+                Assert.True(cs.DispatcherId != 0, "Expected non-zero dispatcher ID in resume callstack");
                 Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
@@ -698,8 +698,8 @@ namespace System.Threading.Tasks.Tests
 
             Assert.Equal(ExpectedChainDepth, markerCallstacks[0].Frames.Count);
 
-            ulong chainTaskId = markerCallstacks[0].TaskId;
-            var chainEvents = stream.ForTask(chainTaskId);
+            ulong chainDispatcherId = markerCallstacks[0].DispatcherId;
+            var chainEvents = stream.ChainEventsFromDispatcher(chainDispatcherId);
 
             int resumeCount = chainEvents.Count(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncMethod);
             Assert.Equal(ExpectedChainDepth, resumeCount);
@@ -882,9 +882,9 @@ namespace System.Threading.Tasks.Tests
             var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_UnhandledExceptionUnwind_Marker));
             Assert.NotEmpty(resumeStacks);
 
-            ulong taskId = resumeStacks[0].TaskId;
+            ulong dispatcherId = resumeStacks[0].DispatcherId;
 
-            var taskEvts = stream.ForTask(taskId);
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var eventIds = taskEvts.Select(e => e.EventId).ToList();
 
             Assert.Contains(AsyncEventID.RuntimeAsync_ResumeAsyncContext, eventIds);
@@ -916,9 +916,9 @@ namespace System.Threading.Tasks.Tests
             var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_HandledExceptionUnwind_Marker));
             Assert.NotEmpty(resumeStacks);
 
-            ulong taskId = resumeStacks[0].TaskId;
+            ulong dispatcherId = resumeStacks[0].DispatcherId;
 
-            var taskEvts = stream.ForTask(taskId);
+            var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var eventIds = taskEvts.Select(e => e.EventId).ToList();
 
             Assert.Contains(AsyncEventID.RuntimeAsync_ResumeAsyncContext, eventIds);
@@ -1533,7 +1533,7 @@ namespace System.Threading.Tasks.Tests
                     if (header is null)
                         return;
 
-                    uint contextId = header.Value.AsyncThreadContextId;
+                    uint threadContextId = header.Value.AsyncThreadContextId;
 
                     // Parse the first event in this buffer.
                     int index = HeaderSize;
@@ -1549,17 +1549,17 @@ namespace System.Threading.Tasks.Tests
                         firstId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack ||
                         firstId == AsyncEventID.RuntimeAsync_SuspendAsyncCallstack)
                     {
-                        // Callstack payload: callstackId(1) + continuationIndex(1) + frameCount(1) + compressed taskId + frames...
+                        // Callstack payload: callstackId(1) + continuationIndex(1) + frameCount(1) + compressed parentDispatcherId + compressed dispatcherId + frames...
                         index++; // callstack ID (reserved)
                         index++; // continuation index
                         if (index < buffer.Length)
                             frameCount = buffer[index];
                     }
 
-                    if (!buffersByContext.TryGetValue(contextId, out var list))
+                    if (!buffersByContext.TryGetValue(threadContextId, out var list))
                     {
                         list = new List<(int, AsyncEventID, byte)>();
-                        buffersByContext[contextId] = list;
+                        buffersByContext[threadContextId] = list;
                     }
                     list.Add((buffer.Length, firstId, frameCount));
                 });
@@ -1733,7 +1733,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
@@ -1748,15 +1748,15 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(branchBCallstacks);
             Assert.NotEmpty(branchCCallstacks);
 
-            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own TaskId.
-            AssertExactlyOneCreateAndComplete(stream, branchACallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
-            AssertExactlyOneCreateAndComplete(stream, branchBCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
-            AssertExactlyOneCreateAndComplete(stream, branchCCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
+            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, branchACallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
+            AssertExactlyOneCreateAndComplete(stream, branchBCallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
+            AssertExactlyOneCreateAndComplete(stream, branchCCallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
 
             // The outer marker's chain should fire Create -> Resume -> Complete in that order.
-            ulong markerTaskId = markerCallstacks[0].TaskId;
-            var markerIds = stream.ForTask(markerTaskId).Select(e => e.EventId).ToList();
+            ulong markerDispatcherId = markerCallstacks[0].DispatcherId;
+            var markerIds = stream.ChainEventsFromDispatcher(markerDispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = markerIds.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             int resumeIdx = markerIds.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
@@ -1820,15 +1820,15 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(slow1Callstacks);
             Assert.NotEmpty(slow2Callstacks);
 
-            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own TaskId.
-            AssertExactlyOneCreateAndComplete(stream, fastCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
-            AssertExactlyOneCreateAndComplete(stream, slow1Callstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
-            AssertExactlyOneCreateAndComplete(stream, slow2Callstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
+            // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, fastCallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
+            AssertExactlyOneCreateAndComplete(stream, slow1Callstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
+            AssertExactlyOneCreateAndComplete(stream, slow2Callstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
 
             // The outer marker should also be resumed at least once.
-            ulong markerTaskId = markerCallstacks[0].TaskId;
-            var markerIds = stream.ForTask(markerTaskId).Select(e => e.EventId).ToList();
+            ulong markerDispatcherId = markerCallstacks[0].DispatcherId;
+            var markerIds = stream.ChainEventsFromDispatcher(markerDispatcherId).Select(e => e.EventId).ToList();
             int resumeCountForMarker = markerIds.Count(id => id == AsyncEventID.RuntimeAsync_ResumeAsyncContext);
             Assert.True(resumeCountForMarker >= 1, $"Expected outer marker to be resumed at least once, got {resumeCountForMarker}");
         }
@@ -1859,7 +1859,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
@@ -1878,8 +1878,8 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(nameof(RuntimeAsync_ConfigureAwaitFalse_Marker), frameNames);
 
             // ConfigureAwait(false) on a sequential await chain collapses Leaf -> Mid -> Marker into one
-            // continuation chain, so exactly one Create / one Complete is expected on the marker's TaskId.
-            AssertExactlyOneCreateAndComplete(stream, deepest.TaskId, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
+            // continuation chain, so exactly one Create / one Complete is expected on the marker's DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, deepest.DispatcherId, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1920,9 +1920,9 @@ namespace System.Threading.Tasks.Tests
             var innerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
             Assert.NotEmpty(innerCallstacks);
 
-            // Inner cancelled task + outer marker must each see exactly one Create and one Complete on their own TaskId.
-            AssertExactlyOneCreateAndComplete(stream, innerCallstacks[0].TaskId, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_TaskCancellation_Marker));
+            // Inner cancelled task + outer marker must each see exactly one Create and one Complete on their own DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, innerCallstacks[0].DispatcherId, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(RuntimeAsync_TaskCancellation_Marker));
         }
 
         private static InlinePostSynchronizationContext? s_runtimeAsyncSyncContextCtx;
@@ -1969,12 +1969,12 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            // The marker's chain should see exactly one Create and one Complete on its own TaskId.
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
+            // The marker's chain should see exactly one Create and one Complete on its own DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
 
             // Verify the standard Create -> Resume -> Complete sequence fired in order for our context.
-            ulong taskId = markerCallstacks[0].TaskId;
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
@@ -2017,12 +2017,12 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            // The marker's chain should see exactly one Create and one Complete on its own TaskId.
-            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].TaskId, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
+            // The marker's chain should see exactly one Create and one Complete on its own DispatcherId.
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
 
             // Verify the standard Create -> Resume -> Complete sequence fired in order for our context.
-            ulong taskId = markerCallstacks[0].TaskId;
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
@@ -2051,8 +2051,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_EventSequenceOrder_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
@@ -2179,8 +2179,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
@@ -2238,8 +2238,8 @@ namespace System.Threading.Tasks.Tests
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
             Assert.NotEmpty(markerCallstacks);
 
-            ulong taskId = markerCallstacks[0].TaskId;
-            var ids = stream.ForTask(taskId).Select(e => e.EventId).ToList();
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
             int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
             Assert.True(createIdx >= 0, "Expected CreateAsyncContext");
@@ -2319,12 +2319,12 @@ namespace System.Threading.Tasks.Tests
                     continue;
                 }
 
-                var replayTaskIds = postResetMarkerCallstacks.Select(c => c.TaskId).ToHashSet();
+                var replayDispatcherIds = postResetMarkerCallstacks.Select(c => c.DispatcherId).ToHashSet();
                 var postResetResumeContext = stream.All
                     .Where(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncContext
                                 && e.OsThreadId == threadId
                                 && e.Timestamp >= lastResetTimestamp
-                                && replayTaskIds.Contains(e.TaskId))
+                                && replayDispatcherIds.Contains(e.DispatcherId))
                     .ToList();
                 if (postResetResumeContext.Count == 0)
                 {
