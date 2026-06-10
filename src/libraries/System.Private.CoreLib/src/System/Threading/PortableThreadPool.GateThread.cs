@@ -132,7 +132,7 @@ namespace System.Threading
 
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
-                            threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
+                            threadPoolInstance._separated._hasOutstandingThreadRequest &&
                             SufficientDelaySinceLastDequeue(threadPoolInstance))
                         {
                             bool addWorker = false;
@@ -187,7 +187,7 @@ namespace System.Threading
                             }
                         }
 
-                        if (threadPoolInstance._separated._hasOutstandingThreadRequest == 0 &&
+                        if (!threadPoolInstance._separated._hasOutstandingThreadRequest &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) <= GetRunningStateForNumRuns(0))
                         {

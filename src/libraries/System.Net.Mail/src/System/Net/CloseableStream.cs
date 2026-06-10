@@ -11,7 +11,7 @@ namespace System.Net
     internal sealed class ClosableStream : DelegatedStream
     {
         private readonly EventHandler? _onClose;
-        private int _closed;
+        private bool _closed;
 
         internal ClosableStream(Stream stream, EventHandler? onClose) : base(stream)
         {
@@ -23,7 +23,7 @@ namespace System.Net
 
         public override void Close()
         {
-            if (Interlocked.Increment(ref _closed) == 1)
+            if (!Interlocked.Exchange(ref _closed, true))
             {
                 _onClose?.Invoke(this, new EventArgs());
             }

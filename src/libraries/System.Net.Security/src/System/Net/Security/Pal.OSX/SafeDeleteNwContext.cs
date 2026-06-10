@@ -81,7 +81,7 @@ namespace System.Net.Security
         private CancellationTokenSource _shutdownCts = new CancellationTokenSource();
 
         private bool _disposed;
-        private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
+        private bool _challengeCallbackCompleted;
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
 
         private ResettableValueTaskSource _appWriteTcs = new ResettableValueTaskSource()
@@ -112,7 +112,7 @@ namespace System.Net.Security
 
         public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
 
-        internal bool ClientCertificateRequested => _challengeCallbackCompleted == 1 && _selectedClientCertificate != IntPtr.Zero;
+        internal bool ClientCertificateRequested => _challengeCallbackCompleted && _selectedClientCertificate != IntPtr.Zero;
 
         internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
@@ -595,7 +595,7 @@ namespace System.Net.Security
 
                 // the callback may end up being called multiple times for some reason.
                 // check if we've already processed the challenge callback
-                if (Interlocked.CompareExchange(ref nwContext._challengeCallbackCompleted, 1, 0) != 0)
+                if (Interlocked.Exchange(ref nwContext._challengeCallbackCompleted, true))
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {

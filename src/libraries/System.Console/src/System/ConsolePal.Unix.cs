@@ -36,7 +36,7 @@ namespace System
         private static int s_cursorTop;     // Cached CursorTop, invalid when s_cursorLeft == -1.
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
-        private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
+        private static bool s_invalidateCachedSettings = true; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
@@ -1098,7 +1098,7 @@ namespace System
             // Register for signals that invalidate cached values.
             EnsureConsoleInitialized();
 
-            bool invalidateSettings = Interlocked.CompareExchange(ref s_invalidateCachedSettings, 0, 1) == 1;
+            bool invalidateSettings = Interlocked.Exchange(ref s_invalidateCachedSettings, false);
             if (invalidateSettings)
             {
                 InvalidateCachedCursorPosition();
@@ -1109,7 +1109,7 @@ namespace System
         [UnmanagedCallersOnly]
         private static void InvalidateTerminalSettings()
         {
-            Volatile.Write(ref s_invalidateCachedSettings, 1);
+            Volatile.Write(ref s_invalidateCachedSettings, true);
         }
 
         // ANSI colors are enabled when stdout is a terminal, when

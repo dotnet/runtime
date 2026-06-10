@@ -129,8 +129,8 @@ namespace System.Threading
                     // We generally avoid spurious wakes by requesting one thread at a time. We nearly always should see a request.
                     // However, we allow external wakes when thread goals change, which can result in "stolen" requests.
                     // Therefore we check for request before clearing it and dispatching workitems.
-                    if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
-                        Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
+                    if (threadPoolInstance._separated._hasOutstandingThreadRequest &&
+                        Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, false))
                     {
                         // We took the request, now we must Dispatch some work items.
                         threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);

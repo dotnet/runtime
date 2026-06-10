@@ -231,7 +231,7 @@ namespace System.Threading
                     newNumThreadsGoal,
                     HillClimbing.StateOrTransition.CooperativeBlocking);
 
-                if (counts.NumProcessingWork >= numThreadsGoal && _separated._hasOutstandingThreadRequest != 0)
+                if (counts.NumProcessingWork >= numThreadsGoal && _separated._hasOutstandingThreadRequest)
                 {
                     addWorker = true;
                 }

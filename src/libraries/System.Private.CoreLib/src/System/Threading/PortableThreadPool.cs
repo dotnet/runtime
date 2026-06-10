@@ -111,7 +111,7 @@ namespace System.Threading
             //       A new work item may be added right before the flag is reset
             //       without asking for a worker, while the last worker is quitting.
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4)]
-            public int _hasOutstandingThreadRequest;
+            public bool _hasOutstandingThreadRequest;
 
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4 + sizeof(int))]
             public int gateThreadRunningState;
@@ -223,7 +223,7 @@ namespace System.Threading
                 else if (_separated.counts.NumThreadsGoal < newMinThreads)
                 {
                     _separated.counts.InterlockedSetNumThreadsGoal(newMinThreads);
-                    if (_separated._hasOutstandingThreadRequest != 0)
+                    if (_separated._hasOutstandingThreadRequest)
                     {
                         addWorker = true;
                     }
@@ -480,8 +480,8 @@ namespace System.Threading
         internal void EnsureWorkerRequested()
         {
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (_separated._hasOutstandingThreadRequest == 0 &&
-                Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, 1) == 0)
+            if (!_separated._hasOutstandingThreadRequest &&
+                !Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, true))
             {
                 WorkerThread.MaybeAddWorkingWorker(this);
                 GateThread.EnsureRunning(this);

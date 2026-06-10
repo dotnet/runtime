@@ -26,7 +26,7 @@ namespace System.Net
         private bool _writePending;
         private bool _writing;
         private bool _syncHint;
-        private int _aborted;
+        private bool _aborted;
 
         internal FileWebRequest(Uri uri)
         {
@@ -55,7 +55,7 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-        internal bool Aborted => _aborted != 0;
+        internal bool Aborted => _aborted;
 
         public override string? ConnectionGroupName { get; set; }
 
@@ -294,7 +294,7 @@ namespace System.Net
 
         public override void Abort()
         {
-            if (Interlocked.Increment(ref _aborted) == 1)
+            if (!Interlocked.Exchange(ref _aborted, true))
             {
                 _stream?.Abort();
                 _response?.Close();

@@ -13,7 +13,7 @@ namespace System.Net.Security
     internal sealed class SecurityContextTokenHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
 #endif
-        private int _disposed;
+        private bool _disposed;
 
         public SecurityContextTokenHandle() : base(true)
         {
@@ -23,7 +23,7 @@ namespace System.Net.Security
         {
             if (!IsInvalid)
             {
-                if (Interlocked.Increment(ref _disposed) == 1)
+                if (!Interlocked.Exchange(ref _disposed, true))
                 {
                     return Interop.Kernel32.CloseHandle(handle);
                 }

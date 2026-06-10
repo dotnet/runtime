@@ -43,7 +43,7 @@ namespace System.Threading
             //       and resetting the flag, when the flag is in a wrong state.
             //       A new work item may be added right before the flag is reset
             //       without asking for a worker, while the last worker is quitting.
-            public int _hasOutstandingThreadRequest;
+            public bool _hasOutstandingThreadRequest;
 
             private readonly Internal.PaddingFor32 pad2;
         }
@@ -171,7 +171,7 @@ namespace System.Threading
 
             Debug.Assert(s_work == work);
             // Before looking for work items, acknowledge that the thread request has been satisfied
-            _separated._hasOutstandingThreadRequest = 0;
+            _separated._hasOutstandingThreadRequest = false;
             // NOTE: the thread request must be cleared before doing Dispatch.
             //       the following Interlocked.Increment will guarantee the ordering.
             Interlocked.Increment(ref s_workingThreadCounter.Count);
@@ -185,8 +185,8 @@ namespace System.Threading
         internal static void EnsureWorkerRequested()
         {
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (_separated._hasOutstandingThreadRequest == 0 &&
-                Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, 1) == 0)
+            if (!_separated._hasOutstandingThreadRequest &&
+                !Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, true))
             {
                 RequestWorkerThread();
             }

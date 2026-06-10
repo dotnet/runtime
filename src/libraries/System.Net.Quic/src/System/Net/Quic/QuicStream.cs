@@ -88,7 +88,7 @@ public sealed partial class QuicStream
         }
     };
     private ReceiveBuffers _receiveBuffers = new ReceiveBuffers();
-    private int _receivedNeedsEnable;
+    private bool _receivedNeedsEnable;
 
     private readonly ResettableValueTaskSource _sendTcs = new ResettableValueTaskSource()
     {
@@ -359,7 +359,7 @@ public sealed partial class QuicStream
             }
         } while (!buffer.IsEmpty && totalCopied == 0);  // Exit the loop if target buffer is full we at least copied something.
 
-        if (totalCopied > 0 && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1)
+        if (totalCopied > 0 && Interlocked.Exchange(ref _receivedNeedsEnable, false))
         {
             unsafe
             {
@@ -604,13 +604,13 @@ public sealed partial class QuicStream
 
         if (totalCopied < data.TotalBufferLength)
         {
-            Volatile.Write(ref _receivedNeedsEnable, 1);
+            Volatile.Write(ref _receivedNeedsEnable, true);
         }
 
         _receiveTcs.TrySetResult();
 
         data.TotalBufferLength = totalCopied;
-        return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
+        return (_receiveBuffers.HasCapacity() && Interlocked.Exchange(ref _receivedNeedsEnable, false)) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
     }
     private int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
