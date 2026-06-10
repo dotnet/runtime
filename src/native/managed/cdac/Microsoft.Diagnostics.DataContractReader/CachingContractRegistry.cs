@@ -19,6 +19,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
 
     private readonly Dictionary<Type, IContract> _contracts = [];
     private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
+    private readonly HashSet<(Type, string)> _unsupportedVersions = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
@@ -38,10 +39,15 @@ internal sealed class CachingContractRegistry : ContractRegistry
         _creators[(typeof(TContract), version)] = t => creator(t);
     }
 
-    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+    public override void RegisterUnsupported<TContract>(string version)
+    {
+        _unsupportedVersions.Add((typeof(TContract), version));
+    }
+
+    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
     {
         contract = default!;
-        failureReason = null;
+        failureException = null;
         if (_contracts.TryGetValue(typeof(TContract), out IContract? cached))
         {
             contract = (TContract)cached;
@@ -53,13 +59,15 @@ internal sealed class CachingContractRegistry : ContractRegistry
         {
             if (!_creators.TryGetValue((typeof(TContract), version), out creator))
             {
-                failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                failureException = _unsupportedVersions.Contains((typeof(TContract), version))
+                    ? new ContractObsoleteException(TContract.Name, version)
+                    : new ContractUnrecognizedException(TContract.Name, version);
                 return false;
             }
         }
         else if (!_creators.TryGetValue((typeof(TContract), string.Empty), out creator))
         {
-            failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
+            failureException = new ContractMissingException(TContract.Name);
             return false;
         }
 
