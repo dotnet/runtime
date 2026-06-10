@@ -3117,7 +3117,7 @@ bool Compiler::optLoopCloningEnabled()
 //
 //   The per-call ratio is
 //
-//       (cycles saved per method call) / (duplicated body nodes)
+//       (cycles saved per method call) / (weighted body cost)
 //
 //   and the loop is cloned only if that ratio is at least the configured
 //   threshold JitCloneLoopsMinPerCallRatio (interpreted in hundredths,
@@ -3136,11 +3136,6 @@ bool Compiler::optLoopCloningEnabled()
 //
 bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    // When the gate is disabled, accept the candidate without any further
-    // work. The config value is interpreted in hundredths, so divide by
-    // 100 to obtain the actual per-call-ratio threshold (e.g. config 4
-    // means a threshold of 0.04).
-    //
     const weight_t minPerCallRatio = (weight_t)JitConfig.JitCloneLoopsMinPerCallRatio() / 100.0;
     if (minPerCallRatio <= 0.0)
     {
@@ -3154,17 +3149,8 @@ bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext*
         return false;
     }
 
-    //
-    // Part 1: benefit estimate.
-    //
-    // Sum cycles saved per call across all opt-infos, weighted by the
-    // per-call execution count of the check block so PGO hot blocks are
-    // valued higher. Per-block cycle figures are 2.0 for array/span
-    // bounds checks and 3.0 for the GDV-style tests.
-    //
-    // getBBWeight returns the block weight scaled by BB_UNITY_WEIGHT
-    // (= 100), so divide by BB_UNITY_WEIGHT to convert to a true
-    // per-call execution count.
+    // Benefit: cycles saved per call, summed across opt-infos and
+    // weighted by the per-call execution count of each check block.
     //
     BasicBlock* const header         = loop->GetHeader();
     const weight_t    headerWeight   = header->getBBWeight(this) / BB_UNITY_WEIGHT;
@@ -3205,47 +3191,36 @@ bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext*
         benefitPerCall += cyclesSaved * perCallWeight;
     }
 
+    // Cost: tree nodes in the loop body, with each block's contribution scaled
+    // by min(1.0, blockWeight / headerWeight) so cold blocks don't over-charge
+    // the per-call ratio. The static body size is already capped by
+    // JitCloneLoopsSizeLimit in the caller.
     //
-    // Part 2: cost estimate.
-    //
-    // Cost is the number of tree nodes that would be duplicated by cloning.
-    // Bound the walker by min(sizeLimit, floor(benefit / minPerCallRatio)):
-    //   - sizeLimit (matches the earlier JitCloneLoopsSizeLimit check) is
-    //     defensive; by construction the body is already <= sizeLimit here.
-    //   - floor(benefit / minPerCallRatio) is the largest body size for
-    //     which the per-call ratio gate could pass, so the walker can
-    //     short-circuit as soon as the body grows past it.
-    //
-    const int      sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
-    unsigned       bodyCap   = (sizeLimit >= 0) ? (unsigned)sizeLimit : UINT_MAX;
-    const weight_t bodyMaxW  = benefitPerCall / minPerCallRatio;
-    const unsigned bodyMax   = (bodyMaxW >= (weight_t)UINT_MAX) ? UINT_MAX : (unsigned)bodyMaxW;
-    if (bodyMax < bodyCap)
-    {
-        bodyCap = bodyMax;
-    }
+    weight_t weightedBodyCost = 0.0;
+    loop->VisitLoopBlocks([&, this](BasicBlock* block) {
+        unsigned blockNodes   = 0;
+        auto     countInBlock = [&blockNodes](GenTree* tree) -> unsigned {
+            blockNodes++;
+            return 1;
+        };
+        block->ComplexityExceeds(this, UINT_MAX, countInBlock);
 
-    unsigned bodyNodes  = 0;
-    auto     countNodes = [&bodyNodes](GenTree* tree) -> unsigned {
-        bodyNodes++;
-        return 1;
-    };
-    if (optLoopComplexityExceeds(loop, bodyCap, countNodes))
-    {
-        // Walker exceeded the cap, so the gate must fail.
-        JITDUMP(FMT_LP " rejected by cloning heuristic: body exceeds cap %u\n", loop->GetIndex(), bodyCap);
-        return false;
-    }
-    if (bodyNodes == 0)
+        const weight_t blockWeight = block->getBBWeight(this) / BB_UNITY_WEIGHT;
+        const weight_t normWeight  = (headerWeight > 0.0) ? min(1.0, blockWeight / headerWeight) : 1.0;
+        weightedBodyCost += normWeight * (weight_t)blockNodes;
+        return BasicBlockVisit::Continue;
+    });
+
+    if (weightedBodyCost <= 0.0)
     {
         return false;
     }
 
-    const weight_t perCallRatio = benefitPerCall / (weight_t)bodyNodes;
+    const weight_t perCallRatio = benefitPerCall / weightedBodyCost;
     if (perCallRatio < minPerCallRatio)
     {
-        JITDUMP(FMT_LP " rejected by cloning heuristic: PerCallRatio=%f < threshold=%f\n", loop->GetIndex(),
-                perCallRatio, minPerCallRatio);
+        JITDUMP(FMT_LP " rejected by cloning heuristic: PerCallRatio=%f < threshold=%f (benefit=%f, weightedCost=%f)\n",
+                loop->GetIndex(), perCallRatio, minPerCallRatio, benefitPerCall, weightedBodyCost);
         return false;
     }
     return true;
