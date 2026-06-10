@@ -3293,19 +3293,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate

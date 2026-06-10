@@ -19,9 +19,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
+    private const uint DacStressPrivRequestFlushTargetState = 0xf2000000;
+
     int IXCLRDataProcess.Flush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
@@ -755,12 +757,22 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
+        else if (reqCode == DacStressPrivRequestFlushTargetState)
+        {
+            if (inBufferSize == 0 && inBuffer is null && outBufferSize == 0 && outBuffer is null)
+            {
+                _target.Flush(FlushScope.ForwardExecution);
+                hr = HResults.S_OK;
+            }
+        }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        if (_legacyProcess is not null)
+        // The private DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE opcode is cDAC-only
+        // and must NOT be forwarded to the legacy DAC.
+        if (_legacyProcess is not null && reqCode != DacStressPrivRequestFlushTargetState)
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)

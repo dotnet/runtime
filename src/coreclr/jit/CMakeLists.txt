@@ -106,6 +106,7 @@ set( JIT_SOURCES
   asyncanalysis.cpp
   bitset.cpp
   block.cpp
+  boundscheckcoalesce.cpp
   buildstring.cpp
   codegencommon.cpp
   codegenlinear.cpp
