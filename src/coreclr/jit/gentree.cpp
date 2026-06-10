@@ -9536,8 +9536,6 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
 #if defined(TARGET_ARM64)
     if (type == TYP_SIMD)
     {
-        assert(simdBaseType != TYP_UNDEF);
-
         GenTree* one = nullptr;
         if (varTypeIsIntegral(simdBaseType))
         {
