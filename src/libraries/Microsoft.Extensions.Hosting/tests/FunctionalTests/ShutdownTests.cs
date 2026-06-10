@@ -71,12 +71,10 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
             using (var deployer = new SelfHostDeployer(deploymentParameters, xunitTestLoggerFactory))
             {
-                var result = await deployer.DeployAsync();
-
                 var started = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var completed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var output = string.Empty;
-                deployer.HostProcess.OutputDataReceived += (sender, args) =>
+                deployer.OutputReceived += (sender, args) =>
                 {
                     if (!string.IsNullOrEmpty(args.Data) && args.Data.StartsWith(StartedMessage))
                     {
@@ -93,6 +91,8 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                         completed.TrySetResult(0);
                     }
                 };
+
+                await deployer.DeployAsync();
 
                 await started.Task.WaitAsync(TimeSpan.FromSeconds(180));
 
