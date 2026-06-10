@@ -2206,7 +2206,7 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
 
     Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
     assert(range.IsValid());
-    if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
     {
         JITDUMP("Range is completely unknown.\n");
         return false;
@@ -2219,15 +2219,6 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
     }
 
     assert(range.IsValid());
-
-    // If upper or lower limit is found to be unknown (top), or it was found to
-    // be unknown because of over budget or a deep search, then return early.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
-    {
-        // Note: If we had stack depth too deep in the GetRangeWorker call, we'd be
-        // too deep even in the ComputeDoesOverflow call. So return early.
-        return false;
-    }
 
     JITDUMP("Range value %s\n", range.ToString(m_compiler));
     ClearSearchPath();
