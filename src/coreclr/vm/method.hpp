@@ -1546,7 +1546,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         // methods with transient IL bodies do not have IL headers
-        return IsIL() && !IsUnboxingStub() && !IsAsyncThunkMethod();
+        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen());
     }
 
     ULONG GetRVA();

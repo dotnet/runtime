@@ -7539,21 +7539,9 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     /* Grab information from the IL header */
     SigPointer localSig{};
 
-    MethodDesc* ilFtn = ftn;
-    COR_ILMETHOD_DECODER ilHeader;
     // For async versions we get the IL of the ordinary variant and pass the
     // JIT a flag indicating that.
-    if (ftn->SupportsAsyncVersionCodegen())
-    {
-        _ASSERTE(header == NULL);
-        ilFtn = ftn->GetOrdinaryVariant();
-        COR_ILMETHOD* pILFuncHeader;
-        if (ilFtn->MayHaveILHeader() && (pILFuncHeader = ilFtn->GetILHeader()) != NULL)
-        {
-            ilHeader = COR_ILMETHOD_DECODER(pILFuncHeader, ilFtn->GetMDImport(), NULL);
-            header = &ilHeader;
-        }
-    }
+    MethodDesc* ilFtn = ftn->SupportsAsyncVersionCodegen() ? ftn->GetOrdinaryVariant() : ftn;
 
     MethodInfoWorkerContext cxt{ ftn, header };
 
