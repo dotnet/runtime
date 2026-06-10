@@ -1,6 +1,6 @@
 #!/bin/bash
-
-set -ex
+set -euo pipefail
+set -x
 export DEBIAN_FRONTEND=noninteractive
 
 echo "=================================="
@@ -103,6 +103,7 @@ echo "=================================="
   /p:PublishAot=false \
   /p:SupportsNativeAotComponents=false \
   | tee build.log
+  exit ${PIPESTATUS[0]}
 
 # =========================================================
 #  Build Libraries
