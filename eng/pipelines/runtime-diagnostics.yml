@@ -279,6 +279,39 @@ extends:
               condition: failed()
 
     #
+    # cDAC Shared Build — One coreclr+libs build per platform, consumed by
+    # both CdacDumpTests and CdacStressTests (and the X-plat dump stages)
+    # so we don't rebuild coreclr per test leg. Runtime is built Checked;
+    # cDAC native shim ships in the Release testhost (used by stress tests
+    # in-process); dump tests will rebuild the cDAC managed assemblies at
+    # /p:Configuration=Debug during payload prep.
+    #
+    - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
+      - stage: CdacBuild
+        dependsOn: []
+        jobs:
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
+            platforms: ${{ parameters.cdacDumpPlatforms }}
+            jobParameters:
+              nameSuffix: CdacBuild
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              timeoutInMinutes: 180
+              postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                  displayName: cDAC Shared Build Artifacts
+
+    #
     # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)
     #
     - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
