@@ -9,6 +9,8 @@ namespace System.Formats.Cbor
     /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
+        internal const int DefaultMaxDepth = 64;
+
         private ReadOnlyMemory<byte> _data;
         private int _offset;
 
@@ -43,9 +45,25 @@ namespace System.Formats.Cbor
         /// <value>A number that represents the current level of nestedness in the CBOR document.</value>
         public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
 
+        /// <summary>Gets the maximum depth of nested CBOR data items that this reader is configured to allow.</summary>
+        /// <value>The maximum depth of nested CBOR data items that this reader is configured to allow.</value>
+        public int MaxDepth { get; }
+
         /// <summary>Gets the total number of unread bytes in the buffer.</summary>
         /// <value>The total number of unread bytes in the buffer.</value>
         public int BytesRemaining => _data.Length - _offset;
+
+        /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given options.</summary>
+        /// <param name="data">The CBOR-encoded data to read.</param>
+        /// <param name="options">The options that configure the reader, or <see langword="null" /> to use the default options.</param>
+        public CborReader(ReadOnlyMemory<byte> data, CborReaderOptions? options)
+            : this(
+                  data,
+                  options?.ConformanceMode ?? CborConformanceMode.Strict,
+                  options?.AllowMultipleRootLevelValues ?? false,
+                  options?.MaxDepth ?? 0)
+        {
+        }
 
         /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
         /// <param name="data">The CBOR-encoded data to read.</param>
@@ -54,12 +72,23 @@ namespace System.Formats.Cbor
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not defined.</exception>
         public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false)
+            : this(data, conformanceMode, allowMultipleRootLevelValues, maxDepth: 0)
+        {
+        }
+
+        private CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode, bool allowMultipleRootLevelValues, int maxDepth)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
+
+            if (maxDepth < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxDepth));
+            }
 
             _data = data;
             ConformanceMode = conformanceMode;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            MaxDepth = maxDepth == 0 ? DefaultMaxDepth : maxDepth;
             _definiteLength = allowMultipleRootLevelValues ? null : 1;
         }
 
@@ -171,8 +200,18 @@ namespace System.Formats.Cbor
             }
         }
 
+        private void EnsureMaxDepthNotExceeded()
+        {
+            if (CurrentDepth >= MaxDepth)
+            {
+                throw new CborContentException(SR.Format(SR.Cbor_Reader_MaximumDepthExceeded, MaxDepth));
+            }
+        }
+
         private void PushDataItem(CborMajorType majorType, int? definiteLength)
         {
+            Debug.Assert(CurrentDepth < MaxDepth);
+
             _nestedDataItems ??= new Stack<StackFrame>();
 
             var frame = new StackFrame(

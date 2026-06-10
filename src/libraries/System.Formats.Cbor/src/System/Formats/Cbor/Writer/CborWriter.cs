@@ -12,6 +12,7 @@ namespace System.Formats.Cbor
     /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
+        internal const int DefaultMaxDepth = 64;
         private const int DefaultCapacitySentinel = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
@@ -48,6 +49,10 @@ namespace System.Formats.Cbor
         /// <value>A number that represents the current level of nestedness in the CBOR document.</value>
         public int CurrentDepth => _nestedDataItems is null ? 0 : _nestedDataItems.Count;
 
+        /// <summary>Gets the maximum depth of nested CBOR data items that this writer is configured to allow.</summary>
+        /// <value>The maximum depth of nested CBOR data items that this writer is configured to allow.</value>
+        public int MaxDepth { get; }
+
         /// <summary>Gets the total number of bytes that have been written to the buffer.</summary>
         /// <value>The total number of bytes that have been written to the buffer.</value>
         public int BytesWritten => _offset;
@@ -55,6 +60,18 @@ namespace System.Formats.Cbor
         /// <summary>Declares whether the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents.</summary>
         /// <value><see langword="true" /> if the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents; <see langword="false" /> otherwise.</value>
         public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
+
+        /// <summary>Initializes a new instance of the <see cref="CborWriter" /> class using the specified options.</summary>
+        /// <param name="options">The options that configure the writer, or <see langword="null" /> to use the default options.</param>
+        public CborWriter(CborWriterOptions? options)
+            : this(
+                  options?.ConformanceMode ?? CborConformanceMode.Strict,
+                  options?.ConvertIndefiniteLengthEncodings ?? false,
+                  options?.AllowMultipleRootLevelValues ?? false,
+                  options?.InitialCapacity ?? DefaultCapacitySentinel,
+                  options?.MaxDepth ?? 0)
+        {
+        }
 
         /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
         /// <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
@@ -84,12 +101,28 @@ namespace System.Formats.Cbor
             bool convertIndefiniteLengthEncodings = false,
             bool allowMultipleRootLevelValues = false,
             int initialCapacity = DefaultCapacitySentinel)
+            : this(conformanceMode, convertIndefiniteLengthEncodings, allowMultipleRootLevelValues, initialCapacity, maxDepth: 0)
+        {
+        }
+
+        private CborWriter(
+            CborConformanceMode conformanceMode,
+            bool convertIndefiniteLengthEncodings,
+            bool allowMultipleRootLevelValues,
+            int initialCapacity,
+            int maxDepth)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
+
+            if (maxDepth < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxDepth));
+            }
 
             ConformanceMode = conformanceMode;
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            MaxDepth = maxDepth == 0 ? DefaultMaxDepth : maxDepth;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
 
             _buffer = initialCapacity switch
@@ -252,8 +285,18 @@ namespace System.Formats.Cbor
             }
         }
 
+        private void EnsureMaxDepthNotExceeded()
+        {
+            if (CurrentDepth >= MaxDepth)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_Writer_MaximumDepthExceeded, MaxDepth));
+            }
+        }
+
         private void PushDataItem(CborMajorType newMajorType, int? definiteLength)
         {
+            Debug.Assert(CurrentDepth < MaxDepth);
+
             _nestedDataItems ??= new Stack<StackFrame>();
 
             var frame = new StackFrame(

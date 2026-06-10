@@ -399,6 +399,156 @@ namespace System.Formats.Cbor.Tests
             AssertExtensions.SequenceEqual(expected, encoded);
         }
 
+        [Fact]
+        public static void MaxDepth_DefaultValue_ShouldBe64()
+        {
+            var writer = new CborWriter();
+            Assert.Equal(64, writer.MaxDepth);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(7)]
+        [InlineData(100)]
+        public static void MaxDepth_CustomValue_ShouldBeReported(int maxDepth)
+        {
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = maxDepth });
+            Assert.Equal(maxDepth, writer.MaxDepth);
+        }
+
+        [Fact]
+        public static void MaxDepth_ZeroValue_ShouldUseDefault()
+        {
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = 0 });
+            Assert.Equal(64, writer.MaxDepth);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(7)]
+        public static void MaxDepth_NestedArraysWithinLimit_ShouldSucceed(int maxDepth)
+        {
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = maxDepth });
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                writer.WriteStartArray(1);
+            }
+
+            Assert.Equal(maxDepth, writer.CurrentDepth);
+            writer.WriteInt32(1);
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                writer.WriteEndArray();
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(7)]
+        public static void MaxDepth_NestedArraysExceedingLimit_ShouldThrowInvalidOperationException(int maxDepth)
+        {
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = maxDepth });
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                writer.WriteStartArray(1);
+            }
+
+            int bytesWritten = writer.BytesWritten;
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray(1));
+            // the failed write should not have advanced the writer
+            Assert.Equal(bytesWritten, writer.BytesWritten);
+            Assert.Equal(maxDepth, writer.CurrentDepth);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(7)]
+        public static void MaxDepth_NestedMapsExceedingLimit_ShouldThrowInvalidOperationException(int maxDepth)
+        {
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = maxDepth });
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                writer.WriteStartMap(1);
+            }
+
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap(1));
+        }
+
+        [Fact]
+        public static void MaxDepth_NegativeValue_ShouldThrowArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriterOptions { MaxDepth = -1 });
+        }
+
+        [Fact]
+        public static void CborWriterOptions_NullOptions_ShouldUseDefaults()
+        {
+            var writer = new CborWriter(options: null);
+            Assert.Equal(64, writer.MaxDepth);
+            Assert.Equal(CborConformanceMode.Strict, writer.ConformanceMode);
+            Assert.False(writer.AllowMultipleRootLevelValues);
+            Assert.False(writer.ConvertIndefiniteLengthEncodings);
+        }
+
+        [Fact]
+        public static void CborWriterOptions_Defaults_ShouldMatchLegacyConstructor()
+        {
+            var options = new CborWriterOptions();
+            Assert.Equal(CborConformanceMode.Strict, options.ConformanceMode);
+            Assert.False(options.AllowMultipleRootLevelValues);
+            Assert.False(options.ConvertIndefiniteLengthEncodings);
+            Assert.Equal(0, options.InitialCapacity);
+            Assert.Equal(0, options.MaxDepth);
+        }
+
+        [Fact]
+        public static void CborWriterOptions_InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriterOptions { ConformanceMode = (CborConformanceMode)(-1) });
+        }
+
+        [Fact]
+        public static void CborWriterOptions_NegativeInitialCapacity_ShouldThrowArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriterOptions { InitialCapacity = -1 });
+        }
+
+        [Theory]
+        [InlineData(CborConformanceMode.Lax)]
+        [InlineData(CborConformanceMode.Strict)]
+        [InlineData(CborConformanceMode.Canonical)]
+        [InlineData(CborConformanceMode.Ctap2Canonical)]
+        public static void CborWriterOptions_ConformanceMode_ShouldFlowThrough(CborConformanceMode mode)
+        {
+            var writer = new CborWriter(new CborWriterOptions { ConformanceMode = mode });
+            Assert.Equal(mode, writer.ConformanceMode);
+        }
+
+        [Fact]
+        public static void CborWriterOptions_AllowMultipleRootLevelValues_ShouldFlowThrough()
+        {
+            var writer = new CborWriter(new CborWriterOptions { AllowMultipleRootLevelValues = true });
+            writer.WriteInt32(1);
+            writer.WriteInt32(2);
+            Assert.Equal(new byte[] { 0x01, 0x02 }, writer.Encode());
+        }
+
+        [Fact]
+        public static void CborWriterOptions_InitialCapacity_ShouldFlowThrough()
+        {
+            var writer = new CborWriter(new CborWriterOptions { InitialCapacity = 1023 });
+            byte[]? buffer = (byte[]?)typeof(CborWriter).GetField("_buffer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(writer);
+            Assert.NotNull(buffer);
+            Assert.Equal(1023, buffer!.Length);
+        }
+
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });
         public static IEnumerable<object[]> EncodedValueBadInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
 

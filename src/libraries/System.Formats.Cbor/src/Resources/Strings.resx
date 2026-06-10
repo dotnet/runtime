@@ -219,8 +219,14 @@
   <data name="Cbor_Reader_InvalidDecimalEncoding" xml:space="preserve">
     <value>Not a valid tagged decimal encoding.</value>
   </data>
+  <data name="Cbor_Reader_MaximumDepthExceeded" xml:space="preserve">
+    <value>The depth of the CBOR data exceeded the maximum allowed depth of {0}.</value>
+  </data>
   <data name="Cbor_Writer_PayloadIsNotValidCbor" xml:space="preserve">
     <value>Not a valid CBOR value encoding.</value>
+  </data>
+  <data name="Cbor_Writer_MaximumDepthExceeded" xml:space="preserve">
+    <value>Writing the CBOR data item would exceed the maximum allowed depth of {0}.</value>
   </data>
   <data name="Cbor_Writer_IncompleteCborDocument" xml:space="preserve">
     <value>Writer contains an incomplete CBOR document.</value>

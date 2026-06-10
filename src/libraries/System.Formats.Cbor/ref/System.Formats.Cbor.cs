@@ -23,13 +23,22 @@ namespace System.Formats.Cbor
         public CborContentException(string? message) { }
         public CborContentException(string? message, System.Exception? inner) { }
     }
+    public sealed partial class CborReaderOptions
+    {
+        public CborReaderOptions() { }
+        public bool AllowMultipleRootLevelValues { get { throw null; } set { } }
+        public System.Formats.Cbor.CborConformanceMode ConformanceMode { get { throw null; } set { } }
+        public int MaxDepth { get { throw null; } set { } }
+    }
     public partial class CborReader
     {
+        public CborReader(System.ReadOnlyMemory<byte> data, System.Formats.Cbor.CborReaderOptions? options) { }
         public CborReader(System.ReadOnlyMemory<byte> data, System.Formats.Cbor.CborConformanceMode conformanceMode = System.Formats.Cbor.CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false) { }
         public bool AllowMultipleRootLevelValues { get { throw null; } }
         public int BytesRemaining { get { throw null; } }
         public System.Formats.Cbor.CborConformanceMode ConformanceMode { get { throw null; } }
         public int CurrentDepth { get { throw null; } }
+        public int MaxDepth { get { throw null; } }
         public System.Formats.Cbor.CborReaderState PeekState() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Formats.Cbor.CborTag PeekTag() { throw null; }
@@ -124,6 +133,7 @@ namespace System.Formats.Cbor
     }
     public partial class CborWriter
     {
+        public CborWriter(System.Formats.Cbor.CborWriterOptions? options) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public CborWriter(System.Formats.Cbor.CborConformanceMode conformanceMode, bool convertIndefiniteLengthEncodings, bool allowMultipleRootLevelValues) { }
         public CborWriter(System.Formats.Cbor.CborConformanceMode conformanceMode = System.Formats.Cbor.CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false, int initialCapacity = -1) { }
@@ -133,6 +143,7 @@ namespace System.Formats.Cbor
         public bool ConvertIndefiniteLengthEncodings { get { throw null; } }
         public int CurrentDepth { get { throw null; } }
         public bool IsWriteCompleted { get { throw null; } }
+        public int MaxDepth { get { throw null; } }
         public byte[] Encode() { throw null; }
         public int Encode(System.Span<byte> destination) { throw null; }
         public void Reset() { }
@@ -170,5 +181,14 @@ namespace System.Formats.Cbor
         public void WriteUInt64(ulong value) { }
         public void WriteUnixTimeSeconds(double seconds) { }
         public void WriteUnixTimeSeconds(long seconds) { }
+    }
+    public sealed partial class CborWriterOptions
+    {
+        public CborWriterOptions() { }
+        public bool AllowMultipleRootLevelValues { get { throw null; } set { } }
+        public System.Formats.Cbor.CborConformanceMode ConformanceMode { get { throw null; } set { } }
+        public bool ConvertIndefiniteLengthEncodings { get { throw null; } set { } }
+        public int InitialCapacity { get { throw null; } set { } }
+        public int MaxDepth { get { throw null; } set { } }
     }
 }
