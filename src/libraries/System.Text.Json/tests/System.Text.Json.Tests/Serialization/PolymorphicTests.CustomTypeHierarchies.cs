@@ -3367,6 +3367,231 @@ namespace System.Text.Json.Serialization.Tests
             public T? Item { get; set; }
         }
 
+        // ---- Specialization-specific filtering scenarios (PR #127318 follow-up) ----
+
+        // Scenario 1: Closed derived types registered on an OPEN generic base where each
+        // derived only matches a specific base specialization (Cat:Animal<int>,
+        // Dog:Animal<string>). Resolver must drop the derived that does not match the
+        // current closed base specialization rather than throw.
+
+        [JsonDerivedType(typeof(SpecAnimal_Cat), "cat")]
+        [JsonDerivedType(typeof(SpecAnimal_Dog), "dog")]
+        public class SpecAnimal<T>
+        {
+            public string? Name { get; set; }
+        }
+
+        public sealed class SpecAnimal_Cat : SpecAnimal<int> { public int Lives { get; set; } }
+        public sealed class SpecAnimal_Dog : SpecAnimal<string> { public string? Breed { get; set; } }
+
+        [Fact]
+        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnAnimalOfInt()
+        {
+            // For SpecAnimal<int>, only SpecAnimal_Cat applies (Dog : Animal<string>
+            // does not match Animal<int> and must be filtered silently).
+            SpecAnimal<int> cat = new SpecAnimal_Cat { Name = "Felix", Lives = 9 };
+            string json = await Serializer.SerializeWrapper(cat);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"cat","Lives":9,"Name":"Felix"}""", json);
+
+            var roundTrippedCat = await Serializer.DeserializeWrapper<SpecAnimal<int>>(json);
+            var typedCat = Assert.IsType<SpecAnimal_Cat>(roundTrippedCat);
+            Assert.Equal(9, typedCat.Lives);
+            Assert.Equal("Felix", typedCat.Name);
+        }
+
+        [Fact]
+        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnAnimalOfString()
+        {
+            // For SpecAnimal<string>, only SpecAnimal_Dog applies (Cat : Animal<int>
+            // does not match Animal<string> and must be filtered silently).
+            SpecAnimal<string> dog = new SpecAnimal_Dog { Name = "Rex", Breed = "Husky" };
+            string json = await Serializer.SerializeWrapper(dog);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"dog","Breed":"Husky","Name":"Rex"}""", json);
+
+            var roundTrippedDog = await Serializer.DeserializeWrapper<SpecAnimal<string>>(json);
+            var typedDog = Assert.IsType<SpecAnimal_Dog>(roundTrippedDog);
+            Assert.Equal("Husky", typedDog.Breed);
+            Assert.Equal("Rex", typedDog.Name);
+        }
+
+        [Fact]
+        public async Task ClosedDerivedTypes_AllFilteredForSpecialization_SerializesAsBase()
+        {
+            // For SpecAnimal<bool>, NEITHER Cat nor Dog matches. After filtering, no
+            // derived types remain -- the type should silently serialize as a plain
+            // (non-polymorphic) base, with no $type discriminator and no throw.
+            SpecAnimal<bool> animal = new() { Name = "Cookie" };
+            string json = await Serializer.SerializeWrapper(animal);
+            JsonTestHelper.AssertJsonEqual("""{"Name":"Cookie"}""", json);
+
+            var roundTripped = await Serializer.DeserializeWrapper<SpecAnimal<bool>>(json);
+            Assert.Equal("Cookie", roundTripped.Name);
+        }
+
+        // Scenario 2: Open derived with a constraint that fails for the current base
+        // specialization (Derived<T> : Base<T> where T : IEnumerable<int>, on Base<string>).
+
+        [JsonDerivedType(typeof(ConstrainedDerived<>), "derived")]
+        public class ConstrainedBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class ConstrainedDerived<T> : ConstrainedBase<T> where T : System.Collections.Generic.IEnumerable<int>
+        {
+            public int Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenDerivedWithConstraint_AppliesWhenConstraintIsSatisfied()
+        {
+            // List<int> satisfies IEnumerable<int>, so ConstrainedDerived<List<int>>
+            // is a valid closure for ConstrainedBase<List<int>>.
+            var derived = new ConstrainedDerived<System.Collections.Generic.List<int>>
+            {
+                Value = new System.Collections.Generic.List<int> { 1, 2, 3 },
+                Extra = 42,
+            };
+            ConstrainedBase<System.Collections.Generic.List<int>> value = derived;
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Extra":42,"Value":[1,2,3]}""", json);
+        }
+
+        [Fact]
+        public async Task OpenDerivedWithConstraint_ThrowsWhenConstraintFails()
+        {
+            // string does NOT satisfy IEnumerable<int>, so the open ConstrainedDerived<T>
+            // registration cannot be closed against ConstrainedBase<string>. The resolver
+            // surfaces this as InvalidOperationException at first-use of the closed base.
+            ConstrainedBase<string> baseValue = new() { Value = "hello" };
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(baseValue));
+
+            // The message should identify both the registration and the failure reason so the
+            // user can diagnose the registration without diving into source.
+            Assert.Contains("ConstrainedDerived", ex.Message);
+            Assert.Contains("ConstrainedBase", ex.Message);
+        }
+
+        // Scenario 3: Open derived definitions with EXTRA unbound type parameters
+        // (Cat<T,T2> registered on Animal<T>). The extra-parameter variant is not
+        // closeable against any specialization of the base and must surface a hard
+        // diagnostic. The well-formed variant (Cat<T>) is verified separately on its
+        // own base type so the failing registration doesn't poison shared metadata.
+
+        [JsonDerivedType(typeof(ExtraParam_Cat<>), "cat")]
+        public class ExtraParamAnimal<T>
+        {
+            public T? Tag { get; set; }
+        }
+
+        [JsonDerivedType(typeof(ExtraParam_Cat<,>), "cat2")]
+        public class ExtraParamAnimalWithBadRegistration<T>
+        {
+            public T? Tag { get; set; }
+        }
+
+        public class ExtraParam_Cat<T> : ExtraParamAnimal<T>
+        {
+            public string? Name { get; set; }
+        }
+
+        public class ExtraParam_Cat<T, T2> : ExtraParamAnimalWithBadRegistration<T>
+        {
+            public T2? Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenDerivedWithoutExtraParameter_Resolves()
+        {
+            // Sanity-check companion to the throw test below: ExtraParam_Cat<T> with no
+            // extra unbound parameter closes cleanly against ExtraParamAnimal<int>.
+            ExtraParamAnimal<int> value = new ExtraParam_Cat<int> { Name = "Felix", Tag = 7 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"cat","Name":"Felix","Tag":7}""", json);
+
+            var roundTripped = await Serializer.DeserializeWrapper<ExtraParamAnimal<int>>(json);
+            var typedCat = Assert.IsType<ExtraParam_Cat<int>>(roundTripped);
+            Assert.Equal("Felix", typedCat.Name);
+            Assert.Equal(7, typedCat.Tag);
+        }
+
+        [Fact]
+        public async Task OpenDerivedWithExtraUnboundParameter_ThrowsInvalidOperationException()
+        {
+            // ExtraParam_Cat<T,T2> has an unbound T2 that the single-parameter base
+            // ExtraParamAnimalWithBadRegistration<T> cannot pin down. The derived
+            // definition is structurally malformed for this base hierarchy regardless
+            // of which closed base is supplied, so the resolver surfaces a hard error.
+            ExtraParamAnimalWithBadRegistration<int> value = new();
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(value));
+
+            Assert.Contains("ExtraParam_Cat", ex.Message);
+            Assert.Contains("ExtraParamAnimalWithBadRegistration", ex.Message);
+        }
+
+        // Mixed-scenario coverage: a single open base def carrying a mix of closed and
+        // well-formed open registrations. Closed registrations whose base spec does not
+        // match the current specialization must be silently filtered; well-formed open
+        // registrations must still resolve. (Registrations that would throw for the
+        // current specialization -- extra unbound params, failing constraints -- are
+        // covered above on dedicated bases so they don't poison the whole hierarchy.)
+
+        [JsonDerivedType(typeof(MixedClosedInt), "closed-int")]
+        [JsonDerivedType(typeof(MixedClosedString), "closed-string")]
+        [JsonDerivedType(typeof(MixedOpenOk<>), "open-ok")]
+        public class MixedBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public sealed class MixedClosedInt : MixedBase<int> { public int A { get; set; } }
+        public sealed class MixedClosedString : MixedBase<string> { public string? B { get; set; } }
+
+        public class MixedOpenOk<T> : MixedBase<T> { public T? C { get; set; } }
+
+        [Fact]
+        public async Task MixedRegistrations_OnlyApplicableSurviveOnIntSpecialization()
+        {
+            // For MixedBase<int>: closed-int matches, closed-string filtered, open-ok applies.
+            MixedBase<int> closedInt = new MixedClosedInt { A = 1, Value = 10 };
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"closed-int","A":1,"Value":10}""",
+                await Serializer.SerializeWrapper(closedInt));
+
+            MixedBase<int> openOk = new MixedOpenOk<int> { C = 2, Value = 20 };
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"open-ok","C":2,"Value":20}""",
+                await Serializer.SerializeWrapper(openOk));
+        }
+
+        [Fact]
+        public async Task MixedRegistrations_OnlyApplicableSurviveOnStringSpecialization()
+        {
+            // For MixedBase<string>: closed-int filtered, closed-string matches, open-ok applies.
+            MixedBase<string> closedString = new MixedClosedString { B = "b", Value = "v" };
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"closed-string","B":"b","Value":"v"}""",
+                await Serializer.SerializeWrapper(closedString));
+
+            MixedBase<string> openOk = new MixedOpenOk<string> { C = "c", Value = "v" };
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"open-ok","C":"c","Value":"v"}""",
+                await Serializer.SerializeWrapper(openOk));
+        }
+
+        [Fact]
+        public async Task MixedRegistrations_ClosedBothFilteredOnUnrelatedSpecialization()
+        {
+            // For MixedBase<bool>: both closed registrations are filtered, open-ok still
+            // applies. Polymorphism remains active with a reduced derived-type set.
+            MixedBase<bool> openOk = new MixedOpenOk<bool> { C = true, Value = false };
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"open-ok","C":true,"Value":false}""",
+                await Serializer.SerializeWrapper(openOk));
+        }
+
         #endregion
 
         #region Generic Variance Tests

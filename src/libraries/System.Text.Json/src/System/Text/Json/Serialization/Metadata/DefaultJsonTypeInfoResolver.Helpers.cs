@@ -89,7 +89,31 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (options is not null)
             {
+                int originalDerivedTypeCount = options.DerivedTypes.Count;
                 ResolveOpenGenericDerivedTypes(typeInfo.Type, options.DerivedTypes);
+
+                // If closed-derived filtering removed every entry from a non-empty
+                // registration AND the user did not explicitly declare [JsonPolymorphic],
+                // demote the current specialization to non-polymorphic rather than
+                // emitting empty polymorphism options that would throw downstream. The
+                // typical scenario is a generic base def carrying closed [JsonDerivedType]
+                // attributes that only apply to specific specializations (e.g. Cat :
+                // Animal<int> and Dog : Animal<string> both attached to Animal<T>) --
+                // for an unrelated Animal<bool>, neither survives filtering and the user
+                // expects the type to serialize as plain base. Open-derived failures
+                // throw eagerly inside ResolveOpenGenericDerivedTypes, so we only reach
+                // this branch when the emptying was caused by silent closed-derived
+                // filtering. When [JsonPolymorphic] IS present the user has explicitly
+                // opted in, so we honor that intent and let the downstream "no derived
+                // types specified" error surface.
+                if (polymorphicAttribute is null && originalDerivedTypeCount > 0 && options.DerivedTypes.Count == 0)
+                {
+                    options = null;
+                }
+            }
+
+            if (options is not null)
+            {
                 typeInfo.SetPolymorphismOptions(options);
             }
 
@@ -120,11 +144,13 @@ namespace System.Text.Json.Serialization.Metadata
             Type? baseTypeDefinition = null;
             Type[]? baseTypeArgs = null;
 
-            for (int i = 0; i < derivedTypes.Count; i++)
+            // Iterate backwards so RemoveAt(i) for filtered entries doesn't disturb the
+            // remaining iteration indices.
+            for (int i = derivedTypes.Count - 1; i >= 0; i--)
             {
                 JsonDerivedType entry = derivedTypes[i];
 
-                if (entry.DerivedType is null || !entry.DerivedType.IsGenericTypeDefinition)
+                if (entry.DerivedType is null)
                 {
                     // entry.DerivedType is annotated non-nullable, but the public
                     // JsonDerivedType constructors do not validate the argument, so a
@@ -132,6 +158,26 @@ namespace System.Text.Json.Serialization.Metadata
                     // null) yields an entry with DerivedType == null. The downstream
                     // validation in PolymorphicTypeResolver will surface a friendly
                     // diagnostic; skip silently here so the explicit error wins.
+                    continue;
+                }
+
+                if (!entry.DerivedType.IsGenericTypeDefinition)
+                {
+                    // Closed derived type. If the base type is generic and the closed derived
+                    // type isn't assignable to the current base specialization, drop it
+                    // silently so the same generic base def can carry [JsonDerivedType]
+                    // attributes that only apply to specific specializations (e.g. closed
+                    // Cat : Animal<int> and Dog : Animal<string> both attached to Animal<T>).
+                    // We deliberately do not throw here: the attribute is declared on the
+                    // open generic definition, so it cannot statically know which closed
+                    // base it will be paired with at runtime. Closed derived types on a
+                    // non-generic base continue to flow through to PolymorphicTypeResolver,
+                    // which throws if they aren't assignable -- that's a true misregistration.
+                    if (baseType.IsGenericType && !baseType.IsAssignableFrom(entry.DerivedType))
+                    {
+                        derivedTypes.RemoveAt(i);
+                    }
+
                     continue;
                 }
 

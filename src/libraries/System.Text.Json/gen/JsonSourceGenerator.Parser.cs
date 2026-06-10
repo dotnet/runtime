@@ -952,6 +952,23 @@ namespace System.Text.Json.SourceGeneration
 
                             derivedType = resolvedType!;
                         }
+                        else if (derivedType is INamedTypeSymbol namedDerived &&
+                                 typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true } &&
+                                 !_knownSymbols.Compilation.HasImplicitConversion(namedDerived, typeToGenerate.Type))
+                        {
+                            // Closed derived type whose base specialization differs from the
+                            // current base specialization (e.g. closed Cat : Animal<int>
+                            // declared as [JsonDerivedType(typeof(Cat))] on the open
+                            // Animal<T> when the current type-to-generate is Animal<string>).
+                            // Silently drop so the same attribute set can target multiple
+                            // specializations. Mirrors the reflection-side filter in
+                            // DefaultJsonTypeInfoResolver.ResolveOpenGenericDerivedTypes.
+                            //
+                            // Note: closed derived types declared on a NON-generic base flow
+                            // through to PolymorphicTypeResolver, which throws if they aren't
+                            // assignable -- that's a true misregistration.
+                            continue;
+                        }
 
                         TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
 

@@ -96,11 +96,110 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("hello", d.Extra);
         }
 
+        [Fact]
+        public static void ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnIntSpec()
+        {
+            // For SourceGenSpecAnimal<int>, only SourceGenSpecAnimal_Cat applies; the closed
+            // Dog : SourceGenSpecAnimal<string> registration is silently filtered.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalInt;
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(SourceGenSpecAnimal_Cat), derivedType.DerivedType);
+
+            SourceGenSpecAnimal<int> cat = new SourceGenSpecAnimal_Cat { Name = "Felix", Lives = 9 };
+            string json = JsonSerializer.Serialize(cat, typeInfo);
+            Assert.Contains("\"$type\":\"cat\"", json);
+        }
+
+        [Fact]
+        public static void ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnStringSpec()
+        {
+            // For SourceGenSpecAnimal<string>, only SourceGenSpecAnimal_Dog applies.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalString;
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(SourceGenSpecAnimal_Dog), derivedType.DerivedType);
+
+            SourceGenSpecAnimal<string> dog = new SourceGenSpecAnimal_Dog { Name = "Rex", Breed = "Husky" };
+            string json = JsonSerializer.Serialize(dog, typeInfo);
+            Assert.Contains("\"$type\":\"dog\"", json);
+        }
+
+        [Fact]
+        public static void ClosedDerivedTypes_AllFilteredForSpec_BecomesNonPolymorphic()
+        {
+            // For SourceGenSpecAnimal<bool>, NEITHER Cat nor Dog applies; filtering empties
+            // the derived-type list, so the source-gen-emitted type info must omit
+            // polymorphism options entirely (otherwise we would throw at runtime).
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalBool;
+            Assert.Null(typeInfo.PolymorphismOptions);
+
+            string json = JsonSerializer.Serialize(new SourceGenSpecAnimal<bool> { Name = "Cookie" }, typeInfo);
+            Assert.DoesNotContain("$type", json);
+            Assert.Contains("\"Name\":\"Cookie\"", json);
+        }
+
+        [Fact]
+        public static void OpenDerivedWithConstraint_FailingConstraintIsDroppedFromEmittedMetadata()
+        {
+            // SourceGenConstrainedDerived<T> where T : struct, registered on
+            // SourceGenConstrainedBase<string>. string is not a struct, so the source
+            // generator emits SYSLIB1229 (suppressed below) and drops the registration
+            // from generated metadata. The emitted typeInfo has no derived types and
+            // serializes the closed base as non-polymorphic.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseString;
+            Assert.Null(typeInfo.PolymorphismOptions);
+
+            string json = JsonSerializer.Serialize(new SourceGenConstrainedBase<string> { Value = "hi" }, typeInfo);
+            Assert.DoesNotContain("$type", json);
+        }
+
+        [Fact]
+        public static void OpenDerivedWithConstraint_AppliesWhenConstraintIsSatisfied()
+        {
+            // SourceGenConstrainedDerived<T> where T : struct, registered on
+            // SourceGenConstrainedBase<int>. int satisfies struct -- the open derived
+            // resolves to SourceGenConstrainedDerived<int>.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseInt;
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(SourceGenConstrainedDerived<int>), derivedType.DerivedType);
+
+            SourceGenConstrainedBase<int> derived = new SourceGenConstrainedDerived<int> { Value = 1, Extra = 2 };
+            string json = JsonSerializer.Serialize(derived, typeInfo);
+            Assert.Contains("\"$type\":\"derived\"", json);
+        }
+
+        [Fact]
+        public static void OpenDerivedWithExtraUnboundParameter_BadArmIsDroppedFromEmittedMetadata()
+        {
+            // Two registrations on the same base: SourceGenExtraParam_Cat<T> resolves OK to
+            // SourceGenExtraParam_Cat<int>; SourceGenExtraParam_Cat<T, T2> has an unbound
+            // T2 that the base does not pin down, so the source generator emits SYSLIB1229
+            // (suppressed below) and drops it from the generated metadata. Only the well-
+            // formed "cat" arm survives in the emitted typeInfo.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenExtraParamAnimalInt;
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(SourceGenExtraParam_Cat<int>), derivedType.DerivedType);
+            Assert.Equal("cat", derivedType.TypeDiscriminator);
+
+            SourceGenExtraParamAnimal<int> value = new SourceGenExtraParam_Cat<int> { Name = "Felix", Tag = 7 };
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            Assert.Contains("\"$type\":\"cat\"", json);
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(SourceGenPolymorphicBase))]
         [JsonSerializable(typeof(SourceGenClassifiedAnimal))]
         [JsonSerializable(typeof(SourceGenPolymorphicIntList))]
         [JsonSerializable(typeof(SourceGenOpenGenericBase<string, int>))]
+        [JsonSerializable(typeof(SourceGenSpecAnimal<int>), TypeInfoPropertyName = "SourceGenSpecAnimalInt")]
+        [JsonSerializable(typeof(SourceGenSpecAnimal<string>), TypeInfoPropertyName = "SourceGenSpecAnimalString")]
+        [JsonSerializable(typeof(SourceGenSpecAnimal<bool>), TypeInfoPropertyName = "SourceGenSpecAnimalBool")]
+        [JsonSerializable(typeof(SourceGenConstrainedBase<string>), TypeInfoPropertyName = "SourceGenConstrainedBaseString")]
+        [JsonSerializable(typeof(SourceGenConstrainedBase<int>), TypeInfoPropertyName = "SourceGenConstrainedBaseInt")]
+        [JsonSerializable(typeof(SourceGenExtraParamAnimal<int>), TypeInfoPropertyName = "SourceGenExtraParamAnimalInt")]
         internal sealed partial class PolymorphismTestsContext : JsonSerializerContext
         {
         }
@@ -116,6 +215,58 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int>
     {
         public T? Extra { get; set; }
+    }
+
+    // Specialization-filtering fixtures (PR #127318 follow-up).
+
+    [JsonDerivedType(typeof(SourceGenSpecAnimal_Cat), "cat")]
+    [JsonDerivedType(typeof(SourceGenSpecAnimal_Dog), "dog")]
+    public class SourceGenSpecAnimal<T>
+    {
+        public string? Name { get; set; }
+    }
+
+    public sealed class SourceGenSpecAnimal_Cat : SourceGenSpecAnimal<int> { public int Lives { get; set; } }
+    public sealed class SourceGenSpecAnimal_Dog : SourceGenSpecAnimal<string> { public string? Breed { get; set; } }
+
+    // Constraint-on-derived: the source generator emits SYSLIB1229 for the
+    // SourceGenConstrainedBase<string> specialization because string does not satisfy
+    // the `where T : struct` constraint. The warning is benign here -- the bad
+    // registration is dropped from generated metadata and the closed base serializes
+    // as a plain (non-polymorphic) type.
+#pragma warning disable SYSLIB1229
+    [JsonDerivedType(typeof(SourceGenConstrainedDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+    public class SourceGenConstrainedBase<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    public sealed class SourceGenConstrainedDerived<T> : SourceGenConstrainedBase<T> where T : struct
+    {
+        public int Extra { get; set; }
+    }
+
+    [JsonDerivedType(typeof(SourceGenExtraParam_Cat<>), "cat")]
+    // SourceGenExtraParam_Cat<T, T2> has an extra unbound T2 that the single-parameter
+    // base cannot pin down. The source generator emits SYSLIB1229; suppress it here so
+    // we can verify the runtime drops the bad arm and keeps the well-formed "cat" arm.
+#pragma warning disable SYSLIB1229
+    [JsonDerivedType(typeof(SourceGenExtraParam_Cat<,>), "cat2")]
+#pragma warning restore SYSLIB1229
+    public class SourceGenExtraParamAnimal<T>
+    {
+        public T? Tag { get; set; }
+    }
+
+    public class SourceGenExtraParam_Cat<T> : SourceGenExtraParamAnimal<T>
+    {
+        public string? Name { get; set; }
+    }
+
+    public class SourceGenExtraParam_Cat<T, T2> : SourceGenExtraParamAnimal<T>
+    {
+        public T2? Extra { get; set; }
     }
 
     [JsonPolymorphic(
