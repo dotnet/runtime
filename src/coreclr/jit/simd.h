@@ -2310,6 +2310,7 @@ bool TryEvaluateUnarySimdScalable(
         memcpy(&result->gtSimdScalableStep, &resultStep, sizeof(TBase));
     };
 
+    // First try the unary operation on the index value
     TBase resultIndex;
     if (!TryEvaluateUnaryScalarForSimdScalable(oper, index, &resultIndex))
     {
@@ -2321,6 +2322,12 @@ bool TryEvaluateUnarySimdScalable(
     if (scalar)
     {
         setResult(SimdScalableScalar, resultIndex, zero, result);
+        return true;
+    }
+
+    if (arg0.IsZero())
+    {
+        setResult(SimdScalableRepeated, resultIndex, zero, result);
         return true;
     }
 
@@ -2374,12 +2381,6 @@ bool TryEvaluateUnarySimdScalable(
             if (SimdBitwiseEqual(upperValue, zero))
             {
                 setResult(SimdScalableScalar, resultIndex, zero, result);
-                return true;
-            }
-
-            if (SimdBitwiseEqual(upperValue, resultIndex))
-            {
-                setResult(SimdScalableRepeated, resultIndex, zero, result);
                 return true;
             }
 
