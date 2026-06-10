@@ -22,6 +22,10 @@
 
 #include "eventtracebase.h"
 
+#if defined(TARGET_APPLE)
+#include <mach-o/compact_unwind_encoding.h>
+#endif // TARGET_APPLE
+
 #if defined(TARGET_ARM64)
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
@@ -120,6 +124,15 @@ struct PacFrameInfo
 static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
                                PacFrameInfo *pPacFrameInfo)
 {
+#if defined(TARGET_APPLE)
+    // PAC-enabled Apple ARM64 methods use DWARF to preserve negate_ra_state;
+    // compact unwind has no PAC state to parse.
+    if ((pNativeMethodInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF)
+    {
+        return true;
+    }
+#endif // TARGET_APPLE
+
     const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
     uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
     const uint8_t* end = p + fdeLength;
@@ -1400,7 +1413,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
 
 #if defined(TARGET_ARM64)
-    PacFrameInfo pacFrameInfo = {};
+    PacFrameInfo pacFrameInfo = { false, 0, INT_MIN, 0 };
     bool hasPacFrameInfo = TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo);
     bool pacPresent = hasPacFrameInfo && pacFrameInfo.hasPac;
     if (pacPresent)
