@@ -288,26 +288,6 @@ namespace System.Formats.Tar
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and
         // set the stream position to the first byte of the next entry.
-        internal static int SkipBlockAlignmentPadding(Stream archiveStream, long size)
-        {
-            ValueTask<int> vt = SkipBlockAlignmentPaddingCoreAsync<SyncReadWriteAdapter>(archiveStream, size, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous SkipBlockAlignmentPadding completed asynchronously.");
-            return vt.GetAwaiter().GetResult();
-        }
-
-        // After the file contents, there may be zero or more null characters,
-        // which exist to ensure the data is aligned to the record size.
-        // Asynchronously skip them and set the stream position to the first byte of the next entry.
-        internal static ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled<int>(cancellationToken);
-            }
-
-            return SkipBlockAlignmentPaddingCoreAsync<AsyncReadWriteAdapter>(archiveStream, size, cancellationToken);
-        }
-
         internal static async ValueTask<int> SkipBlockAlignmentPaddingCoreAsync<TAdapter>(Stream archiveStream, long size, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {

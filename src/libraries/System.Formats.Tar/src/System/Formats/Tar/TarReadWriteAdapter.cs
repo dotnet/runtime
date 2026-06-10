@@ -18,6 +18,7 @@ namespace System.Formats.Tar
         static abstract ValueTask ReadExactlyAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
         static abstract ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
         static abstract ValueTask CopyToAsync(Stream source, Stream destination, CancellationToken cancellationToken);
+        static abstract ValueTask AdvanceToEndAsync(SubReadStream stream, CancellationToken cancellationToken);
         static abstract ValueTask DisposeAsync(Stream stream);
     }
 
@@ -34,6 +35,9 @@ namespace System.Formats.Tar
 
         public static ValueTask CopyToAsync(Stream source, Stream destination, CancellationToken cancellationToken) =>
             new ValueTask(source.CopyToAsync(destination, cancellationToken));
+
+        public static ValueTask AdvanceToEndAsync(SubReadStream stream, CancellationToken cancellationToken) =>
+            stream.AdvanceToEndAsync(cancellationToken);
 
         public static ValueTask DisposeAsync(Stream stream) => stream.DisposeAsync();
     }
@@ -58,6 +62,12 @@ namespace System.Formats.Tar
         public static ValueTask CopyToAsync(Stream source, Stream destination, CancellationToken cancellationToken)
         {
             source.CopyTo(destination);
+            return default;
+        }
+
+        public static ValueTask AdvanceToEndAsync(SubReadStream stream, CancellationToken cancellationToken)
+        {
+            stream.AdvanceToEnd();
             return default;
         }
 

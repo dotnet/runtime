@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,30 +52,19 @@ namespace System.Formats.Tar
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
         {
-            if (!_isDisposed)
-            {
-                _isDisposed = true;
-
-                if (!_leaveOpen)
-                {
-                    if (_dataStreamsToDispose?.Count > 0)
-                    {
-                        foreach (Stream s in _dataStreamsToDispose)
-                        {
-                            s.Dispose();
-                        }
-                    }
-
-                    _archiveStream.Dispose();
-                }
-            }
+            ValueTask vt = DisposeCoreAsync<SyncReadWriteAdapter>();
+            Debug.Assert(vt.IsCompleted, "Synchronous Dispose completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync() => DisposeCoreAsync<AsyncReadWriteAdapter>();
+
+        private async ValueTask DisposeCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
         {
             if (!_isDisposed)
             {
@@ -88,11 +76,11 @@ namespace System.Formats.Tar
                     {
                         foreach (Stream s in _dataStreamsToDispose)
                         {
-                            await s.DisposeAsync().ConfigureAwait(false);
+                            await TAdapter.DisposeAsync(s).ConfigureAwait(false);
                         }
                     }
 
-                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                    await TAdapter.DisposeAsync(_archiveStream).ConfigureAwait(false);
                 }
             }
         }
@@ -128,32 +116,9 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            AdvanceDataStreamIfNeeded();
-
-            TarHeader? header = TryGetNextEntryHeader(copyData);
-            if (header != null)
-            {
-                TarEntry entry = header._format switch
-                {
-                    TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
-                                          new PaxGlobalExtendedAttributesTarEntry(header, this) : new PaxTarEntry(header, this),
-                    TarEntryFormat.Gnu => new GnuTarEntry(header, this),
-                    TarEntryFormat.Ustar => new UstarTarEntry(header, this),
-                    TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
-                };
-
-                if (_archiveStream.CanSeek && _archiveStream.Length == _archiveStream.Position)
-                {
-                    _reachedEndMarkers = true;
-                }
-
-                _previouslyReadEntry = entry;
-                PreserveDataStreamForDisposalIfNeeded(entry);
-                return entry;
-            }
-
-            _reachedEndMarkers = true;
-            return null;
+            ValueTask<TarEntry?> vt = GetNextEntryCoreAsync<SyncReadWriteAdapter>(copyData, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous GetNextEntry completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -193,12 +158,21 @@ namespace System.Formats.Tar
                 return ValueTask.FromResult<TarEntry?>(null);
             }
 
-            return GetNextEntryInternalAsync(copyData, cancellationToken);
+            return GetNextEntryCoreAsync<AsyncReadWriteAdapter>(copyData, cancellationToken);
         }
 
         // Moves the underlying archive stream position pointer to the beginning of the next header.
         internal void AdvanceDataStreamIfNeeded()
         {
+            ValueTask vt = AdvanceDataStreamIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous AdvanceDataStreamIfNeeded completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        // Moves the underlying archive stream position pointer to the beginning of the next header.
+        private async ValueTask AdvanceDataStreamIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             if (_previouslyReadEntry == null)
             {
                 return;
@@ -221,51 +195,19 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                dataStream.AdvanceToEnd();
+                await TAdapter.AdvanceToEndAsync(dataStream, cancellationToken).ConfigureAwait(false);
 
-                TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header._size);
+                await TarHelpers.SkipBlockAlignmentPaddingCoreAsync<TAdapter>(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        // Asynchronously moves the underlying archive stream position pointer to the beginning of the next header.
-        internal async ValueTask AdvanceDataStreamIfNeededAsync(CancellationToken cancellationToken)
+        // Retrieves the next entry if one is found.
+        private async ValueTask<TarEntry?> GetNextEntryCoreAsync<TAdapter>(bool copyData, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            await AdvanceDataStreamIfNeededCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
 
-            if (_previouslyReadEntry == null)
-            {
-                return;
-            }
-
-            if (_archiveStream.CanSeek)
-            {
-                Debug.Assert(_previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment > 0);
-                _archiveStream.Position = _previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment;
-            }
-            else if (_previouslyReadEntry._header._size > 0)
-            {
-                // When working with unseekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
-                // This is so the user can read the data if desired. But if the data was not read by the user, we need to advance the pointer
-                // here until it's located at the beginning of the next entry header.
-                // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream.
-
-                if (_previouslyReadEntry._header._dataStream is not SubReadStream dataStream)
-                {
-                    return;
-                }
-
-                await dataStream.AdvanceToEndAsync(cancellationToken).ConfigureAwait(false);
-
-                await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        // Asynchronously retrieves the next entry if one is found.
-        private async ValueTask<TarEntry?> GetNextEntryInternalAsync(bool copyData, CancellationToken cancellationToken)
-        {
-            await AdvanceDataStreamIfNeededAsync(cancellationToken).ConfigureAwait(false);
-
-            TarHeader? header = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(false);
+            TarHeader? header = await TryGetNextEntryHeaderCoreAsync<TAdapter>(copyData, cancellationToken).ConfigureAwait(false);
             if (header != null)
             {
                 TarEntry entry = header._format switch
@@ -296,12 +238,12 @@ namespace System.Formats.Tar
         // An entry header represents any typeflag that is contains metadata.
         // Metadata typeflags: ExtendedAttributes, GlobalExtendedAttributes, LongLink, LongPath.
         // Metadata typeflag entries get handled internally by this method until a valid header entry can be returned.
-        private TarHeader? TryGetNextEntryHeader(bool copyData)
+        private async ValueTask<TarHeader?> TryGetNextEntryHeaderCoreAsync<TAdapter>(bool copyData, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(!_reachedEndMarkers);
 
-            TarHeader? header = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true);
-
+            TarHeader? header = await TarHeader.TryGetNextHeaderCoreAsync<TAdapter>(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true, cancellationToken).ConfigureAwait(false);
             if (header == null)
             {
                 return null;
@@ -312,48 +254,7 @@ namespace System.Formats.Tar
             // PAX metadata
             if (header._typeFlag is TarEntryType.ExtendedAttributes)
             {
-                if (!TryProcessExtendedAttributesHeader(header, copyData, out TarHeader? mainHeader))
-                {
-                    return null;
-                }
-                header = mainHeader;
-            }
-            // GNU metadata
-            else if (header._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
-            {
-                if (!TryProcessGnuMetadataHeader(header, copyData, out TarHeader mainHeader))
-                {
-                    return null;
-                }
-                header = mainHeader;
-            }
-
-            return header;
-        }
-
-        // Asynchronously attempts to read the next tar archive entry header.
-        // Returns true if an entry header was collected successfully, false otherwise.
-        // An entry header represents any typeflag that is contains metadata.
-        // Metadata typeflags: ExtendedAttributes, GlobalExtendedAttributes, LongLink, LongPath.
-        // Metadata typeflag entries get handled internally by this method until a valid header entry can be returned.
-        private async ValueTask<TarHeader?> TryGetNextEntryHeaderAsync(bool copyData, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            Debug.Assert(!_reachedEndMarkers);
-
-            TarHeader? header = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true, cancellationToken).ConfigureAwait(false);
-            if (header == null)
-            {
-                return null;
-            }
-
-            // If a metadata typeflag entry is retrieved, handle it here, then read the next entry
-
-            // PAX metadata
-            if (header._typeFlag is TarEntryType.ExtendedAttributes)
-            {
-                TarHeader? mainHeader = await TryProcessExtendedAttributesHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(false);
+                TarHeader? mainHeader = await TryProcessExtendedAttributesHeaderCoreAsync<TAdapter>(header, copyData, cancellationToken).ConfigureAwait(false);
                 if (mainHeader == null)
                 {
                     return null;
@@ -363,7 +264,7 @@ namespace System.Formats.Tar
             // GNU metadata
             else if (header._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
             {
-                TarHeader? mainHeader = await TryProcessGnuMetadataHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(false);
+                TarHeader? mainHeader = await TryProcessGnuMetadataHeaderCoreAsync<TAdapter>(header, copyData, cancellationToken).ConfigureAwait(false);
                 if (mainHeader == null)
                 {
                     return null;
@@ -376,44 +277,12 @@ namespace System.Formats.Tar
 
         // Tries to read the contents of the PAX metadata entry as extended attributes, tries to also read the actual entry that follows,
         // and returns the actual entry with the processed extended attributes saved in the _extendedAttributes dictionary.
-        private bool TryProcessExtendedAttributesHeader(TarHeader extendedAttributesHeader, bool copyData, [NotNullWhen(returnValue: true)] out TarHeader? actualHeader)
+        private async ValueTask<TarHeader?> TryProcessExtendedAttributesHeaderCoreAsync<TAdapter>(TarHeader extendedAttributesHeader, bool copyData, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // Don't process the data block of the actual entry just yet, because there's a slim chance
             // that the extended attributes contain a size that we need to override in the header
-            actualHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false);
-
-            if (actualHeader == null)
-            {
-                return false;
-            }
-
-            // We're currently processing an extended attributes header, so we can never have two extended entries in a row
-            if (actualHeader._typeFlag is TarEntryType.GlobalExtendedAttributes or
-                TarEntryType.ExtendedAttributes or
-                TarEntryType.LongLink or
-                TarEntryType.LongPath)
-            {
-                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
-            }
-
-            // Replace all the attributes representing standard fields with the extended ones, if any
-            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
-
-            // We retrieved the extended attributes, now we can read the data, and always with the right size
-            actualHeader.ProcessDataBlock(_archiveStream, copyData);
-
-            return true;
-        }
-
-        // Asynchronously tries to read the contents of the PAX metadata entry as extended attributes, tries to also read the actual entry that follows,
-        // and returns the actual entry with the processed extended attributes saved in the _extendedAttributes dictionary.
-        private async ValueTask<TarHeader?> TryProcessExtendedAttributesHeaderAsync(TarHeader extendedAttributesHeader, bool copyData, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Don't process the data block of the actual entry just yet, because there's a slim chance
-            // that the extended attributes contain a size that we need to override in the header
-            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false, cancellationToken).ConfigureAwait(false);
+            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderCoreAsync<TAdapter>(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false, cancellationToken).ConfigureAwait(false);
             if (actualHeader == null)
             {
                 return null;
@@ -428,105 +297,22 @@ namespace System.Formats.Tar
                 throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
-            // Can't have two extended attribute metadata entries in a row
-            if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
-            {
-                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
-            }
-
             // Replace all the attributes representing standard fields with the extended ones, if any
             actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
 
             // We retrieved the extended attributes, now we can read the data, and always with the right size
-            actualHeader.ProcessDataBlock(_archiveStream, copyData);
+            await actualHeader.ProcessDataBlockCoreAsync<TAdapter>(_archiveStream, copyData, cancellationToken).ConfigureAwait(false);
 
             return actualHeader;
         }
 
         // Tries to read the contents of the GNU metadata entry, then tries to read the next entry, which could either be another GNU metadata entry
         // or the actual entry. Processes them all and returns the actual entry updating its path and/or linkpath fields as needed.
-        private bool TryProcessGnuMetadataHeader(TarHeader header, bool copyData, out TarHeader finalHeader)
+        private async ValueTask<TarHeader?> TryProcessGnuMetadataHeaderCoreAsync<TAdapter>(TarHeader header, bool copyData, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            finalHeader = new(TarEntryFormat.Gnu);
-
-            TarHeader? secondHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true);
-
             // Get the second entry, which is the actual entry
-            if (secondHeader == null)
-            {
-                return false;
-            }
-
-            // Can't have two identical metadata entries in a row
-            if (secondHeader._typeFlag == header._typeFlag)
-            {
-                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
-            }
-
-            // It's possible to have the two different metadata entries in a row
-            if ((header._typeFlag is TarEntryType.LongLink && secondHeader._typeFlag is TarEntryType.LongPath) ||
-                (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
-            {
-                TarHeader? thirdHeader = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true);
-
-                // Get the third entry, which is the actual entry
-                if (thirdHeader == null)
-                {
-                    return false;
-                }
-
-                // Can't have three GNU metadata entries in a row
-                if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
-                {
-                    throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
-                }
-
-                if (header._typeFlag is TarEntryType.LongLink)
-                {
-                    Debug.Assert(header._linkName != null);
-                    Debug.Assert(secondHeader._name != null);
-
-                    thirdHeader._linkName = header._linkName;
-                    thirdHeader._name = secondHeader._name;
-                }
-                else if (header._typeFlag is TarEntryType.LongPath)
-                {
-                    Debug.Assert(header._name != null);
-                    Debug.Assert(secondHeader._linkName != null);
-                    thirdHeader._name = header._name;
-                    thirdHeader._linkName = secondHeader._linkName;
-                }
-
-                finalHeader = thirdHeader;
-            }
-            // Only one metadata entry was found
-            else
-            {
-                if (header._typeFlag is TarEntryType.LongLink)
-                {
-                    Debug.Assert(header._linkName != null);
-                    secondHeader._linkName = header._linkName;
-                }
-                else if (header._typeFlag is TarEntryType.LongPath)
-                {
-                    Debug.Assert(header._name != null);
-                    secondHeader._name = header._name;
-                }
-
-                finalHeader = secondHeader;
-            }
-
-            return true;
-        }
-
-        // Asynchronously tries to read the contents of the GNU metadata entry, then tries to read the next entry, which could either be another GNU metadata entry
-        // or the actual entry. Processes them all and returns the actual entry updating its path and/or linkpath fields as needed.
-        private async ValueTask<TarHeader?> TryProcessGnuMetadataHeaderAsync(TarHeader header, bool copyData, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Get the second entry, which is the actual entry
-            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
+            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderCoreAsync<TAdapter>(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
             if (secondHeader == null)
             {
                 return null;
@@ -545,7 +331,7 @@ namespace System.Formats.Tar
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
                 // Get the third entry, which is the actual entry
-                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
+                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderCoreAsync<TAdapter>(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
                 if (thirdHeader == null)
                 {
                     return null;

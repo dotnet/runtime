@@ -19,27 +19,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
-        {
-            ValueTask<TarHeader?> vt = TryGetNextHeaderCoreAsync<SyncReadWriteAdapter>(archiveStream, copyData, initialFormat, processDataBlock, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous TryGetNextHeader completed asynchronously.");
-            return vt.GetAwaiter().GetResult();
-        }
-
-        // Asynchronously attempts read all the fields of the next header.
-        // Throws if end of stream is reached or if any data type conversion fails.
-        // Returns true if all the attributes were read successfully, false otherwise.
-        internal static ValueTask<TarHeader?> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled<TarHeader?>(cancellationToken);
-            }
-
-            return TryGetNextHeaderCoreAsync<AsyncReadWriteAdapter>(archiveStream, copyData, initialFormat, processDataBlock, cancellationToken);
-        }
-
-        private static async ValueTask<TarHeader?> TryGetNextHeaderCoreAsync<TAdapter>(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock, CancellationToken cancellationToken)
+        internal static async ValueTask<TarHeader?> TryGetNextHeaderCoreAsync<TAdapter>(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
             // The four supported formats have a header that fits in the default record size
@@ -236,13 +216,6 @@ namespace System.Formats.Tar
         // - Block, Character, Directory, Fifo, HardLink and SymbolicLink typeflag entries have no data section so the archive stream pointer will be positioned at the beginning of the next header.
         // - All other typeflag entries with a data section will generate a SubReadStream wrapping the data section.
         //   When the archive stream is seekable, the SubReadStream is seekable too.
-        internal void ProcessDataBlock(Stream archiveStream, bool copyData)
-        {
-            ValueTask vt = ProcessDataBlockCoreAsync<SyncReadWriteAdapter>(archiveStream, copyData, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous ProcessDataBlock completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
         internal async ValueTask ProcessDataBlockCoreAsync<TAdapter>(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
