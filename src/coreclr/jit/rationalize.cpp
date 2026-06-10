@@ -386,19 +386,20 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            // This builds a constant multiplier vector and, when op1 is not constant, multiplies it by a broadcast of op1.
-            // The multiplier must be constant.
+            // This builds a constant multiplier vector and, when op1 is not constant, multiplies it by a broadcast of
+            // op1. The multiplier must be constant.
             if (op2->OperIsConst())
             {
 #if defined(TARGET_ARM64)
-                // If the base type is long, we need to bail on ARM64 as it does not have a general SIMD 64-bit integer multiply.
+                // If the base type is long, we need to bail on ARM64
+                // because it does not have a general SIMD 64-bit integer multiply.
                 // If op1 is constant, the result folds to a vector constant so we can proceed anyway.
-                // If simd size is 8, there will only be one element so we can still proceed as no vector multiply is needed.
+                // If there is only one element, we can still proceed as no vector multiply is needed.
                 bool canGenerate = !varTypeIsLong(simdBaseType) || op1->OperIsConst() || (simdSize == 8);
 #elif defined(TARGET_XARCH)
                 // AVX2 support is required for 256-bit integral vectors.
                 // While floating-point vectors and non-256-bit sizes do not need AVX2.
-                // In addition, if op1 is constant, the result folds to a vector constant so we can proceed anyway.
+                // Also, if op1 is constant, the result folds to a vector constant so we can proceed anyway.
                 bool canGenerate = op1->OperIsConst() || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
                                    m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 #else
