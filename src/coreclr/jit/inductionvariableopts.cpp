@@ -1328,13 +1328,6 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
-    if (varDsc->lvDoNotEnregister)
-    {
-        // We cannot reason precisely about uses of locals that are not
-        // enregisterable, so be conservative.
-        return true;
-    }
-
     if (!varDsc->lvTracked && !varDsc->lvInSsa)
     {
         // We do not have liveness we can use for this untracked local.
@@ -1367,6 +1360,26 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         // (and whether it doesn't extend their lifetimes too much).
         return true;
     }
+
+#ifdef DEBUG
+    // We currently do not expect to ever widen IVs that are live into
+    // exceptional exits. Such IVs are not currently register candidates (EH
+    // write-thru is only for single def locals) which makes it unprofitable.
+    // If this ever changes we need some more expansive handling here.
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+        block->VisitAllSuccs(this, [=](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
+            {
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) &&
+                       "Candidate IV for widening is live into exceptional exit");
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        return BasicBlockVisit::Continue;
+    });
+#endif
 
     return false;
 }
