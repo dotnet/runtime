@@ -454,8 +454,9 @@ namespace System.Numerics.Tensors.Tests
         #region Span -> Destination
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
-            // The current trigonometric algorithm depends on hardware FMA support for best precision.
-            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            // The vectorized trigonometric algorithms achieve best precision when x86 hardware FMA is available.
+            // On ARM64 (AdvSimd), the vectorized paths may have slightly reduced precision, so use a relaxed tolerance.
+            T? trigTolerance = Fma.IsSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
