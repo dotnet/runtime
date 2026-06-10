@@ -877,7 +877,7 @@ HRESULT CordbReferenceValue::GetType(CorElementType *pType)
         // We may not have a CordbType if we were created from a GC handle to NULL
         _ASSERTE( m_info.objTypeData.elementType == ELEMENT_TYPE_CLASS );
         _ASSERTE(!m_valueHome.ObjHandleIsNull());
-        _ASSERTE( m_info.objRef == NULL );
+        _ASSERTE( m_info.objRef == (CORDB_ADDRESS)NULL );
         *pType = m_info.objTypeData.elementType;
     }
     else
@@ -917,7 +917,7 @@ HRESULT CordbReferenceValue::IsNull(BOOL * pfIsNull)
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pfIsNull, BOOL *);
 
-   if (m_isLiteral || (m_info.objRef == NULL))
+   if (m_isLiteral || (m_info.objRef == (CORDB_ADDRESS)NULL))
         *pfIsNull = TRUE;
     else
         *pfIsNull = FALSE;
@@ -939,7 +939,7 @@ HRESULT CordbReferenceValue::GetValue(CORDB_ADDRESS *pAddress)
     if (m_isLiteral)
         *pAddress = (CORDB_ADDRESS)NULL;
     else
-        *pAddress = PTR_TO_CORDB_ADDRESS(m_info.objRef);
+        *pAddress = m_info.objRef;
 
     return S_OK;
 }
@@ -973,7 +973,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
 
     // Either we know the type, or it's a handle to a null value
     _ASSERTE((m_type != NULL) ||
-             (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == NULL)));
+             (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == (CORDB_ADDRESS)NULL)));
 
 	EX_TRY
 	{
@@ -991,7 +991,8 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
         if (m_info.objTypeData.elementType == ELEMENT_TYPE_STRING)
         {
             // update information about the string
-            InitRef(MemoryRange(&m_info.objRef, sizeof (void *)));
+            void * pObjRef = CORDB_ADDRESS_TO_PTR(m_info.objRef);
+            InitRef(MemoryRange(&pObjRef, sizeof (void *)));
         }
 
         // All other data in m_info is no longer valid, and we may have invalidated other
@@ -1034,7 +1035,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
     {
         // We may know ahead of time (depending on the reference type) if
         // the reference is bad.
-        if ((m_info.objRefBad) || (m_info.objRef == NULL))
+        if ((m_info.objRefBad) || (m_info.objRef == (CORDB_ADDRESS)NULL))
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
@@ -1099,7 +1100,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
 
             if (isBoxedVCObject)
             {
-                TargetBuffer remoteValue(PTR_TO_CORDB_ADDRESS(pInfo->objRef), (ULONG)pInfo->objSize);
+                TargetBuffer remoteValue(pInfo->objRef, (ULONG)pInfo->objSize);
                 EX_TRY
                 {
                     RSSmartPtr<CordbBoxValue> pBoxValue(new CordbBoxValue(
@@ -1137,7 +1138,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
     case ELEMENT_TYPE_SZARRAY:
         {
             LOG((LF_CORDB, LL_INFO1000, "DereferenceInternal: type array/szarray\n"));
-            TargetBuffer remoteValue(PTR_TO_CORDB_ADDRESS(pInfo->objRef), (ULONG)pInfo->objSize); // sizeof(void *)?
+            TargetBuffer remoteValue(pInfo->objRef, (ULONG)pInfo->objSize);
             EX_TRY
             {
                 RSSmartPtr<CordbArrayValue> pArrayValue(new CordbArrayValue(
@@ -1388,7 +1389,7 @@ void CordbReferenceValue::SanityCheckPointer (CorElementType type)
     {
         // We should never dereference a function pointer, so all references
         // are considered "bad."
-        if (m_info.objRef != NULL)
+        if (m_info.objRef != (CORDB_ADDRESS)NULL)
         {
             if (type == ELEMENT_TYPE_PTR)
             {
@@ -1453,7 +1454,8 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         //                                           ---------------    |
 
         _ASSERTE(localValue.Size() == sizeof(void *));
-        localCopy(&(m_info.objRef), localValue);
+        void * pObjRef = CORDB_ADDRESS_TO_PTR(m_info.objRef);
+        localCopy(&pObjRef, localValue);
     }
     else
     {
@@ -1467,7 +1469,7 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         EX_CATCH_HRESULT(hr);
         if (FAILED(hr))
         {
-            m_info.objRef = NULL;
+            m_info.objRef = (CORDB_ADDRESS)NULL;
             m_info.objRefBad = TRUE;
             ThrowHR(hr);
         }
@@ -1651,7 +1653,7 @@ HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
     // If the helper thread is dead, then pretend this is a bad reference.
     if (GetProcess()->m_helperThreadDead)
     {
-        m_info.objRef = NULL;
+        m_info.objRef = (CORDB_ADDRESS)NULL;
         m_info.objRefBad = TRUE;
         return hr;
     }
@@ -4350,7 +4352,7 @@ HRESULT CordbHandleValue::RefreshHandleValue()
     // If reference is already gone bad or reference is NULL,
     // don't bother to refetch in the future.
     //
-    if ((m_info.objRefBad) || (m_info.objRef == NULL))
+    if ((m_info.objRefBad) || (m_info.objRef == (CORDB_ADDRESS)NULL))
     {
         m_fCanBeValid = FALSE;
     }
@@ -4646,12 +4648,12 @@ HRESULT CordbHandleValue::IsNull(BOOL *pbNull)
             return hr;
         }
 
-        if (m_info.objRef == NULL)
+        if (m_info.objRef == (CORDB_ADDRESS)NULL)
         {
             *pbNull = TRUE;
         }
     }
-    else if (m_info.objRef == NULL)
+    else if (m_info.objRef == (CORDB_ADDRESS)NULL)
     {
         *pbNull = TRUE;
     }
@@ -4681,7 +4683,7 @@ HRESULT CordbHandleValue::GetValue(CORDB_ADDRESS *pValue)
     }
 
     RefreshHandleValue();
-    *pValue = PTR_TO_CORDB_ADDRESS(m_info.objRef);
+    *pValue = m_info.objRef;
     return S_OK;
 }   // CordbHandleValue::GetValue
 
@@ -4719,7 +4721,7 @@ HRESULT CordbHandleValue::Dereference(ICorDebugValue **ppValue)
         return hr;
     }
 
-    if ((m_info.objRefBad) || (m_info.objRef == NULL))
+    if ((m_info.objRefBad) || (m_info.objRef == (CORDB_ADDRESS)NULL))
     {
         return CORDBG_E_BAD_REFERENCE_VALUE;
     }
