@@ -3817,6 +3817,8 @@ public static partial class XmlSerializerTests
         object[] actualAll = (object[])field.GetValue(actual);
         Assert.NotNull(actualAll);
         Assert.Equal(expected, actualAll);
+    }
+
     [Theory]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]

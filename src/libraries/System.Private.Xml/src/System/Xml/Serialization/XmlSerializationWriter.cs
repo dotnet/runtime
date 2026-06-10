@@ -2248,6 +2248,9 @@ namespace System.Xml.Serialization
                 '\n' => "\\n",
                 '\t' => "\\t",
                 '\0' => "\\0",
+                '\u0085' => "\\u0085",
+                '\u2028' => "\\u2028",
+                '\u2029' => "\\u2029",
                 <(char)32 => $"\\x{((byte)value >> 4):X}{((byte)value & 0xF):X}",
                 _ => null
             };
