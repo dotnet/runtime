@@ -2421,6 +2421,15 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     insOpts        opt      = emitter::optGetSveInsOpt(emitTypeSize(baseType));
                     emitAttr       emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
 
+                    if (vecCon->IsZero())
+                    {
+                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+                    }
+                    else if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, -1, opt);
+                    }
+
                     auto loadConstantHelper = [&](uint64_t constValue) -> regNumber {
                         // Get a temp integer register to compute long address. Use Extract so multiple calls
                         // (index + step) get distinct temps when LSRA reserved more than one.
@@ -2563,116 +2572,105 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         }
                     }
 
-                    if (vecCon->IsZero())
+                    switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
                     {
-                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
-                    }
-                    else if (vecCon->IsAllBitsSet())
-                    {
-                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, -1, opt);
-                    }
-                    else
-                    {
-                        switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
+                        case SimdScalableRepeated:
                         {
-                            case SimdScalableRepeated:
+                            if (varTypeIsIntegral(baseType) && indexHasImm &&
+                                (emitter::isValidSimm<8>(indexImm) || emitter::isValidSimm_MultipleOf<8, 256>(indexImm)))
                             {
-                                if (varTypeIsIntegral(baseType) && indexHasImm &&
-                                    (emitter::isValidSimm<8>(indexImm) || emitter::isValidSimm_MultipleOf<8, 256>(indexImm)))
-                                {
-                                    emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, indexImm, opt);
-                                }
-                                else if ((baseType == TYP_FLOAT) &&
-                                         emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]))
-                                {
-                                    emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                      simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
-                                }
-                                else if ((baseType == TYP_DOUBLE) &&
-                                         emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
-                                {
-                                    emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                      static_cast<double>(simdVal.gtSimdScalableIndexF64[0]),
-                                                      INS_OPTS_SCALABLE_D);
-                                }
-                                else
-                                {
-                                    regNumber indexReg = loadConstantHelper(indexVal);
-                                    emit->emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
-                                }
-
-                                break;
+                                emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, indexImm, opt);
+                            }
+                            else if ((baseType == TYP_FLOAT) &&
+                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]))
+                            {
+                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                  simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
+                            }
+                            else if ((baseType == TYP_DOUBLE) &&
+                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
+                            {
+                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                  static_cast<double>(simdVal.gtSimdScalableIndexF64[0]),
+                                                  INS_OPTS_SCALABLE_D);
+                            }
+                            else
+                            {
+                                regNumber indexReg = loadConstantHelper(indexVal);
+                                emit->emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
                             }
 
-                            case SimdScalableSequence:
-                            {
-                                // FP sequences should have been imported into a set of nodes
-                                assert(varTypeIsIntegral(baseType));
-
-                                if (indexHasImm && stepHasImm && emitter::isValidSimm<5>(indexImm) &&
-                                    emitter::isValidSimm<5>(stepImm))
-                                {
-                                    emit->emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, indexImm, stepImm, opt);
-                                }
-                                else if (indexHasImm && emitter::isValidSimm<5>(indexImm))
-                                {
-                                    regNumber stepReg = loadConstantHelper(stepVal);
-                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg, indexImm, opt,
-                                                           INS_SCALABLE_OPTS_IMM_FIRST);
-                                }
-                                else if (stepHasImm && emitter::isValidSimm<5>(stepImm))
-                                {
-                                    regNumber indexReg = loadConstantHelper(indexVal);
-                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg, stepImm, opt);
-                                }
-                                else
-                                {
-                                    regNumber indexReg = loadConstantHelper(indexVal);
-                                    regNumber stepReg  = loadConstantHelper(stepVal);
-                                    emit->emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg, stepReg, opt);
-                                }
-                                break;
-                            }
-
-                            case SimdScalableScalar:
-                            {
-                                // Clear the entire target register
-                                emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
-
-                                // Use NEON instructions to load the constant (to avoid using predicates)
-
-                                if (varTypeIsIntegral(baseType) && indexHasImm &&
-                                    emitter::emitIns_valid_imm_for_mov(indexImm, emitSize))
-                                {
-                                    emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, indexImm);
-                                }
-                                else if ((baseType == TYP_FLOAT) &&
-                                         emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]))
-                                {
-                                    emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
-                                                      static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
-                                }
-                                else if ((baseType == TYP_DOUBLE) &&
-                                         emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
-                                {
-                                    emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
-                                                      simdVal.gtSimdScalableIndexF64[0]);
-                                }
-                                else
-                                {
-                                    regNumber indexReg = loadConstantHelper(indexVal);
-                                    emit->emitIns_R_R(INS_ins, emitSize, targetReg, indexReg, INS_OPTS_16B);
-                                }
-                                break;
-                            }
-
-                            default:
-                                unreached();
-                                break;
+                            break;
                         }
+
+                        case SimdScalableSequence:
+                        {
+                            // FP sequences should have been imported into a set of nodes
+                            assert(varTypeIsIntegral(baseType));
+
+                            if (indexHasImm && stepHasImm && emitter::isValidSimm<5>(indexImm) &&
+                                emitter::isValidSimm<5>(stepImm))
+                            {
+                                emit->emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, indexImm, stepImm, opt);
+                            }
+                            else if (indexHasImm && emitter::isValidSimm<5>(indexImm))
+                            {
+                                regNumber stepReg = loadConstantHelper(stepVal);
+                                emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg, indexImm, opt,
+                                                       INS_SCALABLE_OPTS_IMM_FIRST);
+                            }
+                            else if (stepHasImm && emitter::isValidSimm<5>(stepImm))
+                            {
+                                regNumber indexReg = loadConstantHelper(indexVal);
+                                emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg, stepImm, opt);
+                            }
+                            else
+                            {
+                                regNumber indexReg = loadConstantHelper(indexVal);
+                                regNumber stepReg  = loadConstantHelper(stepVal);
+                                emit->emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg, stepReg, opt);
+                            }
+                            break;
+                        }
+
+                        case SimdScalableScalar:
+                        {
+                            // Clear the entire target register
+                            emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+
+                            // Use NEON instructions to load the constant (to avoid using predicates)
+
+                            if (varTypeIsIntegral(baseType) && indexHasImm &&
+                                emitter::emitIns_valid_imm_for_mov(indexImm, emitSize))
+                            {
+                                emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, indexImm);
+                            }
+                            else if ((baseType == TYP_FLOAT) &&
+                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]))
+                            {
+                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                                  static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
+                            }
+                            else if ((baseType == TYP_DOUBLE) &&
+                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
+                            {
+                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                                  simdVal.gtSimdScalableIndexF64[0]);
+                            }
+                            else
+                            {
+                                regNumber indexReg = loadConstantHelper(indexVal);
+                                emit->emitIns_R_R(INS_ins, emitSize, targetReg, indexReg, INS_OPTS_16B);
+                            }
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                            break;
                     }
-                    break;
                 }
+                break;
 
                 default:
                 {
