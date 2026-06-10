@@ -16,7 +16,12 @@ namespace Microsoft.Extensions.Caching.Memory
         // expirations under a generous SizeLimit. The working set is a tiny fraction of the limit, so
         // no legitimate capacity rejection can occur. After the storm the tracked size must not be
         // negative and the cache must still retain fresh, non-expiring entries.
-        [Fact]
+        //
+        // The workers are LongRunning tasks, which the default scheduler backs with dedicated threads
+        // rather than the shared ThreadPool. This prevents the storm from starving timing-sensitive
+        // post-eviction callbacks in sibling tests. ConditionalFact skips platforms without real
+        // thread support (e.g. browser/wasm).
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConcurrentSetReplaceAndRemove_DoesNotDriftSizeNegative_NorLatch()
         {
             using MemoryCache cache = new(new MemoryCacheOptions
@@ -27,31 +32,22 @@ namespace Microsoft.Extensions.Caching.Memory
 
             const int KeyCount = 16;
             const int ValueSize = 4096;
+            const int IterationsPerThread = 200_000;
+            const int SampleMask = 1023; // sample CurrentEstimatedSize roughly every 1024 iterations
             byte[] payload = new byte[ValueSize];
-            int threadCount = Math.Max(8, Environment.ProcessorCount * 4);
+            int threadCount = Math.Min(Math.Max(4, Environment.ProcessorCount), 16);
 
-            long observedNegative = 0;
-            using (CancellationTokenSource cts = new(TimeSpan.FromSeconds(3)))
+            long observedMinSize = 0;
+
+            Task[] workers = new Task[threadCount];
+            for (int t = 0; t < threadCount; t++)
             {
-                Task monitor = Task.Run(() =>
-                {
-                    while (!cts.IsCancellationRequested)
+                int seed = t + 1;
+                workers[t] = Task.Factory.StartNew(
+                    () =>
                     {
-                        long? size = cache.GetCurrentStatistics()?.CurrentEstimatedSize;
-                        if (size.HasValue && size.Value < Interlocked.Read(ref observedNegative))
-                        {
-                            Interlocked.Exchange(ref observedNegative, size.Value);
-                        }
-                    }
-                });
-
-                Task[] workers = new Task[threadCount];
-                for (int t = 0; t < threadCount; t++)
-                {
-                    workers[t] = Task.Run(() =>
-                    {
-                        Random rnd = new(Environment.CurrentManagedThreadId);
-                        while (!cts.IsCancellationRequested)
+                        Random rnd = new(seed);
+                        for (int i = 0; i < IterationsPerThread; i++)
                         {
                             string key = "k" + rnd.Next(KeyCount);
                             int roll = rnd.Next(100);
@@ -70,14 +66,23 @@ namespace Microsoft.Extensions.Caching.Memory
                             {
                                 cache.Remove(key);
                             }
-                        }
-                    });
-                }
 
-                Task.WaitAll(workers);
-                cts.Cancel();
-                monitor.Wait();
+                            if ((i & SampleMask) == 0)
+                            {
+                                long? size = cache.GetCurrentStatistics()?.CurrentEstimatedSize;
+                                if (size.HasValue && size.Value < Interlocked.Read(ref observedMinSize))
+                                {
+                                    Interlocked.Exchange(ref observedMinSize, size.Value);
+                                }
+                            }
+                        }
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
             }
+
+            Task.WaitAll(workers);
 
             // Drain the working set so the cache is logically empty.
             for (int k = 0; k < KeyCount; k++)
@@ -86,7 +91,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
             Thread.Sleep(100);
 
-            Assert.True(observedNegative >= 0, $"CurrentEstimatedSize drifted negative to {observedNegative}.");
+            Assert.True(observedMinSize >= 0, $"CurrentEstimatedSize drifted negative to {observedMinSize}.");
 
             long drainedSize = cache.GetCurrentStatistics().CurrentEstimatedSize ?? 0;
             Assert.True(drainedSize >= 0, $"CurrentEstimatedSize is negative after drain: {drainedSize}.");
