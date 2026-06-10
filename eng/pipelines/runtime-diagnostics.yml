@@ -3,12 +3,12 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 4 SOS
-#                      legs that run on top of it: cDAC, cDAC_no_fallback, DAC,
-#                      Interpreter. Built and tested on the same job graph so the
-#                      build is shared across all SOS legs.
+#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
+#                      legs that run on top of it: cDAC, cDAC_no_fallback, DAC.
+#                      Each leg sets testInterpreter: true so interpreter coverage
+#                      is exercised inline (no separate Interpreter leg).
 #
-#   CdacUnitTests      linux_x64 Checked. Builds + tests the cDAC managed-side
+#   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
 #                      subset). Independent of every other stage.
 #
@@ -115,9 +115,11 @@ extends:
     - stage: SOSTests
       jobs:
       # Shared coreclr+libs+host+packs build. -clrinterpreter compiles
-      # FEATURE_INTERPRETER into the Release CoreCLR so the Interpreter SOS
-      # leg can share this build (see review on dotnet/runtime#127840 --
-      # -clrinterpreter enables the interpreter in Release too).
+      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS legs below
+      # (which all set testInterpreter: true via sos-test-leg.yml) get
+      # interpreter coverage without needing a separate Checked drop
+      # (see review on dotnet/runtime#127840 -- -clrinterpreter enables
+      # the interpreter in Release too).
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml

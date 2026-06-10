@@ -16,29 +16,12 @@ parameters:
   cdacTestConfig: '$(_BuildConfig)'
   # Libraries configuration is pinned independently of cdacTestConfig so
   # an /p:Configuration=Debug override here never causes MSBuild to look
-  # for Debug-built libraries (which we don't ship in CI).
+  # for Debug-built libraries (which we don't ship in CI). If the libs
+  # are missing at this config, the dotnet build below will fail with a
+  # clear unresolved-reference error.
   librariesConfiguration: '$(_BuildConfig)'
 
 steps:
-# Pre-flight: confirm a libraries build exists at the expected configuration.
-# Detects misalignment between what CdacBuild produced and what we're about
-# to consume during payload prep.
-- pwsh: |
-    $libsDir = "$(Build.SourcesDirectory)/artifacts/bin/runtime"
-    if (-not (Test-Path $libsDir)) {
-        Write-Error "Libraries output directory not found at '$libsDir' -- did CdacBuild publish artifacts/bin?"
-        exit 1
-    }
-    $configMatches = Get-ChildItem -Directory $libsDir -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like "*-${{ parameters.librariesConfiguration }}" }
-    if (-not $configMatches) {
-        Write-Error "No libraries built at configuration '${{ parameters.librariesConfiguration }}' under $libsDir. Found: $((Get-ChildItem -Directory $libsDir | Select-Object -ExpandProperty Name) -join ', ')"
-        exit 1
-    }
-    Write-Host "Libraries configuration '${{ parameters.librariesConfiguration }}' verified at:"
-    $configMatches | ForEach-Object { Write-Host "  $($_.FullName)" }
-  displayName: 'Verify libraries built at ${{ parameters.librariesConfiguration }}'
-
 - ${{ if parameters.buildDebuggees }}:
   - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
       $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
