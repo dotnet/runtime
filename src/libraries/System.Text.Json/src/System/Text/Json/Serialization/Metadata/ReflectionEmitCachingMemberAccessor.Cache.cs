@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (Interlocked.CompareExchange(ref _evictLock, 1, 0) == 0)
                     {
-                        if (Stopwatch.GetElapsedTime(_lastEvictedTimestamp, nowTimestamp) >= _evictionInterval)
+                        if (Stopwatch.GetElapsedTime(Volatile.Read(ref _lastEvictedTimestamp), nowTimestamp) >= _evictionInterval)
                         {
                             EvictStaleCacheEntries(nowTimestamp);
                             Volatile.Write(ref _lastEvictedTimestamp, nowTimestamp);
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Metadata
             public void Clear()
             {
                 _cache.Clear();
-                _lastEvictedTimestamp = Stopwatch.GetTimestamp();
+                Volatile.Write(ref _lastEvictedTimestamp, Stopwatch.GetTimestamp());
             }
 
             private void EvictStaleCacheEntries(long nowTimestamp)
