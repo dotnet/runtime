@@ -222,7 +222,9 @@ switch (testCase) {
             onConfigLoaded: (config) => {
                 const bufferedAssets = [
                     ...config.resources.wasmNative,
+                    ...config.resources.coreAssembly,
                     ...config.resources.assembly,
+                    ...(config.resources.corePdb ?? []),
                     ...(config.resources.pdb ?? []),
                     ...config.resources.wasmSymbols,
                 ];

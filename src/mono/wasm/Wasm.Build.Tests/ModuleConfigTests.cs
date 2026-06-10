@@ -121,7 +121,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime))]
+    [Fact]
     public async Task BufferedAssetsTest()
     {
         Configuration config = Configuration.Debug;
