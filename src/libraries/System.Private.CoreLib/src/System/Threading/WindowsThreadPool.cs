@@ -34,15 +34,15 @@ namespace System.Threading
 
             // This flag is used for communication between item enqueuing and workers that process the items.
             // There are two states of this flag:
-            // 0: has no guarantees
-            // 1: means a worker will check work queues and ensure that
-            //    any work items inserted in work queue before setting the flag
-            //    are picked up.
-            //    Note: The state must be cleared by the worker thread _before_
-            //       checking. Otherwise there is a window between finding no work
-            //       and resetting the flag, when the flag is in a wrong state.
-            //       A new work item may be added right before the flag is reset
-            //       without asking for a worker, while the last worker is quitting.
+            // false: has no guarantees
+            // true:  means a worker will check work queues and ensure that
+            //        any work items inserted in work queue before setting the flag
+            //        are picked up.
+            //        Note: The state must be cleared by the worker thread _before_
+            //           checking. Otherwise there is a window between finding no work
+            //           and resetting the flag, when the flag is in a wrong state.
+            //           A new work item may be added right before the flag is reset
+            //           without asking for a worker, while the last worker is quitting.
             public bool _hasOutstandingThreadRequest;
 
             private readonly Internal.PaddingFor32 pad2;
