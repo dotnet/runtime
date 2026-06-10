@@ -9075,7 +9075,6 @@ public:
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
     Statement*  optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
-    bool        optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP*  optInitAssertionDataflowFlags();
     ASSERT_TP*  optComputeAssertionGen();
 
