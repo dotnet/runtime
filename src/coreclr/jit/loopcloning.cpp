@@ -190,13 +190,13 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case MethodAddr:
         {
             GenTreeIntCon* methodAddrHandle = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
-            INDEBUG(methodAddrHandle->gtTargetHandle = (size_t)targetMethHnd);
+            INDEBUG(methodAddrHandle->SetTargetHandle((size_t)targetMethHnd));
             return methodAddrHandle;
         }
         case IndirOfMethodAddrSlot:
         {
             GenTreeIntCon* slot = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
-            INDEBUG(slot->gtTargetHandle = (size_t)targetMethHnd);
+            INDEBUG(slot->SetTargetHandle((size_t)targetMethHnd));
             GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             return indir;
         }
@@ -2882,7 +2882,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
                     LcMethodAddrTestOptInfo(compCurBB, info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
-                                                            (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
+                                                            (CORINFO_METHOD_HANDLE)iconHandle->GetTargetHandle()));
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())->Push(optInfo);
             }
         }

@@ -3059,7 +3059,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     //
     if (size->isContainedIntOrIImmed())
     {
-        size_t amount = size->AsIntCon()->gtIconVal;
+        size_t amount = size->AsIntCon()->IconValue();
 
         // Handle zero
         //

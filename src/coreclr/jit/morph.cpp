@@ -1773,7 +1773,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
-        INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
+        INDEBUG(indirectCellAddress->AsIntCon()->SetTargetHandle((size_t)call->gtCallMethHnd));
 #ifdef TARGET_ARM
         // TODO-ARM: We currently do not properly kill this register in LSRA
         // (see getKillSetForCall which does so only for VSD calls).
@@ -3820,7 +3820,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree)
             offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsFieldAddr()->gtFieldLookup.addr,
                                                   GTF_ICON_CONST_PTR);
 #ifdef DEBUG
-            offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)fieldHandle;
+            offsetNode->gtGetOp1()->AsIntCon()->SetTargetHandle((size_t)fieldHandle);
 #endif
         }
         else
@@ -5935,7 +5935,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
-        INDEBUG(stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
+        INDEBUG(stubAddrArg->AsIntCon()->SetTargetHandle((size_t)call->gtCallMethHnd));
     }
     assert(stubAddrArg != nullptr);
     return stubAddrArg;
@@ -6804,7 +6804,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
             case IAT_PVALUE:
                 indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR);
-                INDEBUG(indNode->gtGetOp1()->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
+                INDEBUG(indNode->gtGetOp1()->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(funcHandle)));
                 break;
 
             case IAT_VALUE:
@@ -6814,7 +6814,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
                 fgUpdateConstTreeValueNumber(tree);
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
+                INDEBUG(tree->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(funcHandle)));
                 break;
 
             default:
@@ -6916,7 +6916,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     cns1->SetIconValue(foldedCns->IconValue());
     cns1->SetVNsFromNode(foldedCns);
-    cns1->gtFieldSeq = foldedCns->gtFieldSeq;
+    cns1->SetFieldSeq(foldedCns->GetFieldSeq());
 
     op1 = tree->gtGetOp1();
     op1->SetVNsFromNode(tree);
@@ -7837,7 +7837,7 @@ DONE_MORPHING_CHILDREN:
                     // except when `op2` is a const byref.
 
                     op2->AsIntConCommon()->SetValueTruncating(-op2->AsIntConCommon()->IconValue());
-                    op2->AsIntConRef().gtFieldSeq = nullptr;
+                    op2->AsIntConRef().SetFieldSeq(nullptr);
                     fgUpdateConstTreeValueNumber(op2);
 
                     oper = GT_ADD;
@@ -8080,7 +8080,7 @@ DONE_MORPHING_CHILDREN:
                         if (canTransform)
                         {
                             op1op2->AsIntConCommon()->SetValueTruncating(-op1op2->AsIntConCommon()->IconValue());
-                            op1op2->AsIntConRef().gtFieldSeq = nullptr;
+                            op1op2->AsIntConRef().SetFieldSeq(nullptr);
                         }
                     }
                     else
@@ -10521,7 +10521,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
         // Keep the offset nodes with annotations for value numbering purposes.
-        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == nullptr))
+        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->GetFieldSeq() == nullptr))
         {
             DEBUG_DESTROY_NODE(op2);
             DEBUG_DESTROY_NODE(add);
@@ -10736,7 +10736,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             if (op2->IsCnsIntOrI())
             {
                 op2->AsIntConCommon()->SetValueTruncating(-op2->AsIntConCommon()->IconValue());
-                op2->AsIntConRef().gtFieldSeq = nullptr;
+                op2->AsIntConRef().SetFieldSeq(nullptr);
             }
             else
             {
@@ -11353,8 +11353,8 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                         break;
                     }
 
-                    ssize_t imul = op2->AsIntCon()->gtIconVal;
-                    ssize_t iadd = add->AsIntCon()->gtIconVal;
+                    ssize_t imul = op2->AsIntCon()->IconValue();
+                    ssize_t iadd = add->AsIntCon()->IconValue();
 
                     /* Change '(val + iadd) * imul' -> '(val * imul) + (iadd * imul)' */
 
@@ -12332,7 +12332,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
-                leftShiftMask  = leftShiftIndex->gtGetOp2()->AsIntCon()->gtIconVal;
+                leftShiftMask  = leftShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
                 leftShiftIndex = leftShiftIndex->gtGetOp1();
             }
             else
@@ -12345,7 +12345,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
-                rightShiftMask  = rightShiftIndex->gtGetOp2()->AsIntCon()->gtIconVal;
+                rightShiftMask  = rightShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
                 rightShiftIndex = rightShiftIndex->gtGetOp1();
             }
             else
@@ -12385,7 +12385,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
             {
-                if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->gtIconVal == rotatedValueBitSize)
+                if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->IconValue() == rotatedValueBitSize)
                 {
                     if (shiftIndexWithAdd->gtGetOp1()->OperGet() == GT_NEG)
                     {
@@ -12417,7 +12417,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         }
         else if ((leftShiftIndex->IsCnsIntOrI() && rightShiftIndex->IsCnsIntOrI()))
         {
-            if (leftShiftIndex->AsIntCon()->gtIconVal + rightShiftIndex->AsIntCon()->gtIconVal == rotatedValueBitSize)
+            if (leftShiftIndex->AsIntCon()->IconValue() + rightShiftIndex->AsIntCon()->IconValue() == rotatedValueBitSize)
             {
                 // We found this pattern:
                 // (x << c1) | (x >>> c2)
@@ -12616,7 +12616,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree)
         // GT_CNS_INT is considered small, so ReplaceWith() won't copy all fields
         if (tree->IsIconHandle())
         {
-            copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
+            copy->AsIntCon()->SetCompileTimeHandle(tree->AsIntCon()->GetCompileTimeHandle());
         }
 #endif
 
@@ -13161,7 +13161,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             FlowEdge *retainedEdge, *removedEdge;
 
-            if (cond->AsIntCon()->gtIconVal != 0)
+            if (cond->AsIntCon()->IconValue() != 0)
             {
                 retainedEdge = block->GetTrueEdge();
                 removedEdge  = block->GetFalseEdge();
@@ -13236,7 +13236,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
+            size_t     switchVal           = (size_t)cond->AsIntCon()->IconValue();
             unsigned   jumpCnt             = block->GetSwitchTargets()->GetCaseCount();
             FlowEdge** jumpTab             = block->GetSwitchTargets()->GetCases();
             bool       foundVal            = false;
