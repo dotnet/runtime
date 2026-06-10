@@ -13128,24 +13128,13 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     unsigned ilNum = compMap2ILvarNum(lclNum);
 #if TARGET_WASM
     int wasmSpillSlotIndex = -1;
-    if (m_wasmRefSpillSlots != nullptr)
+    if (m_wasmSpillSlots != nullptr)
     {
-        for (unsigned i = 0; i < m_wasmRefSpillSlots->size(); i++)
+        for (unsigned i = 0; i < m_wasmSpillSlots->size(); i++)
         {
-            if (m_wasmRefSpillSlots->at(i) == lclNum)
+            if (m_wasmSpillSlots->at(i).lclNum == lclNum)
             {
                 wasmSpillSlotIndex = i;
-                break;
-            }
-        }
-
-        assert(m_wasmByRefSpillSlots);
-
-        for (unsigned i = 0; i < m_wasmByRefSpillSlots->size(); i++)
-        {
-            if (m_wasmByRefSpillSlots->at(i) == lclNum)
-            {
-                wasmSpillSlotIndex = i + (int)m_wasmRefSpillSlots->size();
                 break;
             }
         }

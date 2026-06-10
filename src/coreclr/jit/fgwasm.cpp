@@ -1682,6 +1682,14 @@ PhaseStatus Compiler::WasmSpillRefs()
     {
         // LIR edges cannot span blocks, so we can safely clear the list of live values per-block
         defs.clear();
+        if (m_wasmSpillSlots != nullptr)
+        {
+            // Flag all our spill slot vars as no longer in use so they can be reused in the new block
+            for (int s = 0; s < m_wasmSpillSlots->size(); s++)
+            {
+                m_wasmSpillSlots->at(s).inUse = false;
+            }
+        }
 
         for (GenTree* tree : LIR::AsRange(block))
         {
@@ -1693,22 +1701,12 @@ PhaseStatus Compiler::WasmSpillRefs()
                 //  on the stack where the GC can see them so it won't move them.
                 if (defs.size())
                 {
-                    anyChanges = true;
-
-                    if (m_wasmRefSpillSlots == nullptr)
+                    if (m_wasmSpillSlots == nullptr)
                     {
-                        m_wasmRefSpillSlots =
-                            new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
-                        m_wasmByRefSpillSlots =
-                            new (this, CMK_WasmSpillRefs) jitstd::vector<unsigned>(getAllocator(CMK_WasmSpillRefs));
-                    }
-                    else
-                    {
-                        assert(m_wasmByRefSpillSlots != nullptr);
+                        m_wasmSpillSlots =
+                            new (this, CMK_WasmSpillRefs) jitstd::vector<WasmSpillSlot>(getAllocator(CMK_WasmSpillRefs));
                     }
 
-                    unsigned refSpillSlotIndex   = 0;
-                    unsigned byRefSpillSlotIndex = 0;
                     JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
                     DISPNODE(tree);
                     for (GenTree* def : defs)
@@ -1716,15 +1714,23 @@ PhaseStatus Compiler::WasmSpillRefs()
                         JITDUMP("    ");
                         DISPNODE(def);
 
-                        unsigned* spillSlotIndex = def->TypeIs(TYP_BYREF) ? &byRefSpillSlotIndex : &refSpillSlotIndex;
-                        jitstd::vector<unsigned>* spillSlotList =
-                            def->TypeIs(TYP_BYREF) ? m_wasmByRefSpillSlots : m_wasmRefSpillSlots;
-                        unsigned spillSlot;
-                        if (*spillSlotIndex < spillSlotList->size())
+                        int spillSlot = -1;
+                        // Find an existing spill slot of the right type (byref or ref) that isn't in use
+                        for (int s = 0; s < m_wasmSpillSlots->size(); s++)
                         {
-                            spillSlot = spillSlotList->at(*spillSlotIndex);
+                            WasmSpillSlot* slot = &(m_wasmSpillSlots->at(s));
+                            if (slot->inUse)
+                                continue;
+                            if (slot->byRef != def->TypeIs(TYP_BYREF))
+                                continue;
+
+                            spillSlot = slot->lclNum;
+                            slot->inUse = true;
+                            break;
                         }
-                        else
+
+                        // We didn't find an available spill slot so make a new one
+                        if (spillSlot == -1)
                         {
                             spillSlot                      = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
                             LclVarDsc* const varDsc        = lvaGetDesc(spillSlot);
@@ -1732,9 +1738,12 @@ PhaseStatus Compiler::WasmSpillRefs()
                             varDsc->lvPinned               = true;
                             varDsc->lvMustInit             = true;
                             lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-                            spillSlotList->push_back(spillSlot);
+                            WasmSpillSlot slotDesc;
+                            slotDesc.lclNum = spillSlot;
+                            slotDesc.byRef = def->TypeIs(TYP_BYREF);
+                            slotDesc.inUse = true;
+                            m_wasmSpillSlots->push_back(slotDesc);
                         }
-                        (*spillSlotIndex) += 1;
 
                         GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
                         GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
@@ -1743,6 +1752,9 @@ PhaseStatus Compiler::WasmSpillRefs()
                         use.ReplaceWith(reload);
                         LIR::AsRange(block).InsertAfter(def, spill);
                         LIR::AsRange(block).InsertAfter(spill, reload);
+
+                        // The user will expect to have child nodes that have the multiply-used flag set, so when
+                        //  we replace the expression with the reload node, we need to transfer the flag
                         if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
                         {
                             JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n",
@@ -1750,6 +1762,7 @@ PhaseStatus Compiler::WasmSpillRefs()
                             def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
                             reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
                         }
+
                         anyChanges = true;
                     }
 
@@ -1795,9 +1808,32 @@ PhaseStatus Compiler::WasmSpillRefs()
             //  and we won't need to spill it.
             if (tree->OperIs(GT_LCL_VAR))
             {
-                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVarCommon());
+                GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
+                LclVarDsc* dsc = lvaGetDesc(lclVar);
                 if (!dsc->IsAddressExposed())
+                {
                     continue;
+                }
+
+                // We may have an address-exposed spill variable, in which case we don't want to spill it a
+                //  second time. Scan the spill slots list for this variable.
+                bool isSpillSlot = false;
+                if (m_wasmSpillSlots)
+                {
+                    for (WasmSpillSlot spillSlotDesc : *m_wasmSpillSlots)
+                    {
+                        if (spillSlotDesc.lclNum == lclVar->GetLclNum())
+                        {
+                            isSpillSlot = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (isSpillSlot)
+                {
+                    continue;
+                }
             }
 
             // We have a ref sourced from something like a call result or an indirection that hasn't been
@@ -1809,7 +1845,14 @@ PhaseStatus Compiler::WasmSpillRefs()
         }
     }
 
-    JITDUMP("High water mark for refs was %zu\n", highWaterMark);
+    if (highWaterMark > 0)
+    {
+        JITDUMP("High water mark for refs was %zu\n", highWaterMark);
+    }
+    if (m_wasmSpillSlots != nullptr)
+    {
+        JITDUMP("Total allocated spill slot count was %zu\n", m_wasmSpillSlots->size());
+    }
     return anyChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
