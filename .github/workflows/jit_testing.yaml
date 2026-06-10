@@ -70,6 +70,7 @@ jobs:
           docker exec gha bash -c "
             set -euo pipefail
             /jit_testing.sh setup | tee /tmp/setup.log
+             exit ${PIPESTATUS[0]}
           "
 
       # ======================================
@@ -80,6 +81,7 @@ jobs:
           docker exec gha bash -c "
             set -euo pipefail
             /jit_testing.sh build_runtime | tee /tmp/build_runtime.log
+             exit ${PIPESTATUS[0]}
           "
 
       - name: Build Libraries
@@ -87,6 +89,7 @@ jobs:
           docker exec gha bash -c "
             set -euo pipefail
             /jit_testing.sh build_libs | tee /tmp/build_libs.log
+             exit ${PIPESTATUS[0]}
           "
 
       - name: Build Tests
@@ -94,6 +97,7 @@ jobs:
           docker exec gha bash -c "
             set -euo pipefail
             /jit_testing.sh build_tests | tee /tmp/build_tests.log
+             exit ${PIPESTATUS[0]}
           "
 
       # ======================================
@@ -104,6 +108,7 @@ jobs:
           docker exec gha bash -c "
             set -euo pipefail
             /jit_testing.sh run_tests | tee /tmp/jit_tests.log
+            exit ${PIPESTATUS[0]}
           "
 
       # ======================================
