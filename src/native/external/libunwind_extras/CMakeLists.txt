@@ -130,8 +130,12 @@ if(CLR_CMAKE_HOST_WIN32)
     # (e.g. atomic_compare_exchange_strong in Gaddress_validator.c) compiles
     # against MSVC's real header instead of a generated fake.
     # /std:c11 is already implied by CMAKE_C_STANDARD=11 set in libunwind/CMakeLists.txt.
-    if(MSVC)
-        add_compile_options(/experimental:c11atomics)
+    # CMAKE_C_COMPILER_ID is used instead of MSVC so that clang-cl (which sets
+    # MSVC=TRUE but does not accept /experimental:c11atomics) is excluded.
+    # The COMPILE_LANGUAGE:C generator expression scopes the flag to C sources
+    # so it is not passed to C++ compilation (e.g. remote-unwind.cpp).
+    if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>)
     endif()
 
     # include paths
