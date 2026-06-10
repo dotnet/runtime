@@ -498,6 +498,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForIndexAddr(node->AsIndexAddr());
             break;
 
+        case GT_CKFINITE:
+            ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
