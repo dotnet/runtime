@@ -667,7 +667,7 @@ namespace System.IO.Compression
         }
 
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        internal void WriteCentralDirectoryFileHeader(bool forceWrite)
+        internal unsafe void WriteCentralDirectoryFileHeader(bool forceWrite)
         {
             if (WriteCentralDirectoryFileHeaderInitialize(forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint offsetOfLocalHeaderTruncated))
             {
@@ -981,7 +981,11 @@ namespace System.IO.Compression
         private bool IsOpenableFinalVerifications(bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
         {
             message = null;
-            if (offsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
+            // Use an overflow-safe form: corrupt zip64 archives can report compressed sizes / offsets
+            // near long.MaxValue, which would wrap around in 'offsetOfCompressedData + _compressedSize'.
+            if (offsetOfCompressedData < 0 ||
+                _compressedSize < 0 ||
+                _compressedSize > _archive.ArchiveStream.Length - offsetOfCompressedData)
             {
                 message = SR.LocalFileHeaderCorrupt;
                 return false;
@@ -1062,7 +1066,7 @@ namespace System.IO.Compression
 
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
 
-        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
+        private unsafe bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1200,7 +1204,7 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
+        private unsafe bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
             if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
@@ -1304,7 +1308,7 @@ namespace System.IO.Compression
         // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
         // writes them, then seeks back to where you started
         // Assumes that the stream is currently at the end of the data
-        private void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
+        private unsafe void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
         {
             // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
             Span<byte> writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
@@ -1428,7 +1432,7 @@ namespace System.IO.Compression
         // signature is optional but recommended by the spec
         private const int MaxSizeOfDataDescriptor = 24;
 
-        private void WriteDataDescriptor()
+        private unsafe void WriteDataDescriptor()
         {
             Span<byte> dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
             int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);

@@ -267,6 +267,27 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 }
 
 //------------------------------------------------------------------------
+// Emit helper for SVE+SVE2 WHILE* intrinsics - these set the width
+// (emitSize) based on the scalar operand
+//
+static void genEmitCreateWhileMask(emitter*            emit,
+                                   GenTreeHWIntrinsic* node,
+                                   instruction         ins,
+                                   instruction         unsignedIns,
+                                   regNumber           targetReg,
+                                   regNumber           op1Reg,
+                                   regNumber           op2Reg,
+                                   insOpts             opt)
+{
+    var_types auxType  = node->GetAuxiliaryType();
+    emitAttr  emitSize = emitActualTypeSize(auxType);
+    if (varTypeIsUnsigned(auxType))
+    {
+        ins = unsignedIns;
+    }
+    emit->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+}
+
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
 // Arguments:
@@ -2138,18 +2159,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateWhileLessThanMaskUInt16:
             case NI_Sve_CreateWhileLessThanMaskUInt32:
             case NI_Sve_CreateWhileLessThanMaskUInt64:
-            {
-                // Emit size and instruction is based on the scalar operands.
-                var_types auxType = node->GetAuxiliaryType();
-                emitSize          = emitActualTypeSize(auxType);
-                if (varTypeIsUnsigned(auxType))
-                {
-                    ins = INS_sve_whilelo;
-                }
-
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                genEmitCreateWhileMask(GetEmitter(), node, ins, INS_sve_whilelo, targetReg, op1Reg, op2Reg, opt);
                 break;
-            }
 
             case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
             case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
@@ -2161,18 +2172,49 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
             case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
             case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
-            {
-                // Emit size and instruction is based on the scalar operands.
-                var_types auxType = node->GetAuxiliaryType();
-                emitSize          = emitActualTypeSize(auxType);
-                if (varTypeIsUnsigned(auxType))
-                {
-                    ins = INS_sve_whilels;
-                }
-
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                genEmitCreateWhileMask(GetEmitter(), node, ins, INS_sve_whilels, targetReg, op1Reg, op2Reg, opt);
                 break;
-            }
+
+            case NI_Sve2_CreateWhileGreaterThanMaskByte:
+            case NI_Sve2_CreateWhileGreaterThanMaskDouble:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt16:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt32:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt64:
+            case NI_Sve2_CreateWhileGreaterThanMaskSByte:
+            case NI_Sve2_CreateWhileGreaterThanMaskSingle:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
+                genEmitCreateWhileMask(GetEmitter(), node, ins, INS_sve_whilehi, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
+                genEmitCreateWhileMask(GetEmitter(), node, ins, INS_sve_whilehs, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_Sve2_CreateWhileReadAfterWriteMaskByte:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskDouble:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt16:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt32:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt64:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskSByte:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskSingle:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt16:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt32:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt64:
+                // WHILERW operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
+                // No signed/unsigned instruction variant exists.
+                GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, targetReg, op1Reg, op2Reg, opt);
+                break;
 
             case NI_Sve_GatherPrefetch8Bit:
             case NI_Sve_GatherPrefetch16Bit:

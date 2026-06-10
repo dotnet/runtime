@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dataBuilder.EmitTypeSignature(typeRef, innerContext);
                 }
 
-                MethodWithToken method = new MethodWithToken(_signatureMethod, moduleToken, null, unboxing: false, context: null);
+                MethodWithToken method = new MethodWithToken(_signatureMethod, moduleToken, null, unboxing: false, genericContextObject: null);
                 dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, false);
             }
 

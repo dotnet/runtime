@@ -211,10 +211,10 @@ namespace System.Formats.Tar
             }
             else if (_previouslyReadEntry._header._size > 0)
             {
-                // When working with seekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
+                // When working with unseekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
                 // This is so the user can read the data if desired. But if the data was not read by the user, we need to advance the pointer
                 // here until it's located at the beginning of the next entry header.
-                // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream or SeekableSubReadStream.
+                // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream.
 
                 if (_previouslyReadEntry._header._dataStream is not SubReadStream dataStream)
                 {
@@ -244,10 +244,10 @@ namespace System.Formats.Tar
             }
             else if (_previouslyReadEntry._header._size > 0)
             {
-                // When working with seekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
+                // When working with unseekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
                 // This is so the user can read the data if desired. But if the data was not read by the user, we need to advance the pointer
                 // here until it's located at the beginning of the next entry header.
-                // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream or SeekableSubReadStream.
+                // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream.
 
                 if (_previouslyReadEntry._header._dataStream is not SubReadStream dataStream)
                 {

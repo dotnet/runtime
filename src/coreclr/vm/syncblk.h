@@ -169,10 +169,6 @@ public:
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         , m_pRCW{}
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_OBJCMARSHAL
-        , m_taggedMemory{}
-        , m_taggedAlloc{}
-#endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -327,50 +323,6 @@ public:
 #endif
 
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_OBJCMARSHAL
-public:
-#ifndef DACCESS_COMPILE
-    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(memoryInSizeT != NULL);
-
-        *memoryInSizeT = GetTaggedMemorySizeInBytes() / sizeof(SIZE_T);
-
-        // The allocation is meant to indicate that memory
-        // has been made available by the system. Calling the 'get'
-        // without allocating memory indicates there has been
-        // no request for reference tracking tagged memory.
-        m_taggedMemory = m_taggedAlloc;
-        return m_taggedMemory;
-    }
-#endif // !DACCESS_COMPILE
-
-    PTR_VOID GetTaggedMemory()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_taggedMemory;
-    }
-
-    size_t GetTaggedMemorySizeInBytes()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ARRAY_SIZE(m_taggedAlloc);
-    }
-
-private:
-    PTR_VOID m_taggedMemory;
-
-    // Two pointers worth of bytes of the requirement for
-    // the current consuming implementation so that is what
-    // is being allocated.
-    // If the size of this array is changed, the NativeAOT version
-    // should be updated as well.
-    // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
-    // ObjectiveCMarshal.NativeAot.cs
-    BYTE m_taggedAlloc[2 * sizeof(void*)];
-#endif // FEATURE_OBJCMARSHAL
 
     friend struct ::cdac_data<InteropSyncBlockInfo>;
 };

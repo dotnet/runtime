@@ -41,6 +41,7 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
     source.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
     source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
+    source.applicationEnvironment = source.applicationEnvironment !== undefined ? source.applicationEnvironment : target.applicationEnvironment;
     // Merge maps and arrays: target values first, source values merged on top.
     source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
@@ -92,6 +93,8 @@ function defaultConfig(target: LoaderConfigInternal) {
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
     if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = browserVirtualAppBase;
     if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
+    if (target.enableDownloadRetry === undefined) target.enableDownloadRetry = true;
+    if (target.applicationEnvironment === undefined) target.applicationEnvironment = "Production";
     normalizeConfig(target);
 }
 

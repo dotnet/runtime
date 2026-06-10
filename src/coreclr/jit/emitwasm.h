@@ -16,6 +16,7 @@ void emitDispInst(instruction ins);
 /************************************************************************/
 
 public:
+bool isValidVectorIndex(uint8_t elemsize, uint8_t index);
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
@@ -31,7 +32,13 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
+// Packed SIMD instruction emit functions
+void emitIns_V128Imm(instruction ins, const uint8_t bytes[16]);
+void emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx);
+void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
+
 void emitAddressConstant(void* address);
+void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
@@ -45,6 +52,9 @@ static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 instrDesc*           emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int localCount);
 static WasmValueType emitGetValTypeImmType(const instrDesc* id);
 static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
+
+const uint8_t* emitGetV128ImmValue(const instrDesc* id);
+uint8_t        emitGetLaneImmValue(const instrDesc* id);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -66,6 +76,8 @@ size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
 size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
+size_t emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType);
+
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
 
 void emitUpdateFuncletLocations();

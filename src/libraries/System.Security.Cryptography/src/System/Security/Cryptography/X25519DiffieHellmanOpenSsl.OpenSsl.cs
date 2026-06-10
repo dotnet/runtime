@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
             return _key.DuplicateHandle();
         }
 
-        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
@@ -54,16 +54,27 @@ namespace System.Security.Cryptography
             {
                 Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
                 otherParty.ExportPublicKey(publicKey);
-
-                using (SafeEvpPKeyHandle peerKeyHandle = Interop.Crypto.X25519ImportPublicKey(publicKey))
-                {
-                    written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, peerKeyHandle, destination);
-                }
+                written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, publicKey, destination);
             }
 
             if (written != SecretAgreementSizeInBytes)
             {
                 Debug.Fail($"{nameof(Interop.Crypto.EvpPKeyDeriveSecretAgreement)} wrote an unexpected number of bytes: {written}.");
+                throw new CryptographicException();
+            }
+        }
+
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+
+            int written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
+
+            if (written != SecretAgreementSizeInBytes)
+            {
+                Debug.Fail($"{nameof(Interop.Crypto.X25519DeriveSecretAgreementWithBytes)} wrote an unexpected number of bytes: {written}.");
                 throw new CryptographicException();
             }
         }

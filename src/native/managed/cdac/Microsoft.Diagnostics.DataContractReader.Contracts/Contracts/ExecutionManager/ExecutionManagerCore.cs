@@ -17,22 +17,27 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
     private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
-    private readonly Data.RangeSectionMap _topRangeSectionMap;
+    private readonly TargetPointer _topRangeSectionMapAddress;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
+    private readonly InterpreterJitManager _interpreterJitManager;
 
-    public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
+    private Data.RangeSectionMap _topRangeSectionMap
+        => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
+
+    public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
         _target = target;
-        _topRangeSectionMap = topRangeSectionMap;
+        _topRangeSectionMapAddress = topRangeSectionMapAddress;
         _rangeSectionMapLookup = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
+        _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _codeInfos.Clear();
     }
@@ -40,11 +45,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
-        public TargetCodePointer StartAddress { get; }
+        public TargetPointer StartAddress { get; }
         public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetPointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
         {
             StartAddress = startAddress;
             MethodDescAddress = methodDesc;
@@ -60,6 +65,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         CodeHeap = 0x02,
         RangeList = 0x04,
+        Interpreter = 0x08,
     }
 
     // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
@@ -77,6 +83,21 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         Finally = 0x2,
         Fault = 0x4,
         CachedClass = 0x10000000,
+    }
+
+    // Mirrors StubCodeBlockKind in codeman.h
+    private enum StubKind : int
+    {
+        Unknown = 0,
+        JumpStub = 1,
+        DynamicHelper = 3,
+        StubPrecode = 4,
+        FixupPrecode = 5,
+        VSDDispatchStub = 6,
+        VSDResolveStub = 7,
+        VSDLookupStub = 8,
+        VSDVTableStub = 9,
+        CallCountingStub = 10,
     }
 
     private abstract class JitManager
@@ -99,6 +120,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
         public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
+        public abstract CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
     }
 
     private sealed class RangeSection
@@ -117,6 +139,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         private bool HasFlags(RangeSectionFlags mask) => (Data!.Flags & (int)mask) != 0;
         internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
         internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+        internal bool IsInterpreter => HasFlags(RangeSectionFlags.Interpreter);
+
+        internal bool HasR2RModule => Data!.R2RModule != TargetPointer.Null;
 
         internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
         {
@@ -152,15 +177,23 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
-    private JitManager GetJitManager(Data.RangeSection rangeSectionData)
+    private JitManager? GetJitManager(RangeSection rangeSection)
     {
-        if (rangeSectionData.R2RModule == TargetPointer.Null)
+        if (rangeSection.IsInterpreter)
+        {
+            return _interpreterJitManager;
+        }
+        else if (rangeSection.Data!.R2RModule != TargetPointer.Null)
+        {
+            return _r2rJitManager;
+        }
+        else if (rangeSection.IsCodeHeap)
         {
             return _eeJitManager;
         }
         else
         {
-            return _r2rJitManager;
+            return null;
         }
     }
 
@@ -171,8 +204,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         {
             return null;
         }
-        JitManager jitManager = GetJitManager(range.Data);
-        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info))
+        JitManager? jitManager = GetJitManager(range);
+        if (jitManager?.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info) == true)
         {
             return info;
         }
@@ -205,7 +238,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.MethodDescAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
@@ -213,14 +246,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
             throw new InvalidOperationException("Unable to get runtime function address");
 
-        JitManager jitManager = GetJitManager(range.Data);
-        TargetPointer runtimeFunctionPtr = jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
+        JitManager? jitManager = GetJitManager(range);
+        TargetPointer runtimeFunctionPtr = jitManager?.GetUnwindInfo(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
 
         if (runtimeFunctionPtr == TargetPointer.Null)
             throw new InvalidOperationException("Unable to get runtime function address");
@@ -230,7 +263,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
         // non-fragment RuntimeFunction
 
-        return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+        return CodePointerUtils.AddressFromCodePointer(
+            new TargetCodePointer(range.Data.RangeBegin + runtimeFunction.BeginAddress), _target);
     }
 
     void IExecutionManager.GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
@@ -243,31 +277,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             throw new InvalidOperationException("Unable to get runtime function address");
 
-        JitManager jitManager = GetJitManager(range.Data);
+        JitManager? jitManager = GetJitManager(range);
 
-        jitManager.GetMethodRegionInfo(range, codeInfoHandle.Address.Value, out hotSize, out coldStart, out coldSize);
-    }
-
-    JitType IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
-    {
-        RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
-        if (range.Data == null)
-            return JitType.Unknown;
-
-        JitManager jitManager = GetJitManager(range.Data);
-
-        if (jitManager == _eeJitManager)
-        {
-            return JitType.Jit;
-        }
-        else if (jitManager == _r2rJitManager)
-        {
-            return JitType.R2R;
-        }
-        else
-        {
-            return JitType.Unknown;
-        }
+        jitManager?.GetMethodRegionInfo(range, codeInfoHandle.Address.Value, out hotSize, out coldStart, out coldSize);
     }
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
@@ -299,8 +311,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
         else
         {
-            JitManager jitManager = GetJitManager(range.Data);
-            if (jitManager.GetMethodInfo(range, entrypoint, out CodeBlock? info) && info != null)
+            JitManager? jitManager = GetJitManager(range);
+            if (jitManager?.GetMethodInfo(range, entrypoint, out CodeBlock? info) == true && info != null)
             {
                 return info.MethodDescAddress;
             }
@@ -310,8 +322,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
-        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
-               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+        // Interpreter code has no native unwind info and therefore no funclets.
+        TargetPointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
+        if (((IExecutionManager)this).GetCodeKind(new TargetCodePointer(startAddress.Value)) == CodeKind.Interpreter)
+            return false;
+
+        return startAddress != ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
@@ -324,7 +340,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (!eman.IsFunclet(codeInfoHandle))
             return false;
 
-        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle);
         uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
 
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
@@ -343,9 +359,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             return TargetPointer.Null;
 
-        JitManager jitManager = GetJitManager(range.Data);
+        JitManager? jitManager = GetJitManager(range);
 
-        return jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
+        return jitManager?.GetUnwindInfo(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
     }
 
     TargetPointer IExecutionManager.GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
@@ -364,8 +380,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             return TargetPointer.Null;
 
-        JitManager jitManager = GetJitManager(range.Data);
-        return jitManager.GetDebugInfo(range, codeInfoHandle.Address.Value, out hasFlagByte);
+        JitManager? jitManager = GetJitManager(range);
+        return jitManager?.GetDebugInfo(range, codeInfoHandle.Address.Value, out hasFlagByte) ?? TargetPointer.Null;
     }
 
     void IExecutionManager.GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion)
@@ -377,8 +393,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             return;
 
-        JitManager jitManager = GetJitManager(range.Data);
-        jitManager.GetGCInfo(range, codeInfoHandle.Address.Value, out gcInfo, out gcVersion);
+        JitManager? jitManager = GetJitManager(range);
+        jitManager?.GetGCInfo(range, codeInfoHandle.Address.Value, out gcInfo, out gcVersion);
     }
 
 
@@ -388,6 +404,24 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
         return info.RelativeOffset;
+    }
+
+    uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
+    {
+        IExecutionManager eman = this;
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
+            return 0;
+
+        if (eman.IsFunclet(codeInfoHandle))
+            return 0;
+
+        eman.GetGCInfo(codeInfoHandle, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
+        if (gcInfoAddress == TargetPointer.Null)
+            throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
+
+        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
+        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
+        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
@@ -493,7 +527,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             return new List<ExceptionClauseInfo>();
 
-        JitManager jitManager = GetJitManager(range.Data);
+        JitManager? jitManager = GetJitManager(range);
+        if (jitManager == null)
+            return new List<ExceptionClauseInfo>();
         jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
         bool isR2R = jitManager is ReadyToRunJitManager;
         DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
@@ -551,5 +587,38 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             });
         }
         return exceptionClauses;
+    }
+
+    private static CodeKind GetStubKind(StubKind stubKind)
+    {
+        return stubKind switch
+        {
+            StubKind.JumpStub => CodeKind.JumpStub,
+            StubKind.DynamicHelper => CodeKind.DynamicHelper,
+            StubKind.StubPrecode => CodeKind.StubPrecode,
+            StubKind.FixupPrecode => CodeKind.FixupPrecode,
+            StubKind.VSDDispatchStub => CodeKind.VSD_DispatchStub,
+            StubKind.VSDResolveStub => CodeKind.VSD_ResolveStub,
+            StubKind.VSDLookupStub => CodeKind.VSD_LookupStub,
+            StubKind.VSDVTableStub => CodeKind.VSD_VTableStub,
+            StubKind.CallCountingStub => CodeKind.CallCountingStub,
+            _ => CodeKind.Unknown,
+        };
+    }
+
+    public CodeKind GetCodeKind(TargetCodePointer codeAddress)
+    {
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
+        if (range.Data == null)
+            return CodeKind.Unknown;
+
+        // check if this is a stub
+        JitManager? jitManager = GetJitManager(range);
+        if (jitManager == null)
+        {
+            CodeRangeMapRangeList rangeList = _target.ProcessedData.GetOrAdd<Data.CodeRangeMapRangeList>(range.Data.RangeList);
+            return GetStubKind((StubKind)rangeList.RangeListType);
+        }
+        return jitManager.GetCodeKind(range, codeAddress);
     }
 }

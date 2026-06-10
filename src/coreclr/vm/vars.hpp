@@ -52,6 +52,11 @@ namespace InteropLib { namespace ABI {
 GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
 
 #endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_DECL(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable);
+#endif // FEATURE_OBJCMARSHAL
+
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;
@@ -359,8 +364,10 @@ GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_DECL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_DECL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP

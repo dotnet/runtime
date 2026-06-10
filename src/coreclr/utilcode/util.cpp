@@ -255,7 +255,7 @@ namespace
         _ASSERTE(wszDllPath != nullptr);
 
         // We've got the name of the DLL to load, so load it.
-        HModuleHolder hDll = WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag());
+        HModuleHolder hDll{ WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag()) };
         if (hDll == nullptr)
             return HRESULT_FROM_GetLastError();
 
@@ -267,10 +267,10 @@ namespace
         // Call the function to get a class object for the rclsid and riid passed in.
         IfFailRet(dllGetClassObject(rclsid, riid, ppv));
 
-        hDll.SuppressRelease();
+        HMODULE hLoadedDll = hDll.Detach();
 
         if (phmodDll != nullptr)
-            *phmodDll = hDll.GetValue();
+            *phmodDll = hLoadedDll;
 
         return hr;
     }
@@ -334,11 +334,11 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     // necessary object.
     IfFailRet(classFactory->CreateInstance(NULL, riid, ppv));
 
-    hDll.SuppressRelease();
+    HMODULE hLoadedDll = hDll.Detach();
 
     if (phmodDll != NULL)
     {
-        *phmodDll = hDll.GetValue();
+        *phmodDll = hLoadedDll;
     }
 
     return hr;
@@ -1084,36 +1084,6 @@ DWORD_PTR GetCurrentProcessCpuMask()
 #endif
 }
 #endif // HOST_WINDOWS
-
-uint32_t GetOsPageSizeUncached()
-{
-    SYSTEM_INFO sysInfo;
-    ::GetSystemInfo(&sysInfo);
-    return sysInfo.dwAllocationGranularity ? sysInfo.dwAllocationGranularity : 0x1000;
-}
-
-namespace
-{
-    Volatile<uint32_t> g_pageSize = 0;
-}
-
-uint32_t GetOsPageSize()
-{
-#ifdef HOST_UNIX
-    size_t result = g_pageSize.LoadWithoutBarrier();
-
-    if(!result)
-    {
-        result = GetOsPageSizeUncached();
-
-        g_pageSize.StoreWithoutBarrier(result);
-    }
-
-    return result;
-#else
-    return 0x1000;
-#endif
-}
 
 //=============================================================================
 // AssemblyNamesList
@@ -2291,11 +2261,23 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
-    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-    pCode[0] |= hi20;
-    int bottomBitsPos = isStype ? 7 : 20;
-    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
-    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+    pCode[0] &= 0x00000FFF;
+    pCode[0] |= hi20 & 0xFFFFF000;
+
+    UINT32 lo12Bits = UINT32(lo12) & 0xFFF;
+    if (isStype)
+    {
+        pCode[1] &= 0x01FFF07F;
+        pCode[1] |= (lo12Bits & 0xFE0) << 20;
+        pCode[1] |= (lo12Bits & 0x01F) << 7;
+    }
+    else
+    {
+        pCode[1] &= 0x000FFFFF;
+        pCode[1] |= lo12Bits << 20;
+    }
+
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 

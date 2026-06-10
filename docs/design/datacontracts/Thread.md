@@ -32,10 +32,12 @@ enum ThreadState
     Unstarted           = 0x00000400,    // Thread has never been started
     Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
+    WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 record struct ThreadData (
+    TargetPointer ThreadAddress,
     uint Id;
     TargetNUInt OSId;
     ThreadState State;
@@ -50,17 +52,30 @@ record struct ThreadData (
     bool LastThrownObjectIsUnhandled;
     bool HasUnhandledException;
     TargetPointer NextThread;
+    TargetPointer ThreadHandle;
+    bool IsInteropDebuggingHijacked;
+    TargetPointer DebuggerFilterContext;
 );
+```
+
+``` csharp
+[Flags]
+enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
+}
 ```
 
 ``` csharp
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
-byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
 ```
 
 ## Version 1
@@ -105,6 +120,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
+| `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
@@ -116,8 +132,10 @@ The contract additionally depends on these data descriptors
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
+| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
+| `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
@@ -227,6 +245,18 @@ void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer st
     stackBase = target.ReadPointer(threadPointer + /* Thread::CachedStackBase offset */);
     stackLimit = target.ReadPointer(threadPointer + /* Thread::CachedStackLimit offset */);
     frameAddress = threadPointer + /* Thread::Frame offset */;
+}
+
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current | (uint)state);
+}
+
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current & ~(uint)state);
 }
 
 TargetPointer IThread.IdToThread(uint id)
@@ -355,30 +385,6 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 
     _target.ReadBuffer(readFrom, span);
     return span.ToArray();
-}
-
-byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-{
-    // Allocate a context buffer for the target platform
-    IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-    byte[] bytes = new byte[context.Size];
-
-    TargetPointer filterContext = TargetPointer.Null;
-
-    if (contextSource.HasFlag(ThreadContextSource.Debugger))
-        filterContext = target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
-
-    if (filterContext != TargetPointer.Null)
-    {
-        // Use the filter context directly
-        target.ReadBuffer(filterContext, bytes);
-        return bytes;
-    }
-
-    // Fall back to the OS thread context
-    ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
-    target.GetThreadContext(osId, contextFlags, bytes);
-    return bytes;
 }
 
 ```

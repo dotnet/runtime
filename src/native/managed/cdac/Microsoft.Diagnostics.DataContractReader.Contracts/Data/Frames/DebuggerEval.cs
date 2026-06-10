@@ -3,20 +3,13 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class DebuggerEval : IData<DebuggerEval>
+[CdacType(nameof(DataType.DebuggerEval))]
+internal sealed partial class DebuggerEval : IData<DebuggerEval>
 {
-    static DebuggerEval IData<DebuggerEval>.Create(Target target, TargetPointer address)
-        => new DebuggerEval(target, address);
-
-    public DebuggerEval(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.DebuggerEval);
-        TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        EvalUsesHijack = target.ReadField<byte>(address, type, nameof(EvalUsesHijack)) != 0;
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
+    [FieldAddress]
     public TargetPointer TargetContext { get; }
-    public bool EvalUsesHijack { get; }
+
+    [Field] public bool EvalUsesHijack { get; }
+    [Field] public uint MethodToken { get; }
+    [Field] public TargetPointer AssemblyPtr { get; }
 }
