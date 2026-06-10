@@ -3236,9 +3236,9 @@ void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo
             LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
         }
     }
-    else if (retInfo->Type.ReturnType == TYP_REF)
+    else if (varTypeIsGC(retInfo->Type.ReturnType))
     {
-        clearGCRef(resultOffset, TYP_REF);
+        clearGCRef(resultOffset, retInfo->Type.ReturnType);
     }
 }
 
