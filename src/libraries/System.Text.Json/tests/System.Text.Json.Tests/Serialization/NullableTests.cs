@@ -492,7 +492,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NullableStructProperty_StreamWithBufferBoundaryAfterNullToken()
+        public static void NullableStructProperty_StreamWithContinuationAfterNullToken()
         {
             string json = """{"Value":{"Total":0,"a":null,"b":0}}""";
             byte[] bytes = Encoding.UTF8.GetBytes(json);
