@@ -1071,6 +1071,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         assert((info.simdSize == 8) || (info.simdSize == 16));
 #elif defined(TARGET_XARCH)
         assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#elif defined(TARGET_WASM)
+        assert(info.simdSize == 16);
 #else
         unreached();
 #endif
