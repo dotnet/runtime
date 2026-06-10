@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Formats.Tar
 {
@@ -51,28 +52,25 @@ namespace System.Formats.Tar
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
         {
-            if (archiveStream.CanSeek)
-            {
-                archiveStream.Position += bytesToDiscard;
-            }
-            else if (bytesToDiscard > 0)
-            {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
-                {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                    bytesToDiscard -= currentLengthToRead;
-                }
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+            ValueTask vt = AdvanceStreamCoreAsync<SyncReadWriteAdapter>(archiveStream, bytesToDiscard, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous AdvanceStream completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
-        internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+        internal static ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
 
+            return AdvanceStreamCoreAsync<AsyncReadWriteAdapter>(archiveStream, bytesToDiscard, cancellationToken);
+        }
+
+        internal static async ValueTask AdvanceStreamCoreAsync<TAdapter>(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             if (archiveStream.CanSeek)
             {
                 archiveStream.Position += bytesToDiscard;
@@ -80,45 +78,42 @@ namespace System.Formats.Tar
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                        await TAdapter.ReadExactlyAsync(archiveStream, buffer.AsMemory(0, currentLengthToRead), cancellationToken).ConfigureAwait(false);
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
         // Helps copy a specific number of bytes from one stream into another.
-        internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
+        internal static async ValueTask CopyBytesCoreAsync<TAdapter>(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
+            try
             {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                destination.Write(buffer.AsSpan(0, currentLengthToRead));
-                bytesToCopy -= currentLengthToRead;
+                while (bytesToCopy > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                    Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                    await TAdapter.ReadExactlyAsync(origin, memory, cancellationToken).ConfigureAwait(false);
+                    await TAdapter.WriteAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+                    bytesToCopy -= currentLengthToRead;
+                }
             }
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-
-        // Asynchronously helps copy a specific number of bytes from one stream into another.
-        internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
+            finally
             {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
-                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-                bytesToCopy -= currentLengthToRead;
+                ArrayPool<byte>.Shared.Return(buffer);
             }
-            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         // Returns the number of bytes until the next multiple of the record size.
@@ -295,20 +290,29 @@ namespace System.Formats.Tar
         // set the stream position to the first byte of the next entry.
         internal static int SkipBlockAlignmentPadding(Stream archiveStream, long size)
         {
-            int bytesToSkip = CalculatePadding(size);
-            AdvanceStream(archiveStream, bytesToSkip);
-            return bytesToSkip;
+            ValueTask<int> vt = SkipBlockAlignmentPaddingCoreAsync<SyncReadWriteAdapter>(archiveStream, size, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous SkipBlockAlignmentPadding completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
         }
 
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size.
         // Asynchronously skip them and set the stream position to the first byte of the next entry.
-        internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
+        internal static ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
 
+            return SkipBlockAlignmentPaddingCoreAsync<AsyncReadWriteAdapter>(archiveStream, size, cancellationToken);
+        }
+
+        internal static async ValueTask<int> SkipBlockAlignmentPaddingCoreAsync<TAdapter>(Stream archiveStream, long size, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             int bytesToSkip = CalculatePadding(size);
-            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
+            await AdvanceStreamCoreAsync<TAdapter>(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
             return bytesToSkip;
         }
 
