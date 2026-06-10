@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 using Internal.IL;
@@ -25,9 +21,6 @@ namespace TypeSystemTests
         private readonly ITestOutputHelper _output;
         private TestTypeSystemContext _context;
         private ModuleDesc _testModule;
-
-        private const byte ElementTypeValueType = 0x11;
-        private const byte ElementTypeClass = 0x12;
 
         public SignatureTests(ITestOutputHelper output)
         {
@@ -55,184 +48,6 @@ namespace TypeSystemTests
                     sb.Append("<null>");
             }
             return sb.ToString();
-        }
-
-        private static EcmaModule CreateModuleWithTypeSpecification(Action<MetadataBuilder, BlobBuilder> buildSignature)
-        {
-            // Create a minimal in-memory assembly with exactly one TypeSpec row.
-            MetadataBuilder metadataBuilder = new MetadataBuilder();
-            StringHandle assemblyName = metadataBuilder.GetOrAddString("TypeSpecTest");
-
-            metadataBuilder.AddModule(0, metadataBuilder.GetOrAddString("TypeSpecTest.dll"), metadataBuilder.GetOrAddGuid(new Guid("F3C03C57-397E-4A33-B670-CB4EE2C88AF7")), default(GuidHandle), default(GuidHandle));
-            metadataBuilder.AddAssembly(assemblyName, new Version(1, 0, 0, 0), default(StringHandle), default(BlobHandle), default(AssemblyFlags), AssemblyHashAlgorithm.None);
-            metadataBuilder.AddTypeDefinition(
-                default(TypeAttributes),
-                default(StringHandle),
-                metadataBuilder.GetOrAddString("<Module>"),
-                default(EntityHandle),
-                MetadataTokens.FieldDefinitionHandle(1),
-                MetadataTokens.MethodDefinitionHandle(1));
-
-            BlobBuilder signature = new BlobBuilder();
-            buildSignature(metadataBuilder, signature);
-            metadataBuilder.AddTypeSpecification(metadataBuilder.GetOrAddBlob(signature));
-
-            BlobBuilder peBlob = new BlobBuilder();
-            ManagedPEBuilder peBuilder = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadataBuilder), new BlobBuilder());
-            peBuilder.Serialize(peBlob);
-
-            MemoryStream peStream = new MemoryStream();
-            peBlob.WriteContentTo(peStream);
-            peStream.Position = 0;
-
-            TestTypeSystemContext context = new TestTypeSystemContext(TargetArchitecture.X64);
-            ModuleDesc systemModule = context.CreateModuleForSimpleName("CoreTestAssembly");
-            context.SetSystemModule(systemModule);
-            return (EcmaModule)context.CreateModuleForSimpleName("TypeSpecTest", peStream);
-        }
-
-        private static AssemblyReferenceHandle AddCoreTestAssemblyReference(MetadataBuilder metadataBuilder)
-        {
-            return metadataBuilder.AddAssemblyReference(
-                metadataBuilder.GetOrAddString("CoreTestAssembly"),
-                new Version(0, 0, 0, 0),
-                default(StringHandle),
-                default(BlobHandle),
-                default(AssemblyFlags),
-                default(BlobHandle));
-        }
-
-        private static TypeReferenceHandle AddCoreTestAssemblyTypeReference(MetadataBuilder metadataBuilder, string ns, string name)
-        {
-            AssemblyReferenceHandle coreTestAssembly = AddCoreTestAssemblyReference(metadataBuilder);
-            return metadataBuilder.AddTypeReference(coreTestAssembly, metadataBuilder.GetOrAddString(ns), metadataBuilder.GetOrAddString(name));
-        }
-
-        private static void WriteTypeDefOrRefEncoded(BlobBuilder signature, EntityHandle handle)
-        {
-            int tag = handle.Kind switch
-            {
-                HandleKind.TypeDefinition => 0,
-                HandleKind.TypeReference => 1,
-                HandleKind.TypeSpecification => 2,
-                _ => throw new BadImageFormatException()
-            };
-
-            signature.WriteCompressedInteger((MetadataTokens.GetRowNumber(handle) << 2) | tag);
-        }
-
-        [Theory]
-        [InlineData(SignatureTypeCode.Void)]
-        [InlineData(SignatureTypeCode.Boolean)]
-        [InlineData(SignatureTypeCode.Char)]
-        [InlineData(SignatureTypeCode.SByte)]
-        [InlineData(SignatureTypeCode.Byte)]
-        [InlineData(SignatureTypeCode.Int16)]
-        [InlineData(SignatureTypeCode.UInt16)]
-        [InlineData(SignatureTypeCode.Int32)]
-        [InlineData(SignatureTypeCode.UInt32)]
-        [InlineData(SignatureTypeCode.Int64)]
-        [InlineData(SignatureTypeCode.UInt64)]
-        [InlineData(SignatureTypeCode.Single)]
-        [InlineData(SignatureTypeCode.Double)]
-        [InlineData(SignatureTypeCode.String)]
-        [InlineData(SignatureTypeCode.ByReference)]
-        [InlineData(SignatureTypeCode.TypedReference)]
-        [InlineData(SignatureTypeCode.IntPtr)]
-        [InlineData(SignatureTypeCode.UIntPtr)]
-        [InlineData(SignatureTypeCode.Object)]
-        public void TestInvalidTopLevelTypeSpecification(SignatureTypeCode typeCode)
-        {
-            // Primitive and special element types cannot be used as
-            // the top-level signature in a TypeSpec row.
-            EcmaModule module = CreateModuleWithTypeSpecification((_, signature) =>
-            {
-                signature.WriteByte((byte)typeCode);
-                if (typeCode == SignatureTypeCode.ByReference)
-                    signature.WriteByte((byte)SignatureTypeCode.Int32);
-            });
-
-            Assert.Throws<TypeSystemException.BadImageFormatException>(() => module.GetType(MetadataTokens.TypeSpecificationHandle(1)));
-        }
-
-        [Theory]
-        [InlineData(ElementTypeClass, "Object")]
-        [InlineData(ElementTypeValueType, "Int32")]
-        public void TestInvalidTopLevelTypeHandleTypeSpecification(byte elementType, string typeName)
-        {
-            // CLASS and VALUETYPE cannot be used as tokens in a top-level TypeSpec signature.
-            EcmaModule module = CreateModuleWithTypeSpecification((metadataBuilder, signature) =>
-            {
-                TypeReferenceHandle typeRef = AddCoreTestAssemblyTypeReference(metadataBuilder, "System", typeName);
-                signature.WriteByte(elementType);
-                WriteTypeDefOrRefEncoded(signature, typeRef);
-            });
-
-            Assert.Throws<TypeSystemException.BadImageFormatException>(() => module.GetType(MetadataTokens.TypeSpecificationHandle(1)));
-        }
-
-        [Theory]
-        [InlineData(SignatureTypeCode.GenericTypeParameter)]
-        [InlineData(SignatureTypeCode.GenericMethodParameter)]
-        public void TestTopLevelGenericVariableTypeSpecificationResolves(SignatureTypeCode typeCode)
-        {
-            EcmaModule module = CreateModuleWithTypeSpecification((_, signature) =>
-            {
-                signature.WriteByte((byte)typeCode);
-                signature.WriteCompressedInteger(0);
-            });
-
-            Assert.NotNull(module.GetType(MetadataTokens.TypeSpecificationHandle(1)));
-        }
-
-        [Theory]
-        [InlineData(SignatureTypeCode.Pointer)]
-        [InlineData(SignatureTypeCode.FunctionPointer)]
-        [InlineData(SignatureTypeCode.Array)]
-        [InlineData(SignatureTypeCode.SZArray)]
-        [InlineData(SignatureTypeCode.GenericTypeInstance)]
-        public void TestValidTopLevelTypeSpecification(SignatureTypeCode typeCode)
-        {
-            EcmaModule module = CreateModuleWithTypeSpecification((metadataBuilder, signature) =>
-            {
-                signature.WriteByte((byte)typeCode);
-
-                // Use the smallest valid payload for each root so this test only exercises
-                // top-level TypeSpec validation.
-                switch (typeCode)
-                {
-                    case SignatureTypeCode.Pointer:
-                        signature.WriteByte((byte)SignatureTypeCode.Void);
-                        break;
-
-                    case SignatureTypeCode.FunctionPointer:
-                        signature.WriteByte((byte)SignatureCallingConvention.Default);
-                        signature.WriteCompressedInteger(0);
-                        signature.WriteByte((byte)SignatureTypeCode.Void);
-                        break;
-
-                    case SignatureTypeCode.Array:
-                        signature.WriteByte((byte)SignatureTypeCode.Object);
-                        signature.WriteCompressedInteger(1);
-                        signature.WriteCompressedInteger(0);
-                        signature.WriteCompressedInteger(0);
-                        break;
-
-                    case SignatureTypeCode.SZArray:
-                        signature.WriteByte((byte)SignatureTypeCode.Object);
-                        break;
-
-                    case SignatureTypeCode.GenericTypeInstance:
-                        TypeReferenceHandle genericTypeRef = AddCoreTestAssemblyTypeReference(metadataBuilder, "GenericTypes", "GenericClass`1");
-                        signature.WriteByte(ElementTypeClass);
-                        WriteTypeDefOrRefEncoded(signature, genericTypeRef);
-                        signature.WriteCompressedInteger(1);
-                        signature.WriteByte((byte)SignatureTypeCode.Object);
-                        break;
-                }
-            });
-
-            Assert.NotNull(module.GetType(MetadataTokens.TypeSpecificationHandle(1)));
         }
 
         [Fact]

@@ -62,54 +62,37 @@ namespace Internal.TypeVerifier
                     return false;
                 }
             }
-            else if (baseType.Kind == HandleKind.TypeSpecification)
+            else
             {
-                if (!IsValidBaseTypeSpecification((TypeSpecificationHandle)baseType))
+                TypeDesc resolvedBaseType;
+                try
+                {
+                    resolvedBaseType = _module.GetType(baseType);
+                }
+                catch (BadImageFormatException)
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    return false;
+                }
+                catch (TypeSystemException)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                     return false;
                 }
 
-            }
-            else if (_module.GetType(baseType).IsValueType)
-            {
-                VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool IsValidBaseTypeSpecification(TypeSpecificationHandle typeSpecificationHandle)
-        {
-            try
-            {
-                TypeDesc baseType = _module.GetType(typeSpecificationHandle);
-
                 // Arrays, pointers, and generic variables are valid TypeSpec forms in other
                 // metadata and IL token contexts, so GetType must continue to resolve them. A
                 // BaseType TypeSpec is narrower: it has to name a constructed generic class,
                 // which resolves to InstantiatedType.
-                if (baseType is not InstantiatedType)
+                if (resolvedBaseType.IsValueType ||
+                    (baseType.Kind == HandleKind.TypeSpecification && resolvedBaseType is not InstantiatedType))
                 {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                     return false;
                 }
+            }
 
-                if (baseType.IsValueType)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (BadImageFormatException)
-            {
-                return false;
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
+            return true;
         }
 
         public void VerifyInterfaces()

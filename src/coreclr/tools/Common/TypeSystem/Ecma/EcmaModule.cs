@@ -571,7 +571,9 @@ namespace Internal.TypeSystem.Ecma
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
 
+#if ILVERIFICATION
             ValidateTypeSpecificationSignature(signatureReader);
+#endif
 
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
@@ -582,6 +584,7 @@ namespace Internal.TypeSystem.Ecma
                 return parsedType;
         }
 
+#if ILVERIFICATION
         private static void ValidateTypeSpecificationSignature(BlobReader signatureReader)
         {
             switch (signatureReader.ReadSignatureTypeCode())
@@ -598,6 +601,7 @@ namespace Internal.TypeSystem.Ecma
 
             ThrowHelper.ThrowBadImageFormatException();
         }
+#endif
 
         private object ResolveMemberReference(MemberReferenceHandle handle)
         {

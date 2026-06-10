@@ -60,7 +60,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func2()
         {
-            .override method instance string A.T1::Func1()
+            .override method instance string class A.T1::Func1()
             ldstr "T2"
             ret
         }
@@ -81,7 +81,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string A.T1::Func1()
+            .override method instance string class A.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -92,7 +92,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string A.T2Exp::Func2()
+            .override method instance string class A.T2Exp::Func2()
             ldstr "T3"
             ret
         }
@@ -126,7 +126,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string A.T1::Func1()
+            .override method instance string class A.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -138,7 +138,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string A.T2Imp::Func1()
+            .override method instance string class A.T2Imp::Func1()
             ldstr "T3"
             ret
         }
@@ -173,7 +173,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func2()
         {
-            .override method instance string B.T1::Func1()
+            .override method instance string class B.T1::Func1()
             ldstr "T2"
             ret
         }
@@ -185,7 +185,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string B.T1::Func1()
+            .override method instance string class B.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -197,7 +197,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string B.T2::Func2()
+            .override method instance string class B.T2::Func2()
             ldstr "T3"
             ret
         }
@@ -244,7 +244,7 @@
         .method public hidebysig newslot virtual instance string Func2()
         {
             .custom instance void [CoreTestAssembly]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
-            .override method instance string C.T1::Func1()
+            .override method instance string class C.T1::Func1()
             ldstr "T2"
             ret
         }
@@ -256,7 +256,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string C.T1::Func1()
+            .override method instance string class C.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -268,7 +268,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string C.T2::Func2()
+            .override method instance string class C.T2::Func2()
             ldstr "T3"
             ret
         }
@@ -326,7 +326,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string D.T1::Func1()
+            .override method instance string class D.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -338,7 +338,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string D.T2::Func1()
+            .override method instance string class D.T2::Func1()
             ldstr "T3"
             ret
         }
@@ -384,7 +384,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string E.T1::Func1()
+            .override method instance string class E.T1::Func1()
             ldstr "T3"
             ret
         }
@@ -396,7 +396,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func3()
         {
-            .override method instance string E.T2::Func1()
+            .override method instance string class E.T2::Func1()
             ldstr "T3"
             ret
         }
