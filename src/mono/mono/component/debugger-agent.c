@@ -5879,7 +5879,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 					decode_byte(buf, &buf, limit);
 					decode_int(buf, &buf, limit); //not used
 				}
-				*(MonoObject **) addr = NULL;
+				*(MonoObject**)addr = NULL;
 
 			} else if (type == MONO_TYPE_VALUETYPE) {
 				ERROR_DECL (error);
