@@ -434,16 +434,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LCL_ADDR:
 	    genCodeForLclAddr(treeNode->AsLclFld());
 	    break;
+	       case GT_NULLCHECK:
+	           genCodeForNullCheck(treeNode->AsIndir());
+	           break;
+
 	case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
+	           noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
 
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
+	           /* Catch arguments get passed in a register. genCodeForBBlist()
+	              would have marked it as holding a GC object, but not used. */
 
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
-            break;
+	           noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
+	           genConsumeReg(treeNode);
+	           break;
 	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
 	                  GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -1621,8 +1625,13 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 //
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_NULLCHECK));
+
+    genConsumeRegs(tree->gtOp1);
+
+    // Perform a load operation to trigger a null pointer exception if the address is null
+    // Use REG_R0 as a scratch register (zero register on PPC64LE)
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
 }
 
 //------------------------------------------------------------------------

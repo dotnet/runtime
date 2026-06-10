@@ -12377,6 +12377,38 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
 }
 #endif // FEATURE_INTERPRETER
 
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
+//
+// Helper function to check if a function name should use interpreter fallback
+//
+static bool ShouldUseInterpreterFallback(const char* ftnName)
+{
+    // List of function names that should use interpreter fallback
+    static const char* coreclrInitializationInterpreterFallbackFunctions[] = {
+        "ppc64leHelloWorldCallee",
+        "ppc64leHelloWorld",
+        "Setup",
+        "GetEnvironmentVariable",
+        "ThrowIfNull",
+        "GetReference",
+        "get_Length",
+        "get_Capacity"
+    };
+
+    const size_t numFunctions = sizeof(coreclrInitializationInterpreterFallbackFunctions) / sizeof(coreclrInitializationInterpreterFallbackFunctions[0]);
+    
+    for (size_t i = 0; i < numFunctions; i++)
+    {
+        if (strcmp(ftnName, coreclrInitializationInterpreterFallbackFunctions[i]) == 0)
+        {
+            return true;
+        }
+    }
+    
+    return false;
+}
+#endif // defined(TARGET_S390X) || defined(TARGET_POWERPC64)
+
 //
 // Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
 //
@@ -12428,7 +12460,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (!strcmp(ftnName, "ppc64leHelloWorldCallee") || !strcmp(ftnName, "ppc64leHelloWorld") || !strcmp(ftnName, "Setup"))
+    if (ShouldUseInterpreterFallback(ftnName))
     {
 	printf ("Function name is %s\n", ftnName);
 	interpreterFallback = true;
