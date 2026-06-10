@@ -239,12 +239,18 @@ internal sealed class FrameHelpers
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
             case FrameType.DynamicHelperFrame:
-            case FrameType.ResolveHelperFrame:
-                TargetPointer transitionBlock = frameType == FrameType.ResolveHelperFrame
-                    ? _target.ProcessedData.GetOrAdd<Data.ResolveHelperFrame>(frame.Address).TransitionBlockPtr
-                    : _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address).TransitionBlockPtr;
-                Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
+            {
+                Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
+                Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
                 return tb.ReturnAddress;
+            }
+
+            case FrameType.ResolveHelperFrame:
+            {
+                Data.ResolveHelperFrame resolveHelperFrame = _target.ProcessedData.GetOrAdd<Data.ResolveHelperFrame>(frame.Address);
+                Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(resolveHelperFrame.TransitionBlockPtr);
+                return tb.ReturnAddress;
+            }
 
             // SoftwareExceptionFrame: stored m_ReturnAddress
             case FrameType.SoftwareExceptionFrame:
