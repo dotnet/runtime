@@ -103,14 +103,8 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
-    {
-        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
-        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
-        // the buffer even in the non-synchronous completion scenario.
-        ValueTask<T> result = GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
-        key.Clear();
-        return result;
-    }
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken));
 
     /// <summary>
     /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
@@ -131,14 +125,8 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
-    {
-        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
-        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
-        // the buffer even in the non-synchronous completion scenario.
-        ValueTask<T> result = GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
-        key.Clear();
-        return result;
-    }
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken));
 #endif
 
     /// <summary>
@@ -265,11 +253,8 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
-    {
-        ValueTask<T> result = GetOrCreateAsync(key.Text, factory, WrappedOptionsCallbackCache<T>.Instance, options, tags, cancellationToken);
-        key.Clear();
-        return result;
-    }
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, factory, WrappedOptionsCallbackCache<T>.Instance, options, tags, cancellationToken));
 
     /// <summary>
     /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
@@ -290,8 +275,14 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken));
+
+    // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+    // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+    // the buffer even in the non-synchronous completion scenario.
+    private static ValueTask<T> ClearAndReturn<T>(ref DefaultInterpolatedStringHandler key, ValueTask<T> result)
     {
-        ValueTask<T> result = GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
         key.Clear();
         return result;
     }
