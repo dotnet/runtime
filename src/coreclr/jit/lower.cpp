@@ -12744,20 +12744,47 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     bool         canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
     bool         canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
 
-    if (canConvertOp2ToCCMP &&
-        (!canConvertOp1ToCCMP ||
-         ((op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
-          (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()))) &&
+    // The CCMP-side operands cannot stay contained: Arm64 ccmp only accepts a register
+    // or imm5 second operand (no shifted-register form), and xarch APX ccmp likewise has
+    // ContainCheckConditionalCompare re-contain only immediates. The existing post-
+    // conversion ClearContained() calls below will un-contain the CCMP-side operands; the
+    // leading cmp on the other side keeps its contained operand (Arm64 cmp supports the
+    // shifted-register form, xarch cmp supports memory).
+    //
+    // Earlier this code bailed entirely when both candidate relops had contained operands.
+    // That bail produces a cset/orr/cbnz fallback that is strictly worse than letting CCMP
+    // form with one un-contained operand. Allow the conversion in that case while still
+    // preferring a candidate whose operands are already free of containment when possible,
+    // so we don't add an unnecessary un-contain instruction.
+    //
+    // Memory containment counts as "dirty" for CCMP-side preference because un-containing
+    // a load on the CCMP side adds a separate load instruction; the leading cmp side can
+    // keep its memory containment.
+    auto ccmpSideOperandsAreClean = [](GenTree* relop) {
+        GenTree* relopOp1 = relop->gtGetOp1();
+        GenTree* relopOp2 = relop->gtGetOp2();
+        return (relopOp1->IsIntegralConst() || !relopOp1->isContained()) &&
+               ((relopOp2 == nullptr) || relopOp2->IsIntegralConst() || !relopOp2->isContained());
+    };
+
+    if (canConvertOp2ToCCMP && (!canConvertOp1ToCCMP || ccmpSideOperandsAreClean(op2)) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
     {
         // Fall through, converting op2 to the CCMP
     }
-    else if (canConvertOp1ToCCMP &&
-             (!op1->gtGetOp1()->isContained() || op1->gtGetOp1()->IsIntegralConst() ||
-              IsContainableMemoryOp(op1->gtGetOp1())) &&
-             (op1->gtGetOp2() == nullptr || !op1->gtGetOp2()->isContained() || op1->gtGetOp2()->IsIntegralConst() ||
-              IsContainableMemoryOp(op1->gtGetOp2())) &&
+    else if (canConvertOp1ToCCMP && ccmpSideOperandsAreClean(op1) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
+    {
+        std::swap(op1, op2);
+    }
+    else if (canConvertOp2ToCCMP && TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
+    {
+        // Both relops have contained operands and op2 is eligible. Convert op2 without
+        // swapping: this keeps op1's contained operand on the leading cmp and only
+        // un-contains op2's operands. Preserves original instruction order, which tends
+        // to give register allocator slightly tighter live ranges than a swap.
+    }
+    else if (canConvertOp1ToCCMP && TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);
     }
