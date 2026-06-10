@@ -9,7 +9,7 @@ export function getIcuResourceName(): string | null {
             loaderConfig.applicationCulture = culture;
         }
 
-        if (culture) {
+        if (culture && loaderConfig.environmentVariables!["LANG"] === undefined) {
             loaderConfig.environmentVariables!["LANG"] = `${culture}.UTF-8`;
         }
 
