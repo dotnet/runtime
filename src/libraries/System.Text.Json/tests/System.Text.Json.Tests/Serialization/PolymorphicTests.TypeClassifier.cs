@@ -741,6 +741,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128765", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public void MetadataServices_NullPolymorphismOptions_DoesNotActivateAttributeClassifier()
         {
             JsonTypeInfo<AttrClassifiedAnimal> typeInfo = JsonMetadataServices.CreateObjectInfo(
