@@ -78,6 +78,7 @@ class   MethodTable;
 class   Module;
 class   Object;
 class   Stub;
+enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -792,6 +793,9 @@ private:
         mdMethodDef methodDef,
         DWORD dwImplFlags,
         DWORD dwMemberAttrs,
+        AsyncMethodFlags asyncFlags,
+        PCCOR_SIGNATURE pAsyncSig,
+        DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
 public:
     // Add a new field to an already loaded type for EnC
@@ -1780,6 +1784,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
 };
 
 // --------------------------------------------------------------------------------------------

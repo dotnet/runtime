@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { EmsAmbientSymbolsType } from "../types";
+import type { CharPtr, EmsAmbientSymbolsType } from "../types";
 
 import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
-import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
+import type { addOnExitListener, exit, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
 
 import type { initializeCoreCLR } from "../host/host";
 import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../host/assets";
@@ -24,6 +24,8 @@ import type { cancelPromise } from "../../../System.Runtime.InteropServices.Java
 import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { SystemJS_ScheduleDiagnosticServer } from "../../../System.Native.Browser/native";
+import type { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "../../../System.Native.Browser/diagnostics/diagnostic-server";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -75,6 +77,7 @@ export type LoaderExports = {
     addOnExitListener: typeof addOnExitListener,
     abortStartup: typeof abortStartup,
     quitNow: typeof quitNow,
+    exit: typeof exit,
     normalizeException: typeof normalizeException,
     fetchSatelliteAssemblies: typeof fetchSatelliteAssemblies,
     fetchLazyAssembly: typeof fetchLazyAssembly,
@@ -98,6 +101,7 @@ export type LoaderExportsTable = [
     typeof addOnExitListener,
     typeof abortStartup,
     typeof quitNow,
+    typeof exit,
     typeof normalizeException,
     typeof fetchSatelliteAssemblies,
     typeof fetchLazyAssembly,
@@ -144,11 +148,13 @@ export type InteropJavaScriptExportsTable = [
 export type NativeBrowserExports = {
     getWasmMemory: getWasmMemoryType,
     getWasmTable: getWasmTableType,
+    SystemJS_ScheduleDiagnosticServer: typeof SystemJS_ScheduleDiagnosticServer,
 }
 
 export type NativeBrowserExportsTable = [
     getWasmMemoryType,
     getWasmTableType,
+    typeof SystemJS_ScheduleDiagnosticServer,
 ]
 
 export type BrowserUtilsExports = {
@@ -186,9 +192,21 @@ export type BrowserUtilsExportsTable = [
 export type DiagnosticsExportsTable = [
     typeof symbolicateStackTrace,
     typeof installNativeSymbols,
+    typeof ds_rt_websocket_create,
+    typeof ds_rt_websocket_send,
+    typeof ds_rt_websocket_poll,
+    typeof ds_rt_websocket_recv,
+    typeof ds_rt_websocket_close,
+    (namePtr: CharPtr, start: number) => void
 ]
 
 export type DiagnosticsExports = {
     symbolicateStackTrace: typeof symbolicateStackTrace,
     installNativeSymbols: typeof installNativeSymbols,
+    ds_rt_websocket_create: typeof ds_rt_websocket_create,
+    ds_rt_websocket_send: typeof ds_rt_websocket_send,
+    ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
+    ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
+    ds_rt_websocket_close: typeof ds_rt_websocket_close,
+    ds_rt_browser_performance_measure: (namePtr: CharPtr, start: number) => void
 }

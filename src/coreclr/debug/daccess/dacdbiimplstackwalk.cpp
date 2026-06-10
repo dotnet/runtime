@@ -297,16 +297,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 }
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
-                    // Skip the new exception handling managed code, the debugger clients are not supposed to see them
-                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
-
-                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    // and System.Runtime.StackFrameIterator.*
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
-                    {
-                        continue;
-                    }
-
+                    // Runtime-internal frames (exception handling helpers, entry point, etc.) are NOT
+                    // skipped here with continue. On x86, GetFrameWorker() unwinds one frame ahead to
+                    // compute the frame pointer (see rsstackwalk.cpp). Skipping frames here would cause
+                    // the unwind to land on the wrong frame, producing incorrect frame pointers.
+                    // Instead, GetStackWalkCurrentFrameInfo classifies these frames and GetFrameWorker
+                    // returns S_FALSE to hide them from debugger clients.
                     fIsAtEndOfStack = FALSE;
                 }
                 else
@@ -343,9 +339,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
     return hr;
 }
 
-bool g_fSkipStackCheck     = false;
-bool g_fSkipStackCheckInit = false;
-
 // Check whether the specified CONTEXT is valid.  The only check we perform right now is whether the
 // SP in the specified CONTEXT is in the stack range of the thread.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
@@ -359,34 +352,21 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       v
         return S_OK;
     }
 
-    if (!g_fSkipStackCheckInit)
-    {
-        g_fSkipStackCheck = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgSkipStackCheck) != 0);
-        g_fSkipStackCheckInit = true;
-    }
+    // We don't have the backing store boundaries stored on the thread, but this is just
+    // a sanity check anyway.
+    Thread * pThread = vmThread.GetDacPtr();
+    PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
 
-    // Skip this check if the customer has set the reg key/env var.  This is necessary for AutoCad.  They
-    // enable fiber mode by calling the Win32 API ConvertThreadToFiber(), but when a managed debugger is
-    // attached, they don't actually call into our hosting APIs such as SwitchInLogicalThreadState().  This
-    // leads to the cached stack range on the Thread object being stale.
-    if (!g_fSkipStackCheck)
+    if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
     {
-        // We don't have the backing store boundaries stored on the thread, but this is just
-        // a sanity check anyway.
-        Thread * pThread = vmThread.GetDacPtr();
-        PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
-
-        if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
-        {
-            return CORDBG_E_NON_MATCHING_CONTEXT;
-        }
+        return CORDBG_E_NON_MATCHING_CONTEXT;
     }
 
     return S_OK;
 }
 
 // Retrieve information about the current frame from the stackwalker.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -417,9 +397,15 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     {
                         MethodDesc *pMD = pIter->m_crawl.GetFunction();
                         // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                        // and System.Runtime.StackFrameIterator.*
+                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
+                        }
+                        // Environment.CallEntryPoint
+                        else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
                         }
                         else
                         {
@@ -559,16 +545,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     EX_TRY
     {
 
-        DebuggerIPCE_STRData frameData;
+        Debugger_STRData frameData;
 
         Thread *    pThread    = vmThread.GetDacPtr();
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        // This used to be only true for Enter-Managed chains.
-        // Since we don't have chains anymore, this can always be false.
-        frameData.quicklyUnwound = false;
-        frameData.eType = DebuggerIPCE_STRData::cStubFrame;
+        frameData.eType = Debugger_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
         {
@@ -605,7 +588,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                 MethodDesc * pMD = pFrame->GetFunction();
 
                 Module *     pModule = (pMD ? pMD->GetModule() : NULL);
-                DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
+                Assembly * pAssembly = (pModule ? pModule->GetAssembly() : NULL);
 
                 if (frameData.stubFrame.frameType == STUBFRAME_FUNC_EVAL)
                 {
@@ -613,14 +596,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                     DebuggerEval *  pDE  = pFEF->GetDebuggerEval();
 
                     frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
-                    frameData.stubFrame.vmDomainAssembly.SetHostPtr(
-                        pDE->m_debuggerModule ? pDE->m_debuggerModule->GetDomainAssembly() : NULL);
+                    frameData.stubFrame.vmAssembly.SetHostPtr(
+                        pDE->m_debuggerModule ? pDE->m_debuggerModule->GetAssembly() : NULL);
                     frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
                 }
                 else
                 {
                     frameData.stubFrame.funcMetadataToken = (pMD == NULL ? mdTokenNil : pMD->GetMemberDef());
-                    frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
+                    frameData.stubFrame.vmAssembly.SetHostPtr(pAssembly);
                     frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
                 }
 
@@ -631,28 +614,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
             // move on to the next internal frame
             pFrame = pFrame->Next();
         }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Given the FramePointer of the parent frame and the FramePointer of the current frame,
-// check if the current frame is the parent frame.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
-
-        StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
-
-        // Ask the ExInfo to figure out the answer.
-        // Don't try to compare the StackFrames/FramePointers ourselves.
-        *pResult = ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -743,7 +704,6 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 }
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
-// @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
@@ -753,7 +713,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     {
 
         DT_CONTEXT ctxLeaf;
-        IfFailThrow(GetContext(vmThread, &ctxLeaf));
+        Thread *  pThread  = vmThread.GetDacPtr();
+        ctxLeaf.ContextFlags = DT_CONTEXT_ALL;
+        IfFailThrow(m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+                                                ctxLeaf.ContextFlags,
+                                                sizeof(DT_CONTEXT),
+                                                reinterpret_cast<BYTE *>(&ctxLeaf)));
 
         // Call a platform-specific helper to compare the two contexts.
         *pResult = CompareControlRegisters(pContext, &ctxLeaf);
@@ -797,27 +762,24 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDispla
 
 void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                         FrameType              ft,
-                                        DebuggerIPCE_STRData * pFrameData)
+                                        Debugger_STRData * pFrameData)
 {
     CrawlFrame * pCF = &(pIter->m_crawl);
 
     //
-    // do common initialization of DebuggerIPCE_STRData for both managed stack frames and explicit frames
+    // do common initialization of Debugger_STRData for both managed stack frames and explicit frames
     //
 
     pFrameData->fp = GetFramePointerWorker(pIter);
-
-    // This used to be only true for Enter-Managed chains.
-    // Since we don't have chains anymore, this can always be false.
-    pFrameData->quicklyUnwound = false;
 
     pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 
     if (ft == kNativeRuntimeUnwindableStackFrame)
     {
-        pFrameData->eType = DebuggerIPCE_STRData::cRuntimeNativeFrame;
+        pFrameData->eType = Debugger_STRData::cRuntimeNativeFrame;
 
-        GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx != NULL);
+        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
     }
     else if (ft == kManagedStackFrame)
     {
@@ -826,11 +788,11 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Although MiniDumpNormal tries to dump all AppDomains, it's possible
         // target corruption will keep one from being present.  This should mean
         // we'll just fail later, but struggle on for now.
-        DomainAssembly *pDomainAssembly = NULL;
+        Assembly *pAssembly = NULL;
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
-            _ASSERTE(pDomainAssembly != NULL);
+            pAssembly = (pModule ? pModule->GetAssembly() : NULL);
+            _ASSERTE(pAssembly != NULL);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
 
@@ -842,21 +804,22 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         _ASSERTE(pModule != NULL);
 
         //
-        // initialize the rest of the DebuggerIPCE_STRData
+        // initialize the rest of the Debugger_STRData
         //
 
-        pFrameData->eType = DebuggerIPCE_STRData::cMethodFrame;
+        pFrameData->eType = Debugger_STRData::cMethodFrame;
 
-        SetDebuggerREGDISPLAYFromREGDISPLAY(&(pFrameData->rd), pCF->GetRegisterSet());
+        _ASSERTE(pFrameData->rd != NULL);
+        SetDebuggerREGDISPLAYFromREGDISPLAY(pFrameData->rd, pCF->GetRegisterSet());
 
-        GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx != NULL);
+        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
 
         //
-        // initialize the fields in DebuggerIPCE_STRData::v
+        // initialize the fields in Debugger_STRData::v
         //
 
-        // These fields will be filled in later.  We don't have the sequence point mapping information here.
-        pFrameData->v.ILOffset = (SIZE_T)(-1);
+        // This field will be filled in later.  We don't have the sequence point mapping information here.
         pFrameData->v.mapping  = MAPPING_NO_INFO;
 
         // Check if this is a vararg method by getting the managed calling convention from the signature.
@@ -900,34 +863,21 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
 
         //
-        // initialize the DebuggerIPCE_FuncData and DebuggerIPCE_JITFuncData
+        // initialize the Debugger_FuncData and Debugger_JITFuncData
         //
 
-        DebuggerIPCE_FuncData *    pFuncData    = &(pFrameData->v.funcData);
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
+        Debugger_FuncData *    pFuncData    = &(pFrameData->v.funcData);
+        Debugger_JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
 
         //
-        // initialize the "easy" fields of DebuggerIPCE_FuncData
+        // initialize the "easy" fields of Debugger_FuncData
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
-        pFuncData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
-
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        // It is only needed if we haven't already got a cached copy
-        pFuncData->classMetadataToken = mdTokenNil;
+        pFuncData->vmAssembly.SetHostPtr(pAssembly);
 
         //
-        // initialize the remaining fields of DebuggerIPCE_FuncData to the default values
-        //
-
-        pFuncData->ilStartAddress = NULL;
-        pFuncData->ilSize = 0;
-        pFuncData->currentEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        pFuncData->localVarSigToken = mdSignatureNil;
-
-        //
-        // inititalize the fields of DebuggerIPCE_JITFuncData
+        // inititalize the fields of Debugger_JITFuncData
         //
 
         // For MiniDumpNormal, we do not guarantee method region info for all JIT tokens
@@ -963,7 +913,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                      && !pCF->IsIPadjusted()
                                      && pJITFuncData->nativeOffset != 0;
 
-        pJITFuncData->nativeCodeJITInfoToken.Set(NULL);
         pJITFuncData->vmNativeCodeMethodDescToken.SetHostPtr(pMD);
 
         InitParentFrameInfo(pCF, pJITFuncData);
@@ -971,19 +920,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         ALLOW_DATATARGET_MISSING_MEMORY(
             pJITFuncData->isInstantiatedGeneric = pMD->HasClassOrMethodInstantiation();
         );
-        pJITFuncData->enCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        // It is only needed if we haven't already got a cached copy
-        pFuncData->localVarSigToken = 0;
-        pFuncData->ilStartAddress = 0;
-        pFuncData->ilSize = 0;
-
-
-        // See the comment for LookupEnCVersions().
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        pFuncData->currentEnCVersion = 0;
-        pJITFuncData->enCVersion = 0;
     }
     else
     {
@@ -1002,7 +938,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 //
 
 void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      taStartAddr,
-                                                    DebuggerIPCE_JITFuncData * pJITFuncData)
+                                                    Debugger_JITFuncData * pJITFuncData)
 {
     PTR_CORDB_ADDRESS_TYPE pAddr = dac_cast<PTR_CORDB_ADDRESS_TYPE>(taStartAddr);
     CodeRegionInfo crInfo = CodeRegionInfo::GetCodeRegionInfo(NULL, NULL, pAddr);
@@ -1016,7 +952,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 
 //---------------------------------------------------------------------------------------
 //
-// Initialize the funclet-related fields of DebuggerIPCE_JITFuncData.  This is an nop on non-WIN64 platforms.
+// Initialize the funclet-related fields of Debugger_JITFuncData.  This is an nop on non-WIN64 platforms.
 //
 // Arguments:
 //    pCF          - the CrawlFrame for the current frame
@@ -1024,7 +960,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 //
 
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
-                                              DebuggerIPCE_JITFuncData * pJITFuncData)
+                                              Debugger_JITFuncData * pJITFuncData)
 {
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 
@@ -1163,95 +1099,31 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
 // Return Value:
 //    Return the CorDebugInternalFrameType of the explicit frame
 //
-// Notes:
-//    I wish this function were simpler, but it's not.  The logic in this function is adopted
-//    from the logic in the old in-proc debugger stackwalker.
-//
 
 CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFrame)
 {
-    CorDebugInternalFrameType resultType = STUBFRAME_NONE;
-
-    Frame::ETransitionType tt = pFrame->GetTransitionType();
-    Frame::Interception it = pFrame->GetInterception();
-    int ft = pFrame->GetFrameType();
-
-    switch (tt)
+    Frame::StubFrameType stubType = pFrame->GetStubFrameType();
+    switch (stubType)
     {
-        case Frame::TT_NONE:
-            if (it == Frame::INTERCEPTION_CLASS_INIT)
-            {
-                resultType = STUBFRAME_CLASS_INIT;
-            }
-            else if (it == Frame::INTERCEPTION_EXCEPTION)
-            {
-                resultType = STUBFRAME_EXCEPTION;
-            }
-            else if (it == Frame::INTERCEPTION_SECURITY)
-            {
-                resultType = STUBFRAME_SECURITY;
-            }
-            else if (it == Frame::INTERCEPTION_PRESTUB)
-            {
-                resultType = STUBFRAME_JIT_COMPILATION;
-            }
-            else
-            {
-                if (ft == Frame::TYPE_FUNC_EVAL)
-                {
-                    resultType = STUBFRAME_FUNC_EVAL;
-                }
-                else if (ft == Frame::TYPE_EXIT)
-                {
-                    if ((pFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame) ||
-                        InlinedCallFrame::FrameHasActiveCall(pFrame))
-                    {
-                        resultType = STUBFRAME_M2U;
-                    }
-                }
-            }
-            break;
-
-        case Frame::TT_M2U:
-            // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
-            if (pFrame->GetFrameIdentifier() != FrameIdentifier::StubDispatchFrame)
-            {
-                if (it == Frame::INTERCEPTION_SECURITY)
-                {
-                    resultType = STUBFRAME_SECURITY;
-                }
-                else
-                {
-                    resultType = STUBFRAME_M2U;
-                }
-            }
-            break;
-
-        case Frame::TT_U2M:
-            resultType = STUBFRAME_U2M;
-            break;
-
-        case Frame::TT_AppDomain:
-            resultType = STUBFRAME_APPDOMAIN_TRANSITION;
-            break;
-
-        case Frame::TT_InternalCall:
-            if (it == Frame::INTERCEPTION_EXCEPTION)
-            {
-                resultType = STUBFRAME_EXCEPTION;
-            }
-            else
-            {
-                resultType = STUBFRAME_INTERNALCALL;
-            }
-            break;
-
-        default:
-            UNREACHABLE();
-            break;
+    case Frame::StubFrameType::STUB_FRAME_NONE:
+        return STUBFRAME_NONE;
+    case Frame::StubFrameType::STUB_FRAME_M2U:
+        return STUBFRAME_M2U;
+    case Frame::StubFrameType::STUB_FRAME_U2M:
+        return STUBFRAME_U2M;
+    case Frame::StubFrameType::STUB_FRAME_FUNC_EVAL:
+        return STUBFRAME_FUNC_EVAL;
+    case Frame::StubFrameType::STUB_FRAME_INTERNAL_CALL:
+        return STUBFRAME_INTERNALCALL;
+    case Frame::StubFrameType::STUB_FRAME_CLASS_INIT:
+        return STUBFRAME_CLASS_INIT;
+    case Frame::StubFrameType::STUB_FRAME_EXCEPTION:
+        return STUBFRAME_EXCEPTION;
+    case Frame::StubFrameType::STUB_FRAME_JIT_COMPILATION:
+        return STUBFRAME_JIT_COMPILATION;
+    default:
+        return STUBFRAME_NONE;
     }
-
-    return resultType;
 }
 
 //---------------------------------------------------------------------------------------

@@ -749,7 +749,7 @@ namespace System.Diagnostics
         /// This state is useful, for example, when your application needs to wait for a starting process
         /// to finish creating its main window before the application communicates with that window.
         /// </remarks>
-        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
@@ -1457,6 +1457,8 @@ namespace System.Diagnostics
         /// </summary>
         public bool WaitForExit(int milliseconds)
         {
+            ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, Timeout.Infinite);
+
             bool exited = WaitForExitCore(milliseconds);
             if (exited && _watchForExit)
             {
@@ -1469,17 +1471,7 @@ namespace System.Diagnostics
         /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
-        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
-
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
-        {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
-
-            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
-
-            return (int)totalMilliseconds;
-        }
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         /// <summary>
         /// Instructs the Process component to wait for the associated process to exit, or

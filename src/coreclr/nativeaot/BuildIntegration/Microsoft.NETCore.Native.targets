@@ -82,6 +82,11 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeImportLibrary Condition="'$(NativeImportLibrary)' == '' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(LibFileExt)</NativeImportLibrary>
+    <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
+    <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetOS)' == 'win'">.exe</NativeExecutableExt>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == ''"></NativeExecutableExt>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
@@ -100,7 +105,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
-    <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
+    <IlcCompileDependsOn>$(IlcCompileDependsOn);ComputeAggregateExecutableInputs;SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
@@ -168,6 +173,47 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
   </Target>
 
+  <Target Name="ComputeAggregateExecutableInputs"
+          DependsOnTargets="ResolveReferences">
+
+    <ItemGroup>
+      <_AggregateExecutableReferencePath Include="@(ReferencePath)"
+                                   Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IncludeInAggregateExecutable)' == 'true'">
+        <AssemblyName>%(ReferencePath.Filename)</AssemblyName>
+        <SanitizedAssemblyName>__AggregateExeShim_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
+        <AssemblyNameHash>$([MSBuild]::StableStringHash('%(ReferencePath.Filename)', 'Sha256'))</AssemblyNameHash>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableReferencePath>
+        <EntryPointSymbol>_AggregateExeMain_%(SanitizedAssemblyName)_%(AssemblyNameHash)</EntryPointSymbol>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' != ''">%(_AggregateExecutableReferencePath.LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' != ''">$(LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' == ''">CONSOLE</ShimLinkerSubsystem>
+        <ShimSource>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.c</ShimSource>
+        <ShimObject>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe$(NativeObjectExt)</ShimObject>
+        <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.cl.rsp</ShimCompileRspFile>
+        <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.link.rsp</ShimLinkRspFile>
+        <ShimResourceFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.res</ShimResourceFile>
+        <ShimCompileLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.rsp</ShimCompileLinkRspFile>
+        <ShimBinary>$(NativeOutputPath)%(AssemblyName)$(NativeExecutableExt)</ShimBinary>
+        <ShimSymbol>$(NativeOutputPath)%(AssemblyName)$(NativeSymbolExt)</ShimSymbol>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableShim Include="%(_AggregateExecutableReferencePath.ShimBinary)">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeExecutableExt)</RelativePath>
+      </_AggregateExecutableShim>
+      <_AggregateExecutableShimSymbol Include="%(_AggregateExecutableReferencePath.ShimSymbol)" Condition="'$(NativeDebugSymbols)' == 'true'">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)</RelativePath>
+      </_AggregateExecutableShimSymbol>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_AggregateExecutable Condition="'$(NativeLib)' == 'Shared' and '@(_AggregateExecutableReferencePath)' != ''">true</_AggregateExecutable>
+    </PropertyGroup>
+
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(OutputType)' != 'Library'" Text="IncludeInAggregateExecutable requires OutputType=Library." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(NativeLib)' != 'Shared'" Text="IncludeInAggregateExecutable requires NativeLib=Shared." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(EnablePreviewFeatures)' != 'true'" Text="IncludeInAggregateExecutable requires EnablePreviewFeatures=true." />
+  </Target>
+
   <!--
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to
     produce the shared framework library on demand
@@ -215,9 +261,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(IlcSatelliteAssembly->'--satellite:%(Identity)')" />
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
-      <!-- To the NativeAOT compiler, Android is just another linux -->
-      <IlcArg Condition="'$(_targetOS)' == 'android'" Include="--targetos:linux" />
-      <IlcArg Condition="'$(_targetOS)' != '' and '$(_targetOS)' != 'android'" Include="--targetos:$(_targetOS)" />
+      <IlcArg Condition="'$(_targetOS)' != ''" Include="--targetos:$(_targetOS)" />
       <IlcArg Condition="$(_targetArchitectureWithAbi) != ''" Include="--targetarch:$(_targetArchitectureWithAbi)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and ($(_targetOS) != 'win' or '$(OptimizationPreference)' == 'Size' or '$(IlcDehydrate)' == 'true')" Include="--dehydrate" />
@@ -236,6 +280,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(ExportsFile)' != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader,DATA" />
       <IlcArg Condition="'$(_targetOS)' != 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader" />
+      <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor,DATA" />
+      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor" />
       <IlcArg Condition="'$(_targetOS)' == 'freebsd' and '$(IsNativeExecutable)' == 'true'" Include="--export-dynamic-symbol:__progname;--export-dynamic-symbol:environ" />
       <IlcArg Condition="'$(IlcExportUnmanagedEntrypoints)' == 'true'" Include="--export-unmanaged-entrypoints" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
@@ -286,6 +332,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Export the managed entry point if building a native library in custom main mode -->
       <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--aggregateexe:%(AssemblyName)=%(EntryPointSymbol)')" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--export-dynamic-symbol:%(EntryPointSymbol)')" />
 
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--reachabilityinstrument" />
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--feature:Internal.Runtime.CompilerHelpers.ReachabilityInstrumentationSupport=true" />
@@ -329,13 +377,14 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
-      Outputs="$(NativeBinary)"
+      Outputs="$(_LinkNativeOutputs)"
       DependsOnTargets="$(LinkNativeDependsOn)">
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
       <CustomLinkerArg Include="-o &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' == 'win'" />
+      <CustomLinkerArg Include="/IMPLIB:&quot;$(NativeImportLibrary)&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' == 'win' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />

@@ -107,6 +107,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Schema\JsonSchemaExporterOptions.cs" />
     <Compile Include="System\Text\Json\Schema\JsonSchemaExporterContext.cs" />
     <Compile Include="System\Text\Json\Schema\JsonSchemaType.cs" />
+    <Compile Include="System\Text\Json\Serialization\AsyncEnumeratorState.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonObjectCreationHandlingAttribute.cs" />
@@ -154,6 +155,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Helpers.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Union.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\IJsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonDerivedType.cs" />
@@ -282,6 +284,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonObjectInfoValuesOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonUnionInfoValuesOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoValues.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoOfT.cs" />
@@ -352,12 +355,25 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\ThrowHelper.cs" />
 
     <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+
+    <!-- Union/classifier types available on all TFMs -->
+    <Compile Include="System\Text\Json\Serialization\JsonTypeClassifier.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierContext.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonTypeClassifierKind.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonValueType.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonUnionAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonUnionCaseInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Union\JsonUnionConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Union\JsonUnionConverterFactory.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ParamCollectionAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ScopedRefAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
@@ -369,6 +385,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\SinglePolyfills.cs" Link="Common\Polyfills\SinglePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitArrayPolyfills.cs" Link="Common\Polyfills\BitArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
   </ItemGroup>

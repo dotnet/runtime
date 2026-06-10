@@ -653,6 +653,11 @@ namespace System.Xml
 
         private void VerifyNCName(string s)
         {
+            if (string.IsNullOrEmpty(s))
+            {
+                XmlExceptionHelper.ThrowXmlException(this, SR.InvalidLocalNameEmpty, null);
+            }
+
             try
             {
                 XmlConvert.VerifyNCName(s);

@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RuntimeInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "heap";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -52,7 +54,8 @@ public class RuntimeInfoDumpTests : DumpTestBase
         RuntimeInfoOperatingSystem expected = DumpMetadata.Os switch
         {
             "windows" => RuntimeInfoOperatingSystem.Windows,
-            "linux" or "osx" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
+            "osx" => RuntimeInfoOperatingSystem.Apple,
+            "linux" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
             _ => RuntimeInfoOperatingSystem.Unknown,
         };
 

@@ -420,7 +420,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     if (state & Thread::TS_AbortRequested)
         res |= ThreadNative::ThreadAbortRequested;
 
-    if (state & Thread::TS_Interruptible)
+    if (state & Thread::TS_WaitSleepJoin)
         res |= ThreadNative::ThreadWaitSleepJoin;
 
     return res;
@@ -436,8 +436,7 @@ extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle
     CONTRACTL_END;
 
     // Set the state bits.
-    thread->SetThreadState(Thread::TS_Interruptible);
-    thread->SetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+    thread->SetThreadState(Thread::TS_WaitSleepJoin);
 }
 
 extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
@@ -450,8 +449,7 @@ extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHand
     CONTRACTL_END;
 
     // Clear the state bits.
-    thread->ResetThreadState(Thread::TS_Interruptible);
-    thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+    thread->ResetThreadState(Thread::TS_WaitSleepJoin);
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -630,7 +628,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND

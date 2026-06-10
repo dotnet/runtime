@@ -123,7 +123,7 @@ configuration:
         - payloadType: Pull_Request
       - or:
         - labelAdded:
-            label: area-assemblyloading
+            label: area-AssemblyLoader
         - labelAdded:
             label: area-AssemblyLoader-mono
         - labelAdded:
@@ -172,6 +172,8 @@ configuration:
             label: area-GC-coreclr
         - labelAdded:
             label: area-GC-mono
+        - labelAdded:
+            label: area-Host
         - labelAdded:
             label: area-ILTools-coreclr
         - labelAdded:
@@ -297,6 +299,8 @@ configuration:
         - labelAdded:
             label: area-System.Runtime.CompilerServices
         - labelAdded:
+            label: area-System.Runtime.InteropServices
+        - labelAdded:
             label: area-System.Runtime.Intrinsics
         - labelAdded:
             label: area-System.Security
@@ -331,7 +335,7 @@ configuration:
       then:
       - if:
         - hasLabel:
-            label: area-assemblyloading
+            label: area-AssemblyLoader
         then:
         - mentionUsers:
             mentionees:
@@ -629,7 +633,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - JulieLeeMSFT
+            - anicka-net
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1407,6 +1411,18 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-runtime-compilerservices
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime.InteropServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/interop-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

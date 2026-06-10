@@ -58,14 +58,23 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/public-api.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/v8.d.ts"
 
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/client-commands.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/common.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/console-proxy.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/diagnostic-server.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/diagnostic-server-js.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/diagnostic-server-ws.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-counters.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-cpu-profiler.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-gcdump.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/exit.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/per-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/symbolicate.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/crypto.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/diagnostics.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/globalization-locale.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/main.ts"
@@ -174,4 +183,8 @@ add_custom_target(System.Native.Browser-NpmInstall
 if (NOT CORERUN_LIBS_ONLY)
     install(FILES ${ROLLUP_OUTPUTS} DESTINATION sharedFramework COMPONENT runtime)
     install(FILES "${CLR_SRC_NATIVE_DIR}/package.json" DESTINATION sharedFramework COMPONENT runtime)
+    # extpost.js is a hand-written passthrough file (not produced by rollup) that the
+    # per-app emcc relink consumes via --extern-post-js. Ship it in the runtime pack.
+    install(FILES "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.extpost.js"
+            DESTINATION sharedFramework COMPONENT runtime)
 endif()

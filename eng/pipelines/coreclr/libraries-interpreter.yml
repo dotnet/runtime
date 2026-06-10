@@ -24,7 +24,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
-          - windows_x64
           - osx_arm64
           - linux_x64
           helixQueueGroup: libraries
@@ -39,4 +38,4 @@ extends:
                   creator: dotnet-bot
                   extraHelixArguments: /maxcpucount:10
                   scenarios:
-                  - interpmode3
+                  - interpmode1

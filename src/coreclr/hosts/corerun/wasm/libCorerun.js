@@ -178,7 +178,15 @@ function libCoreRunFactory() {
             } catch (e) {
                 return false;
             }
-            const wasmModule = new WebAssembly.Module(wasmBytes);
+            let wasmModule;
+            try {
+                wasmModule = new WebAssembly.Module(wasmBytes);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                return false;
+            }
+
             const tableStartIndex = wasmTable.length;
 
             var payloadSize = 0;
@@ -195,7 +203,14 @@ function libCoreRunFactory() {
                 console.error("Webcil payload size is 0; cannot load image");
                 return false;
             }
-            wasmTable.grow(tableSize);
+
+            try {
+                wasmTable.grow(tableSize);
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                return false;
+            }
 
             var payloadPtr = 0;
             var wasmInstance;
@@ -204,6 +219,9 @@ function libCoreRunFactory() {
                 const ptrPtr = stackAlloc(4);
                 if (_posix_memalign(ptrPtr, 16, payloadSize)) {
                     throw new Error("posix_memalign failed for Webcil payload");
+                }
+                if (typeof (wasmExports.__stack_pointer) === "undefined") {
+                    throw new Error("__stack_pointer was not preserved by the linker or optimizer");
                 }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
@@ -214,6 +232,10 @@ function libCoreRunFactory() {
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
                     }});
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                return false;
             } finally {
                 stackRestore(sp);
             }

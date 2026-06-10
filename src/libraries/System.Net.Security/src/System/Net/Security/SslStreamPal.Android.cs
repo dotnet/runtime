@@ -20,6 +20,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = false;
 
         // There is no API to generate custom alerts on Android, but the interop layer currently
@@ -110,40 +111,64 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
-            Span<byte> buffer,
-            out int offset,
-            out int count)
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
-            offset = 0;
-            count = 0;
+            bytesWritten = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
 
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;
 
-                securityContext.Write(buffer);
+                securityContext.Write(encrypted);
 
-                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer, out int read);
+                PAL_SSLStreamStatus ret;
+
+                // Opportunistically decrypt directly into the caller-provided destination span
+                // when one was supplied (saves a memcpy through the SslStream-owned buffer).
+                // If the first read does not fill the destination, all currently available
+                // plaintext has been consumed and we report the resulting status as-is.
+                if (!destination.IsEmpty)
+                {
+                    ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, destination, out int written);
+                    if (ret == PAL_SSLStreamStatus.Error)
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+
+                    bytesWritten = written;
+                    if (ret != PAL_SSLStreamStatus.OK || written < destination.Length)
+                    {
+                        return new SecurityStatusPal(MapSSLStreamStatus(ret));
+                    }
+                }
+
+                // Either destination was empty, or the first read filled it; capture any
+                // remaining plaintext in-place inside the ciphertext span so SslStream can
+                // pick it up via leftoverOffset/leftoverLength.
+                ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, encrypted, out int leftover);
                 if (ret == PAL_SSLStreamStatus.Error)
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
 
-                count = read;
-
-                SecurityStatusPalErrorCode statusCode = ret switch
-                {
-                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
-                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
-                    PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
-                    PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
-                    _ => SecurityStatusPalErrorCode.InternalError
-                };
-
-                return new SecurityStatusPal(statusCode);
+                leftoverLength = leftover;
+                return new SecurityStatusPal(MapSSLStreamStatus(ret));
             }
             catch (Exception e)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
             }
+
+            static SecurityStatusPalErrorCode MapSSLStreamStatus(PAL_SSLStreamStatus status) => status switch
+            {
+                PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
+                PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
+                _ => SecurityStatusPalErrorCode.InternalError,
+            };
         }
 
         public static ChannelBinding? QueryContextChannelBinding(
