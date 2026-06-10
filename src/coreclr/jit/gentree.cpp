@@ -20378,6 +20378,9 @@ bool Compiler::IsValidForShuffle(
 //    scalar   - true if this is a scalar operation; otherwise, false
 //    baseType - the base type of the constant being checked
 //
+//  Returns:
+//    true if the constant could be evaluated; otherwise false.
+//
 bool GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
 {
     switch (gtType)
