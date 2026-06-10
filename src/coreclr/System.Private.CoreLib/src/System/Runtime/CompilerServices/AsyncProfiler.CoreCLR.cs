@@ -25,12 +25,12 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.CreateAsyncContextEvent(eventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp, id);
+                        EmitEvent(context, currentTimestamp, id, AsyncEventID.RuntimeAsync_CreateAsyncContext);
                     }
 
                     if (IsEnabled.CreateAsyncCallstackEvent(eventKeywords) && nextContinuation != null)
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.CreateAsyncCallstack, id, nextContinuation);
+                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_CreateAsyncCallstack, id, nextContinuation);
                     }
                 }
 
@@ -70,13 +70,13 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeAsyncContextEvent(activeEventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp, id);
+                        EmitEvent(context, currentTimestamp, id, AsyncEventID.RuntimeAsync_ResumeAsyncContext);
                     }
 
                     if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
                     {
                         byte wrapperIndex = (byte)(info.AsyncProfilerInfo.ContinuationIndex & ContinuationWrapper.COUNT_MASK);
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, wrapperIndex, info.NextContinuation);
+                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, id, wrapperIndex, info.NextContinuation);
                     }
                 }
             }
@@ -97,12 +97,12 @@ namespace System.Runtime.CompilerServices
 
                     if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords) && nextContinuation != null)
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.SuspendAsyncCallstack, GetId(ref info), nextContinuation);
+                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, GetId(ref info), nextContinuation);
                     }
 
                     if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp);
+                        EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_SuspendAsyncContext);
                     }
                 }
 
@@ -116,6 +116,95 @@ namespace System.Runtime.CompilerServices
                     return (ulong)info.CurrentTask.Id;
                 }
                 return 0;
+            }
+
+            private static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
+            {
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID, 0);
+            }
+        }
+
+        internal static partial class CompleteAsyncContext
+        {
+            public static void Complete(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                SyncPoint.Check(context);
+
+                if (IsEnabled.CompleteAsyncContextEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp(), AsyncEventID.RuntimeAsync_CompleteAsyncContext);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class AsyncMethodException
+        {
+            public static void Unhandled(ref AsyncDispatcherInfo info, uint unwindedFrames)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                {
+                    long currentTimestamp = Stopwatch.GetTimestamp();
+                    if (IsEnabled.UnwindAsyncExceptionEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp, unwindedFrames, AsyncEventID.RuntimeAsync_UnwindAsyncException);
+                    }
+
+                    if (IsEnabled.CompleteAsyncContextEvent(activeEventKeywords))
+                    {
+                        CompleteAsyncContext.EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_CompleteAsyncContext);
+                    }
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
+            public static void Handled(ref AsyncDispatcherInfo info, uint unwindedFrames)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.UnwindAsyncExceptionEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp(), unwindedFrames, AsyncEventID.RuntimeAsync_UnwindAsyncException);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class ResumeAsyncMethod
+        {
+            public static void Resume(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.ResumeAsyncMethodEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, AsyncEventID.RuntimeAsync_ResumeAsyncMethod);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class CompleteAsyncMethod
+        {
+            public static void Complete(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.CompleteAsyncMethodEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+                }
+
+                AsyncThreadContext.Release(context);
             }
         }
 
@@ -456,12 +545,13 @@ namespace System.Runtime.CompilerServices
                     return result;
                 }
 
-                public static AsyncCallstackType CallstackType => AsyncCallstackType.Runtime;
                 public static int MaxAsyncMethodFrameSize => MaxRuntimeAsyncMethodFrameSize;
             }
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
             {
+                Debug.Assert(eventID == AsyncEventID.RuntimeAsync_CreateAsyncCallstack || eventID == AsyncEventID.RuntimeAsync_ResumeAsyncCallstack || eventID == AsyncEventID.RuntimeAsync_SuspendAsyncCallstack);
+
                 CaptureRuntimeAsyncCallstackState state = default;
                 state.Continuation = asyncCallstack;
                 EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, 0, ref state);
@@ -469,6 +559,8 @@ namespace System.Runtime.CompilerServices
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, byte continuationIndex, Continuation? asyncCallstack)
             {
+                Debug.Assert(eventID == AsyncEventID.RuntimeAsync_CreateAsyncCallstack || eventID == AsyncEventID.RuntimeAsync_ResumeAsyncCallstack || eventID == AsyncEventID.RuntimeAsync_SuspendAsyncCallstack);
+
                 CaptureRuntimeAsyncCallstackState state = default;
                 state.Continuation = asyncCallstack;
                 EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, continuationIndex, ref state);
