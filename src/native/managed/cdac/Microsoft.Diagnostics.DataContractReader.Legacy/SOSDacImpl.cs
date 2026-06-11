@@ -3456,11 +3456,16 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl is not null)
         {
             char[] stringDataLocal = new char[count];
-            uint neededLocal;
+            uint neededLocal = 0;
             int hrLocal;
             fixed (char* ptr = stringDataLocal)
             {
-                hrLocal = _legacyImpl.GetObjectStringData(obj, count, ptr, &neededLocal);
+                // Invoke the legacy DAC under the same argument contract the caller gave the cDAC:
+                // only pass an output buffer when the caller did, and only request the size-out when
+                // the caller did. This keeps the HRESULT comparison apples-to-apples.
+                char* stringDataArg = stringData is null ? null : ptr;
+                uint* pNeededArg = pNeeded is null ? null : &neededLocal;
+                hrLocal = _legacyImpl.GetObjectStringData(obj, count, stringDataArg, pNeededArg);
             }
 
             // The native DAC returns E_INVALIDARG for a size-only query (no output buffer) even on a
