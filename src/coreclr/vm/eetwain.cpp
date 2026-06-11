@@ -1631,9 +1631,6 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
             );
 
     UINT32 codeLength = gcInfoDecoder.GetCodeLength();
-#ifdef TARGET_WASM
-    codeLength = 1; // WASM-TODO, something isn't working in the GCEncoder/Decoder for WASM, and we're getting back 0 for code length. We'll need to fix this at some point.
-#endif // TARGET_WASM
     _ASSERTE( codeLength > 0 );
     return codeLength;
 
@@ -1920,41 +1917,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 {
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
-#ifdef TARGET_WASM
-    throw ResumeAfterCatchException(resumeSP, resumeIP);
-#else
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
-
-    ClrCaptureContext(pContext);
-
-    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-
-    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
-    // the resumeSP
-    do
-    {
-        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
-        {
-            // JIT / AOT generated managed code
-            Thread::VirtualUnwindCallFrame(pContext);
-        }
-        else
-        {
-#ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext);
-#else
-            Thread::VirtualUnwindCallFrame(pContext);
-#endif
-        }
-    }
-    while (GetSP(pContext) != targetSP);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
-#endif // TARGET_WASM
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

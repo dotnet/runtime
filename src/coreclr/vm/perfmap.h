@@ -51,7 +51,7 @@ public:
         }
         CONTRACTL_END;
     }
-    
+
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
     {
         CONTRACTL
@@ -82,6 +82,7 @@ private:
     // Indicate current stub granularity rules
     static bool s_GroupStubsOfSameType;
     static bool s_IndividualAllocationStubReporting;
+    static bool s_LogStubs; // If false, do not log stubs at all
 
     // Set to true if an error is encountered when writing to the file.
     static unsigned s_StubsMapped;
