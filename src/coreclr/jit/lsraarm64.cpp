@@ -1496,6 +1496,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         case NI_VectorT_Create:
         case NI_VectorT_CreateScalarUnsafe:
+            // FP values need moving into a GP register
             if (varTypeIsFloating(intrin.baseType))
             {
                 buildInternalIntRegisterDefForNode(intrinsicTree);
