@@ -118,6 +118,59 @@ public unsafe class ObjectTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void StringData(MockTarget.Architecture arch)
+    {
+        TargetPointer TestStringAddress = default;
+        int offsetToFirstChar = 0;
+        string expected = "test_string_value";
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                offsetToFirstChar = objectBuilder.StringLayout.GetField("m_FirstChar").Offset;
+                TestStringAddress = objectBuilder.AddStringObject(expected);
+            });
+
+        contract.GetStringData(TestStringAddress, out uint length, out uint actualOffsetToFirstChar);
+
+        Assert.Equal((uint)expected.Length, length);
+        Assert.Equal((uint)offsetToFirstChar, actualOffsetToFirstChar);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Size(MockTarget.Architecture arch)
+    {
+        TargetPointer TestObjectAddress = default;
+        TargetPointer TestArrayAddress = default;
+        Array array = new int[10];
+        TargetTestHelpers targetTestHelpers = new(arch);
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestClass");
+                MockMethodTable methodTable = objectBuilder.RTSBuilder.AddMethodTable("TestClass");
+                methodTable.BaseSize = objectBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                eeClass.MethodTable = methodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                TestObjectAddress = objectBuilder.AddObject(methodTable.Address);
+
+                TestArrayAddress = objectBuilder.AddArrayObject(array);
+            });
+
+        // Fixed-size object: size is just the base size, no component data.
+        Assert.Equal(targetTestHelpers.ObjectBaseSize, contract.GetSize(TestObjectAddress));
+
+        // Variable-size object (array): base size plus component count times component size.
+        // The mock encodes the component size as the array length in the method table flags.
+        ulong componentSize = (uint)array.Length;
+        ulong expectedArraySize = targetTestHelpers.ArrayBaseBaseSize + (ulong)array.Length * componentSize;
+        Assert.Equal(expectedArraySize, contract.GetSize(TestArrayAddress));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ArrayData(MockTarget.Architecture arch)
     {
         TargetPointer SingleDimensionArrayAddress = default;
