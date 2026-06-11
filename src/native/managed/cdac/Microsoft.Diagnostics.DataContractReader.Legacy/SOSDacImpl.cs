@@ -3468,15 +3468,13 @@ public sealed unsafe partial class SOSDacImpl
                 hrLocal = _legacyImpl.GetObjectStringData(obj, count, stringDataArg, pNeededArg);
             }
 
-            // The native DAC returns E_INVALIDARG for a size-only query (no output buffer) even on a
-            // valid string, while still populating *pNeeded; the cDAC returns S_OK for that case.
-            // Callers (e.g. CLRMA) ignore the HRESULT and use the reported size, so allow the cDAC to
-            // succeed where the DAC fails rather than replicating the DAC's quirk.
-            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(stringData)));
+                // Compare against the legacy buffer using the cDAC string length: neededLocal is only
+                // populated when a size-out was requested from the legacy DAC (mirroring the caller).
+                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, new string(stringData).Length).SequenceEqual(new string(stringData)));
             }
         }
 #endif
