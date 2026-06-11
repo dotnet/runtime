@@ -295,31 +295,24 @@ internal partial class StackWalk_1 : IStackWalk
     // gcenv.ee.cpp ScanStackRoots.
     private void ReportExceptionTrackerRoots(ThreadData threadData, GcScanContext scanContext)
     {
-        try
-        {
-            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-            TargetPointer pExInfo = _target.ReadPointer(thread.ExceptionTracker);
-            if (pExInfo == TargetPointer.Null)
-                return;
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+        TargetPointer pExInfo = _target.ReadPointer(thread.ExceptionTracker);
+        if (pExInfo == TargetPointer.Null)
+            return;
 
-            IException exceptionContract = _target.Contracts.Exception;
-            HashSet<TargetPointer> seen = new();
-            while (pExInfo != TargetPointer.Null && seen.Add(pExInfo))
-            {
-                // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
-                // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
-                // The ExInfo lives on the stack, so report its address as the StackPointer: native
-                // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
-                // (SOSDacImpl.GetStackReferences) forward it.
-                exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
-                scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo);
-                scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
-                pExInfo = previous;
-            }
-        }
-        catch (System.Exception ex)
+        IException exceptionContract = _target.Contracts.Exception;
+        HashSet<TargetPointer> seen = new();
+        while (pExInfo != TargetPointer.Null && seen.Add(pExInfo))
         {
-            Debug.WriteLine($"Exception during {nameof(ReportExceptionTrackerRoots)}: {ex.GetType().Name}: {ex.Message}");
+            // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
+            // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
+            // The ExInfo lives on the stack, so report its address as the StackPointer: native
+            // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
+            // (SOSDacImpl.GetStackReferences) forward it.
+            exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
+            scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo);
+            scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
+            pExInfo = previous;
         }
     }
 
@@ -328,39 +321,32 @@ internal partial class StackWalk_1 : IStackWalk
     // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
     private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
-        try
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+
+        // The GCFrame field is optional in the data contract; nothing to scan when the target
+        // does not describe it.
+        if (thread.GCFrame is not TargetPointer head)
+            return;
+
+        // The chain is terminated by GCFRAME_TOP (FRAME_TOP_VALUE == ~0), sized to the pointer width.
+        TargetPointer terminator = TargetPointer.PlatformMaxValue(_target);
+        ulong pointerSize = (ulong)_target.PointerSize;
+        HashSet<TargetPointer> seen = new();
+        TargetPointer pGCFrame = head;
+        while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
         {
-            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-
-            // The GCFrame field is optional in the data contract; nothing to scan when the target
-            // does not describe it.
-            if (thread.GCFrame is not TargetPointer head)
-                return;
-
-            // The chain is terminated by GCFRAME_TOP (FRAME_TOP_VALUE == ~0), sized to the pointer width.
-            TargetPointer terminator = TargetPointer.PlatformMaxValue(_target);
-            ulong pointerSize = (ulong)_target.PointerSize;
-            HashSet<TargetPointer> seen = new();
-            TargetPointer pGCFrame = head;
-            while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
+            Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
+            // The GCFrame lives on the stack, so report its address as the StackPointer: native
+            // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
+            // (SOSDacImpl.GetStackReferences) forward it.
+            scanContext.UpdateScanContext(pGCFrame, TargetPointer.Null, pGCFrame);
+            GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
+            for (uint i = 0; i < gcFrame.NumObjRefs; i++)
             {
-                Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
-                // The GCFrame lives on the stack, so report its address as the StackPointer: native
-                // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
-                // (SOSDacImpl.GetStackReferences) forward it.
-                scanContext.UpdateScanContext(pGCFrame, TargetPointer.Null, pGCFrame);
-                GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
-                for (uint i = 0; i < gcFrame.NumObjRefs; i++)
-                {
-                    TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
-                    scanContext.GCReportCallback(slot, flags);
-                }
-                pGCFrame = gcFrame.Next;
+                TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
+                scanContext.GCReportCallback(slot, flags);
             }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.WriteLine($"Exception during {nameof(ReportGCFrameRoots)}: {ex.GetType().Name}: {ex.Message}");
+            pGCFrame = gcFrame.Next;
         }
     }
 

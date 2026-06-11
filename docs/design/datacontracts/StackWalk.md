@@ -641,7 +641,7 @@ After walking the thread's frames, `WalkStackReferences` reports two additional 
 - **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame`, each `GCFrame` is walked via its `Next` pointer until the `GCFRAME_TOP` terminator (`~0`, sized to the pointer width). For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
 - **Exception tracker (ExInfo) chain**: starting from `Thread.ExceptionTracker`, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
 
-Both sets are reported as frame-sourced roots: `Source` is the GCFrame / ExInfo node address, and `StackPointer` is that same address (the node lives on the stack), so the roots carry a non-zero, stack-resident location consistent with the per-frame roots. Each helper is independently wrapped in a try/catch so a single unreadable node yields partial results rather than failing the whole walk.
+Both sets are reported as frame-sourced roots: `Source` is the GCFrame / ExInfo node address, and `StackPointer` is that same address (the node lives on the stack), so the roots carry a non-zero, stack-resident location consistent with the per-frame roots.
 
 ### GCRefMap Format and Resolution
 
