@@ -447,6 +447,8 @@ namespace System.Formats.Cbor
         // containing the individual chunk payloads
         private List<(int Offset, int Length)> ReadIndefiniteLengthStringChunkRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
+            EnsureMaxDepthNotExceeded();
+
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
             ReadOnlySpan<byte> data = GetRemainingBytes();
             concatenatedBufferSize = 0;

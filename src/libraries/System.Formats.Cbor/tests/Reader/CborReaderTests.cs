@@ -511,6 +511,72 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(remaining, reader.BytesRemaining);
         }
 
+        [Fact]
+        public static void MaxDepth_IndefiniteByteString_AtLimit()
+        {
+            // indefinite byte string with one chunk: (_ h'01')
+            byte[] encoding = [0x5F, 0x41, 0x01, 0xFF];
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthByteString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadByteString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.SkipValue(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void MaxDepth_IndefiniteTextString_AtLimit()
+        {
+            // indefinite text string with one chunk: (_ "a")
+            byte[] encoding = [0x7F, 0x61, 0x61, 0xFF];
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartIndefiniteLengthTextString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadTextString(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.SkipValue(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void MaxDepth_IndefiniteArray_AtLimit()
+        {
+            // indefinite array with one element: [_ 1]
+            byte[] encoding = [0x9F, 0x01, 0xFF];
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartArray(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.SkipValue(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void MaxDepth_IndefiniteMap_AtLimit()
+        {
+            // indefinite map with one entry: {_ 1: 2}
+            byte[] encoding = [0xBF, 0x01, 0x02, 0xFF];
+            var reader = new CborReader(encoding, new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, MaxDepth = 0 });
+
+            int remaining = reader.BytesRemaining;
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.ReadStartMap(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+
+            AssertExtensions.ThrowsContains<CborContentException>(() => reader.SkipValue(), MaxDepthMessageSentinel);
+            Assert.Equal(remaining, reader.BytesRemaining);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(1)]

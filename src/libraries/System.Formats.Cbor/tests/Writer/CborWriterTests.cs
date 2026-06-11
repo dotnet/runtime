@@ -792,32 +792,41 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(bytesWritten, writer.BytesWritten);
         }
 
-        [Fact]
-        public static void MaxDepth_WriteEncodedValue_ThrowsWhenDepthExceeded()
+        [Theory]
+        [InlineData("8181182A", 2)] // [[42]]
+        [InlineData("7F6161FF", 1)] // (_ "a")
+        [InlineData("7FFF", 1)] // (_ )
+        [InlineData("817FFF", 2)] // [(_ )]
+        [InlineData("5F4101FF", 1)] // (_ h'01')
+        [InlineData("5FFF", 1)] // (_ )
+        [InlineData("9F01FF", 1)] // [_ 1]
+        [InlineData("819F01FF", 2)] // [[_ 1]]
+        [InlineData("BFFF", 1)] // {_ }
+        [InlineData("BF0101FF", 1)] // {_ 1: 1}
+        public static void MaxDepth_WriteEncodedValue_ThrowsWhenDepthExceeded(string encodedValueHex, int appliedDepth)
         {
-            // Encoded value: [[42]] — two levels of nesting
-            byte[] encodedValue = [0x81, 0x81, 0x18, 0x2a];
+            const int MaxDepth = 2;
+            byte[] encodedValue = encodedValueHex.HexToByteArray();
 
-            // Writer at depth 1 with MaxDepth=2: remaining allowed depth = 1, but encoded value needs 2
-            var writer = new CborWriter(new CborWriterOptions { MaxDepth = 2 });
-            writer.WriteStartArray(1);
+            var limitedWriter = new CborWriter(new CborWriterOptions { MaxDepth = MaxDepth });
+            var writer = new CborWriter(new CborWriterOptions { MaxDepth = MaxDepth + 1 });
 
-            int bytesWritten = writer.BytesWritten;
-            Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(encodedValue));
+            int testLimit = MaxDepth - appliedDepth + 1;
+
+            for (int i = testLimit; i > 0; i--)
+            {
+                limitedWriter.WriteStartArray(1);
+                writer.WriteStartArray(1);
+            }
+
+            int bytesWritten = limitedWriter.BytesWritten;
             Assert.Equal(bytesWritten, writer.BytesWritten);
-        }
 
-        [Fact]
-        public static void MaxDepth_WriteEncodedValue_SucceedsAtLimit()
-        {
-            // Encoded value: [[42]] — two levels of nesting
-            byte[] encodedValue = [0x81, 0x81, 0x18, 0x2a];
+            // limitedWriter can't accept the value
+            Assert.Throws<ArgumentException>(() => limitedWriter.WriteEncodedValue(encodedValue));
+            Assert.Equal(bytesWritten, limitedWriter.BytesWritten);
 
-            // Writer at depth 1 with MaxDepth=3: remaining allowed depth = 2, and encoded value needs 2
-            var writer = new CborWriter(new CborWriterOptions { MaxDepth = 3 });
-            writer.WriteStartArray(1);
-
-            int bytesWritten = writer.BytesWritten;
+            // writer can
             writer.WriteEncodedValue(encodedValue);
             Assert.Equal(bytesWritten + encodedValue.Length, writer.BytesWritten);
         }
