@@ -7816,6 +7816,17 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                 if (region != nullptr)
                 {
+                    // If this block lives in a different handler region than the
+                    // parent try's begin block, the block is inside a funclet
+                    // that is nested inside the parent try's IL range but is
+                    // not part of the parent try's code body. Don't add it to
+                    // the parent region.
+                    //
+                    if (!includeHandlerBlocks &&
+                        !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    {
+                        break;
+                    }
                     tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
