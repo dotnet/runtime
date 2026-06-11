@@ -288,7 +288,10 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>)
   endif()
 else()
-  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # OpenBSD marks the main executable's read-only segments immutable (mimmutable) at load,
+  # so the runtime cannot mprotect the read-only GS cookie page to writable to initialize it.
+  # Keep the cookie in writable memory there, like Apple.
+  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
