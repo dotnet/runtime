@@ -246,7 +246,6 @@ enum InterpInstFlags
     INTERP_INST_FLAG_DBG_CALL_INSTRUCTION = 0x08
 };
 
-// A managed call site's return value home, emitted as an ICorDebugInfo::CALL_RETURN_ILNUM var.
 struct InterpCallReturnInfo
 {
     uint32_t ilOffset;
