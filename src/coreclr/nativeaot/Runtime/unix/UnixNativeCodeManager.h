@@ -5,8 +5,6 @@
 
 // libunwind headers
 #include <libunwind.h>
-#include <external/llvm-libunwind/src/config.h>
-#include <external/llvm-libunwind/src/AddressSpace.hpp>
 
 class UnixNativeCodeManager : public ICodeManager
 {
@@ -17,8 +15,6 @@ class UnixNativeCodeManager : public ICodeManager
 
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
-
-    libunwind::UnwindInfoSections m_UnwindInfoSections;
 
     bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet);
 

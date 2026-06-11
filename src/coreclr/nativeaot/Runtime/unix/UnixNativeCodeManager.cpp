@@ -53,11 +53,8 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
                                              PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
     : m_moduleBase(moduleBase),
       m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
-      m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
+            m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
-    // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
-        (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 
 UnixNativeCodeManager::~UnixNativeCodeManager()
@@ -89,7 +86,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     unw_proc_info_t procInfo;
 
-    if (!UnwindHelpers::GetUnwindProcInfo((TADDR)ControlPC, m_UnwindInfoSections, &procInfo))
+    if (!UnwindHelpers::GetUnwindProcInfo((TADDR)ControlPC, &procInfo))
     {
         return false;
     }
@@ -98,7 +95,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     pMethodInfo->start_ip = procInfo.start_ip;
     pMethodInfo->format = procInfo.format;
-    pMethodInfo->unwind_info = procInfo.unwind_info;
+    pMethodInfo->unwind_info = static_cast<unw_word_t>(reinterpret_cast<uintptr_t>(procInfo.unwind_info));
 
     uintptr_t lsda = procInfo.lsda;
 
@@ -800,7 +797,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         {
             unw_proc_info_t procInfo;
 
-            bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), m_UnwindInfoSections, &procInfo);
+            bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), &procInfo);
             ASSERT(result);
 
             if (branchTarget < procInfo.start_ip || branchTarget >= procInfo.end_ip)
