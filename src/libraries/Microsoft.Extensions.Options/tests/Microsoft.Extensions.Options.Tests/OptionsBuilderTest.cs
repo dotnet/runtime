@@ -905,6 +905,45 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
 #if NET11_0_OR_GREATER
+        private sealed class AsyncOnlyFailAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext) => ValidationResult.Success;
+
+            protected override async Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                if (value is null)
+                {
+                    return ValidationResult.Success;
+                }
+
+                return new ValidationResult("Async-only failure", new[] { validationContext.MemberName! });
+            }
+        }
+
+        private class AsyncAnnotatedOptions
+        {
+            [AsyncOnlyFail]
+            public string? Value { get; set; }
+        }
+
+        private class ParentWithNestedAsync
+        {
+            [Required]
+            public string? Name { get; set; }
+
+            [ValidateObjectMembers]
+            public AsyncAnnotatedOptions? Child { get; set; }
+        }
+
+        private class ParentWithEnumeratedAsync
+        {
+            [ValidateEnumeratedItems]
+            public List<AsyncAnnotatedOptions>? Items { get; set; }
+        }
+#endif
+
+#if NET11_0_OR_GREATER
         [Fact]
         public async Task DataAnnotationValidateOptions_ValidateAsync_ReportsAnnotationFailures()
         {
@@ -923,9 +962,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
             Assert.True(asyncResult.Failed);
-            Assert.Equal(syncResult.Failures, asyncResult.Failures);
+            Assert.Equal(syncResult.Failures.OrderBy(f => f), asyncResult.Failures.OrderBy(f => f));
             Assert.Equal(5, asyncResult.Failures.Count());
-            Assert.Contains("DataAnnotation validation failed", asyncResult.Failures.First());
+            Assert.All(asyncResult.Failures, f => Assert.Contains("DataAnnotation validation failed", f));
         }
 
         [Fact]
@@ -1029,6 +1068,72 @@ namespace Microsoft.Extensions.Options.Tests
 
             ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options, cts.Token);
             Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_DetectsAsyncOnlyFailure()
+        {
+            var options = new AsyncAnnotatedOptions { Value = "test" };
+            var validator = new DataAnnotationValidateOptions<AsyncAnnotatedOptions>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_AsyncOnlySuccess()
+        {
+            var options = new AsyncAnnotatedOptions { Value = null };
+            var validator = new DataAnnotationValidateOptions<AsyncAnnotatedOptions>(Options.DefaultName);
+
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_NestedObjectRecursion()
+        {
+            var options = new ParentWithNestedAsync
+            {
+                Name = "parent",
+                Child = new AsyncAnnotatedOptions { Value = "test" }
+            };
+            var validator = new DataAnnotationValidateOptions<ParentWithNestedAsync>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("ParentWithNestedAsync.Child", asyncResult.FailureMessage);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_EnumeratedItemsRecursion()
+        {
+            var options = new ParentWithEnumeratedAsync
+            {
+                Items = new List<AsyncAnnotatedOptions>
+                {
+                    new() { Value = "a" },
+                    new() { Value = "b" }
+                }
+            };
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedAsync>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("[0]", asyncResult.FailureMessage);
+            Assert.Contains("[1]", asyncResult.FailureMessage);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
         }
 #endif // NET11_0_OR_GREATER
     }

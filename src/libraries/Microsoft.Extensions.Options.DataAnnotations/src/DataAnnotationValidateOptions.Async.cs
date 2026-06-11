@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Options
         /// <remarks>
         /// The <paramref name="cancellationToken"/> is propagated from
         /// <c>Host.StartAsync(CancellationToken)</c>. By default, no startup timeout
-        /// is applied. Configure <see cref="T:Microsoft.Extensions.Hosting.HostOptions.StartupTimeout"/> or pass
+        /// is applied. Configure <c>HostOptions.StartupTimeout</c> or pass
         /// a <see cref="CancellationToken"/> with a timeout to <c>Host.StartAsync</c>
         /// to bound I/O-bound async validators:
         /// <code>

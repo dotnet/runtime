@@ -15,9 +15,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Registers this options instance for validation of its DataAnnotations.
         /// </summary>
         /// <remarks>
-        /// Synchronous validation runs on every options access. When targeting .NET 11 or later,
+        /// Synchronous validation runs when the options instance is created or accessed. When targeting .NET 11 or later,
         /// asynchronous validation (including <c>AsyncValidationAttribute</c>-derived attributes)
-        /// runs once at startup when <c>ValidateOnStart()</c> is also called.
+        /// runs once at startup, and only when <c>ValidateOnStart()</c> is also called.
+        /// If <c>ValidateOnStart()</c> is not called, attributes deriving from
+        /// <c>AsyncValidationAttribute</c> are never evaluated asynchronously: runtime options access triggers only
+        /// synchronous validation, which invokes the attribute's synchronous fallback instead.
+        /// When using <c>AsyncValidationAttribute</c>-derived attributes, ensure the synchronous
+        /// <c>IsValid</c> fallback does not throw: synchronous validation still runs on every
+        /// options access, so a throwing fallback surfaces as an exception on each access (for example
+        /// when resolving <c>IOptions{TOptions}.Value</c>), even if startup validation succeeded.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>
