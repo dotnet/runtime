@@ -98,11 +98,13 @@ namespace System.Diagnostics
             {
                 int entrySeparator = baggageSpan.IndexOf(Comma);
                 ReadOnlySpan<char> currentEntry = entrySeparator >= 0 ? baggageSpan.Slice(0, entrySeparator) : baggageSpan;
+                ReadOnlySpan<char> nextBaggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
 
                 int keyValueSeparator = currentEntry.IndexOf(Equal);
                 if (keyValueSeparator <= 0 || keyValueSeparator >= currentEntry.Length - 1)
                 {
-                    break; // invalid format
+                    baggageSpan = nextBaggageSpan;
+                    continue; // invalid format
                 }
 
                 ReadOnlySpan<char> keySpan = currentEntry.Slice(0, keyValueSeparator);
@@ -114,7 +116,7 @@ namespace System.Diagnostics
                     baggageList.Add(new KeyValuePair<string, string?>(key, value));
                 }
 
-                baggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
+                baggageSpan = nextBaggageSpan;
             } while (baggageSpan.Length > 0);
 
             // reverse order for asp.net compatibility.
