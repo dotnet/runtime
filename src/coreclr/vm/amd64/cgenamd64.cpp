@@ -610,6 +610,8 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
 
 #define END_DYNAMIC_HELPER_EMIT() \
+    _ASSERTE(pStart + cb == p); \
+    while (p < pStart + cbAligned) *p++ = X86_INSTR_INT3; \
     ClrFlushInstructionCache(pStartRX, cbAligned); \
     return (PCODE)pStartRX
 

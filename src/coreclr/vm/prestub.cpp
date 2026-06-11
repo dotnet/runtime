@@ -2871,6 +2871,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
             if (!*protectedObj) {
+                // NOTE: This is in a preemptive block, but the ! operator
+                // is safe to use on OBJECTREF even in preemptive mode
+                // (as long as the OBJECTREF is not on a managed object which
+                // in this case it is not)
                 COMPlusThrow(kNullReferenceException);
             }
 
