@@ -201,7 +201,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -416,7 +416,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -3303,15 +3302,6 @@ VOID
 PALAPI
 SetLastError(
          IN DWORD dwErrCode);
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
 
 PALIMPORT
 VOID

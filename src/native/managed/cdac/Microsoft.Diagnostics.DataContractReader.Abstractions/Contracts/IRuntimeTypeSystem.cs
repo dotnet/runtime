@@ -122,6 +122,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetNumInstanceFieldBytes(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
 
@@ -274,8 +275,9 @@ public interface IRuntimeTypeSystem : IContract
     uint GetFieldDescMemberDef(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
+    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();

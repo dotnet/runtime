@@ -23,8 +23,15 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         _target = target;
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
+        // They are safe to retain across FlushScope.ForwardExecution because
+        // ManagedTypeSource_1 only resolves names in System.Private.CoreLib, which
+        // is loaded into the non-collectible default AssemblyLoadContext at runtime
+        // startup and whose ECMA metadata never changes for the process lifetime.
+        if (scope != FlushScope.All)
+            return;
+
         _typeInfoCache.Clear();
         _typeHandleCache.Clear();
         _fieldDescCache.Clear();
@@ -47,7 +54,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         }
 
         // Re-entrancy guard: if we're already searching for a type and we recurse
-        // (e.g., LayoutPair -> ManagedTypeSource -> IData -> LayoutPair), short-circuit
+        // (e.g., LayoutSet -> ManagedTypeSource -> IData -> LayoutSet), short-circuit
         // to break the cycle. Do NOT cache the negative result here — the outer search
         // may legitimately succeed for this same name once the recursion unwinds.
         if (_inSearch)

@@ -4216,10 +4216,12 @@ public static partial class DataContractSerializerTests
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
         }
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())
@@ -4633,6 +4635,28 @@ public static partial class DataContractSerializerTests
         XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new System.Xml.XmlDictionaryReaderQuotas() { MaxStringContentLength = maxStringContentLength });
 
         Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
+    }
+
+    [Theory]
+    [InlineData("<s:")]
+    [InlineData("<s:1")]
+    public static void DCS_ReadObject_MalformedPrefix_InvalidLocalName_ThrowsSerializationException(string malformedElement)
+    {
+        var serializer = new DataContractSerializer(typeof(MalformedPrefixObject));
+
+        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(CreateMalformedPrefixStream(malformedElement)));
+        Assert.IsType<XmlException>(ex.InnerException);
+    }
+
+    private static MemoryStream CreateMalformedPrefixStream(string malformedElement)
+    {
+        string xml = $@"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz"">{malformedElement}";
+        return new MemoryStream(Encoding.UTF8.GetBytes(xml));
+    }
+
+    [DataContract(Name = "Program.Obj", Namespace = "http://schemas.datacontract.org/2004/07/CoreFX.Fuzz")]
+    private sealed class MalformedPrefixObject
+    {
     }
 
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)

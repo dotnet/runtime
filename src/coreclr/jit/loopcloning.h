@@ -191,6 +191,7 @@ class Compiler;
 struct ArrIndex
 {
     unsigned                      arrLcl;   // The array base local num
+    var_types                     arrType;  // The array base type at extraction time
     JitExpandArrayStack<unsigned> indLcls;  // The indices local nums
     JitExpandArrayStack<GenTree*> bndsChks; // The bounds checks nodes along each dimension.
     unsigned                      rank;     // Rank of the array
@@ -198,6 +199,7 @@ struct ArrIndex
 
     ArrIndex(CompAllocator alloc)
         : arrLcl(BAD_VAR_NUM)
+        , arrType(TYP_UNDEF)
         , indLcls(alloc)
         , bndsChks(alloc)
         , rank(0)
@@ -312,7 +314,8 @@ struct LcMdArrayOptInfo : public LcOptInfo
             {
                 index->indLcls.Push(arrElem->gtArrInds[i]->AsLclVarCommon()->GetLclNum());
             }
-            index->arrLcl = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
+            index->arrLcl  = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
+            index->arrType = arrElem->gtArrObj->TypeGet();
         }
         return index;
     }
@@ -484,7 +487,8 @@ struct LC_Array
         assert(type != Invalid && that.type != Invalid);
 
         // Types match and the array base matches.
-        if (type != that.type || arrIndex->arrLcl != that.arrIndex->arrLcl || oper != that.oper)
+        if (type != that.type || arrIndex->arrLcl != that.arrIndex->arrLcl ||
+            arrIndex->arrType != that.arrIndex->arrType || oper != that.oper)
         {
             return false;
         }
@@ -592,15 +596,18 @@ private:
 
     LC_Ident(IdentType type)
         : type(type)
+        , lclType(TYP_UNDEF)
     {
     }
 
 public:
     // The type of this object
     IdentType type;
+    var_types lclType;
 
     LC_Ident()
         : type(Invalid)
+        , lclType(TYP_UNDEF)
     {
     }
 
@@ -619,9 +626,9 @@ public:
             case ClassHandle:
                 return (clsHnd == that.clsHnd);
             case Var:
-                return (lclNum == that.lclNum);
+                return (lclNum == that.lclNum) && (lclType == that.lclType);
             case IndirOfLocal:
-                return (lclNum == that.lclNum) && (indirOffs == that.indirOffs);
+                return (lclNum == that.lclNum) && (indirOffs == that.indirOffs) && (lclType == that.lclType);
             case ArrAccess:
                 return (arrAccess == that.arrAccess);
             case SpanAccess:
@@ -693,18 +700,20 @@ public:
     // Convert this symbolic representation into a tree node.
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 
-    static LC_Ident CreateVar(unsigned lclNum)
+    static LC_Ident CreateVar(unsigned lclNum, var_types lclType)
     {
         LC_Ident id(Var);
-        id.lclNum = lclNum;
+        id.lclNum  = lclNum;
+        id.lclType = lclType;
         return id;
     }
 
-    static LC_Ident CreateIndirOfLocal(unsigned lclNum, unsigned offs)
+    static LC_Ident CreateIndirOfLocal(unsigned lclNum, unsigned offs, var_types lclType)
     {
         LC_Ident id(IndirOfLocal);
         id.lclNum    = lclNum;
         id.indirOffs = offs;
+        id.lclType   = lclType;
         return id;
     }
 
@@ -729,9 +738,11 @@ public:
         return id;
     }
 
-    static LC_Ident CreateNull()
+    static LC_Ident CreateNull(var_types nullType = TYP_REF)
     {
-        return LC_Ident(Null);
+        LC_Ident ident(Null);
+        ident.lclType = nullType;
+        return ident;
     }
 
     static LC_Ident CreateClassHandle(CORINFO_CLASS_HANDLE clsHnd)

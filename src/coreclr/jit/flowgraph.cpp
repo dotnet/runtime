@@ -6952,8 +6952,9 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
     // Check if we have a.length or a[i][j].length
     if (limit->AsArrLen()->ArrRef()->OperIs(GT_LCL_VAR))
     {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
+        index->arrLcl  = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
+        index->arrType = limit->AsArrLen()->ArrRef()->TypeGet();
+        index->rank    = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
@@ -7743,6 +7744,19 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
     for (BasicBlock* block : comp->Blocks())
     {
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+
         if (!block->hasTryIndex())
         {
             continue;
@@ -7823,19 +7837,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             // This is a handler block inside a try.
             // For flow purposes we may consider it to be outside the try.
-        }
-
-        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
-        // as requiring runtime resumption.
-        //
-        if (block->KindIs(BBJ_EHCATCHRET))
-        {
-            assert(block->hasHndIndex());
-            unsigned const            ehRegionIndex        = block->getHndIndex();
-            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
-            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
-
-            dispatchingTryRegion->SetRequiresRuntimeResumption();
         }
     }
 

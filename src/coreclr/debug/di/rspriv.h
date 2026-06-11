@@ -5850,7 +5850,7 @@ public:
     VMPTR_MethodDesc GetVMNativeCodeMethodDescToken() { return m_vmNativeCodeMethodDescToken; };
 
     // Worker function for GetReturnValueLiveOffset.
-    HRESULT GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets);
+    HRESULT GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos);
 
     // get total size of the code including both hot and cold regions
     ULONG32 GetSize();
@@ -5920,8 +5920,6 @@ private:
 
     // Grabs the appropriate signature parser for a methodref, methoddef, methodspec.
     HRESULT GetSigParserFromFunction(mdToken mdFunction, mdToken *pClass, SigParser &methodSig, SigParser &genericSig);
-
-    int GetCallInstructionLength(BYTE *buffer, ULONG32 len);
 
     //-----------------------------------------------------------
     // Data members
@@ -7324,9 +7322,6 @@ private:
     // Worker function for GetReturnValueForILOffset.
     HRESULT GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDebugValue** ppReturnValue);
 
-    // Given pType, fills ppReturnValue with the correct value.
-    HRESULT GetReturnValueForType(CordbType *pType, ICorDebugValue **ppReturnValue);
-
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------
@@ -8183,7 +8178,7 @@ public:
     //               ReadProcessMemory.
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue) = 0;
@@ -8247,7 +8242,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                                SIZE_T            offset,
+                                CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
                                 ICorDebugValue ** ppValue);
@@ -8300,7 +8295,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);
@@ -8367,7 +8362,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);

@@ -332,12 +332,12 @@ public abstract class Target
     public abstract ContractRegistry Contracts { get; }
 
     /// <summary>
-    /// Clear all cached data held by this target, including processed data and contract caches.
+    /// Clear cached data held by this target for the given <paramref name="scope"/>.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public virtual void Flush()
+    public virtual void Flush(FlushScope scope)
     {
         ProcessedData.Clear();
-        Contracts.Flush();
+        Contracts.Flush(scope);
     }
 }

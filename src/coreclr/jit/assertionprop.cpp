@@ -272,8 +272,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+            NamedIntrinsic      id          = hwintrinsic->GetHWIntrinsicId();
 
-            switch (hwintrinsic->GetHWIntrinsicId())
+            if (HWIntrinsicInfo::ReturnsBoolean(id))
+            {
+                // A boolean [0, 1]
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            }
+
+            if (HWIntrinsicInfo::ReturnsScalarT(id))
+            {
+                // We are extracting a value of the base types width and sign
+                var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    rangeType = simdBaseType;
+                }
+                break;
+            }
+
+            switch (id)
             {
 #if defined(TARGET_XARCH)
                 case NI_Vector256_ExtractMostSignificantBits:
@@ -299,65 +318,6 @@ bool IntegralRange::Contains(int64_t value) const
                     else if (elementCount <= 16)
                     {
                         rangeType = TYP_USHORT;
-                    }
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-                case NI_X86Base_CompareScalarOrderedEqual:
-                case NI_X86Base_CompareScalarOrderedGreaterThan:
-                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarOrderedLessThan:
-                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarOrderedNotEqual:
-                case NI_X86Base_CompareScalarUnorderedEqual:
-                case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThan:
-                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedNotEqual:
-                case NI_X86Base_TestC:
-                case NI_X86Base_TestNotZAndNotC:
-                case NI_X86Base_TestZ:
-                case NI_AVX_TestC:
-                case NI_AVX_TestNotZAndNotC:
-                case NI_AVX_TestZ:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-#endif
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-                {
-                    // A boolean [0, 1]
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-                }
-
-#if defined(TARGET_XARCH)
-                case NI_Vector256_GetElement:
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_GetElement:
-                case NI_Vector512_ToScalar:
-                case NI_X86Base_Extract:
-                case NI_X86Base_X64_Extract:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_GetElement:
-                case NI_Vector64_ToScalar:
-                case NI_AdvSimd_Extract:
-#endif
-                case NI_Vector128_GetElement:
-                case NI_Vector128_ToScalar:
-                {
-                    // We are extracting a value of the base types width and sign
-                    var_types simdBaseType = hwintrinsic->GetSimdBaseType();
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        rangeType = simdBaseType;
                     }
                     break;
                 }
@@ -811,10 +771,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
     optCanPropLclVar       = false;
-    optCanPropEqual        = false;
-    optCanPropNonNull      = false;
-    optCanPropBndsChk      = false;
-    optCanPropSubRange     = false;
 }
 
 #ifdef DEBUG
@@ -1383,55 +1339,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
 /*****************************************************************************
  *
- * If tree is a constant node holding an integral value, retrieve the value in
- * pConstant. If the method returns true, pConstant holds the appropriate
- * constant. Set "vnBased" to true to indicate local or global assertion prop.
- * "pFlags" indicates if the constant is a handle marked by GTF_ICON_HDL_MASK.
- */
-bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pFlags)
-{
-    // Is Local assertion prop?
-    if (!vnBased)
-    {
-        if (tree->OperIs(GT_CNS_INT))
-        {
-            *pConstant = tree->AsIntCon()->IconValue();
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-        return false;
-    }
-
-    // Global assertion prop
-    ValueNum vn = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-    if (!vnStore->IsVNConstant(vn))
-    {
-        return false;
-    }
-
-    // ValueNumber 'vn' indicates that this node evaluates to a constant
-
-    var_types vnType = vnStore->TypeOfVN(vn);
-    if (vnType == TYP_INT)
-    {
-        *pConstant = vnStore->ConstantValue<int>(vn);
-        *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : GTF_EMPTY;
-        return true;
-    }
-#ifdef TARGET_64BIT
-    else if (vnType == TYP_LONG)
-    {
-        *pConstant = vnStore->ConstantValue<INT64>(vn);
-        *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : GTF_EMPTY;
-        return true;
-    }
-#endif
-
-    return false;
-}
-
-/*****************************************************************************
- *
  *  Given an assertion add it to the assertion table
  *
  *  If it is already in the assertion table return the assertionIndex that
@@ -1524,10 +1431,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 
     // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion.CanPropLclVar();
-    optCanPropEqual |= newAssertion.CanPropEqualOrNotEqual();
-    optCanPropNonNull |= newAssertion.CanPropNonNull();
-    optCanPropSubRange |= newAssertion.CanPropSubRange();
-    optCanPropBndsChk |= newAssertion.CanPropBndsCheck();
 
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
@@ -2428,10 +2331,6 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
     assert(optLocalAssertionProp); // Subrange assertions are local only.
-    if (!optCanPropSubRange)
-    {
-        return NO_ASSERTION_INDEX;
-    }
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
@@ -4298,7 +4197,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 //
 AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
+    if (BitVecOps::IsEmpty(apTraits, assertions))
     {
         return NO_ASSERTION_INDEX;
     }
@@ -5083,11 +4982,6 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
-    {
-        return false;
-    }
-
     op = op->gtEffectiveVal();
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -5102,6 +4996,11 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     }
     else
     {
+        if (BitVecOps::MayBeUninit(assertions))
+        {
+            return false;
+        }
+
         // Find live assertions related to lclNum
         //
         unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
@@ -5156,18 +5055,24 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
 
-    // Check each assertion to find if we have a vn != null assertion.
+    // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
+    // may be uninit here (e.g. when the current block has no live assertions); in that case we
+    // skip the iteration and fall through to the reaching-assertions walk below, which can still
+    // prove non-null via predecessor-edge assertions (e.g. across PHIs).
     //
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
-        AssertionIndex      assertionIndex = GetAssertionIndex(index);
-        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-        if (curAssertion.CanPropNonNull() &&
-            ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            return true;
+            AssertionIndex      assertionIndex = GetAssertionIndex(index);
+            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+            if (curAssertion.CanPropNonNull() &&
+                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
+            {
+                return true;
+            }
         }
     }
 
@@ -5503,7 +5408,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  */
 GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optLocalAssertionProp || !optCanPropBndsChk)
+    if (optLocalAssertionProp)
     {
         return nullptr;
     }
@@ -6658,6 +6563,15 @@ PhaseStatus Compiler::optAssertionPropMain()
 
     noway_assert(optAssertionCount == 0);
     bool madeChanges = false;
+
+    // Reset any bbAssertionOut left over from earlier phases (e.g. morph's cross-block
+    // local AP writes them with a different apTraits). Until dataflow re-initializes
+    // them, MayBeUninit guards in optGetEdgeAssertions / optAssertionVNIsNonNull will
+    // skip iteration that would otherwise see stale (out-of-range) bits.
+    for (BasicBlock* const block : Blocks())
+    {
+        block->bbAssertionOut = BitVecOps::UninitVal();
+    }
 
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
