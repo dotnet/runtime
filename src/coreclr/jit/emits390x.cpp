@@ -3247,6 +3247,7 @@ void emitter::emitIns_R_I(instruction ins,
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
     bool      canEncode = false;
+    instrDesc* id = emitNewInstrSC(attr, imm);
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -3483,6 +3484,20 @@ void emitter::emitIns_R_I(instruction ins,
             }
             break;
 #endif
+        case INS_lghi:
+        case INS_aghi:
+        {
+            // Validate immediate fits in 16-bit signed range
+            assert(imm >= -32768 && imm <= 32767);
+
+            code_t code = emitInsCode(ins, fmt);
+            code |= (code_t)reg << 20;
+            code |= ((code_t)imm & 0xFFFF);
+
+            //id->idAddr()->iiaSetInstrEncode(code);
+            id->idCodeSize();
+            break;
+        }
         default:
             break;
             // fallback to emit SVE instructions.
@@ -3493,7 +3508,6 @@ void emitter::emitIns_R_I(instruction ins,
     //assert(canEncode);
     //ssert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -3509,6 +3523,8 @@ void emitter::emitIns_R_I(instruction ins,
     dispIns(id);
     appendToCurIG(id);
 }
+
+
 
 /*****************************************************************************
  *
@@ -8446,220 +8462,82 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
  *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
+/*****************************************************************************
+ * Emit a call instruction
+ * For s390x, we use BRASL (Branch Relative And Save Long) for direct calls
+ * and BASR (Branch And Save Register) for indirect calls
+ */
 
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
-                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*            addr,
-                           ssize_t          argSize,
-                           emitAttr         retSize,
-			   emitAttr         secondRetSize,
-                           VARSET_VALARG_TP ptrVars,
-                           regMaskTP        gcrefRegs,
-                           regMaskTP        byrefRegs,
-                           const DebugInfo& di /* = DebugInfo() */,
-                           regNumber        ireg /* = REG_NA */,
-                           regNumber        xreg /* = REG_NA */,
-                           unsigned         xmul /* = 0     */,
-                           ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */,
-                           bool             noSafePoint /* = false */)
+                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                           void*                 addr,
+                           ssize_t               argSize,
+                           emitAttr              retSize,
+                           emitAttr              secondRetSize,
+                           VARSET_VALARG_TP      ptrVars,
+                           regMaskTP             gcrefRegs,
+                           regMaskTP             byrefRegs,
+                           const DebugInfo&      di,
+                           regNumber             ireg,
+                           regNumber             xreg,
+                           unsigned              xmul,
+                           ssize_t               disp,
+                           bool                  isJump,
+			   bool                  noSafePoint)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    /* Sanity check the arguments depending on callType */
+    assert(!isJump); // Tail calls handled separately
 
-    assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
-    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
+    // Create instruction descriptor for call
+    instrDesc* id = emitNewInstrCallDir(argSize, ptrVars, gcrefRegs,
+		                        byrefRegs, retSize, secondRetSize);
 
-    // ARM never uses these
-    assert(xreg == REG_NA && xmul == 0 && disp == 0);
-
-    // Our stack level should be always greater than the bytes of arguments we push. Just
-    // a sanity test.
-    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
-
-    // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet;
-    byrefRegs &= savedSet;
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
-        dumpConvertedVarSet(emitComp, ptrVars);
-        printf(", gcrefRegs=");
-        printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
-        printf(", byrefRegs=");
-        printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
-        printf("\n");
-    }
-#endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
-    }
-
-    /*
-        We need to allocate the appropriate instruction descriptor based
-        on whether this is a direct/indirect call, and whether we need to
-        record an updated set of live GC variables.
-     */
-    instrDesc* id;
-
-    assert(argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
-
-    if (callType == EC_INDIR_R)
-    {
-        /* Indirect call, virtual calls */
-
-        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize);
-    }
-    else
-    {
-        /* Helper/static/nonvirtual/function calls (direct or through handle),
-           and calls to an absolute addr. */
-
-        assert(callType == EC_FUNC_TOKEN);
-
-        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
-    }
-
-    /* Update the emitter's live GC ref sets */
-
-    // If the method returns a GC ref, mark RBM_INTRET appropriately
-    if (retSize == EA_GCREF)
-    {
-        gcrefRegs |= RBM_INTRET;
-    }
-    else if (retSize == EA_BYREF)
-    {
-        byrefRegs |= RBM_INTRET;
-    }
-
-    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
-    if (secondRetSize == EA_GCREF)
-    {
-        gcrefRegs |= RBM_INTRET_1;
-    }
-    else if (secondRetSize == EA_BYREF)
-    {
-        byrefRegs |= RBM_INTRET_1;
-    }
-
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
-    emitThisGCrefRegs = gcrefRegs;
-    emitThisByrefRegs = byrefRegs;
-
-    // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
-
-    /* Set the instruction - special case jumping a function */
+    // Set instruction based on call type
     instruction ins;
-    insFormat   fmt = IF_NONE;
 
-    /* Record the address: method, indirection, or funcptr */
-
-    if (callType == EC_INDIR_R)
+    switch (callType)
     {
-        /* This is an indirect call (either a virtual call or func ptr call) */
+        case EC_FUNC_TOKEN:
+            ins = INS_brasl;
+            id->idIns(ins);
+            id->idInsOpt(INS_OPTS_NONE);
+            id->idReg1(REG_R14);
+            id->idReg2(ireg);
 
-        if (isJump)
-        {
-            ins = INS_br_tail; // INS_br_tail  Reg
-        }
-        else
-        {
-            ins = INS_blr; // INS_blr Reg
-        }
-        fmt = IF_BR_1B;
-
-        id->idIns(ins);
-        id->idInsFmt(fmt);
-
-        assert(xreg == REG_NA);
-        if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
-        {
-            // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
-            // Since we do not have space to embed it in instrDesc, we use the `iiaAddr` to
-            // store the method handle.
-            // The target handle need to be always in R2 and hence the assert check.
-            // We cannot use reg1 and reg2 fields of instrDesc because they contain the gc
-            // registers (emitEncodeCallGCregs()) that are live across the call.
-
-            assert(ireg == REG_R2);
-            id->idSetTlsGD();
-            id->idAddr()->iiaAddr = (BYTE*)methHnd;
-        }
-        else
-        {
-            id->idReg3(ireg);
-        }
-    }
-    else
-    {
-        /* This is a simple direct call: "call helper/method/addr" */
-
-        assert(callType == EC_FUNC_TOKEN);
-
-        assert(addr != NULL);
-
-        if (isJump)
-        {
-            ins = INS_b_tail; // INS_b_tail imm28
-        }
-        else
-        {
-            ins = INS_bl; // INS_bl imm28
-        }
-        fmt = IF_BI_0C;
-
-        id->idIns(ins);
-        id->idInsFmt(fmt);
-
-        id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (emitComp->opts.compReloc)
-        {
+            // Set target address
+            id->idAddr()->iiaAddr = (BYTE*)addr;
             id->idSetIsDspReloc();
-        }
-    }
+            break;
 
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        if (id->idIsLargeCall())
-        {
-            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-        }
-    }
+        case EC_INDIR_R:
+            ins = INS_basr;
+            id->idIns(ins);
+            id->idReg1(REG_R14);  // Link register
+            id->idReg2(ireg);      // Target address in register
+            break;
+#if 0
+        case CT_HELPER:
+            ins = INS_brasl;
+            id->idIns(ins);
+            id->idAddr()->iiaAddr = (BYTE*)addr;
+            id->idSetIsDspReloc();
+            break;
 #endif
 
-    if (m_debugInfoSize > 0)
-    {
-        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+        default:
+            unreached();
     }
 
-#ifdef LATE_DISASM
-    if (addr != nullptr)
-    {
-        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
-    }
-#endif // LATE_DISASM
+    // Set method handle for GC info
+    id->idDebugOnlyInfo();
 
-    dispIns(id);
+    //if (methHnd != nullptr)
+    //{
+    //    id->idCallMethHnd(methHnd);
+    //}
+
+    // Append instruction
     appendToCurIG(id);
-    emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
-#endif				  
 }
 
 /*****************************************************************************
@@ -10136,7 +10014,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE*       odst = dst;
     code_t      code = 0;
     code_t	op = 0;
-    size_t      sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
+    size_t      sz   = emitGetInstrDescSize(id);
     instruction ins  = id->idIns();
     insFormat   fmt  = id->idInsFmt();
     emitAttr    size = id->idOpSize();
@@ -10621,6 +10499,39 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
              break;
+        case INS_brasl:
+            //imm = id->idAddr()->iiaGetJitDataOffset();
+            if (id->idIsCall())
+            {
+               void* addr = id->idAddr()->iiaAddr;
+               imm = 0;
+
+               //emitHandleRelocation(addr);
+           }
+           else
+           {
+               imm = id->idAddr()->iiaGetJitDataOffset();
+           }
+            op = emitInsCode(ins, fmt);
+            assert((id->idReg1() >= 0) && (id->idReg1() <= 15));
+            assert((imm >= -0x80000000LL) && (imm <= 0x7FFFFFFFLL));
+
+            S390_RIL_b(dst, op, id->idReg1(), imm);
+            break;
+        case INS_basr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_bras:
+           op = emitInsCode(ins, fmt);
+           S390_RI(dst, op, id->idReg1(), 0);
+           break;
+
+        case INS_xgr:
+           op = emitInsCode(ins, fmt);
+           S390_RR(dst, op, id->idReg1(), id->idReg2());
+           break;
 
         default:
             _ASSERTE(!"NYI");

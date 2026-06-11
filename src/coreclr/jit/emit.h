@@ -1192,6 +1192,7 @@ protected:
                 case INS_clr:
                 case INS_dr:
                 case INS_lcr:
+                case INS_basr:
                     size = 2;
                     break;
                 case INS_lgfi:
@@ -1237,6 +1238,14 @@ protected:
                 case INS_llgc:
                 case INS_llgf:
                 case INS_lgb:
+                case INS_brasl:
+                case INS_bras:
+                case INS_slag:
+                case INS_slgfi:
+                case INS_nilf:
+                case INS_oihf:
+                case INS_oilf:
+                case INS_xilf:
                     size = 6;
                     break;
                 default:

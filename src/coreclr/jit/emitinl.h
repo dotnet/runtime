@@ -396,6 +396,14 @@ inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
 
     id->idReg2((regNumber)encodeMask); // Save in idReg2
 
+#elif defined(TARGET_S390X)
+    assert(REGNUM_BITS >= 2);
+    encodeMask = 0;
+
+    if ((regmask & RBM_R14) != RBM_NONE)
+        encodeMask |= 0x01;
+    if ((regmask & RBM_R15) != RBM_NONE)
+        encodeMask |= 0x01;
 #else
     NYI("unknown target");
 #endif
