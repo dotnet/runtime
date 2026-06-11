@@ -38,19 +38,15 @@ struct FloatTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0f / 0.0f on x86/x64 has
     //    different binary representation (0xffc00000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7fc00000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7fc00000).
 
     static float NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // WASM uses the canonical NaN payload, matching ARM.
         unsigned bits = 0x7FC00000u;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("FloatTraits::NaN");
-        unsigned bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -69,19 +65,15 @@ struct DoubleTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0 / 0.0 on x86/x64 has
     //    different binary representation (0xfff8000000000000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7ff8000000000000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7ff8000000000000).
 
     static double NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // WASM uses the canonical NaN payload, matching ARM.
         unsigned long long bits = 0x7FF8000000000000ull;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("DoubleTraits::NaN");
-        unsigned long long bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -96,7 +88,7 @@ struct DoubleTraits
 // FpAdd: Computes value1 + value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 + value2  - Otherwise
 //
 // Notes:
@@ -105,7 +97,7 @@ struct DoubleTraits
 template <typename TFp, typename TFpTraits>
 TFp FpAdd(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // If [value1] is negative infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is positive infinity and [value2] is negative infinity
@@ -123,7 +115,7 @@ TFp FpAdd(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 + value2;
 }
@@ -132,7 +124,7 @@ TFp FpAdd(TFp value1, TFp value2)
 // FpSub: Computes value1 - value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 - value2  - Otherwise
 //
 // Notes:
@@ -141,7 +133,7 @@ TFp FpAdd(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpSub(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // If [value1] is positive infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is negative infinity and [value2] is negative infinity
@@ -159,7 +151,7 @@ TFp FpSub(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 - value2;
 }
@@ -168,7 +160,7 @@ TFp FpSub(TFp value1, TFp value2)
 // FpMul: Computes value1 * value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 * value2  - Otherwise
 //
 // Notes:
@@ -177,7 +169,7 @@ TFp FpSub(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpMul(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // From the ECMA standard:
     //
     // If [value1] is zero and [value2] is infinity
@@ -193,7 +185,7 @@ TFp FpMul(TFp value1, TFp value2)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 * value2;
 }
@@ -202,7 +194,7 @@ TFp FpMul(TFp value1, TFp value2)
 // FpDiv: Computes value1 / value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 / value2  - Otherwise
 //
 // Notes:
@@ -211,7 +203,7 @@ TFp FpMul(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpDiv(TFp dividend, TFp divisor)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // From the ECMA standard:
     //
     // If [dividend] is zero and [divisor] is zero
@@ -228,7 +220,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return dividend / divisor;
 }

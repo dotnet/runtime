@@ -1343,55 +1343,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
 /*****************************************************************************
  *
- * If tree is a constant node holding an integral value, retrieve the value in
- * pConstant. If the method returns true, pConstant holds the appropriate
- * constant. Set "vnBased" to true to indicate local or global assertion prop.
- * "pFlags" indicates if the constant is a handle marked by GTF_ICON_HDL_MASK.
- */
-bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pFlags)
-{
-    // Is Local assertion prop?
-    if (!vnBased)
-    {
-        if (tree->OperIs(GT_CNS_INT))
-        {
-            *pConstant = tree->AsIntCon()->IconValue();
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-        return false;
-    }
-
-    // Global assertion prop
-    ValueNum vn = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-    if (!vnStore->IsVNConstant(vn))
-    {
-        return false;
-    }
-
-    // ValueNumber 'vn' indicates that this node evaluates to a constant
-
-    var_types vnType = vnStore->TypeOfVN(vn);
-    if (vnType == TYP_INT)
-    {
-        *pConstant = vnStore->ConstantValue<int>(vn);
-        *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : GTF_EMPTY;
-        return true;
-    }
-#ifdef TARGET_64BIT
-    else if (vnType == TYP_LONG)
-    {
-        *pConstant = vnStore->ConstantValue<INT64>(vn);
-        *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : GTF_EMPTY;
-        return true;
-    }
-#endif
-
-    return false;
-}
-
-/*****************************************************************************
- *
  *  Given an assertion add it to the assertion table
  *
  *  If it is already in the assertion table return the assertionIndex that
