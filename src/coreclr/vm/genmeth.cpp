@@ -306,6 +306,81 @@ static MethodDesc * FindTightlyBoundUnboxingStub_DEBUG(MethodDesc * pMD)
 }
 #endif // _DEBUG
 
+static BOOL SatisfiesMethodConstraintsForInstantiation(MethodDesc *pGenericMethodDef,
+                                                       TypeHandle thParent,
+                                                       Instantiation methodInst,
+                                                       BOOL fThrowIfNotSatisfied)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pGenericMethodDef));
+    }
+    CONTRACTL_END;
+
+    if (methodInst.IsEmpty())
+        return TRUE;
+
+    Instantiation typicalInst = pGenericMethodDef->LoadTypicalMethodDefinition()->GetMethodInstantiation();
+
+    //NB: according to the constructor's signature, thParent should be the declaring type,
+    // but the code appears to admit derived types too.
+    SigTypeContext typeContext(pGenericMethodDef, thParent, methodInst);
+    InstantiationContext instContext(&typeContext, NULL);
+
+    bool typicalInstMatchesMethodInst = true;
+    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+    {
+        if (typicalInst[i] != methodInst[i])
+        {
+            typicalInstMatchesMethodInst = false;
+            break;
+        }
+    }
+
+    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+    {
+        TypeHandle thArg = methodInst[i];
+        _ASSERTE(!thArg.IsNull());
+
+        TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) (typicalInst[i].AsTypeDesc());
+        _ASSERTE(tyvar != NULL);
+        _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
+
+        // Pass in the InstatiationContext so constraints can be correctly evaluated
+        // if this is an instantiation where the type variable is in its open position
+        if (!tyvar->SatisfiesConstraints(&typeContext, thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
+        {
+            if (fThrowIfNotSatisfied)
+            {
+                SString sParentName;
+                TypeString::AppendType(sParentName, thParent);
+
+                SString sMethodName(SString::Utf8, pGenericMethodDef->GetName());
+
+                SString sActualParamName;
+                TypeString::AppendType(sActualParamName, methodInst[i]);
+
+                SString sFormalParamName;
+                TypeString::AppendType(sFormalParamName, typicalInst[i]);
+
+                COMPlusThrow(kVerificationException,
+                             IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
+                             sParentName.GetUnicode(),
+                             sMethodName.GetUnicode(),
+                             sActualParamName.GetUnicode(),
+                             sFormalParamName.GetUnicode()
+                            );
+            }
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 /* static */
 InstantiatedMethodDesc *
 InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
@@ -353,6 +428,18 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
     // Create LoaderAllocator to LoaderAllocator links for members of the instantiations of this method
     pAllocator->EnsureInstantiation(pExactMT->GetLoaderModule(), pExactMT->GetInstantiation());
     pAllocator->EnsureInstantiation(pGenericMDescInRepMT->GetLoaderModule(), methodInst);
+
+    if (!methodInst.IsEmpty())
+    {
+        BOOL fExempt =
+            TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
+            TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation());
+
+        if (!fExempt)
+        {
+            SatisfiesMethodConstraintsForInstantiation(pGenericMDescInRepMT, TypeHandle(pExactMT), methodInst, TRUE);
+        }
+    }
 
     {
         // Hold the lock across lookup and creation so that only one thread allocates
@@ -495,18 +582,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
     _ASSERTE(pNewMD != NULL);
     pNewMD->CheckRestore();
-    //
-    // The canonical instantiation is exempt from constraint checks. It's used as the basis
-    // for all other reference instantiations so we can't not load it. The Canon type is
-    // not visible to users so it can't be abused.
-    BOOL fExempt =
-        TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
-        TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
-
-    if (!fExempt)
-    {
-        pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), TRUE);
-    }
 
     RETURN pNewMD;
 }
@@ -1585,65 +1660,10 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
     if (!HasMethodInstantiation())
        return TRUE;
 
-    Instantiation methodInst = LoadMethodInstantiation();
-    Instantiation typicalInst = LoadTypicalMethodDefinition()->GetMethodInstantiation();
-
-    //NB: according to the constructor's signature, thParent should be the declaring type,
-    // but the code appears to admit derived types too.
-    SigTypeContext typeContext(this,thParent);
-    InstantiationContext instContext(&typeContext, NULL);
-
-    bool typicalInstMatchesMethodInst = true;
-    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-    {
-        if (typicalInst[i] != methodInst[i])
-        {
-            typicalInstMatchesMethodInst = false;
-            break;
-        }
-    }
-
-    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-    {
-        TypeHandle thArg = methodInst[i];
-        _ASSERTE(!thArg.IsNull());
-
-        TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) (typicalInst[i].AsTypeDesc());
-        _ASSERTE(tyvar != NULL);
-        _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
-
-        // Pass in the InstatiationContext so constraints can be correctly evaluated
-        // if this is an instantiation where the type variable is in its open position
-        if (!tyvar->SatisfiesConstraints(&typeContext,thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
-        {
-            if (fThrowIfNotSatisfied)
-            {
-                SString sParentName;
-                TypeString::AppendType(sParentName, thParent);
-
-                SString sMethodName(SString::Utf8, GetName());
-
-                SString sActualParamName;
-                TypeString::AppendType(sActualParamName, methodInst[i]);
-
-                SString sFormalParamName;
-                TypeString::AppendType(sFormalParamName, typicalInst[i]);
-
-                COMPlusThrow(kVerificationException,
-                             IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
-                             sParentName.GetUnicode(),
-                             sMethodName.GetUnicode(),
-                             sActualParamName.GetUnicode(),
-                             sFormalParamName.GetUnicode()
-                            );
-
-
-            }
-            return FALSE;
-        }
-
-    }
-    return TRUE;
+    return SatisfiesMethodConstraintsForInstantiation(LoadTypicalMethodDefinition(),
+                                                      thParent,
+                                                      LoadMethodInstantiation(),
+                                                      fThrowIfNotSatisfied);
 }
 
 #endif // !DACCESS_COMPILE
