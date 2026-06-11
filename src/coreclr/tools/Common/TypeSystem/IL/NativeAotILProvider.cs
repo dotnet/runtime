@@ -360,10 +360,16 @@ namespace Internal.IL
                 return AsyncThunkILEmitter.EmitReturnDroppingThunk(returnDroppingVariant, returnDroppingVariant.AsyncVariantTarget);
             }
             else
-            if (method is AsyncMethodVariant asyncVariantImpl
-                && EcmaMethodIL.Create(asyncVariantImpl.Target) is EcmaMethodIL asyncTargetIL)
+            if (method is AsyncMethodVariant asyncVariantImpl)
             {
-                return new AsyncEcmaMethodIL(asyncVariantImpl, asyncTargetIL);
+                MethodIL wrappedIL = asyncVariantImpl.IsAsync
+                    ? EcmaMethodIL.Create(asyncVariantImpl.Target)
+                    : GetMethodIL(asyncVariantImpl.Target);
+
+                if (wrappedIL == null)
+                    return null;
+
+                return new AsyncMethodIL(asyncVariantImpl, wrappedIL);
             }
             else
             {
@@ -372,25 +378,25 @@ namespace Internal.IL
             }
         }
 
-        private sealed class AsyncEcmaMethodIL : MethodIL
+        private sealed class AsyncMethodIL : MethodIL
         {
             private readonly AsyncMethodVariant _variant;
-            private readonly EcmaMethodIL _ecmaIL;
+            private readonly MethodIL _wrappedIL;
 
-            public AsyncEcmaMethodIL(AsyncMethodVariant variant, EcmaMethodIL ecmaIL)
-                => (_variant, _ecmaIL) = (variant, ecmaIL);
+            public AsyncMethodIL(AsyncMethodVariant variant, MethodIL wrappedIL)
+                => (_variant, _wrappedIL) = (variant, wrappedIL);
 
             // This is the reason we need this class - the method that owns the IL is the variant.
             public override MethodDesc OwningMethod => _variant;
 
-            // Everything else dispatches to EcmaMethodIL
-            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
-            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
-            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
-            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
-            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
-            public override int MaxStack => _ecmaIL.MaxStack;
+            // Everything else dispatches to the wrapped IL
+            public override MethodDebugInformation GetDebugInfo() => _wrappedIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _wrappedIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _wrappedIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _wrappedIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _wrappedIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _wrappedIL.IsInitLocals;
+            public override int MaxStack => _wrappedIL.MaxStack;
         }
     }
 }
