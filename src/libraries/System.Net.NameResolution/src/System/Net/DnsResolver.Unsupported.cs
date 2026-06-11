@@ -11,46 +11,25 @@ namespace System.Net
 {
     public sealed partial class DnsResolver
     {
-        private Task<DnsResult<AddressRecord>> ResolveAddressesCoreAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+        private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<SrvRecord>> ResolveSrvCoreAsync(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<MxRecord>> ResolveMxCoreAsync(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<TxtRecord>> ResolveTxtCoreAsync(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<CNameRecord>> ResolveCNameCoreAsync(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<PtrRecord>> ResolvePtrCoreAsync(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
-        private Task<DnsResult<NsRecord>> ResolveNsCoreAsync(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<AddressRecord> ResolveAddressesCore(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<SrvRecord> ResolveSrvCore(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<MxRecord> ResolveMxCore(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<TxtRecord> ResolveTxtCore(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<CNameRecord> ResolveCNameCore(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<PtrRecord> ResolvePtrCore(string name, CancellationToken cancellationToken)
-            => throw new PlatformNotSupportedException();
-
-        private DnsResult<NsRecord> ResolveNsCore(string name, CancellationToken cancellationToken)
+        private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
     }
 }

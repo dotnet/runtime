@@ -13,27 +13,43 @@ namespace System.Net
 {
     public sealed partial class DnsResolver
     {
-        // ---- Asynchronous Resolve*Core methods (called from cross-platform DnsResolver) ----
+        // ---- Resolve*Core methods (called from cross-platform DnsResolver) ----
+        //
+        // Each method takes a `bool async` flag controlling whether the underlying
+        // DnsQueryEx call is issued asynchronously (via the completion-callback state
+        // machine) or synchronously (inline on the calling thread). When async is
+        // false the returned Task is already completed, so the synchronous public
+        // entry points can safely unwrap it without blocking a thread.
 
-        private async Task<DnsResult<AddressRecord>> ResolveAddressesCoreAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+        private async Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
             if (addressFamily == AddressFamily.Unspecified)
             {
-                // Issue A and AAAA in parallel; merge results.
-                Task<DnsResult<AddressRecord>> aTask = QueryAddressesAsync(name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken);
-                Task<DnsResult<AddressRecord>> aaaaTask = QueryAddressesAsync(name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken);
-                DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
-                DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
-                return MergeAddressResults(aRes, aaaaRes);
+                if (async)
+                {
+                    // Issue A and AAAA in parallel; merge results.
+                    Task<DnsResult<AddressRecord>> aTask = QueryAddresses(async: true, name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken);
+                    Task<DnsResult<AddressRecord>> aaaaTask = QueryAddresses(async: true, name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken);
+                    DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
+                    DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
+                    return MergeAddressResults(aRes, aaaaRes);
+                }
+                else
+                {
+                    // Synchronous: query A then AAAA sequentially.
+                    DnsResult<AddressRecord> aRes = await QueryAddresses(async: false, name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken).ConfigureAwait(false);
+                    DnsResult<AddressRecord> aaaaRes = await QueryAddresses(async: false, name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken).ConfigureAwait(false);
+                    return MergeAddressResults(aRes, aaaaRes);
+                }
             }
 
             ushort qtype = AddressFamilyToQueryType(addressFamily);
-            return await QueryAddressesAsync(name, qtype, cancellationToken).ConfigureAwait(false);
+            return await QueryAddresses(async, name, qtype, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<DnsResult<SrvRecord>> ResolveSrvCoreAsync(string name, CancellationToken cancellationToken)
+        private async Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryExAsync(name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
+            DnsQueryRawResult raw = await DnsQueryEx(async, name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
             try
             {
                 return ParseSrv(raw);
@@ -44,21 +60,21 @@ namespace System.Net
             }
         }
 
-        private Task<DnsResult<MxRecord>> ResolveMxCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, s_parseMx);
+        private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
+            => QuerySimple(async, name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, s_parseMx);
 
-        private Task<DnsResult<CNameRecord>> ResolveCNameCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, s_parseCName);
+        private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
+            => QuerySimple(async, name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, s_parseCName);
 
-        private Task<DnsResult<PtrRecord>> ResolvePtrCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, s_parsePtr);
+        private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
+            => QuerySimple(async, name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, s_parsePtr);
 
-        private Task<DnsResult<NsRecord>> ResolveNsCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, s_parseNs);
+        private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
+            => QuerySimple(async, name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, s_parseNs);
 
-        private async Task<DnsResult<TxtRecord>> ResolveTxtCoreAsync(string name, CancellationToken cancellationToken)
+        private async Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryExAsync(name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
+            DnsQueryRawResult raw = await DnsQueryEx(async, name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
             try
             {
                 return ParseTxt(raw);
@@ -69,60 +85,7 @@ namespace System.Net
             }
         }
 
-        // ---- Synchronous Resolve*Core methods (called from cross-platform DnsResolver) ----
-
-        private DnsResult<AddressRecord> ResolveAddressesCore(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
-        {
-            if (addressFamily == AddressFamily.Unspecified)
-            {
-                DnsResult<AddressRecord> aRes = QueryAddresses(name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken);
-                DnsResult<AddressRecord> aaaaRes = QueryAddresses(name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken);
-                return MergeAddressResults(aRes, aaaaRes);
-            }
-
-            ushort qtype = AddressFamilyToQueryType(addressFamily);
-            return QueryAddresses(name, qtype, cancellationToken);
-        }
-
-        private DnsResult<SrvRecord> ResolveSrvCore(string name, CancellationToken cancellationToken)
-        {
-            DnsQueryRawResult raw = DnsQueryExSync(name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken);
-            try
-            {
-                return ParseSrv(raw);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
-        }
-
-        private DnsResult<MxRecord> ResolveMxCore(string name, CancellationToken cancellationToken)
-            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, s_parseMx);
-
-        private DnsResult<CNameRecord> ResolveCNameCore(string name, CancellationToken cancellationToken)
-            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, s_parseCName);
-
-        private DnsResult<PtrRecord> ResolvePtrCore(string name, CancellationToken cancellationToken)
-            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, s_parsePtr);
-
-        private DnsResult<NsRecord> ResolveNsCore(string name, CancellationToken cancellationToken)
-            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, s_parseNs);
-
-        private DnsResult<TxtRecord> ResolveTxtCore(string name, CancellationToken cancellationToken)
-        {
-            DnsQueryRawResult raw = DnsQueryExSync(name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken);
-            try
-            {
-                return ParseTxt(raw);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
-        }
-
-        // ---- Per-record-type selectors (shared by sync and async paths) ----
+        // ---- Per-record-type selectors (shared by all record types) ----
 
         private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, MxRecord> s_parseMx = static (hdr, dataPtr) =>
         {
@@ -156,11 +119,11 @@ namespace System.Net
                 _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
             };
 
-        // ---- Address query helpers ----
+        // ---- Query wrappers (issue the query, then parse the record list) ----
 
-        private async Task<DnsResult<AddressRecord>> QueryAddressesAsync(string name, ushort qtype, CancellationToken cancellationToken)
+        private async Task<DnsResult<AddressRecord>> QueryAddresses(bool async, string name, ushort qtype, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryExAsync(name, qtype, cancellationToken).ConfigureAwait(false);
+            DnsQueryRawResult raw = await DnsQueryEx(async, name, qtype, cancellationToken).ConfigureAwait(false);
             try
             {
                 return ParseAddresses(raw, qtype);
@@ -171,12 +134,13 @@ namespace System.Net
             }
         }
 
-        private DnsResult<AddressRecord> QueryAddresses(string name, ushort qtype, CancellationToken cancellationToken)
+        private async Task<DnsResult<TRecord>> QuerySimple<TRecord>(bool async, string name, ushort qtype, CancellationToken cancellationToken,
+            Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
         {
-            DnsQueryRawResult raw = DnsQueryExSync(name, qtype, cancellationToken);
+            DnsQueryRawResult raw = await DnsQueryEx(async, name, qtype, cancellationToken).ConfigureAwait(false);
             try
             {
-                return ParseAddresses(raw, qtype);
+                return ParseSimple(raw, qtype, selector);
             }
             finally
             {
@@ -184,7 +148,7 @@ namespace System.Net
             }
         }
 
-        // ---- Record-list parsers (sync/async agnostic) ----
+        // ---- Record-list parsers ----
 
         private static DnsResult<AddressRecord> ParseAddresses(DnsQueryRawResult raw, ushort qtype)
         {
@@ -372,47 +336,24 @@ namespace System.Net
             }
         }
 
-        // ---- Generic single-record-type query wrappers ----
+        // ---- Core DnsQueryEx wrapper ----
 
-        private async Task<DnsResult<TRecord>> QuerySimpleAsync<TRecord>(string name, ushort qtype, CancellationToken cancellationToken,
-            Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
-        {
-            DnsQueryRawResult raw = await DnsQueryExAsync(name, qtype, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseSimple(raw, qtype, selector);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
-        }
-
-        private DnsResult<TRecord> QuerySimple<TRecord>(string name, ushort qtype, CancellationToken cancellationToken,
-            Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
-        {
-            DnsQueryRawResult raw = DnsQueryExSync(name, qtype, cancellationToken);
-            try
-            {
-                return ParseSimple(raw, qtype, selector);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
-        }
-
-        // ---- Core DnsQueryEx wrappers ----
-
-        private unsafe Task<DnsQueryRawResult> DnsQueryExAsync(string name, ushort queryType, CancellationToken cancellationToken)
+        private unsafe Task<DnsQueryRawResult> DnsQueryEx(bool async, string name, ushort queryType, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<DnsQueryRawResult>(cancellationToken);
             }
 
-            DnsQueryAsyncState state = new DnsQueryAsyncState(_options.Servers, name, queryType, cancellationToken);
-            return state.StartAsync();
+            if (async)
+            {
+                DnsQueryAsyncState state = new DnsQueryAsyncState(_options.Servers, name, queryType, cancellationToken);
+                return state.StartAsync();
+            }
+
+            // Synchronous: the result is produced inline, so the returned Task is
+            // already completed and the sync entry points unwrap it without blocking.
+            return Task.FromResult(DnsQueryExSync(name, queryType, cancellationToken));
         }
 
         private static unsafe string? PtrToString(IntPtr p) =>
