@@ -3,9 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace System.Text.RegularExpressions.Examples
 {
-    public class MatchExample
+    public class MatchExamples
     {
-        public static void Run()
+        [Fact]
+        public static void MatchZipCode()
         {
             #region Match
             string input = "Zip code: 98052";
