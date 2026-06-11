@@ -216,7 +216,11 @@ internal readonly struct Thread_1 : IThread
                 if (collectibleCount > indexOffset)
                 {
                     TargetPointer collectibleArray = threadLocalData.CollectibleTlsArrayData;
-                    threadLocalStaticBase = _target.ReadPointer(collectibleArray + (ulong)(indexOffset * _target.PointerSize));
+                    // The collectible TLS array slot holds an OBJECTHANDLE, not the object directly.
+                    // Dereference the handle to get the static base (matches the native
+                    // GetThreadLocalStaticBaseNoCreate, which does ObjectFromHandleUnchecked).
+                    TargetPointer handleAddress = collectibleArray + (ulong)(indexOffset * _target.PointerSize);
+                    threadLocalStaticBase = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleAddress).Object;
                 }
                 break;
             case TLSIndexType.DirectOnThreadLocalData:
