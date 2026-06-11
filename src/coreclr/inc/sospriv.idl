@@ -111,6 +111,7 @@ typedef enum SOSStackSourceType
 {
     SOS_StackSourceIP,     // Instruction pointer in managed code
     SOS_StackSourceFrame,  // clr!Frame
+    SOS_StackSourceExInfo, // Thread's exception-tracking (ExInfo) chain
 } SOSStackSourceType;
 
 typedef enum SOSRefFlags
