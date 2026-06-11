@@ -871,7 +871,6 @@ private:
 #endif
     int32_t m_ILToNativeMapSize = 0;
 
-    // Return value homes for managed call sites (ICorDebugInfo::CALL_RETURN_ILNUM entries).
     TArray<InterpCallReturnInfo, MemPoolAllocator> m_callReturnInfos;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
