@@ -23,20 +23,6 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
-  if(NOT CMAKE_OBJCOPY)
-    message(FATAL_ERROR "CMAKE_OBJCOPY is required to privatize NativeAOT libunwind symbols")
-  endif()
-
-  find_program(NATIVEAOT_PRIVATE_LIBUNWIND_SH NAMES sh)
-  if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_SH)
-    message(FATAL_ERROR "sh is required to privatize NativeAOT libunwind symbols")
-  endif()
-
-  find_program(NATIVEAOT_PRIVATE_LIBUNWIND_SORT NAMES sort)
-  if(NOT NATIVEAOT_PRIVATE_LIBUNWIND_SORT)
-    message(FATAL_ERROR "sort is required to privatize NativeAOT libunwind symbols")
-  endif()
-
   add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 
   set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
@@ -68,11 +54,11 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
             "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     # Generate the objcopy symbol list from libunwind-owned object files only.
-    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_SH}" -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
+    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
             "${CMAKE_NM}"
             ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
-    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_SORT}" -u -o
+    COMMAND sort -u -o
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
             "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
     COMMAND "${CMAKE_COMMAND}" -E rm -f
