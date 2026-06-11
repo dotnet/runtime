@@ -12705,7 +12705,7 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// TryLowerOrToBFX : Lower AND of right shift and constant
+// TryLowerAndRshToBFX : Lower AND of right shift and constant
 //
 // Arguments:
 //    tree - pointer to the node
@@ -12714,7 +12714,7 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
 // Return Value:
 //    false if no changes were made
 //
-bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
+bool Lowering::TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next)
 {
     assert(tree->OperIs(GT_AND));
 
