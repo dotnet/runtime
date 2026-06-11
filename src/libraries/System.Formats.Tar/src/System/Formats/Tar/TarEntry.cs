@@ -425,6 +425,13 @@ namespace System.Formats.Tar
                 : StringComparison.Ordinal;
 
             string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
+
+            // Use the logical destination path for computing the relative path
+            string logicalDest = Path.GetFullPath(destinationDirectoryPath);
+            string logicalPrefix = logicalDest.EndsWith(Path.DirectorySeparatorChar)
+                ? logicalDest
+                : logicalDest + Path.DirectorySeparatorChar;
+
             string destPrefix = resolvedDest.EndsWith(Path.DirectorySeparatorChar)
                 ? resolvedDest
                 : resolvedDest + Path.DirectorySeparatorChar;
@@ -432,8 +439,15 @@ namespace System.Formats.Tar
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
 
+            // Guard with StartsWith before computing relative path
+            if (!normalizedFile.StartsWith(logicalPrefix, pathComparison) &&
+                !normalizedFile.Equals(logicalDest, pathComparison))
+            {
+                return true;
+            }
+
             // Walk relative components, resolving symlinks at each step
-            string relative = normalizedFile.Substring(resolvedDest.Length)
+            string relative = normalizedFile.Substring(logicalPrefix.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
