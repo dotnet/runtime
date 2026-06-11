@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,49 +35,63 @@ namespace System.Net
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveAddressesCore(async: false, name, addressFamily, default).GetAwaiter().GetResult();
+            Task<DnsResult<AddressRecord>> task = ResolveAddressesCore(async: false, name, addressFamily, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<SrvRecord> ResolveSrv(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveSrvCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<SrvRecord>> task = ResolveSrvCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<MxRecord> ResolveMx(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveMxCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<MxRecord>> task = ResolveMxCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<TxtRecord> ResolveTxt(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveTxtCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<TxtRecord>> task = ResolveTxtCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<CNameRecord> ResolveCName(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveCNameCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<CNameRecord>> task = ResolveCNameCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<PtrRecord> ResolvePtr(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolvePtrCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<PtrRecord>> task = ResolvePtrCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public DnsResult<NsRecord> ResolveNs(string name)
         {
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolveNsCore(async: false, name, default).GetAwaiter().GetResult();
+            Task<DnsResult<NsRecord>> task = ResolveNsCore(async: false, name, default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
         }
 
         public Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, CancellationToken cancellationToken = default)
