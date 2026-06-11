@@ -43,8 +43,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
-    <Compile Include="System\Net\DnsResolver.Windows.cs" />
-    <Compile Include="System\Net\DnsResolver.WindowsAsync.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Windows.cs" />
     <!-- Dnsapi interop -->
     <Compile Include="$(CommonPath)Interop\Windows\Dnsapi\Interop.DnsApi.cs"
              Link="Common\Interop\Windows\Dnsapi\Interop.DnsApi.cs" />
@@ -89,7 +88,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="System\Net\DnsResolver.Unsupported.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -129,7 +128,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
 
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="System\Net\DnsResolver.Unsupported.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"

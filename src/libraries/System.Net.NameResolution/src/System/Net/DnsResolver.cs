@@ -161,6 +161,36 @@ namespace System.Net
             return ValueTask.CompletedTask;
         }
 
+        // ---- Resolve*Core methods ----
+        //
+        // These instance methods are the platform-agnostic seam between the public
+        // API and the platform abstraction layer (DnsResolverPal). They exist as a
+        // dedicated layer so that instrumentation and telemetry can be added here
+        // later without touching either the public surface or the PAL. The `async`
+        // flag is threaded down to the PAL, which issues the underlying query
+        // synchronously or asynchronously accordingly.
+
+        private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
+
+        private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
+
+        private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
+
+        private Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
+
+        private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
+
+        private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
+
+        private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
+            => DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
+
         private static void ValidateName(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
