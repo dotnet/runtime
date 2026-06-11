@@ -1831,12 +1831,17 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         info.returnValueLoc.vlType         = VLT_FPSTK;
         info.returnValueLoc.vlFPstk.vlfReg = 0;
 #else
-        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+        // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+        // platform-specific XMM0/V0 base when converting to CorDebugRegister.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
 #endif
     }
     else if (varTypeUsesFloatReg(call))
     {
-        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+        // VLT_REG_FP uses a 0-based FP register index.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
     }
     else
     {
