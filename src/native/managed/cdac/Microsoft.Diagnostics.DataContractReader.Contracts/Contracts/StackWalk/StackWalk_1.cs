@@ -284,7 +284,12 @@ internal partial class StackWalk_1 : IStackWalk
             Address = r.Address,
             Object = r.Object,
             Flags = (uint)r.Flags,
-            IsStackSourceFrame = r.SourceType == StackRefData.SourceTypes.StackSourceFrame,
+            SourceType = r.SourceType switch
+            {
+                StackRefData.SourceTypes.StackSourceFrame => StackSourceType.Frame,
+                StackRefData.SourceTypes.StackSourceExInfo => StackSourceType.ExInfo,
+                _ => StackSourceType.InstructionPointer,
+            },
             Source = r.Source,
             StackPointer = r.StackPointer,
         }).ToList();
@@ -310,7 +315,7 @@ internal partial class StackWalk_1 : IStackWalk
             // (DacStackReferenceWalker) reports frame-sourced roots with a non-zero SP, and consumers
             // (SOSDacImpl.GetStackReferences) forward it.
             exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
-            scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo);
+            scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo, StackRefData.SourceTypes.StackSourceExInfo);
             scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
             pExInfo = previous;
         }
