@@ -1144,8 +1144,8 @@ DONE:
         // should be disabled. The exception is a tail await: for those the JIT
         // directly returns the callee's continuation to the caller and no
         // context needs to be restored, so the async call can be turned into a
-        // real tail call. Any other async call in an async method must be
-        // disqualified.
+        // real tail call. Any other tail call candidate in an async method
+        // must be disqualified.
         if (canTailCall && compIsAsync() && (!call->AsCall()->IsAsync() || !call->AsCall()->GetAsyncInfo().IsTailAwait))
         {
             canTailCall             = false;
