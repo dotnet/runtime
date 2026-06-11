@@ -98,7 +98,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                stubDeclaration = PrintGeneratedSource(
+                stubDeclaration = PrintMethodStub(
                     methodStub.StubMethodSyntaxTemplate,
                     methodStub.SignatureContext,
                     code)
@@ -128,7 +128,7 @@ namespace Microsoft.Interop
                 untypedFunctionPointerExpression));
         }
 
-        private static MethodDeclarationSyntax PrintGeneratedSource(
+        private static MethodDeclarationSyntax PrintMethodStub(
             ContainingSyntax stubMethodSyntax,
             SignatureContext stub,
             BlockSyntax stubCode)

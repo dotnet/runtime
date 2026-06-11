@@ -312,6 +312,41 @@ namespace ComInterfaceGenerator.Tests
             Assert.True(AlternateIntMarshaller.UnmanagedToManagedCount > 0, "Property-level fallback marshaller was not invoked on the setter value path.");
         }
 
+        [Fact]
+        public void PropertyLevelMarshalling_ElementIndirection_PropertyDepth1AndAccessorDepth0Coexist()
+        {
+            // The property carries [MarshalUsing(typeof(TrackedIntMarshaller), ElementIndirectionDepth = 1)]
+            // (the per-element marshaller) and each accessor carries [MarshalUsing(ConstantElementCount = N)]
+            // (depth-0 count info, no marshaller type). The accessor-level depth-0 MarshalUsing must NOT
+            // displace the property-level depth-1 MarshalUsing: dedup of property-vs-accessor MarshalUsing
+            // is partitioned by ElementIndirectionDepth.
+            TrackedIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            int[] payload = new int[IPropertyMarshalling.ElementIndirectionArrayLength];
+            for (int i = 0; i < payload.Length; i++)
+            {
+                payload[i] = i + 1;
+            }
+
+            rcw.ElementIndirectionArray = payload;
+            int[] observed = rcw.ElementIndirectionArray;
+
+            Assert.Equal(payload, observed);
+
+            // The per-element marshaller runs once per element on each direction of each accessor:
+            // setter writes N elements managed-to-unmanaged (CCW receives) and reads them back
+            // unmanaged-to-managed (CCW stores); getter reverses. So we expect at least N invocations
+            // of each direction.
+            Assert.True(
+                TrackedIntMarshaller.ManagedToUnmanagedCount >= IPropertyMarshalling.ElementIndirectionArrayLength,
+                $"Per-element marshaller (depth 1) was dropped on the managed-to-unmanaged path: only {TrackedIntMarshaller.ManagedToUnmanagedCount} call(s) observed.");
+            Assert.True(
+                TrackedIntMarshaller.UnmanagedToManagedCount >= IPropertyMarshalling.ElementIndirectionArrayLength,
+                $"Per-element marshaller (depth 1) was dropped on the unmanaged-to-managed path: only {TrackedIntMarshaller.UnmanagedToManagedCount} call(s) observed.");
+        }
+
         // -------------------------------------------------------------------------
         // Shadow-property attribute propagation. A derived [GeneratedComInterface]
         // emits `new T Prop { get => ((Base)this).Prop; set => ((Base)this).Prop = value; }`

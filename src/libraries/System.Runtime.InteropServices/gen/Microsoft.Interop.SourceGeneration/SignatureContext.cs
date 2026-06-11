@@ -163,25 +163,51 @@ namespace Microsoft.Interop
                 return accessorAttributes;
             }
 
-            HashSet<ISymbol?> accessorAttributeTypes = new(SymbolEqualityComparer.Default);
+            // Accessor-level attributes win over property-level ones at the same dedup key.
+            // For most attributes the dedup key is the attribute type. MarshalUsing is the
+            // only AllowMultiple = true attribute that flows through this merge: it can repeat
+            // on a single value surface with distinct ElementIndirectionDepth values to describe
+            // marshalling at successive levels of indirection (the value itself at depth 0, its
+            // elements at depth 1, their elements at depth 2, and so on). The public contract on
+            // MarshalUsingAttribute.ElementIndirectionDepth states only one MarshalUsing with a
+            // given depth may be provided on a given parameter or return value, so dedup keys
+            // for MarshalUsing include the depth -- an accessor-level MarshalUsing overrides
+            // only the property-level MarshalUsing at the matching depth, and property-level
+            // MarshalUsings at other depths flow through.
+            HashSet<(string?, int)> accessorAttributeKeys = new();
             foreach (AttributeData attr in accessorAttributes)
             {
-                accessorAttributeTypes.Add(attr.AttributeClass);
+                accessorAttributeKeys.Add(GetMergeKey(attr));
             }
 
             ImmutableArray<AttributeData>.Builder merged = ImmutableArray.CreateBuilder<AttributeData>(accessorAttributes.Length + associatedPropertyAttributes.Length);
             merged.AddRange(accessorAttributes);
             foreach (AttributeData attr in associatedPropertyAttributes)
             {
-                // Accessor-level attributes win over property-level ones of the same type.
-                // Otherwise carry over all property-level attributes (including repeated
-                // AllowMultiple attributes such as MarshalUsing).
-                if (!accessorAttributeTypes.Contains(attr.AttributeClass))
+                if (!accessorAttributeKeys.Contains(GetMergeKey(attr)))
                 {
                     merged.Add(attr);
                 }
             }
             return merged.ToImmutable();
+
+            static (string?, int) GetMergeKey(AttributeData attr)
+            {
+                string? attributeName = attr.AttributeClass?.ToDisplayString();
+                int depth = 0;
+                if (attributeName == TypeNames.MarshalUsingAttribute)
+                {
+                    foreach (KeyValuePair<string, TypedConstant> named in attr.NamedArguments)
+                    {
+                        if (named.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth)
+                        {
+                            depth = (int)named.Value.Value!;
+                            break;
+                        }
+                    }
+                }
+                return (attributeName, depth);
+            }
         }
 
         public bool Equals(SignatureContext other)

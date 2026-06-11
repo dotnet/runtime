@@ -46,4 +46,4 @@ A property must have all accessors abstract or all accessors bodied — mixing t
 
 ### `new` modifier on members
 
-The earlier release note that `[GeneratedComInterface]` "disallows declaring any methods with the `new` modifier" is no longer accurate. Both methods and properties may now be declared with `new` to explicitly shadow an inherited base member; the shadowing member receives a fresh vtable slot appended after the base interface's slots, and the base member's slot continues to dispatch to its original target.
+In earlier releases, `[GeneratedComInterface]` disallowed declaring any methods with the `new` modifier. This is no longer the case. Both methods and properties may now be declared with `new` to explicitly shadow an inherited base member; the shadowing member receives a fresh vtable slot appended after the base interface's slots, and the base member's slot continues to dispatch to its original target.

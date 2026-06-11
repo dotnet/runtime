@@ -52,6 +52,22 @@ namespace SharedTypes.ComInterfaces
             get;
             set;
         }
+
+        public const int ElementIndirectionArrayLength = 4;
+
+        // The property-level [MarshalUsing] supplies the per-element marshaller at depth 1
+        // (one indirection past the int[] value itself). The accessor-level [MarshalUsing]
+        // at depth 0 supplies only the constant collection size for the COM ABI. Both must
+        // flow through to the generator so that the depth-0 size info AND the depth-1
+        // element marshaller are honored.
+        [MarshalUsing(typeof(TrackedIntMarshaller), ElementIndirectionDepth = 1)]
+        int[] ElementIndirectionArray
+        {
+            [return: MarshalUsing(ConstantElementCount = ElementIndirectionArrayLength)]
+            get;
+            [param: MarshalUsing(ConstantElementCount = ElementIndirectionArrayLength)]
+            set;
+        }
     }
 
     [GeneratedComClass]
@@ -65,6 +81,7 @@ namespace SharedTypes.ComInterfaces
         public int BareMarshalled { get; set; }
         public int AccessorOverridesProperty { get; set; }
         public int MixedPropertyAndAccessor { get; set; }
+        public int[] ElementIndirectionArray { get; set; } = new int[IPropertyMarshalling.ElementIndirectionArrayLength];
 
         public int WriteOnlySink => _writeOnly;
     }
@@ -95,6 +112,9 @@ namespace SharedTypes.ComInterfaces
     [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedIn, typeof(TrackedIntMarshaller))]
     [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(TrackedIntMarshaller))]
     [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedOut, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.ElementIn, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.ElementOut, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.ElementRef, typeof(TrackedIntMarshaller))]
     internal static class TrackedIntMarshaller
     {
         private static int s_managedToUnmanagedCount;
