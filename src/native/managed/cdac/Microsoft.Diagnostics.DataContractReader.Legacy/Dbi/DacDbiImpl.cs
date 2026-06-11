@@ -3130,13 +3130,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetBasicObjectInfo(ulong objectAddress, Interop.BOOL* pIsValidRef, uint* pObjSize, uint* pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData* pObjTypeData)
     {
-        *pIsValidRef = Interop.BOOL.TRUE;
-        *pObjSize = 0;
-        *pObjOffsetToVars = 0;
-        *pObjTypeData = default;
         int hr = HResults.S_OK;
         try
         {
+            *pIsValidRef = Interop.BOOL.TRUE;
+            *pObjSize = 0;
+            *pObjOffsetToVars = 0;
+            *pObjTypeData = default;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             // verify the object reference is readable and has a valid MethodTable
             TypeHandle th = default;

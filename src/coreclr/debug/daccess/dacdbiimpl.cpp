@@ -6008,10 +6008,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS 
             if (objPtr->GetGCSafeMethodTable() == g_pStringClass)
             {
                 pObjTypeData->elementType = ELEMENT_TYPE_STRING;
-                if(*pObjSize < MIN_OBJECT_SIZE)
-                {
-                    *pObjSize = PtrAlign(*pObjSize);
-                }
             }
         }
     }

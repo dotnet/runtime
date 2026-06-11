@@ -1769,8 +1769,6 @@ public:
     // type information.
     // Arguments:
     //     input:  objectAddress    - address of the object for which we want information
-    //             type             - the basic type of the object (we may find more specific type
-    //                                information for the object)
     //     output: pIsValidRef      - FALSE if the object reference is bad
     //             pObjSize         - size of the object in bytes
     //             pObjOffsetToVars - byte offset from the object base to the first field

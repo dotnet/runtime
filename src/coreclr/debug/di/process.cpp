@@ -2280,7 +2280,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(pType != NULL);
                 _ASSERTE(cdbAppDomain != NULL);
 
-                DacDbiObjectData objData;
+                DacDbiObjectData objData = {};
                 BOOL isValidRef = FALSE;
 
                 IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, &isValidRef, &objData.objSize, &objData.objOffsetToVars, &objData.objTypeData));

@@ -206,7 +206,6 @@ internal readonly struct Object_1 : IObject
             Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
             size += (ulong)arr.NumComponents * componentSize;
         }
-        ulong minObjectSize = (ulong)(2 * (uint)_target.PointerSize) + _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
-        return size < minObjectSize ? minObjectSize : size;
+        return size;
     }
 }

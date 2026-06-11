@@ -42,8 +42,7 @@ TargetPointer GetSyncBlockAddress(TargetPointer address);
 
 DelegateInfo GetDelegateInfo(TargetPointer address);
 
-// Returns the logical size of the object in bytes (base size plus any variable-size
-// component data), padded up to the minimum allocated object size.
+// Returns the logical size of the object in bytes (base size plus any variable-size component data).
 ulong GetSize(TargetPointer address);
 ```
 
@@ -250,11 +249,6 @@ ulong GetSize(TargetPointer address)
         uint numComponents = target.Read<uint>(address + /* Array::m_NumComponents offset */);
         size += (ulong)numComponents * componentSize;
     }
-
-    // Round up to the minimum allocated object size. The GC will not produce an
-    // object smaller than 2 pointers plus the object header, so report at least
-    // that much regardless of the type's declared base size.
-    ulong minObjectSize = (ulong)(2 * (uint)target.PointerSize) + target.ReadGlobal<uint>("ObjectHeaderSize");
-    return size < minObjectSize ? minObjectSize : size;
+    return size;
 }
 ```
