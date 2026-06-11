@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Get the secret agreement generated between two parties
         /// </summary>
-        private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
+        private unsafe byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
         {
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.

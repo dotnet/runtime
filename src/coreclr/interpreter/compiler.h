@@ -242,8 +242,16 @@ enum InterpInstFlags
     INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
     // The IL stack is empty at this instruction
     INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04,
-    // Marks a user IL call site reportable to ICorDebugCode3::GetReturnValueLiveOffset
+    // Marks a value-returning managed call site whose return value is reportable to the debugger
     INTERP_INST_FLAG_DBG_CALL_INSTRUCTION = 0x08
+};
+
+// A managed call site's return value home, emitted as an ICorDebugInfo::CALL_RETURN_ILNUM var.
+struct InterpCallReturnInfo
+{
+    uint32_t ilOffset;
+    uint32_t postCallNativeOffset;
+    int32_t returnValueVarOffset;
 };
 
 struct InterpInst
@@ -709,6 +717,10 @@ private:
 
     TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
 
+    TArray<int32_t, MemPoolAllocator> m_suspensionPointIPOffsets;
+    TArray<ICorDebugInfo::AsyncSuspensionPoint, MemPoolAllocator> m_asyncDebugSuspensionPoints;
+    TArray<ICorDebugInfo::AsyncContinuationVarInfo, MemPoolAllocator> m_asyncDebugContinuationVars;
+
     // Tracks which data items contain pointers to async suspend data
     // First = data item index, Second = index into m_asyncSuspendDataItems
     struct DataItemAsyncSuspendRef
@@ -858,7 +870,9 @@ private:
     int32_t* m_pNativeMapIndexToILOffset = NULL;
 #endif
     int32_t m_ILToNativeMapSize = 0;
-    int32_t m_ILToNativeMapCapacity = 0;
+
+    // Return value homes for managed call sites (ICorDebugInfo::CALL_RETURN_ILNUM entries).
+    TArray<InterpCallReturnInfo, MemPoolAllocator> m_callReturnInfos;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
@@ -892,6 +906,7 @@ private:
     int32_t m_synchronizedOrAsyncRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
     int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
 
+    int32_t m_threadObjVarIndex = -1; // If the method is async, this is the var index of the Thread local
     int32_t m_execContextVarIndex = -1; // If the method is async, this is the var index of the ExecutionContext local
     int32_t m_syncContextVarIndex = -1; // If the method is async, this is the var index of the SynchronizationContext local
 
@@ -1048,6 +1063,7 @@ private:
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();
+    void ReportAsyncDebugInfo();
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);

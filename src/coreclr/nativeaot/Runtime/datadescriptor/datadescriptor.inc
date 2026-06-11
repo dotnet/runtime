@@ -154,7 +154,7 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 3)
 
 // StressLog globals (no module table in NativeAOT)
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
-CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 0)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, 0xCFCFCFCF)

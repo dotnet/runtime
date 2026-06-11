@@ -257,13 +257,25 @@ Exit /b !ERRORLEVEL!
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
 
+      <!-- CoreCLR on browser defaults to running tests with Node.js -->
+      <BatchDefaultRunWithNodeJS Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
+IF NOT DEFINED RunWithNodeJS (
+    set RunWithNodeJS=1
+)
+]]></BatchDefaultRunWithNodeJS>
+
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <!-- Note that this overwrites CLRTestBatchPreCommands rather than adding to it. -->
       <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+$(CLRTestBatchPreCommands)
+$(BatchDefaultRunWithNodeJS)
+if defined RunCrossGen2 (
+  call :TakeLock
+)
+
 IF NOT DEFINED RunWithNodeJS (
     REM Build wasm app containing the test dll
     IF DEFINED __TestDotNetCmd (
@@ -277,9 +289,16 @@ IF NOT DEFINED RunWithNodeJS (
 
     !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%%CD%% $(CLRTestMSBuildArgs)
     IF NOT "!ERRORLEVEL!"=="0" (
+        if defined RunCrossGen2 (
+          call :ReleaseLock
+        )
         popd
         Exit /b !ERRORLEVEL!
     )
+)
+
+if defined RunCrossGen2 (
+  call :ReleaseLock
 )
       ]]></CLRTestBatchPreCommands>
 
@@ -314,6 +333,10 @@ if defined RunCrossGen2 (
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
     <![CDATA[
+if defined RunCrossGen2 (
+  call :TakeLock
+)
+
 IF NOT DEFINED RunWithNodeJS (
     ECHO V8 execution is not supported on Windows. Set RunWithNodeJS to use Node.
     set CLRTestExitCode=1
@@ -345,6 +368,10 @@ IF NOT DEFINED RunWithNodeJS (
     ECHO Running: !__RunCmd!
     call :RunWithTimeout !__TestTimeout!
     set CLRTestExitCode=!ERRORLEVEL!
+)
+
+if defined RunCrossGen2 (
+  call :ReleaseLock
 )
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">

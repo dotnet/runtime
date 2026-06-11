@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { EmsAmbientSymbolsType } from "../types";
+import type { CharPtr, EmsAmbientSymbolsType } from "../types";
 
 import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
@@ -197,6 +197,7 @@ export type DiagnosticsExportsTable = [
     typeof ds_rt_websocket_poll,
     typeof ds_rt_websocket_recv,
     typeof ds_rt_websocket_close,
+    (namePtr: CharPtr, start: number) => void
 ]
 
 export type DiagnosticsExports = {
@@ -207,4 +208,5 @@ export type DiagnosticsExports = {
     ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
     ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
     ds_rt_websocket_close: typeof ds_rt_websocket_close,
+    ds_rt_browser_performance_measure: (namePtr: CharPtr, start: number) => void
 }

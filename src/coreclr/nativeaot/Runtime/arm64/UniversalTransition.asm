@@ -86,10 +86,12 @@
 ;; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;;
 
+    EXTERN __guard_check_icall_fptr
+
     TEXTAREA
 
     MACRO
-        UNIVERSAL_TRANSITION $FunctionName, $ReturnResult
+        UNIVERSAL_TRANSITION $FunctionName, $ValidateTarget
 
     NESTED_ENTRY Rhp$FunctionName
 
@@ -122,6 +124,15 @@
 
     ALTERNATE_ENTRY ReturnFrom$FunctionName
 
+    IF "$ValidateTarget" != ""
+        ;; Validate the target address using Control Flow Guard before tail-calling it.
+        ;; The validator takes the target in x15 and preserves x0-x8, x15, and all float registers.
+        mov         x15, x0
+        adrp        x16, __guard_check_icall_fptr
+        ldr         x16, [x16, __guard_check_icall_fptr]
+        blr         x16
+    ENDIF
+
         ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
         ;; argument registers.
         mov         x12, x0
@@ -142,20 +153,14 @@
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!
 
-        IF $ReturnResult == 0
         ;; Tailcall to the target address.
         EPILOG_NOP br x12
-        ELSE
-        ;; Return target address
-        EPILOG_NOP mov x15, x12
-        ret
-        ENDIF
 
     NESTED_END Rhp$FunctionName
 
     MEND
 
-    UNIVERSAL_TRANSITION UniversalTransitionTailCall, 0
-    UNIVERSAL_TRANSITION UniversalTransitionReturnResult, 1
+    UNIVERSAL_TRANSITION UniversalTransitionTailCall
+    UNIVERSAL_TRANSITION UniversalTransitionGuardedTailCall, ValidateTarget
 
     END

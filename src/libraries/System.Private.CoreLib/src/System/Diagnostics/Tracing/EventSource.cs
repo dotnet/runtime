@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
@@ -1765,7 +1765,7 @@ namespace System.Diagnostics.Tracing
             return eventSourceType.Name;
         }
 
-        private static Guid GenerateGuidFromName(string name)
+        private static unsafe Guid GenerateGuidFromName(string name)
         {
             ReadOnlySpan<byte> namespaceBytes =
             [

@@ -55,6 +55,9 @@ else()
             System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+        if (TARGET coreclr_gen_static)
+            target_link_libraries(corerun PRIVATE coreclr_gen_static)
+        endif()
 
         # additional requirements for System.IO.Compression.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
@@ -86,9 +89,11 @@ else()
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
                 -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
-                -sEXPORTED_FUNCTIONS=_main,___stack_pointer,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+                -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
+                -lexports.js
+                -Wl,--export=__stack_pointer
                 -Wl,--error-limit=0)
 
             if (CORERUN_IN_BROWSER)

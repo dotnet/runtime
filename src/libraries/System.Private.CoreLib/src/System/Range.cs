@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -64,7 +64,7 @@ namespace System
         }
 
         /// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
-        public override string ToString()
+        public override unsafe string ToString()
         {
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint

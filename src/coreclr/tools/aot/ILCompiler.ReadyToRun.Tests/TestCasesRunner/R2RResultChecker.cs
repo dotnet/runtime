@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -35,9 +36,9 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts the R2R image contains a manifest or MSIL assembly reference with the given name.
+    /// Returns true if the R2R image contains a manifest or MSIL assembly reference with the given name.
     /// </summary>
-    public static void HasManifestRef(ReadyToRunReader reader, string assemblyName)
+    public static bool HasManifestRef(ReadyToRunReader reader, string assemblyName, out string diagnostic)
     {
         var allRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -55,19 +56,376 @@ internal static class R2RAssert
         foreach (var kvp in reader.ManifestReferenceAssemblies)
             allRefs.Add(kvp.Key);
 
-        Assert.True(allRefs.Contains(assemblyName),
-            $"Expected assembly reference '{assemblyName}' not found. " +
-            $"Found: [{string.Join(", ", allRefs.OrderBy(s => s))}]");
+        bool found = allRefs.Contains(assemblyName);
+        diagnostic = found
+            ? $"Found manifest/MSIL ref '{assemblyName}'."
+            : $"Expected assembly reference '{assemblyName}' not found. " +
+              $"Found: [{string.Join(", ", allRefs.OrderBy(s => s))}]";
+        return found;
     }
 
     /// <summary>
-    /// Asserts that the CrossModuleInlineInfo section records that <paramref name="inlinerMethodName"/>
-    /// inlined <paramref name="inlineeMethodName"/>, and that the inlinee is encoded as a cross-module
-    /// reference (ILBody import index, not a local MethodDef RID).
+    /// Returns true if ARM R2R relocations preserve the Thumb bit only for raw runtime function
+    /// start RVAs, while non-code pointers keep even RVAs.
     /// </summary>
-    public static void HasCrossModuleInlinedMethod(ReadyToRunReader reader, string inlinerMethodName, string inlineeMethodName)
+    public static bool HasExpectedArmThumbBitTargets(ReadyToRunReader reader, out string diagnostic)
     {
-        var inliningInfo = GetCrossModuleInliningInfoSection(reader);
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.ExceptionInfo, failures);
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.DelayLoadMethodCallThunks, failures);
+        result &= DelayLoadHelperImportTargetsAreOdd(reader, failures);
+        result &= ExceptionInfoMethodRVAsAreEven(reader, failures);
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= BaseRelocatedCodePointersAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM Thumb-bit relocation targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns true if the image contains hot/cold split runtime functions and the raw cold
+    /// runtime function start RVAs carry exactly one ARM Thumb bit.
+    /// </summary>
+    public static bool HasExpectedArmHotColdRuntimeFunctionTargets(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= ColdRuntimeFunctionStartRVAsAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM hot/cold runtime function targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
+        {
+            failures.Add($"Expected {sectionType} section not found.");
+            return false;
+        }
+
+        bool result = true;
+        if (section.Size <= 0)
+        {
+            failures.Add($"Expected {sectionType} section to be non-empty.");
+            result = false;
+        }
+
+        if ((section.RelativeVirtualAddress & 1) != 0)
+        {
+            failures.Add($"{sectionType} section RVA 0x{section.RelativeVirtualAddress:X8} should be even.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool ExceptionInfoMethodRVAsAreEven(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ExceptionInfo, out ReadyToRunSection section))
+        {
+            return true;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int endOffset = offset + section.Size;
+        int entries = 0;
+        for (; offset + 2 * sizeof(int) <= endOffset; offset += 2 * sizeof(int))
+        {
+            int methodRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+            if (methodRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((methodRva & 1) != 0)
+            {
+                failures.Add($"ExceptionInfo method RVA 0x{methodRva:X8} should be even.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected ExceptionInfo to contain at least one method entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool DelayLoadHelperImportTargetsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        bool result = true;
+        int entries = 0;
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if ((section.Flags & ReadyToRunImportSectionFlags.PCode) == 0)
+            {
+                continue;
+            }
+
+            int offset = reader.CompositeReader.GetOffset(section.SectionRVA);
+            int endOffset = offset + section.SectionSize;
+            for (; offset + section.EntrySize <= endOffset; offset += section.EntrySize)
+            {
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+                if (targetAddress == 0)
+                {
+                    continue;
+                }
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"PCode import target 0x{targetAddress:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one non-empty PCode import target.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool BaseRelocatedCodePointersAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        byte[] image = reader.Image.ToArray();
+        using var peReader = new PEReader(new MemoryStream(image));
+
+        if (peReader.PEHeaders.PEHeader is null)
+        {
+            failures.Add("Expected PE header to be present.");
+            return false;
+        }
+
+        DirectoryEntry relocDirectory = peReader.PEHeaders.PEHeader.BaseRelocationTableDirectory;
+        if (relocDirectory.Size == 0)
+        {
+            failures.Add("Expected base relocation table to contain entries.");
+            return false;
+        }
+
+        List<(int Start, int End)> runtimeFunctionRanges = GetAllMethods(reader)
+            .SelectMany(method => method.RuntimeFunctions)
+            .Select(function =>
+            {
+                int start = function.StartAddress & ~1;
+                int size = function.Size >= 0 ? function.Size : (function.EndAddress & ~1) - start;
+                return (Start: start, End: start + size);
+            })
+            .Where(range => range.End > range.Start)
+            .OrderBy(range => range.Start)
+            .ToList();
+
+        bool result = true;
+        int entries = 0;
+        int offset = peReader.GetOffset(relocDirectory.RelativeVirtualAddress);
+        int endOffset = offset + relocDirectory.Size;
+        while (offset + 2 * sizeof(int) <= endOffset)
+        {
+            int pageRva = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset));
+            int blockSize = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset + sizeof(int)));
+            offset += 2 * sizeof(int);
+
+            if (pageRva == 0 || blockSize < 2 * sizeof(int))
+                break;
+
+            int entryCount = (blockSize - 2 * sizeof(int)) / sizeof(ushort);
+            for (int i = 0; i < entryCount && offset + sizeof(ushort) <= endOffset; i++, offset += sizeof(ushort))
+            {
+                ushort entry = BinaryPrimitives.ReadUInt16LittleEndian(image.AsSpan(offset));
+                const int ImageRelBasedHighLow = 3;
+                if (entry >> 12 != ImageRelBasedHighLow)
+                    continue;
+
+                int relocatedRva = pageRva + (entry & 0x0FFF);
+                int relocatedOffset = peReader.GetOffset(relocatedRva);
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(relocatedOffset));
+                int targetRva = targetAddress - (int)reader.ImageBase;
+                if (!IsRuntimeFunctionAddress(runtimeFunctionRanges, targetRva & ~1))
+                    continue;
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"Base relocation at RVA 0x{relocatedRva:X8} points to code address 0x{targetAddress:X8} without the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one base-relocated code pointer.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool IsRuntimeFunctionAddress(List<(int Start, int End)> ranges, int rva)
+    {
+        foreach ((int start, int end) in ranges)
+        {
+            if (rva < start)
+                return false;
+            if (rva < end)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ColdRuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionsSection))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.HotColdMap, out ReadyToRunSection hotColdMapSection))
+        {
+            failures.Add("Expected HotColdMap section not found.");
+            return false;
+        }
+
+        const int RuntimeFunctionSize = 2 * sizeof(int);
+        int runtimeFunctionCount = runtimeFunctionsSection.Size / RuntimeFunctionSize;
+        int hotColdMapCount = hotColdMapSection.Size / (2 * sizeof(int));
+        if (hotColdMapCount == 0)
+        {
+            failures.Add("Expected HotColdMap to contain at least one mapping.");
+            return false;
+        }
+
+        var mappings = new List<(int ColdIndex, int HotIndex)>(hotColdMapCount);
+        int hotColdMapOffset = reader.CompositeReader.GetOffset(hotColdMapSection.RelativeVirtualAddress);
+        for (int i = 0; i < hotColdMapCount; i++, hotColdMapOffset += 2 * sizeof(int))
+        {
+            int coldIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset));
+            int hotIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset + sizeof(int)));
+            mappings.Add((coldIndex, hotIndex));
+        }
+
+        bool result = true;
+        int entries = 0;
+        int runtimeFunctionsOffset = reader.CompositeReader.GetOffset(runtimeFunctionsSection.RelativeVirtualAddress);
+        for (int i = 0; i < mappings.Count; i++)
+        {
+            int coldIndex = mappings[i].ColdIndex;
+            int coldEndIndex = i + 1 < mappings.Count ? mappings[i + 1].ColdIndex : runtimeFunctionCount;
+            if (coldIndex < 0 || coldEndIndex > runtimeFunctionCount || coldIndex >= coldEndIndex)
+            {
+                failures.Add($"Invalid HotColdMap cold runtime function range [{coldIndex}, {coldEndIndex}) for {runtimeFunctionCount} runtime functions.");
+                result = false;
+                continue;
+            }
+
+            for (int runtimeFunctionIndex = coldIndex; runtimeFunctionIndex < coldEndIndex; runtimeFunctionIndex++)
+            {
+                int entryOffset = runtimeFunctionsOffset + runtimeFunctionIndex * RuntimeFunctionSize;
+                int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(entryOffset));
+                entries++;
+                if ((startRva & 1) == 0)
+                {
+                    failures.Add($"Cold RuntimeFunctions[{runtimeFunctionIndex}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one cold runtime function entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool RuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        int runtimeFunctionSize = 2 * sizeof(int);
+        if (section.Size < runtimeFunctionSize)
+        {
+            failures.Add($"Expected RuntimeFunctions section to contain at least one entry, but size is {section.Size}.");
+            return false;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int count = section.Size / runtimeFunctionSize;
+        int entries = 0;
+        for (int index = 0; index < count; index++, offset += runtimeFunctionSize)
+        {
+            int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+            if (startRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((startRva & 1) == 0)
+            {
+                failures.Add($"RuntimeFunctions[{index}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected RuntimeFunctions to contain at least one entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns true if the CrossModuleInlineInfo section records that <paramref name="inlinerMethodName"/>
+    /// inlined <paramref name="inlineeMethodName"/> and the inlinee is encoded as a cross-module
+    /// reference (ILBody import index, not a local MethodDef RID). If a pair matches but the
+    /// encoding is wrong, returns false with the mismatch described in <paramref name="diagnostic"/>.
+    /// </summary>
+    public static bool HasCrossModuleInlinedMethod(ReadyToRunReader reader, string inlinerMethodName, string inlineeMethodName, out string diagnostic)
+    {
+        if (!TryGetCrossModuleInliningInfoSection(reader, out var inliningInfo, out diagnostic))
+            return false;
 
         var allPairs = new List<string>();
         foreach (var (inlinerName, inlineeName, inlineeKind) in inliningInfo.GetInliningPairs())
@@ -77,31 +435,40 @@ internal static class R2RAssert
             if (inlinerName.Contains(inlinerMethodName, StringComparison.OrdinalIgnoreCase) &&
                 inlineeName.Contains(inlineeMethodName, StringComparison.OrdinalIgnoreCase))
             {
-                Assert.True(inlineeKind == CrossModuleInliningInfoSection.InlineeReferenceKind.CrossModule,
+                if (inlineeKind == CrossModuleInliningInfoSection.InlineeReferenceKind.CrossModule)
+                {
+                    diagnostic = $"Found cross-module inlining '{inlinerName} → {inlineeName}'.";
+                    return true;
+                }
+
+                diagnostic =
                     $"Found inlining pair '{inlinerName} → {inlineeName}' but the inlinee is not encoded " +
-                    $"as a cross-module reference ({inlineeKind}). Expected ILBody import encoding.");
-                return;
+                    $"as a cross-module reference ({inlineeKind}). Expected ILBody import encoding.";
+                return false;
             }
         }
 
-        Assert.Fail(
+        diagnostic =
             $"Expected cross-module inlining '{inlineeMethodName}' into '{inlinerMethodName}', but it was not found.\n" +
-            $"Recorded inlining pairs:\n  {string.Join("\n  ", allPairs)}");
+            $"Recorded inlining pairs:\n  {string.Join("\n  ", allPairs)}";
+        return false;
     }
 
     /// <summary>
-    /// Asserts that the CrossModuleInlineInfo section has an entry for an inlinee matching
+    /// Returns true if the CrossModuleInlineInfo section has an entry for an inlinee matching
     /// <paramref name="inlineeMethodName"/> with cross-module inliners whose resolved names
     /// contain each of the <paramref name="expectedInlinerNames"/>. This validates that
     /// cross-module inliner indices (encoded as absolute ILBody import indices) resolve
     /// to the correct method names.
     /// </summary>
-    public static void HasCrossModuleInliners(
+    public static bool HasCrossModuleInliners(
         ReadyToRunReader reader,
         string inlineeMethodName,
-        params string[] expectedInlinerNames)
+        IEnumerable<string> expectedInlinerNames,
+        out string diagnostic)
     {
-        var inliningInfo = GetCrossModuleInliningInfoSection(reader);
+        if (!TryGetCrossModuleInliningInfoSection(reader, out var inliningInfo, out diagnostic))
+            return false;
 
         foreach (var entry in inliningInfo.GetEntries())
         {
@@ -118,30 +485,37 @@ internal static class R2RAssert
 
             foreach (string expected in expectedInlinerNames)
             {
-                Assert.True(
-                    crossModuleInlinerNames.Any(n => n.Contains(expected, StringComparison.OrdinalIgnoreCase)),
-                    $"Inlinee '{inlineeName}': expected a cross-module inliner matching '{expected}' " +
-                    $"but found only:\n  {string.Join("\n  ", crossModuleInlinerNames)}");
+                if (!crossModuleInlinerNames.Any(n => n.Contains(expected, StringComparison.OrdinalIgnoreCase)))
+                {
+                    diagnostic =
+                        $"Inlinee '{inlineeName}': expected a cross-module inliner matching '{expected}' " +
+                        $"but found only:\n  {string.Join("\n  ", crossModuleInlinerNames)}";
+                    return false;
+                }
             }
 
-            return;
+            diagnostic =
+                $"Inlinee '{inlineeName}' has all expected cross-module inliners: " +
+                $"[{string.Join(", ", expectedInlinerNames)}]";
+            return true;
         }
 
         var allEntries = new List<string>();
         foreach (var (inlinerName, inlineeName, _) in inliningInfo.GetInliningPairs())
             allEntries.Add($"{inlinerName} → {inlineeName}");
 
-        Assert.Fail(
+        diagnostic =
             $"No CrossModuleInlineInfo entry found for inlinee matching '{inlineeMethodName}'.\n" +
-            $"All inlining pairs:\n  {string.Join("\n  ", allEntries)}");
+            $"All inlining pairs:\n  {string.Join("\n  ", allEntries)}";
+        return false;
     }
 
     /// <summary>
-    /// Asserts that any inlining info section (CrossModuleInlineInfo or InliningInfo2) records that
-    /// <paramref name="inlinerMethodName"/> inlined <paramref name="inlineeMethodName"/>.
+    /// Returns true if any inlining info section (CrossModuleInlineInfo or InliningInfo2) records
+    /// that <paramref name="inlinerMethodName"/> inlined <paramref name="inlineeMethodName"/>.
     /// Does not check whether the encoding is cross-module or local.
     /// </summary>
-    public static void HasInlinedMethod(ReadyToRunReader reader, string inlinerMethodName, string inlineeMethodName)
+    public static bool HasInlinedMethod(ReadyToRunReader reader, string inlinerMethodName, string inlineeMethodName, out string diagnostic)
     {
         var foundPairs = new List<string>();
 
@@ -153,7 +527,8 @@ internal static class R2RAssert
                 if (inlinerName.Contains(inlinerMethodName, StringComparison.OrdinalIgnoreCase) &&
                     inlineeName.Contains(inlineeMethodName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return;
+                    diagnostic = $"Found inlining '{inlinerName} -> {inlineeName}' in CrossModuleInlineInfo.";
+                    return true;
                 }
                 foundPairs.Add($"[CXMI] {inlinerName} -> {inlineeName}");
             }
@@ -166,19 +541,18 @@ internal static class R2RAssert
                 if (inlinerName.Contains(inlinerMethodName, StringComparison.OrdinalIgnoreCase) &&
                     inlineeName.Contains(inlineeMethodName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return;
+                    diagnostic = $"Found inlining '{inlinerName} -> {inlineeName}' in InliningInfo2.";
+                    return true;
                 }
                 foundPairs.Add($"[II2] {inlinerName} -> {inlineeName}");
             }
         }
 
-        string pairList = foundPairs.Count > 0
-            ? string.Join("\n  ", foundPairs)
-            : "(none)";
-
-        Assert.Fail(
-            $"Expected inlining '{inlineeMethodName}' into '{inlinerMethodName}', but it was not found.\n" +
-            $"Found inlining pairs:\n  {pairList}");
+        string pairList = foundPairs.Count > 0 ? string.Join("\n  ", foundPairs) : "(none)";
+        diagnostic =
+            $"Inlining '{inlineeMethodName}' into '{inlinerMethodName}' not found.\n" +
+            $"Inlining pairs in image:\n  {pairList}";
+        return false;
     }
 
     private static CrossModuleInliningInfoSection GetCrossModuleInliningInfoSection(ReadyToRunReader reader)
@@ -192,6 +566,23 @@ internal static class R2RAssert
         int endOffset = offset + section.Size;
 
         return new CrossModuleInliningInfoSection(reader, offset, endOffset);
+    }
+
+    private static bool TryGetCrossModuleInliningInfoSection(ReadyToRunReader reader, out CrossModuleInliningInfoSection inliningInfo, out string diagnostic)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(
+                ReadyToRunSectionType.CrossModuleInlineInfo, out ReadyToRunSection section))
+        {
+            inliningInfo = null!;
+            diagnostic = "Expected CrossModuleInlineInfo section not found in R2R image.";
+            return false;
+        }
+
+        int offset = reader.GetOffset(section.RelativeVirtualAddress);
+        int endOffset = offset + section.Size;
+        inliningInfo = new CrossModuleInliningInfoSection(reader, offset, endOffset);
+        diagnostic = "";
+        return true;
     }
 
     private static IEnumerable<InliningInfoSection2> GetAllInliningInfo2Sections(ReadyToRunReader reader)
@@ -226,31 +617,30 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts the R2R image contains a CrossModuleInlineInfo section with at least one entry.
+    /// Returns true if the R2R image contains a CrossModuleInlineInfo section with at least one entry.
     /// </summary>
-    public static void HasCrossModuleInliningInfo(ReadyToRunReader reader)
+    public static bool HasCrossModuleInliningInfo(ReadyToRunReader reader, out string diagnostic)
     {
-        Assert.True(
-            reader.ReadyToRunHeader.Sections.TryGetValue(
-                ReadyToRunSectionType.CrossModuleInlineInfo, out ReadyToRunSection section),
-            "Expected CrossModuleInlineInfo section not found in R2R image.");
+        if (!TryGetCrossModuleInliningInfoSection(reader, out var inliningInfo, out diagnostic))
+            return false;
 
-        int offset = reader.GetOffset(section.RelativeVirtualAddress);
-        int endOffset = offset + section.Size;
-        var inliningInfo = new CrossModuleInliningInfoSection(reader, offset, endOffset);
         string dump = inliningInfo.ToString();
+        if (dump.Length == 0)
+        {
+            diagnostic = "CrossModuleInlineInfo section is present but contains no entries.";
+            return false;
+        }
 
-        Assert.True(
-            dump.Length > 0,
-            "CrossModuleInlineInfo section is present but contains no entries.");
+        diagnostic = $"CrossModuleInlineInfo contains entries:\n{dump}";
+        return true;
     }
 
     /// <summary>
-    /// Asserts the R2R image contains exactly one [ASYNC] variant entry whose signature contains the given method name.
-    /// Fails if no match is found or if more than one [ASYNC] method signature matches the search token.
+    /// Returns true if the R2R image contains exactly one [ASYNC] variant entry whose signature contains the given method name.
+    /// Returns false if no match is found or if more than one [ASYNC] method signature matches the search token.
     /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
-    public static void HasAsyncVariant(ReadyToRunReader reader, string methodName)
+    public static bool HasAsyncVariant(ReadyToRunReader reader, string methodName, out string diagnostic)
     {
         var asyncSigs = GetAllMethods(reader)
             .Where(m => m.SignatureString.Contains("[ASYNC]", StringComparison.OrdinalIgnoreCase))
@@ -261,75 +651,136 @@ internal static class R2RAssert
             .Where(s => s.Contains(methodName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        Assert.True(matchingSigs.Count > 0,
-            $"Expected [ASYNC] variant for '{methodName}' not found. " +
-            $"Async methods: [{string.Join(", ", asyncSigs)}]");
+        if (matchingSigs.Count == 0)
+        {
+            diagnostic = $"Expected [ASYNC] variant for '{methodName}' not found. " +
+                $"Async methods: [{string.Join(", ", asyncSigs)}]";
+            return false;
+        }
 
-        Assert.True(matchingSigs.Count == 1,
-            $"Expected exactly one [ASYNC] variant matching '{methodName}', " +
-            $"but found {matchingSigs.Count}: [{string.Join(", ", matchingSigs)}]");
+        if (matchingSigs.Count > 1)
+        {
+            diagnostic = $"Expected exactly one [ASYNC] variant matching '{methodName}', " +
+                $"but found {matchingSigs.Count}: [{string.Join(", ", matchingSigs)}]";
+            return false;
+        }
+
+        diagnostic = $"Found [ASYNC] variant for '{methodName}'.";
+        return true;
     }
 
     /// <summary>
-    /// Asserts the R2R image contains a [RESUME] stub entry whose signature contains the given method name.
+    /// Returns true if the R2R image contains a [RESUME] stub entry whose signature contains the given method name.
     /// </summary>
-    public static void HasResumptionStub(ReadyToRunReader reader, string methodName)
+    public static bool HasResumptionStub(ReadyToRunReader reader, string methodName, out string diagnostic)
     {
         var resumeSigs = GetAllMethods(reader)
             .Where(m => m.SignatureString.Contains("[RESUME]", StringComparison.OrdinalIgnoreCase))
             .Select(m => m.SignatureString)
             .ToList();
 
-        Assert.True(
-            resumeSigs.Any(s => s.Contains(methodName, StringComparison.OrdinalIgnoreCase)),
-            $"Expected [RESUME] stub for '{methodName}' not found. " +
-            $"Resume methods: [{string.Join(", ", resumeSigs)}]");
+        bool found = resumeSigs.Any(s => s.Contains(methodName, StringComparison.OrdinalIgnoreCase));
+        diagnostic = found
+            ? $"Found [RESUME] stub for '{methodName}'."
+            : $"Expected [RESUME] stub for '{methodName}' not found. " +
+              $"Resume methods: [{string.Join(", ", resumeSigs)}]";
+        return found;
     }
 
     /// <summary>
-    /// Asserts the R2R image contains at least one ContinuationLayout fixup.
+    /// Returns true if every [ASYNC] method with a ResumptionStubEntryPoint fixup is followed
+    /// immediately in emitted code by its [RESUME] stub.
     /// </summary>
-    public static void HasContinuationLayout(ReadyToRunReader reader)
+    public static bool AsyncMethodsWithResumptionStubsAreAdjacent(ReadyToRunReader reader, out string diagnostic)
     {
-        HasFixupKind(reader, ReadyToRunFixupKind.ContinuationLayout);
+        var methodsByRva = GetAllMethods(reader)
+            .Select(method => (Method: method, EntryPointRva: GetEntryPointRva(method)))
+            .Where(entry => entry.EntryPointRva >= 0)
+            .OrderBy(entry => entry.EntryPointRva)
+            .ToList();
+
+        var failures = new List<string>();
+        int checkedMethodCount = 0;
+        for (int i = 0; i < methodsByRva.Count; i++)
+        {
+            ReadyToRunMethod method = methodsByRva[i].Method;
+            if (!HasSignaturePrefix(method, "[ASYNC]") ||
+                !HasFixupKind(method, ReadyToRunFixupKind.ResumptionStubEntryPoint))
+            {
+                continue;
+            }
+
+            checkedMethodCount++;
+            if (i + 1 == methodsByRva.Count)
+            {
+                failures.Add($"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} is the final method.");
+                continue;
+            }
+
+            ReadyToRunMethod nextMethod = methodsByRva[i + 1].Method;
+            if (!HasSignaturePrefix(nextMethod, "[RESUME]") ||
+                StripAsyncMethodPrefix(nextMethod.SignatureString) != StripAsyncMethodPrefix(method.SignatureString))
+            {
+                failures.Add(
+                    $"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} " +
+                    $"is followed by '{nextMethod.SignatureString}' at RVA 0x{methodsByRva[i + 1].EntryPointRva:X}.");
+            }
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No [ASYNC] methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        if (failures.Count != 0)
+        {
+            diagnostic =
+                $"Expected each [ASYNC] method with a ResumptionStubEntryPoint fixup to be followed by its [RESUME] stub, " +
+                $"but found {failures.Count} mismatch(es):\n  {string.Join("\n  ", failures)}";
+            return false;
+        }
+
+        diagnostic = $"Found {checkedMethodCount} [ASYNC] method(s), each followed by its [RESUME] stub.";
+        return true;
     }
 
     /// <summary>
-    /// Asserts a method whose signature contains <paramref name="methodName"/>
+    /// Returns true if the R2R image contains at least one ContinuationLayout fixup.
+    /// </summary>
+    public static bool HasContinuationLayout(ReadyToRunReader reader, out string diagnostic)
+        => HasFixupKind(reader, ReadyToRunFixupKind.ContinuationLayout, out diagnostic);
+
+    /// <summary>
+    /// Returns true if a method whose signature contains <paramref name="methodName"/>
     /// has at least one ContinuationLayout fixup.
     /// </summary>
-    public static void HasContinuationLayout(ReadyToRunReader reader, string methodName)
-    {
-        HasFixupKindOnMethod(reader, ReadyToRunFixupKind.ContinuationLayout, methodName);
-    }
+    public static bool HasContinuationLayout(ReadyToRunReader reader, string methodName, out string diagnostic)
+        => HasFixupKindOnMethod(reader, ReadyToRunFixupKind.ContinuationLayout, methodName, out diagnostic);
 
     /// <summary>
-    /// Asserts the R2R image contains at least one ResumptionStubEntryPoint fixup.
+    /// Returns true if the R2R image contains at least one ResumptionStubEntryPoint fixup.
     /// </summary>
-    public static void HasResumptionStubFixup(ReadyToRunReader reader)
-    {
-        HasFixupKind(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint);
-    }
+    public static bool HasResumptionStubFixup(ReadyToRunReader reader, out string diagnostic)
+        => HasFixupKind(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, out diagnostic);
 
     /// <summary>
-    /// Asserts a method whose signature contains <paramref name="methodName"/>
+    /// Returns true if a method whose signature contains <paramref name="methodName"/>
     /// has at least one ResumptionStubEntryPoint fixup.
     /// </summary>
-    public static void HasResumptionStubFixup(ReadyToRunReader reader, string methodName)
-    {
-        HasFixupKindOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, methodName);
-    }
+    public static bool HasResumptionStubFixup(ReadyToRunReader reader, string methodName, out string diagnostic)
+        => HasFixupKindOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, methodName, out diagnostic);
 
     /// <summary>
-    /// Asserts that exactly one method whose signature contains <paramref name="methodName"/>
+    /// Returns true if exactly one method whose signature contains <paramref name="methodName"/>
     /// has at least one fixup of <paramref name="kind"/>, and that method has exactly
     /// <paramref name="expectedCount"/> fixups of that kind.
-    /// Fails if no match is found, if more than one method matches the search token, or if
+    /// Returns false if no match is found, if more than one method matches the search token, or if
     /// the fixup count differs from <paramref name="expectedCount"/>.
     /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// Useful for ensuring fixups are properly deduplicated.
     /// </summary>
-    public static void HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount)
+    public static bool HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount, out string diagnostic)
     {
         var matchingMethods = new List<(string Signature, int Count)>();
         foreach (var method in GetAllMethods(reader))
@@ -352,24 +803,34 @@ internal static class R2RAssert
                 matchingMethods.Add((method.SignatureString, count));
         }
 
-        Assert.True(matchingMethods.Count > 0,
-            $"No method matching '{methodName}' was found with any '{kind}' fixup.");
-
-        Assert.True(matchingMethods.Count == 1,
-            $"Expected exactly one method matching '{methodName}' with '{kind}' fixup, " +
-            $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods.Select(m => m.Signature))}]");
-
-        foreach (var (signature, count) in matchingMethods)
+        if (matchingMethods.Count == 0)
         {
-            Assert.True(count == expectedCount,
-                $"Expected exactly {expectedCount} '{kind}' fixup(s) on method '{signature}', but found {count}.");
+            diagnostic = $"No method matching '{methodName}' was found with any '{kind}' fixup.";
+            return false;
         }
+
+        if (matchingMethods.Count > 1)
+        {
+            diagnostic = $"Expected exactly one method matching '{methodName}' with '{kind}' fixup, " +
+                $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods.Select(m => m.Signature))}]";
+            return false;
+        }
+
+        var (signature, fixupCount) = matchingMethods[0];
+        if (fixupCount != expectedCount)
+        {
+            diagnostic = $"Expected exactly {expectedCount} '{kind}' fixup(s) on method '{signature}', but found {fixupCount}.";
+            return false;
+        }
+
+        diagnostic = $"Found exactly {expectedCount} '{kind}' fixup(s) on method '{signature}'.";
+        return true;
     }
 
     /// <summary>
-    /// Asserts the R2R image contains at least one fixup of the given kind.
+    /// Returns true if the R2R image contains at least one fixup of the given kind.
     /// </summary>
-    public static void HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind)
+    public static bool HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind, out string diagnostic)
     {
         var presentKinds = new HashSet<ReadyToRunFixupKind>();
         foreach (var method in GetAllMethods(reader))
@@ -383,18 +844,62 @@ internal static class R2RAssert
             }
         }
 
-        Assert.True(presentKinds.Contains(kind),
-            $"Expected fixup kind '{kind}' not found. " +
-            $"Present kinds: [{string.Join(", ", presentKinds)}]");
+        bool found = presentKinds.Contains(kind);
+        diagnostic = found
+            ? $"Found fixup kind '{kind}'."
+            : $"Expected fixup kind '{kind}' not found. " +
+              $"Present kinds: [{string.Join(", ", presentKinds)}]";
+        return found;
+    }
+
+    private static bool HasFixupKind(ReadyToRunMethod method, ReadyToRunFixupKind kind)
+    {
+        if (method.Fixups is null)
+            return false;
+
+        foreach (var cell in method.Fixups)
+        {
+            if (cell.Signature is not null && cell.Signature.FixupKind == kind)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasSignaturePrefix(ReadyToRunMethod method, string prefix)
+        => method.SignaturePrefixes is not null && method.SignaturePrefixes.Contains(prefix);
+
+    private static int GetEntryPointRva(ReadyToRunMethod method)
+    {
+        foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
+        {
+            if (runtimeFunction.Id == method.EntryPointRuntimeFunctionId)
+                return runtimeFunction.StartAddress;
+        }
+
+        return -1;
+    }
+
+    private static string StripAsyncMethodPrefix(string signature)
+    {
+        const string AsyncPrefix = "[ASYNC] ";
+        const string ResumePrefix = "[RESUME] ";
+        if (signature.StartsWith(AsyncPrefix, StringComparison.Ordinal))
+            return signature.Substring(AsyncPrefix.Length);
+
+        if (signature.StartsWith(ResumePrefix, StringComparison.Ordinal))
+            return signature.Substring(ResumePrefix.Length);
+
+        return signature;
     }
 
     /// <summary>
-    /// Asserts exactly one method whose signature contains <paramref name="methodName"/>
+    /// Returns true if exactly one method whose signature contains <paramref name="methodName"/>
     /// has at least one fixup of the given kind.
     /// Fails if no match is found or if more than one method matches the search token.
     /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
-    public static void HasFixupKindOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName)
+    public static bool HasFixupKindOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, out string diagnostic)
     {
         var matchingMethods = new List<string>();
         var methodsWithFixup = new List<string>();
@@ -421,13 +926,24 @@ internal static class R2RAssert
             }
         }
 
-        Assert.True(matchingMethods.Count > 0,
-            $"Expected fixup kind '{kind}' on method matching '{methodName}', but not found.\n" +
-            $"Methods with '{kind}' fixups: [{string.Join(", ", methodsWithFixup)}]");
+        if (matchingMethods.Count == 0)
+        {
+            diagnostic =
+                $"Expected fixup kind '{kind}' on method matching '{methodName}', but not found.\n" +
+                $"Methods with '{kind}' fixups: [{string.Join(", ", methodsWithFixup)}]";
+            return false;
+        }
 
-        Assert.True(matchingMethods.Count == 1,
-            $"Expected exactly one method matching '{methodName}' with fixup kind '{kind}', " +
-            $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods)}]");
+        if (matchingMethods.Count > 1)
+        {
+            diagnostic =
+                $"Expected exactly one method matching '{methodName}' with fixup kind '{kind}', " +
+                $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods)}]";
+            return false;
+        }
+
+        diagnostic = $"Found '{kind}' fixup on method matching '{methodName}'.";
+        return true;
     }
 }
 
@@ -483,7 +999,7 @@ internal sealed class SimpleAssemblyMetadata : IAssemblyMetadata
         _peReader = new PEReader(new MemoryStream(imageBytes));
     }
 
-    public PEReader ImageReader => _peReader;
+    public void GetSectionData(int relativeVirtualAddress, Action<BlobReader> action) => action(_peReader.GetSectionData(relativeVirtualAddress).GetReader());
 
     public MetadataReader MetadataReader => _peReader.GetMetadataReader();
 }

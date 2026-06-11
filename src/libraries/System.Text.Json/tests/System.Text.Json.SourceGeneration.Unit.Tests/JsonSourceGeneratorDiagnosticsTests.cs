@@ -697,6 +697,278 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 
+        [Fact]
+        public void UnionWithAmbiguousCaseTypes_CompilesWithWarning()
+        {
+            // Two case types serialize as the same JSON value type (Number).
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("IntOrLongUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'IntOrLongUnion': case types 'int', 'long' all serialize as JSON value type 'Number'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithListAndDictionaryCases_CompilesWithoutWarning()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(ListOrDictionaryUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct ListOrDictionaryUnion : IUnion
+                    {
+                        public ListOrDictionaryUnion(List<int> value) { Value = value; }
+                        public ListOrDictionaryUnion(Dictionary<string, int> value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
+        public void UnionWithAmbiguousCaseTypesAndAttributeClassifier_CompilesWithoutWarning()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [JsonUnion(TypeClassifier = typeof(IntOrLongClassifier))]
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+
+                    public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                    {
+                        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+                        public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                            (ref Utf8JsonReader reader) => typeof(int);
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
+        public void UnionWithAmbiguousCaseTypesAndOptionsClassifier_CompilesWithWarning()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSourceGenerationOptions(TypeClassifiers = new[] { typeof(IntOrLongClassifier) })]
+                    [JsonSerializable(typeof(IntOrLongUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct IntOrLongUnion : IUnion
+                    {
+                        public IntOrLongUnion(int value) { Value = value; }
+                        public IntOrLongUnion(long value) { Value = value; }
+                        public object? Value { get; }
+                    }
+
+                    public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                    {
+                        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+                        public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                            (ref Utf8JsonReader reader) => typeof(int);
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Location unionLocation = compilation.GetSymbolsWithName("IntOrLongUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'IntOrLongUnion': case types 'int', 'long' all serialize as JSON value type 'Number'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithCustomConverterCaseType_CompilesWithWarning()
+        {
+            // A case type annotated with [JsonConverter] cannot be classified at compile time
+            // because user-defined converters can serialize as any JSON value type.
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MyUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [JsonConverter(typeof(CustomConverter))]
+                    public class CustomCase
+                    {
+                    }
+
+                    public class CustomConverter : JsonConverter<CustomCase>
+                    {
+                        public override CustomCase? Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options) => null;
+                        public override void Write(Utf8JsonWriter writer, CustomCase value, JsonSerializerOptions options) { }
+                    }
+
+                    public class OtherCase
+                    {
+                    }
+
+                    [Union]
+                    public readonly struct MyUnion : IUnion
+                    {
+                        public MyUnion(CustomCase value) { Value = value; }
+                        public MyUnion(OtherCase value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MyUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MyUnion': case type 'CustomCase' is annotated with [JsonConverter] and may serialize as any JSON value type. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionAttributeWithoutValueProperty_GeneratesDiagnosticWarning()
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MissingShapeUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct MissingShapeUnion : IUnion
+                    {
+                        public MissingShapeUnion(int value) { }
+                        object IUnion.Value => throw new System.NotSupportedException();
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MissingShapeUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MissingShapeUnion' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnionWithValuePropertyButNoCaseConstructor_GeneratesDiagnosticWarning()
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(MissingShapeUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct MissingShapeUnion : IUnion
+                    {
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location unionLocation = compilation.GetSymbolsWithName("MissingShapeUnion").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'MissingShapeUnion' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
 #if NET
         [Fact]
         public void CollectionWithRefStructElement_CompilesWithWarning()
@@ -880,6 +1152,867 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Assert.Empty(result.Diagnostics);
             result.AssertContainsType("global::HelloWorld.TypeWithManyParams<int, string, bool, double, long>");
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_SupportedPattern_CompileSuccessfully()
+        {
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<T>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.MyBase<int>");
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_WrappedTypeArgs_WarnsWithSYSLIB1229()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<List<T>>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("MyDerived<>", diagnostic.GetMessage());
+            Assert.Contains("MyBase<int>", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_GroundMismatchAgainstClosedBase_WarnsWithSYSLIB1229()
+        {
+            // Derived<T> : Base<T, int> registered on Base<int, string>:
+            // position 0 (T) unifies with int, but position 1 (the concrete `int` in the
+            // derived's base spec) contradicts `string` in the closed base. The derived is
+            // well-formed in isolation -- it just does not apply to this particular closed
+            // base. The resolver surfaces a SYSLIB1229 diagnostic.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<T, int>
+                    {
+                        public T Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_PartiallyConcrete_Resolves()
+        {
+            // Derived<T> : Base<T, int> registered on Base<string, int>:
+            // position 0 (T) unifies with string, position 1 (concrete int) matches.
+            // Expected: closed type is MyDerived<string>, no diagnostic.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<string, int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<T, int>
+                    {
+                        public T Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics.Where(d => d.Id == "SYSLIB1229"));
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_NonGenericBase_WarnsWithSYSLIB1229()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_SYSLIB1229_IsPragmaSuppressible()
+        {
+            string source = """
+                #pragma warning disable SYSLIB1229
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<List<T>>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1229");
+            Assert.True(diagnostic.IsSuppressed);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_WrappedArgWithMatchingBase_CompilesSuccessfully()
+        {
+            // Derived<T> : Base<List<T>> registered on Base<List<int>> unifies to Derived<int>.
+            string source = """
+                #nullable enable
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<List<int>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<List<T>>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ReorderedParameters_CompilesSuccessfully()
+        {
+            // Derived<T1, T2> : Base<T2, T1> registered on Base<int, string> unifies to Derived<string, int>.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<,>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                    }
+
+                    public class MyDerived<T1, T2> : MyBase<T2, T1>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_PartialConcretization_CompilesSuccessfully()
+        {
+            // Derived<T> : Base<T, int> registered on Base<string, int> unifies to Derived<string>.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<string, int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                    }
+
+                    public class MyDerived<T> : MyBase<T, int>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ArrayTypeArg_CompilesSuccessfully()
+        {
+            // Derived<T> : Base<T[]> registered on Base<int[]> unifies to Derived<int>.
+            // Exercises the IArrayTypeSymbol branch of structural unification.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int[]>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                    }
+
+                    public class MyDerived<T> : MyBase<T[]>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_UnboundParameter_WarnsWithSYSLIB1229()
+        {
+            // Derived<T1, T2> : Base<T1> — T2 is not bound by the base type's arguments.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<,>), "derived")]
+                    public class MyBase<T>
+                    {
+                    }
+
+                    public class MyDerived<T1, T2> : MyBase<T1>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_AmbiguousMatch_WarnsWithSYSLIB1229()
+        {
+            // Impl<T> : IBase<T>, IBase<List<T>> registered on IBase<List<int>>.
+            // Both interface ancestors unify, which is ambiguous.
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IBase<List<int>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBase<T> { }
+
+                    public class Impl<T> : IBase<T>, IBase<List<T>> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ConstraintViolation_WarnsWithSYSLIB1229()
+        {
+            // Derived<T> : Base<T> where T : struct, registered on Base<string>.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                    }
+
+                    public class MyDerived<T> : MyBase<T> where T : struct
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ReferenceTypeConstraintSatisfied_CompilesSuccessfully()
+        {
+            // Derived<T> : Base<T> where T : class, registered on Base<string>.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                    }
+
+                    public class MyDerived<T> : MyBase<T> where T : class
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_InterfaceConstraintSatisfied_CompilesSuccessfully()
+        {
+            // Derived<T> : Base<T> where T : System.IComparable<T>, registered on Base<int>.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                    }
+
+                    public class MyDerived<T> : MyBase<T> where T : System.IComparable<T>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ArrayInsideGenericConstraint_CompilesSuccessfully()
+        {
+            // where T : IEnumerable<U[]> with T=List<int[]>, U=int.
+            // Exercises array substitution into a generic constraint type.
+            string source = """
+                #nullable enable
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<List<int[]>, int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<,>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                    }
+
+                    public class MyDerived<T, U> : MyBase<T, U> where T : IEnumerable<U[]>
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_NestedInGenericOuter_CompilesSuccessfully()
+        {
+            // Outer<T>.Middle.Leaf<U> : Base<(T, U)> registered on Base<(int, string)>.
+            // Exercises ConstructEnclosing rebinding a non-generic intermediate type
+            // through a constructed generic outer.
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(Base<(int, string)>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Outer<>.Middle.Leaf<>), "leaf")]
+                    public class Base<T>
+                    {
+                    }
+
+                    public class Outer<T>
+                    {
+                        public class Middle
+                        {
+                            public class Leaf<U> : Base<(T, U)>
+                            {
+                            }
+                        }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_MultipleGenericInterfaceBases_EachResolvesIndependently()
+        {
+            // Impl<T> implements two unrelated generic interfaces, each carrying its own
+            // open-generic [JsonDerivedType(typeof(Impl<>))]. Each base interface's
+            // polymorphism metadata must resolve Impl<> independently against its closed form.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IBaseA<int>))]
+                    [JsonSerializable(typeof(IBaseB<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBaseA<T> { }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBaseB<T> { }
+
+                    public class Impl<T> : IBaseA<T>, IBaseB<T> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_GenericInterfaceDiamond_CompilesSuccessfully()
+        {
+            // Diamond inheritance via two generic interface legs. Impl<T> reaches IBaseA<T>
+            // and IBaseB<T> through the intermediate IDerived<T>. Resolution through each
+            // diamond leg must independently succeed.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IBaseA<int>))]
+                    [JsonSerializable(typeof(IBaseB<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBaseA<T> { }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBaseB<T> { }
+
+                    public interface IDerived<T> : IBaseA<T>, IBaseB<T> { }
+
+                    public class Impl<T> : IDerived<T> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_MultipleInterfaceConstructions_NonAmbiguousResolution_CompilesSuccessfully()
+        {
+            // Impl<T> reaches IBase<> twice: once via its own type-parameterized base (IBase<T>)
+            // and once via inheritance from the non-generic IntBase (IBase<int>). When resolved
+            // against the closed base IBase<string>, only the IBase<T> leg unifies (T=string);
+            // the IBase<int> leg is incompatible. Resolution must succeed and produce
+            // Impl<string>. The both-legs-match scenario (which IS ambiguous) is covered by
+            // OpenGenericDerivedType_AmbiguousMatch. Indirecting the IBase<int> leg through a
+            // non-generic base class avoids C# CS0695 -- a class cannot directly declare two
+            // constructions of the same generic interface that could unify under any
+            // substitution.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IBase<string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Impl<>), "impl")]
+                    public interface IBase<T> { }
+
+                    public class IntBase : IBase<int> { }
+
+                    public class Impl<T> : IntBase, IBase<T> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_CovariantInterface_CompilesSuccessfully()
+        {
+            // Open generic VarCovImpl<T> registered on a covariant interface base.
+            // Unification is purely structural and ignores 'out'; the resolver closes T
+            // to whatever the closed base specifies. No diagnostic expected.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IVarCovBase<Animal>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class Animal { }
+
+                    [JsonDerivedType(typeof(VarCovImpl<>), "covImpl")]
+                    public interface IVarCovBase<out T> { }
+
+                    public class VarCovImpl<T> : IVarCovBase<T> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ContravariantInterface_CompilesSuccessfully()
+        {
+            // Open generic VarContraImpl<T> registered on a contravariant interface base.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IVarContraBase<Animal>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class Animal { }
+
+                    [JsonDerivedType(typeof(VarContraImpl<>), "contraImpl")]
+                    public interface IVarContraBase<in T> { }
+
+                    public class VarContraImpl<T> : IVarContraBase<T> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_BivariantInterface_CompilesSuccessfully()
+        {
+            // Mixed-variance interface with both 'in' and 'out' parameters.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IVarBivariantBase<Dog, Animal>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class Animal { }
+                    public class Dog : Animal { }
+
+                    [JsonDerivedType(typeof(VarBivariantImpl<,>), "bvImpl")]
+                    public interface IVarBivariantBase<in TIn, out TOut> { }
+
+                    public class VarBivariantImpl<TIn, TOut> : IVarBivariantBase<TIn, TOut> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_NestedGenericEnclosingMismatch_WarnsWithSYSLIB1229()
+        {
+            // Pattern: NestedDerived<T> : NestedBase<NestedOuter<int>.NestedBox<T>>.
+            // Closed base: NestedBase<NestedOuter<string>.NestedBox<int>>.
+            // The enclosing argument differs (int vs string); unification MUST fail.
+            // Pre-fix source-gen ignored ContainingType arguments in TryUnifyWith and would
+            // have false-accepted T=int. With the ContainingType walk in place, the
+            // mismatch is detected and SYSLIB1229 is reported, matching the reflection
+            // resolver's InvalidOperationException at runtime.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(NestedBase<NestedOuter<string>.NestedBox<int>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(NestedDerivedMismatch<>), "nested")]
+                    public class NestedBase<T> { }
+
+                    public class NestedOuter<TOuter>
+                    {
+                        public class NestedBox<TInner> { }
+                    }
+
+                    public class NestedDerivedMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1229", diagnostic.Id);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_NestedGenericTypeParameterInEnclosing_CompilesSuccessfully()
+        {
+            // Pattern: NestedDerived<T> : NestedBase<NestedOuter<T>.NestedBox<int>>.
+            // Closed base: NestedBase<NestedOuter<string>.NestedBox<int>>.
+            // T appears only in the ENCLOSING type's argument list. Pre-fix source-gen
+            // ignored ContainingType and reported SYSLIB1229 because T was never bound by
+            // the leaf-only TryUnifyWith walk. With the ContainingType walk in place,
+            // unification succeeds with T=string and the resolver closes NestedDerived to
+            // NestedDerived<string>. No diagnostic expected.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(NestedBaseB<NestedOuterB<string>.NestedBoxB<int>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(NestedDerivedParamInEnclosing<>), "nestedB")]
+                    public class NestedBaseB<T> { }
+
+                    public class NestedOuterB<TOuter>
+                    {
+                        public class NestedBoxB<TInner> { }
+                    }
+
+                    public class NestedDerivedParamInEnclosing<T> : NestedBaseB<NestedOuterB<T>.NestedBoxB<int>> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_CovariantInterfaceConstraintSatisfied_CompilesSuccessfully()
+        {
+            // where T : IEnumerable<object>. Closing T to List<string> satisfies the
+            // constraint ONLY via IEnumerable<out T> covariance (IEnumerable<string> is
+            // assignable to IEnumerable<object> only by virtue of 'out T'). Pre-fix
+            // source-gen used identity-based interface containment for the constraint
+            // check and would have reported SYSLIB1229. With Compilation.HasImplicitConversion
+            // in place, source-gen matches reflection's behavior and accepts.
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(ConstraintBase<List<string>>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(ConstraintImpl<>), "impl")]
+                    public class ConstraintBase<T> { }
+
+                    public class ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
         }
     }
 }

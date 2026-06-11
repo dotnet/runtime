@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Tests;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
@@ -353,9 +354,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         /// generated file matches the corresponding baseline in
         /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false)
+        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false, CSharpParseOptions? parseOptions = null)
         {
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: disableDiagnosticValidation, logger: logger);
 
             var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));

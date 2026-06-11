@@ -936,6 +936,31 @@ namespace System.Diagnostics
             return new Process(".", false, processId, null);
         }
 
+        /// <summary>
+        /// Attempts to get a <see cref="Process"/> instance for an existing process with the specified process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <param name="process">When this method returns <see langword="true"/>, contains a <see cref="Process"/> representing the opened process; otherwise, <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the process was found and opened successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static bool TryGetProcessById(int processId, [NotNullWhen(true)] out Process? process)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
+
+            if (ProcessManager.IsProcessRunning(processId))
+            {
+                process = new Process(".", false, processId, null);
+                return true;
+            }
+
+            process = null;
+            return false;
+        }
+
+
         /// <devdoc>
         ///    <para>
         ///       Creates an array of <see cref='System.Diagnostics.Process'/> components that are
@@ -1457,6 +1482,8 @@ namespace System.Diagnostics
         /// </summary>
         public bool WaitForExit(int milliseconds)
         {
+            ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, Timeout.Infinite);
+
             bool exited = WaitForExitCore(milliseconds);
             if (exited && _watchForExit)
             {

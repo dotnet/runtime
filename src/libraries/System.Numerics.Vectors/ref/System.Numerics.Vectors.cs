@@ -258,50 +258,50 @@ namespace System.Numerics
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector3 value) { throw null; }
-        public static System.Numerics.Vector<System.Byte> AsVectorByte<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<System.Double> AsVectorDouble<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<System.Int32> AsVectorInt32<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<System.Int64> AsVectorInt64<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<byte> AsVectorByte<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<double> AsVectorDouble<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<short> AsVectorInt16<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<int> AsVectorInt32<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<long> AsVectorInt64<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<nint> AsVectorNInt<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<nuint> AsVectorNUInt<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> AsVectorSByte<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<System.Single> AsVectorSingle<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> AsVectorSByte<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<float> AsVectorSingle<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> AsVectorUInt16<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<ushort> AsVectorUInt16<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> AsVectorUInt32<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<uint> AsVectorUInt32<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt64> AsVectorUInt64<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<ulong> AsVectorUInt64<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<T> BitwiseAnd<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> BitwiseOr<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<System.Double> Ceiling(System.Numerics.Vector<System.Double> value) { throw null; }
-        public static System.Numerics.Vector<System.Single> Ceiling(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<double> Ceiling(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> Ceiling(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<T> Clamp<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
         public static System.Numerics.Vector<T> ClampNative<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
-        public static System.Numerics.Vector<System.Single> ConditionalSelect(System.Numerics.Vector<System.Int32> condition, System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
-        public static System.Numerics.Vector<System.Double> ConditionalSelect(System.Numerics.Vector<System.Int64> condition, System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalSelect(System.Numerics.Vector<int> condition, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<long> condition, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<T> ConditionalSelect<T>(System.Numerics.Vector<T> condition, System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<System.Double> ConvertToDouble(System.Numerics.Vector<System.Int64> value) { throw null; }
+        public static System.Numerics.Vector<double> ConvertToDouble(System.Numerics.Vector<long> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Double> ConvertToDouble(System.Numerics.Vector<System.UInt64> value) { throw null; }
-        public static System.Numerics.Vector<System.Int32> ConvertToInt32(System.Numerics.Vector<System.Single> value) { throw null; }
-        public static System.Numerics.Vector<System.Int32> ConvertToInt32Native(System.Numerics.Vector<System.Single> value) { throw null; }
-        public static System.Numerics.Vector<System.Int64> ConvertToInt64(System.Numerics.Vector<System.Double> value) { throw null; }
-        public static System.Numerics.Vector<System.Int64> ConvertToInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
-        public static System.Numerics.Vector<System.Single> ConvertToSingle(System.Numerics.Vector<System.Int32> value) { throw null; }
+        public static System.Numerics.Vector<double> ConvertToDouble(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<int> ConvertToInt32Native(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64Native(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<int> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Single> ConvertToSingle(System.Numerics.Vector<System.UInt32> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<uint> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> ConvertToUInt32(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<float> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> ConvertToUInt32Native(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<uint> ConvertToUInt32Native(System.Numerics.Vector<float> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64(System.Numerics.Vector<double> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64Native(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<T> CopySign<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> sign) { throw null; }
         public static System.Numerics.Vector<double> Cos(System.Numerics.Vector<double> vector) { throw null; }
         public static System.Numerics.Vector<float> Cos(System.Numerics.Vector<float> vector) { throw null; }
@@ -317,10 +317,10 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static T Dot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> Equals(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> Equals(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> Equals(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> Equals(System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
+        public static System.Numerics.Vector<long> Equals(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<int> Equals(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Equals(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> Equals(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static bool EqualsAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Equals<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -332,24 +332,24 @@ namespace System.Numerics
         public static uint ExtractMostSignificantBits(this System.Numerics.Vector3 vector) { throw null; }
         [CLSCompliant(false)]
         public static uint ExtractMostSignificantBits(this System.Numerics.Vector4 vector) { throw null; }
-        public static System.Numerics.Vector<System.Double> Floor(System.Numerics.Vector<System.Double> value) { throw null; }
-        public static System.Numerics.Vector<System.Single> Floor(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<double> Floor(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> Floor(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, System.Numerics.Vector<double> addend) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, System.Numerics.Vector<float> addend) { throw null; }
         public static T GetElement<T>(this System.Numerics.Vector<T> vector, int index) { throw null; }
         public static float GetElement(this System.Numerics.Vector2 vector, int index) { throw null; }
         public static float GetElement(this System.Numerics.Vector3 vector, int index) { throw null; }
         public static float GetElement(this System.Numerics.Vector4 vector, int index) { throw null; }
-        public static System.Numerics.Vector<System.Int64> GreaterThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> GreaterThan(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> GreaterThan(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> GreaterThan(System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
+        public static System.Numerics.Vector<long> GreaterThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<int> GreaterThan(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> GreaterThan(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> GreaterThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static bool GreaterThanAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool GreaterThanAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> GreaterThanOrEqual(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> GreaterThanOrEqual(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> GreaterThanOrEqual(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> GreaterThanOrEqual(System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
+        public static System.Numerics.Vector<long> GreaterThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<int> GreaterThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> GreaterThanOrEqual(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> GreaterThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static bool GreaterThanOrEqualAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool GreaterThanOrEqualAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> GreaterThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -375,16 +375,16 @@ namespace System.Numerics
         public static int LastIndexOfWhereAllBitsSet<T>(System.Numerics.Vector<T> vector) { throw null; }
         public static System.Numerics.Vector<double> Lerp(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y, System.Numerics.Vector<double> amount) { throw null; }
         public static System.Numerics.Vector<float> Lerp(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y, System.Numerics.Vector<float> amount) { throw null; }
-        public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> LessThan(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> LessThan(System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
+        public static System.Numerics.Vector<long> LessThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<int> LessThan(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> LessThan(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> LessThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static bool LessThanAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool LessThanAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> LessThanOrEqual(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> LessThanOrEqual(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
-        public static System.Numerics.Vector<System.Int64> LessThanOrEqual(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
-        public static System.Numerics.Vector<System.Int32> LessThanOrEqual(System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
+        public static System.Numerics.Vector<long> LessThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<int> LessThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> LessThanOrEqual(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> LessThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static bool LessThanOrEqualAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool LessThanOrEqualAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -417,28 +417,28 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<double> MultiplyAddEstimate(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, System.Numerics.Vector<double> addend) { throw null; }
         public static System.Numerics.Vector<float> MultiplyAddEstimate(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, System.Numerics.Vector<float> addend) { throw null; }
-        public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
+        public static System.Numerics.Vector<float> Narrow(System.Numerics.Vector<double> low, System.Numerics.Vector<double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
-        public static System.Numerics.Vector<System.Int16> Narrow(System.Numerics.Vector<System.Int32> low, System.Numerics.Vector<System.Int32> high) { throw null; }
-        public static System.Numerics.Vector<System.Int32> Narrow(System.Numerics.Vector<System.Int64> low, System.Numerics.Vector<System.Int64> high) { throw null; }
+        public static System.Numerics.Vector<sbyte> Narrow(System.Numerics.Vector<short> low, System.Numerics.Vector<short> high) { throw null; }
+        public static System.Numerics.Vector<short> Narrow(System.Numerics.Vector<int> low, System.Numerics.Vector<int> high) { throw null; }
+        public static System.Numerics.Vector<int> Narrow(System.Numerics.Vector<long> low, System.Numerics.Vector<long> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Byte> Narrow(System.Numerics.Vector<System.UInt16> low, System.Numerics.Vector<System.UInt16> high) { throw null; }
+        public static System.Numerics.Vector<byte> Narrow(System.Numerics.Vector<ushort> low, System.Numerics.Vector<ushort> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
+        public static System.Numerics.Vector<ushort> Narrow(System.Numerics.Vector<uint> low, System.Numerics.Vector<uint> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
-        public static System.Numerics.Vector<System.Single> NarrowWithSaturation(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
+        public static System.Numerics.Vector<uint> Narrow(System.Numerics.Vector<ulong> low, System.Numerics.Vector<ulong> high) { throw null; }
+        public static System.Numerics.Vector<float> NarrowWithSaturation(System.Numerics.Vector<double> low, System.Numerics.Vector<double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> NarrowWithSaturation(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
-        public static System.Numerics.Vector<System.Int16> NarrowWithSaturation(System.Numerics.Vector<System.Int32> low, System.Numerics.Vector<System.Int32> high) { throw null; }
-        public static System.Numerics.Vector<System.Int32> NarrowWithSaturation(System.Numerics.Vector<System.Int64> low, System.Numerics.Vector<System.Int64> high) { throw null; }
+        public static System.Numerics.Vector<sbyte> NarrowWithSaturation(System.Numerics.Vector<short> low, System.Numerics.Vector<short> high) { throw null; }
+        public static System.Numerics.Vector<short> NarrowWithSaturation(System.Numerics.Vector<int> low, System.Numerics.Vector<int> high) { throw null; }
+        public static System.Numerics.Vector<int> NarrowWithSaturation(System.Numerics.Vector<long> low, System.Numerics.Vector<long> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Byte> NarrowWithSaturation(System.Numerics.Vector<System.UInt16> low, System.Numerics.Vector<System.UInt16> high) { throw null; }
+        public static System.Numerics.Vector<byte> NarrowWithSaturation(System.Numerics.Vector<ushort> low, System.Numerics.Vector<ushort> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> NarrowWithSaturation(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
+        public static System.Numerics.Vector<ushort> NarrowWithSaturation(System.Numerics.Vector<uint> low, System.Numerics.Vector<uint> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> NarrowWithSaturation(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
+        public static System.Numerics.Vector<uint> NarrowWithSaturation(System.Numerics.Vector<ulong> low, System.Numerics.Vector<ulong> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) { throw null; }
         public static bool None<T>(System.Numerics.Vector<T> vector, T value) { throw null; }
         public static bool NoneWhereAllBitsSet<T>(System.Numerics.Vector<T> vector) { throw null; }
@@ -449,42 +449,42 @@ namespace System.Numerics
         public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector, System.MidpointRounding mode) { throw null; }
-        public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int64> ShiftLeft(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeft(System.Numerics.Vector<byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeft(System.Numerics.Vector<short> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeft(System.Numerics.Vector<int> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeft(System.Numerics.Vector<long> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<nint> ShiftLeft(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<nuint> ShiftLeft(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> ShiftLeft(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftLeft(System.Numerics.Vector<sbyte> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> ShiftLeft(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeft(System.Numerics.Vector<ushort> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> ShiftLeft(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeft(System.Numerics.Vector<uint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt64> ShiftLeft(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int16> ShiftRightArithmetic(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int32> ShiftRightArithmetic(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int64> ShiftRightArithmetic(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeft(System.Numerics.Vector<ulong> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmetic(System.Numerics.Vector<short> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmetic(System.Numerics.Vector<int> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmetic(System.Numerics.Vector<long> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<nint> ShiftRightArithmetic(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> ShiftRightArithmetic(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Byte> ShiftRightLogical(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int16> ShiftRightLogical(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int32> ShiftRightLogical(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
-        public static System.Numerics.Vector<System.Int64> ShiftRightLogical(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightLogical(System.Numerics.Vector<short> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightLogical(System.Numerics.Vector<int> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightLogical(System.Numerics.Vector<long> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<nint> ShiftRightLogical(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<nuint> ShiftRightLogical(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> ShiftRightLogical(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightLogical(System.Numerics.Vector<sbyte> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> ShiftRightLogical(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogical(System.Numerics.Vector<ushort> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> ShiftRightLogical(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogical(System.Numerics.Vector<uint> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt64> ShiftRightLogical(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightLogical(System.Numerics.Vector<ulong> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<double> Sin(System.Numerics.Vector<double> vector) { throw null; }
         public static System.Numerics.Vector<float> Sin(System.Numerics.Vector<float> vector) { throw null; }
         public static (System.Numerics.Vector<double> Sin, System.Numerics.Vector<double> Cos) SinCos(System.Numerics.Vector<double> vector) { throw null; }
@@ -536,38 +536,38 @@ namespace System.Numerics
         public static System.Numerics.Vector<double> Truncate(System.Numerics.Vector<double> vector) { throw null; }
         public static System.Numerics.Vector<float> Truncate(System.Numerics.Vector<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> low, out System.Numerics.Vector<System.UInt16> high) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> low, out System.Numerics.Vector<System.Int32> high) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int32> source, out System.Numerics.Vector<System.Int64> low, out System.Numerics.Vector<System.Int64> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<byte> source, out System.Numerics.Vector<ushort> low, out System.Numerics.Vector<ushort> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<short> source, out System.Numerics.Vector<int> low, out System.Numerics.Vector<int> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<int> source, out System.Numerics.Vector<long> low, out System.Numerics.Vector<long> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.SByte> source, out System.Numerics.Vector<System.Int16> low, out System.Numerics.Vector<System.Int16> high) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Single> source, out System.Numerics.Vector<System.Double> low, out System.Numerics.Vector<System.Double> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<sbyte> source, out System.Numerics.Vector<short> low, out System.Numerics.Vector<short> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<float> source, out System.Numerics.Vector<double> low, out System.Numerics.Vector<double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt16> source, out System.Numerics.Vector<System.UInt32> low, out System.Numerics.Vector<System.UInt32> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<ushort> source, out System.Numerics.Vector<uint> low, out System.Numerics.Vector<uint> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<uint> source, out System.Numerics.Vector<ulong> low, out System.Numerics.Vector<ulong> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<ushort> WidenLower(System.Numerics.Vector<System.Byte> source) { throw null; }
-        public static System.Numerics.Vector<int> WidenLower(System.Numerics.Vector<System.Int16> source) { throw null; }
-        public static System.Numerics.Vector<long> WidenLower(System.Numerics.Vector<System.Int32> source) { throw null; }
+        public static System.Numerics.Vector<ushort> WidenLower(System.Numerics.Vector<byte> source) { throw null; }
+        public static System.Numerics.Vector<int> WidenLower(System.Numerics.Vector<short> source) { throw null; }
+        public static System.Numerics.Vector<long> WidenLower(System.Numerics.Vector<int> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<short> WidenLower(System.Numerics.Vector<System.SByte> source) { throw null; }
-        public static System.Numerics.Vector<double> WidenLower(System.Numerics.Vector<System.Single> source) { throw null; }
+        public static System.Numerics.Vector<short> WidenLower(System.Numerics.Vector<sbyte> source) { throw null; }
+        public static System.Numerics.Vector<double> WidenLower(System.Numerics.Vector<float> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<uint> WidenLower(System.Numerics.Vector<System.UInt16> source) { throw null; }
+        public static System.Numerics.Vector<uint> WidenLower(System.Numerics.Vector<ushort> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<ulong> WidenLower(System.Numerics.Vector<System.UInt32> source) { throw null; }
+        public static System.Numerics.Vector<ulong> WidenLower(System.Numerics.Vector<uint> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<ushort> WidenUpper(System.Numerics.Vector<System.Byte> source) { throw null; }
-        public static System.Numerics.Vector<int> WidenUpper(System.Numerics.Vector<System.Int16> source) { throw null; }
-        public static System.Numerics.Vector<long> WidenUpper(System.Numerics.Vector<System.Int32> source) { throw null; }
+        public static System.Numerics.Vector<ushort> WidenUpper(System.Numerics.Vector<byte> source) { throw null; }
+        public static System.Numerics.Vector<int> WidenUpper(System.Numerics.Vector<short> source) { throw null; }
+        public static System.Numerics.Vector<long> WidenUpper(System.Numerics.Vector<int> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<short> WidenUpper(System.Numerics.Vector<System.SByte> source) { throw null; }
-        public static System.Numerics.Vector<double> WidenUpper(System.Numerics.Vector<System.Single> source) { throw null; }
+        public static System.Numerics.Vector<short> WidenUpper(System.Numerics.Vector<sbyte> source) { throw null; }
+        public static System.Numerics.Vector<double> WidenUpper(System.Numerics.Vector<float> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<uint> WidenUpper(System.Numerics.Vector<System.UInt16> source) { throw null; }
+        public static System.Numerics.Vector<uint> WidenUpper(System.Numerics.Vector<ushort> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<ulong> WidenUpper(System.Numerics.Vector<System.UInt32> source) { throw null; }
+        public static System.Numerics.Vector<ulong> WidenUpper(System.Numerics.Vector<uint> source) { throw null; }
         public static System.Numerics.Vector<T> WithElement<T>(this System.Numerics.Vector<T> vector, int index, T value) { throw null; }
         public static System.Numerics.Vector2 WithElement(this System.Numerics.Vector2 vector, int index, float value) { throw null; }
         public static System.Numerics.Vector3 WithElement(this System.Numerics.Vector3 vector, int index, float value) { throw null; }
@@ -1125,23 +1125,23 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> operator /(System.Numerics.Vector<T> left, T right) { throw null; }
         public static bool operator ==(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator ^(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Byte> (System.Numerics.Vector<T> value) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Double> (System.Numerics.Vector<T> value) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Int16> (System.Numerics.Vector<T> value) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Int32> (System.Numerics.Vector<T> value) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Int64> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<byte> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<double> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<short> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<int> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<long> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<nint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator System.Numerics.Vector<nuint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.Vector<System.SByte> (System.Numerics.Vector<T> value) { throw null; }
-        public static explicit operator System.Numerics.Vector<System.Single> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<sbyte> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<float> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.Vector<System.UInt16> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<ushort> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.Vector<System.UInt32> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<uint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.Vector<System.UInt64> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<ulong> (System.Numerics.Vector<T> value) { throw null; }
         public static bool operator !=(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator <<(System.Numerics.Vector<T> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<T> operator *(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }

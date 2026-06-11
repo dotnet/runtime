@@ -91,15 +91,7 @@ public class ManagedToNativeGenerator : Task
         // The signatures should be in the form of a string where the first character represents the return type and the
         // following characters represent the argument types. The type characters should match those used by the
         // SignatureMapper.CharToNativeType method.
-        string[] pregeneratedInterpreterToNativeSignatures =
-        {
-            "ip",
-            "iip",
-            "iiip",
-            "iiiip",
-            "vip",
-            "viip",
-        };
+        string[] pregeneratedInterpreterToNativeSignatures = Array.Empty<string>(); // Currently none, but can be added here as needed in the future.
 
         IEnumerable<string> cookies = pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath);
         cookies = cookies.Concat(internalCallCollector.GetSignatures());
