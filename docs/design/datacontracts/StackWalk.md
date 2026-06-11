@@ -640,7 +640,7 @@ After walking the thread's frames, `WalkStackReferences` reports two additional 
 - **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame`, each `GCFrame` is walked via its `Next` pointer until the `GCFRAME_TOP` terminator (`~0`, sized to the pointer width). For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
 - **Exception tracker (ExInfo) chain**: starting from `Thread.ExceptionTracker`, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
 
-Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack), consistent with the per-frame roots. The `SourceType` differentiates them: GCFrame roots use the `Frame` source type, while ExInfo roots use the dedicated `ExInfo` source type (`SOS_StackSourceExInfo`, mapped to `Frame` for the legacy `ISOSDacInterface`).
+Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack), consistent with the per-frame roots. The `SourceType` differentiates them: GCFrame roots use the `Frame` source type, while ExInfo roots use the dedicated `ExInfo` source type. The legacy `ISOSDacInterface` exposes the same distinction: `GetStackReferences` forwards GCFrame roots as `SOS_StackSourceFrame` and ExInfo roots as `SOS_StackSourceExInfo`.
 
 ### Signature-Based Scanning (currently deferred)
 
