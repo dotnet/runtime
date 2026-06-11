@@ -5674,7 +5674,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     // Report the return value home for value-returning managed calls. Tail calls do not return
     // to this frame, newobj produces the object on the stack, and void calls have no return value.
-    if (!tailcall && !newObj && callInfo.sig.retType != CORINFO_TYPE_VOID)
+    // The debugger only resolves return values for IL call/callvirt, so calli is excluded.
+    if (!tailcall && !newObj && !isCalli && callInfo.sig.retType != CORINFO_TYPE_VOID)
         m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
