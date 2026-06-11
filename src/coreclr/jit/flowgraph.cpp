@@ -7822,8 +7822,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                     // not part of the parent try's code body. Don't add it to
                     // the parent region.
                     //
-                    if (!includeHandlerBlocks &&
-                        !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    if (!includeHandlerBlocks && !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
                     {
                         break;
                     }
