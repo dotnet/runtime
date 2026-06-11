@@ -8171,7 +8171,7 @@ public:
     bool optPrimaryIVStaysEHLiveAfterReplacement(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, PerLoopInfo* loopLocals);
     bool optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* HBtab, FlowGraphNaturalLoop* loop);
+    bool optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGraphNaturalLoop* loop);
     void optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* stmt);
 
     // Redundant branch opts

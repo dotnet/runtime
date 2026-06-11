@@ -1269,25 +1269,16 @@ bool Compiler::optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraph
     BitVec       checkedRegions = BitVecOps::MakeEmpty(&ehTraits);
 
     BasicBlockVisit result = loop->VisitLoopBlocks([=, &ehTraits, &checkedRegions](BasicBlock* block) {
-        EHblkDsc* exnFlowRegion = ehGetBlockExnFlowDsc(block);
-        unsigned  ehIndex = exnFlowRegion == nullptr ? EHblkDsc::NO_ENCLOSING_INDEX : ehGetIndex(exnFlowRegion);
-
-        while (ehIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            EHblkDsc* HBtab = ehGetDsc(ehIndex);
-
-            if (BitVecOps::TryAddElemD(&ehTraits, checkedRegions, ehIndex))
+        return block->VisitEHSuccs(this, [=, &ehTraits, &checkedRegions](BasicBlock* ehSucc) {
+            unsigned ehIndex = ehSucc->getHndIndex();
+            if (BitVecOps::TryAddElemD(&ehTraits, checkedRegions, ehIndex) &&
+                !optPrimaryIVCanCrossHandler(lclNum, ehGetDsc(ehIndex), loop))
             {
-                if (!optPrimaryIVCanCrossHandler(lclNum, HBtab, loop))
-                {
-                    return BasicBlockVisit::Abort;
-                }
+                return BasicBlockVisit::Abort;
             }
 
-            ehIndex = HBtab->ebdEnclosingTryIndex;
-        }
-
-        return BasicBlockVisit::Continue;
+            return BasicBlockVisit::Continue;
+        });
     });
 
     if (result == BasicBlockVisit::Abort)
@@ -1323,61 +1314,48 @@ bool Compiler::optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraph
 //
 // Parameters:
 //   lclNum - The primary IV
-//   HBtab  - The EH region whose handler is reachable from the loop
+//   eh     - The EH region whose handler is reachable from the loop
 //   loop   - The loop
 //
 // Returns:
 //   True if the replacement is legal with respect to this handler.
 //
-bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* HBtab, FlowGraphNaturalLoop* loop)
+bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGraphNaturalLoop* loop)
 {
     // Handlers inside the loop have their occurrences replaced along with the
     // rest of the loop, so they are fine.
-    if (loop->ContainsBlock(HBtab->ebdHndBeg))
+    if (loop->ContainsBlock(eh->ebdHndBeg))
     {
         return true;
     }
 
-    if (HBtab->HasFinallyOrFaultHandler())
+    if (!eh->HasFinallyOrFaultHandler())
     {
-        // A finally/fault handler is fine as long as the IV is not actually used
-        // inside it. Such a handler never resumes normal execution after the
-        // protected region.
-        for (BasicBlock* block = HBtab->ebdHndBeg, *end = HBtab->ebdHndLast->Next(); block != end;
-             block             = block->Next())
+        // A catch/filter handler can resume normal execution after the protected
+        // region, so the IV must not be live into it (this also rejects values
+        // that are merely live through the handler).
+        if (eh->HasFilter() && optLocalIsLiveIntoBlock(lclNum, eh->ebdFilter))
         {
-            for (Statement* stmt : block->Statements())
-            {
-                // Skip PHI definitions: the PHI at the handler entry is an SSA
-                // artifact representing the EH-boundary merge, not a real use.
-                if (stmt->IsPhiDefnStmt())
-                {
-                    continue;
-                }
-
-                for (GenTree* node : stmt->TreeList())
-                {
-                    if (node->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_FLD) &&
-                        (node->AsLclVarCommon()->GetLclNum() == lclNum))
-                    {
-                        return false;
-                    }
-                }
-            }
+            return false;
         }
 
-        return true;
+        return !optLocalIsLiveIntoBlock(lclNum, eh->ebdHndBeg);
     }
 
-    // A catch/filter handler can resume normal execution after the protected
-    // region, so the IV must not be live into it (this also rejects values that
-    // are merely live through the handler).
-    if (HBtab->HasFilter() && optLocalIsLiveIntoBlock(lclNum, HBtab->ebdFilter))
+    // A finally/fault handler never resumes normal execution after the protected
+    // region, so it is fine as long as the IV is not actually used inside it.
+    // bbVarUse captures exactly the upward-exposed uses (and excludes the SSA PHI
+    // artifacts at the handler entry).
+    unsigned varIndex = lvaGetDesc(lclNum)->lvVarIndex;
+    for (BasicBlock* block = eh->ebdHndBeg, *end = eh->ebdHndLast->Next(); block != end; block = block->Next())
     {
-        return false;
+        if (VarSetOps::IsMember(this, block->bbVarUse, varIndex))
+        {
+            return false;
+        }
     }
 
-    return !optLocalIsLiveIntoBlock(lclNum, HBtab->ebdHndBeg);
+    return true;
 }
 
 //------------------------------------------------------------------------
