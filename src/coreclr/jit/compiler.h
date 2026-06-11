@@ -2002,6 +2002,11 @@ struct NaturalLoopIterInfo
     // allowMissingBaseCase=true.
     bool NeedsZeroTripGuard : 1;
 
+    // Constant peeled from the loop limit so that the effective limit is
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
+    // and HasArrayLengthLimit.
+    int LimitOffset = 0;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -2021,6 +2026,7 @@ struct NaturalLoopIterInfo
     bool IsDecreasingLoop();
     GenTree* Iterator();
     GenTree* Limit();
+    GenTree* LimitBase();
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
