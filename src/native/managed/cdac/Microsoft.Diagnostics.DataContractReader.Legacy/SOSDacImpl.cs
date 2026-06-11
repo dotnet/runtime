@@ -3441,11 +3441,25 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (obj == 0 || (stringData == null && pNeeded == null) || (stringData is not null && count <= 0))
+            // Mirror ClrDataAccess::GetObjectStringData argument validation: reject a null object,
+            // or a request that provides neither an output buffer nor a size-out parameter.
+            if (obj == 0)
                 throw new ArgumentException();
+            if ((stringData == null || count == 0) && pNeeded == null)
+                throw new ArgumentException();
+
             Contracts.IObject contract = _target.Contracts.Object;
             string str = contract.GetStringValue(obj.ToTargetPointer(_target));
+
+            // Always reports the needed size via pNeeded; copies characters only when an output
+            // buffer (stringData with count > 0) is provided.
             OutputBufferHelpers.CopyStringToBuffer(stringData, count, pNeeded, str);
+
+            // Match the legacy DAC: a size-only query (count == 0) still reports the needed size
+            // via *pNeeded but returns E_INVALIDARG rather than S_OK. Callers (e.g. CLRMA) rely on
+            // this to size their buffer before the real copy.
+            if (count == 0)
+                hr = HResults.E_INVALIDARG;
         }
         catch (System.Exception ex)
         {
