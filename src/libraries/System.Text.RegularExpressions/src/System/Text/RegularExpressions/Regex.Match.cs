@@ -465,8 +465,8 @@ namespace System.Text.RegularExpressions
         /// > [!TIP]
         /// > - If a pattern starts with the `^` anchor but `startat` is greater than 0, no matches will ever be found in a single-line search since they are constrained by `^` to start at index 0.
         /// > - The [`\G` anchor](https://learn.microsoft.com/dotnet/standard/base-types/anchors-in-regular-expressions#contiguous-matches-g) is satisfied at `startat`. Because of this, if you want to restrict
-        /// a match so that it begins exactly at a particular character position in the string, anchor the regular expression with a `\G` on the left for a left-to-right pattern.
-        /// This restricts the match so it must start exactly at `startat` (or, when multiple matches are desired, so the matches are contiguous).
+        /// >   a match so that it begins exactly at a particular character position in the string, anchor the regular expression with a `\G` on the left for a left-to-right pattern.
+        /// >   This restricts the match so it must start exactly at `startat` (or, when multiple matches are desired, so the matches are contiguous).
         ///
         /// ## Right-to-left searches
         ///
