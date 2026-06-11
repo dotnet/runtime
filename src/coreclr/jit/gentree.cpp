@@ -25039,14 +25039,13 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     }
 #endif // TARGET_ARM64
 
+    // This effectively does: (Indices * op2) + Create(op1)
+    //
+    // When both op2 and op1 are constant we can fully fold this to a constant. Additionally,
+    // if only op2 is a constant we can simplify the computation by a lot. However, if only op1
+    // is constant than there isn't any real optimization we can do and we need the full computation.
     if (op2->OperIsConst())
     {
-        // This effectively does: (Indices * op2) + Create(op1)
-        //
-        // When both op2 and op1 are constant we can fully fold this to a constant. Additionally,
-        // if only op2 is a constant we can simplify the computation by a lot. However, if only op1
-        // is constant than there isn't any real optimization we can do and we need the full computation.
-
         GenTreeVecCon* vcon       = gtNewVconNode(type);
         uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
