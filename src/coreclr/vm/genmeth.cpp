@@ -350,7 +350,7 @@ static BOOL SatisfiesMethodConstraintsForInstantiation(MethodDesc *pGenericMetho
         _ASSERTE(tyvar != NULL);
         _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
 
-        // Pass in the InstatiationContext so constraints can be correctly evaluated
+        // Pass in the InstantiationContext so constraints can be correctly evaluated
         // if this is an instantiation where the type variable is in its open position
         if (!tyvar->SatisfiesConstraints(&typeContext, thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
         {
