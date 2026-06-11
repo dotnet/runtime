@@ -1347,7 +1347,7 @@ bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGr
     // bbVarUse captures exactly the upward-exposed uses (and excludes the SSA PHI
     // artifacts at the handler entry).
     unsigned varIndex = lvaGetDesc(lclNum)->lvVarIndex;
-    for (BasicBlock* block = eh->ebdHndBeg, *end = eh->ebdHndLast->Next(); block != end; block = block->Next())
+    for (BasicBlock *block = eh->ebdHndBeg, *end = eh->ebdHndLast->Next(); block != end; block = block->Next())
     {
         if (VarSetOps::IsMember(this, block->bbVarUse, varIndex))
         {
