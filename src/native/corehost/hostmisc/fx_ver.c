@@ -60,7 +60,7 @@ static size_t index_of_non_numeric(const pal_char_t* str, size_t start, size_t l
     for (size_t i = start; i - start < len; i++)
     {
         if (str[i] == _X('\0'))
-            return (size_t)-1;
+            break;
         
         if (str[i] < _X('0') || str[i] > _X('9'))
             return i;

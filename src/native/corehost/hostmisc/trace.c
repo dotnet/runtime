@@ -249,8 +249,7 @@ bool trace_enable(void)
             }
 
             // Fall back to "host" if either the exe path lookup failed or the
-            // filename did not fit in the buffer (the original C++ used a
-            // dynamically sized pal::string_t and never hit this case).
+            // filename did not fit in the buffer.
             if (exe_name[0] == _X('\0'))
                 pal_str_printf(exe_name, ARRAY_SIZE(exe_name), _X("host"));
 
