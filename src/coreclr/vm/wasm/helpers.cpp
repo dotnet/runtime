@@ -520,14 +520,18 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
     __builtin_unreachable();
 }
 
+// These CallFunclet functions are used to call funclets from the VM.
+// They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
+// then invoke the new funclet with SP pointing to the top of the new frame.
+// There are two versions of the function, one for funclets that need to pass a Throwable (catch/finally), and 1 for those do not (finally/fault)
 __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
-         "local.get       3\n"               // Get pFuncletCallerSP address to store the original stack pointer for the caller of the funclet
+         "local.get       3\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
          "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
          "i32.const       16\n"
          "i32.sub \n"
-         "i32.store       0\n"               // Store the stack pointer into pFuncletCallerSP
+         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
          "local.get       3\n"               // Get pFuncletCallerSP address to load the value we just stored
          "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
          "local.tee       3\n"               // Tee the stack pointer into a local so that we can use it again.
@@ -548,14 +552,15 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
          "return" ::);
 }
 
+// Finally/fault version of the CallFunclet function which does not need to pass a Throwable
 __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
-         "local.get       2\n"               // Get pFuncletCallerSP address to store the original stack pointer for the caller of the funclet
+         "local.get       2\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
          "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
          "i32.const       16\n"
          "i32.sub \n"
-         "i32.store       0\n"               // Store the stack pointer into pFuncletCallerSP
+         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
          "local.get       2\n"               // Get pFuncletCallerSP address to load the value we just stored
          "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
          "local.tee       2\n"               // Tee the stack pointer into a local so that we can use it again.
