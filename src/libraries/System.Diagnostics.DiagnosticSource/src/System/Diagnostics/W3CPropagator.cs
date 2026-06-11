@@ -104,7 +104,7 @@ namespace System.Diagnostics
                 if (keyValueSeparator <= 0 || keyValueSeparator >= currentEntry.Length - 1)
                 {
                     baggageSpan = nextBaggageSpan;
-                    continue; // invalid format
+                    continue; // skip malformed entry and continue parsing
                 }
 
                 ReadOnlySpan<char> keySpan = currentEntry.Slice(0, keyValueSeparator);
