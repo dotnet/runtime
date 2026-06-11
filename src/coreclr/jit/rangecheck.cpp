@@ -370,7 +370,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    Range arrSizeRng = GetRangeFromAssertions(m_compiler, arrLenVn, block->bbAssertionIn);
+    Range arrSizeRng = GetRangeFromAssertions(m_compiler, bndsChk->GetArrayLength(), block->bbAssertionIn);
 
     if (arrSizeRng.IsConstantRange())
     {
