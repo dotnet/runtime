@@ -76,7 +76,7 @@ struct StackRef
     CLRDATA_ADDRESS Object;     // The object pointer value
     unsigned int    Flags;      // SOSRefFlags (interior, pinned)
     CLRDATA_ADDRESS Source;     // IP or Frame that owns this ref
-    int             SourceType; // SOS_StackSourceIP or SOS_StackSourceFrame
+    int             SourceType; // SOS_StackSourceIP, SOS_StackSourceFrame, or SOS_StackSourceExInfo
     int             Register;   // Processor-encoding reg number, -1 for stack slots
                                 // (cDAC populates from GcInfo; runtime populates
                                 // by inverting GetRegisterSlot on supported arches)
@@ -819,6 +819,11 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
     GCFrame* pGCFrame = pThread->GetGCFrame();
     while (pGCFrame != GCFRAME_TOP)
     {
+        // Attribute GCFrame-protected refs to the GCFrame node address with the Frame
+        // source type, matching cDAC (GcScanContext stamps Source = GCFrame node, SourceType = Frame).
+        collectCtx.currentFrameSource = (CLRDATA_ADDRESS)dac_cast<TADDR>(pGCFrame);
+        collectCtx.currentFrameSourceType = 1; // SOS_StackSourceFrame
+        collectCtx.currentRegDisplay = nullptr;
         pGCFrame->GcScanRoots(gcctx.f, gcctx.sc);
         pGCFrame = pGCFrame->PtrNextFrame();
     }
@@ -826,6 +831,11 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
     PTR_ExInfo pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
     while (pExInfo != NULL)
     {
+        // Attribute in-flight exception refs to the ExInfo node address with the dedicated
+        // ExInfo source type, matching cDAC (Source = ExInfo node, SourceType = ExInfo).
+        collectCtx.currentFrameSource = (CLRDATA_ADDRESS)dac_cast<TADDR>(pExInfo);
+        collectCtx.currentFrameSourceType = 2; // SOS_StackSourceExInfo
+        collectCtx.currentRegDisplay = nullptr;
         PTR_PTR_Object pRef = dac_cast<PTR_PTR_Object>(&pExInfo->m_exception);
         gcctx.f(pRef, gcctx.sc, 0);
         pExInfo = pExInfo->GetPreviousExceptionTracker();
@@ -1637,6 +1647,13 @@ static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf,
 {
     if (bufLen <= 0)
         return;
+
+    if (sourceType == 2) // SOS_StackSourceExInfo
+    {
+        // ExInfo is not a Frame; do not dereference source as a Frame*.
+        snprintf(buf, bufLen, "<exinfo 0x%llx>", (unsigned long long)source);
+        return;
+    }
 
     if (sourceType != 0) // SOS_StackSourceFrame
     {
