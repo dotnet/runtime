@@ -1362,15 +1362,16 @@ namespace Internal.JitInterface
 
     public enum ILNum
     {
-        VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
-        RETBUF_ILNUM        = -2, // Pointer to the return-buffer
-        TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        VARARGS_HND_ILNUM        = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
+        RETBUF_ILNUM             = -2, // Pointer to the return-buffer
+        TYPECTXT_ILNUM           = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
         ASYNC_CONTINUATION_ILNUM = -4, // Async continuation argument
+        CALL_RETURN_ILNUM        = -5, // The return value of a call
 
-        UNKNOWN_ILNUM       = -5, // Unknown variable
+        UNKNOWN_ILNUM            = -6, // Unknown variable
 
-        MAX_ILNUM           = -5  // Sentinel value. This should be set to the largest magnitude value in the enum
-                                  // so that the compression routines know the enum's range.
+        MAX_ILNUM                = -6  // Sentinel value. This should be set to the largest magnitude value in the enum
+                                       // so that the compression routines know the enum's range.
     };
 
     public struct ILVarInfo

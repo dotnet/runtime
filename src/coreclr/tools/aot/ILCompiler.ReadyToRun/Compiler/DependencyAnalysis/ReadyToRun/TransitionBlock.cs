@@ -370,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                         fpReturnSize += 1;
                                     }
 
-                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    if (descriptor.eightByteClassifications1 == SystemVClassificationType.SystemVClassificationTypeSSE)
                                     {
                                         fpReturnSize += 2;
                                     }
