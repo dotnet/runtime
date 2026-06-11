@@ -51,10 +51,24 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Fact]
+        public void DnsResolver_NullName_Throws_Sync()
+        {
+            using DnsResolver r = new DnsResolver();
+            Assert.Throws<ArgumentNullException>(() => r.ResolveAddresses(null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolveSrv(null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolveMx(null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolveTxt(null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolveCName(null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolvePtr((string)null!));
+            Assert.Throws<ArgumentNullException>(() => r.ResolveNs(null!));
+        }
+
+        [Fact]
         public async Task DnsResolver_EmptyName_Throws()
         {
             using DnsResolver r = new DnsResolver();
             await Assert.ThrowsAsync<ArgumentException>(() => r.ResolveAddressesAsync(string.Empty));
+            Assert.Throws<ArgumentException>(() => r.ResolveAddresses(string.Empty));
         }
 
         [Fact]
@@ -65,6 +79,9 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveSrvAsync(TestSrv));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveMxAsync(TestMxHost));
+            Assert.Throws<ObjectDisposedException>(() => r.ResolveAddresses(TestHost));
+            Assert.Throws<ObjectDisposedException>(() => r.ResolveSrv(TestSrv));
+            Assert.Throws<ObjectDisposedException>(() => r.ResolveMx(TestMxHost));
         }
 
         [Fact]
@@ -228,6 +245,7 @@ namespace System.Net.NameResolution.Tests
             };
             using DnsResolver r = new DnsResolver(opts);
             await Assert.ThrowsAsync<PlatformNotSupportedException>(() => r.ResolveAddressesAsync(TestHost));
+            Assert.Throws<PlatformNotSupportedException>(() => r.ResolveAddresses(TestHost));
         }
 
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----

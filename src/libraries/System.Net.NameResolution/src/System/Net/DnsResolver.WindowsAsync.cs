@@ -50,21 +50,7 @@ namespace System.Net
 
             public Task<DnsQueryRawResult> StartAsync()
             {
-                // DnsQueryEx only supports DNS servers reachable on the standard port 53.
-                // The sockaddr port field passed to the API must be 0 (the API always
-                // queries port 53); supplying any non-zero port - even 53 itself - results
-                // in ERROR_INVALID_PARAMETER. We therefore reject any server endpoint that
-                // requests a non-default port, since it cannot be honored on Windows.
-                if (_servers is { Count: > 0 })
-                {
-                    foreach (IPEndPoint ep in _servers)
-                    {
-                        if (ep.Port != 0 && ep.Port != 53)
-                        {
-                            throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
-                        }
-                    }
-                }
+                ValidateServerPorts(_servers);
 
                 try
                 {
@@ -245,6 +231,95 @@ namespace System.Net
             catch
             {
                 // Swallow — never allow exceptions to propagate into native code.
+            }
+        }
+
+        // DnsQueryEx only supports DNS servers reachable on the standard port 53.
+        // The sockaddr port field passed to the API must be 0 (the API always
+        // queries port 53); supplying any non-zero port - even 53 itself - results
+        // in ERROR_INVALID_PARAMETER. We therefore reject any server endpoint that
+        // requests a non-default port, since it cannot be honored on Windows.
+        private static void ValidateServerPorts(IList<IPEndPoint> servers)
+        {
+            if (servers is { Count: > 0 })
+            {
+                foreach (IPEndPoint ep in servers)
+                {
+                    if (ep.Port != 0 && ep.Port != 53)
+                    {
+                        throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
+                    }
+                }
+            }
+        }
+
+        // Synchronous DnsQueryEx invocation. By omitting the completion callback the
+        // API executes the query inline on the calling thread and returns the result
+        // directly, so no GCHandle / TaskCompletionSource bookkeeping is required.
+        private unsafe DnsQueryRawResult DnsQueryExSync(string name, ushort queryType, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ValidateServerPorts(_options.Servers);
+
+            IntPtr namePtr = IntPtr.Zero;
+            IntPtr serverListPtr = IntPtr.Zero;
+            try
+            {
+                namePtr = Marshal.StringToHGlobalUni(name);
+
+                Interop.Dnsapi.DNS_QUERY_RESULT result = default;
+                result.Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+
+                Interop.Dnsapi.DNS_QUERY_REQUEST request = default;
+                request.Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+                request.QueryName = namePtr;
+                request.QueryType = queryType;
+                request.QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
+                // No completion callback => synchronous execution.
+
+                if (_options.Servers is { Count: > 0 })
+                {
+                    BuildAddrArray(_options.Servers, out serverListPtr);
+                    request.pDnsServerList = (Interop.Dnsapi.DNS_ADDR_ARRAY*)serverListPtr;
+                }
+
+                // A null cancel handle is valid for synchronous queries.
+                int status = Interop.Dnsapi.DnsQueryEx(&request, &result, null);
+
+                IntPtr records = result.pQueryRecords;
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    if (records != IntPtr.Zero)
+                    {
+                        Interop.Dnsapi.DnsFree(records, Interop.Dnsapi.DnsFreeRecordList);
+                    }
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                DnsResponseCode rc = MapWindowsErrorToResponseCode(status);
+
+                // For NXDOMAIN/NODATA, try to extract the negative-cache TTL from the
+                // SOA in the authority section if it's present in the record list.
+                TimeSpan negativeTtl = TimeSpan.Zero;
+                if (rc != DnsResponseCode.NoError || records == IntPtr.Zero)
+                {
+                    negativeTtl = ExtractNegativeCacheTtl(records);
+                }
+
+                return new DnsQueryRawResult(rc, records, negativeTtl);
+            }
+            finally
+            {
+                if (namePtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(namePtr);
+                }
+                if (serverListPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(serverListPtr);
+                }
             }
         }
 

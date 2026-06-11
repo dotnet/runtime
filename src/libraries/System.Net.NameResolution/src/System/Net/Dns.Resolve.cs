@@ -56,7 +56,10 @@ namespace System.Net
             => DefaultResolver.ResolvePtr(name);
 
         public static DnsResult<PtrRecord> ResolvePtr(IPAddress address)
-            => DefaultResolver.ResolvePtrAsync(address).GetAwaiter().GetResult();
+        {
+            ArgumentNullException.ThrowIfNull(address);
+            return DefaultResolver.ResolvePtr(DnsResolver.BuildArpaName(address));
+        }
 
         public static Task<DnsResult<PtrRecord>> ResolvePtrAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolvePtrAsync(name, cancellationToken);

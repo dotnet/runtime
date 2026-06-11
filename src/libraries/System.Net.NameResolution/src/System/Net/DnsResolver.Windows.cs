@@ -13,7 +13,7 @@ namespace System.Net
 {
     public sealed partial class DnsResolver
     {
-        // ---- Public Resolve*Core methods (called from cross-platform DnsResolver) ----
+        // ---- Asynchronous Resolve*Core methods (called from cross-platform DnsResolver) ----
 
         private async Task<DnsResult<AddressRecord>> ResolveAddressesCoreAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
@@ -27,12 +27,7 @@ namespace System.Net
                 return MergeAddressResults(aRes, aaaaRes);
             }
 
-            ushort qtype = addressFamily switch
-            {
-                AddressFamily.InterNetwork => Interop.Dnsapi.DNS_TYPE_A,
-                AddressFamily.InterNetworkV6 => Interop.Dnsapi.DNS_TYPE_AAAA,
-                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
-            };
+            ushort qtype = AddressFamilyToQueryType(addressFamily);
             return await QueryAddressesAsync(name, qtype, cancellationToken).ConfigureAwait(false);
         }
 
@@ -41,36 +36,7 @@ namespace System.Net
             DnsQueryRawResult raw = await DnsQueryExAsync(name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
             try
             {
-                if (raw.ResponseCode != DnsResponseCode.NoError)
-                {
-                    return new DnsResult<SrvRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
-                }
-
-                // Gather additional-section A/AAAA records by name so we can attach them.
-                Dictionary<string, List<AddressRecord>>? glue = null;
-                ParseAdditionalAddresses(raw.RecordsHead, ref glue);
-
-                List<SrvRecord> records = new();
-                for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
-                {
-                    Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
-                    uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                    if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && section == Interop.Dnsapi.DNSREC_ANSWER)
-                    {
-                        IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
-                        Interop.Dnsapi.DNS_SRV_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
-                        string target = PtrToString(data.pNameTarget) ?? string.Empty;
-                        IReadOnlyList<AddressRecord>? attached = null;
-                        if (glue != null && glue.TryGetValue(target, out List<AddressRecord>? list))
-                        {
-                            attached = list;
-                        }
-                        records.Add(new SrvRecord(target, data.wPort, data.wPriority, data.wWeight, TimeSpan.FromSeconds(hdr.dwTtl), attached));
-                    }
-                    cur = hdr.pNext;
-                }
-
-                return new DnsResult<SrvRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+                return ParseSrv(raw);
             }
             finally
             {
@@ -79,73 +45,23 @@ namespace System.Net
         }
 
         private Task<DnsResult<MxRecord>> ResolveMxCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync<MxRecord>(name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, static (hdr, dataPtr) =>
-            {
-                Interop.Dnsapi.DNS_MX_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_MX_DATA>(dataPtr);
-                return new MxRecord(PtrToString(data.pNameExchange) ?? string.Empty, data.wPreference, TimeSpan.FromSeconds(hdr.dwTtl));
-            });
+            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, s_parseMx);
 
         private Task<DnsResult<CNameRecord>> ResolveCNameCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync<CNameRecord>(name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, static (hdr, dataPtr) =>
-            {
-                Interop.Dnsapi.DNS_CNAME_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_CNAME_DATA>(dataPtr);
-                return new CNameRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
-            });
+            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, s_parseCName);
 
         private Task<DnsResult<PtrRecord>> ResolvePtrCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync<PtrRecord>(name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, static (hdr, dataPtr) =>
-            {
-                Interop.Dnsapi.DNS_PTR_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_PTR_DATA>(dataPtr);
-                return new PtrRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
-            });
+            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, s_parsePtr);
 
         private Task<DnsResult<NsRecord>> ResolveNsCoreAsync(string name, CancellationToken cancellationToken)
-            => QuerySimpleAsync<NsRecord>(name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, static (hdr, dataPtr) =>
-            {
-                Interop.Dnsapi.DNS_NS_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_NS_DATA>(dataPtr);
-                return new NsRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
-            });
+            => QuerySimpleAsync(name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, s_parseNs);
 
         private async Task<DnsResult<TxtRecord>> ResolveTxtCoreAsync(string name, CancellationToken cancellationToken)
         {
             DnsQueryRawResult raw = await DnsQueryExAsync(name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
             try
             {
-                if (raw.ResponseCode != DnsResponseCode.NoError)
-                {
-                    return new DnsResult<TxtRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
-                }
-
-                List<TxtRecord> records = new();
-                for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
-                {
-                    Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
-                    uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                    if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && section == Interop.Dnsapi.DNSREC_ANSWER)
-                    {
-                        IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
-                        // DNS_TXT_DATA: uint dwStringCount; followed by array of PCWSTR.
-                        uint count = (uint)Marshal.ReadInt32(dataPtr);
-                        int ptrSize = IntPtr.Size;
-                        IntPtr stringsPtr = dataPtr + sizeof(uint);
-                        if (ptrSize > sizeof(uint))
-                        {
-                            // Round up to pointer alignment.
-                            long aligned = ((long)stringsPtr + (ptrSize - 1)) & ~(long)(ptrSize - 1);
-                            stringsPtr = checked((nint)aligned);
-                        }
-                        string[] values = new string[count];
-                        for (int i = 0; i < count; i++)
-                        {
-                            IntPtr strPtr = Marshal.ReadIntPtr(stringsPtr, i * ptrSize);
-                            values[i] = PtrToString(strPtr) ?? string.Empty;
-                        }
-                        records.Add(new TxtRecord(values, TimeSpan.FromSeconds(hdr.dwTtl)));
-                    }
-                    cur = hdr.pNext;
-                }
-
-                return new DnsResult<TxtRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+                return ParseTxt(raw);
             }
             finally
             {
@@ -153,40 +69,244 @@ namespace System.Net
             }
         }
 
-        // ---- Helpers for address parsing ----
+        // ---- Synchronous Resolve*Core methods (called from cross-platform DnsResolver) ----
+
+        private DnsResult<AddressRecord> ResolveAddressesCore(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+        {
+            if (addressFamily == AddressFamily.Unspecified)
+            {
+                DnsResult<AddressRecord> aRes = QueryAddresses(name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken);
+                DnsResult<AddressRecord> aaaaRes = QueryAddresses(name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken);
+                return MergeAddressResults(aRes, aaaaRes);
+            }
+
+            ushort qtype = AddressFamilyToQueryType(addressFamily);
+            return QueryAddresses(name, qtype, cancellationToken);
+        }
+
+        private DnsResult<SrvRecord> ResolveSrvCore(string name, CancellationToken cancellationToken)
+        {
+            DnsQueryRawResult raw = DnsQueryExSync(name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken);
+            try
+            {
+                return ParseSrv(raw);
+            }
+            finally
+            {
+                raw.Dispose();
+            }
+        }
+
+        private DnsResult<MxRecord> ResolveMxCore(string name, CancellationToken cancellationToken)
+            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_MX, cancellationToken, s_parseMx);
+
+        private DnsResult<CNameRecord> ResolveCNameCore(string name, CancellationToken cancellationToken)
+            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_CNAME, cancellationToken, s_parseCName);
+
+        private DnsResult<PtrRecord> ResolvePtrCore(string name, CancellationToken cancellationToken)
+            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_PTR, cancellationToken, s_parsePtr);
+
+        private DnsResult<NsRecord> ResolveNsCore(string name, CancellationToken cancellationToken)
+            => QuerySimple(name, Interop.Dnsapi.DNS_TYPE_NS, cancellationToken, s_parseNs);
+
+        private DnsResult<TxtRecord> ResolveTxtCore(string name, CancellationToken cancellationToken)
+        {
+            DnsQueryRawResult raw = DnsQueryExSync(name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken);
+            try
+            {
+                return ParseTxt(raw);
+            }
+            finally
+            {
+                raw.Dispose();
+            }
+        }
+
+        // ---- Per-record-type selectors (shared by sync and async paths) ----
+
+        private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, MxRecord> s_parseMx = static (hdr, dataPtr) =>
+        {
+            Interop.Dnsapi.DNS_MX_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_MX_DATA>(dataPtr);
+            return new MxRecord(PtrToString(data.pNameExchange) ?? string.Empty, data.wPreference, TimeSpan.FromSeconds(hdr.dwTtl));
+        };
+
+        private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, CNameRecord> s_parseCName = static (hdr, dataPtr) =>
+        {
+            Interop.Dnsapi.DNS_CNAME_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_CNAME_DATA>(dataPtr);
+            return new CNameRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+        };
+
+        private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, PtrRecord> s_parsePtr = static (hdr, dataPtr) =>
+        {
+            Interop.Dnsapi.DNS_PTR_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_PTR_DATA>(dataPtr);
+            return new PtrRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+        };
+
+        private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, NsRecord> s_parseNs = static (hdr, dataPtr) =>
+        {
+            Interop.Dnsapi.DNS_NS_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_NS_DATA>(dataPtr);
+            return new NsRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+        };
+
+        private static ushort AddressFamilyToQueryType(AddressFamily addressFamily) =>
+            addressFamily switch
+            {
+                AddressFamily.InterNetwork => Interop.Dnsapi.DNS_TYPE_A,
+                AddressFamily.InterNetworkV6 => Interop.Dnsapi.DNS_TYPE_AAAA,
+                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
+            };
+
+        // ---- Address query helpers ----
 
         private async Task<DnsResult<AddressRecord>> QueryAddressesAsync(string name, ushort qtype, CancellationToken cancellationToken)
         {
             DnsQueryRawResult raw = await DnsQueryExAsync(name, qtype, cancellationToken).ConfigureAwait(false);
             try
             {
-                if (raw.ResponseCode != DnsResponseCode.NoError)
-                {
-                    return new DnsResult<AddressRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
-                }
-
-                List<AddressRecord> records = new();
-                for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
-                {
-                    Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
-                    uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                    if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
-                    {
-                        IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
-                        if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
-                        {
-                            records.Add(new AddressRecord(address!, TimeSpan.FromSeconds(hdr.dwTtl)));
-                        }
-                    }
-                    cur = hdr.pNext;
-                }
-
-                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+                return ParseAddresses(raw, qtype);
             }
             finally
             {
                 raw.Dispose();
             }
+        }
+
+        private DnsResult<AddressRecord> QueryAddresses(string name, ushort qtype, CancellationToken cancellationToken)
+        {
+            DnsQueryRawResult raw = DnsQueryExSync(name, qtype, cancellationToken);
+            try
+            {
+                return ParseAddresses(raw, qtype);
+            }
+            finally
+            {
+                raw.Dispose();
+            }
+        }
+
+        // ---- Record-list parsers (sync/async agnostic) ----
+
+        private static DnsResult<AddressRecord> ParseAddresses(DnsQueryRawResult raw, ushort qtype)
+        {
+            if (raw.ResponseCode != DnsResponseCode.NoError)
+            {
+                return new DnsResult<AddressRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
+            }
+
+            List<AddressRecord> records = new();
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            {
+                Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
+                uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
+                if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
+                {
+                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
+                    {
+                        records.Add(new AddressRecord(address!, TimeSpan.FromSeconds(hdr.dwTtl)));
+                    }
+                }
+                cur = hdr.pNext;
+            }
+
+            return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+        }
+
+        private static DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw)
+        {
+            if (raw.ResponseCode != DnsResponseCode.NoError)
+            {
+                return new DnsResult<SrvRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
+            }
+
+            // Gather additional-section A/AAAA records by name so we can attach them.
+            Dictionary<string, List<AddressRecord>>? glue = null;
+            ParseAdditionalAddresses(raw.RecordsHead, ref glue);
+
+            List<SrvRecord> records = new();
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            {
+                Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
+                uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && section == Interop.Dnsapi.DNSREC_ANSWER)
+                {
+                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    Interop.Dnsapi.DNS_SRV_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
+                    string target = PtrToString(data.pNameTarget) ?? string.Empty;
+                    IReadOnlyList<AddressRecord>? attached = null;
+                    if (glue != null && glue.TryGetValue(target, out List<AddressRecord>? list))
+                    {
+                        attached = list;
+                    }
+                    records.Add(new SrvRecord(target, data.wPort, data.wPriority, data.wWeight, TimeSpan.FromSeconds(hdr.dwTtl), attached));
+                }
+                cur = hdr.pNext;
+            }
+
+            return new DnsResult<SrvRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+        }
+
+        private static DnsResult<TxtRecord> ParseTxt(DnsQueryRawResult raw)
+        {
+            if (raw.ResponseCode != DnsResponseCode.NoError)
+            {
+                return new DnsResult<TxtRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
+            }
+
+            List<TxtRecord> records = new();
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            {
+                Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
+                uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && section == Interop.Dnsapi.DNSREC_ANSWER)
+                {
+                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    // DNS_TXT_DATA: uint dwStringCount; followed by array of PCWSTR.
+                    uint count = (uint)Marshal.ReadInt32(dataPtr);
+                    int ptrSize = IntPtr.Size;
+                    IntPtr stringsPtr = dataPtr + sizeof(uint);
+                    if (ptrSize > sizeof(uint))
+                    {
+                        // Round up to pointer alignment.
+                        long aligned = ((long)stringsPtr + (ptrSize - 1)) & ~(long)(ptrSize - 1);
+                        stringsPtr = checked((nint)aligned);
+                    }
+                    string[] values = new string[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        IntPtr strPtr = Marshal.ReadIntPtr(stringsPtr, i * ptrSize);
+                        values[i] = PtrToString(strPtr) ?? string.Empty;
+                    }
+                    records.Add(new TxtRecord(values, TimeSpan.FromSeconds(hdr.dwTtl)));
+                }
+                cur = hdr.pNext;
+            }
+
+            return new DnsResult<TxtRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+        }
+
+        private static DnsResult<TRecord> ParseSimple<TRecord>(DnsQueryRawResult raw, ushort qtype,
+            Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
+        {
+            if (raw.ResponseCode != DnsResponseCode.NoError)
+            {
+                return new DnsResult<TRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
+            }
+
+            List<TRecord> records = new();
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            {
+                Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
+                uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
+                if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
+                {
+                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    records.Add(selector(hdr, dataPtr));
+                }
+                cur = hdr.pNext;
+            }
+
+            return new DnsResult<TRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
         }
 
         private static DnsResult<AddressRecord> MergeAddressResults(DnsResult<AddressRecord> a, DnsResult<AddressRecord> b)
@@ -252,7 +372,7 @@ namespace System.Net
             }
         }
 
-        // ---- Generic single-record-type parser ----
+        // ---- Generic single-record-type query wrappers ----
 
         private async Task<DnsResult<TRecord>> QuerySimpleAsync<TRecord>(string name, ushort qtype, CancellationToken cancellationToken,
             Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
@@ -260,23 +380,7 @@ namespace System.Net
             DnsQueryRawResult raw = await DnsQueryExAsync(name, qtype, cancellationToken).ConfigureAwait(false);
             try
             {
-                if (raw.ResponseCode != DnsResponseCode.NoError)
-                {
-                    return new DnsResult<TRecord>(raw.ResponseCode, null, raw.NegativeCacheTtl);
-                }
-                List<TRecord> records = new();
-                for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
-                {
-                    Interop.Dnsapi.DNS_RECORD_HEADER hdr = Marshal.PtrToStructure<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
-                    uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                    if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
-                    {
-                        IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
-                        records.Add(selector(hdr, dataPtr));
-                    }
-                    cur = hdr.pNext;
-                }
-                return new DnsResult<TRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+                return ParseSimple(raw, qtype, selector);
             }
             finally
             {
@@ -284,7 +388,21 @@ namespace System.Net
             }
         }
 
-        // ---- Core DnsQueryEx async wrapper ----
+        private DnsResult<TRecord> QuerySimple<TRecord>(string name, ushort qtype, CancellationToken cancellationToken,
+            Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
+        {
+            DnsQueryRawResult raw = DnsQueryExSync(name, qtype, cancellationToken);
+            try
+            {
+                return ParseSimple(raw, qtype, selector);
+            }
+            finally
+            {
+                raw.Dispose();
+            }
+        }
+
+        // ---- Core DnsQueryEx wrappers ----
 
         private unsafe Task<DnsQueryRawResult> DnsQueryExAsync(string name, ushort queryType, CancellationToken cancellationToken)
         {
@@ -300,7 +418,7 @@ namespace System.Net
         private static unsafe string? PtrToString(IntPtr p) =>
             p == IntPtr.Zero ? null : Marshal.PtrToStringUni(p);
 
-        // ---- Raw query result returned by the low-level helper ----
+        // ---- Raw query result returned by the low-level helpers ----
 
         private readonly struct DnsQueryRawResult : IDisposable
         {

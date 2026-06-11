@@ -31,5 +31,26 @@ namespace System.Net
 
         private Task<DnsResult<NsRecord>> ResolveNsCoreAsync(string name, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
+
+        private DnsResult<AddressRecord> ResolveAddressesCore(string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<SrvRecord> ResolveSrvCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<MxRecord> ResolveMxCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<TxtRecord> ResolveTxtCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<CNameRecord> ResolveCNameCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<PtrRecord> ResolvePtrCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
+
+        private DnsResult<NsRecord> ResolveNsCore(string name, CancellationToken cancellationToken)
+            => throw new PlatformNotSupportedException();
     }
 }

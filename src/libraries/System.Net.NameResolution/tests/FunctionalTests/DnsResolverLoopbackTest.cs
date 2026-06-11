@@ -37,6 +37,9 @@ namespace System.Net.NameResolution.Tests
     // tests are skipped via SkipTestException rather than failing. Because the single
     // machine-wide port 53 is shared, these tests run sequentially (see the collection).
     //
+    // Each behavioral test is parameterized over the synchronous and asynchronous APIs
+    // so both code paths are exercised against the same loopback responses.
+    //
     // These tests cover the record-parsing and response-handling behavior that the
     // OuterLoop tests in DnsResolverTest.cs cannot exercise deterministically.
     [OuterLoop("Binds the loopback DNS port 53 and issues real DnsQueryEx calls.")]
@@ -62,16 +65,43 @@ namespace System.Net.NameResolution.Tests
 
         internal DnsResolver Resolver => _resolver ??= CreateResolver(_server);
 
+        // ---- Sync/async dispatch helpers ----
+        // The synchronous overloads execute inline on the calling thread; the results
+        // are wrapped in a completed Task so each test can await a single helper.
+
+        private static async Task<DnsResult<AddressRecord>> ResolveAddresses(bool async, DnsResolver resolver, string name, AddressFamily addressFamily = AddressFamily.Unspecified)
+            => async ? await resolver.ResolveAddressesAsync(name, addressFamily) : resolver.ResolveAddresses(name, addressFamily);
+
+        private static async Task<DnsResult<SrvRecord>> ResolveSrv(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveSrvAsync(name) : resolver.ResolveSrv(name);
+
+        private static async Task<DnsResult<MxRecord>> ResolveMx(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveMxAsync(name) : resolver.ResolveMx(name);
+
+        private static async Task<DnsResult<TxtRecord>> ResolveTxt(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveTxtAsync(name) : resolver.ResolveTxt(name);
+
+        private static async Task<DnsResult<CNameRecord>> ResolveCName(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveCNameAsync(name) : resolver.ResolveCName(name);
+
+        private static async Task<DnsResult<PtrRecord>> ResolvePtr(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolvePtrAsync(name) : resolver.ResolvePtr(name);
+
+        private static async Task<DnsResult<NsRecord>> ResolveNs(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveNsAsync(name) : resolver.ResolveNs(name);
+
         // ---- Address resolution ----
 
-        [Fact]
-        public async Task ResolveAddresses_Unspecified_ReturnsBothV4AndV6()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_Unspecified_ReturnsBothV4AndV6(bool async)
         {
             string name = UniqueName("host");
             _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0, 1 }, ttl: 120));
             _server.AddResponse(name, DnsRecordType.AAAA, b => b.Answer(IPAddress.Parse("fd00::1").GetAddressBytes(), ttl: 60));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Equal(2, result.Records.Count);
@@ -79,14 +109,16 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, a => a.Address.ToString() == "fd00::1");
         }
 
-        [Fact]
-        public async Task ResolveAddresses_IPv4Only_ReturnsOnlyV4()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_IPv4Only_ReturnsOnlyV4(bool async)
         {
             string name = UniqueName("v4");
             _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0, 2 }, ttl: 300));
             _server.AddResponse(name, DnsRecordType.AAAA, b => b.ResponseCode(DnsResponseCode.NxDomain));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             // A succeeds, AAAA returns NXDOMAIN — overall is success because we got addresses.
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
@@ -94,41 +126,47 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("10.0.0.2", record.Address.ToString());
         }
 
-        [Fact]
-        public async Task ResolveAddresses_IPv6Only_ReturnsOnlyV6()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_IPv6Only_ReturnsOnlyV6(bool async)
         {
             string name = UniqueName("v6");
             _server.AddResponse(name, DnsRecordType.A, b => b.ResponseCode(DnsResponseCode.NxDomain));
             _server.AddResponse(name, DnsRecordType.AAAA, b => b.Answer(IPAddress.Parse("fd00::1").GetAddressBytes(), ttl: 60));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             AddressRecord record = Assert.Single(result.Records);
             Assert.Equal("fd00::1", record.Address.ToString());
         }
 
-        [Fact]
-        public async Task ResolveAddresses_AddressFamilyV4_QueriesOnlyA()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_AddressFamilyV4_QueriesOnlyA(bool async)
         {
             string name = UniqueName("famv4");
             _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 192, 0, 2, 7 }, ttl: 200));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name, AddressFamily.InterNetwork);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name, AddressFamily.InterNetwork);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             AddressRecord record = Assert.Single(result.Records);
             Assert.Equal("192.0.2.7", record.Address.ToString());
         }
 
-        [Fact]
-        public async Task ResolveAddresses_HasTtl()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_HasTtl(bool async)
         {
             string name = UniqueName("ttl");
             _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0, 1 }, ttl: 120));
             _server.AddResponse(name, DnsRecordType.AAAA, b => b.ResponseCode(DnsResponseCode.NxDomain));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             AddressRecord record = Assert.Single(result.Records);
             // The TTL we sent (120s) should be preserved (custom-server queries bypass the OS cache).
@@ -136,8 +174,10 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected TTL: {record.Ttl}");
         }
 
-        [Fact]
-        public async Task ResolveAddresses_Nxdomain_ReturnsNxDomain()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_Nxdomain_ReturnsNxDomain(bool async)
         {
             string name = UniqueName("missing");
             byte[] soaRdata = DnsResponseBuilder.BuildSoaRdata("test", 120);
@@ -148,14 +188,16 @@ namespace System.Net.NameResolution.Tests
                 .ResponseCode(DnsResponseCode.NxDomain)
                 .Authority("test", DnsRecordType.SOA, soaRdata, ttl: 120));
 
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
             Assert.Empty(result.Records);
         }
 
-        [Fact]
-        public async Task ResolveAddresses_NoData_ReturnsNoErrorWithEmptyRecords()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_NoData_ReturnsNoErrorWithEmptyRecords(bool async)
         {
             string name = UniqueName("nodata");
             byte[] soaRdata = DnsResponseBuilder.BuildSoaRdata("test", 30);
@@ -165,14 +207,16 @@ namespace System.Net.NameResolution.Tests
                 .Authority("test", DnsRecordType.SOA, soaRdata, ttl: 30));
 
             // The name exists but has no A/AAAA records → NODATA for both queries.
-            DnsResult<AddressRecord> result = await Resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Empty(result.Records);
         }
 
-        [Fact]
-        public async Task ResolveAddresses_NoData_And_Nxdomain_AreDistinguishable()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_NoData_And_Nxdomain_AreDistinguishable(bool async)
         {
             string nodataName = UniqueName("nodata");
             byte[] soaRdata = DnsResponseBuilder.BuildSoaRdata("test", 30);
@@ -190,11 +234,11 @@ namespace System.Net.NameResolution.Tests
                 .ResponseCode(DnsResponseCode.NxDomain)
                 .Authority("test", DnsRecordType.SOA, nxSoaRdata, ttl: 120));
 
-            DnsResult<AddressRecord> nodata = await Resolver.ResolveAddressesAsync(nodataName);
+            DnsResult<AddressRecord> nodata = await ResolveAddresses(async, Resolver, nodataName);
             Assert.Equal(DnsResponseCode.NoError, nodata.ResponseCode);
             Assert.Empty(nodata.Records);
 
-            DnsResult<AddressRecord> nxdomain = await Resolver.ResolveAddressesAsync(missingName);
+            DnsResult<AddressRecord> nxdomain = await ResolveAddresses(async, Resolver, missingName);
             Assert.Equal(DnsResponseCode.NxDomain, nxdomain.ResponseCode);
             Assert.Empty(nxdomain.Records);
 
@@ -203,15 +247,17 @@ namespace System.Net.NameResolution.Tests
 
         // ---- SRV ----
 
-        [Fact]
-        public async Task ResolveSrv_ReturnsRecords()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveSrv_ReturnsRecords(bool async)
         {
             string name = $"_http._tcp.{UniqueName("svc")}";
             _server.AddResponse(name, DnsRecordType.SRV, b => b
                 .Answer(DnsResponseBuilder.BuildSrvRdata(10, 100, 8080, "node1.test"), ttl: 120)
                 .Answer(DnsResponseBuilder.BuildSrvRdata(20, 50, 8081, "node2.test"), ttl: 120));
 
-            DnsResult<SrvRecord> result = await Resolver.ResolveSrvAsync(name);
+            DnsResult<SrvRecord> result = await ResolveSrv(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Equal(2, result.Records.Count);
@@ -226,8 +272,10 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal((ushort)20, s2.Priority);
         }
 
-        [Fact]
-        public async Task ResolveSrv_IncludesAdditionalAddresses()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveSrv_IncludesAdditionalAddresses(bool async)
         {
             string name = $"_http._tcp.{UniqueName("svc")}";
             _server.AddResponse(name, DnsRecordType.SRV, b => b
@@ -237,7 +285,7 @@ namespace System.Net.NameResolution.Tests
                 .Additional("node2.test", DnsRecordType.A, new byte[] { 10, 0, 0, 11 }, ttl: 120)
                 .Additional("node2.test", DnsRecordType.AAAA, IPAddress.Parse("fd00::11").GetAddressBytes(), ttl: 120));
 
-            DnsResult<SrvRecord> result = await Resolver.ResolveSrvAsync(name);
+            DnsResult<SrvRecord> result = await ResolveSrv(async, Resolver, name);
 
             SrvRecord s1 = Assert.Single(result.Records, s => s.Target == "node1.test");
             Assert.NotNull(s1.Addresses);
@@ -249,14 +297,16 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(2, s2.Addresses.Count);
         }
 
-        [Fact]
-        public async Task ResolveSrv_NoAdditionalAddresses()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveSrv_NoAdditionalAddresses(bool async)
         {
             string name = $"_noadd._tcp.{UniqueName("svc")}";
             _server.AddResponse(name, DnsRecordType.SRV, b => b
                 .Answer(DnsResponseBuilder.BuildSrvRdata(10, 100, 9090, "noaddr.test"), ttl: 60));
 
-            DnsResult<SrvRecord> result = await Resolver.ResolveSrvAsync(name);
+            DnsResult<SrvRecord> result = await ResolveSrv(async, Resolver, name);
 
             SrvRecord record = Assert.Single(result.Records);
             Assert.Equal("noaddr.test", record.Target);
@@ -265,15 +315,17 @@ namespace System.Net.NameResolution.Tests
 
         // ---- MX / TXT / CNAME / PTR / NS ----
 
-        [Fact]
-        public async Task ResolveMx_ReturnsRecords()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveMx_ReturnsRecords(bool async)
         {
             string name = UniqueName("mx");
             _server.AddResponse(name, DnsRecordType.MX, b => b
                 .Answer(DnsResponseBuilder.BuildMxRdata(10, "mail1.test"), ttl: 120)
                 .Answer(DnsResponseBuilder.BuildMxRdata(20, "mail2.test"), ttl: 120));
 
-            DnsResult<MxRecord> result = await Resolver.ResolveMxAsync(name);
+            DnsResult<MxRecord> result = await ResolveMx(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Equal(2, result.Records.Count);
@@ -283,15 +335,17 @@ namespace System.Net.NameResolution.Tests
             Assert.Single(result.Records, m => m.Exchange == "mail2.test" && m.Preference == 20);
         }
 
-        [Fact]
-        public async Task ResolveTxt_ReturnsValues()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveTxt_ReturnsValues(bool async)
         {
             string name = UniqueName("txt");
             _server.AddResponse(name, DnsRecordType.TXT, b => b
                 .Answer(DnsResponseBuilder.BuildTxtRdata("v=spf1 -all"), ttl: 120)
                 .Answer(DnsResponseBuilder.BuildTxtRdata("part1", "part2"), ttl: 120));
 
-            DnsResult<TxtRecord> result = await Resolver.ResolveTxtAsync(name);
+            DnsResult<TxtRecord> result = await ResolveTxt(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Equal(2, result.Records.Count);
@@ -299,43 +353,49 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, t => t.Values.Count == 2 && t.Values[0] == "part1" && t.Values[1] == "part2");
         }
 
-        [Fact]
-        public async Task ResolveCName_ReturnsCanonicalName()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveCName_ReturnsCanonicalName(bool async)
         {
             string name = UniqueName("alias");
             _server.AddResponse(name, DnsRecordType.CNAME, b => b
                 .Answer(DnsResponseBuilder.EncodeName("canonical.test"), ttl: 120));
 
-            DnsResult<CNameRecord> result = await Resolver.ResolveCNameAsync(name);
+            DnsResult<CNameRecord> result = await ResolveCName(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             CNameRecord record = Assert.Single(result.Records);
             Assert.Equal("canonical.test", record.CanonicalName);
         }
 
-        [Fact]
-        public async Task ResolvePtr_ReturnsName()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolvePtr_ReturnsName(bool async)
         {
             string name = $"1.0.0.10.in-addr.{UniqueName("arpa")}";
             _server.AddResponse(name, DnsRecordType.PTR, b => b
                 .Answer(DnsResponseBuilder.EncodeName("host.test"), ttl: 120));
 
-            DnsResult<PtrRecord> result = await Resolver.ResolvePtrAsync(name);
+            DnsResult<PtrRecord> result = await ResolvePtr(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             PtrRecord record = Assert.Single(result.Records);
             Assert.Equal("host.test", record.Name);
         }
 
-        [Fact]
-        public async Task ResolveNs_ReturnsRecords()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveNs_ReturnsRecords(bool async)
         {
             string name = UniqueName("ns");
             _server.AddResponse(name, DnsRecordType.NS, b => b
                 .Answer(DnsResponseBuilder.EncodeName("ns1.test"), ttl: 120)
                 .Answer(DnsResponseBuilder.EncodeName("ns2.test"), ttl: 120));
 
-            DnsResult<NsRecord> result = await Resolver.ResolveNsAsync(name);
+            DnsResult<NsRecord> result = await ResolveNs(async, Resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Equal(2, result.Records.Count);
@@ -345,8 +405,10 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Custom server endpoint handling ----
 
-        [Fact]
-        public async Task CustomServer_DefaultPortZero_IsAccepted()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomServer_DefaultPortZero_IsAccepted(bool async)
         {
             // Port 0 means "use the default DNS port"; DnsQueryEx always queries port 53.
             using DnsResolver resolver = new DnsResolver(new DnsResolverOptions
@@ -358,7 +420,7 @@ namespace System.Net.NameResolution.Tests
             _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0, 5 }, ttl: 120));
             _server.AddResponse(name, DnsRecordType.AAAA, b => b.ResponseCode(DnsResponseCode.NxDomain));
 
-            DnsResult<AddressRecord> result = await resolver.ResolveAddressesAsync(name);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, resolver, name);
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             AddressRecord record = Assert.Single(result.Records);
