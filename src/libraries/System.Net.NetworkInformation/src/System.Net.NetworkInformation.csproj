@@ -166,8 +166,8 @@
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
 
-  <!-- OSX -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'freebsd'">
+  <!-- OSX/FreeBSD/OpenBSD -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'openbsd'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
@@ -201,7 +201,7 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'openbsd'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
