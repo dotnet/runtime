@@ -141,9 +141,10 @@ public unsafe class ObjectTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void Size(MockTarget.Architecture arch)
     {
+        const int TestArrayLength = 10;
         TargetPointer TestObjectAddress = default;
         TargetPointer TestArrayAddress = default;
-        Array array = new int[10];
+        Array testArray = new int[TestArrayLength];
         TargetTestHelpers targetTestHelpers = new(arch);
         IObject contract = CreateObjectContract(
             arch,
@@ -156,16 +157,17 @@ public unsafe class ObjectTests
                 methodTable.EEClassOrCanonMT = eeClass.Address;
                 TestObjectAddress = objectBuilder.AddObject(methodTable.Address);
 
-                TestArrayAddress = objectBuilder.AddArrayObject(array);
+                TestArrayAddress = objectBuilder.AddArrayObject(testArray);
             });
 
         // Fixed-size object: size is just the base size, no component data.
         Assert.Equal(targetTestHelpers.ObjectBaseSize, contract.GetSize(TestObjectAddress));
 
         // Variable-size object (array): base size plus component count times component size.
-        // The mock encodes the component size as the array length in the method table flags.
-        ulong componentSize = (uint)array.Length;
-        ulong expectedArraySize = targetTestHelpers.ArrayBaseBaseSize + (ulong)array.Length * componentSize;
+        // AddArrayObject encodes the component size as the array length in the method table flags,
+        // so the expected component size here matches TestArrayLength rather than sizeof(int).
+        ulong componentSize = TestArrayLength;
+        ulong expectedArraySize = targetTestHelpers.ArrayBaseBaseSize + TestArrayLength * componentSize;
         Assert.Equal(expectedArraySize, contract.GetSize(TestArrayAddress));
     }
 
