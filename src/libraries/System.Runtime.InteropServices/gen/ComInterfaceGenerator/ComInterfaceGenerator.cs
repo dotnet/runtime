@@ -713,11 +713,21 @@ namespace Microsoft.Interop
             // Property and indexer accessor stubs arrive one per accessor (get then set when both exist).
             // Merge consecutive get+set halves of the same property/indexer into a single declaration
             // before emitting, so the resulting code is a valid explicit interface implementation.
+            //
+            // Three cases below:
+            //   (1) Incoming node is a getter accessor — flush any prior buffered getter
+            //       (an orphan with no matching setter) and stash this one to wait for a paired setter.
+            //   (2) Incoming node is a setter accessor that pairs with the buffered getter (same
+            //       target property/indexer) — merge them into a single declaration and emit.
+            //   (3) Anything else (orphan setter, setter targeting a different property/indexer than
+            //       the buffered getter, or a non-property syntax node) — flush any buffered getter
+            //       and emit the incoming node as-is.
             if (node is BasePropertyDeclarationSyntax basePropertyDecl)
             {
                 bool isGetter = basePropertyDecl.AccessorList!.Accessors[0].Kind() is SyntaxKind.GetAccessorDeclaration;
                 if (isGetter)
                 {
+                    // Case (1): buffer the getter; wait for a possible paired setter.
                     FlushBufferedPropertyGetter(writer, ref bufferedGetter);
                     bufferedGetter = basePropertyDecl;
                     return;
@@ -725,6 +735,7 @@ namespace Microsoft.Interop
                 if (bufferedGetter is not null
                     && IsSameAccessorTarget(bufferedGetter, basePropertyDecl))
                 {
+                    // Case (2): setter pairs with the buffered getter — merge and emit one declaration.
                     BasePropertyDeclarationSyntax merged = MergePropertyAccessors(bufferedGetter, basePropertyDecl);
                     writer.InnerWriter.WriteLine();
                     writer.WriteMultilineNode(merged.NormalizeWhitespace());
@@ -732,6 +743,7 @@ namespace Microsoft.Interop
                     return;
                 }
             }
+            // Case (3): flush any buffered getter and emit the incoming node as-is.
             FlushBufferedPropertyGetter(writer, ref bufferedGetter);
             writer.InnerWriter.WriteLine();
             writer.WriteMultilineNode(node.NormalizeWhitespace());

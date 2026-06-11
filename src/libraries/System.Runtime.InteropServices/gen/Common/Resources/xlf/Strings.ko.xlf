@@ -532,21 +532,6 @@
         <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 이벤트 선언은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
-        <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="translated">속성은 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 속성에 대해 interop 코드가 생성되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
-        <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 속성이 선언되었습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
-        <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 속성 선언은 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
         <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
         <target state="translated">'GeneratedComInterfaceAttribute' 및 'InterfaceTypeAttribute'는 'ComInterfaceType' 값 '{0}'에서 지원되지 않습니다.</target>
@@ -880,6 +865,21 @@
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
         <target state="translated">'CustomMarshallerAttribute'의 'marshalMode' 인수는 'MarshalMode'의 유효한 열거형 값이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
+        <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute, or attach the count-only attribute to the property declaration.</source>
+        <target state="new">When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute, or attach the count-only attribute to the property declaration.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
+        <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Move count-only configuration to the property declaration, or combine the marshaller type and count on a single 'MarshalUsing' attribute on the accessor.</source>
+        <target state="new">The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Move count-only configuration to the property declaration, or combine the marshaller type and count on a single 'MarshalUsing' attribute on the accessor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
+        <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
+        <target state="new">'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">

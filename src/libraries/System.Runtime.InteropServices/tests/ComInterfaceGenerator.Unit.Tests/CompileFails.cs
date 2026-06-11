@@ -107,11 +107,60 @@ namespace ComInterfaceGenerator.Unit.Tests
                DiagnosticResult.CompilerError("CS0501").WithSpan(12, 23, 12, 26).WithArguments("INativeAPI.this[int].get"),
             } };
 
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.RefProp"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefReadonlyProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.RefReadonlyProp"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.this[int]"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefReadonlyIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.this[int]"),
+            } };
+
             yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedIndexer, new[]
             {
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
                    .WithLocation(0)
                    .WithArguments("this[]", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingCountOnlyOnPropertyGetter, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingCountOnlyOnPropertySetter, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingDepthOnlyOnPropertyAccessor, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
             } };
 
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
@@ -1139,13 +1188,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
         }
 
-        // The following tests document the current limitation that indexer accessors cannot
-        // reference peer index parameters via [MarshalUsing(CountElementName = ...)]. All
-        // property accessors (including indexers) are routed through EmptyElementInfoProvider,
-        // which intentionally fails peer-element lookups. Lifting this limitation for indexers
-        // would require additional design (the index parameters are legitimate peers of the
-        // value surface) and is tracked as future work. If indexer peer-element lookups are
-        // enabled, these tests should be updated to expect a successful compile.
+        // Indexer accessors that use [MarshalUsing(CountElementName = ...)] are now rejected
+        // upfront by MarshalUsingOnPropertyAccessorMustSpecifyType: accessor-level [MarshalUsing]
+        // must specify a marshaller type, so neither the count-only form nor the depth-only form
+        // is reachable on a property/indexer accessor without first combining the marshaller type
+        // and count info on a single attribute. The earlier underlying limitation (indexer
+        // accessors are routed through EmptyElementInfoProvider so peer-element lookups against
+        // the index parameter fail) is still present in the marshalling pipeline, but is hidden
+        // behind this diagnostic from a user's perspective.
 
         [Fact]
         public async Task IndexerGetterWithCountElementName_ReportsDiagnostic()
@@ -1162,20 +1212,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
                 partial interface I
                 {
-                    int[] {|#0:this|}[int count] { [return: {|#1:MarshalUsing(CountElementName = "count")|}] get; }
+                    int[] {|#0:this|}[int count] { [return: MarshalUsing(CountElementName = "count")] get; }
                 }
                 """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
                 source,
                 VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
                     .WithLocation(0)
-                    .WithArguments(SR.ArraySizeMustBeSpecified, "get_Item"),
-                VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
-                    .WithLocation(1)
-                    .WithArguments("count", ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName));
+                    .WithArguments("this[]", "I"));
         }
 
         [Fact]
@@ -1193,20 +1239,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
                 partial interface I
                 {
-                    int[] {|#0:this|}[int count] { [param: {|#1:MarshalUsing(CountElementName = "count")|}] set; }
+                    int[] {|#0:this|}[int count] { [param: MarshalUsing(CountElementName = "count")] set; }
                 }
                 """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
                 source,
                 VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
                     .WithLocation(0)
-                    .WithArguments(SR.ArraySizeMustBeSpecified, "value"),
-                VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
-                    .WithLocation(1)
-                    .WithArguments("count", ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName));
+                    .WithArguments("this[]", "I"));
         }
     }
 }

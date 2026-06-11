@@ -163,17 +163,24 @@ namespace Microsoft.Interop
                 return accessorAttributes;
             }
 
-            // Accessor-level attributes win over property-level ones at the same dedup key.
-            // For most attributes the dedup key is the attribute type. MarshalUsing is the
-            // only AllowMultiple = true attribute that flows through this merge: it can repeat
-            // on a single value surface with distinct ElementIndirectionDepth values to describe
-            // marshalling at successive levels of indirection (the value itself at depth 0, its
-            // elements at depth 1, their elements at depth 2, and so on). The public contract on
-            // MarshalUsingAttribute.ElementIndirectionDepth states only one MarshalUsing with a
-            // given depth may be provided on a given parameter or return value, so dedup keys
-            // for MarshalUsing include the depth -- an accessor-level MarshalUsing overrides
-            // only the property-level MarshalUsing at the matching depth, and property-level
-            // MarshalUsings at other depths flow through.
+            // Accessor-level attributes win over property-level ones at the same dedup key
+            // (attribute type + ElementIndirectionDepth for [MarshalUsing], attribute type alone
+            // otherwise). [MarshalUsing] is the only AllowMultiple = true attribute that flows
+            // through this merge: it can repeat on a single value surface with distinct
+            // ElementIndirectionDepth values to describe marshalling at successive levels of
+            // indirection (the value itself at depth 0, its elements at depth 1, and so on). The
+            // public contract on MarshalUsingAttribute.ElementIndirectionDepth states only one
+            // [MarshalUsing] with a given depth may be provided on a given parameter or return
+            // value, so dedup keys for [MarshalUsing] include the depth -- an accessor-level
+            // [MarshalUsing] overrides only the property-level [MarshalUsing] at the matching
+            // depth, and property-level [MarshalUsing]s at other depths flow through.
+            //
+            // To keep this dedup unambiguous, the COM generator additionally rejects accessor-level
+            // [MarshalUsing] attributes that omit the marshaller type (see
+            // MarshalUsingOnPropertyAccessorMustSpecifyType in GeneratorDiagnostics). That keeps the
+            // partial-split case (e.g., marshaller type on the property and count-only on the
+            // accessor) from silently dropping one side; the user combines the information on a
+            // single attribute or attaches the count-only [MarshalUsing] to the property.
             HashSet<(string?, int)> accessorAttributeKeys = new();
             foreach (AttributeData attr in accessorAttributes)
             {

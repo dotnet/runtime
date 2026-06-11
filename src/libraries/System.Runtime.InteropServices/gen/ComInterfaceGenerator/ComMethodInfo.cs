@@ -235,8 +235,7 @@ namespace Microsoft.Interop
             ct.ThrowIfCancellationRequested();
 
             // For externally-defined contexts, mirror the ordinary-method fast path: emit ComMethodInfos
-            // only for abstract accessors. Default-implemented accessors in another assembly do not
-            // occupy vtable slots, so we must not count them when computing inheritance offsets.
+            // only for abstract accessors (handled inside AddExternallyDefinedAccessor).
             if (ifaceContext.IsExternallyDefined)
             {
                 AddExternallyDefinedAccessor(methods, property.GetMethod);
@@ -276,10 +275,10 @@ namespace Microsoft.Interop
             if (propertyDeclaringSyntax is null)
             {
                 // The syntax tree doesn't cover the located position. This is unexpected for any
-                // BasePropertyDeclarationSyntax shape (property or indexer), so fall back to the generic
-                // unsupported-property signal so the user gets a clear "this isn't supported" message.
+                // BasePropertyDeclarationSyntax shape (property or indexer); report the same
+                // analysis-failure diagnostic the ordinary-method path uses for the parallel case.
                 methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
-                    property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString())));
+                    DiagnosticInfo.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, property.Locations.FirstOrDefault(), property.ToDisplayString())));
                 return;
             }
 
@@ -305,6 +304,10 @@ namespace Microsoft.Interop
             ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
             IMethodSymbol? accessor)
         {
+            // Default-implemented accessors in another assembly do not occupy vtable slots, so we
+            // must not count them when computing inheritance offsets. Rely on IMethodSymbol.IsAbstract
+            // (which is false for DIMs) to distinguish — matching AddMethodInfo's
+            // externally-defined fast path for ordinary methods.
             if (accessor is null || !accessor.IsAbstract)
             {
                 return;
@@ -387,28 +390,23 @@ namespace Microsoft.Interop
                         continue;
                     case SyntaxKind.ExternKeyword:
                     case SyntaxKind.RequiredKeyword:
+                    default:
+                        // Any other modifier (e.g. `static`, `partial`, `abstract`, `virtual`, …)
+                        // is rejected by the same unsupported-modifier diagnostic with the offending
+                        // keyword text. C# already disallows most of these on interface instance
+                        // properties, but reporting through our own diagnostic gives a clearer signal.
                         diagnostic = property.CreateDiagnosticInfo(
                             GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
                             property.Name, ifaceSymbol.ToDisplayString(), modifier.ValueText);
                         return MemberShapeOutcome.Error;
-                    default:
-                        diagnostic = property.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
-                            property.Name, ifaceSymbol.ToDisplayString());
-                        return MemberShapeOutcome.Error;
                 }
             }
 
-            // Auto-property initializers are not legal on interface instance properties at the C# level;
-            // they should never reach this point. Defensive check retained from earlier diagnostic.
-            // Indexers cannot carry initializers, so this is property-only.
-            if (propertyDeclaringSyntax is PropertyDeclarationSyntax { Initializer: not null })
-            {
-                diagnostic = property.CreateDiagnosticInfo(
-                    GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
-                    property.Name, ifaceSymbol.ToDisplayString());
-                return MemberShapeOutcome.Error;
-            }
+            // Auto-property initializers are not legal on interface instance properties at the C#
+            // level (CS8053), so we never reach AnalyzePropertyShape with one. Indexers cannot carry
+            // initializers at all.
+            Debug.Assert(propertyDeclaringSyntax is not PropertyDeclarationSyntax { Initializer: not null },
+                "Interface instance properties cannot have auto-property initializers (CS8053).");
 
             // Disallow `init` accessors before deciding DIM-vs-ABI: an `init` accessor is conceptually a
             // setter, but `init`-vs-`set` has no meaningful representation in a COM vtable, so it isn't
@@ -473,7 +471,72 @@ namespace Microsoft.Interop
                 }
             }
 
+            // For the COM ABI path (no bodies), reject ref / ref readonly returns the same way
+            // ordinary methods do — there is no representation for a managed ref-return in a COM
+            // vtable. DIM-shaped properties returning by ref are unaffected because the DIM
+            // branches above have already returned MemberShapeOutcome.DefaultImplementation.
+            if (property.ReturnsByRef || property.ReturnsByRefReadonly)
+            {
+                diagnostic = property.CreateDiagnosticInfo(
+                    GeneratorDiagnostics.ReturnConfigurationNotSupported,
+                    "ref return", property.ToDisplayString());
+                return MemberShapeOutcome.Error;
+            }
+
+            // [MarshalUsing] on an accessor's value surface (the getter's return or the setter's
+            // value parameter) must specify a marshaller type. A count-only or depth-only attribute
+            // on the accessor could partially conflict with a property-level [MarshalUsing] and
+            // silently shadow it in the property-to-accessor merge in SignatureContext. We require
+            // the user to combine the marshaller type and count on a single accessor attribute or
+            // attach the count-only attribute to the property declaration instead.
+            if (!HasCompleteAccessorMarshalUsing(property))
+            {
+                diagnostic = property.CreateDiagnosticInfo(
+                    GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType,
+                    property.Name, ifaceSymbol.ToDisplayString());
+                return MemberShapeOutcome.Error;
+            }
+
             return MemberShapeOutcome.ComAbi;
+        }
+
+        private static bool HasCompleteAccessorMarshalUsing(IPropertySymbol property)
+        {
+            // Inspect the only two value surfaces that participate in the property-to-accessor
+            // attribute merge in SignatureContext.MergeAccessorAndPropertyAttributes:
+            //   - The getter's return type attributes (e.g., `[return: MarshalUsing(...)] get`).
+            //   - The setter's value parameter attributes (e.g., `[param: MarshalUsing(...)] set`).
+            // Index parameters on indexer accessors are deliberately excluded -- they don't merge
+            // with property-level attributes, so [MarshalUsing] there cannot create the ambiguity
+            // this diagnostic guards against. An accessor surface is "complete" when every
+            // [MarshalUsing] on it specifies a marshaller type; a surface with no [MarshalUsing]
+            // at all is trivially complete.
+            if (property.GetMethod is { } getter
+                && !IsMarshalUsingComplete(getter.GetReturnTypeAttributes()))
+            {
+                return false;
+            }
+
+            if (property.SetMethod is { } setter && setter.Parameters.Length > 0
+                && !IsMarshalUsingComplete(setter.Parameters[setter.Parameters.Length - 1].GetAttributes()))
+            {
+                return false;
+            }
+
+            return true;
+
+            static bool IsMarshalUsingComplete(ImmutableArray<AttributeData> attributes)
+            {
+                foreach (AttributeData attr in attributes)
+                {
+                    if (attr.AttributeClass?.ToDisplayString() == TypeNames.MarshalUsingAttribute
+                        && attr.ConstructorArguments.Length == 0)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         private static void EmitMarshalAttributeWarningsForMethod(

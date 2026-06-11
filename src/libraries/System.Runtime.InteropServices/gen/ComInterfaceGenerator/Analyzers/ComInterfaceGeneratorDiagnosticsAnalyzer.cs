@@ -36,7 +36,6 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly,
                 // Method-level diagnostics
                 GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
-                GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
                 GeneratorDiagnostics.InstanceEventDeclaredInInterface,
                 GeneratorDiagnostics.CannotAnalyzeMethodPattern,
                 GeneratorDiagnostics.CannotAnalyzeInterfacePattern,
@@ -60,6 +59,7 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
                 GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue,
                 GeneratorDiagnostics.InvalidExceptionMarshallingConfiguration,
+                GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType,
                 GeneratorDiagnostics.GeneratedComInterfaceUsageDoesNotFollowBestPractices);
 
         public override void Initialize(AnalysisContext context)
