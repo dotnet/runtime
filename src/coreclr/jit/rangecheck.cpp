@@ -1442,6 +1442,48 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 }
             }
         }
+        // Current assertion is of the form "X != (BoundVN + 0)" or "X == (BoundVN + 0)"
+        // where BoundVN is a length-like checked bound (e.g. an array length). These are
+        // generated from loop exit tests written as "i != arr.Length"; we can tighten the
+        // induction variable's range when its current upper/lower limit equals the bound.
+        else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
+                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+        {
+            const ValueNum boundVN = curAssertion.GetOp2().GetVN();
+
+            if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+            {
+                // X == bound: range tightens to exactly [bound, bound].
+                limit   = Limit(Limit::keBinOpArray, boundVN, 0);
+                cmpOper = GT_EQ;
+            }
+            else
+            {
+                // X != bound: only useful when pRange's upper or lower limit already equals
+                // the bound. Tighten:
+                //   [lo, bound] -> [lo, bound - 1]
+                //   [bound, hi] -> [bound + 1, hi]
+                if (pRange->UpperLimit().IsBinOpArray() && (pRange->UpperLimit().vn == boundVN) &&
+                    (pRange->UpperLimit().GetConstant() == 0))
+                {
+                    limit   = Limit(Limit::keBinOpArray, boundVN, -1);
+                    cmpOper = GT_LE;
+                }
+                else if (pRange->LowerLimit().IsBinOpArray() && (pRange->LowerLimit().vn == boundVN) &&
+                         (pRange->LowerLimit().GetConstant() == 0))
+                {
+                    limit   = Limit(Limit::keBinOpArray, boundVN, 1);
+                    cmpOper = GT_GE;
+                }
+                else
+                {
+                    // Nothing to deduce from this assertion at this site.
+                    continue;
+                }
+            }
+        }
         // Current assertion asserts a bounds check does not throw
         else if (curAssertion.IsBoundsCheckNoThrow())
         {

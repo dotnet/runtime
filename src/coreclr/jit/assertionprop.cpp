@@ -1529,7 +1529,10 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
         case O2K_VN_ADD_CNS:
             assert(!optLocalAssertionProp);
             assert(assertion.GetOp1().KindIs(O1K_VN));
-            assert(assertion.IsRelop());
+            // Most O2K_VN_ADD_CNS assertions are ordered relops ("i <relop> bnd + cns"), but
+            // we also create equality assertions against a checked bound (e.g. "i != arr.Length")
+            // for use by RangeCheck.
+            assert(assertion.IsRelop() || assertion.CanPropEqualOrNotEqual());
             break;
 
         case O2K_ZEROOBJ:
@@ -1682,6 +1685,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     bool isUnsignedRelop;
+    bool isEqualityRelop = false;
     if (relopFuncApp.FuncIs(VNF_LE, VNF_LT, VNF_GE, VNF_GT))
     {
         isUnsignedRelop = false;
@@ -1690,10 +1694,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         isUnsignedRelop = true;
     }
+    else if (relopFuncApp.FuncIs(VNF_EQ, VNF_NE))
+    {
+        // Equality relops against a checked bound (e.g. "i != arr.Length") are
+        // useful for RangeCheck to tighten ranges on loop back-edges. They flow
+        // through the CheckedBound paths below; other equality assertions
+        // (against constants, locals, type handles, etc.) are handled in
+        // optAssertionGenJtrue.
+        isUnsignedRelop = false;
+        isEqualityRelop = true;
+    }
     else
     {
         // Not a relop we're interested in.
-        // Assertions for NE/EQ are handled elsewhere.
+        // Assertions for EQ/NE not against a checked bound are handled elsewhere.
         return NO_ASSERTION_INDEX;
     }
 
@@ -1710,21 +1724,42 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "CheckedBnd <relop> X"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
     {
-        // Move the checked bound to the right side for simplicity
-        relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
+        // For equality relops where the non-bound side is a constant (e.g. "len != 0"), the
+        // LCLVAR-based equality assertion created below by optAssertionGenJtrue is strictly more
+        // useful than a CompareCheckedBound form -- downstream consumers (folding bounds checks,
+        // proving "len > 0" after a "len != 0" test) only recognize the LCLVAR form. Skip the new
+        // assertion in that case and let the LCLVAR path produce it.
+        if (!(isEqualityRelop && vnStore->IsVNConstant(op2VN)))
+        {
+            // Move the checked bound to the right side for simplicity
+            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
     }
 
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
+        // Symmetric guard: leave constant-vs-CheckedBound equality assertions to the LCLVAR path.
+        if (!(isEqualityRelop && vnStore->IsVNConstant(op1VN)))
+        {
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
+    }
+
+    // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
+    // comparison is ordered (LT/LE/GT/GE). For equality relops we don't produce
+    // CheckedBoundAddConst-shaped assertions; the consumers (RangeCheck) only
+    // tighten ranges from equality assertions whose RHS is the bound itself.
+    if (isEqualityRelop)
+    {
+        return NO_ASSERTION_INDEX;
     }
 
     // "(CheckedBnd + CNS) <relop> X"
