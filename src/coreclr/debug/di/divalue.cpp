@@ -278,11 +278,7 @@ ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Ob
 
 CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
 {
-    IDacDbiInterface* pDac = pAppDomain->GetProcess()->GetDAC();
-
-    TargetBuffer objBuffer;
-    IfFailThrow(pDac->GetObjectContents(vmObj, &objBuffer));
-    VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR(objBuffer.pAddress);
+    VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)VmPtrToCookie(vmObj));
     // This creates a local reference that has a remote address in it. Ie &pRemoteAddr is an address
     // in the host address space and pRemoteAddr is an address in the target.
     MemoryRange localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
@@ -2056,7 +2052,7 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
     EX_TRY
     {
         BOOL fSyncBlockField = FALSE;
-        SIZE_T fldOffset;
+        CORDB_ADDRESS fldOffset;
 
         //
         // <TODO>@todo: need to ensure that pType is really on the class
@@ -3117,7 +3113,7 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
 
         _ASSERTE(pFieldData->OkToGetOrSetInstanceOffset());
         // Compute the address of the field contents in our local object cache
-        SIZE_T fieldOffset = pFieldData->GetInstanceOffset();
+        CORDB_ADDRESS fieldOffset = pFieldData->GetInstanceOffset();
         ULONG32 size = GetSizeForType(pFieldType, kUnboxed);
 
         // verify that the field starts before the end of m_pObjectCopy

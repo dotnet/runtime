@@ -305,6 +305,32 @@ public class DataGeneratorTests
         Assert.Equal((TargetPointer)(InstanceAddr + 12), t.AnchorAddress);
     }
 
+    [Fact]
+    public void FieldAddress_OptionalPresent()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestOptionalFieldAddr", size: 8, ("Required", 0), ("OptionalAddress", 4))
+            .Allocate(InstanceAddr, 8, (0, U32(7u)));
+
+        TestOptionalFieldAddr t = Materialize<TestOptionalFieldAddr>(target, InstanceAddr);
+
+        Assert.Equal(7u, t.Required);
+        Assert.Equal((TargetPointer)(InstanceAddr + 4), t.OptionalAddress);
+    }
+
+    [Fact]
+    public void FieldAddress_OptionalAbsent()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestOptionalFieldAddr", size: 4, ("Required", 0))
+            .Allocate(InstanceAddr, 4, (0, U32(9u)));
+
+        TestOptionalFieldAddr t = Materialize<TestOptionalFieldAddr>(target, InstanceAddr);
+
+        Assert.Equal(9u, t.Required);
+        Assert.Null(t.OptionalAddress);
+    }
+
     // ================================================================
     // UsePropertyName = false
     // ================================================================

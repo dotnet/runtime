@@ -4237,7 +4237,24 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     EX_TRY
     {
-        hr = GetReturnValueLiveOffsetImpl(NULL, ILoffset, bufferSize, pFetched, pOffsets);
+        LoadNativeInfo();
+
+        NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos;
+        const ICorDebugInfo::NativeVarInfo **pVarInfosBuffer = NULL;
+        if (pOffsets != NULL && bufferSize > 0)
+        {
+            varInfos = new const ICorDebugInfo::NativeVarInfo *[bufferSize];
+            pVarInfosBuffer = varInfos;
+        }
+
+        hr = GetReturnValueVariableHomes(NULL, ILoffset, bufferSize, pFetched, pVarInfosBuffer);
+        if ((SUCCEEDED(hr) || hr == S_FALSE) && pVarInfosBuffer != NULL)
+        {
+            for (ULONG32 i = 0; i < *pFetched; ++i)
+            {
+                pOffsets[i] = pVarInfosBuffer[i]->startOffset;
+            }
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4348,385 +4365,6 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
     EX_CATCH_HRESULT(hr);
 
     return hr;
-}
-
-int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
-{
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
-    if (Is32BitInstruction(*(WORD*)ip))
-        return 4;
-    else
-        return 2;
-#elif defined(TARGET_ARM64)
-    return MAX_INSTRUCTION_LENGTH;
-#elif defined(TARGET_LOONGARCH64)
-    return MAX_INSTRUCTION_LENGTH;
-#elif defined(TARGET_X86)
-    if (count < 2)
-        return -1;
-
-    // Skip instruction prefixes
-    do
-    {
-        switch (*ip)
-        {
-            // Segment overrides
-        case 0x26: // ES
-        case 0x2E: // CS
-        case 0x36: // SS
-        case 0x3E: // DS
-        case 0x64: // FS
-        case 0x65: // GS
-
-            // Size overrides
-        case 0x66: // Operand-Size
-        case 0x67: // Address-Size
-
-            // Lock
-        case 0xf0:
-
-            // String REP prefixes
-        case 0xf1:
-        case 0xf2: // REPNE/REPNZ
-        case 0xf3:
-            ip++;
-            count--;
-            continue;
-
-        default:
-            break;
-        }
-    } while (0);
-
-    // Read the opcode
-    BYTE opcode = *ip++;
-    if (opcode == 0xcc)
-    {
-        // todo:  Can we actually get this result?  Doesn't ICorDebug hand out un-patched assembly?
-        _ASSERTE(!"Hit break opcode!");
-        return -1;
-    }
-
-    // Analyze what we can of the opcode
-    switch (opcode)
-    {
-    case 0xff:
-    {
-                 // Count may have been decremented by prefixes.
-                 if (count < 2)
-                     return -1;
-
-                 BYTE modrm = *ip++;
-                 BYTE mod = (modrm & 0xC0) >> 6;
-                 BYTE reg = (modrm & 0x38) >> 3;
-                 BYTE rm  = (modrm & 0x07);
-
-                 int displace = -1;
-
-                 if ((reg != 2) && (reg != 3) && (reg != 4) && (reg != 5))
-                 {
-                     //
-                     // This is not a CALL or JMP instruction, return, unknown.
-                     //
-                     _ASSERTE(!"Unhandled opcode!");
-                     return -1;
-                 }
-
-
-                 // Only try to decode registers if we actually have reg sets.
-                 switch (mod)
-                 {
-                 case 0:
-                 case 1:
-                 case 2:
-
-                     if (rm == 4)
-                     {
-                         if (count < 3)
-                             return -1;
-
-                         //
-                         // Get values from the SIB byte
-                         //
-                         BYTE ss    = (*ip & 0xC0) >> 6;
-                         BYTE index = (*ip & 0x38) >> 3;
-                         BYTE base  = (*ip & 0x7);
-
-                         //
-                         // Finally add in the offset
-                         //
-                         if (mod == 0)
-                         {
-                             if (base == 5)
-                                 displace = 7;
-                             else
-                                 displace = 3;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 4;
-                         }
-                         else
-                         {
-                             displace = 7;
-                         }
-                     }
-                     else
-                     {
-                         if (mod == 0)
-                         {
-                             if (rm == 5)
-                                 displace = 6;
-                             else
-                                 displace = 2;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 3;
-                         }
-                         else
-                         {
-                             displace = 6;
-                         }
-                     }
-                     break;
-
-                 case 3:
-                 default:
-                     displace = 2;
-                     break;
-                 }
-
-                 return displace;
-    }  // end of 0xFF case
-
-    case 0xe8:
-        return 5;
-
-
-    default:
-        break;
-    }
-
-
-    _ASSERTE(!"Unhandled opcode!");
-    return -1;
-
-#elif defined(TARGET_AMD64)
-    BYTE rex = 0;
-    BYTE prefix = *ip;
-    BOOL fContainsPrefix = FALSE;
-
-    // Should not happen.
-    if (prefix == 0xcc)
-        return -1;
-
-    // Skip instruction prefixes
-    //@TODO by euzem:
-    //This "loop" can't be really executed more than once so if CALL can really have more than one prefix we'll crash.
-    //Some of these prefixes are not allowed for CALL instruction and we should treat them as invalid code.
-    //It appears that this code was mostly copy/pasted from \NDP\clr\src\Debug\EE\amd64\amd64walker.cpp
-    //with very minimum fixes.
-    do
-    {
-        switch (prefix)
-        {
-            // Segment overrides
-        case 0x26: // ES
-        case 0x2E: // CS
-        case 0x36: // SS
-        case 0x3E: // DS
-        case 0x64: // FS
-        case 0x65: // GS
-
-            // Size overrides
-        case 0x66: // Operand-Size
-        case 0x67: // Address-Size
-
-            // Lock
-        case 0xf0:
-
-            // String REP prefixes
-        case 0xf2: // REPNE/REPNZ
-        case 0xf3:
-            ip++;
-            fContainsPrefix = TRUE;
-            continue;
-
-            // REX register extension prefixes
-        case 0x40:
-        case 0x41:
-        case 0x42:
-        case 0x43:
-        case 0x44:
-        case 0x45:
-        case 0x46:
-        case 0x47:
-        case 0x48:
-        case 0x49:
-        case 0x4a:
-        case 0x4b:
-        case 0x4c:
-        case 0x4d:
-        case 0x4e:
-        case 0x4f:
-            // make sure to set rex to prefix, not *ip because *ip still represents the
-            // codestream which has a 0xcc in it.
-            rex = prefix;
-            ip++;
-            fContainsPrefix = TRUE;
-            continue;
-
-        default:
-            break;
-        }
-    } while (0);
-
-    // Read the opcode
-    BYTE opcode = *ip++;
-
-    // Should not happen.
-    if (opcode == 0xcc)
-        return -1;
-
-
-    // Setup rex bits if needed
-    BYTE rex_b = 0;
-    BYTE rex_x = 0;
-    BYTE rex_r = 0;
-
-    if (rex != 0)
-    {
-        rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field or OPCODE reg field    -- Hmm, when which?
-        rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
-        rex_r = (rex & 0x4) >> 2;  // high bit to modrm reg field
-    }
-
-    // Analyze what we can of the opcode
-    switch (opcode)
-    {
-    case 0xff:
-    {
-                 BYTE modrm = *ip++;
-
-                 _ASSERT(modrm != 0);
-
-                 BYTE mod = (modrm & 0xC0) >> 6;
-                 BYTE reg = (modrm & 0x38) >> 3;
-                 BYTE rm  = (modrm & 0x07);
-
-                 reg   |= (rex_r << 3);
-                 rm    |= (rex_b << 3);
-
-                 if ((reg < 2) || (reg > 5 && reg < 8) || (reg > 15)) {
-                     // not a valid register for a CALL or BRANCH
-                     _ASSERTE(!"Invalid opcode!");
-                     return -1;
-                 }
-
-                 SHORT displace = -1;
-
-                 // See: Tables A-15,16,17 in AMD Dev Manual 3 for information
-                 //      about how the ModRM/SIB/REX bytes interact.
-
-                 switch (mod)
-                 {
-                 case 0:
-                 case 1:
-                 case 2:
-                     if ((rm & 0x07) == 4) // we have an SIB byte following
-                     {
-                         //
-                         // Get values from the SIB byte
-                         //
-                         BYTE sib   = *ip;
-                         _ASSERT(sib != 0);
-
-                         BYTE base  = (sib & 0x07);
-                         base  |= (rex_b << 3);
-
-                         ip++;
-
-                         //
-                         // Finally add in the offset
-                         //
-                         if (mod == 0)
-                         {
-                             if ((base & 0x07) == 5)
-                                 displace = 7;
-                             else
-                                 displace = 3;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 4;
-                         }
-                         else // mod == 2
-                         {
-                             displace = 7;
-                         }
-                     }
-                     else
-                     {
-                         //
-                         // Get the value we need from the register.
-                         //
-
-                         // Check for RIP-relative addressing mode.
-                         if ((mod == 0) && ((rm & 0x07) == 5))
-                         {
-                             displace = 6;   // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
-                         }
-                         else
-                         {
-                             if (mod == 0)
-                                 displace = 2;
-                             else if (mod == 1)
-                                 displace = 3;
-                             else // mod == 2
-                                 displace = 6;
-                         }
-                     }
-
-                     break;
-
-                 case 3:
-                 default:
-                     displace = 2;
-                 }
-
-                 // Displace should be set by one of the cases above
-                 if (displace == -1)
-                 {
-                     _ASSERTE(!"GetCallInstructionLength() encountered unexpected call instruction");
-                     return -1;
-                 }
-
-                 // Account for the 1 byte prefix (REX or otherwise)
-                 if (fContainsPrefix)
-                     displace++;
-
-                 // reg == 4 or 5 means that it is not a CALL, but JMP instruction
-                 // so we will fall back to ASSERT after break
-                 if ((reg != 4) && (reg != 5))
-                     return displace;
-                 break;
-    }
-    case 0xe8:
-    {
-                 //Near call with the target specified by a 32-bit relative displacement.
-                 //[maybe 1 byte prefix] + [1 byte opcode E8h] + [4 bytes offset]
-                 return 5 + (fContainsPrefix ? 1 : 0);
-    }
-    default:
-        break;
-    }
-
-    _ASSERTE(!"Invalid opcode!");
-    return -1;
-#else
-#error Platform not implemented
-#endif
 }
 
 HRESULT CordbNativeCode::GetSigParserFromFunction(mdToken mdFunction, mdToken *pClass, SigParser &parser, SigParser &methodGenerics)
@@ -4990,7 +4628,7 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     return GetSigParserFromFunction(mdFunction, pClass, parser, generics);
 }
 
-HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets)
+HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
@@ -5004,36 +4642,33 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     IfFailRet(GetCallSignature(ILoffset, &mdClass, NULL, signature, generics));
     IfFailRet(EnsureReturnValueAllowed(currentInstantiation, mdClass, signature, generics));
 
-    // now find the native offset
-    SequencePoints *pSP = GetSequencePoints();
-    DebuggerILToNativeMap *pMap = pSP->GetCallsiteMapAddr();
-
-    for (ULONG32 i = 0; i < pSP->GetCallsiteEntryCount() && pMap; ++i, pMap++)
+    // now find the matching CALL_RETURN_ILNUM NativeVarInfo entries
+    const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> *pOffsetInfoList = m_nativeVarData.GetOffsetInfoList();
+    _ASSERTE(pOffsetInfoList != NULL);
+    for (unsigned int i = 0; i < pOffsetInfoList->Count(); i++)
     {
-        if (pMap->ilOffset == ILoffset && (pMap->source & ICorDebugInfo::CALL_INSTRUCTION) == ICorDebugInfo::CALL_INSTRUCTION)
+        const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
+        _ASSERTE(pNativeVarInfo != NULL);
+        if (pNativeVarInfo->varNumber != (unsigned)ICorDebugInfo::CALL_RETURN_ILNUM)
         {
-            // if we have a buffer, fill it in.
-            if (pOffsets && found < bufferSize)
-            {
-                // Fetch the actual assembly instructions
-                BYTE nativeBuffer[8];
-
-                ULONG32 fetched = 0;
-                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
-
-                // Get the length of the call instruction.
-                int offset = GetCallInstructionLength(nativeBuffer, fetched);
-                if (offset == -1)
-                    return E_UNEXPECTED; // Could not decode instruction, this should never happen.
-
-                pOffsets[found] = pMap->nativeStartOffset + offset;
-            }
-
-            found++;
+            continue;
         }
+
+        if (pNativeVarInfo->callReturnValueILOffset != ILoffset)
+        {
+            continue;
+        }
+
+        // if we have a buffer, fill it in.
+        if (ppVarInfos && found < bufferSize)
+        {
+            ppVarInfos[found] = pNativeVarInfo;
+        }
+
+        found++;
     }
 
-    if (pOffsets)
+    if (ppVarInfos)
         *pFetched = found < bufferSize ? found : bufferSize;
     else
         *pFetched = found;
@@ -5041,7 +4676,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     if (found == 0)
         return E_FAIL;
 
-    if (pOffsets && found > bufferSize)
+    if (ppVarInfos && found > bufferSize)
         return S_FALSE;
 
     return S_OK;

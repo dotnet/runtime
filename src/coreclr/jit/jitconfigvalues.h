@@ -903,8 +903,8 @@ RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported",
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
-// Enable processing methods with funclets.
-RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 0)
+// Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
+RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

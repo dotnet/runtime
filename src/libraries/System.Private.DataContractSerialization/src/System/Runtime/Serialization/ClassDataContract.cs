@@ -616,6 +616,10 @@ namespace System.Runtime.Serialization.DataContracts
             internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
+                // When importing from schemas, we don't want to fill in all this stuff just yet.
+                if (type == Globals.TypeOfSchemaDefinedType)
+                    return;
+
                 XmlQualifiedName xmlName = GetXmlNameAndSetHasDataContract(type);
                 if (type == Globals.TypeOfDBNull)
                 {
