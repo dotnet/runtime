@@ -116,6 +116,20 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows directory handles follow the directory on move; no error is raised.
+        public void FileSystemWatcher_WatchedDirectory_Move()
+        {
+            string dir = CreateTestDirectory(TestDirectory, "watched");
+            string targetDir = Path.Combine(TestDirectory, "moved");
+            using var watcher = new FileSystemWatcher(dir);
+
+            Action action = () => Directory.Move(dir, targetDir);
+            Action cleanup = () => Directory.Move(targetDir, dir);
+
+            ExpectError(watcher, action, cleanup);
+        }
+
         #region Test Helpers
 
         private void DirectoryMove_SameDirectory(WatcherChangeTypes eventType)

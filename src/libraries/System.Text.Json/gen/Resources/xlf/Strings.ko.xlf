@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
     <body>
@@ -54,12 +54,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
+        <target state="translated">멤버 '{0}.{1}'이(가) JsonIncludeAttribute로 주석 처리되었지만 원본 생성기에는 표시되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
         <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="new">Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</target>
+        <target state="translated">JsonIncludeAttribute로 주석 처리된 액세스할 수 없는 속성은 원본 생성 모드에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
@@ -74,12 +74,12 @@
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
         <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
-        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <target state="translated">'{0}' 형식은 형식 선언에서 유효하지 않은 'JsonIgnoreCondition.Always'를 사용하여 'JsonIgnoreAttribute'로 주석을 달았습니다. 특성이 무시됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
         <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
-        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <target state="translated">'JsonIgnoreCondition.Always'는 형식 수준의 'JsonIgnoreAttribute' 주석에서 유효하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
@@ -132,6 +132,41 @@
         <target state="translated">형식에 JsonExtensionDataAttribute로 주석이 추가 된 멤버가 여러 개 있습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="new">The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="new">the derived type matches the base type through multiple ancestors</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="new">the derived type is not assignable to the base type</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="new">the type parameter '{0}' of the derived type is not bound by the base type's arguments</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="new">the base type's arguments do not match the derived type's base specification</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="new">Open generic derived type could not be resolved for the polymorphic base type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">'{0}' 형식에는 속성, 필드 또는 생성자 매개 변수 '{1}'와 같은 ref가 포함됩니다. 속성, 필드 또는 생성자에 대한 소스 코드가 생성되지 않습니다.</target>
@@ -154,23 +189,24 @@
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
         <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
-        <target state="new">Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</target>
+        <target state="translated">유니온 형식 '{0}': {1}. 고유하게 구분할 수 있는 사용자 지정 분류자를 제공하려면 JsonUnionAttribute.TypeClassifier를 설정하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableTitle">
         <source>Union case types cannot be unambiguously classified by JSON value type.</source>
-        <target state="new">Union case types cannot be unambiguously classified by JSON value type.</target>
+        <target state="translated">유니온 케이스 형식은 JSON 값 형식만으로는 명확하게 분류할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
         <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
-        <target state="new">Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</target>
+        <target state="translated">유니온 형식 '{0}'은(는) C# 유니온 셰이프 규칙과 일치하지 않습니다. 하나 이상의 공용 단일 매개 변수 케이스 생성자와 형식이 'object'인 공용 인스턴스 속성 'Value'를 선언해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedTitle">
         <source>Union type shape is not a valid C# union.</source>
-        <target state="new">Union type shape is not a valid C# union.</target>
+        <target state="translated">유니온 형식 셰이프는 올바른 C# 유니온이 아닙니다.</target>
         <note />
-      </trans-unit>    </body>
+      </trans-unit>
+    </body>
   </file>
 </xliff>

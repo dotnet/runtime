@@ -1784,6 +1784,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
 };
 
 // --------------------------------------------------------------------------------------------

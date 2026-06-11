@@ -577,8 +577,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                 if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
                 {
-                    bool rootExists = Directory.Exists(_root);
-
                     // Only enable recursive subdirectory watching when at least one registered
                     // pattern actually references a subdirectory. This avoids creating an inotify
                     // watch descriptor on every descendant directory on Linux when only root-level files
@@ -590,18 +588,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         _fileWatcher.IncludeSubdirectories = needsSubdirectories;
                     }
 
-                    // On some platforms (e.g., Linux), FileSystemWatcher currently does not
-                    // invoke OnError when the watched directory is deleted, so we don't disable
-                    // the FSW and start root watcher at that point.
-                    // Detect and handle this opportunistically now.
-                    if (_fileWatcher.EnableRaisingEvents && !rootExists)
-                    {
-                        _fileWatcher.EnableRaisingEvents = false;
-                    }
-
                     if (!_fileWatcher.EnableRaisingEvents)
                     {
-                        if (!rootExists)
+                        if (!Directory.Exists(_root))
                         {
                             needsRootWatcher = true;
                             _rootWasUnavailable = true;

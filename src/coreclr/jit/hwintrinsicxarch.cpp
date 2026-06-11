@@ -2169,39 +2169,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
-            // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
-
-            GenTree* prevArg           = nullptr;
-            bool     areArgsContiguous = (simdBaseType == TYP_FLOAT);
-
             for (int i = sig->numArgs - 1; i >= 0; i--)
             {
                 GenTree* arg = impPopStack().val;
-
-                if (areArgsContiguous)
-                {
-                    if (prevArg != nullptr)
-                    {
-                        // Recall that we are popping the args off the stack in reverse order.
-                        areArgsContiguous = areArgumentsContiguous(arg, prevArg);
-                    }
-
-                    prevArg = arg;
-                }
-
                 nodeBuilder.AddOperand(i, arg);
             }
 
-            if (areArgsContiguous)
-            {
-                op1                 = nodeBuilder.GetOperand(0);
-                GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
-                retNode             = gtNewIndir(retType, op1Address);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
-            }
+            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
             break;
         }
 

@@ -6712,7 +6712,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.LockedFlush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyImpl13 is not null)

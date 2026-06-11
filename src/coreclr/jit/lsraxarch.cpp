@@ -1406,9 +1406,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
-    SingleTypeRegSet srcRegMask     = RBM_NONE;
-    SingleTypeRegSet sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet srcRegMask = RBM_NONE;
 
     RefPosition* internalIntDef = nullptr;
 #ifdef TARGET_X86
@@ -1469,12 +1467,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
             }
             break;
-
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RAX;
-                sizeRegMask    = SRBM_RCX;
-                break;
 
             case GenTreeBlk::BlkOpKindLoop:
                 // Needed for offsetReg
@@ -1584,28 +1576,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                sizeRegMask    = SRBM_RCX;
-                break;
-
             default:
                 unreached();
         }
-
-        if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE))
-        {
-            // This is a local source; we'll use a temp register for its address.
-            assert(src->isContained() && src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-            buildInternalIntRegisterDefForNode(blkNode, srcRegMask);
-        }
-    }
-
-    if (sizeRegMask != RBM_NONE)
-    {
-        // Reserve a temp register for the block size argument.
-        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
     }
 
     int useCount = 0;
@@ -1613,7 +1586,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (!dstAddr->isContained())
     {
         useCount++;
-        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, dstAddrRegMask, getEvexIsSupported()));
+        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
     }
     else if (dstAddr->OperIsAddrMode())
     {

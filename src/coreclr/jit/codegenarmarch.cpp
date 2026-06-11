@@ -708,6 +708,46 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+        case NI_PRIMITIVE_PopCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidFloatReg(tmpReg));
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            emitAttr attr = emitTypeSize(srcNode->TypeGet());
+
+            if (attr != EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_I(INS_movi, EA_8BYTE, tmpReg, 0, INS_OPTS_8B);
+            }
+            GetEmitter()->emitIns_R_R_I(INS_ins, attr, tmpReg, srcReg, 0, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_cnt, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R(INS_addv, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R_I(INS_umov, attr, dstReg, tmpReg, 0, INS_OPTS_NONE);
+            break;
+        }
+
+        case NI_PRIMITIVE_TrailingZeroCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            GetEmitter()->emitIns_R_R(INS_rbit, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_clz, emitActualTypeSize(srcNode), dstReg, dstReg, INS_OPTS_NONE);
+            break;
+        }
 #endif // TARGET_ARM64
 
         case NI_System_Math_Sqrt:
@@ -3253,19 +3293,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate

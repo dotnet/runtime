@@ -145,4 +145,34 @@ internal readonly struct Object_1 : IObject
         uint index = syncBlockValue & _syncBlockIndexMask;
         return _target.Contracts.SyncBlock.GetSyncBlock(index);
     }
+
+    public DelegateInfo GetDelegateInfo(TargetPointer address)
+    {
+        Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
+
+        // Classify by invocation count first:
+        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
+        // that this API does not interpret further. Only when invocationCount==0
+        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        DelegateType delegateType = DelegateType.Unknown;
+        if (del.InvocationCount.Value == 0)
+        {
+            if (del.MethodPtrAux == TargetCodePointer.Null)
+                delegateType = DelegateType.Closed;
+            else
+                delegateType = DelegateType.Open;
+        }
+
+        (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
+        {
+            DelegateType.Closed => (del.Target, del.MethodPtr),
+            DelegateType.Open => (TargetPointer.Null, del.MethodPtrAux),
+            _ => (TargetPointer.Null, TargetCodePointer.Null),
+        };
+
+        return new DelegateInfo(
+            TargetObject: targetObject,
+            TargetMethodPtr: targetMethodPtr,
+            DelegateType: delegateType);
+    }
 }

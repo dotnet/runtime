@@ -217,12 +217,11 @@ private:
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
-    void         LowerArg(GenTreeCall* call, CallArg* callArg);
-    void         SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg);
-    ClassLayout* SliceLayout(ClassLayout* layout, unsigned offset, unsigned size);
-    void         InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
-    void         InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
-    void         LegalizeArgPlacement(GenTreeCall* call);
+    void LowerArg(GenTreeCall* call, CallArg* callArg);
+    void SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg);
+    void InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
+    void InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
@@ -436,10 +435,10 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
-    void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerInitBlockStore(GenTreeBlk* blkNode);
     void     LowerCopyBlockStore(GenTreeBlk* blkNode);
     bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
@@ -458,6 +457,7 @@ private:
     static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
     GenTree*    LowerNeg(GenTreeOp* node);
     void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void        LowerCkfinite(GenTreeOp* node);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);

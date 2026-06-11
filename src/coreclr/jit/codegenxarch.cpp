@@ -3047,17 +3047,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForInitBlkLoop(storeBlkNode);
             break;
 
-        case GenTreeBlk::BlkOpKindRepInstr:
-            assert(!storeBlkNode->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkRepMovs(storeBlkNode);
-            }
-            else
-            {
-                genCodeForInitBlkRepStos(storeBlkNode);
-            }
-            break;
         case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
@@ -3089,19 +3078,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         default:
             unreached();
     }
-}
-
-//
-//------------------------------------------------------------------------
-// genCodeForInitBlkRepStos: Generate code for InitBlk using rep stos.
-//
-// Arguments:
-//    initBlkNode - The Block store for which we are generating code.
-//
-void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
-{
-    genConsumeBlockOp(initBlkNode, REG_RDI, REG_RAX, REG_RCX);
-    instGen(INS_r_stosb);
 }
 
 //----------------------------------------------------------------------------------
@@ -3679,24 +3655,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
 #endif
     }
-}
-
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkRepMovs - Generate code for CpBlk by using rep movs
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in RDI, source address goes in RSE, and size goes in RCX.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_RDI, REG_RSI, REG_RCX);
-    instGen(INS_r_movsb);
 }
 
 //------------------------------------------------------------------------
@@ -6058,20 +6016,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the IL offset information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
