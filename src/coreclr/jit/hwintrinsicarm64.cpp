@@ -2927,8 +2927,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impPopStack().val;
 
             // Where possible, import a constant vector to allow for optimisations.
-
-            // For "all true" masks, import as a constant simd vector to allow for optimisations
             if (op1->IsIntegralConst())
             {
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
