@@ -3200,7 +3200,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
+                    tree->gtType = TYP_INT;
                     tree->AsIntCon()->SetIconValue((int)ival);
 
                     fgUpdateConstTreeValueNumber(tree);

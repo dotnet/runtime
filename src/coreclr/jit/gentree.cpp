@@ -10671,9 +10671,10 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #if defined(LATE_DISASM)
             if (tree->IsIconHandle())
             {
-                copy = gtNewIconHandleNode(tree->AsIntCon()->IconValue(), tree->gtFlags, tree->AsIntCon()->GetFieldSeq());
+                copy =
+                    gtNewIconHandleNode(tree->AsIntCon()->IconValue(), tree->gtFlags, tree->AsIntCon()->GetFieldSeq());
                 copy->AsIntCon()->SetCompileTimeHandle(tree->AsIntCon()->GetCompileTimeHandle());
-                copy->gtType                          = tree->gtType;
+                copy->gtType = tree->gtType;
             }
             else
 #endif
@@ -10854,10 +10855,10 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 #if defined(LATE_DISASM)
                 if (tree->IsIconHandle())
                 {
-                    copy =
-                        gtNewIconHandleNode(tree->AsIntCon()->IconValue(), tree->gtFlags, tree->AsIntCon()->GetFieldSeq());
+                    copy = gtNewIconHandleNode(tree->AsIntCon()->IconValue(), tree->gtFlags,
+                                               tree->AsIntCon()->GetFieldSeq());
                     copy->AsIntCon()->SetCompileTimeHandle(tree->AsIntCon()->GetCompileTimeHandle());
-                    copy->gtType                          = tree->gtType;
+                    copy->gtType = tree->gtType;
                 }
                 else
 #endif

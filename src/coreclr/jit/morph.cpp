@@ -12417,7 +12417,8 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         }
         else if ((leftShiftIndex->IsCnsIntOrI() && rightShiftIndex->IsCnsIntOrI()))
         {
-            if (leftShiftIndex->AsIntCon()->IconValue() + rightShiftIndex->AsIntCon()->IconValue() == rotatedValueBitSize)
+            if (leftShiftIndex->AsIntCon()->IconValue() + rightShiftIndex->AsIntCon()->IconValue() ==
+                rotatedValueBitSize)
             {
                 // We found this pattern:
                 // (x << c1) | (x >>> c2)

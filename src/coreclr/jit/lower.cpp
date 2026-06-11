@@ -11276,7 +11276,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
-        auto* intCon      = currData.value->AsIntCon();
+        auto* intCon = currData.value->AsIntCon();
         intCon->SetIconValue(static_cast<ssize_t>(val));
         if (genTypeSize(oldType) == 1 && node->OperIsIndir())
         {
