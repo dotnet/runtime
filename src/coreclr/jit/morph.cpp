@@ -9744,7 +9744,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                if (!op2Cns->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                if (!op2Cns->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
                 {
                     break;
                 }
@@ -9855,7 +9855,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                if (!op2Cns->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                if (!op2Cns->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
                 {
                     break;
                 }
@@ -9988,7 +9988,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
 
-                if (!op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                if (!op2->AsVecCon()->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
                 {
                     break;
                 }
@@ -11885,7 +11885,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
             if (op2->IsCnsVec())
             {
-                if (!op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                if (!op2->AsVecCon()->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
                 {
                     break;
                 }

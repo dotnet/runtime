@@ -7085,7 +7085,7 @@ struct GenTreeVecCon : public GenTree
 
 #endif // FEATURE_HW_INTRINSICS
 
-    bool EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType);
+    bool TryEvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType);
     void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon* other);
 
     template <typename TBase>

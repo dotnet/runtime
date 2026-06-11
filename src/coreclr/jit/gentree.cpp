@@ -20371,7 +20371,7 @@ bool Compiler::IsValidForShuffle(
 }
 
 //------------------------------------------------------------------------
-// GenTreeVecCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
+// GenTreeVecCon::TryEvaluateUnaryInPlace: Evaluates this constant using the given operation
 //
 // Arguments:
 //    oper     - the operation to use in the evaluation
@@ -20381,7 +20381,7 @@ bool Compiler::IsValidForShuffle(
 //  Returns:
 //    true if the constant could be evaluated; otherwise false.
 //
-bool GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
+bool GenTreeVecCon::TryEvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
 {
     switch (gtType)
     {
@@ -34182,7 +34182,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
             else
             {
-                if (!cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType))
+                if (!cnsNode->AsVecCon()->TryEvaluateUnaryInPlace(oper, isScalar, simdBaseType))
                 {
                     return tree;
                 }
