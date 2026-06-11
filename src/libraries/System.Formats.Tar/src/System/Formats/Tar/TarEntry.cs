@@ -336,7 +336,8 @@ namespace System.Formats.Tar
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
-            if (fileDestinationPath == null)
+
+            if (fileDestinationPath is null || FilePathEscapesDirectory(destinationDirectoryPath, fileDestinationPath))
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
@@ -357,7 +358,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
-                if (linkDestination is null)
+                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -372,7 +373,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.Join(destinationDirectoryPath, linkName));
-                if (linkDestination is null)
+                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -381,6 +382,101 @@ namespace System.Formats.Tar
             }
 
             return (fileDestinationPath, linkTargetPath);
+        }
+
+        // Check if the file destination path or the link target path escapes the destination directory, by walking through the relative path components and resolving symlinks at each step.
+        private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
+        {
+            // Windows is case insensitive while Linux is case sensitive
+            // This ensures the comparison is consistent with how the OS would resolve the paths
+            StringComparison pathComparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
+            string destPrefix = resolvedDest.EndsWith(Path.DirectorySeparatorChar)
+                ? resolvedDest
+                : resolvedDest + Path.DirectorySeparatorChar;
+
+            // Normalize file path (resolves .. and . but not symlinks)
+            string normalizedFile = Path.GetFullPath(fileDestinationPath);
+
+            // Walk relative components, resolving symlinks at each step
+            string relative = normalizedFile.Substring(resolvedDest.Length)
+                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                StringSplitOptions.RemoveEmptyEntries);
+
+            string current = resolvedDest;
+
+            foreach (string component in components)
+            {
+                current = Path.Combine(current, component);
+
+                if (Path.Exists(current))
+                {
+                    string? resolved = ResolveSymlink(current);
+                    if (resolved is null)
+                    {
+                        return true;
+                    }
+                    current = resolved;
+                }
+
+                string normalizedCurrent = Path.GetFullPath(current);
+                if (!normalizedCurrent.StartsWith(destPrefix, pathComparison) &&
+                    !normalizedCurrent.Equals(resolvedDest, pathComparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string? ResolveSymlink(string path)
+        {
+            FileSystemInfo? target = new FileInfo(path).ResolveLinkTarget(returnFinalTarget: true);
+
+            if (target is null)
+            {
+                return Path.GetFullPath(path);
+            }
+
+            return target.FullName;
+        }
+
+        // Resolves the full path of the specified path, resolving symlinks at each step.
+        // This is needed to mitigate malicious entries in the archive that could lead to writing files outside of the intended directory.
+        private static string ResolvePhysicalPath(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+            string? root = Path.GetPathRoot(fullPath);
+
+            if (root is null)
+            {
+                return fullPath;
+            }
+
+            string[] components = fullPath.Substring(root.Length)
+                .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            string current = root;
+            foreach (string component in components)
+            {
+                current = Path.Combine(current, component);
+                if (Path.Exists(current))
+                {
+                    string? resolved = ResolveSymlink(current);
+                    if (resolved is null)
+                    {
+                        return current;
+                    }
+                    current = resolved;
+                }
+            }
+
+            return current;
         }
 
         // Returns the full destination path if the path is the destinationDirectory or a subpath. Otherwise, returns null.
