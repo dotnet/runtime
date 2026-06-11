@@ -607,7 +607,7 @@ class Array : public ArrayBase
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return PTR_KIND(m_Array);
+        return PTR_KIND(GetDataPtr());
     }
 };
 
