@@ -5558,7 +5558,7 @@ void CodeGen::genFnProlog()
     //
     //-------------------------------------------------------------------------
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_S390X)
     regMaskTP maskStackAlloc = RBM_NONE;
 
 #ifdef TARGET_ARM

@@ -1028,6 +1028,11 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 #define IMAGE_REL_RISCV64_PC            0x0003
 
 //
+// S390X relocation types
+//
+#define IMAGE_REL_S390X_PC32DBL         0x0003  // 32-bit PC-relative offset in halfwords
+
+//
 // CEF relocation types.
 //
 #define IMAGE_REL_CEF_ABSOLUTE          0x0000  // Reference is absolute, no relocation is necessary

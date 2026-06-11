@@ -11511,6 +11511,24 @@ void CEEJitInfo::recordRelocation(void * location,
 
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_S390X
+    case IMAGE_REL_S390X_PC32DBL:
+        {
+            _ASSERTE(addlDelta == 0);
+            // location points to the 4-byte displacement field (bytes 2-5 of BRASL).
+            // The CPU uses PC of the instruction (byte 0), which is 2 bytes before.
+            INT64 instrAddr = (INT64)location - 2;
+            delta = (INT64)target - instrAddr;
+            // s390x branch targets are always halfword-aligned
+            _ASSERTE((delta & 1) == 0);
+            delta = delta / 2;
+            _ASSERTE(delta >= (INT64)INT32_MIN && delta <= (INT64)INT32_MAX);
+            *((INT32*)locationRW) = (INT32)delta;
+        }
+        break;
+#endif // TARGET_S390X
+
+
     default:
         _ASSERTE(!"Unknown reloc type");
         break;

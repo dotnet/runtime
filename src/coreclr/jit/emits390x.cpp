@@ -10469,6 +10469,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3());
             break;
 
+        case INS_brasl:
+            //imm = id->idAddr()->iiaGetJitDataOffset();
+            if (id->idIsCall())
+            {
+    		imm = 0;
+	    }
+	    else
+	    {
+    		imm = id->idAddr()->iiaGetJitDataOffset();
+	    }
+            op = emitInsCode(ins, fmt);
+            assert((id->idReg1() >= 0) && (id->idReg1() <= 15));
+            assert((imm >= -0x80000000LL) && (imm <= 0x7FFFFFFFLL));
+            {
+                BYTE* braslStart = dst;
+                S390_RIL_b(dst, op, id->idReg1(), imm);
+               
+                if (id->idIsDspReloc())
+                {
+                    emitRecordRelocation((void*)(braslStart + 2),id->idAddr()->iiaAddr,IMAGE_REL_S390X_PC32DBL);
+                }
+            }
+            break; 
+        case INS_basr:
         case INS_lcr:
             op = emitInsCode(ins, fmt);
             S390_RR(dst, op, id->idReg1(), id->idReg2());
@@ -10499,30 +10523,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
              break;
-        case INS_brasl:
-            //imm = id->idAddr()->iiaGetJitDataOffset();
-            if (id->idIsCall())
-            {
-               void* addr = id->idAddr()->iiaAddr;
-               imm = 0;
-
-               //emitHandleRelocation(addr);
-           }
-           else
-           {
-               imm = id->idAddr()->iiaGetJitDataOffset();
-           }
-            op = emitInsCode(ins, fmt);
-            assert((id->idReg1() >= 0) && (id->idReg1() <= 15));
-            assert((imm >= -0x80000000LL) && (imm <= 0x7FFFFFFFLL));
-
-            S390_RIL_b(dst, op, id->idReg1(), imm);
-            break;
-        case INS_basr:
-            op = emitInsCode(ins, fmt);
-            S390_RR(dst, op, id->idReg1(), id->idReg2());
-            break;
-
+        
         case INS_bras:
            op = emitInsCode(ins, fmt);
            S390_RI(dst, op, id->idReg1(), 0);
