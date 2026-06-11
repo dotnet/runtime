@@ -30,6 +30,16 @@
 #define __STDC_CONSTANT_MACROS
 #endif
 
+// Mono's LLVM backend uses the global-context LLVM-C type accessors (LLVMInt32Type, etc.)
+// pervasively. These are deprecated in newer LLVM versions in favor of the *InContext variants.
+// Suppress the deprecation warnings rather than threading an LLVMContextRef through every call site.
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include "llvm-c/Core.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
