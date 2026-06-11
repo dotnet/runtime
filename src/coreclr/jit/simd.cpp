@@ -519,6 +519,23 @@ void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 
 #if defined(TARGET_ARM64)
 
+uint64_t SimdAllBitsSetForElementType(var_types baseType)
+{
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            return 0xFF;
+        case 2:
+            return 0xFFFF;
+        case 4:
+            return 0xFFFFFFFFull;
+        case 8:
+            return 0xFFFFFFFFFFFFFFFFull;
+        default:
+            unreached();
+    }
+}
+
 bool simdscalable_t::IsAllBitsSet() const
 {
     if (gtSimdScalableKind != SimdScalableRepeated)
@@ -556,24 +573,7 @@ bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t*
         return false;
     }
 
-    uint64_t allBitsSet = 0;
-    switch (genTypeSize(baseType))
-    {
-        case 1:
-            allBitsSet = 0xFF;
-            break;
-        case 2:
-            allBitsSet = 0xFFFF;
-            break;
-        case 4:
-            allBitsSet = 0xFFFFFFFFull;
-            break;
-        case 8:
-            allBitsSet = 0xFFFFFFFFFFFFFFFFull;
-            break;
-        default:
-            unreached();
-    }
+    uint64_t allBitsSet = SimdAllBitsSetForElementType(baseType);
 
     maskCon->gtSimdMaskScalableBaseType = baseType;
     maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == allBitsSet);

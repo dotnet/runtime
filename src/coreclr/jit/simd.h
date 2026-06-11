@@ -2133,6 +2133,8 @@ enum SimdScalableKind : uint8_t
     SimdScalableScalar,   // First lane is set. The rest of the vector is zero
 };
 
+uint64_t SimdAllBitsSetForElementType(var_types baseType);
+
 struct simdscalable_t
 {
     var_types        gtSimdScalableBaseType;

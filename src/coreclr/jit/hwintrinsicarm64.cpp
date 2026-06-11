@@ -2937,26 +2937,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     if ((pattern == SVE_PATTERN_ALL) || (pattern == SVE_PATTERN_POW2))
                     {
-                        uint64_t allOnes = 0;
-                        switch (genTypeSize(simdBaseType))
-                        {
-                            case 1:
-                                allOnes = 0xFF;
-                                break;
-                            case 2:
-                                allOnes = 0xFFFF;
-                                break;
-                            case 4:
-                                allOnes = 0xFFFFFFFFull;
-                                break;
-                            case 8:
-                                allOnes = 0xFFFFFFFFFFFFFFFFull;
-                                break;
-                            default:
-                                unreached();
-                        }
-
-                        retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated, allOnes);
+                        retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated,
+                                                    SimdAllBitsSetForElementType(simdBaseType));
                         break;
                     }
                 }
