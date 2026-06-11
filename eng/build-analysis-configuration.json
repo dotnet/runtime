@@ -139,7 +139,7 @@
     {
       "PipelineId": 155,
       "PipelineName": "runtime-coreclr jit-cfg"
-    }
+    },
     {
       "PipelineId": 159,
       "PipelineName": "runtime-coreclr jitstress-random"
