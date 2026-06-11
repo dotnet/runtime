@@ -85,8 +85,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
-    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
-    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
+    <MonoCrossAOTTargetOS>browser+wasi</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <!-- Init _subset here to allow RuntimeFlavor to be set as early as possible -->
@@ -712,6 +711,10 @@
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' == 'true'">
             <_BuildCoreCLRRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'CoreCLR'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'Mono'">true</_BuildMonoRuntimePack>
+          </PropertyGroup>
+
+          <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
+            <_BuildMonoRuntimePack></_BuildMonoRuntimePack>
           </PropertyGroup>
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true'">
