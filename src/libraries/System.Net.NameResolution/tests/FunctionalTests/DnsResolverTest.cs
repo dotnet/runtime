@@ -4,6 +4,7 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -203,9 +204,13 @@ namespace System.Net.NameResolution.Tests
         [OuterLoop]
         public async Task DnsResolver_CustomServer_Port53_Works()
         {
+            IPAddress dnsAddress = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                .SelectMany(ni => ni.GetIPProperties().DnsAddresses)
+                .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+
             DnsResolverOptions opts = new DnsResolverOptions
             {
-                Servers = { new IPEndPoint(IPAddress.Parse("8.8.8.8"), 53) }
+                Servers = { new IPEndPoint(dnsAddress, 53) }
             };
             using DnsResolver r = new DnsResolver(opts);
             DnsResult<AddressRecord> result = await r.ResolveAddressesAsync(TestHost);

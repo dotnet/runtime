@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -27,11 +27,10 @@ namespace System.Net.NameResolution.Tests
     /// </remarks>
     internal sealed class LoopbackDnsServer : IAsyncDisposable
     {
-        // DnsQueryEx always queries DNS servers on the standard port 53.
         public const int DnsPort = 53;
 
-        private readonly UdpClient _udp;
-        private readonly TcpListener _tcp;
+        private readonly Socket _udp;
+        private readonly Socket _tcp;
         private readonly CancellationTokenSource _cts = new();
         private readonly Task _udpListenTask;
         private readonly Task _tcpListenTask;
@@ -44,7 +43,7 @@ namespace System.Net.NameResolution.Tests
 
         public int TcpRequestCount { get; private set; }
 
-        private LoopbackDnsServer(UdpClient udp, TcpListener tcp, IPEndPoint endPoint)
+        private LoopbackDnsServer(Socket udp, Socket tcp, IPEndPoint endPoint)
         {
             _udp = udp;
             _tcp = tcp;
@@ -55,32 +54,43 @@ namespace System.Net.NameResolution.Tests
 
         public static LoopbackDnsServer Start()
         {
-            UdpClient udp;
+            Socket udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            if (OperatingSystem.IsWindows())
+            {
+                // Disable ICMP "port unreachable" surfacing as WSAECONNRESET on ReceiveFrom
+                const int SIO_UDP_CONNRESET = -1744830452;
+                udp.IOControl(SIO_UDP_CONNRESET, new byte[] { 0 }, null);
+            }
             try
             {
-                udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, DnsPort));
-            }
-            catch (SocketException ex)
-            {
-                throw new SkipTestException(
-                    $"Unable to bind loopback DNS port {DnsPort}; another DNS server may be running ({ex.SocketErrorCode}).");
-            }
-
-            IPEndPoint ep = (IPEndPoint)udp.Client.LocalEndPoint!;
-            TcpListener tcp = new(IPAddress.Loopback, ep.Port);
-            try
-            {
-                tcp.Start();
+                udp.Bind(new IPEndPoint(IPAddress.Loopback, DnsPort));
             }
             catch (SocketException ex)
             {
                 udp.Dispose();
+                throw new SkipTestException(
+                    $"Unable to bind loopback DNS port {DnsPort}; another DNS server may be running ({ex.SocketErrorCode}).");
+            }
+
+            IPEndPoint ep = (IPEndPoint)udp.LocalEndPoint!;
+            Socket tcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                tcp.Bind(new IPEndPoint(IPAddress.Loopback, ep.Port));
+                tcp.Listen();
+            }
+            catch (SocketException ex)
+            {
+                udp.Dispose();
+                tcp.Dispose();
                 throw new SkipTestException(
                     $"Unable to bind loopback DNS TCP port {DnsPort}; another DNS server may be running ({ex.SocketErrorCode}).");
             }
 
             return new LoopbackDnsServer(udp, tcp, ep);
         }
+
+        public void ClearResponses() => _responses.Clear();
 
         public void AddResponse(string name, DnsRecordType type, Func<DnsResponseBuilder, DnsResponseBuilder> configure)
         {
@@ -101,18 +111,29 @@ namespace System.Net.NameResolution.Tests
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    UdpReceiveResult result = await _udp.ReceiveAsync(ct);
-                    Interlocked.Increment(ref _requestCount);
-
-                    byte[] response = ProcessQuery(result.Buffer);
-                    if (response.Length > 0)
+                    byte[] buffer = new byte[4096];
+                    SocketReceiveFromResult result = await _udp.ReceiveFromAsync(
+                        buffer, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 0), ct);
+                    byte[] query = buffer[..result.ReceivedBytes];
+                    EndPoint remote = result.RemoteEndPoint;
+                    _ = Task.Run(async () =>
                     {
-                        await _udp.SendAsync(response, result.RemoteEndPoint, ct);
-                    }
+                        Interlocked.Increment(ref _requestCount);
+
+                        byte[] response = ProcessQuery(query);
+                        if (response.Length > 0)
+                        {
+                            await _udp.SendToAsync(response, SocketFlags.None, remote, ct);
+                        }
+                    });
                 }
             }
             catch (OperationCanceledException) { }
             catch (ObjectDisposedException) { }
+            catch (Exception ex)
+            {
+                Debug.Fail($"Unexpected exception in UDP listener: {ex}");
+            }
         }
 
         private async Task ListenTcpAsync(CancellationToken ct)
@@ -121,31 +142,33 @@ namespace System.Net.NameResolution.Tests
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    TcpClient client = await _tcp.AcceptTcpClientAsync(ct);
-                    _ = HandleTcpClientAsync(client, ct);
+                    Socket client = await _tcp.AcceptAsync(ct);
+                    _ = Task.Run(() => HandleTcpClientAsync(client, ct));
                 }
             }
             catch (OperationCanceledException) { }
             catch (ObjectDisposedException) { }
+            catch (Exception ex)
+            {
+                Debug.Fail($"Unexpected exception in TCP listener: {ex}");
+            }
         }
 
-        private async Task HandleTcpClientAsync(TcpClient client, CancellationToken ct)
+        private async Task HandleTcpClientAsync(Socket client, CancellationToken ct)
         {
             try
             {
                 using (client)
                 {
-                    NetworkStream stream = client.GetStream();
-
                     byte[] lengthBuf = new byte[2];
-                    if (!await ReadExactlyAsync(stream, lengthBuf, ct))
+                    if (!await ReadExactlyAsync(client, lengthBuf, ct))
                     {
                         return;
                     }
 
                     int queryLength = BinaryPrimitives.ReadUInt16BigEndian(lengthBuf);
                     byte[] query = new byte[queryLength];
-                    if (!await ReadExactlyAsync(stream, query, ct))
+                    if (!await ReadExactlyAsync(client, query, ct))
                     {
                         return;
                     }
@@ -158,22 +181,22 @@ namespace System.Net.NameResolution.Tests
                     {
                         byte[] responseLengthBuf = new byte[2];
                         BinaryPrimitives.WriteUInt16BigEndian(responseLengthBuf, (ushort)response.Length);
-                        await stream.WriteAsync(responseLengthBuf, ct);
-                        await stream.WriteAsync(response, ct);
+                        await client.SendAsync(responseLengthBuf, SocketFlags.None, ct);
+                        await client.SendAsync(response, SocketFlags.None, ct);
                     }
                 }
             }
             catch (OperationCanceledException) { }
             catch (ObjectDisposedException) { }
-            catch (IOException) { }
+            catch (SocketException) { }
         }
 
-        private static async Task<bool> ReadExactlyAsync(NetworkStream stream, byte[] buffer, CancellationToken ct)
+        private static async Task<bool> ReadExactlyAsync(Socket socket, byte[] buffer, CancellationToken ct)
         {
             int read = 0;
             while (read < buffer.Length)
             {
-                int n = await stream.ReadAsync(buffer.AsMemory(read), ct);
+                int n = await socket.ReceiveAsync(buffer.AsMemory(read), SocketFlags.None, ct);
                 if (n == 0)
                 {
                     return false;
@@ -266,7 +289,7 @@ namespace System.Net.NameResolution.Tests
         {
             _cts.Cancel();
             _udp.Dispose();
-            _tcp.Stop();
+            _tcp.Dispose();
             try { await _udpListenTask; } catch { }
             try { await _tcpListenTask; } catch { }
             _cts.Dispose();
