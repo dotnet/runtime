@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
@@ -164,32 +165,102 @@ namespace System.Net
         // ---- Resolve*Core methods ----
         //
         // These instance methods are the platform-agnostic seam between the public
-        // API and the platform abstraction layer (DnsResolverPal). They exist as a
-        // dedicated layer so that instrumentation and telemetry can be added here
-        // later without touching either the public surface or the PAL. The `async`
-        // flag is threaded down to the PAL, which issues the underlying query
-        // synchronously or asynchronously accordingly.
+        // API and the platform abstraction layer (DnsResolverPal). They issue the
+        // underlying query through the PAL (synchronously or asynchronously per the
+        // `async` flag) and wrap it with telemetry. When no diagnostics consumer is
+        // enabled, the PAL task is returned directly so the common path stays
+        // allocation-free and, on the synchronous path, completes inline.
 
         private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
+        {
+            Task<DnsResult<AddressRecord>> task = DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Address.ToString()))
+                : task;
+        }
 
         private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<SrvRecord>> task = DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Target))
+                : task;
+        }
 
         private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<MxRecord>> task = DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Exchange))
+                : task;
+        }
 
         private Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<TxtRecord>> task = DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r =>
+                {
+                    List<string> values = new();
+                    foreach (TxtRecord record in r.Records)
+                    {
+                        values.AddRange(record.Values);
+                    }
+                    return values.ToArray();
+                })
+                : task;
+        }
 
         private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<CNameRecord>> task = DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.CanonicalName))
+                : task;
+        }
 
         private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<PtrRecord>> task = DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Name))
+                : task;
+        }
 
         private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
-            => DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
+        {
+            Task<DnsResult<NsRecord>> task = DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
+            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Name))
+                : task;
+        }
+
+        private static async Task<DnsResult<T>> ResolveWithTelemetry<T>(string name, Task<DnsResult<T>> queryTask, Func<DnsResult<T>, string[]> getAnswers)
+        {
+            NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(name);
+            try
+            {
+                DnsResult<T> result = await queryTask.ConfigureAwait(false);
+                NameResolutionTelemetry.Log.AfterResolution(name, in activity, getAnswers(result));
+                return result;
+            }
+            catch (Exception ex)
+            {
+                NameResolutionTelemetry.Log.AfterResolution(name, in activity, answer: null, exception: ex);
+                throw;
+            }
+        }
+
+        private static string[] MapAnswers<T>(DnsResult<T> result, Func<T, string> selector)
+        {
+            IReadOnlyList<T> records = result.Records;
+            string[] answers = new string[records.Count];
+            for (int i = 0; i < records.Count; i++)
+            {
+                answers[i] = selector(records[i]);
+            }
+            return answers;
+        }
 
         private static void ValidateName(string name)
         {
