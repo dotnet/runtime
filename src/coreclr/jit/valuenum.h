@@ -471,6 +471,9 @@ public:
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t      GetConstantSimdMask(ValueNum argVN);
     simdmaskvalue_t GetConstantSimdMaskValue(ValueNum argVN);
+#if defined(TARGET_ARM64)
+    simdmaskscalable_t GetConstantSimdMaskScalable(ValueNum argVN);
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
