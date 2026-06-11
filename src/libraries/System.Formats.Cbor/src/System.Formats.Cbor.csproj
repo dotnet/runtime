@@ -50,7 +50,6 @@ System.Formats.Cbor.CborWriter</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
-    <Compile Include="System\Formats\Cbor\Polyfill.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
     <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />

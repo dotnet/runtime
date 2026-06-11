@@ -89,11 +89,7 @@ namespace System.Formats.Cbor
             MaxDepth = maxDepth < 0 ? DefaultMaxDepth : maxDepth;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
 
-            _buffer = initialCapacity switch
-            {
-                < 1 => Array.Empty<byte>(),
-                _ => new byte[initialCapacity],
-            };
+            _buffer = initialCapacity > 0 ? new byte[initialCapacity] : Array.Empty<byte>();
         }
 
         /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
