@@ -196,6 +196,8 @@ internal sealed class MockRegisterSet : TypedView
 {
     public const string CalleeSavedRegisterName = "rbx";
     public const string ArgumentRegisterName = "rcx";
+    public const string Arm64CalleeSavedRegisterName = "x19";
+    public const string Arm64ArgumentRegisterName = "x0";
 
     public static Layout<MockRegisterSet> CreateLayout(MockTarget.Architecture architecture, string name)
         => new SequentialLayoutBuilder(name, architecture)
@@ -258,7 +260,12 @@ internal sealed class MockFrameBuilder
     {
     }
 
-    public MockFrameBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockFrameBuilder(MockMemorySpace.Builder builder, string calleeSavedRegisterName, string argumentRegisterName)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), calleeSavedRegisterName, argumentRegisterName)
+    {
+    }
+
+    public MockFrameBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, string? calleeSavedRegisterName = null, string? argumentRegisterName = null)
     {
         _builder = builder;
         _helpers = builder.TargetTestHelpers;
@@ -272,8 +279,8 @@ internal sealed class MockFrameBuilder
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
-        CalleeSavedRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, MockRegisterSet.CalleeSavedRegisterName);
-        ArgumentRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, MockRegisterSet.ArgumentRegisterName);
+        CalleeSavedRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, calleeSavedRegisterName ?? MockRegisterSet.CalleeSavedRegisterName);
+        ArgumentRegistersLayout = MockRegisterSet.CreateLayout(_helpers.Arch, argumentRegisterName ?? MockRegisterSet.ArgumentRegisterName);
         TransitionBlockLayout = MockTransitionBlock.CreateLayout(_helpers.Arch, CalleeSavedRegistersLayout, ArgumentRegistersLayout);
     }
 

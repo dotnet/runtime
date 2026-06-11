@@ -17,8 +17,10 @@ public unsafe class StackWalkTests
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,
-        Action<MockFrameBuilder>? configureFrames = null)
+        Action<MockFrameBuilder>? configureFrames = null,
+        RuntimeInfoArchitecture? runtimeArchOverride = null)
     {
+        RuntimeInfoArchitecture runtimeArch = runtimeArchOverride ?? GetRuntimeInfoArchitecture(arch);
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
         configure(threadBuilder);
@@ -26,13 +28,15 @@ public unsafe class StackWalkTests
         MockFrameBuilder? frameBuilder = null;
         if (configureFrames is not null)
         {
-            frameBuilder = new MockFrameBuilder(targetBuilder.MemoryBuilder);
+            frameBuilder = runtimeArch == RuntimeInfoArchitecture.Arm64
+                ? new MockFrameBuilder(targetBuilder.MemoryBuilder, MockRegisterSet.Arm64CalleeSavedRegisterName, MockRegisterSet.Arm64ArgumentRegisterName)
+                : new MockFrameBuilder(targetBuilder.MemoryBuilder);
             configureFrames(frameBuilder);
         }
 
         targetBuilder
             .AddTypes(CreateThreadTypes(threadBuilder))
-            .AddGlobalStrings((Constants.Globals.Architecture, GetRuntimeInfoArchitecture(arch).ToString().ToLowerInvariant()))
+            .AddGlobalStrings((Constants.Globals.Architecture, runtimeArch.ToString().ToLowerInvariant()))
             .AddGlobals(
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
@@ -202,8 +206,10 @@ public unsafe class StackWalkTests
         Assert.Equal(InternalFrameType.None, frames[9].InternalFrameType);
     }
 
-    [Fact]
-    public void GetContext_ResolveHelperFrame_UpdatesAmd64ContextFromTransitionBlock()
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X64, MockRegisterSet.CalleeSavedRegisterName, MockRegisterSet.ArgumentRegisterName)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, MockRegisterSet.Arm64CalleeSavedRegisterName, MockRegisterSet.Arm64ArgumentRegisterName)]
+    public void GetContext_ResolveHelperFrame_UpdatesContextFromTransitionBlock(RuntimeInfoArchitecture runtimeArch, string calleeSavedRegisterName, string argumentRegisterName)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
         MockThread? thread = null;
@@ -221,7 +227,8 @@ public unsafe class StackWalkTests
                 MockResolveHelperFrame resolveHelperFrame = frameBuilder.AddResolveHelperFrame(transitionBlock.Address);
                 expectedStackPointer = transitionBlock.Address + (ulong)frameBuilder.TransitionBlockLayout.Size;
                 thread!.Frame = frameBuilder.LinkChain(resolveHelperFrame.Address);
-            });
+            },
+            runtimeArchOverride: runtimeArch);
 
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
         byte[] contextBytes = target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, 0);
@@ -230,9 +237,9 @@ public unsafe class StackWalkTests
 
         Assert.Equal(returnAddress, context.InstructionPointer.Value);
         Assert.Equal(expectedStackPointer, context.StackPointer.Value);
-        Assert.True(context.TryReadRegister(MockRegisterSet.CalleeSavedRegisterName, out TargetNUInt actualCalleeSavedRegister));
+        Assert.True(context.TryReadRegister(calleeSavedRegisterName, out TargetNUInt actualCalleeSavedRegister));
         Assert.Equal(calleeSavedRegister, actualCalleeSavedRegister.Value);
-        Assert.True(context.TryReadRegister(MockRegisterSet.ArgumentRegisterName, out TargetNUInt actualArgumentRegister));
+        Assert.True(context.TryReadRegister(argumentRegisterName, out TargetNUInt actualArgumentRegister));
         Assert.Equal(argumentRegister, actualArgumentRegister.Value);
     }
 
