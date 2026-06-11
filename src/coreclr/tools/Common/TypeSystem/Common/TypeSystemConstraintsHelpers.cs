@@ -73,7 +73,7 @@ namespace Internal.TypeSystem
                 if (instantiationParam.IsValueType && instantiatedType.IsValueType && !instantiationParam.IsEquivalentTo(instantiatedType))
                     return false;
 
-                if (!instantiationParam.CanCastTo(instantiatedType))
+                if (!instantiationParam.CanCastToWithCanon(instantiatedType))
                     return false;
             }
 
@@ -164,7 +164,7 @@ namespace Internal.TypeSystem
         {
             for (int i = 0; i < instantiatedConstraints.Count; ++i)
             {
-                if (instantiatedConstraints[i].CanCastTo(instantiatedType))
+                if (instantiatedConstraints[i].CanCastToWithCanon(instantiatedType))
                     return true;
             }
 
