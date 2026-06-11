@@ -5888,7 +5888,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
     }
 
-    if ((peeledBase != nullptr) && !peeledBase->IsCnsIntOrI())
+    if ((peeledBase != nullptr) && !peeledBase->IsCnsIntOrI() && (peeledOffset != 0))
     {
         limitOp           = peeledBase;
         info->LimitOffset = peeledOffset;
