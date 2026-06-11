@@ -6687,8 +6687,11 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
