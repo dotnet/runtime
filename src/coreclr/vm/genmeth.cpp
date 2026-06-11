@@ -453,21 +453,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
             pNewMD->SetTemporaryEntryPoint(&amt);
 
-            {
-                // The canonical instantiation is exempt from constraint checks. It's used as the basis
-                // for all other reference instantiations so we can't not load it. The Canon type is
-                // not visible to users so it can't be abused.
-
-                BOOL fExempt =
-                    TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
-                    TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
-
-                if (!fExempt)
-                {
-                    pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), TRUE);
-                }
-            }
-
             amt.SuppressRelease();
 
 #ifdef _DEBUG
@@ -508,9 +493,19 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         // CrstHolder goes out of scope here
     }
 
-    if (pNewMD != NULL)
+    _ASSERTE(pNewMD != NULL);
+    pNewMD->CheckRestore();
+    //
+    // The canonical instantiation is exempt from constraint checks. It's used as the basis
+    // for all other reference instantiations so we can't not load it. The Canon type is
+    // not visible to users so it can't be abused.
+    BOOL fExempt =
+        TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
+        TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
+
+    if (!fExempt)
     {
-        pNewMD->CheckRestore();
+        pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), TRUE);
     }
 
     RETURN pNewMD;
