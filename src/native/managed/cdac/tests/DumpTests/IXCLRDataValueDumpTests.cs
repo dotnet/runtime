@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -537,7 +538,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         int totalValues = 0;
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -730,7 +731,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)

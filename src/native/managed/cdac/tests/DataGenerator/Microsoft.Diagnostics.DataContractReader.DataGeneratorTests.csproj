@@ -13,7 +13,7 @@
          defined in this project. Generator ships no runtime assembly. -->
     <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj"
                       GlobalPropertiesToRemove="RuntimeIdentifier" />
-    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj"
+    <ProjectReference Include="..\..\gen\Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>

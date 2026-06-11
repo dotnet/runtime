@@ -1317,7 +1317,7 @@ public:
             *value = 0;
             return false;
         }
-        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        int64_t val = CoercedConstantValue<int64_t>(vn);
         if (FitsIn<T>(val))
         {
             *value = static_cast<T>(val);

@@ -29,7 +29,6 @@ struct REGDISPLAY_BASE {
     T_KNONVOLATILE_CONTEXT_POINTERS *pCallerContextPointers;
 
     BOOL IsCallerContextValid;  // TRUE if pCallerContext really contains the caller's context
-    BOOL IsCallerSPValid;       // Don't add usage of this field.  This is only temporary.
 
     T_CONTEXT  ctxOne;    // used by stackwalk
     T_CONTEXT  ctxTwo;    // used by stackwalk
@@ -449,13 +448,11 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     if (pCallerCtx == NULL)
     {
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
     else
     {
         *(pRD->pCallerContext)    = *(pCallerCtx);
         pRD->IsCallerContextValid = TRUE;
-        pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
     }
 
 #if defined(TARGET_ARM64)

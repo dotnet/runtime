@@ -748,14 +748,14 @@ namespace System.Net.Security
 
                 if (token.Failed &&
                     token.Status.ErrorCode != SecurityStatusPalErrorCode.CredentialsNeeded &&
-                    token.Status.ErrorCode != SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation)
+                    token.Status.ErrorCode != SecurityStatusPalErrorCode.CertValidationNeeded)
                 {
                     throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                 }
 
                 bool done = token.Status.ErrorCode == SecurityStatusPalErrorCode.OK;
                 bool needsCredentials = token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded;
-                bool needsCertValidation = token.Status.ErrorCode == SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation;
+                bool needsCertValidation = token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationNeeded;
 
                 if (done)
                 {

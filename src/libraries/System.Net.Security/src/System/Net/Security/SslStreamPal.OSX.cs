@@ -32,7 +32,12 @@ namespace System.Net.Security
         // Since ST is not producing the framed empty message just call this false and avoid the
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
-        internal const bool CanGenerateCustomAlerts = false;
+        internal const bool CanGenerateCustomAlerts = true;
+
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? securityContext)
+        {
+            return securityContext is SafeDeleteSslContext;
+        }
 
         public static void VerifyPackageInfo()
         {
@@ -417,13 +422,7 @@ namespace System.Net.Security
                         return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
                     case PAL_TlsHandshakeState.ServerAuthCompleted:
                     case PAL_TlsHandshakeState.ClientAuthCompleted:
-                        // The standard flow would be to call the verification callback now, and
-                        // possibly abort.  But the library is set up to call this "success" and
-                        // do verification between "handshake complete" and "first send/receive".
-                        //
-                        // So, call SslHandshake again to indicate to Secure Transport that we've
-                        // accepted this handshake and it should go into the ready state.
-                        break;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationNeeded);
                     case PAL_TlsHandshakeState.ClientCertRequested:
                         return new SecurityStatusPal(SecurityStatusPalErrorCode.CredentialsNeeded);
                     case PAL_TlsHandshakeState.ClientHelloReceived:
@@ -442,11 +441,23 @@ namespace System.Net.Security
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
         {
-            // There doesn't seem to be an exposed API for writing an alert,
-            // the API seems to assume that all alerts are generated internally by
-            // SSLHandshake.
             Debug.Assert(CanGenerateCustomAlerts);
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            Debug.Assert(alertType == TlsAlertType.Fatal, $"SecureTransport derives the alert level from the OSStatus and emits only fatal alerts; unexpected alertType: {alertType}");
+
+            if (securityContext is not SafeDeleteSslContext context)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+            }
+
+            try
+            {
+                Interop.AppleCrypto.SslSetError(context.SslContext, alertMessage);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+            catch (Exception ex)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+            }
         }
 #pragma warning restore IDE0060
 

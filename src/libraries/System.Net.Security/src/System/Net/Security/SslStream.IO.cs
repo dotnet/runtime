@@ -397,6 +397,14 @@ namespace System.Net.Security
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
                         }
 
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationFailed && token.GetException() is Exception certException)
+                        {
+                            // The cert-validation path carries the user-visible exception directly;
+                            // throw it without wrapping to preserve parity with the SendAuthResetSignal
+                            // path used after handshake completion on all platforms.
+                            ExceptionDispatchInfo.Throw(certException);
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
                     else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -814,6 +822,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -862,6 +871,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
