@@ -149,7 +149,6 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
 | `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
 | `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
-| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame (GCPROTECT) chain, scanned by `WalkStackReferences` (optional) |
 | `GCFrame` | `Next` | Pointer to the next `GCFrame` toward the top of the chain (terminated by `GCFRAME_TOP`) |
 | `GCFrame` | `ObjRefs` | Pointer to the array of protected object reference slots |
 | `GCFrame` | `NumObjRefs` | Count of protected object reference slots starting at `ObjRefs` |
