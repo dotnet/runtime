@@ -371,14 +371,18 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     Range arrSizeRng = GetRangeFromAssertions(m_compiler, arrLenVn, block->bbAssertionIn);
-    int   arrSize    = arrSizeRng.LowerLimit().GetConstant();
 
-    // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
+    if (arrSizeRng.IsConstantRange())
     {
-        JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-        m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-        m_updateStmt = true;
+        int arrSize = arrSizeRng.LowerLimit().GetConstant();
+
+        // Is the range between the lower and upper bound values.
+        if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
+        {
+            JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
+            m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
+        }
     }
 }
 
