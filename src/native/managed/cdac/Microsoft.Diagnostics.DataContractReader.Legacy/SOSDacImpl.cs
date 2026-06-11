@@ -7117,6 +7117,7 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface17
 
+    [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogThreadEnum : ISOSStressLogThreadEnum
     {
         private readonly DacpThreadStressLogData[] _threads;
@@ -7161,6 +7162,7 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
+    [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogMsgEnum : ISOSStressLogMsgEnum
     {
         private readonly Target _target;
@@ -7208,6 +7210,14 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             *pFetched = written;
+
+            // Shrink to actual size so GetArguments bounds check is safe
+            if (written < count)
+            {
+                Array.Resize(ref _lastBatchRaw, (int)written);
+                Array.Resize(ref _lastBatch, (int)written);
+            }
+
             return _exhausted ? HResults.S_OK : HResults.S_FALSE;
         }
 
@@ -7251,6 +7261,7 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
+    [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogMemoryEnum : ISOSStressLogMemoryEnum
     {
         private readonly DacpStressLogMemoryRange[] _ranges;
@@ -7303,9 +7314,9 @@ public sealed unsafe partial class SOSDacImpl
                 ? HResults.S_OK
                 : HResults.S_FALSE;
         }
-        catch
+        catch (System.Exception ex)
         {
-            return HResults.E_FAIL;
+            return ex.HResult;
         }
     }
 
@@ -7391,7 +7402,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ThreadStressLogData? matchedThread = null;
             foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
             {
-                if (thread.Address == (TargetPointer)(ulong)threadStressLogAddress)
+                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
                 {
                     matchedThread = thread;
                     break;
