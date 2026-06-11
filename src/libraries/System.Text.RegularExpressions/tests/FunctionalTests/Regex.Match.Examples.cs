@@ -3,6 +3,7 @@
 
 using System;
 using System.Text.RegularExpressions;
+using Xunit;
 
 namespace System.Text.RegularExpressions.Examples
 {
@@ -22,6 +23,9 @@ namespace System.Text.RegularExpressions.Examples
             //
             // Match found: 98052
             #endregion
+
+            Assert.True(match.Success);
+            Assert.Equal("98052", match.Value);
         }
     }
 }
