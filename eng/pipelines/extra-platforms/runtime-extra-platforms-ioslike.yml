@@ -11,46 +11,6 @@ parameters:
 jobs:
 
 #
-# tvOS - Full AOT + AggressiveTrimming to reduce size
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
-    platforms:
-      - tvos_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-      - name: illinkContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      # Don't trim tests on rolling builds
-      ${{ if eq(variables['isRollingBuild'], true) }}:
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=false
-      ${{ else }}:
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=true
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-
-#
 # tvOS
 # Build the whole product using Mono and run runtime tests
 #

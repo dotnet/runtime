@@ -53,11 +53,11 @@ parameters:
 - name: mono_arm64_android
   displayName: Build Mono Arm64 Android
   type: boolean
-  default: true
+  default: false
 - name: mono_arm64_ios
   displayName: Build Mono Arm64 iOS
   type: boolean
-  default: true
+  default: false
 - name: monoBDN_arm64_android
   displayName: Build Mono Arm64 Android BDN (Not working)
   type: boolean

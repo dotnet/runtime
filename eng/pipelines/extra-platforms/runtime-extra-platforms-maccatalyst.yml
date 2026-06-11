@@ -12,39 +12,6 @@ jobs:
 
 #
 # MacCatalyst interp - requires AOT Compilation and Interp flags
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
-    platforms:
-      - maccatalyst_x64
-      - maccatalyst_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
-#
-# MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -88,40 +55,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
-#
-# MacCatalyst interp - requires AOT Compilation and Interp flags
-# Build the whole product using Mono and run libraries tests
-# The test app is built with the App Sandbox entitlement
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
-    platforms:
-    - maccatalyst_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_AppSandbox
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:EnableAppSandbox=true
-      timeoutInMinutes: 180
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            interpreter: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
