@@ -5219,6 +5219,23 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
+                    bool canRemove =
+                        predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
+                    if (canRemove)
+                    {
+                        for (BasicBlock* const pred : predBlock->PredBlocksEditing())
+                        {
+                            fgReplaceJumpTarget(pred, predBlock, commSucc);
+                        }
+
+                        fgRemoveBlock(predBlock, true);
+
+                        if (commSucc->hasProfileWeight())
+                        {
+                            commSucc->increaseBBProfileWeight(predBlock->bbWeight);
+                        }
+                    }
+
                     // Add one of the matching stmts to block, and
                     // update its flags.
                     //
@@ -5351,15 +5368,32 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                if (commSucc != nullptr)
+                bool canRemove = predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
+                if (canRemove)
                 {
-                    assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
+                    for (BasicBlock* const pred : predBlock->PredBlocksEditing())
+                    {
+                        fgReplaceJumpTarget(pred, predBlock, crossJumpTarget);
+                    }
+                    fgRemoveBlock(predBlock, true);
+
+                    if (commSucc != nullptr && commSucc->hasProfileWeight())
+                    {
+                        commSucc->increaseBBProfileWeight(predBlock->bbWeight);
+                    }
                 }
                 else
                 {
-                    FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
-                    predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                    if (commSucc != nullptr)
+                    {
+                        assert(predBlock->KindIs(BBJ_ALWAYS));
+                        fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
+                    }
+                    else
+                    {
+                        FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                    }
                 }
 
                 // For tail merge we have a common successor of predBlock and
@@ -5405,6 +5439,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
             if (predBlock->GetUniqueSucc() != block)
+            {
+                continue;
+            }
+
+            // If this block was already processed, skip it
+            //
+            if (predBlock->isEmpty())
             {
                 continue;
             }
@@ -5505,9 +5546,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         predInfo.Reset();
         for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
         {
-            // If this block was already merged, skip it
+            // If this block was already processed, skip it
             //
-            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW) || block->isEmpty())
             {
                 continue;
             }
