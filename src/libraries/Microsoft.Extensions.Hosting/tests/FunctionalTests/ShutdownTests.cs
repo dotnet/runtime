@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
+using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Test;
 using Xunit;
@@ -16,7 +17,6 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 {
     public class ShutdownTests
     {
-        private const int SIGINT = 2;
         private static readonly string StartedMessage = "Started";
         private static readonly string CompletionMessage = "Stopping firing\n" +
                                                             "Stopping end\n" +
@@ -131,7 +131,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void SendSIGINT(int processId)
         {
-            if (kill(processId, SIGINT) != 0)
+            if (kill(processId, ProcessExtensions.SigIntSignalNumber) != 0)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }

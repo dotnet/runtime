@@ -13,9 +13,36 @@ namespace Microsoft.Extensions.Internal
     internal static class ProcessExtensions
     {
         private const int ESRCH = 3;
-        private const int SIGTERM = 15;
+#if NET
+        private static readonly int s_sigint = GetPlatformSignalNumber(PosixSignal.SIGINT);
+        private static readonly int s_sigterm = GetPlatformSignalNumber(PosixSignal.SIGTERM);
+#endif
         private static readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
+
+        internal static int SigIntSignalNumber
+        {
+            get
+            {
+#if NET
+                return s_sigint;
+#else
+                return 2;
+#endif
+            }
+        }
+
+        internal static int SigTermSignalNumber
+        {
+            get
+            {
+#if NET
+                return s_sigterm;
+#else
+                return 15;
+#endif
+            }
+        }
 
         public static void KillTree(this Process process) => process.KillTree(_defaultTimeout);
 
@@ -85,7 +112,7 @@ namespace Microsoft.Extensions.Internal
         {
             try
             {
-                if (kill(processId, SIGTERM) != 0)
+                if (kill(processId, SigTermSignalNumber) != 0)
                 {
                     var error = Marshal.GetLastWin32Error();
                     if (error != ESRCH)
@@ -167,5 +194,10 @@ namespace Microsoft.Extensions.Internal
 
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
+
+#if NET
+        [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetPlatformSignalNumber")]
+        private static extern int GetPlatformSignalNumber(PosixSignal signal);
+#endif
     }
 }
