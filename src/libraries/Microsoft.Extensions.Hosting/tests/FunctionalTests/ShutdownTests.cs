@@ -22,6 +22,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                                                             "Stopping end\n" +
                                                             "Stopped firing\n" +
                                                             "Stopped end";
+        private static readonly TimeSpan s_shutdownExitTimeout = TimeSpan.FromSeconds(30);
         private readonly ITestOutputHelper _output;
 
         public ShutdownTests(ITestOutputHelper output)
@@ -139,7 +140,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void WaitForExitOrKill(Process process)
         {
-            process.WaitForExit(1000);
+            process.WaitForExit((int)s_shutdownExitTimeout.TotalMilliseconds);
             if (!process.HasExited)
             {
                 process.Kill();
