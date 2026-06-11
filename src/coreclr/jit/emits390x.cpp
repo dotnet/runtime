@@ -3848,6 +3848,12 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_cdbr:
         case INS_lgfr:
         case INS_llgfr:
+        case INS_llgcr:
+        case INS_llghr:
+        case INS_lgbr:
+        case INS_lghr:
+        case INS_lgr:
+        case INS_lr:
             fmt = IF_DR_2E;
             break;
 
@@ -10340,6 +10346,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
         break;
 
+        case INS_lr:
         case INS_cr:
         case INS_clr:
             op = emitInsCode(ins, fmt);
@@ -10568,6 +10575,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RS_a(dst, op, id->idReg1(), 0, 0, imm);
             break;
 
+        case INS_llgcr:
+        case INS_llghr:
+        case INS_lgbr:
+        case INS_lghr:
         case INS_llgfr:
         case INS_lgfr:
             op = emitInsCode(ins, fmt);
@@ -10600,6 +10611,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm = emitGetInsSC(id) & 0x3f;
             S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
             break;
+
+        case INS_llgf:
+        case INS_llgc:
+        case INS_llgh:
+        case INS_lgb:
+        case INS_lgh:
+        case INS_lgf:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+             break;
 
         default:
             _ASSERTE(!"NYI");

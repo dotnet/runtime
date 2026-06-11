@@ -71,6 +71,13 @@ INST(llgfr,     "llgfr",        0,      0xb916)
 INST(lgfr,      "lgfr",         0,      0xb914)
 INST(lcdbr,     "lcdbr",        0,      0xb313)
 INST(lcebr,     "lcebr",        0,      0xb303)
+INST(llgcr,     "llgcr",        0,      0xb984)
+INST(llghr,     "llghr",        0,      0xb985)
+INST(lgbr,      "lgbr",         0,      0xb906)
+INST(lghr,      "lghr",         0,      0xb907)
+INST(lr,        "lr",           0,      0x18)
+INST(llgf,      "llgf",         0,      0xe316)
+INST(lgf,       "lgf",          0,      0xe314)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)

@@ -3996,8 +3996,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    _ASSERTE("!NYI");
-#if 0
     genConsumeRegs(cast->CastOp());
 
     GenTree* const  src    = cast->CastOp();
@@ -4012,73 +4010,119 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
         assert(genIsValidIntReg(srcReg));
-        genIntCastOverflowCheck(cast, desc, srcReg);
+        //genIntCastOverflowCheck(cast, desc, srcReg);
+         NYI("genIntCastOverflowCheck for s390x");
     }
 
     if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
         instruction ins;
-        unsigned    insSize;
+        emitAttr    attr;
 
         switch (desc.ExtendKind())
         {
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
-                ins     = (desc.ExtendSrcSize() == 1) ? INS_uxtb : INS_uxth;
-                insSize = 4;
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    ins  = INS_llgcr;
+                    attr = EA_1BYTE;
+                }
+                else
+                {
+                    ins  = INS_llghr;
+                    attr = EA_2BYTE;
+                }
                 break;
             case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
-                ins     = (desc.ExtendSrcSize() == 1) ? INS_sxtb : INS_sxth;
-                insSize = 4;
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    ins  = INS_lgbr;
+                    attr = EA_1BYTE;
+                }
+                else
+                {
+                    ins  = INS_lghr;
+                    attr = EA_2BYTE;
+                }
                 break;
 #ifdef TARGET_64BIT
             case GenIntCastDesc::ZERO_EXTEND_INT:
-                ins     = INS_mov;
-                insSize = 4;
+                ins  = INS_llgfr;
+                attr = EA_4BYTE;
                 break;
             case GenIntCastDesc::SIGN_EXTEND_INT:
-                ins     = INS_sxtw;
-                insSize = 8;
+                ins  = INS_lgfr;
+                attr = EA_4BYTE;
                 break;
 #endif // TARGET_64BIT
             case GenIntCastDesc::COPY:
-                ins     = INS_mov;
-                insSize = desc.ExtendSrcSize();
+                if (desc.ExtendSrcSize() == 4)
+                {
+                    ins  = INS_lr;
+                    attr = EA_4BYTE;
+                }
+                else
+                {
+                    ins  = INS_lgr;
+                    attr = EA_8BYTE;
+                }
                 break;
             case GenIntCastDesc::LOAD_ZERO_EXTEND_SMALL_INT:
-                ins     = (desc.ExtendSrcSize() == 1) ? INS_ldrb : INS_ldrh;
-                insSize = TARGET_POINTER_SIZE;
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    ins  = INS_llgc;
+                    attr = EA_1BYTE;
+                }
+                else
+                {
+                    ins  = INS_llgh;
+                    attr = EA_2BYTE;
+                }
                 break;
             case GenIntCastDesc::LOAD_SIGN_EXTEND_SMALL_INT:
-                ins     = (desc.ExtendSrcSize() == 1) ? INS_ldrsb : INS_ldrsh;
-                insSize = TARGET_POINTER_SIZE;
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    ins  = INS_lgb;
+                    attr = EA_1BYTE;
+                }
+                else
+                {
+                    ins  = INS_lgh;
+                    attr = EA_2BYTE;
+                }
                 break;
 #ifdef TARGET_64BIT
             case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
-                ins     = INS_ldr;
-                insSize = 4;
+                ins  = INS_llgf;
+                attr = EA_4BYTE;
                 break;
             case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
-                ins     = INS_ldrsw;
-                insSize = 8;
+                ins  = INS_lgf;
+                attr = EA_4BYTE;
                 break;
 #endif // TARGET_64BIT
             case GenIntCastDesc::LOAD_SOURCE:
-                ins     = ins_Load(src->TypeGet());
-                insSize = genTypeSize(genActualType(src));
+                if (desc.ExtendSrcSize() == 4)
+                {
+                    ins  = INS_l;
+                    attr = EA_4BYTE;
+                }
+                else
+                {
+                    ins  = INS_lg;
+                    attr = EA_8BYTE;
+                }
                 break;
-
             default:
                 unreached();
         }
 
         if (srcReg != REG_NA)
         {
-            emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, /* canSkip */ false);
+            GetEmitter()->emitIns_R_R(ins, attr, dstReg, srcReg);
         }
         else
         {
-            // The "used from memory" case. On ArmArch casts are the only nodes which can have
-            // contained memory operands, so we have to handle all possible sources "manually".
             assert(src->isUsedFromMemory());
 
             if (src->isUsedFromSpillTemp())
@@ -4089,24 +4133,23 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 unsigned tmpNum = tmpDsc->tdTempNum();
                 regSet.tmpRlsTemp(tmpDsc);
 
-                emit->emitIns_R_S(ins, EA_ATTR(insSize), dstReg, tmpNum, 0);
+                emit->emitIns_R_S(ins, attr, dstReg, tmpNum, 0);
             }
             else if (src->OperIsLocal())
             {
-                emit->emitIns_R_S(ins, EA_ATTR(insSize), dstReg, src->AsLclVarCommon()->GetLclNum(),
+                emit->emitIns_R_S(ins, attr, dstReg, src->AsLclVarCommon()->GetLclNum(),
                                   src->AsLclVarCommon()->GetLclOffs());
             }
             else
             {
                 assert(src->OperIs(GT_IND) && !src->AsIndir()->IsVolatile() && !src->AsIndir()->IsUnaligned());
-                emit->emitIns_R_R_I(ins, EA_ATTR(insSize), dstReg, src->AsIndir()->Base()->GetRegNum(),
+                emit->emitIns_R_R_I(ins, attr, dstReg, src->AsIndir()->Base()->GetRegNum(),
                                     static_cast<int>(src->AsIndir()->Offset()));
             }
         }
     }
 
     genProduceReg(cast);
-#endif
 }
 
 //------------------------------------------------------------------------

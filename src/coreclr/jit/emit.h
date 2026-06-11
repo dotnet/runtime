@@ -1231,6 +1231,12 @@ protected:
                 case INS_srag:
                 case INS_srak:
                 case INS_sllk:
+                case INS_llgh:
+                case INS_lgh:
+                case INS_lgf:
+                case INS_llgc:
+                case INS_llgf:
+                case INS_lgb:
                     size = 6;
                     break;
                 default:
