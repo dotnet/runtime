@@ -1170,19 +1170,11 @@ bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop
 
     // A fresh local would have to be marked DNER if the IV is accessed as a
     // field, so there would be nothing to gain.
-    bool hasFieldAccess = false;
-    loopInfo->VisitOccurrences(loop, lclNum,
-                               [&hasFieldAccess](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
-                                   if (tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD))
-                                   {
-                                       hasFieldAccess = true;
-                                       return false;
-                                   }
+    auto isNotFieldAccess = [](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
+        return !tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD);
+    };
 
-                                   return true;
-                               });
-
-    if (hasFieldAccess)
+    if (!loopInfo->VisitOccurrences(loop, lclNum, isNotFieldAccess))
     {
         JITDUMP("    V%02u is accessed as a field inside the loop; skipping\n", lclNum);
         return false;
