@@ -9406,10 +9406,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
                 if (unboxedEntrySig.hasTypeArg())
                 {
-                    if (unboxedEntrySig.sigInst.methInstCount != 0)
+                    if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
                     {
-                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
-                               CORINFO_CONTEXTFLAGS_METHOD);
                         CORINFO_METHOD_HANDLE exactMethodHandle =
                             (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
@@ -9418,6 +9416,9 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     }
                     else
                     {
+                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
+                               CORINFO_CONTEXTFLAGS_CLASS);
+
                         // Get the method table from the boxed object.
                         //
                         // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
