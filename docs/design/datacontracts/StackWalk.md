@@ -103,6 +103,7 @@ This contract depends on the following descriptors:
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
 | `FramedMethodFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
+| `ResolveHelperFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock (only present when `FEATURE_RESOLVE_HELPER_DISPATCH` is defined) |
 | `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
 | `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
 | `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
@@ -396,6 +397,9 @@ The following Frame types also use this mechanism:
 * CallCountingHelperFrame
 * ExternalMethodFrame
 * DynamicHelperFrame
+* ResolveHelperFrame
+
+`ResolveHelperFrame` additionally restores the argument registers stored in the `TransitionBlock` on all platforms (not just ARM), because the virtual stub dispatch resolve helper relies on the original argument registers to perform dispatch resolution. This mirrors native `ResolveHelperFrame::UpdateRegDisplay`. It is only present when the runtime is built with `FEATURE_RESOLVE_HELPER_DISPATCH`; when the feature is absent its type descriptor and Frame identifier are not emitted, so no Frame is ever classified as a `ResolveHelperFrame`.
 
 #### FuncEvalFrame
 
