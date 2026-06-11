@@ -140,6 +140,26 @@ pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key)
     return file_path;
 }
 
+#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
+
+// Retrieves environment variable which is only used for testing.
+// This will return the value of the variable only if the product binary is stamped
+// with test-only marker.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name)
+{
+    // This is a static variable which is embedded in the product binary (somewhere).
+    // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
+    // The first character is used as the decider:
+    //  - Default value is 'd' (stands for disabled) - test only behavior is disabled
+    //  - To enable test-only behaviors set it to 'e' (stands for enabled)
+    volatile static char embed[sizeof(TEST_ONLY_MARKER)] = TEST_ONLY_MARKER;
+
+    if (embed[0] != 'e')
+        return NULL;
+
+    return pal_getenv(name);
+}
+
 bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root)
 {
     if (out_env_var_name == NULL || out_dotnet_root == NULL)

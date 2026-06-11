@@ -482,37 +482,18 @@ pal::string_t to_upper(const pal::char_t* in) {
     return ret;
 }
 
-#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
-
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
 // with test-only marker.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    // This is a static variable which is embedded in the product binary (somewhere).
-    // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
-    // The first character is used as the decider:
-    //  - Default value is 'd' (stands for disabled) - test only behavior is disabled
-    //  - To enable test-only behaviors set it to 'e' (stands for enabled)
-    constexpr size_t EMBED_SIZE = sizeof(TEST_ONLY_MARKER) / sizeof(TEST_ONLY_MARKER[0]);
-    volatile static char embed[EMBED_SIZE] = TEST_ONLY_MARKER;
-
-    if (embed[0] != 'e')
-    {
+    pal_char_t* value = utils_test_only_getenv(name);
+    if (value == nullptr)
         return false;
-    }
 
-    return pal::getenv(name, recv);
-}
-
-extern "C" pal_char_t* utils_test_only_getenv(const pal_char_t* name)
-{
-    pal::string_t value;
-    if (!test_only_getenv(name, &value))
-        return nullptr;
-
-    pal_char_t* dup = pal_strdup(value.c_str());
-    return dup;
+    recv->assign(value);
+    free(value);
+    return true;
 }
 
 extern "C" pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version)
