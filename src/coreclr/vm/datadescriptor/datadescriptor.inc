@@ -568,6 +568,7 @@ CDAC_TYPE_FIELD(StressLog, T_UINT32, TotalChunks, cdac_offsets<StressLog>::total
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, cdac_offsets<StressLog>::logs)
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, cdac_offsets<StressLog>::tickFrequency)
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, cdac_offsets<StressLog>::startTimeStamp)
+CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTime, cdac_offsets<StressLog>::startTime)
 CDAC_TYPE_FIELD(StressLog, T_NUINT, ModuleOffset, cdac_offsets<StressLog>::moduleOffset)
 CDAC_TYPE_FIELD(StressLog, T_ARRAY(TYPE(StressLogModuleDesc)), Modules, cdac_offsets<StressLog>::modules)
 CDAC_TYPE_END(StressLog)
