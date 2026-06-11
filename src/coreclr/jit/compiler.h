@@ -8167,6 +8167,13 @@ public:
     bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
     bool optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum);
 
+    bool optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
+    bool optPrimaryIVStaysEHLiveAfterReplacement(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    bool optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, PerLoopInfo* loopLocals);
+    bool optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    bool optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* HBtab, FlowGraphNaturalLoop* loop);
+    void optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* stmt);
+
     // Redundant branch opts
     //
     enum class JumpThreadCheckResult
