@@ -4531,7 +4531,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
-        // Binary nodes
         default:
         {
             assert(!"unhandled special node");
