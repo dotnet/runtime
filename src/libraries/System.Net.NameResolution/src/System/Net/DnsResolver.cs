@@ -169,37 +169,29 @@ namespace System.Net
         // underlying query through the PAL (synchronously or asynchronously per the
         // `async` flag) and wrap it with telemetry. When no diagnostics consumer is
         // enabled, the PAL task is returned directly so the common path stays
-        // allocation-free and, on the synchronous path, completes inline.
+        // allocation-free and, on the synchronous path, completes inline. When
+        // telemetry is enabled, the PAL call is deferred into ResolveWithTelemetry so
+        // that the measurement starts before the query runs - on the synchronous path
+        // the PAL would otherwise execute the entire query before telemetry began.
 
         private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<AddressRecord>> task = DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Address.ToString()))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken), static r => MapAnswers(r, static a => a.Address.ToString()))
+                : DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
 
         private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<SrvRecord>> task = DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Target))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Target))
+                : DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
 
         private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<MxRecord>> task = DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Exchange))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Exchange))
+                : DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
 
         private Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<TxtRecord>> task = DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r =>
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken), static r =>
                 {
                     List<string> values = new();
                     foreach (TxtRecord record in r.Records)
@@ -208,39 +200,29 @@ namespace System.Net
                     }
                     return values.ToArray();
                 })
-                : task;
-        }
+                : DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
 
         private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<CNameRecord>> task = DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.CanonicalName))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.CanonicalName))
+                : DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
 
         private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<PtrRecord>> task = DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Name))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Name))
+                : DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
 
         private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
-        {
-            Task<DnsResult<NsRecord>> task = DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
-            return NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, task, static r => MapAnswers(r, static a => a.Name))
-                : task;
-        }
+            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Name))
+                : DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
 
-        private static async Task<DnsResult<T>> ResolveWithTelemetry<T>(string name, Task<DnsResult<T>> queryTask, Func<DnsResult<T>, string[]> getAnswers)
+        private static async Task<DnsResult<T>> ResolveWithTelemetry<T>(string name, Func<Task<DnsResult<T>>> resolve, Func<DnsResult<T>, string[]> getAnswers)
         {
             NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(name);
             try
             {
-                DnsResult<T> result = await queryTask.ConfigureAwait(false);
+                DnsResult<T> result = await resolve().ConfigureAwait(false);
                 NameResolutionTelemetry.Log.AfterResolution(name, in activity, getAnswers(result));
                 return result;
             }

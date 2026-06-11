@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -456,6 +459,61 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => resolveTask);
 
             serverCanContinue.Set();
+        }
+
+        // ---- Telemetry ----
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_RecordsDurationMetric_CoversQueryTime(bool async)
+        {
+            TimeSpan delay = TimeSpan.FromMilliseconds(250);
+            string name = UniqueName("metrics");
+            _server.AddRawResponse(name, DnsRecordType.A, queryId =>
+            {
+                Thread.Sleep(delay);
+                return DnsResponseBuilder.For(queryId, DnsResponseBuilder.EncodeName(name), DnsRecordType.A)
+                    .Answer(new byte[] { 10, 0, 0, 9 }, ttl: 120)
+                    .Build();
+            });
+
+            List<Measurement<double>> measurements = new();
+            using (MeterListener listener = new())
+            {
+                listener.InstrumentPublished = (instrument, l) =>
+                {
+                    if (instrument.Meter.Name == "System.Net.NameResolution" && instrument.Name == "dns.lookup.duration")
+                    {
+                        l.EnableMeasurementEvents(instrument);
+                    }
+                };
+                listener.SetMeasurementEventCallback<double>((instrument, measurement, tags, state) =>
+                {
+                    lock (measurements)
+                    {
+                        measurements.Add(new Measurement<double>(measurement, tags));
+                    }
+                });
+                listener.Start();
+
+                // A single A query so exactly one lookup is measured.
+                DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name, AddressFamily.InterNetwork);
+                Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            }
+
+            Measurement<double>[] matching = measurements
+                .Where(m => m.Tags.ToArray().Any(t => t.Key == "dns.question.name" && (string?)t.Value == name))
+                .ToArray();
+
+            Measurement<double> recorded = Assert.Single(matching);
+
+            // The measured duration must span the actual query, and so must be at least
+            // the server's artificial response delay - the lookup cannot legitimately
+            // complete before the server replies. Regression: on the synchronous path
+            // telemetry used to start only after the PAL had already begun executing the
+            // query, so the recorded duration was shorter than the server delay.
+            Assert.True(recorded.Value >= delay.TotalSeconds, $"Expected a lookup duration of at least {delay.TotalSeconds:0.###}s but got {recorded.Value:0.###}s.");
         }
     }
 }
