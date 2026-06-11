@@ -49,6 +49,8 @@
 
 #include "cdacdata.h"
 
+class CrstStatic;
+
 //
 // Logging levels and facilities
 //
@@ -113,12 +115,12 @@ enum LogFacilitiesEnum: unsigned int {
 
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                                      \
             if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsgOL(facility, msg, __VA_ARGS__);                              \
+                StressLog::LogMsgOL(facility, level, msg, __VA_ARGS__);                       \
             } WHILE_0
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
-                StressLog::LogMsg(facility, 0, msg);                                \
+                StressLog::LogMsg(level, facility, 0, msg);                         \
             } WHILE_0                                                               \
 
 #define STRESS_LOG1(facility, level, msg, data1) \
@@ -153,32 +155,32 @@ enum LogFacilitiesEnum: unsigned int {
 
 #define STRESS_LOG_PLUG_MOVE(plug_start, plug_end, plug_delta) do {                           \
             if (StressLog::StressLogOn(LF_GC, LL_INFO1000))                                   \
-                StressLog::LogMsg(LF_GC, 3, ThreadStressLog::gcPlugMoveMsg(),                 \
+                StressLog::LogMsg(LL_INFO1000, LF_GC, 3, ThreadStressLog::gcPlugMoveMsg(),     \
                 (void*)(size_t)(plug_start), (void*)(size_t)(plug_end), (void*)(size_t)(plug_delta)); \
             } WHILE_0
 
 #define STRESS_LOG_ROOT_PROMOTE(root_addr, objPtr, methodTable) do {                          \
             if (StressLog::StressLogOn(LF_GC|LF_GCROOTS, LL_INFO1000))                        \
-                StressLog::LogMsg(LF_GC|LF_GCROOTS, 3, ThreadStressLog::gcRootPromoteMsg(),   \
+                StressLog::LogMsg(LL_INFO1000, LF_GC|LF_GCROOTS, 3, ThreadStressLog::gcRootPromoteMsg(), \
                     (void*)(size_t)(root_addr), (void*)(size_t)(objPtr), (void*)(size_t)(methodTable)); \
             } WHILE_0
 
 #define STRESS_LOG_ROOT_RELOCATE(root_addr, old_value, new_value, methodTable) do {           \
             if (StressLog::StressLogOn(LF_GC|LF_GCROOTS, LL_INFO1000) && ((size_t)(old_value) != (size_t)(new_value))) \
-                StressLog::LogMsg(LF_GC|LF_GCROOTS, 4, ThreadStressLog::gcRootMsg(),          \
+                StressLog::LogMsg(LL_INFO1000, LF_GC|LF_GCROOTS, 4, ThreadStressLog::gcRootMsg(), \
                     (void*)(size_t)(root_addr), (void*)(size_t)(old_value),                   \
                     (void*)(size_t)(new_value), (void*)(size_t)(methodTable));                \
             } WHILE_0
 
 #define STRESS_LOG_GC_START(gcCount, Gen, collectClasses) do {                                \
             if (StressLog::StressLogOn(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10))               \
-                StressLog::LogMsg(LF_GCROOTS|LF_GC|LF_GCALLOC, 3, ThreadStressLog::gcStartMsg(),        \
+                StressLog::LogMsg(LL_INFO10, LF_GCROOTS|LF_GC|LF_GCALLOC, 3, ThreadStressLog::gcStartMsg(), \
                     (void*)(size_t)(gcCount), (void*)(size_t)(Gen), (void*)(size_t)(collectClasses));   \
             } WHILE_0
 
 #define STRESS_LOG_GC_END(gcCount, Gen, collectClasses) do {                                  \
             if (StressLog::StressLogOn(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10))               \
-                StressLog::LogMsg(LF_GCROOTS|LF_GC|LF_GCALLOC, 3, ThreadStressLog::gcEndMsg(),\
+                StressLog::LogMsg(LL_INFO10, LF_GCROOTS|LF_GC|LF_GCALLOC, 3, ThreadStressLog::gcEndMsg(),\
                     (void*)(size_t)(gcCount), (void*)(size_t)(Gen), (void*)(size_t)(collectClasses), 0);\
             } WHILE_0
 
@@ -233,12 +235,20 @@ public:
     unsigned MaxSizeTotal;                  // maximum memory allowed for stress log
     int32_t totalChunk;                       // current number of total chunks allocated
     PTR_ThreadStressLog logs;               // the list of logs for every thread.
+    unsigned padding;                       // Preserve the layout for SOS
     int32_t deadCount;                        // count of dead threads in the log
-    minipal_mutex lock;                     // lock
+    CrstStatic* lock;                       // lock (heap-allocated, pointer-sized for CoreCLR layout compat)
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
     uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
     size_t   moduleOffset;                  // Used to compute format strings.
+    struct ModuleDesc
+    {
+        uint8_t* baseAddress;
+        size_t        size;
+    };
+    static const size_t MAX_MODULES = 5;
+    ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
 
 #ifndef DACCESS_COMPILE
 public:
@@ -300,7 +310,7 @@ public:
     #endif
     }
 
-    static void LogMsg(unsigned facility, int cArgs, const char* format, ... );
+    static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... );
 
     // Support functions for STRESS_LOG_VA
     // We disable the warning "conversion from 'type' to 'type' of greater size" since everything will
@@ -320,13 +330,13 @@ public:
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
     {
-        LogMsg(LF_GC, sizeof...(args), format, ConvertArgument(args)...);
+        LogMsg(LL_ALWAYS, LF_GC, sizeof...(args), format, ConvertArgument(args)...);
     }
 
     template<typename... Ts>
-    static void LogMsgOL(unsigned facility, const char* format, Ts... args)
+    static void LogMsgOL(unsigned facility, unsigned level, const char* format, Ts... args)
     {
-        LogMsg(facility, sizeof...(args), format, ConvertArgument(args)...);
+        LogMsg(level, facility, sizeof...(args), format, ConvertArgument(args)...);
     }
 
     #ifdef _MSC_VER
@@ -343,6 +353,36 @@ public:
 // private: // static variables
     static StressLog theLog;    // We only have one log, and this is it
 };
+
+// Verify that the NativeAOT StressLog layout is binary-compatible with CoreCLR.
+// The lock field must be pointer-sized (matching CoreCLR's CRITSEC_COOKIE), and
+// all fields that diagnostic tools read must be at the same offsets.
+static_assert(sizeof(StressLog::theLog.lock) == sizeof(void*),
+    "StressLog::lock must be pointer-sized for CoreCLR layout compatibility");
+static_assert(offsetof(StressLog, facilitiesToLog) == 0, "facilitiesToLog offset mismatch");
+static_assert(offsetof(StressLog, levelToLog) == 4, "levelToLog offset mismatch");
+static_assert(offsetof(StressLog, MaxSizePerThread) == 8, "MaxSizePerThread offset mismatch");
+static_assert(offsetof(StressLog, MaxSizeTotal) == 12, "MaxSizeTotal offset mismatch");
+static_assert(offsetof(StressLog, totalChunk) == 16, "totalChunk offset mismatch");
+static_assert(offsetof(StressLog, padding) == offsetof(StressLog, logs) + sizeof(void*),
+    "padding must follow logs");
+static_assert(offsetof(StressLog, deadCount) == offsetof(StressLog, padding) + sizeof(unsigned),
+    "deadCount must follow padding");
+static_assert(offsetof(StressLog, lock) == offsetof(StressLog, deadCount) + sizeof(int32_t),
+    "lock must follow deadCount");
+// Note: on 32-bit platforms the compiler may insert alignment padding between
+// lock (pointer-sized) and tickFrequency (uint64_t). This matches CoreCLR's
+// layout since CRITSEC_COOKIE is also pointer-sized.
+static_assert(offsetof(StressLog, tickFrequency) > offsetof(StressLog, lock),
+    "tickFrequency must be after lock");
+static_assert(offsetof(StressLog, startTimeStamp) == offsetof(StressLog, tickFrequency) + sizeof(uint64_t),
+    "startTimeStamp must follow tickFrequency");
+static_assert(offsetof(StressLog, startTime) == offsetof(StressLog, startTimeStamp) + sizeof(uint64_t),
+    "startTime must follow startTimeStamp");
+static_assert(offsetof(StressLog, moduleOffset) == offsetof(StressLog, startTime) + sizeof(uint64_t),
+    "moduleOffset must follow startTime");
+static_assert(offsetof(StressLog, modules) == offsetof(StressLog, moduleOffset) + sizeof(size_t),
+    "modules must follow moduleOffset");
 
 
 #if TARGET_64BIT

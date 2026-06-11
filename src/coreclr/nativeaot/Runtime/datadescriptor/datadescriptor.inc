@@ -94,7 +94,15 @@ CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, offsetof(StressLog, totalChunk)
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, offsetof(StressLog, logs))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, offsetof(StressLog, tickFrequency))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, offsetof(StressLog, startTimeStamp))
+CDAC_TYPE_FIELD(StressLog, T_NUINT, ModuleOffset, offsetof(StressLog, moduleOffset))
+CDAC_TYPE_FIELD(StressLog, T_ARRAY(TYPE(StressLogModuleDesc)), Modules, offsetof(StressLog, modules))
 CDAC_TYPE_END(StressLog)
+
+CDAC_TYPE_BEGIN(StressLogModuleDesc)
+CDAC_TYPE_SIZE(sizeof(StressLog::ModuleDesc))
+CDAC_TYPE_FIELD(StressLogModuleDesc, T_POINTER, BaseAddress, offsetof(StressLog::ModuleDesc, baseAddress))
+CDAC_TYPE_FIELD(StressLogModuleDesc, T_NUINT, Size, offsetof(StressLog::ModuleDesc, size))
+CDAC_TYPE_END(StressLogModuleDesc)
 
 CDAC_TYPE_BEGIN(ThreadStressLog)
 CDAC_TYPE_INDETERMINATE(ThreadStressLog)
@@ -152,10 +160,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 7)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 3)
 #endif
 
-// StressLog globals (no module table in NativeAOT)
+// StressLog globals
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 0)
+CDAC_GLOBAL(StressLogMaxModules, T_UINT64, StressLog::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, 0xCFCFCFCF)
 CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
