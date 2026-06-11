@@ -3131,10 +3131,55 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        *pRetVal = default;
+        try
+        {
+            DacDbiMonitorLockInfo info = default;
+            uint threadId = 0;
+            uint recursionCount = 0;
+            TargetPointer syncBlock = _target.Contracts.Object.GetSyncBlockAddress(vmObject);
 
-    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
+            if (syncBlock == TargetPointer.Null || !_target.Contracts.SyncBlock.TryGetLockInfo(syncBlock, out threadId, out recursionCount))
+            {
+                *pRetVal = info;
+            }
+            else
+            {
+                TargetPointer threadPtr = _target.Contracts.Thread.IdToThread(threadId);
+                Debug.Assert(threadPtr != TargetPointer.Null, "A thread should have been found");
+                if (threadPtr != TargetPointer.Null)
+                {
+                    info.lockOwner = threadPtr;
+                    info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+                }
+                *pRetVal = info;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiMonitorLockInfo pRetValLocal;
+            int hrLocal = _legacy.GetThreadOwningMonitorLock(vmObject, &pRetValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pRetVal->lockOwner == pRetValLocal.lockOwner,
+                    $"lockOwner mismatch: cDAC={pRetVal->lockOwner}, DAC={pRetValLocal.lockOwner}");
+                Debug.Assert(pRetVal->acquisitionCount == pRetValLocal.acquisitionCount,
+                    $"acquisitionCount mismatch: cDAC={pRetVal->acquisitionCount}, DAC={pRetValLocal.acquisitionCount}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => HResults.E_NOTIMPL;
 
     public int GetAttachStateFlags(int* pRetVal)
     {

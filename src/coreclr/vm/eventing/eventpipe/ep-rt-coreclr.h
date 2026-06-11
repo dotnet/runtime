@@ -1735,7 +1735,9 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// This value is an approximation of the command line for diagnostic purposes, and it may not match
+	// the actual command line used to launch the process.
+	// This value can change over time, specifically before vs after suspension in diagnostics server.
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.

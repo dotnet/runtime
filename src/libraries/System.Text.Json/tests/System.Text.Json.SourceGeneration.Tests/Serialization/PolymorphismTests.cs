@@ -74,13 +74,48 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("derived-list", derivedType.TypeDiscriminator);
         }
 
+        [Fact]
+        public static void OpenGenericDerivedType_PartiallyConcrete_RoundTrips()
+        {
+            // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> registered on
+            // SourceGenOpenGenericBase<string, int>. Position 0 (T) unifies to string;
+            // position 1 (concrete int) matches. The generated metadata for the closed base
+            // must contain SourceGenOpenGenericDerived<string> as the resolved derived type.
+            JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenOpenGenericBaseStringInt32;
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(SourceGenOpenGenericDerived<string>), derivedType.DerivedType);
+            Assert.Equal("derived", derivedType.TypeDiscriminator);
+
+            SourceGenOpenGenericBase<string, int> value = new SourceGenOpenGenericDerived<string> { Extra = "hello" };
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            Assert.Contains("\"$type\":\"derived\"", json);
+
+            var result = JsonSerializer.Deserialize(json, typeInfo);
+            var d = Assert.IsType<SourceGenOpenGenericDerived<string>>(result);
+            Assert.Equal("hello", d.Extra);
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(SourceGenPolymorphicBase))]
         [JsonSerializable(typeof(SourceGenClassifiedAnimal))]
         [JsonSerializable(typeof(SourceGenPolymorphicIntList))]
+        [JsonSerializable(typeof(SourceGenOpenGenericBase<string, int>))]
         internal sealed partial class PolymorphismTestsContext : JsonSerializerContext
         {
         }
+    }
+
+    [JsonDerivedType(typeof(SourceGenOpenGenericDerived<>), "derived")]
+    public class SourceGenOpenGenericBase<T1, T2>
+    {
+        public T1? Value1 { get; set; }
+        public T2? Value2 { get; set; }
+    }
+
+    public sealed class SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int>
+    {
+        public T? Extra { get; set; }
     }
 
     [JsonPolymorphic(
