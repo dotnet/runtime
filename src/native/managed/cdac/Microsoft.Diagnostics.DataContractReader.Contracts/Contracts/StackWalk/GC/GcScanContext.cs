@@ -10,6 +10,11 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
+
+    // When set, overrides the default IP/Frame source-type classification for reported roots.
+    // Used to mark exception-tracker (ExInfo) roots, which live on the stack but are not Frames.
+    private StackRefData.SourceTypes? _sourceTypeOverride;
+
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
@@ -22,11 +27,31 @@ internal class GcScanContext
         ResolveInteriorPointers = resolveInteriorPointers;
     }
 
-    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame)
+    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
     {
         StackPointer = sp;
         InstructionPointer = ip;
         Frame = frame;
+        _sourceTypeOverride = sourceTypeOverride;
+    }
+
+    private void SetSource(StackRefData data)
+    {
+        if (_sourceTypeOverride is StackRefData.SourceTypes sourceType)
+        {
+            data.SourceType = sourceType;
+            data.Source = Frame;
+        }
+        else if (Frame != TargetPointer.Null)
+        {
+            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
+            data.Source = Frame;
+        }
+        else
+        {
+            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
+            data.Source = InstructionPointer;
+        }
     }
 
     public void RecordDeferredFrame(TargetPointer frameAddress)
@@ -79,16 +104,7 @@ internal class GcScanContext
             StackPointer = StackPointer,
         };
 
-        if (Frame != TargetPointer.Null)
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
-            data.Source = Frame;
-        }
-        else
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
-        }
+        SetSource(data);
 
         StackRefs.Add(data);
     }
@@ -117,16 +133,7 @@ internal class GcScanContext
             StackPointer = StackPointer,
         };
 
-        if (Frame != TargetPointer.Null)
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
-            data.Source = Frame;
-        }
-        else
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
-        }
+        SetSource(data);
 
         StackRefs.Add(data);
     }

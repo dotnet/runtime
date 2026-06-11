@@ -4091,9 +4091,9 @@ public sealed unsafe partial class SOSDacImpl
                     Object = refs[i].Object.Value,
                     Flags = refs[i].Flags,
                     Source = refs[i].Source.Value,
-                    SourceType = refs[i].IsStackSourceFrame
-                        ? SOSStackSourceType.SOS_StackSourceFrame
-                        : SOSStackSourceType.SOS_StackSourceIP,
+                    SourceType = refs[i].SourceType == StackSourceType.InstructionPointer
+                        ? SOSStackSourceType.SOS_StackSourceIP
+                        : SOSStackSourceType.SOS_StackSourceFrame,
                     StackPointer = refs[i].StackPointer.Value,
                 };
             }

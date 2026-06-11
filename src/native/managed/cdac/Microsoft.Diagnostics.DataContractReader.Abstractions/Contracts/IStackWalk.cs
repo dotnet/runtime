@@ -34,6 +34,14 @@ public enum StackWalkState
     SkippedFrame,
 }
 
+// Classifies the origin of a reported stack reference.
+public enum StackSourceType
+{
+    InstructionPointer = 0,
+    Frame = 1,
+    ExInfo = 2,
+}
+
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
@@ -42,7 +50,7 @@ public class StackReferenceData
     public TargetPointer Address { get; init; }
     public TargetPointer Object { get; init; }
     public uint Flags { get; init; }
-    public bool IsStackSourceFrame { get; init; }
+    public StackSourceType SourceType { get; init; }
     public TargetPointer Source { get; init; }
     public TargetPointer StackPointer { get; init; }
 }
