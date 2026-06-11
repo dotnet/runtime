@@ -15,7 +15,7 @@ done
 DIR="$(cd "$(dirname "$SCRIPT")" && pwd -P)"
 
 DOTNET="$DIR/dotnet"
-SDK_VERSION=$("$DOTNET" --list-sdks | tail -1 | cut -d' ' -f1)
+SDK_VERSION=$("$DOTNET" --list-sdks | tail -n 1 | cut -d' ' -f1)
 if [ -z "$SDK_VERSION" ]; then
   echo "Error: dnx requires a .NET SDK to be installed, but none was found." >&2
   exit 1
