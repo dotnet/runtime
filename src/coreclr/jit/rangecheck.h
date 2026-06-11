@@ -821,7 +821,7 @@ public:
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
-    static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
+    static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
 
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);

@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 
-#if defined(TARGET_32BIT) || defined(TARGET_OSX) || defined(TARGET_WINDOWS)
+#if defined(TARGET_32BIT) || defined(TARGET_OSX) || defined(TARGET_WINDOWS) || defined(TARGET_OPENBSD)
 #define FORMAT_PREFIX "l"
 #else
 #define FORMAT_PREFIX ""

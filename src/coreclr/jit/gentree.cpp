@@ -18366,7 +18366,7 @@ GenTree* Compiler::gtFoldExprForOverflow(GenTree* tree)
     // We will change the cast to a GT_COMMA and attach the exception helper as AsOp()->gtOp1.
     // The constant expression zero becomes op2.
 
-    GenTree* op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID, gtNewIconNode(compCurBB->bbTryIndex));
+    GenTree* op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID);
     GenTree* op2 = gtNewZeroConNode(type);
 
     // op1 is a call to the JIT helper that throws an Overflow exception.
