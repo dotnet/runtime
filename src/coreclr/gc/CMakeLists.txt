@@ -11,16 +11,12 @@ set(GC_SOURCES
   gcconfig.cpp
   gccommon.cpp
   gcscan.cpp
-  gcsvr.cpp
-  gcwks.cpp
   handletable.cpp
   handletablecore.cpp
   handletablescan.cpp
   objecthandle.cpp
   softwarewritewatch.cpp
   gchandletable.cpp
-  gceesvr.cpp
-  gceewks.cpp
   gcload.cpp
   gcbridge.cpp
   handletablecache.cpp)
@@ -57,6 +53,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     env/gcenv.windows.inl
     env/volatile.h
     gc.h
+    gcinternal.h
     gcconfig.h
     gcbridge.h
     gcdesc.h
@@ -105,6 +102,29 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
+set(GC_WKS_SVR_SOURCES
+  gcee.cpp
+  gc.cpp
+  init.cpp
+  no_gc.cpp
+  finalization.cpp
+  dynamic_tuning.cpp
+  region_free_list.cpp
+  region_allocator.cpp
+  memory.cpp
+  sweep.cpp
+  collect.cpp
+  diagnostics.cpp
+  dynamic_heap_count.cpp
+  card_table.cpp
+  relocate_compact.cpp
+  mark_phase.cpp
+  background.cpp
+  interface.cpp
+  allocation.cpp
+  plan_phase.cpp
+  regions_segments.cpp)
+
 if(FEATURE_STANDALONE_GC)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     set(BUILD_EXP_GC 1)
@@ -112,7 +132,22 @@ if(FEATURE_STANDALONE_GC)
 
   # clrgcexp is build with standalone+regions
   if (BUILD_EXP_GC)
-    add_library_clr(clrgcexp SHARED ${GC_SOURCES})
+    add_library_clr(clrgcexp_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
+    add_dependencies(clrgcexp_gc_wks eventing_headers)
+    target_compile_definitions(clrgcexp_gc_wks PRIVATE USE_REGIONS)
+    set_property(TARGET clrgcexp_gc_wks PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set(CLRGGCEXP_OBJECTS
+      $<TARGET_OBJECTS:clrgcexp_gc_wks>)
+    if (FEATURE_SVR_GC)
+      add_library_clr(clrgcexp_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
+      add_dependencies(clrgcexp_gc_svr eventing_headers)
+      target_compile_definitions(clrgcexp_gc_svr PRIVATE SERVER_GC USE_REGIONS)
+      set_property(TARGET clrgcexp_gc_svr PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+      list(APPEND CLRGGCEXP_OBJECTS
+        $<TARGET_OBJECTS:clrgcexp_gc_svr>)
+    endif()
+
+    add_library_clr(clrgcexp SHARED ${GC_SOURCES} ${CLRGGCEXP_OBJECTS})
     add_dependencies(clrgcexp eventing_headers)
     target_link_libraries(clrgcexp PRIVATE ${GC_LINK_LIBRARIES})
     target_link_libraries(clrgcexp PRIVATE gcexp_dll_wks_descriptor)
@@ -120,11 +155,24 @@ if(FEATURE_STANDALONE_GC)
       target_link_libraries(clrgcexp PRIVATE gcexp_dll_svr_descriptor)
     endif()
     target_compile_definitions(clrgcexp PRIVATE -DUSE_REGIONS)
+    set_property(TARGET clrgcexp PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     install_clr(TARGETS clrgcexp DESTINATIONS . COMPONENT runtime)
   endif (BUILD_EXP_GC)
 
+  add_library_clr(clrgc_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
+  add_dependencies(clrgc_gc_wks eventing_headers)
+  set(CLRGC_OBJECTS
+    $<TARGET_OBJECTS:clrgc_gc_wks>)
+  if(FEATURE_SVR_GC)
+    add_library_clr(clrgc_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
+    add_dependencies(clrgc_gc_svr eventing_headers)
+    target_compile_definitions(clrgc_gc_svr PRIVATE SERVER_GC)
+    list(APPEND CLRGC_OBJECTS
+      $<TARGET_OBJECTS:clrgc_gc_svr>)
+  endif()
+
   # clrgc is build with standalone+segments
-  add_library_clr(clrgc SHARED ${GC_SOURCES})
+  add_library_clr(clrgc SHARED ${GC_SOURCES} ${CLRGC_OBJECTS})
   add_dependencies(clrgc eventing_headers)
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
   target_link_libraries(clrgc PRIVATE gc_dll_wks_descriptor)

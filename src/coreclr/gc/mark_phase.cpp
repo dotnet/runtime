@@ -1,6 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
+#ifdef MULTIPLE_HEAPS
+gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o);
+#endif //MULTIPLE_HEAPS
+
 inline
 size_t clear_special_bits (uint8_t* node)
 {
@@ -98,24 +112,6 @@ size_t gc_heap::deque_pinned_plug ()
 }
 
 inline
-mark* gc_heap::pinned_plug_of (size_t bos)
-{
-    return &mark_stack_array [ bos ];
-}
-
-inline
-mark* gc_heap::oldest_pin ()
-{
-    return pinned_plug_of (mark_stack_bos);
-}
-
-inline
-BOOL gc_heap::pinned_plug_que_empty_p ()
-{
-    return (mark_stack_bos == mark_stack_tos);
-}
-
-inline
 mark* gc_heap::before_oldest_pin()
 {
     if (mark_stack_bos >= 1)
@@ -143,18 +139,22 @@ void gc_heap::make_mark_stack (mark* arr)
 #endif //MH_SC_MARK
 }
 
-#ifdef BACKGROUND_GC
 inline
-size_t& gc_heap::bpromoted_bytes(int thread)
+gc_heap* gc_heap::heap_of_gc (uint8_t* o)
 {
 #ifdef MULTIPLE_HEAPS
-    return g_bpromoted [thread*16];
+    if (o == 0)
+        return g_heaps [0];
+
+    gc_heap* hp = seg_mapping_table_heap_of_gc (o);
+    return (hp ? hp : g_heaps[0]);
 #else //MULTIPLE_HEAPS
-    UNREFERENCED_PARAMETER(thread);
-    return g_bpromoted;
+    UNREFERENCED_PARAMETER(o);
+    return __this;
 #endif //MULTIPLE_HEAPS
 }
 
+#ifdef BACKGROUND_GC
 void gc_heap::make_background_mark_stack (uint8_t** arr)
 {
     background_mark_stack_array = arr;
@@ -170,33 +170,9 @@ void gc_heap::make_c_mark_list (uint8_t** arr)
 }
 
 inline
-unsigned int gc_heap::mark_array_marked(uint8_t* add)
-{
-    return mark_array [mark_word_of (add)] & (1 << mark_bit_bit_of (add));
-}
-
-inline
 BOOL gc_heap::is_mark_bit_set (uint8_t* add)
 {
     return (mark_array [mark_word_of (add)] & (1 << mark_bit_bit_of (add)));
-}
-
-inline
-void gc_heap::mark_array_set_marked (uint8_t* add)
-{
-    size_t index = mark_word_of (add);
-    uint32_t val = (1 << mark_bit_bit_of (add));
-#ifdef MULTIPLE_HEAPS
-    Interlocked::Or (&(mark_array [index]), val);
-#else
-    mark_array [index] |= val;
-#endif
-}
-
-inline
-void gc_heap::mark_array_clear_marked (uint8_t* add)
-{
-    mark_array [mark_word_of (add)] &= ~(1 << mark_bit_bit_of (add));
 }
 
 #ifdef FEATURE_BASICFREEZE
@@ -920,17 +896,6 @@ void gc_heap::grow_mark_list ()
 #ifdef BACKGROUND_GC
 #ifdef FEATURE_BASICFREEZE
 inline
-void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
-{
-    uint8_t* range_beg = 0;
-    uint8_t* range_end = 0;
-    if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
-    {
-        clear_mark_array (range_beg, align_on_mark_word (range_end));
-    }
-}
-
-inline
 void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
 {
     uint8_t* range_beg = 0;
@@ -1011,13 +976,7 @@ void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
 #endif //BACKGROUND_GC
 
-inline
-BOOL gc_heap::is_mark_set (uint8_t* o)
-{
-    return marked (o);
-}
-
-inline
+/*inline*/
 size_t gc_heap::get_promoted_bytes()
 {
 #ifdef USE_REGIONS
@@ -1476,24 +1435,6 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
 #endif //USE_REGIONS && _DEBUG
     return marked;
 }
-
-#ifdef USE_REGIONS
-inline bool gc_heap::is_in_gc_range (uint8_t* o)
-{
-#ifdef FEATURE_BASICFREEZE
-    // we may have frozen objects in read only segments
-    // outside of the reserved address range of the gc heap
-    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
-        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
-    return ((gc_low <= o) && (o < gc_high));
-}
-
-#endif //USE_REGIONS
 
 inline
 BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen)
@@ -2871,24 +2812,6 @@ void gc_heap::fire_mark_event (int root_type, size_t& current_promoted_bytes, si
 #endif // FEATURE_EVENT_TRACE
 }
 
-#ifdef FEATURE_EVENT_TRACE
-inline
-void gc_heap::record_mark_time (uint64_t& mark_time,
-                                uint64_t& current_mark_time,
-                                uint64_t& last_mark_time)
-{
-    if (informational_event_enabled_p)
-    {
-        current_mark_time = GetHighPrecisionTimeStamp();
-        mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
-        dprintf (3, ("%zd - %zd = %zd",
-            current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
-        last_mark_time = current_mark_time;
-    }
-}
-
-#endif //FEATURE_EVENT_TRACE
-
 void gc_heap::mark_phase (int condemned_gen_number)
 {
     assert (settings.concurrent == FALSE);
@@ -3597,22 +3520,6 @@ void gc_heap::mark_phase (int condemned_gen_number)
     dprintf(2,("---- End of mark phase ----"));
 }
 
-inline
-void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
-{
-    dprintf (3, ("Pinning %zx->%zx", (size_t)ppObject, (size_t)o));
-    set_pinned (o);
-
-#ifdef FEATURE_EVENT_TRACE
-    if(EVENT_ENABLED(PinObjectAtGCTime))
-    {
-        fire_etw_pin_object_event(o, ppObject);
-    }
-#endif // FEATURE_EVENT_TRACE
-
-    num_pinned_objects++;
-}
-
 size_t gc_heap::get_total_pinned_objects()
 {
 #ifdef MULTIPLE_HEAPS
@@ -3728,7 +3635,7 @@ void gc_heap::grow_mark_list_piece()
 // if the child object's region is <= condemned_gen.
 // cg_pointers_found means it's pointing into a lower generation so it's incremented
 // if the child object's region is < current_gen.
-inline void
+/*inline*/ void
 gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
                                     size_t& cg_pointers_found,
                                     card_fn fn, uint8_t* nhigh,
@@ -4202,3 +4109,5 @@ go_through_refs:
             n_gen, n_eph, n_card_set, total_cards_cleared, generation_skip_ratio));
     }
 }
+
+} // namespace SVR/WKS
