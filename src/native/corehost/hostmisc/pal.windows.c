@@ -13,6 +13,16 @@
 
 #include <minipal/utils.h>
 
+// Long-path extended-syntax prefixes for Windows paths.
+#define EXTENDED_PATH_PREFIX     _X("\\\\?\\")       // "\\?\" (also covers "\\?\UNC\")
+#define UNC_EXTENDED_PATH_PREFIX _X("\\\\?\\UNC\\")  // "\\?\UNC\"
+#define DEVICE_PATH_PREFIX       _X("\\\\.\\")       // "\\.\"
+
+// Windows path separators.
+#define DIR_SEPARATOR     L'\\'
+#define ALT_DIR_SEPARATOR L'/'
+#define VOLUME_SEPARATOR  L':'
+
 pal_char_t* pal_get_own_executable_path(void)
 {
     // GetModuleFileNameW returns 0 on failure, the number of characters
@@ -92,16 +102,13 @@ pal_char_t* pal_getenv(const pal_char_t* name)
 // extended-syntax prefixes:
 //   \\?\        (extended path prefix - includes \\?\UNC\)
 //   \\.\        (device path prefix)
-// Mirrors LongFile::IsNormalized.
 static bool is_path_normalized(const pal_char_t* path)
 {
     if (path[0] == L'\0')
         return true;
 
-    return path[0] == L'\\'
-        && path[1] == L'\\'
-        && (path[2] == L'?' || path[2] == L'.')
-        && path[3] == L'\\';
+    return wcsncmp(path, EXTENDED_PATH_PREFIX, STRING_LENGTH(EXTENDED_PATH_PREFIX)) == 0
+        || wcsncmp(path, DEVICE_PATH_PREFIX, STRING_LENGTH(DEVICE_PATH_PREFIX)) == 0;
 }
 
 pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
@@ -135,8 +142,8 @@ pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
     if (size >= MAX_PATH)
     {
         // Need a larger buffer. Allocate enough room for the canonicalized
-        // path plus the longest long-path prefix ("\\?\UNC\" = 8 chars).
-        const DWORD prefix_headroom = 8;
+        // path plus the longest long-path prefix ("\\?\UNC\").
+        const DWORD prefix_headroom = STRING_LENGTH(UNC_EXTENDED_PATH_PREFIX);
         pal_char_t* new_buf = (pal_char_t*)realloc(buf, (size + prefix_headroom) * sizeof(pal_char_t));
         if (new_buf == NULL)
         {
@@ -158,9 +165,9 @@ pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
         // For UNC paths (\\server\share\...), strip the leading "\\" and
         // prepend "\\?\UNC\"; otherwise just prepend "\\?\".
         bool is_unc = (buf[0] == L'\\' && buf[1] == L'\\');
-        const pal_char_t* prefix = is_unc ? L"\\\\?\\UNC\\" : L"\\\\?\\";
-        DWORD prefix_len = is_unc ? 8 : 4;
-        DWORD skip = is_unc ? 2 : 0;
+        const pal_char_t* prefix = is_unc ? UNC_EXTENDED_PATH_PREFIX : EXTENDED_PATH_PREFIX;
+        DWORD prefix_len = is_unc ? STRING_LENGTH(UNC_EXTENDED_PATH_PREFIX) : STRING_LENGTH(EXTENDED_PATH_PREFIX);
+        DWORD skip = is_unc ? STRING_LENGTH(_X("\\\\")) : 0; // drop the UNC's leading "\\"
 
         // Make room for the prefix by shifting the path right (including the NUL).
         memmove(buf + prefix_len, buf + skip, (new_size - skip + 1) * sizeof(pal_char_t));
@@ -187,10 +194,65 @@ bool pal_file_exists(const pal_char_t* path)
     return exists;
 }
 
+static bool is_dir_separator(pal_char_t c)
+{
+    return c == DIR_SEPARATOR || c == ALT_DIR_SEPARATOR;
+}
+
+// Returns true if the path is relative to the current drive or working
+// directory (i.e. not rooted at a specific drive or UNC share), and therefore
+// must be canonicalized before it can be reliably used.
+static bool is_path_not_fully_qualified(const pal_char_t* path)
+{
+    size_t len = pal_strlen(path);
+
+    // Too short to encode a drive ("X:") or UNC ("\\") root.
+    if (len < 2)
+        return true;
+
+    // Starts with a separator: fully qualified only if it's a UNC path,
+    // i.e. the second character is also a separator ("\\server\share").
+    if (is_dir_separator(path[0]))
+        return !is_dir_separator(path[1]);
+
+    // Otherwise it must be a drive-rooted path of the form "X:\": at least
+    // three characters, a volume separator at index 1, and a directory
+    // separator at index 2.
+    return len < 3
+        || path[1] != VOLUME_SEPARATOR
+        || !is_dir_separator(path[2]);
+}
+
+// Returns true if the path needs normalization (canonicalization, and the \\?\
+// prefix for long paths): it isn't already normalized and is either not fully
+// qualified or at least MAX_PATH characters long.
+static bool should_normalize_path(const pal_char_t* path)
+{
+    if (is_path_normalized(path))
+        return false;
+
+    if (!is_path_not_fully_qualified(path) && pal_strlen(path) < MAX_PATH)
+        return false;
+
+    return true;
+}
+
 bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx)
 {
     if (path == NULL || callback == NULL)
         return false;
+
+    // Long or not-fully-qualified paths must be canonicalized (and prefixed with
+    // \\?\ when long) before being passed to FindFirstFileExW.
+    pal_char_t* normalized = NULL;
+    if (should_normalize_path(path))
+    {
+        normalized = pal_fullpath(path, /*skip_error_logging*/ false);
+        if (normalized == NULL)
+            return false;
+
+        path = normalized;
+    }
 
     // Build the search string: path + "\\*". One extra char beyond path
     // length is needed for the separator if path doesn't already end with one.
@@ -198,13 +260,17 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
     size_t search_len = path_len + 3; // worst case: '\\', '*', NUL
     pal_char_t* search = (pal_char_t*)malloc(search_len * sizeof(pal_char_t));
     if (search == NULL)
+    {
+        free(normalized);
         return false;
+    }
 
     memcpy(search, path, path_len * sizeof(pal_char_t));
+    free(normalized); // path has been copied into search; no longer needed
     size_t pos = path_len;
-    if (pos == 0 || (search[pos - 1] != L'\\' && search[pos - 1] != L'/'))
+    if (pos == 0 || !is_dir_separator(search[pos - 1]))
     {
-        search[pos++] = L'\\';
+        search[pos++] = DIR_SEPARATOR;
     }
     search[pos++] = L'*';
     search[pos] = L'\0';
