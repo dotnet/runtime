@@ -536,7 +536,7 @@
     <Compile Include="CryptographicException.cs" />
     <Compile Include="CryptoStream.cs" />
     <Compile Include="DefaultDSAProvider.cs" />
-    <Compile Include="DefaultDsaCommonTests.cs" />
+    <Compile Include="DSATestRegistration.Default.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
@@ -698,9 +698,10 @@
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
     <Compile Include="DSACngProvider.Windows.cs" />
-    <Compile Include="DSACngCommonTests.Windows.cs" />
+    <Compile Include="DSACngTests.Windows.cs" />
+    <Compile Include="DSATestRegistration.Cng.Windows.cs" />
     <Compile Include="DSACryptoServiceProviderProvider.Windows.cs" />
-    <Compile Include="DSACryptoServiceProviderCommonTests.Windows.cs" />
+    <Compile Include="DSATestRegistration.Csp.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs"
@@ -820,7 +821,7 @@
     <Compile Include="Interop.EVP.ExtraHandle.cs" />
     <Compile Include="DsaOpenSslTests.Unix.cs" />
     <Compile Include="DSAOpenSslProvider.Unix.cs" />
-    <Compile Include="OpenSslDsaCommonTests.Unix.cs" />
+    <Compile Include="DSATestRegistration.OpenSsl.Unix.cs" />
     <Compile Include="MLDsaOpenSslTests.Unix.cs" />
     <Compile Include="MLKemOpenSslTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />

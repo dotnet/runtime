@@ -50,12 +50,10 @@ namespace System.Security.Cryptography.Dsa.Tests
         protected override DSAProvider DSAFactory { get; } = DSACryptoServiceProviderProvider.Instance;
     }
 
-#if NET
     public sealed class DSASignVerify_Span_Csp : DSASignVerify_Span
     {
         protected override DSAProvider DSAFactory { get; } = DSACryptoServiceProviderProvider.Instance;
     }
-#endif
 
     public sealed class DsaArraySignatureFormatTests_Csp : DsaArraySignatureFormatTests
     {

@@ -92,7 +92,6 @@
     <Compile Include="CngKeyTests.cs" />
     <Compile Include="CngPkcs8Tests.cs" />
     <Compile Include="DSACngPkcs8Tests.cs" />
-    <Compile Include="DSACngTests.cs" />
     <Compile Include="ECDHCngPkcs8Tests.cs" />
     <Compile Include="ECDsaCngPkcs8Tests.cs" />
     <Compile Include="RSACngPkcs8Tests.cs" />

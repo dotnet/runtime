@@ -32,10 +32,11 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Fact]
         public void GenerateSecondMinKey()
         {
-            if (!(HasSecondMinSize()))
+            if (!HasSecondMinSize())
             {
                 return;
             }
+
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
