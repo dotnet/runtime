@@ -87,6 +87,8 @@ class OptBoolsDsc;         // defined in optimizer.cpp
 struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
+class IncrementalSsaBuilder; // defined in ssabuilder.h
+struct UseDefLocation;       // defined in ssabuilder.h
 class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
@@ -8176,6 +8178,12 @@ public:
                                                           PerLoopInfo*          loopLocals);
     bool optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGraphNaturalLoop* loop);
+    void optReplaceIVUses(unsigned                    lclNum,
+                          unsigned                    newLclNum,
+                          BasicBlock*                 block,
+                          Statement*                  stmt,
+                          IncrementalSsaBuilder*      ssaBuilder,
+                          ArrayStack<UseDefLocation>* uses);
 
     // Redundant branch opts
     //

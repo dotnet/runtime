@@ -57,14 +57,6 @@
 #include "scev.h"
 #include "ssabuilder.h"
 
-static void optReplaceIVUses(Compiler*                   comp,
-                             unsigned                    lclNum,
-                             unsigned                    newLclNum,
-                             BasicBlock*                 block,
-                             Statement*                  stmt,
-                             IncrementalSsaBuilder*      ssaBuilder,
-                             ArrayStack<UseDefLocation>* uses);
-
 // Data structure that keeps track of per-loop info, like occurrences and suspension-points inside loops.
 class PerLoopInfo
 {
@@ -1299,7 +1291,7 @@ bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop
     // included in the occurrences, so the header phi is left untouched here.
     JITDUMP("    Replacing V%02u with V%02u inside the loop\n", lclNum, newLclNum);
     auto replace = [=, &ssaBuilder, &uses](BasicBlock* block, Statement* stmt) {
-        optReplaceIVUses(this, lclNum, newLclNum, block, stmt, &ssaBuilder, &uses);
+        optReplaceIVUses(lclNum, newLclNum, block, stmt, &ssaBuilder, &uses);
         return true;
     };
     loopInfo->VisitStatementsWithOccurrences(loop, lclNum, replace);
@@ -1477,7 +1469,6 @@ bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGr
 // uses for incremental SSA construction.
 //
 // Parameters:
-//   comp       - Compiler instance
 //   lclNum     - Local to replace
 //   newLclNum  - Local to replace it with
 //   block      - The block containing the statement
@@ -1490,13 +1481,12 @@ bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGr
 //   Phi definitions are intentionally left alone; the IV's header phi is
 //   deleted separately by the caller.
 //
-static void optReplaceIVUses(Compiler*                   comp,
-                             unsigned                    lclNum,
-                             unsigned                    newLclNum,
-                             BasicBlock*                 block,
-                             Statement*                  stmt,
-                             IncrementalSsaBuilder*      ssaBuilder,
-                             ArrayStack<UseDefLocation>* uses)
+void Compiler::optReplaceIVUses(unsigned                    lclNum,
+                                unsigned                    newLclNum,
+                                BasicBlock*                 block,
+                                Statement*                  stmt,
+                                IncrementalSsaBuilder*      ssaBuilder,
+                                ArrayStack<UseDefLocation>* uses)
 {
     struct ReplaceVisitor : GenTreeVisitor<ReplaceVisitor>
     {
@@ -1559,12 +1549,12 @@ static void optReplaceIVUses(Compiler*                   comp,
         }
     };
 
-    ReplaceVisitor visitor(comp, lclNum, newLclNum, block, stmt, ssaBuilder, uses);
+    ReplaceVisitor visitor(this, lclNum, newLclNum, block, stmt, ssaBuilder, uses);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     if (visitor.MadeChanges)
     {
-        comp->gtSetStmtInfo(stmt);
-        comp->fgSetStmtSeq(stmt);
+        gtSetStmtInfo(stmt);
+        fgSetStmtSeq(stmt);
         JITDUMP("New tree:\n");
         DISPTREE(stmt->GetRootNode());
         JITDUMP("\n");
