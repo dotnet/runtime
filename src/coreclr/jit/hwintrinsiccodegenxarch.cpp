@@ -904,6 +904,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
+                        case NI_AVX512_BF16_MultiplyWideningAndAdd:
                         {
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);
@@ -3645,6 +3646,21 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVX512_BF16_ConvertToBFloat16:
+        {
+            assert(baseType == TYP_FLOAT);
+            if (numArgs == 2)
+            {
+                genHWIntrinsic_R_R_RM(node, INS_vcvtne2ps2bf16, attr, instOptions);
+            }
+            else
+            {
+                assert(numArgs == 1);
+                genHWIntrinsic_R_RM(node, INS_vcvtneps2bf16, attr, targetReg, op1, instOptions);
+            }
             break;
         }
 

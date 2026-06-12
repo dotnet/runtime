@@ -2752,6 +2752,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
             case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
+            case NI_AVX512_BF16_MultiplyWideningAndAdd:
             {
                 assert(numArgs == 3);
 
