@@ -54,14 +54,6 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToILCodeVersioningState,
     uint TableDataOffset);
 
-// Aggregate view of the runtime's domain singletons.
-readonly struct RuntimeDomainInfo
-{
-    TargetPointer SystemDomain { get; init; }
-    TargetPointer DefaultAppDomain { get; init; }
-    uint DefaultAppDomainId { get; init; }
-}
-
 readonly struct LoaderHeapBlockData
 {
     TargetPointer Address { get; init; }
@@ -91,7 +83,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
-RuntimeDomainInfo GetDomainInfo();
+TargetPointer GetAppDomain();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -253,7 +245,6 @@ enum ClrModifiableAssemblies : uint
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 | `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
-| `DefaultADID` | uint | Id of the default AppDomain |
 | `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
 
 
@@ -405,14 +396,14 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
 TargetPointer GetRootAssembly()
 {
-    TargetPointer defaultAppDomain = GetDomainInfo().DefaultAppDomain;
+    TargetPointer defaultAppDomain = GetAppDomain();
     AppDomain appDomain = // read AppDomain object starting at defaultAppDomain
     return appDomain.RootAssembly;
 }
 
 string ILoader.GetAppDomainFriendlyName()
 {
-    TargetPointer defaultAppDomain = GetDomainInfo().DefaultAppDomain;
+    TargetPointer defaultAppDomain = GetAppDomain();
     TargetPointer namePtr = defaultAppDomain + /* AppDomain::FriendlyName offset */;
     // Match native AppDomain::GetFriendlyName(): return "DefaultDomain" when pointer is null.
     if (namePtr == TargetPointer.Null)
@@ -421,24 +412,10 @@ string ILoader.GetAppDomainFriendlyName()
     return new string(name);
 }
 
-RuntimeDomainInfo GetDomainInfo()
+TargetPointer GetAppDomain()
 {
-    // Tolerate missing-or-uninitialized globals: callers that only need one of
-    // the values shouldn't fail because an unrelated global is unavailable.
-    static TargetPointer TryReadGlobalIndirectPointer(string name)
-    {
-        if (!target.TryReadGlobalPointer(name, out TargetPointer? ptrPtr))
-            return TargetPointer.Null;
-        if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
-            return TargetPointer.Null;
-        return value;
-    }
-    return new RuntimeDomainInfo
-    {
-        SystemDomain = TryReadGlobalIndirectPointer("SystemDomain"),
-        DefaultAppDomain = TryReadGlobalIndirectPointer("AppDomain"),
-        DefaultAppDomainId = target.TryReadGlobal("DefaultADID", out uint? id) ? id.Value : 0u,
-    };
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointer);
 }
 
 TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -799,13 +776,15 @@ bool IsAssemblyLoaded(ModuleHandle handle)
 
 TargetPointer GetGlobalLoaderAllocator()
 {
-    TargetPointer systemDomain = GetDomainInfo().SystemDomain;
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
     return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
 }
 
 TargetPointer GetSystemAssembly()
 {
-    TargetPointer systemDomain = GetDomainInfo().SystemDomain;
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
     return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 

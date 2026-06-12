@@ -265,7 +265,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             _mainMethodDesc = methodDesc;
             if (appDomain == TargetPointer.Null)
             {
-                _appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+                _appDomain = _target.Contracts.Loader.GetAppDomain();
             }
             else
             {
@@ -658,7 +658,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                 case JitNotificationData jit:
                 {
-                    TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+                    TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
@@ -719,7 +719,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
-                        TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
                         notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);

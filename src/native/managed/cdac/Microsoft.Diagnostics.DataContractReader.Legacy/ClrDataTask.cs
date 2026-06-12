@@ -38,7 +38,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         }
         try
         {
-            TargetPointer currentAppDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
             appDomain.Interface = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain);
         }
         catch (System.Exception ex)

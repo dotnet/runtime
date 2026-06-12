@@ -35,6 +35,8 @@ public sealed unsafe partial class SOSDacImpl
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
       ISOSDacInterface16
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
 
     private readonly ulong _rcwMask = 1UL;
@@ -117,37 +119,33 @@ public sealed unsafe partial class SOSDacImpl
             *data = default;
             data->AppDomainPtr = addr;
             Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.RuntimeDomainInfo domainInfo = loader.GetDomainInfo();
-            ClrDataAddress systemDomain = domainInfo.SystemDomain.ToClrDataAddress(_target);
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
-            if (addr != systemDomain)
+
+            TargetPointer pAppDomain = addr.ToTargetPointer(_target);
+            data->dwId = DefaultAppDomainId;
+
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                pAppDomain,
+                AssemblyIterationFlags.IncludeLoading |
+                AssemblyIterationFlags.IncludeLoaded |
+                AssemblyIterationFlags.IncludeExecution);
+
+            foreach (Contracts.ModuleHandle module in modules)
             {
-                TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                data->dwId = domainInfo.DefaultAppDomainId;
-
-                IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeLoading |
-                    AssemblyIterationFlags.IncludeLoaded |
-                    AssemblyIterationFlags.IncludeExecution);
-
-                foreach (Contracts.ModuleHandle module in modules)
+                if (loader.IsAssemblyLoaded(module))
                 {
-                    if (loader.IsAssemblyLoaded(module))
-                    {
-                        data->AssemblyCount++;
-                    }
+                    data->AssemblyCount++;
                 }
-
-                IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeFailedToLoad);
-                data->FailedAssemblyCount = failedModules.Count();
             }
+
+            IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                pAppDomain,
+                AssemblyIterationFlags.IncludeFailedToLoad);
+            data->FailedAssemblyCount = failedModules.Count();
         }
         catch (System.Exception ex)
         {
@@ -183,7 +181,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             uint i = 0;
-            TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomain != TargetPointer.Null && values.Length > 0)
             {
@@ -222,23 +220,19 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            ClrDataAddress systemDomain = loader.GetDomainInfo().SystemDomain.ToClrDataAddress(_target);
 
             string? friendlyName = null;
-            if (addr != systemDomain)
+            try
             {
-                try
-                {
-                    friendlyName = loader.GetAppDomainFriendlyName();
-                }
-                catch (VirtualReadException)
-                {
-                    // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
-                    // ReadUtf16String throws VirtualReadException when the pointer targets
-                    // unreadable memory (e.g. the name is not yet set during early init).
-                    // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
-                    // and falls through to return an empty string. Match that behavior here.
-                }
+                friendlyName = loader.GetAppDomainFriendlyName();
+            }
+            catch (VirtualReadException)
+            {
+                // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
+                // ReadUtf16String throws VirtualReadException when the pointer targets
+                // unreadable memory (e.g. the name is not yet set during early init).
+                // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
+                // and falls through to return an empty string. Match that behavior here.
             }
 
             if (friendlyName is null || friendlyName.Length == 0)
@@ -296,9 +290,9 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             appDomainStoreData->sharedDomain = 0;
-            Contracts.RuntimeDomainInfo domainInfo = _target.Contracts.Loader.GetDomainInfo();
-            appDomainStoreData->systemDomain = domainInfo.SystemDomain.ToClrDataAddress(_target);
-            appDomainStoreData->DomainCount = domainInfo.DefaultAppDomain != TargetPointer.Null ? 1 : 0;
+            appDomainStoreData->systemDomain = 0;
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            appDomainStoreData->DomainCount = defaultAppDomain != TargetPointer.Null ? 1 : 0;
         }
         catch (System.Exception ex)
         {
@@ -350,7 +344,7 @@ public sealed unsafe partial class SOSDacImpl
             data->AssemblyPtr = assembly;
             data->DomainPtr = domain;
 
-            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
             data->ParentDomain = defaultAppDomain.ToClrDataAddress(_target);
 
             ILoader loader = _target.Contracts.Loader;
@@ -402,10 +396,6 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             TargetPointer appDomain = addr.ToTargetPointer(_target);
             ILoader loader = _target.Contracts.Loader;
-            ClrDataAddress systemDomain = loader.GetDomainInfo().SystemDomain.ToClrDataAddress(_target);
-            if (addr == systemDomain)
-                // We shouldn't be asking for the assemblies in SystemDomain
-                throw new ArgumentException();
 
             List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 appDomain,
@@ -1627,7 +1617,7 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             List<HandleData> handles = gc.GetHandles(types);
 
-            TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             ClrDataAddress appDomainClrAddress = appDomain.ToClrDataAddress(_target);
 
             SOSHandleData[] sosHandles = new SOSHandleData[handles.Count];
@@ -4210,7 +4200,7 @@ public sealed unsafe partial class SOSDacImpl
                             data->HoldingThread = threadPtr.ToClrDataAddress(_target);
                         }
 
-                        TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         data->appDomainPtr = appDomain.ToClrDataAddress(_target);
 
                         data->AdditionalThreadCount = syncBlock.GetAdditionalThreadCount(syncBlockAddr);
@@ -4303,7 +4293,7 @@ public sealed unsafe partial class SOSDacImpl
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);
             data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
 
-            TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             data->context = appDomain.ToClrDataAddress(_target);
             data->domain = appDomain.ToClrDataAddress(_target);
 
