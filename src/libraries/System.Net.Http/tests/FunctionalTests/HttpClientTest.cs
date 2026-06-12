@@ -295,7 +295,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public async Task GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo()
         {
             const string Host = "localhost:1234";
@@ -766,7 +766,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void CancelAllPending_AllPendingOperationsCanceled(bool withInfiniteTimeout)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -785,7 +785,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -823,7 +823,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -1406,6 +1406,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData((HttpVersionPolicy)(-1))]
+        [InlineData((HttpVersionPolicy)3)]
+        [InlineData((HttpVersionPolicy)int.MaxValue)]
+        public void DefaultVersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => client.DefaultVersionPolicy = invalidValue);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact; // still usable after
+                Assert.Equal(HttpVersionPolicy.RequestVersionExact, client.DefaultVersionPolicy);
+            }
+        }
+
         [Fact]
         public async Task DefaultRequestVersion_SetAfterUse_Throws()
         {
@@ -1649,7 +1663,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();

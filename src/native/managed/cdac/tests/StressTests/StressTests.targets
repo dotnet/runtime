@@ -1,0 +1,70 @@
+<Project>
+  <!--
+    cDAC stress test orchestration targets.
+    Auto-discovers debuggee projects, builds them, and makes their paths
+    available to the test project as runtime config properties.
+  -->
+  <PropertyGroup>
+    <DebuggeeDir>$(MSBuildThisFileDirectory)Debuggees\</DebuggeeDir>
+    <DebuggeeConfiguration Condition="'$(DebuggeeConfiguration)' == ''">Release</DebuggeeConfiguration>
+  </PropertyGroup>
+
+  <!-- Auto-discover debuggee .csproj files -->
+  <ItemGroup>
+    <DebuggeeProject Include="$(DebuggeeDir)*/*.csproj" />
+  </ItemGroup>
+
+  <!-- Build all debuggees before running tests -->
+  <Target Name="BuildDebuggees"
+          BeforeTargets="Build"
+          Condition="'@(DebuggeeProject)' != ''">
+    <MSBuild Projects="@(DebuggeeProject)"
+             Targets="Restore;Build"
+             Properties="Configuration=$(DebuggeeConfiguration)" />
+  </Target>
+
+  <!-- Build debuggees only (used by CI pipeline to build before payload prep) -->
+  <Target Name="BuildDebuggeesOnly">
+    <MSBuild Projects="@(DebuggeeProject)"
+             Targets="Restore;Build"
+             Properties="Configuration=$(DebuggeeConfiguration)" />
+  </Target>
+
+  <!-- Prepare Helix payload: copy test output + xunit.console + debuggees to payload dir -->
+  <Target Name="PrepareHelixPayload" AfterTargets="Build" Condition="'$(PrepareHelixPayload)' == 'true'">
+    <PropertyGroup>
+      <_HelixTestsDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'tests'))</_HelixTestsDir>
+      <_HelixDebuggeesDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'debuggees'))</_HelixDebuggeesDir>
+    </PropertyGroup>
+
+    <!-- Copy test output (DLLs, runtimeconfig, deps) -->
+    <ItemGroup>
+      <_TestOutput Include="$(OutputPath)**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_TestOutput)" DestinationFolder="$(_HelixTestsDir)%(RecursiveDir)" />
+
+    <!-- Copy xunit console runner to tests directory -->
+    <ItemGroup>
+      <_XunitConsoleFiles Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
+
+    <!-- Copy each debuggee's build output -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_CopyDebuggeeToHelix"
+             Properties="DebuggeeName=%(DebuggeeProject.Filename);_HelixDebuggeesDir=$(_HelixDebuggeesDir)" />
+  </Target>
+
+  <!-- Copy a single debuggee's publish output to the Helix payload -->
+  <Target Name="_CopyDebuggeeToHelix">
+    <PropertyGroup>
+      <_DebuggeeOutputDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'StressTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)'))</_DebuggeeOutputDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DebuggeeFiles Include="$(_DebuggeeOutputDir)**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DebuggeeFiles)"
+          DestinationFolder="$(_HelixDebuggeesDir)$(DebuggeeName)/%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>
