@@ -1177,6 +1177,9 @@ protected:
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef TARGET_WASM
+    void genCodeForFrameSize(GenTree* tree);
+#endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT

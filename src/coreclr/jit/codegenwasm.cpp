@@ -812,6 +812,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
+        case GT_FRAME_SIZE:
+            genCodeForFrameSize(treeNode);
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -2414,19 +2418,22 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
     assert(genIsValidReg(tree->gtSrcReg));
     GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(tree), WasmRegToIndex(tree->gtSrcReg));
+    WasmProduceReg(tree);
+}
 
-    if ((tree->gtLIRFlags & LIR::Flags::WasmFastTailCallSp) != 0)
-    {
-        // Fast tail call SP arg: undo the prolog SP adjustment (asserts funclet tail calls don't happen).
-        assert(m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX);
-        assert(tree->gtSrcReg == GetStackPointerReg(m_compiler->funCurrentFuncIdx()));
-        if (m_compiler->compLclFrameSize != 0)
-        {
-            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
-            GetEmitter()->emitIns(INS_I_add);
-        }
-    }
-
+//------------------------------------------------------------------------
+// genCodeForFrameSize: Produce code for a GT_FRAME_SIZE node.
+//
+// Emits an i32/i64 const for compLclFrameSize, which is only known after the
+// final frame layout (well after the IR is built).
+//
+// Arguments:
+//    tree - the GT_FRAME_SIZE node
+//
+void CodeGen::genCodeForFrameSize(GenTree* tree)
+{
+    assert(tree->OperIs(GT_FRAME_SIZE));
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
     WasmProduceReg(tree);
 }
 
