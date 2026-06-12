@@ -98,11 +98,6 @@ else()
                 -Wl,--error-limit=0)
 
             if (CORERUN_IN_BROWSER)
-                # Node.js doesn't have good support for WASM_BIGINT
-                # so it only is added when running in the browser.
-                target_link_options(corerun PRIVATE
-                    -sWASM_BIGINT=1)
-
                 # Include the virtual file system data for the
                 # browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
@@ -111,6 +106,10 @@ else()
                         --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
+                # Node.js doesn't have good support for WASM_BIGINT
+                # so it only is added when running in the browser.
+                target_link_options(corerun PRIVATE
+                    -sWASM_BIGINT=0)
                 # If not running in the browser, add
                 # Node.js file system support.
                 target_link_options(corerun PRIVATE
