@@ -5739,9 +5739,16 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
 
-        case GT_ARR_LENGTH:
+#if !defined(TARGET_AMD64)
+        // An MD array access loads several metadata fields (the per-dimension lengths and lower bounds),
+        // most of which are needed for the element-address computation, not just for the bounds checks.
+        // Proving them non-faulting pins each load with an ordering side effect (see
+        // On targets with load-pair addressing (e.g. arm64) GTF_ORDER_SIDEEFFCT
+        // prevents these adjacent metadata loads from being combined into ldp.
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
+#endif
+        case GT_ARR_LENGTH:
             // Unfortunately, doing this in LocalAP produces an asymmetry in exception sets between
             // uses/defs that CSE does not manage to make good use of. As a result, some bounds checks are no longer
             // removed.
