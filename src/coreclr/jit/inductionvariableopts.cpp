@@ -1268,10 +1268,11 @@ bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop
         }
         else
         {
+            // We do not set SSA info on this use of the old local; the old IV
+            // is being removed from the loop and its SSA is left invalid.
             GenTreeLclVar* initUse = gtNewLclvNode(lclNum, ivType);
-            initUse->SetSsaNum(entryArg->GetSsaNum());
-            initUse->gtVNPair = entrySsa->m_vnPair;
-            initVal           = initUse;
+            initUse->gtVNPair      = entrySsa->m_vnPair;
+            initVal                = initUse;
         }
     }
     else
