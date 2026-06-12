@@ -568,13 +568,19 @@ const_int1 (int v)
 static LLVMValueRef
 const_int8 (int v)
 {
-	return LLVMConstInt (LLVMInt8Type (), v, FALSE);
+	/* Mask to 8 bits so a negative int is not implicitly sign-extended via
+	 * the (unsigned long long) parameter conversion. Starting with LLVM 23,
+	 * LLVMConstInt retains the upper bits when SignExtend is FALSE, which
+	 * caused constant folding of subsequent ZExt to produce wrong results
+	 * (e.g. zext i8 -1 to i64 yielding -1 instead of 255). */
+	return LLVMConstInt (LLVMInt8Type (), (guint8)v, FALSE);
 }
 
 static LLVMValueRef
 const_int32 (int v)
 {
-	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
+	/* See const_int8 for why we mask. */
+	return LLVMConstInt (LLVMInt32Type (), (guint32)v, FALSE);
 }
 
 static LLVMValueRef
