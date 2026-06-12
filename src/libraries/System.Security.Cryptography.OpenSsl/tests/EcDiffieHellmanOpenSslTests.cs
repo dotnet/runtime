@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.EcDiffieHellman.Tests;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -9,6 +10,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 {
     public class EcDiffieHellmanOpenSslTests : ECDiffieHellmanTests
     {
+        public static bool ECExplicitCurvesSupported => ECDiffieHellmanFactory.ExplicitCurvesSupported;
+        public static bool SupportsExplicitCurves => ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly;
+
         [Fact]
         public void DefaultCtor()
         {
@@ -125,6 +129,26 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 
                 int keySize = e.KeySize;
                 Assert.Equal(521, keySize);
+                e.Exercise();
+            }
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
+        {
+            int rc = Interop.Crypto.EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, oid, out int keySize);
+
+            Assert.Equal(1, rc);
+            Assert.False(pkey.IsInvalid);
+            Assert.Equal(expectedKeySize, keySize);
+
+            using (pkey)
+            using (ECDiffieHellmanOpenSsl e = new ECDiffieHellmanOpenSsl(pkey))
+            {
+                Assert.Equal(expectedKeySize, e.KeySize);
                 e.Exercise();
             }
         }
@@ -277,6 +301,222 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             Assert.True(param.Curve.IsNamed);
             Assert.Equal("ECDSA_P521", param.Curve.Oid.FriendlyName); // OpenSsl maps secp521r1 to ECDSA_P521
             Assert.Equal(ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void CtorEcKeyExportMatchesReimport(string oid, int expectedKeySize)
+        {
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
+
+                using (ECDiffieHellmanOpenSsl ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey))
+                {
+                    Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
+
+                    ECParameters privateParams = ecKeyBacked.ExportParameters(true);
+
+                    using (ECDiffieHellman evpBacked = ECDiffieHellman.Create(privateParams))
+                    {
+                        Assert.Equal(expectedKeySize, evpBacked.KeySize);
+
+                        ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
+
+                        ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
+                        ComparePrivateKey(privateParams, evpPrivateParams);
+                    }
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE)]
+        [InlineData(ECDSA_P384_OID_VALUE)]
+        [InlineData(ECDSA_P521_OID_VALUE)]
+        public void CtorEcKeyDeriveCrossCompatibleWithReimport(string oid)
+        {
+            IntPtr rawKey1 = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, rawKey1);
+            IntPtr rawKey2 = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, rawKey2);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(rawKey1));
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(rawKey2));
+
+                using (ECDiffieHellmanOpenSsl ecKeyBacked1 = new ECDiffieHellmanOpenSsl(rawKey1))
+                using (ECDiffieHellmanOpenSsl ecKeyBacked2 = new ECDiffieHellmanOpenSsl(rawKey2))
+                using (ECDiffieHellman evpBacked1 = ECDiffieHellman.Create(ecKeyBacked1.ExportParameters(true)))
+                using (ECDiffieHellman evpBacked2 = ECDiffieHellman.Create(ecKeyBacked2.ExportParameters(true)))
+                using (ECDiffieHellmanPublicKey ecPub2 = ecKeyBacked2.PublicKey)
+                using (ECDiffieHellmanPublicKey evpPub2 = evpBacked2.PublicKey)
+                {
+                    byte[] ecEc = ecKeyBacked1.DeriveKeyFromHash(ecPub2, HashAlgorithmName.SHA256);
+                    byte[] ecEvp = ecKeyBacked1.DeriveKeyFromHash(evpPub2, HashAlgorithmName.SHA256);
+                    byte[] evpEc = evpBacked1.DeriveKeyFromHash(ecPub2, HashAlgorithmName.SHA256);
+                    byte[] evpEvp = evpBacked1.DeriveKeyFromHash(evpPub2, HashAlgorithmName.SHA256);
+
+                    Assert.Equal(ecEc, ecEvp);
+                    Assert.Equal(ecEc, evpEc);
+                    Assert.Equal(ecEc, evpEvp);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(rawKey1);
+                Interop.Crypto.EcKeyDestroy(rawKey2);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyDeriveLeftAndRightSide()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D!.Length);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDiffieHellmanOpenSsl ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey))
+                using (ECDiffieHellman peer = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+                using (ECDiffieHellmanPublicKey ecKeyPub = ecKeyBacked.PublicKey)
+                using (ECDiffieHellmanPublicKey peerPub = peer.PublicKey)
+                {
+                    byte[] derivedLeft = ecKeyBacked.DeriveKeyFromHash(peerPub, HashAlgorithmName.SHA256);
+                    byte[] derivedRight = peer.DeriveKeyFromHash(ecKeyPub, HashAlgorithmName.SHA256);
+
+                    Assert.Equal(derivedLeft, derivedRight);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyPublicOnlyFailsDerive()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                null, 0);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDiffieHellmanOpenSsl ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey))
+                using (ECDiffieHellman peer = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+                using (ECDiffieHellmanPublicKey peerPub = peer.PublicKey)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                        ecKeyBacked.DeriveKeyFromHash(peerPub, HashAlgorithmName.SHA256));
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsExplicitCurves))]
+        public void ExplicitCurveImportExportProducesSameExplicitParams()
+        {
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using (ECDiffieHellman original = ECDiffieHellman.Create(explicitCurve))
+            {
+                ECParameters explicitParams = original.ExportExplicitParameters(true);
+
+                using (ECDiffieHellman reimported = ECDiffieHellman.Create(explicitParams))
+                {
+                    ECParameters reimportedParams = reimported.ExportExplicitParameters(true);
+
+                    ComparePublicKey(explicitParams.Q, reimportedParams.Q);
+                    ComparePrivateKey(explicitParams, reimportedParams);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        public void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
+        {
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using (ECDiffieHellman key1 = ECDiffieHellman.Create(explicitCurve))
+            using (ECDiffieHellman key2 = ECDiffieHellman.Create(explicitCurve))
+            {
+                ECParameters key1Params = key1.ExportExplicitParameters(true);
+                ECParameters key2Params = key2.ExportExplicitParameters(true);
+
+                using (ECDiffieHellman key1Reimported = ECDiffieHellman.Create(key1Params))
+                using (ECDiffieHellman key2Reimported = ECDiffieHellman.Create(key2Params))
+                using (ECDiffieHellmanPublicKey pub2 = key2.PublicKey)
+                using (ECDiffieHellmanPublicKey pub2Reimported = key2Reimported.PublicKey)
+                {
+                    byte[] derive1 = key1.DeriveKeyFromHash(pub2, HashAlgorithmName.SHA256);
+                    byte[] derive2 = key1.DeriveKeyFromHash(pub2Reimported, HashAlgorithmName.SHA256);
+                    byte[] derive3 = key1Reimported.DeriveKeyFromHash(pub2, HashAlgorithmName.SHA256);
+                    byte[] derive4 = key1Reimported.DeriveKeyFromHash(pub2Reimported, HashAlgorithmName.SHA256);
+
+                    Assert.Equal(derive1, derive2);
+                    Assert.Equal(derive1, derive3);
+                    Assert.Equal(derive1, derive4);
+                }
+            }
+        }
+
+        [Fact]
+        public void GenerateKeyImplicitCurveThrows()
+        {
+            ECCurve implicitCurve = default;
+
+            using (ECDiffieHellman ecdh = new ECDiffieHellmanOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdh.GenerateKey(implicitCurve));
+            }
+        }
+
+        [Fact]
+        public void ImportParametersImplicitCurveThrows()
+        {
+            ECParameters parameters = new ECParameters
+            {
+                Curve = default,
+                D = new byte[32],
+            };
+
+            using (ECDiffieHellman ecdh = new ECDiffieHellmanOpenSsl())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ecdh.ImportParameters(parameters));
+            }
         }
     }
 }
