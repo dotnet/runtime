@@ -700,8 +700,10 @@
     <Compile Include="DSACngProvider.Windows.cs" />
     <Compile Include="DSACngTests.Windows.cs" />
     <Compile Include="DSATestRegistration.Cng.Windows.cs" />
-    <Compile Include="DSACryptoServiceProviderProvider.Windows.cs" />
-    <Compile Include="DSATestRegistration.Csp.Windows.cs" />
+    <Compile Include="DSACryptoServiceProviderProvider.cs" />
+    <Compile Include="DSACryptoServiceProviderTests.cs" />
+    <Compile Include="DSATestRegistration.Csp.cs" />
+    <Compile Include="ShimHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs"
@@ -822,6 +824,10 @@
     <Compile Include="DsaOpenSslTests.Unix.cs" />
     <Compile Include="DSAOpenSslProvider.Unix.cs" />
     <Compile Include="DSATestRegistration.OpenSsl.Unix.cs" />
+    <Compile Include="DSACryptoServiceProviderProvider.cs" />
+    <Compile Include="DSACryptoServiceProviderTests.cs" />
+    <Compile Include="DSATestRegistration.Csp.cs" />
+    <Compile Include="ShimHelpers.cs" />
     <Compile Include="MLDsaOpenSslTests.Unix.cs" />
     <Compile Include="MLKemOpenSslTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />
