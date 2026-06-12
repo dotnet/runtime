@@ -1294,18 +1294,15 @@ bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop
     DISPSTMT(initStmt);
     JITDUMP("\n");
 
-    // Rename all in-loop occurrences of the IV (except the header phi) to the
-    // new local, collecting the new definitions and uses for SSA construction.
+    // Rename all in-loop occurrences of the IV to the new local, collecting the
+    // new definitions and uses for SSA construction. Phi definitions are not
+    // included in the occurrences, so the header phi is left untouched here.
     JITDUMP("    Replacing V%02u with V%02u inside the loop\n", lclNum, newLclNum);
-    loopInfo->VisitStatementsWithOccurrences(loop, lclNum,
-                                             [=, &ssaBuilder, &uses](BasicBlock* block, Statement* stmt) {
-                                                 if (stmt != headerPhiStmt)
-                                                 {
-                                                     optReplaceIVUses(this, lclNum, newLclNum, block, stmt, &ssaBuilder,
-                                                                      &uses);
-                                                 }
-                                                 return true;
-                                             });
+    auto replace = [=, &ssaBuilder, &uses](BasicBlock* block, Statement* stmt) {
+        optReplaceIVUses(this, lclNum, newLclNum, block, stmt, &ssaBuilder, &uses);
+        return true;
+    };
+    loopInfo->VisitStatementsWithOccurrences(loop, lclNum, replace);
 
     // Delete the old IV's header phi so the scalar-evolution-based optimizations
     // below do not analyze the old IV, which no longer has an in-loop store.
