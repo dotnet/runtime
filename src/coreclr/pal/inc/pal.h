@@ -3513,7 +3513,15 @@ PAL_FreeExceptionRecords(
 #define EXCEPTION_EXECUTE_HANDLER   1
 #define EXCEPTION_CONTINUE_EXECUTION -1
 
-struct PAL_SEHException
+struct
+#ifdef __OpenBSD__
+// OpenBSD's libc++ compares exception type_info by pointer (relying on ld.so to merge
+// type_info across shared objects) instead of falling back to a name compare like Linux's
+// libstdc++. Default visibility lets ld.so merge type_info into one instance so a
+// PAL_SEHException thrown in one PAL DSO is caught in another (e.g. the pal_sxs test).
+__attribute__((visibility("default")))
+#endif
+PAL_SEHException
 {
 private:
     static const SIZE_T NoTargetFrameSp = (SIZE_T)SIZE_MAX;
