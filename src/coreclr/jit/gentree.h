@@ -8059,7 +8059,7 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
-    unsigned  Size() const;
+    unsigned    Size() const;
     ::ValueSize ValueSize() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
