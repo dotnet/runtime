@@ -10,16 +10,16 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
-
-    // When set, overrides the default IP/Frame source-type classification for reported roots.
-    // Used to mark exception-tracker (ExInfo) roots, which live on the stack but are not Frames.
-    private StackRefData.SourceTypes? _sourceTypeOverride;
-
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
     public TargetPointer InstructionPointer { get; private set; }
     public TargetPointer Frame { get; private set; }
+
+    // When set, overrides the default IP/Frame source-type classification for reported roots.
+    // Used to mark roots reported outside the frame walk (GCFrame/GCPROTECT and ExInfo chains)
+    // as StackSourceOther, since their Source is a node address rather than a capital-F Frame.
+    private StackRefData.SourceTypes? _sourceTypeOverride;
 
     public GcScanContext(Target target, bool resolveInteriorPointers)
     {

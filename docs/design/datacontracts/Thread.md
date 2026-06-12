@@ -55,6 +55,7 @@ record struct ThreadData (
     TargetPointer ThreadHandle;
     bool IsInteropDebuggingHijacked;
     TargetPointer DebuggerFilterContext;
+    TargetPointer? GCFrame; // optional: head of the GCFrame (GCPROTECT) chain, null when absent
 );
 ```
 
@@ -238,6 +239,7 @@ ThreadData GetThreadData(TargetPointer address)
         LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
+        GCFrame: /* Thread::GCFrame offset present? */ target.ReadPointer(address + /* Thread::GCFrame offset */) : null,
     );
 }
 

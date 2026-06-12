@@ -535,7 +535,7 @@ public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
     SOS_StackSourceFrame = 1,
-    SOS_StackSourceExInfo = 2,
+    SOS_StackSourceOther = 2,
 }
 
 public struct SOSStackRefData

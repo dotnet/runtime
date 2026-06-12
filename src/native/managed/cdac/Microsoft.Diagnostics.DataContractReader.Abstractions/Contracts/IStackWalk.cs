@@ -35,11 +35,14 @@ public enum StackWalkState
 }
 
 // Classifies the origin of a reported stack reference.
+//   InstructionPointer - a managed (frameless) JIT frame; Source is the native PC.
+//   Frame              - an explicit capital-F Frame; Source is the Frame address.
+//   Other              - a root which is not any of the other enums
 public enum StackSourceType
 {
     InstructionPointer = 0,
     Frame = 1,
-    ExInfo = 2,
+    Other = 2,
 }
 
 public class StackReferenceData

@@ -599,7 +599,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 ### GC Stack Reference Scanning
 
-`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers, then reporting the thread's GCFrame (GCPROTECT) chain and in-flight exception (ExInfo) chain. This mirrors the GC's own root enumeration, `ScanStackRoots` (`src/coreclr/vm/gcenv.ee.cpp`); the legacy `DacStackReferenceWalker` reports only the per-frame subset and omits the GCFrame and ExInfo roots.
+`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers, then reporting the thread's GCFrame (GCPROTECT) chain and in-flight exception (ExInfo) chain. This mirrors the GC's own root enumeration, `ScanStackRoots`.
 
 #### Stack Walk Integration
 
@@ -637,10 +637,10 @@ See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GC
 
 After walking the thread's frames, `WalkStackReferences` reports two additional sets of roots that the GC keeps alive but that are not surfaced by per-frame GC info (matching native `gcenv.ee.cpp` `ScanStackRoots`):
 
-- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame`, each `GCFrame` is walked via its `Next` pointer until the `GCFRAME_TOP` terminator (`~0`, sized to the pointer width). For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
-- **Exception tracker (ExInfo) chain**: starting from `Thread.ExceptionTracker`, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
+- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame` (obtained via the `Thread` contract's `GetThreadData`), each `GCFrame` is walked via its `Next` pointer until the `GCFRAME_TOP` terminator (`~0`, sized to the pointer width). For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
+- **Exception tracker (ExInfo) chain**: starting from the thread's exception tracker, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
 
-Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack), consistent with the per-frame roots. The `SourceType` differentiates them: GCFrame roots use the `Frame` source type, while ExInfo roots use the dedicated `ExInfo` source type. The legacy `ISOSDacInterface` exposes the same distinction: `GetStackReferences` forwards GCFrame roots as `SOS_StackSourceFrame` and ExInfo roots as `SOS_StackSourceExInfo`.
+Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack). A `GCFrame` node belongs to a separate chain from the explicit `Frame` chain, and an ExInfo node is likewise not a capital-F `Frame`, so neither is reported with the `Frame` source type. Both use the `Other` source type, which marks a root reported outside the per-frame walk; the legacy `ISOSDacInterface` forwards them as `SOS_StackSourceOther`.
 
 ### Signature-Based Scanning (currently deferred)
 
