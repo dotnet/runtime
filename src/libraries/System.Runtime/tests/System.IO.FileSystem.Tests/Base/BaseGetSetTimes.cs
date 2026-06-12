@@ -19,7 +19,7 @@ namespace System.IO.Tests
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
 
-        protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
+        protected static bool LowTemporalResolution => isHFS;
         protected static bool HighTemporalResolution => !LowTemporalResolution;
 
         private static void CheckHighTemporalResolution()
