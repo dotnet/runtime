@@ -986,4 +986,28 @@ public unsafe class DacDbiImplTests
         uint result = DacDbiImpl.ConvertSourceTypesToNative(source);
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void ConvertToNativeVarInfo_MapsAllFields()
+    {
+        var varInfo = new DebugVarInfo
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = false,
+            StartOffset = 10,
+            EndOffset = 50,
+            CallReturnValueILOffset = 42,
+            VarNumber = 3,
+            BaseRegister = 5,
+            StackOffset = -0x28,
+        };
+        NativeVarInfo nvi = DacDbiImpl.ConvertToNativeVarInfo(varInfo);
+        Assert.Equal(10u, nvi.startOffset);
+        Assert.Equal(50u, nvi.endOffset);
+        Assert.Equal(42u, nvi.callReturnValueILOffset);
+        Assert.Equal(3u, nvi.varNumber);
+        Assert.Equal(VarLocType.VLT_STK, nvi.loc.vlType);
+        Assert.Equal(5u, nvi.loc.vlsBaseReg);
+        Assert.Equal(-0x28, nvi.loc.vlsOffset);
+    }
 }

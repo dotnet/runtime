@@ -1207,6 +1207,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         List<DbiOffsetMapping> cdacSeqPoints = new();
 #endif
         int hr = HResults.S_OK;
+        if (pFixedArgCount != null)
+            *pFixedArgCount = 0;
         try
         {
             Debug.Assert(vmMethodDesc != 0, $"vmMethodDesc is null");

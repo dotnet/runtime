@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -17,28 +16,11 @@ public sealed unsafe partial class DacDbiImpl
     // This does not include other implicit arguments or varargs.
     private uint GetArgCount(ulong vmMethodDesc)
     {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-        uint token = rts.GetMethodToken(mdh);
-        TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-        ILoader loader = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
-        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+        MethodDescHandle mdh = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
+        MethodDescInfoHelpers.GetMethodInfo(_target, mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out _, out _);
+        MethodDescInfoHelpers.GetMethodSignatureInfo(mdReader, methodDef, out _, out uint numArgs);
 
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)token);
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        SignatureHeader sigHeader = blobReader.ReadSignatureHeader();
-        if (sigHeader.IsGeneric)
-            blobReader.ReadCompressedInteger(); // skip generic arity
-        uint paramCount = (uint)blobReader.ReadCompressedInteger();
-
-        return paramCount + (sigHeader.IsInstance ? 1u : 0u);
+        return numArgs;
     }
 
     internal static NativeVarInfo ConvertToNativeVarInfo(DebugVarInfo varInfo)
@@ -46,6 +28,7 @@ public sealed unsafe partial class DacDbiImpl
         NativeVarInfo nvi = default;
         nvi.startOffset = varInfo.StartOffset;
         nvi.endOffset = varInfo.EndOffset;
+        nvi.callReturnValueILOffset = varInfo.CallReturnValueILOffset;
         nvi.varNumber = varInfo.VarNumber;
         nvi.loc = ConvertToVarLoc(varInfo);
         return nvi;
@@ -192,6 +175,8 @@ public sealed unsafe partial class DacDbiImpl
                 $"VarInfo[{i}] startOffset mismatch - cDAC: {c.startOffset}, DAC: {d.startOffset}");
             Debug.Assert(c.endOffset == d.endOffset,
                 $"VarInfo[{i}] endOffset mismatch - cDAC: {c.endOffset}, DAC: {d.endOffset}");
+            Debug.Assert(c.callReturnValueILOffset == d.callReturnValueILOffset,
+                $"VarInfo[{i}] callReturnValueILOffset mismatch - cDAC: {c.callReturnValueILOffset}, DAC: {d.callReturnValueILOffset}");
             Debug.Assert(c.varNumber == d.varNumber,
                 $"VarInfo[{i}] varNumber mismatch - cDAC: {c.varNumber}, DAC: {d.varNumber}");
             Debug.Assert(c.loc.vlType == d.loc.vlType,

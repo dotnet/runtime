@@ -411,37 +411,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         mdh = rts.GetMethodDescHandle(methodDescPtr);
-        TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-        ILoader loader = _target.Contracts.Loader;
-        moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        token = rts.GetMethodToken(mdh);
-
-        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader? reader = ecmaMetadataContract.GetMetadata(moduleHandle);
-        if (reader is null)
-            throw new NotImplementedException();
-        mdReader = reader;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)token);
-        methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        MethodDescInfoHelpers.GetMethodInfo(_target, mdh, out mdReader, out methodDef, out moduleHandle, out token);
     }
 
     /// <summary>
     /// Parses the method signature to determine argument count and signature header.
     /// </summary>
     private static void GetMethodSignatureInfo(MetadataReader mdReader, MethodDefinition methodDef, out SignatureHeader header, out uint numArgs)
-    {
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        header = blobReader.ReadSignatureHeader();
-        if (header.Kind != SignatureKind.Method)
-            throw new BadImageFormatException();
-        if (header.IsGeneric)
-            blobReader.ReadCompressedInteger(); // skip generic arity
-        uint paramCount = (uint)blobReader.ReadCompressedInteger();
-        numArgs = paramCount + (header.IsInstance ? 1u : 0u);
-    }
+        => MethodDescInfoHelpers.GetMethodSignatureInfo(mdReader, methodDef, out header, out numArgs);
 
     /// <summary>
     /// Creates a ClrDataValue by resolving variable locations for the current frame

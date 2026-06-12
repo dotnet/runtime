@@ -61,53 +61,54 @@ public enum VarLocType
     VLT_INVALID,
 }
 
-[StructLayout(LayoutKind.Explicit)]
+// The native VarLoc struct contains a union with a void* member (vlMemory),
+// which causes pointer-size alignment. On 64-bit, the union starts at offset 8
+// (after vlType + padding). We use nint for the first field to absorb the
+// architecture-dependent padding, matching the layout in CorInfoTypes.VarInfo.cs.
+[StructLayout(LayoutKind.Sequential)]
 public struct VarLoc
 {
-    [FieldOffset(0)]
-    public VarLocType vlType;
+    // vlType (lower 32 bits) + pointer-size padding
+    private nint _vlTypeAndPadding;
 
-    // vlReg
-    [FieldOffset(4)]
-    public uint vlrReg;
+    // Union data: three positional slots covering all union variants.
+    // Different VarLocType values interpret these as different named fields.
+    private uint _field1;
+    private int _field2;
+    private int _field3;
 
-    // vlStk
-    [FieldOffset(4)]
-    public uint vlsBaseReg;
-    [FieldOffset(8)]
-    public int vlsOffset;
+    public VarLocType vlType
+    {
+        get => (VarLocType)(int)(_vlTypeAndPadding & 0xFFFFFFFF);
+        set => _vlTypeAndPadding = (nint)(int)value;
+    }
+
+    // vlReg / vlReg_BYREF
+    public uint vlrReg { get => _field1; set => _field1 = value; }
+
+    // vlStk / vlStk_BYREF / vlStk2
+    public uint vlsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsOffset { get => _field2; set => _field2 = value; }
 
     // vlRegReg
-    [FieldOffset(4)]
-    public uint vlrrReg1;
-    [FieldOffset(8)]
-    public uint vlrrReg2;
+    public uint vlrrReg1 { get => _field1; set => _field1 = value; }
+    public uint vlrrReg2 { get => (uint)_field2; set => _field2 = (int)value; }
 
     // vlRegStk
-    [FieldOffset(4)]
-    public uint vlrsReg;
-    [FieldOffset(8)]
-    public uint vlrssBaseReg;
-    [FieldOffset(12)]
-    public int vlrssOffset;
+    public uint vlrsReg { get => _field1; set => _field1 = value; }
+    public uint vlrssBaseReg { get => (uint)_field2; set => _field2 = (int)value; }
+    public int vlrssOffset { get => _field3; set => _field3 = value; }
 
     // vlStkReg
-    [FieldOffset(4)]
-    public uint vlsrsBaseReg;
-    [FieldOffset(8)]
-    public int vlsrsOffset;
-    [FieldOffset(12)]
-    public uint vlsrReg;
-
-    // vlStk2 (same layout as vlStk)
+    public uint vlsrsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsrsOffset { get => _field2; set => _field2 = value; }
+    public uint vlsrReg { get => (uint)_field3; set => _field3 = (int)value; }
 
     // vlFPstk
-    [FieldOffset(4)]
-    public uint vlfReg;
+    public uint vlfReg { get => _field1; set => _field1 = value; }
 
     // vlFixedVarArg
-    [FieldOffset(4)]
-    public uint vlfvOffset;
+    public uint vlfvOffset { get => _field1; set => _field1 = value; }
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -115,6 +116,7 @@ public struct NativeVarInfo
 {
     public uint startOffset;
     public uint endOffset;
+    public uint callReturnValueILOffset;
     public uint varNumber;
     public VarLoc loc;
 }
