@@ -768,7 +768,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     GenTree* addr;
     noway_assert(arr->gtNext == node);
 
-    if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->IconValue() == 0))
     {
         // If the array is NULL, then we should get a NULL reference
         // exception when computing its length.  We need to maintain
@@ -1707,9 +1707,10 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     JITDUMP("Dividing split arg [%06u] with %u registers, %u stack space into two arguments\n",
             Compiler::dspTreeID(arg), numRegs, stackSeg.Size);
 
-    ClassLayout* registersLayout = SliceLayout(callArg->GetSignatureLayout(), 0, stackSeg.Offset);
-    ClassLayout* stackLayout     = SliceLayout(callArg->GetSignatureLayout(), stackSeg.Offset,
-                                               callArg->GetSignatureLayout()->GetSize() - stackSeg.Offset);
+    ClassLayout* registersLayout = callArg->GetSignatureLayout()->SliceLayout(m_compiler, 0, stackSeg.Offset);
+    ClassLayout* stackLayout =
+        callArg->GetSignatureLayout()->SliceLayout(m_compiler, stackSeg.Offset,
+                                                   callArg->GetSignatureLayout()->GetSize() - stackSeg.Offset);
 
     GenTree* stackNode     = nullptr;
     GenTree* registersNode = nullptr;
@@ -1900,54 +1901,6 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     JITDUMP("Added a new call arg. New call is:\n");
     DISPTREERANGE(BlockRange(), call);
-}
-
-//------------------------------------------------------------------------
-// SliceLayout:
-//   Slice a class layout into the specified range.
-//
-// Parameters:
-//   layout - The layout
-//   offset - Start offset of the slice
-//   size   - Size of the slice
-//
-// Returns:
-//   New layout of size 'size'
-//
-ClassLayout* Lowering::SliceLayout(ClassLayout* layout, unsigned offset, unsigned size)
-{
-    ClassLayoutBuilder builder(m_compiler, size);
-    INDEBUG(
-        builder.SetName(m_compiler->printfAlloc("%s[%03u..%03u)", layout->GetClassName(), offset, offset + size),
-                        m_compiler->printfAlloc("%s[%03u..%03u)", layout->GetShortClassName(), offset, offset + size)));
-
-    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && layout->HasGCPtr())
-    {
-        for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
-        {
-            builder.SetGCPtrType(i / TARGET_POINTER_SIZE, layout->GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
-        }
-    }
-    else
-    {
-        assert(!layout->HasGCPtr());
-    }
-
-    builder.AddPadding(SegmentList::Segment(0, size));
-
-    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
-    {
-        if ((nonPadding.End <= offset) || (nonPadding.Start >= offset + size))
-        {
-            continue;
-        }
-
-        unsigned start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
-        unsigned end   = nonPadding.End >= (offset + size) ? size : (nonPadding.End - offset);
-
-        builder.RemovePadding(SegmentList::Segment(start, end));
-    }
-    return m_compiler->typGetCustomLayout(builder);
 }
 
 //------------------------------------------------------------------------
@@ -3619,7 +3572,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
-    arg1->AsIntCon()->gtIconVal = tailCallHelperFlags;
+    arg1->AsIntCon()->SetIconValue(tailCallHelperFlags);
 
     // arg 2 == numberOfNewStackArgsWords
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
@@ -3627,7 +3580,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->OperIs(GT_CNS_INT));
 
-    arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
+    arg2->AsIntCon()->SetIconValue(nNewStkArgsWords);
 
 #ifdef DEBUG
     // arg 3 == numberOfOldStackArgsWords
@@ -6369,7 +6322,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 // a single indirection.
                 GenTree* cellAddr = AddrGen(addr);
 #ifdef DEBUG
-                cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+                cellAddr->AsIntCon()->SetTargetHandle((size_t)call->gtCallMethHnd);
 #endif
                 GenTree* indir = Ind(cellAddr);
                 result         = indir;
@@ -7275,7 +7228,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
             case IAT_PVALUE:
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->SetTargetHandle((size_t)methHnd);
 #endif
                 result = Ind(addrTree);
                 break;
@@ -7290,7 +7243,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->SetTargetHandle((size_t)methHnd);
 #endif
                 // Double-indirection. Load the address into a register
                 // and call indirectly through the register
@@ -11323,8 +11276,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
-        auto* intCon      = currData.value->AsIntCon();
-        intCon->gtIconVal = static_cast<ssize_t>(val);
+        auto* intCon = currData.value->AsIntCon();
+        intCon->SetIconValue(static_cast<ssize_t>(val));
         if (genTypeSize(oldType) == 1 && node->OperIsIndir())
         {
             node->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
@@ -12850,7 +12803,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
     {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->IconValue();
 
         if (emitter::emitIns_valid_imm_for_ccmp(immVal))
         {
