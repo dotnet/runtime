@@ -194,8 +194,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// specialization is currently being constructed.
         ///
         /// IMPORTANT: This implementation MIRRORS the source-gen resolver
-        /// <c>JsonSourceGenerator.Parser.TryResolveOpenGenericDerivedType</c> in
-        /// gen/JsonSourceGenerator.Parser.cs. Both implementations -- the per-ancestor
+        /// <c>RoslynExtensions.TryResolveOpenGenericDerivedType</c> in
+        /// gen/Helpers/RoslynExtensions.cs. Both implementations -- the per-ancestor
         /// unification, the canonical-substitution consistency check, and the
         /// constraint-subsumption rules -- must be kept in lockstep so that reflection and
         /// source-gen produce the same closed type for the same registration.

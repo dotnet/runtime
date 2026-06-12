@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -663,6 +664,204 @@ namespace System.Text.Json.SourceGeneration
 
         public static bool IsGenericTypeDefinition(this ITypeSymbol type)
             => type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(namedType, namedType.ConstructedFrom);
+
+        /// <summary>
+        /// Validates that <paramref name="unboundDerived"/> applies universally to every
+        /// specialization of the open generic base type whose definition matches
+        /// <c>constructedBase.OriginalDefinition</c>, and (when it does) produces the closed
+        /// derived type for the closure identified by <paramref name="constructedBase"/>.
+        ///
+        /// "Universal" means: there is a single canonical substitution mapping each derived
+        /// type parameter to a base type parameter that simultaneously satisfies every
+        /// matching ancestor of the derived type, with every derived constraint exactly
+        /// matching the constraints on the corresponding base parameter. Registrations that
+        /// pin a particular specialization (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>)
+        /// are rejected: such registrations would silently work for one base specialization
+        /// and break for another, which we treat as a misregistration regardless of which
+        /// specialization is currently being generated.
+        ///
+        /// Returns <see langword="true"/> with <paramref name="resolvedDerivedType"/> set to
+        /// the closed derived type, or <see langword="false"/> with a localized
+        /// <paramref name="failureReason"/> drawn from <c>SR.Polymorphism_OpenGeneric_*</c>
+        /// (suitable for inclusion in the <c>SYSLIB1229</c> message).
+        ///
+        /// IMPORTANT: This implementation MIRRORS the reflection-side resolver
+        /// <c>DefaultJsonTypeInfoResolver.Helpers.TryResolveOpenGenericDerivedType</c> in
+        /// src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs.
+        /// Both implementations -- the per-ancestor unification, the canonical-substitution
+        /// consistency check, and the constraint-equivalence rules -- must be kept in lockstep
+        /// so source-gen and reflection produce the same closed type for the same registration.
+        /// </summary>
+        public static bool TryResolveOpenGenericDerivedType(
+            this Compilation compilation,
+            INamedTypeSymbol unboundDerived,
+            INamedTypeSymbol constructedBase,
+            out INamedTypeSymbol? resolvedDerivedType,
+            out string? failureReason)
+        {
+            Debug.Assert(unboundDerived.IsUnboundGenericType);
+            Debug.Assert(constructedBase.IsGenericType);
+
+            resolvedDerivedType = null;
+            failureReason = null;
+
+            INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
+            INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
+
+            // Every ancestor of the derived type definition whose original definition matches
+            // the base type definition. For classes there is at most one such ancestor; for
+            // interfaces a derived type can implement the same interface definition multiple
+            // times with different type arguments.
+            List<INamedTypeSymbol> matchingBases = derivedDefinition
+                .GetCompatibleGenericBaseTypes(baseDefinition)
+                .ToList();
+
+            if (matchingBases.Count == 0)
+            {
+                failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                return false;
+            }
+
+            // The complete set of derived parameters that must be bound (enclosing + leaf).
+            List<ITypeParameterSymbol> requiredDerivedParams = derivedDefinition.GetAllTypeParameters();
+            List<ITypeParameterSymbol> baseParams = baseDefinition.GetAllTypeParameters();
+            var baseParamSet = new HashSet<ITypeParameterSymbol>(baseParams, SymbolEqualityComparer.Default);
+
+            // Per-ancestor independent substitutions; the universal answer must be a single
+            // canonical substitution agreed upon by every ancestor.
+            Dictionary<ITypeParameterSymbol, ITypeSymbol>? canonical = null;
+
+            foreach (INamedTypeSymbol ancestor in matchingBases)
+            {
+                var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(
+                    requiredDerivedParams.Count, SymbolEqualityComparer.Default);
+
+                if (!ancestor.TryUnifyWith(baseDefinition, substitution))
+                {
+                    // Some position pins a concrete type (e.g. Base<T, int>) or a constructed
+                    // pattern (e.g. Base<List<T>>) that cannot match a free base parameter.
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                    return false;
+                }
+
+                foreach (ITypeParameterSymbol p in requiredDerivedParams)
+                {
+                    if (!substitution.TryGetValue(p, out ITypeSymbol? mapped))
+                    {
+                        // E.g. D<U1, U2> : IBase<U1> -- U2 is not bound by this ancestor.
+                        failureReason = string.Format(
+                            CultureInfo.InvariantCulture,
+                            SR.Polymorphism_OpenGeneric_Reason_UnboundParameter,
+                            p.Name);
+                        return false;
+                    }
+
+                    if (mapped is not ITypeParameterSymbol mappedBaseParam || !baseParamSet.Contains(mappedBaseParam))
+                    {
+                        // Substitution value isn't one of the base's own type parameters --
+                        // happens when a derived ancestor binds a parameter to something
+                        // structural (which TryUnifyWith would have rejected) or pinned.
+                        // Treated as non-universal.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                        return false;
+                    }
+                }
+
+                if (canonical is null)
+                {
+                    canonical = substitution;
+                }
+                else if (!SubstitutionsEqual(canonical, substitution))
+                {
+                    // Two ancestors agree on independent bindings but produce different
+                    // (derived -> base) mappings, e.g. D<U1, U2> : IBase<U1, U2>, IBase<U2, U1>.
+                    // There is no single canonical answer for an arbitrary base closure.
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_AmbiguousMatch;
+                    return false;
+                }
+            }
+
+            Debug.Assert(canonical is not null);
+
+            // Constraint equivalence: every derived parameter's constraints must exactly
+            // match the constraints on the mapped base parameter (after substitution) so
+            // that any valid closure of the base also yields a valid closure of the
+            // derived. See ReflectionExtensions.AreConstraintsEquivalent for the rationale
+            // behind exact match (vs one-sided subsumption).
+            foreach (ITypeParameterSymbol derivedParam in requiredDerivedParams)
+            {
+                var mappedBaseParam = (ITypeParameterSymbol)canonical[derivedParam];
+                if (!compilation.AreConstraintsEquivalent(derivedParam, mappedBaseParam, canonical))
+                {
+                    failureReason = string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.Polymorphism_OpenGeneric_Reason_ConstraintMismatch,
+                        derivedParam.Name,
+                        mappedBaseParam.Name);
+                    return false;
+                }
+            }
+
+            // Closure construction: substitute the canonical mapping then specialize each
+            // base parameter to the actual closed-base type argument.
+            var baseParamPosition = new Dictionary<ITypeParameterSymbol, int>(SymbolEqualityComparer.Default);
+            for (int i = 0; i < baseParams.Count; i++)
+            {
+                baseParamPosition[baseParams[i]] = i;
+            }
+
+            List<ITypeSymbol> constructedBaseAllArgs = GetAllTypeArguments(constructedBase);
+
+            var closedArgs = new ITypeSymbol[requiredDerivedParams.Count];
+            for (int i = 0; i < requiredDerivedParams.Count; i++)
+            {
+                var mappedBaseParam = (ITypeParameterSymbol)canonical[requiredDerivedParams[i]];
+                closedArgs[i] = constructedBaseAllArgs[baseParamPosition[mappedBaseParam]];
+            }
+
+            resolvedDerivedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
+            return true;
+
+            static bool SubstitutionsEqual(
+                Dictionary<ITypeParameterSymbol, ITypeSymbol> a,
+                Dictionary<ITypeParameterSymbol, ITypeSymbol> b)
+            {
+                if (a.Count != b.Count)
+                {
+                    return false;
+                }
+
+                foreach (KeyValuePair<ITypeParameterSymbol, ITypeSymbol> kvp in a)
+                {
+                    if (!b.TryGetValue(kvp.Key, out ITypeSymbol? otherValue) ||
+                        !SymbolEqualityComparer.Default.Equals(kvp.Value, otherValue))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            static List<ITypeSymbol> GetAllTypeArguments(INamedTypeSymbol type)
+            {
+                var result = new List<ITypeSymbol>();
+                Append(type.ContainingType, result);
+                result.AddRange(type.TypeArguments);
+                return result;
+
+                static void Append(INamedTypeSymbol? enclosing, List<ITypeSymbol> list)
+                {
+                    if (enclosing is null)
+                    {
+                        return;
+                    }
+
+                    Append(enclosing.ContainingType, list);
+                    list.AddRange(enclosing.TypeArguments);
+                }
+            }
+        }
 
         public static bool IsNumberType(this ITypeSymbol type)
         {
