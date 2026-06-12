@@ -1,165 +1,197 @@
 #!/bin/bash
 set -euo pipefail
 set -x
+
+STAGE="${1:-all}"
 export DEBIAN_FRONTEND=noninteractive
+[ -f /env.sh ] && source /env.sh
+
+RUNTIME_DIR="$(pwd)/runtime"
+TEST_DIR="$(pwd)/JIT_Testing"
 
 echo "=================================="
-echo "Install dependencies"
+echo "STAGE: $STAGE"
 echo "=================================="
-apt-get update
-apt-get install -y \
-  bc automake clang curl findutils git hostname libtool \
-  libkrb5-dev ninja-build llvm make python3 cmake \
-  liblttng-ust-dev tar wget jq lld \
-  build-essential zlib1g-dev libssl-dev libbrotli-dev \
-  ca-certificates
 
 # =========================================================
-#  Clone runtime
+# SETUP FUNCTION
 # =========================================================
-echo "=================================="
-echo "Clone runtime"
-echo "=================================="
+setup() {
+  echo "Installing dependencies..."
 
-git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
-cd runtime
-git checkout ppc64le_coreclr_jit
+  apt-get update
+  apt-get install -y \
+    bc automake clang curl findutils git hostname libtool \
+    libkrb5-dev ninja-build llvm make python3 cmake \
+    liblttng-ust-dev tar wget jq lld \
+    build-essential zlib1g-dev libssl-dev libbrotli-dev \
+    ca-certificates
 
-# =========================================================
-#  Remove disabled NuGet feeds
-# =========================================================
-echo "=================================="
-echo "Check NuGet feeds"
-echo "=================================="
+  echo "Cloning runtime..."
+  git clone --recurse-submodules https://github.com/alhad-deshpande/runtime.git
+  cd runtime
+  git checkout ppc64le_coreclr_jit
 
-cp NuGet.config NuGet.config.bkp
+  # =========================================================
+  #   Auto-clean disabled NuGet feeds
+  # =========================================================
+  echo "Cleaning NuGet feeds..."
 
-grep 'value="https://pkgs.dev.azure.com' NuGet.config | while read -r line
-do
-    FEED_URL=$(echo "$line" | sed -n 's/.*value="\([^"]*\)".*/\1/p')
+  for CONFIG in NuGet.config eng/NuGet.config; do
+    if [ -f "$CONFIG" ]; then
+      echo "Processing $CONFIG"
 
-    echo "Checking: $FEED_URL"
+      cp "$CONFIG" "$CONFIG.bkp"
 
-    HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" "$FEED_URL" || echo "000")
+      grep 'value="https://pkgs.dev.azure.com' "$CONFIG" | while read -r line
+      do
+        FEED_URL=$(echo "$line" | sed -n 's/.*value="\([^"]*\)".*/\1/p')
 
-    if [ "$HTTP_CODE" = "404" ]; then
-        echo "Removing disabled feed: $FEED_URL"
+        echo "Checking: $FEED_URL"
 
-        ESCAPED_URL=$(printf '%s\n' "$FEED_URL" | sed 's/[\/&]/\\&/g')
+        HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" "$FEED_URL" || echo "000")
 
-        sed -i "\|$ESCAPED_URL|d" NuGet.config
+        if [ "$HTTP_CODE" = "404" ]; then
+          echo "Removing disabled feed: $FEED_URL"
+
+          ESCAPED=$(printf '%s\n' "$FEED_URL" | sed 's/[\/&]/\\&/g')
+
+          sed -i "\|$ESCAPED|d" "$CONFIG"
+        fi
+      done
     fi
-done
+  done
 
-echo "NuGet feed validation completed"
+  echo "NuGet cleanup done"
 
-# =========================================================
-#  Install .NET SDK
-# =========================================================
-echo "=================================="
-echo "Install .NET SDK"
-echo "=================================="
+  cd ..
 
-SDK_VERSION=$(jq -r '.sdk.version' global.json)
+  echo "Setting up .NET SDK..."
 
-export DOTNET_DIR=/dotnet-sdk-$(uname -m)
-mkdir -p $DOTNET_DIR
+  SDK_VERSION=$(jq -r '.sdk.version' runtime/global.json)
 
-pushd $DOTNET_DIR
+  export DOTNET_DIR="/dotnet-sdk-$(uname -m)"
+  mkdir -p "$DOTNET_DIR"
 
-wget https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-$(uname -m).tar.gz
+  pushd "$DOTNET_DIR"
 
-mkdir -p .dotnet
-tar xvf dotnet-sdk-*linux-$(uname -m).tar.gz -C .dotnet > /dev/null
+  wget "https://github.com/IBM/dotnet-s390x/releases/download/v${SDK_VERSION}/dotnet-sdk-${SDK_VERSION}-linux-$(uname -m).tar.gz"
 
-export DOTNET_ROOT=$(pwd)/.dotnet
-export PATH=$DOTNET_ROOT:$PATH
+  mkdir -p .dotnet
+  tar xvf dotnet-sdk-*linux-$(uname -m).tar.gz -C .dotnet > /dev/null
 
-popd
+  export DOTNET_ROOT="$(realpath .dotnet)"
+  export PATH="$DOTNET_ROOT:$PATH"
 
-#  Verify installation
-echo "=================================="
-echo "Verify .NET Installation"
-echo "=================================="
+  popd
 
-if command -v dotnet &> /dev/null
-then
-    echo " .NET installed successfully"
-    dotnet --version
-else
-    echo " .NET installation failed"
-    exit 1
-fi
+  echo "DOTNET installed:"
+  dotnet --version
+
+  echo "export DOTNET_ROOT=$DOTNET_ROOT" > /env.sh
+  echo "export PATH=$DOTNET_ROOT:\$PATH" >> /env.sh
+}
 
 # =========================================================
-#  Build Runtime
+# BUILD RUNTIME
 # =========================================================
-echo "=================================="
-echo "Build Runtime"
-echo "=================================="
+build_runtime() {
+  cd runtime
+  export PATH="$DOTNET_ROOT:$PATH"
+  export DOTNET_MULTILEVEL_LOOKUP=0
+  export UseInstalledDotNetCli=true
 
-./build.sh clr+clr.hosts \
+  ./build.sh clr+clr.hosts \
+  /p:SkipManagedTools=true \
   /p:PrimaryRuntimeFlavor=CoreCLR \
   /p:PublishAot=false \
   /p:SupportsNativeAotComponents=false \
-  | tee build.log
-  exit ${PIPESTATUS[0]}
+  2>&1 | tee build.log
+}
 
 # =========================================================
-#  Build Libraries
+# BUILD LIBS
 # =========================================================
-echo "=================================="
-echo "Build Libraries"
-echo "=================================="
-
-./build.sh libs
-
-# =========================================================
-#  Build Tests
-# =========================================================
-echo "=================================="
-echo "Build Tests"
-echo "=================================="
-
-./src/tests/build.sh /p:LibrariesConfiguration=Debug
+build_libs() {
+  cd runtime
+  ./build.sh libs 2>&1 | tee build_libs.log
+}
 
 # =========================================================
-#  Fix CoreLib
+# BUILD TESTS
 # =========================================================
-echo "=================================="
-echo "Fix CoreLib"
-echo "=================================="
+build_tests() {
+  cd runtime
 
-CORE_ROOT=./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root
+  ./src/tests/build.sh /p:LibrariesConfiguration=Debug 2>&1 | tee build_tests.log
 
-cp ${CORE_ROOT}/IL/System.Private.CoreLib.dll \
-   ${CORE_ROOT}/System.Private.CoreLib.dll
+  CORE_ROOT="./artifacts/tests/coreclr/linux.ppc64le.Debug/Tests/Core_Root"
+
+  cp "${CORE_ROOT}/IL/System.Private.CoreLib.dll" \
+     "${CORE_ROOT}/System.Private.CoreLib.dll"
+}
 
 # =========================================================
-#  Run JIT Tests
+# RUN TESTS
 # =========================================================
+run_tests() {
+  echo "Cloning JIT tests..."
+  git clone https://github.com/alhad-deshpande/JIT_Testing.git
+  cd JIT_Testing
+
+  echo "Commit:"
+  git log --oneline -1
+
+  echo "Test count:"
+  find testcases -name "*.cs" | wc -l
+
+  chmod +x run_test.sh
+
+  set +e
+  ./run_test.sh "$DOTNET_ROOT" "$RUNTIME_DIR"
+  EXIT_CODE=$?
+  set -e
+
+  if [ $EXIT_CODE -ne 0 ]; then
+    echo " JIT Tests FAILED"
+    exit $EXIT_CODE
+  fi
+
+  echo " JIT Tests PASSED"
+}
+
+# =========================================================
+# MAIN DISPATCHER
+# =========================================================
+case "$STAGE" in
+  setup)
+    setup
+    ;;
+  build_runtime)
+    build_runtime
+    ;;
+  build_libs)
+    build_libs
+    ;;
+  build_tests)
+    build_tests
+    ;;
+  run_tests)
+    run_tests
+    ;;
+  all)
+    setup
+    build_runtime
+    build_libs
+    build_tests
+    run_tests
+    ;;
+  *)
+    echo "Invalid stage: $STAGE"
+    exit 1
+    ;;
+esac
+
 echo "=================================="
-echo "Run JIT Tests"
-echo "=================================="
-
-cd ..
-
-git clone https://github.com/alhad-deshpande/JIT_Testing.git
-cd JIT_Testing
-
-echo "Current commit:"
-git log --oneline -1
-
-echo "Testcase count:"
-find testcases -name "*.cs" | wc -l
-
-echo "Files discovered:"
-find testcases -name "*.cs" | sort
-
-chmod +x run_test.sh
-
-./run_test.sh "$DOTNET_ROOT" "$(pwd)/../runtime"
-
-echo "=================================="
-echo " DONE"
+echo "DONE"
 echo "=================================="
