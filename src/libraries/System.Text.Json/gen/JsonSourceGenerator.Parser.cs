@@ -1101,6 +1101,13 @@ namespace System.Text.Json.SourceGeneration
                 {
                     if (baseType is INamedTypeSymbol { IsGenericType: true })
                     {
+                        // Closed derived registered against a generic base, e.g.
+                        //   [JsonDerivedType(typeof(Cat))] class Animal<T>; class Cat : Animal<int>;
+                        // The same JsonDerivedType attribute lives on the open base definition and is
+                        // shared across every closure, so a closed derived necessarily pins one
+                        // specialization (here Animal<int>) and would silently apply for that closure
+                        // and break for every other (Animal<string>, Animal<DateTime>, ...). Reject at
+                        // metadata-resolution time.
                         failureReason = SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase;
                         return false;
                     }
