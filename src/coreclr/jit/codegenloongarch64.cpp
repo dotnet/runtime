@@ -1021,7 +1021,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -1469,7 +1469,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -1891,7 +1891,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Check divisorOp first as we can always allow it to be a contained immediate
         if (divisorOp->isContainedIntOrIImmed())
         {
-            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->IconValue());
             divisorReg       = emitter::isGeneralRegister(divisorReg) ? divisorReg : REG_R21;
             emit->emitIns_I_la(EA_PTRSIZE, divisorReg, intConst);
         }
@@ -3150,7 +3150,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (op2->isContainedIntOrIImmed())
         {
-            ssize_t imm = op2->AsIntCon()->gtIconVal;
+            ssize_t imm = op2->AsIntCon()->IconValue();
 
             switch (cmpSize)
             {
@@ -3398,7 +3398,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     if (op2->isContainedIntOrIImmed())
     {
-        ssize_t imm = op2->AsIntCon()->gtIconVal;
+        ssize_t imm = op2->AsIntCon()->IconValue();
 
         if (imm)
         {
@@ -3452,7 +3452,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             }
 
             instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(REG_RA);
             regs = (int)REG_RA << 5;
         }
@@ -4914,7 +4914,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     }
     else
     {
-        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
 
         // should check shiftByImm for loongarch32-ins.
         unsigned immWidth = emitter::getBitWidth(size); // For LOONGARCH64, immWidth will be set to 32 or 64

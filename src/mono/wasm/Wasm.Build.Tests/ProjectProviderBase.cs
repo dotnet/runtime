@@ -112,9 +112,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
-            string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-            string extension = Path.GetExtension(expectedFilename).Substring(1);
-
             dotnetFiles = dotnetFiles
                 .Where(actualFile =>
                 {
@@ -127,7 +124,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
                     {
-                        string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
+                        string pattern = GetFingerprintRegexPattern(expectedFilename);
                         var match = Regex.Match(actualFilename, pattern);
                         if (!match.Success)
                             return true;
@@ -418,6 +415,19 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
         => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
+    private static string GetFingerprintRegexPattern(string expectedFilename)
+    {
+        const string jsSymbolsSuffix = ".js.symbols";
+        if (expectedFilename.EndsWith(jsSymbolsSuffix, StringComparison.Ordinal))
+        {
+            string prefix = expectedFilename[..^jsSymbolsSuffix.Length];
+            return $"^{Regex.Escape(prefix)}{s_dotnetVersionHashRegex}js\\.symbols$";
+        }
+
+        string defaultPrefix = Path.GetFileNameWithoutExtension(expectedFilename);
+        string extension = Path.GetExtension(expectedFilename).Substring(1);
+        return $"^{Regex.Escape(defaultPrefix)}{s_dotnetVersionHashRegex}{Regex.Escape(extension)}$";
+    }
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
@@ -614,14 +624,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             bool expectFingerprint = knownSet[expectedFilename];
             expectedEntries[expectedFilename] = item =>
             {
-                string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-                string extension = Path.GetExtension(expectedFilename).Substring(1);
-
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                            expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
+                    return Regex.Match(item, GetFingerprintRegexPattern(expectedFilename)).Success;
                 }
                 else
                 {

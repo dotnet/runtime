@@ -627,6 +627,12 @@ private:
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
     CORJIT_FLAGS m_corJitFlags;
+#ifdef PERFTRACING_DISABLE_THREADS
+    bool m_emitSamplingProfiler;
+#ifdef TARGET_BROWSER
+    bool m_emitBrowserProfiler;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -1116,6 +1122,13 @@ public:
     InterpMethodDataBuilder& GetMethodDataBuilder() { return m_methodDataBuilder; }
 
     int32_t* GetCode(int32_t *pCodeSize);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+    static bool s_samplingProfilerEnabled;
+#ifdef TARGET_BROWSER
+    static bool s_browserProfilerEnabled;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

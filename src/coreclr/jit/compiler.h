@@ -2002,6 +2002,11 @@ struct NaturalLoopIterInfo
     // allowMissingBaseCase=true.
     bool NeedsZeroTripGuard : 1;
 
+    // Constant peeled from the loop limit so that the effective limit is
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
+    // and HasArrayLengthLimit.
+    int LimitOffset = 0;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -2021,6 +2026,7 @@ struct NaturalLoopIterInfo
     bool IsDecreasingLoop();
     GenTree* Iterator();
     GenTree* Limit();
+    GenTree* LimitBase();
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
@@ -3237,6 +3243,10 @@ public:
 
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
+
+#if defined(TARGET_ARM64)
+    GenTreeBfm* gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width);
+#endif
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
