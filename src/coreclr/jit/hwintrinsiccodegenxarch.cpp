@@ -1013,6 +1013,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
+        case InstructionSet_AVX512_BF16:
+        case InstructionSet_AVX512_BF16_X64:
         case InstructionSet_AVX512v2:
         case InstructionSet_AVX10v2:
         case InstructionSet_AVX10v2_X64:
