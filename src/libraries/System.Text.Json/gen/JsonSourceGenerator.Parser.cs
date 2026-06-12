@@ -59,12 +59,6 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
-            // Tracks (open base definition, derived type definition) pairs for which an open-generic
-            // polymorphism diagnostic has already been emitted. Whether a derived registration is
-            // universally applicable to a generic base is a property of the open forms alone, so the
-            // diagnostic must fire at most once per (open base, derived) pair regardless of how many
-            // closed specializations of the base appear in [JsonSerializable] attributes.
-            // Lazily allocated since the diagnostic is rarely emitted.
             private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
                 RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
 
