@@ -1835,8 +1835,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             {
                 for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
                 {
-                    GenTree* zero = gtNewZeroConNode(TYP_I_IMPL);
-                    GenTree* store = gtNewStoreLclVarNode(lclNum, zero);
+                    GenTree*   zero  = gtNewZeroConNode(TYP_I_IMPL);
+                    GenTree*   store = gtNewStoreLclVarNode(lclNum, zero);
                     LIR::Range range = LIR::SeqTree(this, store);
                     LIR::InsertBeforeTerminator(block, std::move(range));
                 }
