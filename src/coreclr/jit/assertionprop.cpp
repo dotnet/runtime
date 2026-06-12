@@ -5739,7 +5739,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
 
-#if !defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
         // An MD array access loads several metadata fields (the per-dimension lengths and lower bounds),
         // most of which are needed for the element-address computation, not just for the bounds checks.
         // Proving them non-faulting pins each load with an ordering side effect (see
