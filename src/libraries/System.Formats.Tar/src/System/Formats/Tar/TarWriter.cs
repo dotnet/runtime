@@ -158,7 +158,9 @@ namespace System.Formats.Tar
         public void WriteEntry(string fileName, string? entryName)
         {
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
-            ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, actualEntryName);
+            ValueTask vt = ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<SyncReadWriteAdapter>(fullPath, actualEntryName, FileOptions.None, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteEntry completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -184,14 +186,6 @@ namespace System.Formats.Tar
 
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
             return ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<AsyncReadWriteAdapter>(fullPath, actualEntryName, FileOptions.Asynchronous, cancellationToken).AsTask();
-        }
-
-        // Reads an entry from disk and writes it into the archive stream.
-        private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
-        {
-            ValueTask vt = ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<SyncReadWriteAdapter>(fullPath, entryName, FileOptions.None, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous WriteEntry completed asynchronously.");
-            vt.GetAwaiter().GetResult();
         }
 
         // Reads an entry from disk and writes it into the archive stream.

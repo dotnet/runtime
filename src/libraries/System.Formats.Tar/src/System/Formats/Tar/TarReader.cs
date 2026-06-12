@@ -162,15 +162,7 @@ namespace System.Formats.Tar
         }
 
         // Moves the underlying archive stream position pointer to the beginning of the next header.
-        internal void AdvanceDataStreamIfNeeded()
-        {
-            ValueTask vt = AdvanceDataStreamIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous AdvanceDataStreamIfNeeded completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        // Moves the underlying archive stream position pointer to the beginning of the next header.
-        private async ValueTask AdvanceDataStreamIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
+        internal async ValueTask AdvanceDataStreamIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
             if (_previouslyReadEntry == null)

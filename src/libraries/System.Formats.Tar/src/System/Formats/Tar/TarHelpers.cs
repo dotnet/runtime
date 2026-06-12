@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -11,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Formats.Tar
 {
@@ -71,6 +71,8 @@ namespace System.Formats.Tar
         internal static async ValueTask AdvanceStreamCoreAsync<TAdapter>(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (archiveStream.CanSeek)
             {
                 archiveStream.Position += bytesToDiscard;
@@ -98,6 +100,8 @@ namespace System.Formats.Tar
         internal static async ValueTask CopyBytesCoreAsync<TAdapter>(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
             try
             {
