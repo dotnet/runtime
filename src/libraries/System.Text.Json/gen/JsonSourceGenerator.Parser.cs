@@ -946,32 +946,15 @@ namespace System.Text.Json.SourceGeneration
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                        if (!TryResolveDerivedType(
+                                derivedType, typeToGenerate.Type,
+                                out ITypeSymbol? resolvedDerivedType, out string? failureReason))
                         {
-                            if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, typeToGenerate.Type,
-                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
-                            {
-                                ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), failureReason);
-                                continue;
-                            }
-
-                            derivedType = resolvedType!;
-                        }
-                        else if (typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true })
-                        {
-                            // Closed (non-open) derived type registered against a generic base.
-                            // The same JsonDerivedType attribute lives on the open base definition
-                            // and is shared across every closed specialization; a closed derived
-                            // type necessarily pins a specific specialization of the base. Reject
-                            // at metadata-resolution time so this cannot silently work for one
-                            // specialization and break for another.
-                            //
-                            // Closed derived types on a NON-generic base continue to flow through
-                            // to the normal PolymorphicTypeResolver assignability check below.
-                            ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase);
+                            ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), failureReason);
                             continue;
                         }
+
+                        derivedType = resolvedDerivedType!;
 
                         TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
 
@@ -1070,41 +1053,67 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Source-gen-side resolver: validates that <paramref name="unboundDerived"/> applies
-            /// universally to every specialization of <paramref name="baseType"/>'s open definition,
-            /// and (when it does) produces the closed derived type for the specific closure
-            /// <paramref name="baseType"/>. When <paramref name="baseType"/> is not a generic
-            /// <see cref="INamedTypeSymbol"/>, the registration is rejected as unassignable.
+            /// Source-gen-side resolver for a <c>[JsonDerivedType]</c> registration against
+            /// <paramref name="baseType"/>. Handles four cases:
+            /// <list type="bullet">
+            ///   <item>Open derived + generic base: validates universal applicability and
+            ///   produces the closed derived type for the current closure.</item>
+            ///   <item>Open derived + non-generic base: rejected as unassignable.</item>
+            ///   <item>Closed derived + generic base: rejected. The attribute is shared across
+            ///   every closure of the base definition; a closed derived necessarily pins one
+            ///   specialization and would silently work for that closure and break for the
+            ///   others.</item>
+            ///   <item>Closed derived + non-generic base: passes through unchanged; the normal
+            ///   PolymorphicTypeResolver assignability check applies downstream.</item>
+            /// </list>
             ///
-            /// "Universal" means: there is a single canonical substitution mapping each derived
-            /// type parameter to a base type parameter that simultaneously satisfies every
-            /// matching ancestor of the derived type, with every derived constraint implied by
-            /// (i.e. weaker-than-or-equal-to) the constraints on the corresponding base parameter.
-            /// Registrations that pin a particular specialization (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>)
-            /// are rejected: such registrations would silently work for one base specialization
-            /// and break for another, which we treat as a misregistration regardless of which
-            /// specialization is currently being generated.
+            /// "Universal" (open + generic case) means: there is a single canonical substitution
+            /// mapping each derived type parameter to a base type parameter that simultaneously
+            /// satisfies every matching ancestor of the derived type, with every derived
+            /// constraint implied by (i.e. weaker-than-or-equal-to) the constraints on the
+            /// corresponding base parameter. Registrations that pin a particular specialization
+            /// (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>) are rejected: such registrations
+            /// would silently work for one base specialization and break for another, which we
+            /// treat as a misregistration regardless of which specialization is currently being
+            /// generated.
             ///
-            /// Returns <c>true</c> with the closed derived type. Returns <c>false</c> with a
-            /// localized <paramref name="failureReason"/> suitable for inclusion in
-            /// <c>SYSLIB1229</c>.
+            /// Returns <c>true</c> with <paramref name="resolvedDerivedType"/> set (either the
+            /// closed derived type from unification, or <paramref name="declaredDerived"/> as-is
+            /// for the pass-through case). Returns <c>false</c> with a localized
+            /// <paramref name="failureReason"/> suitable for inclusion in <c>SYSLIB1229</c>.
             ///
-            /// IMPORTANT: This implementation MIRRORS the reflection resolver
+            /// IMPORTANT: The open-derived unification path (per-ancestor unification, canonical-
+            /// substitution consistency check, constraint-equivalence rules) MIRRORS the
+            /// reflection resolver
             /// <c>DefaultJsonTypeInfoResolver.Helpers.TryResolveOpenGenericDerivedType</c> in
-            /// src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs.
-            /// Both implementations -- the per-ancestor unification, the canonical-substitution
-            /// consistency check, and the constraint-subsumption rules -- must be kept in
-            /// lockstep so that source-gen and reflection produce the same closed type for the
-            /// same registration.
+            /// src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs
+            /// and must be kept in lockstep so that source-gen and reflection produce the same
+            /// closed type for the same registration. The reflection-side wrapper splits the
+            /// four-case dispatch differently (it pre-splits the base into definition + args and
+            /// inlines the closed-derived / non-generic-base checks at the caller for caching);
+            /// the unification core is what's mirrored, not the dispatch shape.
             /// </summary>
-            private bool TryResolveOpenGenericDerivedType(
-                INamedTypeSymbol unboundDerived,
+            private bool TryResolveDerivedType(
+                ITypeSymbol declaredDerived,
                 ITypeSymbol baseType,
-                out INamedTypeSymbol? resolvedType,
+                out ITypeSymbol? resolvedDerivedType,
                 out string? failureReason)
             {
-                resolvedType = null;
+                resolvedDerivedType = declaredDerived;
                 failureReason = null;
+
+                if (declaredDerived is not INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                {
+                    if (baseType is INamedTypeSymbol { IsGenericType: true })
+                    {
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase;
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                resolvedDerivedType = null;
 
                 if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
                 {
@@ -1228,7 +1237,7 @@ namespace System.Text.Json.SourceGeneration
                     closedArgs[i] = constructedBaseAllArgs[baseParamPosition[mappedBaseParam]];
                 }
 
-                resolvedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
+                resolvedDerivedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
                 return true;
 
                 static bool SubstitutionsEqual(
