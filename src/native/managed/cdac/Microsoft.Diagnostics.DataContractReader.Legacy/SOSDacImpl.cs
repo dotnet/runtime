@@ -4095,7 +4095,7 @@ public sealed unsafe partial class SOSDacImpl
                     {
                         StackSourceType.InstructionPointer => SOSStackSourceType.SOS_StackSourceIP,
                         StackSourceType.Frame => SOSStackSourceType.SOS_StackSourceFrame,
-                        StackSourceType.ExInfo => SOSStackSourceType.SOS_StackSourceExInfo,
+                        StackSourceType.Other => SOSStackSourceType.SOS_StackSourceOther,
                         _ => throw new NotImplementedException(),
                     },
                     StackPointer = refs[i].StackPointer.Value,
