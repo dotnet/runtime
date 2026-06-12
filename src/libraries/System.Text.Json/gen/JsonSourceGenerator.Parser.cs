@@ -86,25 +86,6 @@ namespace System.Text.Json.SourceGeneration
                 Diagnostics.Add(Diagnostic.Create(descriptor, location, messageArgs));
             }
 
-            /// <summary>
-            /// Emits a <see cref="DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved"/>
-            /// diagnostic at most once per (open base definition, open derived definition) pair across
-            /// the lifetime of this <see cref="Parser"/> instance (i.e., per <see cref="JsonSerializerContext"/>).
-            /// </summary>
-            /// <remarks>
-            /// Whether a derived registration applies universally to a generic base is a property of
-            /// the open forms alone; emitting it once per closed specialization referenced via
-            /// <see cref="JsonSerializableAttribute"/> would spam the user with the same warning for
-            /// every closure of the same base.
-            /// </remarks>
-            private void ReportOpenGenericDerivedTypeDiagnostic(ITypeSymbol baseType, ITypeSymbol derivedType, Location? location, string? failureReason)
-            {
-                if (_diagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
-                {
-                    ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, location, derivedType.ToDisplayString(), baseType.ToDisplayString(), failureReason);
-                }
-            }
-
             public Parser(KnownTypeSymbols knownSymbols)
             {
                 _knownSymbols = knownSymbols;
@@ -1085,6 +1066,19 @@ namespace System.Text.Json.SourceGeneration
                 if (isUnionType)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified);
+                }
+
+                // Emits a SYSLIB1229 diagnostic at most once per (open base definition, open derived definition)
+                // pair across the lifetime of this Parser instance (i.e., per JsonSerializerContext).
+                // Whether a derived registration applies universally to a generic base is a property of the
+                // open forms alone; emitting it once per closed specialization referenced via
+                // JsonSerializableAttribute would spam the user with the same warning for every closure of the same base.
+                void ReportOpenGenericDerivedTypeDiagnostic(ITypeSymbol baseType, ITypeSymbol derivedType, Location? location, string? failureReason)
+                {
+                    if (_diagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
+                    {
+                        ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, location, derivedType.ToDisplayString(), baseType.ToDisplayString(), failureReason);
+                    }
                 }
             }
 
