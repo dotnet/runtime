@@ -948,16 +948,8 @@ namespace System.Text.Json.SourceGeneration
 
                         if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                         {
-                            if (typeToGenerate.Type is not INamedTypeSymbol { IsGenericType: true } constructedBase)
-                            {
-                                // Open derived registered against a non-generic base: no
-                                // closure of the derived can ever be assignable to the base.
-                                ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), SR.Polymorphism_OpenGeneric_Reason_NotAssignable);
-                                continue;
-                            }
-
                             if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, constructedBase,
+                                    unboundDerived, typeToGenerate.Type,
                                     out INamedTypeSymbol? resolvedType, out string? failureReason))
                             {
                                 ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), failureReason);
@@ -1079,9 +1071,10 @@ namespace System.Text.Json.SourceGeneration
 
             /// <summary>
             /// Source-gen-side resolver: validates that <paramref name="unboundDerived"/> applies
-            /// universally to every specialization of <paramref name="constructedBase"/>'s open
-            /// definition, and (when it does) produces the closed derived type for the specific
-            /// closure <paramref name="constructedBase"/>.
+            /// universally to every specialization of <paramref name="baseType"/>'s open definition,
+            /// and (when it does) produces the closed derived type for the specific closure
+            /// <paramref name="baseType"/>. When <paramref name="baseType"/> is not a generic
+            /// <see cref="INamedTypeSymbol"/>, the registration is rejected as unassignable.
             ///
             /// "Universal" means: there is a single canonical substitution mapping each derived
             /// type parameter to a base type parameter that simultaneously satisfies every
@@ -1106,12 +1099,20 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
-                INamedTypeSymbol constructedBase,
+                ITypeSymbol baseType,
                 out INamedTypeSymbol? resolvedType,
                 out string? failureReason)
             {
                 resolvedType = null;
                 failureReason = null;
+
+                if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                {
+                    // Open derived registered against a non-generic base: no closure of the
+                    // derived can ever be assignable to the base.
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                    return false;
+                }
 
                 INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
                 INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
