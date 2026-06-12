@@ -4215,11 +4215,9 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     BasicBlock** const initialLayout = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
 
     // When walking the RPO-based layout, compact the hot blocks, and remember the end of the hot section.
-    // We don't want to waste time running 3-opt on cold blocks, or on handler sections.
     unsigned numHotBlocks  = 0;
     auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
-        // The first block really shouldn't be cold, but if it is, ensure it's still placed first.
-        if (!block->hasHndIndex() && (!block->isBBWeightCold(this) || block->IsFirst()))
+        if (!block->hasHndIndex())
         {
             // Set the block's ordinal.
             block->bbPreorderNum          = numHotBlocks;
