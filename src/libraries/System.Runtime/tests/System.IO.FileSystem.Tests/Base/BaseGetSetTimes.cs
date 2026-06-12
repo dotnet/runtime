@@ -83,7 +83,6 @@ namespace System.IO.Tests
                 bool isLink = linkTarget is not null;
 
                 // Checking that milliseconds are not dropped after setter.
-                // Emscripten drops milliseconds in Browser
                 DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
 
@@ -245,7 +244,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [ConditionalFact] // OSX HFS driver format does not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             CheckHighTemporalResolution();
@@ -283,7 +282,7 @@ namespace System.IO.Tests
         {
             CheckLowTemporalResolution();
             T item = GetExistingItem();
-            // OSX HFS driver format and Browser do not support millisec granularity
+            // OSX HFS driver format does not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>
             {
                 DateTime time = function.Getter(item);
