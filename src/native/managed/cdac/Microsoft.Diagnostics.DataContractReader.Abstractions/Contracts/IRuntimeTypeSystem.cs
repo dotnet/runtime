@@ -131,7 +131,8 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the CorElementType represents a GC-collectable object reference.
+    bool IsCorElementTypeObjRef(CorElementType elementType) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)

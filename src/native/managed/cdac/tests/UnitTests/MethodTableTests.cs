@@ -703,10 +703,10 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(objectTypePtr)));
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(stringTypePtr)));
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(szArrayTypePtr)));
-        Assert.False(contract.IsObjRef(contract.GetTypeHandle(truePrimitiveTypePtr)));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(objectTypePtr))));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(stringTypePtr))));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(szArrayTypePtr))));
+        Assert.False(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(truePrimitiveTypePtr))));
     }
 
     [Theory]

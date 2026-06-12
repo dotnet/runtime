@@ -249,10 +249,10 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle intPtrHandle = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
 
-        Assert.True(rts.IsObjRef(objectHandle));
-        Assert.True(rts.IsObjRef(stringHandle));
-        Assert.True(rts.IsObjRef(objectArrayHandle));
-        Assert.False(rts.IsObjRef(intPtrHandle));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectArrayHandle)));
+        Assert.False(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(intPtrHandle)));
     }
 
     [ConditionalTheory]

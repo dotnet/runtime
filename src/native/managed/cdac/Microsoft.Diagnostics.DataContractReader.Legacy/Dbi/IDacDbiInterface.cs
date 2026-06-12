@@ -307,6 +307,20 @@ public unsafe struct ArgInfoList
     public int m_nEntries;
 }
 
+[StructLayout(LayoutKind.Sequential, Size = 48)]
+public struct DebuggerIPCE_TypeArgData
+{
+    public DebuggerIPCE_ExpandedTypeData data;
+    public uint numTypeArgs; // Portable<UINT>
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct TypeInfoList
+{
+    public DebuggerIPCE_TypeArgData* m_pList;
+    public int m_nEntries;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -571,7 +585,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
+    int GetApproxTypeHandle(TypeInfoList* pTypeData, ulong* pRetVal);
 
     [PreserveSig]
     int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);

@@ -64,8 +64,8 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
-    // True if the type is a GC-collectable object reference.
-    public virtual bool IsObjRef(TypeHandle typeHandle);
+    // True if the CorElementType represents a GC-collectable object reference.
+    public virtual bool IsCorElementTypeObjRef(CorElementType elementType);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
@@ -611,8 +611,12 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
-    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
-
+    public bool IsCorElementTypeObjRef(CorElementType elementType) =>
+        elementType is CorElementType.Class
+            or CorElementType.Object
+            or CorElementType.String
+            or CorElementType.Array
+            or CorElementType.SzArray;
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;

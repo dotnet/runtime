@@ -2286,8 +2286,45 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetApproxTypeHandle(pTypeData, pRetVal) : HResults.E_NOTIMPL;
+    public int GetApproxTypeHandle(TypeInfoList* pTypeData, ulong* pRetVal)
+    {
+        if (pTypeData == null || pRetVal == null)
+            return HResults.E_POINTER;
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer canonMtPtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.CanonMethodTable));
+            TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
+
+            if (pTypeData->m_nEntries <= 0 || pTypeData->m_pList == null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
+            TypeDataWalk walk = new TypeDataWalk(_target, rts, canonTh, pTypeData->m_pList, (uint)pTypeData->m_nEntries);
+            TypeHandle th = walk.ReadLoadedTypeHandle();
+            if (th.IsNull)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            *pRetVal = th.Address.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong vmLocal;
+            int hrLocal = _legacy.GetApproxTypeHandle(pTypeData, &vmLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == vmLocal, $"cDAC: {*pRetVal:x}, DAC: {vmLocal:x}");
+        }
+#endif
+        return hr;
+    }
+
 
     public int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle)
     {
@@ -2379,29 +2416,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         ulong vmAssembly = ReadLittleEndian(pData->vmAssembly);
         uint metadataToken = ReadLittleEndian(pData->metadataToken);
-        return LookupTypeDefOrRefInAssembly(rts, vmAssembly, metadataToken);
-    }
-
-    private TypeHandle LookupTypeDefOrRefInAssembly(IRuntimeTypeSystem rts, ulong vmAssembly, uint metadataToken)
-    {
-        Contracts.ILoader loader = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-        Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-        TargetPointer mt;
-        switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
-        {
-            case EcmaMetadataUtils.TokenType.mdtTypeDef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out _);
-                break;
-            case EcmaMetadataUtils.TokenType.mdtTypeRef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
-                break;
-            default:
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-        }
-        if (mt == TargetPointer.Null)
-            throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-        return rts.GetTypeHandle(mt);
+        return DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
     }
 
     private TypeHandle GetExactArrayTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
@@ -2427,7 +2442,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         ulong vmAssembly = ReadLittleEndian(pTopLevel->ClassTypeData_vmAssembly);
         uint metadataToken = ReadLittleEndian(pTopLevel->ClassTypeData_metadataToken);
-        TypeHandle typeConstructor = LookupTypeDefOrRefInAssembly(rts, vmAssembly, metadataToken);
+        TypeHandle typeConstructor = DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
 
         int argCount = pArgInfo->m_nEntries;
         if (argCount == 0)
@@ -3649,7 +3664,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 // count actually written. Preserve this behavior for compatibility w/ICorDebug.
                 *pceltFetched = celt;
 
-                bool isReferenceType = rts.IsObjRef(typeHandle);
+                bool isReferenceType = rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(typeHandle));
                 uint firstFieldOffset = isReferenceType ? _target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
                 TargetPointer[] fieldDescList = rts.GetFieldDescList(typeHandle).Take((int)cFields).ToArray();
@@ -3779,8 +3794,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 numInstanceFields -= rts.GetNumInstanceFields(parentHandle);
             }
             pLayout->numFields = numInstanceFields;
-            pLayout->boxOffset = rts.IsObjRef(typeHandle) ? 0u : (uint)_target.PointerSize;
-            pLayout->type = (int)(rts.IsString(typeHandle) ? CorElementType.String : rts.GetInternalCorElementType(typeHandle));
+            CorElementType componentType = rts.IsString(typeHandle)
+                ? CorElementType.String
+                : rts.GetInternalCorElementType(typeHandle);
+            pLayout->type = (int)componentType;
+            pLayout->boxOffset = rts.IsCorElementTypeObjRef(componentType) ? 0u : (uint)_target.PointerSize;
         }
         catch (System.Exception ex)
         {
@@ -4720,7 +4738,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
     }
 
-    private static T ReadLittleEndian<T>(T value) where T : unmanaged, IBinaryInteger<T>
+    internal static T ReadLittleEndian<T>(T value) where T : unmanaged, IBinaryInteger<T>
     {
         if (BitConverter.IsLittleEndian)
             return value;
