@@ -44,7 +44,7 @@ namespace System
         // New Delegate Implementation
 
         private object _helperObject;
-        private object _firstParameter;
+        private object _firstParameter; // Keep _firstParameter and _functionPointer next to each other for optimal delegate invoke performance
         private IntPtr _functionPointer;
         private nint _extraFunctionPointerOrData;
 
