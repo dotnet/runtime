@@ -38,7 +38,6 @@ namespace System.Security.Cryptography
         protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
-            ThrowIfPrivateNeeded();
 
             int written;
 
@@ -68,7 +67,6 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
-            ThrowIfPrivateNeeded();
 
             int written = Interop.Crypto.X25519DeriveSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
 
