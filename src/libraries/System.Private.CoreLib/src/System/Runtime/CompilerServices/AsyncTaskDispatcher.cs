@@ -142,8 +142,8 @@ namespace System.Runtime.CompilerServices
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                ulong parentDispatcherId = AsyncProfiler.CaptureParentDispatcherId();
-                ulong dispatcherId = AsyncProfiler.TaskAsyncIds.GetDispatcherId(dispatcher);
+                ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
 
                 if (activeDispatcher != null)
                 {

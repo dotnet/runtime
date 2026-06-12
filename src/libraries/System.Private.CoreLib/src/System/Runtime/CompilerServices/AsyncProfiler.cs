@@ -710,6 +710,34 @@ namespace System.Runtime.CompilerServices
             private static AsyncThreadContext? t_asyncThreadContext;
         }
 
+        internal static partial class DispatcherIds
+        {
+            public static ulong GetDispatcherId(Task dispatcher) => (ulong)dispatcher.Id;
+
+            public static ulong GetDispatcherId(ref AsyncTaskDispatcherInfo info)
+            {
+                if (info.Dispatcher != null)
+                {
+                    return GetDispatcherId(info.Dispatcher);
+                }
+                return 0;
+            }
+
+#if !RUNTIME_ASYNC_SUPPORTED
+            public static unsafe ulong CaptureParentDispatcherId()
+            {
+                AsyncTaskDispatcherInfo* v1 = AsyncTaskDispatcherInfo.t_current;
+                if (v1 == null)
+                {
+                    return 0;
+                }
+
+                AsyncTaskDispatcher? parent = v1->Dispatcher;
+                return parent is not null ? (ulong)parent.Id : 0;
+            }
+#endif
+        }
+
         internal static partial class CreateAsyncContext
         {
             public static void Create(AsyncTaskDispatcher dispatcher, ref Info info, ulong parentDispatcherId, ulong dispatcherId)
@@ -769,27 +797,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal static class TaskAsyncIds
-        {
-            public static ulong GetDispatcherId(Task dispatcher) => (ulong)dispatcher.Id;
-
-            public static ulong GetDispatcherId(ref AsyncTaskDispatcherInfo info)
-            {
-                if (info.Dispatcher != null)
-                {
-                    return GetDispatcherId(info.Dispatcher);
-                }
-                return 0;
-            }
-        }
-
         internal static partial class ResumeAsyncContext
         {
             public static void Resume(ref AsyncTaskDispatcherInfo info)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
-                Resume(ref info, context, TaskAsyncIds.GetDispatcherId(ref info), context.ActiveEventKeywords);
+                Resume(ref info, context, DispatcherIds.GetDispatcherId(ref info), context.ActiveEventKeywords);
 
                 AsyncThreadContext.Release(context);
             }
@@ -820,7 +834,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
                 {
-                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.ContinuationForDiagnostics, currentTimestamp, AsyncEventID.TaskAsync_AppendAsyncCallstack, TaskAsyncIds.GetDispatcherId(dispatcher));
+                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.ContinuationForDiagnostics, currentTimestamp, AsyncEventID.TaskAsync_AppendAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
                 }
             }
 
@@ -830,7 +844,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (!ReferenceEquals(enteringBox, dispatcher.LastContinuation))
                     {
-                        AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.TaskAsync_AppendAsyncCallstack, TaskAsyncIds.GetDispatcherId(dispatcher));
+                        AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.TaskAsync_AppendAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
                     }
                 }
             }
@@ -1645,19 +1659,5 @@ namespace System.Runtime.CompilerServices
                 return rentedArray;
             }
         }
-
-#if !RUNTIME_ASYNC_SUPPORTED
-        internal static unsafe ulong CaptureParentDispatcherId()
-        {
-            AsyncTaskDispatcherInfo* v1 = AsyncTaskDispatcherInfo.t_current;
-            if (v1 == null)
-            {
-                return 0;
-            }
-
-            AsyncTaskDispatcher? parent = v1->Dispatcher;
-            return parent is not null ? (ulong)parent.Id : 0;
-        }
-#endif
     }
 }
