@@ -158,6 +158,9 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
+    assert(genIsValidIntReg(reg));
+    assert(otherReg == REG_NA || genIsValidIntReg(otherReg));
+
     if (otherReg == REG_NA)
     {
         // Only one register is used
@@ -409,10 +412,10 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
+            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
             break;
 
 #else // !TARGET_64BIT
@@ -442,12 +445,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         {
             this->vlType = VLT_REG_FP;
 
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
-            //
-            // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
-            // in eeDispVar() --> getRegName() that regNumber is valid.
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
+            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
             break;
         }
 #endif // FEATURE_SIMD
