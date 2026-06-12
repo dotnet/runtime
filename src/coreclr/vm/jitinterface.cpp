@@ -1085,7 +1085,9 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
-                pMD = pMD->ReturnsTaskOrValueTask() && !pMD->IsCLRToCOMCall() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                // For COM-import interface calls we do not have an async variant of the COM interop stub, and
+                // in any case there would be no benefit of creating one.
+                pMD = pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             }
             break;
 
@@ -9016,7 +9018,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
 
-    if (pMD->ReturnsTaskOrValueTask())
+    if (pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport())
     {
          pAsyncOtherVariant = pMD->GetAsyncVariant();
     }
