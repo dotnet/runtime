@@ -857,5 +857,41 @@ namespace System.Text.Json.SourceGeneration
                 attr.AttributeClass?.Name == attributeName &&
                 attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
         }
+
+        /// <summary>
+        /// Returns an <see cref="IEqualityComparer{T}"/> for value tuples of two elements that
+        /// delegates equality and hashing of each tuple component to the corresponding element
+        /// comparer. Useful when neither component has a usable default comparer (e.g. Roslyn
+        /// symbol types, where <see cref="SymbolEqualityComparer.Default"/> must be used).
+        /// </summary>
+        public static IEqualityComparer<(T1, T2)> CreateTupleComparer<T1, T2>(
+            IEqualityComparer<T1> firstComparer,
+            IEqualityComparer<T2> secondComparer)
+        {
+            return new TupleComparer<T1, T2>(firstComparer, secondComparer);
+        }
+
+        private sealed class TupleComparer<T1, T2> : IEqualityComparer<(T1, T2)>
+        {
+            private readonly IEqualityComparer<T1> _firstComparer;
+            private readonly IEqualityComparer<T2> _secondComparer;
+
+            public TupleComparer(IEqualityComparer<T1> firstComparer, IEqualityComparer<T2> secondComparer)
+            {
+                _firstComparer = firstComparer;
+                _secondComparer = secondComparer;
+            }
+
+            public bool Equals((T1, T2) x, (T1, T2) y) =>
+                _firstComparer.Equals(x.Item1, y.Item1) &&
+                _secondComparer.Equals(x.Item2, y.Item2);
+
+            public int GetHashCode((T1, T2) obj)
+            {
+                int h1 = obj.Item1 is null ? 0 : _firstComparer.GetHashCode(obj.Item1);
+                int h2 = obj.Item2 is null ? 0 : _secondComparer.GetHashCode(obj.Item2);
+                return unchecked(h1 * 397 ^ h2);
+            }
+        }
     }
 }

@@ -63,22 +63,12 @@ namespace System.Text.Json.SourceGeneration
             // universally applicable to a generic base is a property of the open forms alone, so the
             // diagnostic must fire at most once per (open base, derived) pair regardless of how many
             // closed specializations of the base appear in [JsonSerializable] attributes.
-            private readonly HashSet<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)> _diagnosedOpenDerivedRegistrations =
+            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_baseDerivedDefinitionPairComparer =
+                RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
+
+            private readonly HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> _diagnosedOpenDerivedRegistrations =
                 new(s_baseDerivedDefinitionPairComparer);
 #pragma warning restore
-
-            private static readonly IEqualityComparer<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)> s_baseDerivedDefinitionPairComparer =
-                new BaseDerivedDefinitionPairComparer();
-
-            private sealed class BaseDerivedDefinitionPairComparer : IEqualityComparer<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)>
-            {
-                public bool Equals((ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) x, (ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) y) =>
-                    SymbolEqualityComparer.Default.Equals(x.BaseDefinition, y.BaseDefinition) &&
-                    SymbolEqualityComparer.Default.Equals(x.DerivedDefinition, y.DerivedDefinition);
-
-                public int GetHashCode((ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) obj) =>
-                    unchecked(SymbolEqualityComparer.Default.GetHashCode(obj.BaseDefinition) * 397 ^ SymbolEqualityComparer.Default.GetHashCode(obj.DerivedDefinition));
-            }
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
