@@ -196,6 +196,20 @@ public class OffsetLimit
         Assert.Equal(want, got);
     }
 
+    // When the array is shorter than the constant offset, `a.Length - K` is
+    // negative and the decreasing loop steps past index 0. The source loop
+    // throws IndexOutOfRangeException; the `arr.Length + offset >= 0` guard
+    // in loop cloning must keep the fast (bounds-check-free) clone from
+    // silently accepting these accesses.
+    [Theory]
+    [InlineData(2, 3)]
+    [InlineData(0, 1)]
+    public static void DecGtArrayLengthMinusKShortArrayTest(int initVal, int len)
+    {
+        int[] a = MakeArray(len);
+        Assert.Throws<IndexOutOfRangeException>(() => DecGtArrayLengthMinusK(a, initVal));
+    }
+
     [Theory]
     [InlineData(5)]
     [InlineData(50)]

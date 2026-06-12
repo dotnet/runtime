@@ -1464,7 +1464,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Condition geZero;
         if (isIncreasingLoop)
         {
-            // For increasing loop, thelimit value needs to be checked against the array length
+            // For increasing loop, the limit value needs to be checked against the array length
             ident  = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
             geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident::CreateConst(0u)));
         }
