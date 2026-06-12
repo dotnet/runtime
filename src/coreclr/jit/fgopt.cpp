@@ -4216,7 +4216,7 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
 
     // When walking the RPO-based layout, compact the hot blocks, and remember the end of the hot section.
     unsigned numHotBlocks  = 0;
-    auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
+    auto     addToSequence = [initialLayout, &numHotBlocks](BasicBlock* block) {
         if (!block->hasHndIndex())
         {
             // Set the block's ordinal.
