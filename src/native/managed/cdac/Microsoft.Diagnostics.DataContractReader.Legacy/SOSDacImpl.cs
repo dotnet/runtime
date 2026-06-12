@@ -3456,17 +3456,25 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl is not null)
         {
             char[] stringDataLocal = new char[count];
-            uint neededLocal;
+            uint neededLocal = 0;
             int hrLocal;
             fixed (char* ptr = stringDataLocal)
             {
-                hrLocal = _legacyImpl.GetObjectStringData(obj, count, ptr, &neededLocal);
+                // Invoke the legacy DAC under the same argument contract the caller gave the cDAC:
+                // only pass an output buffer when the caller did, and only request the size-out when
+                // the caller did. This keeps the HRESULT comparison apples-to-apples.
+                char* stringDataArg = stringData is null ? null : ptr;
+                uint* pNeededArg = pNeeded is null ? null : &neededLocal;
+                hrLocal = _legacyImpl.GetObjectStringData(obj, count, stringDataArg, pNeededArg);
             }
+
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(stringData)));
+                // Compare against the legacy buffer using the cDAC string length: neededLocal is only
+                // populated when a size-out was requested from the legacy DAC (mirroring the caller).
+                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, new string(stringData).Length).SequenceEqual(new string(stringData)));
             }
         }
 #endif
@@ -6712,7 +6720,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.LockedFlush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyImpl13 is not null)

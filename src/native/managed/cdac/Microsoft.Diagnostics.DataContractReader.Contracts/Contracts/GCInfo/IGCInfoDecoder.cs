@@ -11,6 +11,7 @@ internal interface IGCInfoDecoder : IGCInfoHandle
 {
     uint GetCodeLength();
     uint GetStackBaseRegister();
+    uint GetSizeOfStackParameterArea();
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
 }

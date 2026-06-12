@@ -53,7 +53,7 @@ public sealed class FieldAttribute : Attribute
 
     /// <summary>
     /// One or more candidate descriptor field names tried in priority order.
-    /// The cdac LayoutPair cascade tries each name against the native cdac
+    /// The cdac LayoutSet cascade tries each name against the native cdac
     /// descriptor first; if none match (or the native descriptor isn't
     /// available), it then tries each name against the managed type metadata.
     /// </summary>
