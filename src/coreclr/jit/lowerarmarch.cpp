@@ -84,7 +84,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         }
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
@@ -849,9 +849,9 @@ void Lowering::LowerRotate(GenTree* tree)
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+            ssize_t rotateLeftIndex  = rotateLeftIndexNode->AsIntCon()->IconValue();
+            ssize_t rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->AsIntCon()->SetIconValue(rotateRightIndex);
         }
         else
         {
@@ -1934,7 +1934,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 
     if (op1->IsCnsIntOrI())
     {
-        const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
+        const ssize_t dataValue = op1->AsIntCon()->IconValue();
         return m_compiler->GetEmitter()->emitIns_valid_imm_for_movi(dataValue,
                                                                     emitActualTypeSize(node->GetSimdBaseType()));
     }

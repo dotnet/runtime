@@ -928,7 +928,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 GenTree* cns1Tree = addr->AsOp()->gtOp1;
                 if (!cns1Tree->IsIconHandle())
                 {
-                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->IconValue()))
                     {
                         // Op1 was an ordinary small constant
                         return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -943,7 +943,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                         // Is this an addition of a handle and constant
                         if (!cns2Tree->IsIconHandle())
                         {
-                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                             {
                                 // Op2 was an ordinary small constant
                                 return false; // we can't have a null address
@@ -961,7 +961,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                     // Is this an addition of a small constant
                     if (!cns2Tree->IsIconHandle())
                     {
-                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                         {
                             // Op2 was an ordinary small constant
                             return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
@@ -1058,7 +1058,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         if (handleNode->OperIs(GT_CNS_INT))
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
-            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
+            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->GetCompileTimeHandle());
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
@@ -1094,7 +1094,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
         noway_assert(tokenNode->OperIs(GT_CNS_INT));
-        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
+        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->GetCompileTimeHandle());
     }
 
     // Verify using the ldftnToken gives us all of what we used to get
@@ -6848,9 +6848,20 @@ genTreeOps NaturalLoopIterInfo::TestOper()
 bool NaturalLoopIterInfo::IsIncreasingLoop()
 {
     // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0))));
+    // We also recognize "!=" against a limit when the IV step is exactly +1 (or -1 with GT_SUB):
+    // such loops visit indices [init, limit) provided that "init <= limit" holds on entry.
+    // Stride must be ±1 to avoid parity/overflow issues where the IV could skip past the limit
+    // (e.g. "for (i = 0; i != 5; i += 2)" never terminates and wraps around).
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_LT, GT_LE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == 1)) || ((IterOper() == GT_SUB) && (IterConst() == -1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6864,9 +6875,18 @@ bool NaturalLoopIterInfo::IsDecreasingLoop()
 {
     // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
     // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0))));
+    // As with IsIncreasingLoop, we also recognize "!=" against a limit when the IV step is exactly -1
+    // (or +1 with GT_SUB); the stride must be exactly +/-1 to avoid parity/overflow issues.
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_GT, GT_GE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == -1)) || ((IterOper() == GT_SUB) && (IterConst() == 1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6906,7 +6926,7 @@ int NaturalLoopIterInfo::ConstLimit()
     assert(HasConstLimit);
     GenTree* limit = Limit();
     assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
+    return (int)limit->AsIntCon()->IconValue();
 }
 
 //------------------------------------------------------------------------
@@ -7744,6 +7764,19 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
     for (BasicBlock* block : comp->Blocks())
     {
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+
         if (!block->hasTryIndex())
         {
             continue;
@@ -7816,6 +7849,16 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                 if (region != nullptr)
                 {
+                    // If this block lives in a different handler region than the
+                    // parent try's begin block, the block is inside a funclet
+                    // that is nested inside the parent try's IL range but is
+                    // not part of the parent try's code body. Don't add it to
+                    // the parent region.
+                    //
+                    if (!includeHandlerBlocks && !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    {
+                        break;
+                    }
                     tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
@@ -7824,19 +7867,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             // This is a handler block inside a try.
             // For flow purposes we may consider it to be outside the try.
-        }
-
-        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
-        // as requiring runtime resumption.
-        //
-        if (block->KindIs(BBJ_EHCATCHRET))
-        {
-            assert(block->hasHndIndex());
-            unsigned const            ehRegionIndex        = block->getHndIndex();
-            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
-            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
-
-            dispatchingTryRegion->SetRequiresRuntimeResumption();
         }
     }
 
