@@ -63,6 +63,11 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
+            // SYSLIB1229 dedup set: emit at most once per (open base definition, open derived
+            // definition) pair across the lifetime of this Parser. Whether a derived registration
+            // applies universally to a generic base is a property of the open forms alone; without
+            // dedup we'd spam the same diagnostic for every closure of the same base referenced via
+            // JsonSerializableAttribute.
             private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations => field ??= new(s_typePairComparer);
 
             public List<Diagnostic> Diagnostics { get; } = new();
@@ -950,7 +955,10 @@ namespace System.Text.Json.SourceGeneration
                                 derivedType, typeToGenerate.Type,
                                 out ITypeSymbol? resolvedDerivedType, out string? failureReason))
                         {
-                            ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), failureReason);
+                            if (DiagnosedOpenDerivedRegistrations.Add((typeToGenerate.Type.OriginalDefinition, derivedType.OriginalDefinition)))
+                            {
+                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
+                            }
                             continue;
                         }
 
@@ -1036,19 +1044,6 @@ namespace System.Text.Json.SourceGeneration
                 if (isUnionType)
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified);
-                }
-
-                // Emits a SYSLIB1229 diagnostic at most once per (open base definition, open derived definition)
-                // pair across the lifetime of this Parser instance (i.e., per JsonSerializerContext).
-                // Whether a derived registration applies universally to a generic base is a property of the
-                // open forms alone; emitting it once per closed specialization referenced via
-                // JsonSerializableAttribute would spam the user with the same warning for every closure of the same base.
-                void ReportOpenGenericDerivedTypeDiagnostic(ITypeSymbol baseType, ITypeSymbol derivedType, Location? location, string? failureReason)
-                {
-                    if (DiagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
-                    {
-                        ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, location, derivedType.ToDisplayString(), baseType.ToDisplayString(), failureReason);
-                    }
                 }
             }
 
