@@ -12462,11 +12462,14 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     forceInterpreter = true;
     if (ShouldUseInterpreterFallback(ftnName))
     {
-	printf ("Function name is %s\n", ftnName);
+	printf ("Jitting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
 	interpreterFallback = true;
     }
     else
+    {
+	printf ("Interpreting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
         interpreterFallback = false;
+    }
 #endif
 
     if (interpreterFallback == false)
