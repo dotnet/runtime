@@ -9,7 +9,7 @@ on:
       - ppc64le_coreclr_jit
   workflow_dispatch:
   schedule:
-    - cron: "20 0 * * *"
+    - cron: '30 23 * * *'
 
 concurrency:
   group: jit-testing-${{ github.ref }}
