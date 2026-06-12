@@ -1097,7 +1097,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fgForwardSubMultiUse(nextStmt, lclNum, fwdSubNode))
         {
-            JITDUMP(" multi-use sub did not find enough uses\n");
+            JITDUMP(" multi-use sub found too few or too many uses\n");
             return false;
         }
 
