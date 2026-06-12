@@ -55,6 +55,15 @@
 
 #include "jitpch.h"
 #include "scev.h"
+#include "ssabuilder.h"
+
+static void optReplaceIVUses(Compiler*                   comp,
+                             unsigned                    lclNum,
+                             unsigned                    newLclNum,
+                             BasicBlock*                 block,
+                             Statement*                  stmt,
+                             IncrementalSsaBuilder*      ssaBuilder,
+                             ArrayStack<UseDefLocation>* uses);
 
 // Data structure that keeps track of per-loop info, like occurrences and suspension-points inside loops.
 class PerLoopInfo
@@ -895,8 +904,10 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     }
 
     // If the IV is not enregisterable, or if it lives into a handler, then
-    // uses/defs are going to go to stack regardless.
-    if (lclDsc->lvDoNotEnregister || lclDsc->IsLiveInOutOfHandler())
+    // uses/defs are going to go to stack regardless. Note that the
+    // live-in/out-of-handler state is only meaningful for tracked locals; newly
+    // introduced SSA IVs (e.g. from enregisterable IV replacement) are untracked.
+    if (lclDsc->lvDoNotEnregister || (lclDsc->lvTracked && lclDsc->IsLiveInOutOfHandler()))
     {
         JITDUMP("  V%02u is marked DNER or lives into a handler\n", lclNum);
         return false;
@@ -1087,7 +1098,9 @@ bool Compiler::optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, 
 {
     JITDUMP("Considering primary IVs of " FMT_LP " for enregisterable replacement\n", loop->GetIndex());
 
-    unsigned numReplaced = 0;
+    // Collect the candidate header phis first. Replacing an IV deletes its
+    // header phi, which would otherwise invalidate the iteration below.
+    ArrayStack<Statement*> candidates(getAllocator(CMK_LoopOpt));
     for (Statement* stmt : loop->GetHeader()->Statements())
     {
         if (!stmt->IsPhiDefnStmt())
@@ -1133,7 +1146,15 @@ bool Compiler::optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, 
             continue;
         }
 
-        if (optTryReplaceUnenregisterablePrimaryIV(loop, lclNum, loopInfo))
+        candidates.Push(stmt);
+    }
+
+    unsigned numReplaced = 0;
+    for (int i = 0; i < candidates.Height(); i++)
+    {
+        Statement* headerPhiStmt = candidates.Bottom(i);
+        unsigned   lclNum        = headerPhiStmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        if (optTryReplaceUnenregisterablePrimaryIV(loop, lclNum, headerPhiStmt, loopInfo))
         {
             numReplaced++;
         }
@@ -1144,28 +1165,70 @@ bool Compiler::optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, 
 }
 
 //------------------------------------------------------------------------
+// optGetPrimaryIVEntryArg: Get the entry (non-backedge) phi argument of a
+// primary IV's header phi.
+//
+// Parameters:
+//   loop          - The loop
+//   headerPhiStmt - The IV's header phi definition statement
+//
+// Returns:
+//   The single entry phi argument, or nullptr if there is more than one.
+//
+GenTreePhiArg* Compiler::optGetPrimaryIVEntryArg(FlowGraphNaturalLoop* loop, Statement* headerPhiStmt)
+{
+    GenTreePhi*    phi      = headerPhiStmt->GetRootNode()->AsLclVar()->Data()->AsPhi();
+    GenTreePhiArg* entryArg = nullptr;
+    for (GenTreePhi::Use& use : phi->Uses())
+    {
+        GenTreePhiArg* arg = use.GetNode()->AsPhiArg();
+        if (loop->ContainsBlock(arg->gtPredBB))
+        {
+            continue;
+        }
+
+        if (entryArg != nullptr)
+        {
+            // More than one entry edge.
+            return nullptr;
+        }
+
+        entryArg = arg;
+    }
+
+    return entryArg;
+}
+
+//------------------------------------------------------------------------
 // optTryReplaceUnenregisterablePrimaryIV: Try to replace a primary IV that
 // cannot be enregistered with a fresh enregisterable local.
 //
 // Parameters:
-//   loop     - The loop
-//   lclNum   - The primary IV
-//   loopInfo - Data structure for tracking loop info, like local occurrences
+//   loop          - The loop
+//   lclNum        - The primary IV
+//   headerPhiStmt - The IV's header phi definition statement
+//   loopInfo      - Data structure for tracking loop info, like local occurrences
 //
 // Returns:
 //   True if the IV was replaced.
 //
 // Remarks:
-//   The original local keeps holding the correct value outside the loop: we
-//   initialize the new local from it in the preheader and store the new local
-//   back into it in the loop's regular exits where it is live.
+//   The new local is created as a proper SSA induction variable (with its own
+//   header phi) using IncrementalSsaBuilder, so that the subsequent
+//   scalar-evolution-based optimizations (strength reduction, widening) can
+//   optimize it. The old IV's header phi is deleted so that those optimizations
+//   do not analyze it (it no longer has an in-loop store). The original local
+//   keeps holding the correct value outside the loop: we initialize the new
+//   local in the preheader and store it back into the original in the loop's
+//   regular exits where it is live. SSA for the old IV is left invalid, which
+//   is acceptable since SSA is torn down at the end of this phase.
 //
 bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop,
                                                       unsigned              lclNum,
+                                                      Statement*            headerPhiStmt,
                                                       PerLoopInfo*          loopInfo)
 {
-    JITDUMP("  V%02u is a primary IV that is live in/out of a handler; trying to replace it with an enregisterable "
-            "local\n",
+    JITDUMP("  V%02u is a primary IV that cannot be enregistered; trying to replace it with an enregisterable local\n",
             lclNum);
 
     // A fresh local would have to be marked DNER if the IV is accessed as a
@@ -1185,46 +1248,98 @@ bool Compiler::optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop
         return false;
     }
 
-    LclVarDsc* lclDsc    = lvaGetDesc(lclNum);
-    var_types  ivType    = lclDsc->TypeGet();
-    unsigned   newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Enregisterable replacement for IV V%02u", lclNum)));
-    INDEBUG(lclDsc = nullptr);
+    var_types ivType    = lvaGetDesc(lclNum)->TypeGet();
+    unsigned  newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Enregisterable replacement for IV V%02u", lclNum)));
+    lvaGetDesc(newLclNum)->lvType = ivType;
 
-    // Initialize the new local from the IV in the preheader.
-    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-    GenTree*    initVal   = gtNewLclvNode(lclNum, ivType);
-    GenTree*    initStore = gtNewTempStore(newLclNum, initVal);
-    Statement*  initStmt  = fgNewStmtFromTree(initStore);
+    // Determine the value the IV enters the loop with (and its VN) from the
+    // entry argument of the header phi. When that value is a constant we
+    // initialize the new local to the constant directly to avoid a
+    // store-then-reload round trip.
+    GenTree*       initVal  = nullptr;
+    GenTreePhiArg* entryArg = optGetPrimaryIVEntryArg(loop, headerPhiStmt);
+    if (entryArg != nullptr)
+    {
+        LclSsaVarDsc* entrySsa = lvaGetDesc(lclNum)->GetPerSsaData(entryArg->GetSsaNum());
+        GenTree*      entryDef = entrySsa->GetDefNode() == nullptr ? nullptr : entrySsa->GetDefNode()->Data();
+        if ((entryDef != nullptr) && entryDef->IsIntegralConst())
+        {
+            initVal = gtCloneExpr(entryDef);
+        }
+        else
+        {
+            GenTreeLclVar* initUse = gtNewLclvNode(lclNum, ivType);
+            initUse->SetSsaNum(entryArg->GetSsaNum());
+            initUse->gtVNPair = entrySsa->m_vnPair;
+            initVal           = initUse;
+        }
+    }
+    else
+    {
+        initVal = gtNewLclvNode(lclNum, ivType);
+    }
+
+    IncrementalSsaBuilder      ssaBuilder(this, newLclNum);
+    ArrayStack<UseDefLocation> uses(getAllocator(CMK_LoopOpt));
+
+    // First definition: initialization of the new local in the preheader.
+    BasicBlock*    preheader = loop->EntryEdge(0)->getSourceBlock();
+    GenTreeLclVar* initStore = gtNewStoreLclVarNode(newLclNum, initVal);
+    Statement*     initStmt  = fgNewStmtFromTree(initStore);
     fgInsertStmtNearEnd(preheader, initStmt);
+    ssaBuilder.InsertDef(UseDefLocation(preheader, initStmt, initStore));
 
     JITDUMP("    Initializing replacement V%02u in preheader " FMT_BB "\n", newLclNum, preheader->bbNum);
     DISPSTMT(initStmt);
     JITDUMP("\n");
 
-    // Replace all occurrences of the IV inside the loop with the new local.
+    // Rename all in-loop occurrences of the IV (except the header phi) to the
+    // new local, collecting the new definitions and uses for SSA construction.
     JITDUMP("    Replacing V%02u with V%02u inside the loop\n", lclNum, newLclNum);
-    loopInfo->VisitStatementsWithOccurrences(loop, lclNum, [=](BasicBlock* block, Statement* stmt) {
-        optReplaceIVUses(lclNum, newLclNum, stmt);
-        return true;
-    });
+    loopInfo->VisitStatementsWithOccurrences(loop, lclNum,
+                                             [=, &ssaBuilder, &uses](BasicBlock* block, Statement* stmt) {
+                                                 if (stmt != headerPhiStmt)
+                                                 {
+                                                     optReplaceIVUses(this, lclNum, newLclNum, block, stmt, &ssaBuilder,
+                                                                      &uses);
+                                                 }
+                                                 return true;
+                                             });
+
+    // Delete the old IV's header phi so the scalar-evolution-based optimizations
+    // below do not analyze the old IV, which no longer has an in-loop store.
+    JITDUMP("    Removing old header phi " FMT_STMT "\n", headerPhiStmt->GetID());
+    fgRemoveStmt(loop->GetHeader(), headerPhiStmt);
 
     // Store the final value back into the original local in the loop's regular
     // exits where it is live, so that uses after the loop see the right value.
-    loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+    loop->VisitRegularExitBlocks([=, &uses](BasicBlock* exit) {
         if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             return BasicBlockVisit::Continue;
         }
 
-        GenTree*   store   = gtNewStoreLclVarNode(lclNum, gtNewLclvNode(newLclNum, ivType));
-        Statement* newStmt = fgNewStmtFromTree(store);
+        GenTreeLclVar* newUse  = gtNewLclvNode(newLclNum, ivType);
+        GenTree*       store   = gtNewStoreLclVarNode(lclNum, newUse);
+        Statement*     newStmt = fgNewStmtFromTree(store);
         JITDUMP("    V%02u is live into exit block " FMT_BB "; storing replacement V%02u back\n", lclNum, exit->bbNum,
                 newLclNum);
         DISPSTMT(newStmt);
         fgInsertStmtAtBeg(exit, newStmt);
+        uses.Emplace(exit, newStmt, newUse);
 
         return BasicBlockVisit::Continue;
     });
+
+    // Finalize SSA for the new local: register each use against its reaching
+    // definition, creating the new IV's header phi lazily as needed.
+    if (ssaBuilder.FinalizeDefs())
+    {
+        for (int i = 0; i < uses.Height(); i++)
+        {
+            ssaBuilder.InsertUse(uses.Bottom(i));
+        }
+    }
 
     loopInfo->Invalidate(loop);
     return true;
@@ -1359,21 +1474,41 @@ bool Compiler::optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGr
 }
 
 //------------------------------------------------------------------------
-// optReplaceIVUses: Replace all occurrences of a local in a statement with a
-// new local of the same type.
+// optReplaceIVUses: Replace all non-phi occurrences of a local in a statement
+// with a new local of the same type, recording the resulting definitions and
+// uses for incremental SSA construction.
 //
 // Parameters:
-//   lclNum    - Local to replace
-//   newLclNum - Local to replace it with
-//   stmt      - The statement to replace uses in
+//   comp       - Compiler instance
+//   lclNum     - Local to replace
+//   newLclNum  - Local to replace it with
+//   block      - The block containing the statement
+//   stmt       - The statement to replace uses in
+//   ssaBuilder - Incremental SSA builder for "newLclNum"; new definitions are
+//                registered into it
+//   uses       - [in, out] List that new uses are appended to
 //
-void Compiler::optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* stmt)
+// Remarks:
+//   Phi definitions are intentionally left alone; the IV's header phi is
+//   deleted separately by the caller.
+//
+static void optReplaceIVUses(Compiler*                   comp,
+                             unsigned                    lclNum,
+                             unsigned                    newLclNum,
+                             BasicBlock*                 block,
+                             Statement*                  stmt,
+                             IncrementalSsaBuilder*      ssaBuilder,
+                             ArrayStack<UseDefLocation>* uses)
 {
     struct ReplaceVisitor : GenTreeVisitor<ReplaceVisitor>
     {
     private:
-        unsigned m_lclNum;
-        unsigned m_newLclNum;
+        unsigned                    m_lclNum;
+        unsigned                    m_newLclNum;
+        BasicBlock*                 m_block;
+        Statement*                  m_stmt;
+        IncrementalSsaBuilder*      m_ssaBuilder;
+        ArrayStack<UseDefLocation>* m_uses;
 
     public:
         bool MadeChanges = false;
@@ -1383,22 +1518,42 @@ void Compiler::optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* 
             DoPreOrder = true,
         };
 
-        ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned newLclNum)
+        ReplaceVisitor(Compiler*                   comp,
+                       unsigned                    lclNum,
+                       unsigned                    newLclNum,
+                       BasicBlock*                 block,
+                       Statement*                  stmt,
+                       IncrementalSsaBuilder*      ssaBuilder,
+                       ArrayStack<UseDefLocation>* uses)
             : GenTreeVisitor(comp)
             , m_lclNum(lclNum)
             , m_newLclNum(newLclNum)
+            , m_block(block)
+            , m_stmt(stmt)
+            , m_ssaBuilder(ssaBuilder)
+            , m_uses(uses)
         {
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* node = *use;
-            // Note that we intentionally do not visit GT_PHI_ARG nodes; the
-            // header PHI keeps referencing the old local's SSA defs, just like
-            // IV widening does.
-            if (node->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            if (node->OperIs(GT_STORE_LCL_VAR) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
             {
-                node->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                // Leave phi definitions alone; the header phi is deleted separately.
+                if (node->AsLclVar()->Data()->OperIs(GT_PHI))
+                {
+                    return fgWalkResult::WALK_CONTINUE;
+                }
+
+                node->AsLclVar()->SetLclNum(m_newLclNum);
+                m_ssaBuilder->InsertDef(UseDefLocation(m_block, m_stmt, node->AsLclVar()));
+                MadeChanges = true;
+            }
+            else if (node->OperIs(GT_LCL_VAR) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                node->AsLclVar()->SetLclNum(m_newLclNum);
+                m_uses->Emplace(m_block, m_stmt, node->AsLclVar());
                 MadeChanges = true;
             }
 
@@ -1406,12 +1561,12 @@ void Compiler::optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* 
         }
     };
 
-    ReplaceVisitor visitor(this, lclNum, newLclNum);
+    ReplaceVisitor visitor(comp, lclNum, newLclNum, block, stmt, ssaBuilder, uses);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     if (visitor.MadeChanges)
     {
-        gtSetStmtInfo(stmt);
-        fgSetStmtSeq(stmt);
+        comp->gtSetStmtInfo(stmt);
+        comp->fgSetStmtSeq(stmt);
         JITDUMP("New tree:\n");
         DISPTREE(stmt->GetRootNode());
         JITDUMP("\n");
@@ -3265,6 +3420,15 @@ PhaseStatus Compiler::optInductionVariables()
             continue;
         }
 
+        // Replace primary IVs that cannot be enregistered with fresh
+        // enregisterable locals first, so that the new IVs become candidates
+        // for the scalar-evolution-based optimizations below (strength
+        // reduction, widening).
+        if (optReplaceUnenregisterablePrimaryIVs(loop, &loopInfo))
+        {
+            changed = true;
+        }
+
         StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopInfo);
         if (strengthReductionContext.TryStrengthReduce())
         {
@@ -3290,24 +3454,6 @@ PhaseStatus Compiler::optInductionVariables()
 #endif
 
         if (optRemoveUnusedIVs(loop, &loopInfo))
-        {
-            changed = true;
-        }
-    }
-
-    // Replacing primary IVs that cannot be enregistered with fresh enregisterable
-    // locals breaks SSA (it renames defs in place and adds new stores). We
-    // therefore do it in a separate pass, after all scalar-evolution-based
-    // optimizations have run for every loop, so that no further scalar evolution
-    // analysis observes the broken SSA.
-    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
-    {
-        if (loop->GetPreheader() == nullptr)
-        {
-            continue;
-        }
-
-        if (optReplaceUnenregisterablePrimaryIVs(loop, &loopInfo))
         {
             changed = true;
         }

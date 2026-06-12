@@ -8169,10 +8169,13 @@ public:
 
     bool optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
     bool optPrimaryIVStaysEHLiveAfterReplacement(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, PerLoopInfo* loopLocals);
+    GenTreePhiArg* optGetPrimaryIVEntryArg(FlowGraphNaturalLoop* loop, Statement* headerPhiStmt);
+    bool           optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop,
+                                                          unsigned              lclNum,
+                                                          Statement*            headerPhiStmt,
+                                                          PerLoopInfo*          loopLocals);
     bool optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGraphNaturalLoop* loop);
-    void optReplaceIVUses(unsigned lclNum, unsigned newLclNum, Statement* stmt);
 
     // Redundant branch opts
     //
