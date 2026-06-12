@@ -574,10 +574,6 @@ RELEASE_CONFIG_INTEGER(JitInlineSIMDMultiplier, "JitInlineSIMDMultiplier", 3)
 // Ex lclMAX_TRACKED constant.
 RELEASE_CONFIG_INTEGER(JitMaxLocalsToTrack, "JitMaxLocalsToTrack", 0x400)
 
-#if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
-RELEASE_CONFIG_INTEGER(JitNoRngChks, "JitNoRngChks", 0) // If 1, don't generate range checks
-#endif
-
 OPT_CONFIG_INTEGER(JitDoAssertionProp, "JitDoAssertionProp", 1) // Perform assertion propagation optimization
 OPT_CONFIG_INTEGER(JitDoCopyProp, "JitDoCopyProp", 1) // Perform copy propagation on variables that appear redundant
 OPT_CONFIG_INTEGER(JitDoOptimizeIVs, "JitDoOptimizeIVs", 1)     // Perform optimization of induction variables

@@ -4958,23 +4958,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     return nullptr;
 }
 
-/*****************************************************************************
- *
- *  Given a tree with an array bounds check node, eliminate it because it was
- *  checked already in the program.
- */
-GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
-{
-    // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
-    // When processing visits the bounds check, it sets the throw kind to None if the check is redundant.
-    if (tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK) && ((tree->gtGetOp1()->gtFlags & GTF_CHK_INDEX_INBND) != 0))
-    {
-        optRemoveCommaBasedRangeCheck(tree, stmt);
-        return optAssertionProp_Update(tree, tree, stmt);
-    }
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // optAssertionProp_Ind: see if we can prove the indirection can't cause
 //    and exception.
@@ -5458,59 +5441,34 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  */
 GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
+    assert(tree->OperIs(GT_BOUNDS_CHECK));
     if (optLocalAssertionProp)
     {
+        // We don't have the right kind of assertions to optimize bounds checks in local assertion prop.
         return nullptr;
     }
-
-    assert(tree->OperIs(GT_BOUNDS_CHECK));
-
-#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-    if (JitConfig.JitNoRngChks())
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nFlagging check redundant due to JitNoRngChks in " FMT_BB ":\n", compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
-        }
-#endif // DEBUG
-        tree->gtFlags |= GTF_CHK_INDEX_INBND;
-        return nullptr;
-    }
-#endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
     GenTreeBoundsChk* arrBndsChk    = tree->AsBoundsChk();
     GenTree*          arrBndsChkIdx = arrBndsChk->GetIndex();
     GenTree*          arrBndsChkLen = arrBndsChk->GetArrayLength();
-    ValueNum          vnCurIdx      = vnStore->VNConservativeNormalValue(arrBndsChkIdx->gtVNPair);
-    ValueNum          vnCurLen      = vnStore->VNConservativeNormalValue(arrBndsChkLen->gtVNPair);
+    ValueNum          vnCurIdx      = optConservativeNormalVN(arrBndsChkIdx);
+    ValueNum          vnCurLen      = optConservativeNormalVN(arrBndsChkLen);
 
     auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
-        JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
+        JITDUMP("\nRemoving redundant (%s) bounds check in " FMT_BB ":\n", reason, compCurBB->bbNum);
         DISPTREE(tree);
-        if (arrBndsChk != stmt->GetRootNode())
-        {
-            // Defer the removal.
-            arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
-            return nullptr;
-        }
 
-        GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
-        return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+        // Extract the side-effects of idx and len without taking the root (GT_BOUNDS_CHECK itself) into account.
+        GenTree* nothing = gtWrapWithSideEffects(gtNewNothingNode(), tree, GTF_ALL_EFFECT, /*ignoreRoot*/ true);
+        return optAssertionProp_Update(nothing, arrBndsChk, stmt);
     };
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        AssertionIndex assertionIndex = GetAssertionIndex(index);
-        if (assertionIndex > optAssertionCount)
-        {
-            break;
-        }
         // If it is not a nothrow assertion, skip.
-        const AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
+        const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.IsBoundsCheckNoThrow())
         {
             continue;
@@ -5652,6 +5610,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
         }
     }
+
     return nullptr;
 }
 
@@ -5799,9 +5758,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_BOUNDS_CHECK:
             return optAssertionProp_BndsChk(assertions, tree, stmt);
-
-        case GT_COMMA:
-            return optAssertionProp_Comma(assertions, tree, stmt);
 
         case GT_CAST:
             return optAssertionProp_Cast(assertions, tree->AsCast(), stmt, block);
