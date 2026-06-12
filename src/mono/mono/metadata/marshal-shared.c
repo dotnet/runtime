@@ -903,8 +903,14 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				mono_mb_emit_stloc (mb, 1);
 				break;
 			}
-			case MONO_TYPE_OBJECT: {
-				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_ARRAY: {
+				char *msg = g_strdup_printf ("Type %s with field type %s cannot be marshaled as an unmanaged struct field.",
+					mono_type_full_name (m_class_get_byval_arg (klass)),
+					mono_type_full_name (ftype));
 				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
