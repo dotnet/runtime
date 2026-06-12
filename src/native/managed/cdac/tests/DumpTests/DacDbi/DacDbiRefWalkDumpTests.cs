@@ -99,7 +99,7 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
         IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
-        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: true, handleWalkMask: CorGCReferenceType.CorReferenceStack);
+        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: true, handleWalkMask: (CorGCReferenceType)0);
 
         // Compute the expected count of stack references directly (excluding cDAC-private
         // deferred-frame markers, which WalkRefs filters out).

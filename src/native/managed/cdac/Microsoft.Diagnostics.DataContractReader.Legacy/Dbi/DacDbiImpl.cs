@@ -3636,7 +3636,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
         {
             // Parity check covers the handle prefix only.
-            DacGcReference* legacyRefs = stackalloc DacGcReference[(int)count];
+            DacGcReference* legacyRefs = new DacGcReference[(int)count];
             uint legacyFetched = 0;
             int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
             Debug.ValidateHResult(hr, hrLocal);
