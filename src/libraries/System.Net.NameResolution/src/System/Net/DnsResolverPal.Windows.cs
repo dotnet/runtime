@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -48,15 +50,8 @@ namespace System.Net
 
         public static async Task<DnsResult<SrvRecord>> ResolveSrv(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseSrv(raw);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
+            using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
+            return ParseSrv(raw);
         }
 
         public static Task<DnsResult<MxRecord>> ResolveMx(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
@@ -73,15 +68,8 @@ namespace System.Net
 
         public static async Task<DnsResult<TxtRecord>> ResolveTxt(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseTxt(raw);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
+            using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
+            return ParseTxt(raw);
         }
 
         // ---- Per-record-type selectors (shared by all record types) ----
@@ -122,29 +110,15 @@ namespace System.Net
 
         private static async Task<DnsResult<AddressRecord>> QueryAddresses(IList<IPEndPoint> servers, bool async, string name, ushort qtype, CancellationToken cancellationToken)
         {
-            DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseAddresses(raw, qtype);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
+            using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
+            return ParseAddresses(raw, qtype);
         }
 
         private static async Task<DnsResult<TRecord>> QuerySimple<TRecord>(IList<IPEndPoint> servers, bool async, string name, ushort qtype, CancellationToken cancellationToken,
             Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
         {
-            DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseSimple(raw, qtype, selector);
-            }
-            finally
-            {
-                raw.Dispose();
-            }
+            using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
+            return ParseSimple(raw, qtype, selector);
         }
 
         // ---- Record-list parsers ----
@@ -172,7 +146,7 @@ namespace System.Net
                 cur = hdr.pNext;
             }
 
-            return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+            return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
         private static DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw)
@@ -196,17 +170,14 @@ namespace System.Net
                     IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     Interop.Dnsapi.DNS_SRV_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
                     string target = PtrToString(data.pNameTarget) ?? string.Empty;
-                    IReadOnlyList<AddressRecord>? attached = null;
-                    if (glue != null && glue.TryGetValue(target, out List<AddressRecord>? list))
-                    {
-                        attached = list;
-                    }
+                    List<AddressRecord>? attached = null;
+                    glue?.TryGetValue(target, out attached);
                     records.Add(new SrvRecord(target, data.wPort, data.wPriority, data.wWeight, TimeSpan.FromSeconds(hdr.dwTtl), attached));
                 }
                 cur = hdr.pNext;
             }
 
-            return new DnsResult<SrvRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+            return new DnsResult<SrvRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
         private static DnsResult<TxtRecord> ParseTxt(DnsQueryRawResult raw)
@@ -245,7 +216,7 @@ namespace System.Net
                 cur = hdr.pNext;
             }
 
-            return new DnsResult<TxtRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+            return new DnsResult<TxtRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
         private static DnsResult<TRecord> ParseSimple<TRecord>(DnsQueryRawResult raw, ushort qtype,
@@ -269,18 +240,16 @@ namespace System.Net
                 cur = hdr.pNext;
             }
 
-            return new DnsResult<TRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
+            return new DnsResult<TRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
         private static DnsResult<AddressRecord> MergeAddressResults(DnsResult<AddressRecord> a, DnsResult<AddressRecord> b)
         {
             if (a.Records.Count > 0 || b.Records.Count > 0)
             {
-                AddressRecord[] merged = new AddressRecord[a.Records.Count + b.Records.Count];
-                int idx = 0;
-                for (int i = 0; i < a.Records.Count; i++) merged[idx++] = a.Records[i];
-                for (int i = 0; i < b.Records.Count; i++) merged[idx++] = b.Records[i];
-                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, TimeSpan.Zero);
+                AddressRecord[] merged = [.. a.Records, .. b.Records];
+                TimeSpan mergedTtl = a.NegativeCacheTtl > b.NegativeCacheTtl ? a.NegativeCacheTtl : b.NegativeCacheTtl;
+                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
             }
 
             DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain
@@ -290,21 +259,14 @@ namespace System.Net
             return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
         }
 
-        private static bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)
+        private static unsafe bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)
         {
-            if (recordType == Interop.Dnsapi.DNS_TYPE_A)
+            if (recordType is Interop.Dnsapi.DNS_TYPE_A or Interop.Dnsapi.DNS_TYPE_AAAA)
             {
-                uint ip = (uint)Marshal.ReadInt32(dataPtr);
-                address = new IPAddress(ip);
+                address = new IPAddress(new ReadOnlySpan<byte>((byte*)dataPtr, recordType == Interop.Dnsapi.DNS_TYPE_A ? 4 : 16));
                 return true;
             }
-            if (recordType == Interop.Dnsapi.DNS_TYPE_AAAA)
-            {
-                byte[] bytes = new byte[16];
-                Marshal.Copy(dataPtr, bytes, 0, 16);
-                address = new IPAddress(bytes);
-                return true;
-            }
+
             address = null;
             return false;
         }
@@ -323,11 +285,7 @@ namespace System.Net
                     {
                         string name = PtrToString(hdr.pName) ?? string.Empty;
                         glue ??= new Dictionary<string, List<AddressRecord>>(StringComparer.OrdinalIgnoreCase);
-                        if (!glue.TryGetValue(name, out List<AddressRecord>? list))
-                        {
-                            list = new List<AddressRecord>();
-                            glue[name] = list;
-                        }
+                        List<AddressRecord> list = CollectionsMarshal.GetValueRefOrAddDefault(glue, name, out _) ??= new List<AddressRecord>();
                         list.Add(new AddressRecord(address!, TimeSpan.FromSeconds(hdr.dwTtl)));
                     }
                 }
@@ -379,14 +337,14 @@ namespace System.Net
             private readonly CancellationToken _cancellationToken;
             private readonly IList<IPEndPoint> _servers;
 
-            private GCHandle _selfHandle;
+            private GCHandle<DnsQueryAsyncState> _selfHandle;
             private IntPtr _namePtr;
             private IntPtr _requestPtr;
             private IntPtr _resultPtr;
             private IntPtr _cancelPtr;
             private IntPtr _serverListPtr;       // DNS_ADDR_ARRAY buffer
             private CancellationTokenRegistration _ctReg;
-            private int _completed; // 0 = pending, 1 = completed (callback or sync)
+            private bool _completed;
 
             public DnsQueryAsyncState(IList<IPEndPoint> servers, string name, ushort queryType, CancellationToken cancellationToken)
             {
@@ -411,7 +369,7 @@ namespace System.Net
                     _cancelPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
                     NativeMemory.Clear((void*)_cancelPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
 
-                    _selfHandle = GCHandle.Alloc(this);
+                    _selfHandle = new GCHandle<DnsQueryAsyncState>(this);
 
                     _requestPtr = Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
                     NativeMemory.Clear((void*)_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
@@ -422,7 +380,7 @@ namespace System.Net
                     req->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
                     req->InterfaceIndex = 0;
                     req->pQueryCompletionCallback = s_completionCallbackPtr;
-                    req->pQueryContext = GCHandle.ToIntPtr(_selfHandle);
+                    req->pQueryContext = GCHandle<DnsQueryAsyncState>.ToIntPtr(_selfHandle);
 
                     if (_servers is { Count: > 0 })
                     {
@@ -477,7 +435,7 @@ namespace System.Net
             /// </summary>
             internal void CompleteFromResult(int status)
             {
-                if (Interlocked.Exchange(ref _completed, 1) != 0)
+                if (Interlocked.Exchange(ref _completed, true))
                 {
                     return;
                 }
@@ -501,13 +459,10 @@ namespace System.Net
 
                     DnsResponseCode rc = MapWindowsErrorToResponseCode(status);
 
-                    // For NXDOMAIN/NODATA, try to extract the negative-cache TTL from the
-                    // SOA in the authority section if it's present in the record list.
-                    TimeSpan negativeTtl = TimeSpan.Zero;
-                    if (rc != DnsResponseCode.NoError || records == IntPtr.Zero)
-                    {
-                        negativeTtl = ExtractNegativeCacheTtl(records);
-                    }
+                    // Extract the negative-cache TTL from an authority-section SOA when present.
+                    // This covers both NXDOMAIN and NODATA (the latter maps to NoError but can
+                    // still carry an authority SOA); the helper returns zero when no SOA is found.
+                    TimeSpan negativeTtl = ExtractNegativeCacheTtl(records);
 
                     _tcs.TrySetResult(new DnsQueryRawResult(rc, records, negativeTtl));
                 }
@@ -550,7 +505,7 @@ namespace System.Net
                 }
                 if (_selfHandle.IsAllocated)
                 {
-                    _selfHandle.Free();
+                    _selfHandle.Dispose();
                 }
             }
         }
@@ -562,12 +517,7 @@ namespace System.Net
         {
             try
             {
-                GCHandle handle = GCHandle.FromIntPtr(pQueryContext);
-                DnsQueryAsyncState? state = handle.Target as DnsQueryAsyncState;
-                if (state == null)
-                {
-                    return;
-                }
+                DnsQueryAsyncState state = GCHandle<DnsQueryAsyncState>.FromIntPtr(pQueryContext).Target;
 
                 // pQueryResults points to the same DNS_QUERY_RESULT we passed in.
                 unsafe
@@ -576,9 +526,10 @@ namespace System.Net
                     state.CompleteFromResult(res->QueryStatus);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Swallow — never allow exceptions to propagate into native code.
+                // Never allow exceptions to propagate into native code.
+                Debug.Fail($"Unexpected exception in DnsQueryEx completion callback: {ex}");
             }
         }
 
@@ -589,14 +540,11 @@ namespace System.Net
         // requests a non-default port, since it cannot be honored on Windows.
         private static void ValidateServerPorts(IList<IPEndPoint> servers)
         {
-            if (servers is { Count: > 0 })
+            foreach (IPEndPoint ep in servers)
             {
-                foreach (IPEndPoint ep in servers)
+                if (ep.Port != 0 && ep.Port != 53)
                 {
-                    if (ep.Port != 0 && ep.Port != 53)
-                    {
-                        throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
-                    }
+                    throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
                 }
             }
         }
@@ -648,13 +596,10 @@ namespace System.Net
 
                 DnsResponseCode rc = MapWindowsErrorToResponseCode(status);
 
-                // For NXDOMAIN/NODATA, try to extract the negative-cache TTL from the
-                // SOA in the authority section if it's present in the record list.
-                TimeSpan negativeTtl = TimeSpan.Zero;
-                if (rc != DnsResponseCode.NoError || records == IntPtr.Zero)
-                {
-                    negativeTtl = ExtractNegativeCacheTtl(records);
-                }
+                // Extract the negative-cache TTL from an authority-section SOA when present.
+                // This covers both NXDOMAIN and NODATA (the latter maps to NoError but can
+                // still carry an authority SOA); the helper returns zero when no SOA is found.
+                TimeSpan negativeTtl = ExtractNegativeCacheTtl(records);
 
                 return new DnsQueryRawResult(rc, records, negativeTtl);
             }
@@ -674,9 +619,22 @@ namespace System.Net
         private static unsafe void BuildAddrArray(IList<IPEndPoint> servers, out IntPtr arrayPtr)
         {
             int count = servers.Count;
+
+            // DnsQueryEx encodes a single address family for the whole array, so all
+            // endpoints must share one. Reject mixed IPv4/IPv6 lists up front instead
+            // of producing an inconsistent DNS_ADDR_ARRAY.
+            AddressFamily family = servers[0].AddressFamily;
+            for (int i = 1; i < count; i++)
+            {
+                if (servers[i].AddressFamily != family)
+                {
+                    throw new ArgumentException(SR.net_dns_mixed_address_families, nameof(servers));
+                }
+            }
+
             int headerSize = sizeof(Interop.Dnsapi.DNS_ADDR_ARRAY);
             int addrSize = sizeof(Interop.Dnsapi.DNS_ADDR);
-            int totalSize = headerSize + addrSize * count;
+            int totalSize = checked(headerSize + addrSize * count);
 
             arrayPtr = Marshal.AllocHGlobal(totalSize);
             NativeMemory.Clear((void*)arrayPtr, (nuint)totalSize);
@@ -684,56 +642,42 @@ namespace System.Net
             Interop.Dnsapi.DNS_ADDR_ARRAY* arr = (Interop.Dnsapi.DNS_ADDR_ARRAY*)arrayPtr;
             arr->MaxCount = (uint)count;
             arr->AddrCount = (uint)count;
-            arr->Family = (ushort)(servers[0].AddressFamily == AddressFamily.InterNetwork ? Interop.Dnsapi.AF_INET : Interop.Dnsapi.AF_INET6);
+            arr->Family = (ushort)(family == AddressFamily.InterNetwork ? Interop.Dnsapi.AF_INET : Interop.Dnsapi.AF_INET6);
 
             byte* addrBase = (byte*)arrayPtr + headerSize;
             for (int i = 0; i < count; i++)
             {
-                IPEndPoint ep = servers[i];
                 byte* sa = addrBase + (i * addrSize);
-                WriteSockAddr(sa, ep);
+                WriteSockAddr(sa, servers[i].Address);
             }
         }
 
         // Writes a SOCKADDR_IN or SOCKADDR_IN6 representation into the destination buffer.
         // The buffer must be at least 28 bytes (sizeof sockaddr_in6).
-        private static unsafe void WriteSockAddr(byte* dest, IPEndPoint ep)
+        private static unsafe void WriteSockAddr(byte* dest, IPAddress address)
         {
             // DnsQueryEx always queries DNS servers on port 53 and requires the sockaddr
             // port field to be left as 0. Supplying a non-zero port (even 53) is rejected
             // with ERROR_INVALID_PARAMETER. Non-default ports are validated and rejected
             // earlier, so the port is always written as 0 here.
-            if (ep.AddressFamily == AddressFamily.InterNetwork)
+            if (address.AddressFamily == AddressFamily.InterNetwork)
             {
                 // sockaddr_in: ushort family, ushort port (net order), uint addr, 8 bytes zero
                 *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET;
                 // dest[2..3] (port) left zero
-                Span<byte> addrBytes = stackalloc byte[4];
-                ep.Address.TryWriteBytes(addrBytes, out _);
-                dest[4] = addrBytes[0];
-                dest[5] = addrBytes[1];
-                dest[6] = addrBytes[2];
-                dest[7] = addrBytes[3];
+                address.TryWriteBytes(new Span<byte>(dest + 4, 4), out _);
                 // dest[8..15] left zero
             }
-            else if (ep.AddressFamily == AddressFamily.InterNetworkV6)
+            else if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 // sockaddr_in6: ushort family, ushort port, uint flowinfo, 16-byte addr, uint scope_id
                 *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET6;
                 // dest[2..3] (port) left zero
                 // flowinfo (dest[4..7]) left zero
-                Span<byte> addrBytes = stackalloc byte[16];
-                ep.Address.TryWriteBytes(addrBytes, out _);
-                for (int i = 0; i < 16; i++)
-                {
-                    dest[8 + i] = addrBytes[i];
-                }
-                // scope_id (dest[24..27])
-                uint scopeId = (uint)ep.Address.ScopeId;
-                dest[24] = (byte)(scopeId & 0xff);
-                dest[25] = (byte)((scopeId >> 8) & 0xff);
-                dest[26] = (byte)((scopeId >> 16) & 0xff);
-                dest[27] = (byte)((scopeId >> 24) & 0xff);
+                address.TryWriteBytes(new Span<byte>(dest + 8, 16), out _);
+                // scope_id (dest[24..27]) is in host byte order; this code is Windows-only
+                // (always little-endian), so write it as little-endian.
+                BinaryPrimitives.WriteUInt32LittleEndian(new Span<byte>(dest + 24, 4), (uint)address.ScopeId);
             }
             else
             {

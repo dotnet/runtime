@@ -18,20 +18,50 @@ namespace System.Net
     /// </remarks>
     public sealed partial class DnsResolver : IAsyncDisposable, IDisposable
     {
-        private readonly DnsResolverOptions _options;
+        private readonly IPEndPoint[] _servers;
         private bool _disposed;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DnsResolver"/> class that uses the
+        /// system-configured DNS servers.
+        /// </summary>
         public DnsResolver() : this(new DnsResolverOptions()) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DnsResolver"/> class with the specified options.
+        /// </summary>
+        /// <param name="options">The options controlling how DNS resolution is performed.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         public DnsResolver(DnsResolverOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-            _options = options;
+            // Capture a snapshot of the configured servers so later mutations of the
+            // options instance don't affect resolutions performed by this resolver.
+            _servers = [.. options.Servers];
         }
 
+        /// <summary>
+        /// Resolves the IPv4 (A) and IPv6 (AAAA) addresses for the specified host name.
+        /// </summary>
+        /// <param name="name">The host name to resolve.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<AddressRecord> ResolveAddresses(string name)
             => ResolveAddresses(name, AddressFamily.Unspecified);
 
+        /// <summary>
+        /// Resolves the addresses of the specified family for the specified host name.
+        /// </summary>
+        /// <param name="name">The host name to resolve.</param>
+        /// <param name="addressFamily">
+        /// The address family to query. Use <see cref="AddressFamily.InterNetwork"/> for A records,
+        /// <see cref="AddressFamily.InterNetworkV6"/> for AAAA records, or
+        /// <see cref="AddressFamily.Unspecified"/> for both.
+        /// </param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<AddressRecord> ResolveAddresses(string name, AddressFamily addressFamily)
         {
             ValidateName(name);
@@ -41,6 +71,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the service (SRV) records for the specified name.
+        /// </summary>
+        /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the SRV records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<SrvRecord> ResolveSrv(string name)
         {
             ValidateName(name);
@@ -50,6 +87,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the mail exchange (MX) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the MX records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<MxRecord> ResolveMx(string name)
         {
             ValidateName(name);
@@ -59,6 +103,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the text (TXT) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the TXT records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<TxtRecord> ResolveTxt(string name)
         {
             ValidateName(name);
@@ -68,6 +119,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the canonical name (CNAME) record for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<CNameRecord> ResolveCName(string name)
         {
             ValidateName(name);
@@ -77,6 +135,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the pointer (PTR) records for the specified name, typically used for reverse DNS lookups.
+        /// </summary>
+        /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<PtrRecord> ResolvePtr(string name)
         {
             ValidateName(name);
@@ -86,6 +151,13 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Resolves the authoritative name server (NS) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the NS records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<NsRecord> ResolveNs(string name)
         {
             ValidateName(name);
@@ -95,9 +167,30 @@ namespace System.Net
             return task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Asynchronously resolves the IPv4 (A) and IPv6 (AAAA) addresses for the specified host name.
+        /// </summary>
+        /// <param name="name">The host name to resolve.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, CancellationToken cancellationToken = default)
             => ResolveAddressesAsync(name, AddressFamily.Unspecified, cancellationToken);
 
+        /// <summary>
+        /// Asynchronously resolves the addresses of the specified family for the specified host name.
+        /// </summary>
+        /// <param name="name">The host name to resolve.</param>
+        /// <param name="addressFamily">
+        /// The address family to query. Use <see cref="AddressFamily.InterNetwork"/> for A records,
+        /// <see cref="AddressFamily.InterNetworkV6"/> for AAAA records, or
+        /// <see cref="AddressFamily.Unspecified"/> for both.
+        /// </param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -105,6 +198,14 @@ namespace System.Net
             return ResolveAddressesCore(async: true, name, addressFamily, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously resolves the service (SRV) records for the specified name.
+        /// </summary>
+        /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the SRV records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<SrvRecord>> ResolveSrvAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -112,6 +213,14 @@ namespace System.Net
             return ResolveSrvCore(async: true, name, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously resolves the mail exchange (MX) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the MX records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<MxRecord>> ResolveMxAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -119,6 +228,14 @@ namespace System.Net
             return ResolveMxCore(async: true, name, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously resolves the text (TXT) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the TXT records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<TxtRecord>> ResolveTxtAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -126,6 +243,14 @@ namespace System.Net
             return ResolveTxtCore(async: true, name, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously resolves the canonical name (CNAME) record for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<CNameRecord>> ResolveCNameAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -133,6 +258,14 @@ namespace System.Net
             return ResolveCNameCore(async: true, name, cancellationToken);
         }
 
+        /// <summary>
+        /// Asynchronously resolves the pointer (PTR) records for the specified name, typically used for reverse DNS lookups.
+        /// </summary>
+        /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<PtrRecord>> ResolvePtrAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -140,13 +273,14 @@ namespace System.Net
             return ResolvePtrCore(async: true, name, cancellationToken);
         }
 
-        public Task<DnsResult<PtrRecord>> ResolvePtrAsync(IPAddress address, CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(address);
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            return ResolvePtrCore(async: true, BuildArpaName(address), cancellationToken);
-        }
-
+        /// <summary>
+        /// Asynchronously resolves the authoritative name server (NS) records for the specified name.
+        /// </summary>
+        /// <param name="name">The domain name to resolve.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the NS records.</returns>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<NsRecord>> ResolveNsAsync(string name, CancellationToken cancellationToken = default)
         {
             ValidateName(name);
@@ -154,8 +288,10 @@ namespace System.Net
             return ResolveNsCore(async: true, name, cancellationToken);
         }
 
+        /// <inheritdoc />
         public void Dispose() => _disposed = true;
 
+        /// <inheritdoc />
         public ValueTask DisposeAsync()
         {
             _disposed = true;
@@ -176,53 +312,67 @@ namespace System.Net
 
         private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken), static r => MapAnswers(r, static a => a.Address.ToString()))
-                : DnsResolverPal.ResolveAddresses(_options.Servers, async, name, addressFamily, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, addressFamily, cancellationToken),
+                    static s => DnsResolverPal.ResolveAddresses(s.servers, s.async, s.name, s.addressFamily, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.Address.ToString()))
+                : DnsResolverPal.ResolveAddresses(_servers, async, name, addressFamily, cancellationToken);
 
         private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Target))
-                : DnsResolverPal.ResolveSrv(_options.Servers, async, name, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolveSrv(s.servers, s.async, s.name, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.Target))
+                : DnsResolverPal.ResolveSrv(_servers, async, name, cancellationToken);
 
         private Task<DnsResult<MxRecord>> ResolveMxCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Exchange))
-                : DnsResolverPal.ResolveMx(_options.Servers, async, name, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolveMx(s.servers, s.async, s.name, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.Exchange))
+                : DnsResolverPal.ResolveMx(_servers, async, name, cancellationToken);
 
         private Task<DnsResult<TxtRecord>> ResolveTxtCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken), static r =>
-                {
-                    List<string> values = new();
-                    foreach (TxtRecord record in r.Records)
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolveTxt(s.servers, s.async, s.name, s.cancellationToken),
+                    static r =>
                     {
-                        values.AddRange(record.Values);
-                    }
-                    return values.ToArray();
-                })
-                : DnsResolverPal.ResolveTxt(_options.Servers, async, name, cancellationToken);
+                        List<string> values = new();
+                        foreach (TxtRecord record in r.Records)
+                        {
+                            values.AddRange(record.Values);
+                        }
+                        return values.ToArray();
+                    })
+                : DnsResolverPal.ResolveTxt(_servers, async, name, cancellationToken);
 
         private Task<DnsResult<CNameRecord>> ResolveCNameCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.CanonicalName))
-                : DnsResolverPal.ResolveCName(_options.Servers, async, name, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolveCName(s.servers, s.async, s.name, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.CanonicalName))
+                : DnsResolverPal.ResolveCName(_servers, async, name, cancellationToken);
 
         private Task<DnsResult<PtrRecord>> ResolvePtrCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Name))
-                : DnsResolverPal.ResolvePtr(_options.Servers, async, name, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolvePtr(s.servers, s.async, s.name, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.Name))
+                : DnsResolverPal.ResolvePtr(_servers, async, name, cancellationToken);
 
         private Task<DnsResult<NsRecord>> ResolveNsCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, () => DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken), static r => MapAnswers(r, static a => a.Name))
-                : DnsResolverPal.ResolveNs(_options.Servers, async, name, cancellationToken);
+                ? ResolveWithTelemetry(name, (servers: _servers, async, name, cancellationToken),
+                    static s => DnsResolverPal.ResolveNs(s.servers, s.async, s.name, s.cancellationToken),
+                    static r => MapAnswers(r, static a => a.Name))
+                : DnsResolverPal.ResolveNs(_servers, async, name, cancellationToken);
 
-        private static async Task<DnsResult<T>> ResolveWithTelemetry<T>(string name, Func<Task<DnsResult<T>>> resolve, Func<DnsResult<T>, string[]> getAnswers)
+        private static async Task<DnsResult<T>> ResolveWithTelemetry<T, TState>(string name, TState state, Func<TState, Task<DnsResult<T>>> resolve, Func<DnsResult<T>, string[]> getAnswers)
         {
             NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(name);
             try
             {
-                DnsResult<T> result = await resolve().ConfigureAwait(false);
+                DnsResult<T> result = await resolve(state).ConfigureAwait(false);
                 NameResolutionTelemetry.Log.AfterResolution(name, in activity, getAnswers(result));
                 return result;
             }
@@ -258,13 +408,13 @@ namespace System.Net
             {
                 Span<byte> bytes = stackalloc byte[4];
                 address.TryWriteBytes(bytes, out _);
-                return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{bytes[3]}.{bytes[2]}.{bytes[1]}.{bytes[0]}.in-addr.arpa");
+                return $"{bytes[3]}.{bytes[2]}.{bytes[1]}.{bytes[0]}.in-addr.arpa";
             }
             else if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 Span<byte> bytes = stackalloc byte[16];
                 address.TryWriteBytes(bytes, out _);
-                Span<char> chars = stackalloc char[32 * 2 + 9];
+                Span<char> chars = stackalloc char[16 * 4];
                 int pos = 0;
                 for (int i = 15; i >= 0; i--)
                 {
@@ -274,9 +424,7 @@ namespace System.Net
                     chars[pos++] = ToHex(b >> 4);
                     chars[pos++] = '.';
                 }
-                "ip6.arpa".AsSpan().CopyTo(chars.Slice(pos));
-                pos += "ip6.arpa".Length;
-                return new string(chars.Slice(0, pos));
+                return string.Concat(chars, "ip6.arpa");
 
                 static char ToHex(int n) => (char)(n < 10 ? '0' + n : 'a' + (n - 10));
             }

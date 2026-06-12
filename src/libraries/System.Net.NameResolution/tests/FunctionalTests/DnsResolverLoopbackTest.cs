@@ -195,6 +195,9 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
             Assert.Empty(result.Records);
+            // The negative-cache TTL should be derived from the authority SOA record (120s).
+            Assert.True(result.NegativeCacheTtl > TimeSpan.Zero && result.NegativeCacheTtl <= TimeSpan.FromSeconds(120),
+                $"Unexpected NegativeCacheTtl: {result.NegativeCacheTtl}");
         }
 
         [Theory]
@@ -214,6 +217,9 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Empty(result.Records);
+            // The negative-cache TTL should be derived from the authority SOA record (30s).
+            Assert.True(result.NegativeCacheTtl > TimeSpan.Zero && result.NegativeCacheTtl <= TimeSpan.FromSeconds(30),
+                $"Unexpected NegativeCacheTtl: {result.NegativeCacheTtl}");
         }
 
         [Theory]

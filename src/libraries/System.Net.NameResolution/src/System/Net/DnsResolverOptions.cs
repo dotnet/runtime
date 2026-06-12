@@ -10,9 +10,20 @@ namespace System.Net
     /// </summary>
     public sealed class DnsResolverOptions
     {
+        private IList<IPEndPoint> _servers = new List<IPEndPoint>();
+
         /// <summary>
-        /// DNS servers to query. When empty, the system-configured DNS servers are used.
+        /// Gets or sets the DNS servers to query. When empty, the system-configured DNS servers are used.
         /// </summary>
-        public IList<IPEndPoint> Servers { get; set; } = new List<IPEndPoint>();
+        /// <exception cref="ArgumentNullException">The value being set is <see langword="null"/>.</exception>
+        public IList<IPEndPoint> Servers
+        {
+            get => _servers;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _servers = value;
+            }
+        }
     }
 }

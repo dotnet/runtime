@@ -6,28 +6,30 @@ using System.Collections.Generic;
 namespace System.Net
 {
     /// <summary>
-    /// Carries the result of a DNS resolution operation, including the response
+    /// Represents the result of a DNS resolution operation, including the response
     /// code, the parsed records, and (for negative responses) the negative-cache TTL.
     /// </summary>
+    /// <typeparam name="T">The type of the resolved records.</typeparam>
     public readonly struct DnsResult<T>
     {
         private readonly IReadOnlyList<T>? _records;
 
-        /// <summary>The DNS response code returned by the server.</summary>
+        /// <summary>Gets the DNS response code returned by the server.</summary>
         [CLSCompliant(false)]
         public DnsResponseCode ResponseCode { get; }
 
         /// <summary>
-        /// The records returned by the server. Empty on error or NODATA responses.
+        /// Gets the records returned by the server. The list is empty on error or NODATA responses.
         /// </summary>
         public IReadOnlyList<T> Records => _records ?? Array.Empty<T>();
 
         /// <summary>
-        /// For negative responses (NXDOMAIN/NODATA), the TTL for which the negative
-        /// answer may be cached (derived from the SOA minimum TTL in the authority
-        /// section, per RFC 2308 §5). <see cref="TimeSpan.Zero"/> if not applicable
-        /// or unavailable.
+        /// Gets the duration for which a negative response (NXDOMAIN or NODATA) may be cached.
         /// </summary>
+        /// <remarks>
+        /// The value is derived from the SOA minimum TTL in the authority section, per RFC 2308 §5.
+        /// It is <see cref="TimeSpan.Zero"/> when not applicable or unavailable.
+        /// </remarks>
         public TimeSpan NegativeCacheTtl { get; }
 
         internal DnsResult(DnsResponseCode responseCode, IReadOnlyList<T>? records, TimeSpan negativeCacheTtl)

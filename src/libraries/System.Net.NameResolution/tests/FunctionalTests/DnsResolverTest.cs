@@ -46,7 +46,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveTxtAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveCNameAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolvePtrAsync((string)null!));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolvePtrAsync((IPAddress)null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.ResolvePtrAsync((IPAddress)null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveNsAsync(null!));
         }
 
@@ -201,8 +201,7 @@ namespace System.Net.NameResolution.Tests
         [OuterLoop]
         public async Task ResolvePtr_ByIPAddress_ReturnsRecord()
         {
-            using DnsResolver r = new DnsResolver();
-            DnsResult<PtrRecord> result = await r.ResolvePtrAsync(IPAddress.Parse("8.8.8.8"));
+            DnsResult<PtrRecord> result = await Dns.ResolvePtrAsync(IPAddress.Parse("8.8.8.8"));
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             Assert.False(string.IsNullOrEmpty(result.Records[0].Name));
@@ -221,9 +220,15 @@ namespace System.Net.NameResolution.Tests
         [OuterLoop]
         public async Task DnsResolver_CustomServer_Port53_Works()
         {
-            IPAddress dnsAddress = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            IPAddress? dnsAddress = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
                 .SelectMany(ni => ni.GetIPProperties().DnsAddresses)
                 .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+
+            if (dnsAddress is null)
+            {
+                // No IPv4 DNS server is configured on this machine; nothing to validate.
+                return;
+            }
 
             DnsResolverOptions opts = new DnsResolverOptions
             {
@@ -254,9 +259,8 @@ namespace System.Net.NameResolution.Tests
         [OuterLoop]
         public async Task ResolvePtr_IPv6Address_DoesNotThrow()
         {
-            using DnsResolver r = new DnsResolver();
             // Google public DNS IPv6 — call shouldn't throw, even if no PTR record exists.
-            DnsResult<PtrRecord> result = await r.ResolvePtrAsync(IPAddress.Parse("2001:4860:4860::8888"));
+            DnsResult<PtrRecord> result = await Dns.ResolvePtrAsync(IPAddress.Parse("2001:4860:4860::8888"));
             Assert.True(result.ResponseCode == DnsResponseCode.NoError || result.ResponseCode == DnsResponseCode.NxDomain);
         }
     }
