@@ -1,6 +1,4 @@
----
-excludeAgent: code-review
----
+When reviewing pull requests, use the `code-review` skill unless the user has stated they will review the changes themselves.
 
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 

@@ -2617,7 +2617,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->GetCompileTimeHandle();
     if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
     {
         return nullptr;
@@ -2872,7 +2872,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             return nullptr;
         }
 
-        numElements = S_SIZE_T(arrayLengthNode->AsIntCon()->gtIconVal);
+        numElements = S_SIZE_T(arrayLengthNode->AsIntCon()->IconValue());
 
         if (!info.compCompHnd->isSDArray(arrayClsHnd))
         {
@@ -2940,7 +2940,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree*     store     = gtNewStoreBlkNode(blkLayout, dstAddr, src);
 
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->SetTargetHandle(THT_InitializeArrayIntrinsics);
 #endif
 
     return store;
@@ -2980,7 +2980,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->GetCompileTimeHandle();
     if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
     {
         return nullptr;
