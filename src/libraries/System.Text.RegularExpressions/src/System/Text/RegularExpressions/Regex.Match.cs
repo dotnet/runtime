@@ -460,7 +460,7 @@ namespace System.Text.RegularExpressions
         /// still apply to the input as a whole. For example, the following code includes a pattern with a lookbehind assertion that's satisfied even though it occurs
         /// before the `startat` index of 5 in the input string.
         ///
-        /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Match.Examples.cs#Match)]
+        /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Examples.cs#Match)]
         ///
         /// > [!TIP]
         /// > - If a pattern starts with the `^` anchor but `startat` is greater than 0, no matches will ever be found in a single-line search since they are constrained by `^` to start at index 0.

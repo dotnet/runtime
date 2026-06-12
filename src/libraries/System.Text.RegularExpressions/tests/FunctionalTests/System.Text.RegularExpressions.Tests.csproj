@@ -28,10 +28,10 @@
     <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
+    <Compile Include="Regex.Examples.cs" />
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
     <Compile Include="Regex.Groups.Tests.cs" />
     <Compile Include="Regex.KnownPattern.Tests.cs" />
-    <Compile Include="Regex.Match.Examples.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.MultipleMatches.Tests.cs" />
     <Compile Include="Regex.Replace.Tests.cs" />
