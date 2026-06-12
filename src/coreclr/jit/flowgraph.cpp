@@ -5847,15 +5847,15 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     // Recognize `base ± const` limits (e.g. `arr.Length - 4`, `lcl + 8`) by
     // peeling the constant into LimitOffset and form-checking the base.
-    // Skip the peel when the base is itself a constant (morph should have
-    // folded that already).
+    // Morph canonicalizes commutative ops so that any constant operand sits on
+    // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
     int      peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
     if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();
-        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT))
+        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT) && !lop1->IsCnsIntOrI())
         {
             ssize_t cns = lop2->AsIntCon()->IconValue();
             if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
@@ -5877,18 +5877,9 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
                 }
             }
         }
-        else if (lop1->IsCnsIntOrI() && lop1->TypeIs(TYP_INT) && limitOp->OperIs(GT_ADD))
-        {
-            ssize_t cns = lop1->AsIntCon()->IconValue();
-            if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
-            {
-                peeledOffset = (int)cns;
-                peeledBase   = lop2;
-            }
-        }
     }
 
-    if ((peeledBase != nullptr) && !peeledBase->IsCnsIntOrI() && (peeledOffset != 0))
+    if ((peeledBase != nullptr) && (peeledOffset != 0))
     {
         limitOp           = peeledBase;
         info->LimitOffset = peeledOffset;
