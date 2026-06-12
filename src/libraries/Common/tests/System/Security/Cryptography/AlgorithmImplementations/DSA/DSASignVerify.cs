@@ -257,24 +257,18 @@ namespace System.Security.Cryptography.Dsa.Tests
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void SignAndVerifyDataExplicit2048()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA256()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             byte[] signature =
             {
@@ -297,13 +291,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA384()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             byte[] signature =
             {
@@ -326,13 +317,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA512()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             byte[] signature =
             {
@@ -374,13 +362,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void Sign2048WithSha1()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             byte[] data = { 1, 2, 3, 4 };
 
@@ -394,13 +379,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void Verify2048WithSha1()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             byte[] data = { 1, 2, 3, 4 };
 

@@ -18,13 +18,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public static void TestImportV2Key()
         {
-            if (!DSACngProvider.Instance.SupportsFips186_3)
-            {
-                return;
-            }
+            DSACngProvider.Instance.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             using (CngKey key = CngKey.Import(s_key_DSA2048Key, CngKeyBlobFormat.GenericPrivateBlob))
             {

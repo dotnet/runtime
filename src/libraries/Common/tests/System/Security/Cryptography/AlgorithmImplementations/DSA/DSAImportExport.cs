@@ -73,13 +73,10 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void Import_2048()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             using (DSA dsa = DSAFactory.Create())
             {

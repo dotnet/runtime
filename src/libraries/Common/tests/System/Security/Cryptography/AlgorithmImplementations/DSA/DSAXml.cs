@@ -185,13 +185,10 @@ S      9      R      /       j       6       9        C        v        C
                 DSATestData.GetDSA1024Params());
         }
 
-        [Fact]
+        [ConditionalFact]
         public void TestRead2048Parameters_Public()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             DSAParameters expectedParameters = DSATestData.Dsa2048DeficientXParameters;
             expectedParameters.X = null;
@@ -230,13 +227,10 @@ S      9      R      /       j       6       9        C        v        C
                 expectedParameters);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void TestRead2048Parameters_Private_CryptoBinary()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a CryptoBinary,
@@ -273,13 +267,10 @@ S      9      R      /       j       6       9        C        v        C
                 DSATestData.Dsa2048DeficientXParameters);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void TestRead2048Parameters_Private_Base64Binary()
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a Base64Binary,
@@ -391,15 +382,12 @@ S      9      R      /       j       6       9        C        v        C
                 "wCZ4AHd55S42BoIhS9R/j69CvC0=");
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public void TestWriteDeficientXParameters(bool includePrivateParameters)
         {
-            if (!DSAFactory.SupportsFips186_3)
-            {
-                return;
-            }
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
 
             TestWriteXml(
                 DSATestData.Dsa2048DeficientXParameters,
