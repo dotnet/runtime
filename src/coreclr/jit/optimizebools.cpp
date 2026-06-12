@@ -105,6 +105,62 @@ private:
 };
 
 //-----------------------------------------------------------------------------
+// OptBoolsRule: one rewrite rule consumed by OptBoolsDsc::optOptimizeBoolsCondBlock.
+//
+// A rule matches when (sameTarget, sameLcl, op1, op2) agree and produces the folded compare:
+//
+//   foldOp == GT_NONE : keep c1 as the sole operand and rewrite the compare to cmpOp
+//                       (used for redundant tests against the same local).
+//   foldOp == GT_AND  : (c1 & c2) cmpOp 0   (also requires both inputs to be boolean)
+//   foldOp == GT_OR   : (c1 | c2) cmpOp 0
+//
+// When 'requiresSigned' is set, neither test may carry GTF_UNSIGNED because the
+// folded compare is signed (one of <0, <=0, >=0, >0).
+//
+struct OptBoolsRule
+{
+    bool       sameTarget;     // matches OptBoolsDsc::m_sameTarget
+    bool       sameLcl;        // c1 and c2 must be the same LCL_VAR
+    genTreeOps op1;            // m_testInfo1.compTree oper
+    genTreeOps op2;            // m_testInfo2.compTree oper
+    genTreeOps foldOp;         // GT_AND, GT_OR, or GT_NONE (no fold; rewrite cmp only)
+    genTreeOps cmpOp;          // resulting comparison
+    bool       requiresSigned; // reject if either test has GTF_UNSIGNED
+};
+
+// clang-format off
+static const OptBoolsRule s_optBoolsRules[] =
+{
+    // sameTgt | sameLcl | op1   | op2   | foldOp  | cmpOp | requiresSigned
+    //
+    // m_sameTarget == true   ("branch to BX if t1 || t2")
+    //
+    // Same local: fold to a single signed compare.
+    { true,     true,     GT_LT, GT_EQ, GT_NONE,  GT_LE, true  }, // c1<0  || c1==0 -> c1<=0
+    { true,     true,     GT_EQ, GT_LT, GT_NONE,  GT_LE, true  }, // c1==0 || c1<0  -> c1<=0
+    { true,     true,     GT_GT, GT_EQ, GT_NONE,  GT_GE, true  }, // c1>0  || c1==0 -> c1>=0
+    { true,     true,     GT_EQ, GT_GT, GT_NONE,  GT_GE, true  }, // c1==0 || c1>0  -> c1>=0
+    // Independent operands: fold to a single bitwise compare.
+    { true,     false,    GT_EQ, GT_EQ, GT_AND,   GT_EQ, false }, // c1==0 || c2==0 -> (c1&c2)==0
+    { true,     false,    GT_LT, GT_LT, GT_OR,    GT_LT, true  }, // c1<0  || c2<0  -> (c1|c2)<0
+    { true,     false,    GT_NE, GT_NE, GT_OR,    GT_NE, false }, // c1!=0 || c2!=0 -> (c1|c2)!=0
+
+    //
+    // m_sameTarget == false  ("branch to BX if !t1 && t2")
+    //
+    // Same local: fold to a single signed compare.
+    { false,    true,     GT_LT, GT_NE, GT_NONE,  GT_GT, true  }, // !(c1<0)  && c1!=0  -> c1>0
+    { false,    true,     GT_EQ, GT_GE, GT_NONE,  GT_GT, true  }, // !(c1==0) && c1>=0  -> c1>0
+    { false,    true,     GT_GT, GT_NE, GT_NONE,  GT_LT, true  }, // !(c1>0)  && c1!=0  -> c1<0
+    { false,    true,     GT_EQ, GT_LE, GT_NONE,  GT_LT, true  }, // !(c1==0) && c1<=0  -> c1<0
+    // Independent operands: fold to a single bitwise compare.
+    { false,    false,    GT_EQ, GT_NE, GT_AND,   GT_NE, false }, // !(c1==0) && c2!=0 -> (c1&c2)!=0
+    { false,    false,    GT_LT, GT_GE, GT_OR,    GT_GE, true  }, // !(c1<0)  && c2>=0 -> (c1|c2)>=0
+    { false,    false,    GT_NE, GT_EQ, GT_OR,    GT_EQ, false }, // !(c1!=0) && c2==0 -> (c1|c2)==0
+};
+// clang-format on
+
+//-----------------------------------------------------------------------------
 //  optOptimizeBoolsCondBlock:  Optimize boolean when bbKind of both m_b1 and m_b2 are BBJ_COND
 //
 //  Returns:
@@ -192,160 +248,46 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         return false;
     }
 
-    // Get the fold operator and the comparison operator
+    // Derive the fold type (used when constructing the folded bitwise op).
 
-    genTreeOps foldOp;
-    genTreeOps cmpOp;
-    var_types  foldType = genActualType(m_c1);
+    var_types foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
     }
 
     assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE));
+    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE));
 
-    if (m_sameTarget)
+    // Pick the rewrite rule from the s_optBoolsRules table. The match key is the literal
+    // (sameTarget, sameLcl, op1, op2) -- no implicit transform on either side.
+    const genTreeOps op1     = m_testInfo1.compTree->OperGet();
+    const genTreeOps op2     = m_testInfo2.compTree->OperGet();
+    const bool       sameLcl = m_c1->OperIs(GT_LCL_VAR) && GenTree::Compare(m_c1, m_c2);
+
+    const OptBoolsRule* rule = nullptr;
+    for (const OptBoolsRule& r : s_optBoolsRules)
     {
-        if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
-            m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
+        if ((r.sameTarget == m_sameTarget) && (r.sameLcl == sameLcl) && (r.op1 == op1) && (r.op2 == op2))
         {
-            // The folded comparisons below are signed (e.g. "c1 <= 0", "c1 >= 0"), so
-            // bail if either input has GTF_UNSIGNED.
-            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
-            {
-                return false;
-            }
-
-            if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
-                (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LT)))
-            {
-                // Case: t1:c1<0 t2:c1==0
-                // So we will branch to BX if c1<=0
-                //
-                // Case: t1:c1==0 t2:c1<0
-                // So we will branch to BX if c1<=0
-                cmpOp = GT_LE;
-            }
-            else if ((m_testInfo1.compTree->OperIs(GT_GT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
-                     (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GT)))
-            {
-                // Case: t1:c1>0 t2:c1==0
-                // So we will branch to BX if c1>=0
-                //
-                // Case: t1:c1==0 t2:c1>0
-                // So we will branch to BX if c1>=0
-                cmpOp = GT_GE;
-            }
-            else
-            {
-                return false;
-            }
-
-            foldOp = GT_NONE;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_EQ))
-        {
-            // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
-            // So we will branch to BX if (c1&c2)==0
-
-            foldOp = GT_AND;
-            cmpOp  = GT_EQ;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_LT) &&
-                 (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
-        {
-            // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
-            // So we will branch to BX if (c1|c2)<0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_LT;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_NE) && m_testInfo2.compTree->OperIs(GT_NE))
-        {
-            // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
-            // So we will branch to BX if (c1|c2)!=0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_NE;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else
-    {
-        if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
-            m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
-        {
-            // The folded comparisons below are signed (e.g. "c1 > 0", "c1 < 0"), so
-            // bail if either input has GTF_UNSIGNED.
-            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
-            {
-                return false;
-            }
-
-            if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
-                (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GE)))
-            {
-                // Case: t1:c1<0 t2:c1!=0
-                // So we will branch to BX if c1>0
-                //
-                // Case: t1:c1==0 t2:c1>=0
-                // So we will branch to BX if c1>0
-                cmpOp = GT_GT;
-            }
-            else if ((m_testInfo1.compTree->OperIs(GT_GT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
-                     (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LE)))
-            {
-                // Case: t1:c1>0 t2:c1!=0
-                // So we will branch to BX if c1<0
-                //
-                // Case: t1:c1==0 t2:c1<=0
-                // So we will branch to BX if c1<0
-                cmpOp = GT_LT;
-            }
-            else
-            {
-                return false;
-            }
-
-            foldOp = GT_NONE;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_NE))
-        {
-            // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
-            // So we will branch to BX if (c1&c2)!=0
-
-            foldOp = GT_AND;
-            cmpOp  = GT_NE;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_GE) &&
-                 (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
-        {
-            // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
-            // So we will branch to BX if (c1|c2)>=0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_GE;
-        }
-        else if (m_testInfo1.compTree->OperIs(GT_NE) && m_testInfo2.compTree->OperIs(GT_EQ))
-        {
-            // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
-            // So we will branch to BX if (c1|c2)==0
-
-            foldOp = GT_OR;
-            cmpOp  = GT_EQ;
-        }
-        else
-        {
-            return false;
+            rule = &r;
+            break;
         }
     }
 
-    // Anding requires both values to be 0 or 1
+    if (rule == nullptr)
+    {
+        return false;
+    }
 
-    if ((foldOp == GT_AND) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
+    if (rule->requiresSigned && (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned()))
+    {
+        return false;
+    }
+
+    // Anding requires both values to be 0 or 1.
+
+    if ((rule->foldOp == GT_AND) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
         return false;
     }
@@ -354,21 +296,16 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     // Now update the trees
     //
 
-    m_foldOp   = foldOp;
+    m_foldOp   = rule->foldOp;
     m_foldType = foldType;
-    m_cmpOp    = cmpOp;
+    m_cmpOp    = rule->cmpOp;
 
     optOptimizeBoolsUpdateTrees();
 
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
-               m_b1->bbNum, m_b2->bbNum);
-        m_compiler->gtDispStmt(s1);
-        printf("\n");
-    }
-#endif
+    JITDUMP("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
+            m_b1->bbNum, m_b2->bbNum);
+    DISPSTMT(s1);
+    JITDUMP("\n");
 
     // Return true to continue the bool optimization for the rest of the BB chain
     return true;
@@ -1298,7 +1235,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
             if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
             {
-                JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                JITDUMP("optOptimizeBoolsUpdateTrees: Profile needs to be propagated through " FMT_BB
                         "'s successors. Data %s inconsistent.\n",
                         m_b1->bbNum, m_compiler->fgPgoConsistent ? "is now" : "was already");
                 m_compiler->fgPgoConsistent = false;
@@ -1346,8 +1283,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     {
         return;
     }
-    GenTree* relop  = test.compTree;
-    bool     isBool = test.isBool;
+    GenTree* relop = test.compTree;
 
     if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF))
     {
@@ -1429,8 +1365,6 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
-
     // Is the value a boolean?
     // Currently we only recognize constant 0/1.
 
@@ -1440,7 +1374,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     }
 
     // Was our comparison against the constant 1 (i.e. true)
-    if (ival2 == 1)
+    if (opr2->IsIntegralConst(1))
     {
         // If this is a boolean expression tree we can reverse the relop
         // and change the true to false.
@@ -1470,116 +1404,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //      GT_EQ/GT_NE/GT_GE/GT_LE/GT_GT/GT_LT node with
 //          "op1" being a boolean GT_OR/GT_AND lclVar and
 //          "op2" the const 0/1.
-//      For example, the folded tree for the below boolean optimization is shown below:
-//      Case 1:     (x == 0 && y ==0) => (x | y) == 0
-//          *  RETURN   int
-//          \--*  EQ        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 2:     (x == null && y == null) ==> (x | y) == 0
-//          *  RETURN    int
-//          \-- * EQ        int
-//              + -- * OR        long
-//              |    +-- * LCL_VAR   ref    V00 arg0
-//              |    \-- * LCL_VAR   ref    V01 arg1
-//              \-- * CNS_INT   long   0
-//
-//      Case 3:     (x == 0 && y == 0 && z == 0) ==> ((x | y) | z) == 0
-//          *  RETURN    int
-//          \-- * EQ        int
-//              + -- * OR        int
-//              |    +-- * OR        int
-//              |    |   +-- * LCL_VAR   int    V00 arg0
-//              |    |   \-- * LCL_VAR   int    V01 arg1
-//              |    \-- * LCL_VAR   int    V02 arg2
-//              \-- * CNS_INT   int    0
-//
-//      Case 4:     (x == 0 && y == 0 && z == 0 && w == 0) ==> (((x | y) | z) | w) == 0
-//          *  RETURN    int
-//          \-- *  EQ        int
-//              +  *  OR        int
-//              |  +--*  OR        int
-//              |  |  +--*  OR        int
-//              |  |  |  +--*  LCL_VAR   int    V00 arg0
-//              |  |  |  \--*  LCL_VAR   int    V01 arg1
-//              |  |  \--*  LCL_VAR   int    V02 arg2
-//              |  \--*  LCL_VAR   int    V03 arg3
-//              \--*  CNS_INT   int    0
-//
-//      Case 5:     (x != 0 && y != 0) => (x | y) != 0
-//          *  RETURN   int
-//          \--*  NE        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 6:     (x >= 0 && y >= 0) => (x | y) >= 0
-//          *  RETURN   int
-//          \--*  GE        int
-//             +--*  OR         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 7:     (x < 0 || y < 0) => (x & y) < 0
-//          *  RETURN   int
-//          \--*  LT        int
-//             +--*  AND         int
-//             |  +--*  LCL_VAR     int     V00 arg0
-//             |  \--*  LCL_VAR     int     V01 arg1
-//             \--*  CNS_INT    int     0
-//
-//      Case 8:     (x < 0 || x == 0) => x <= 0
-//          *  RETURN   int
-//          \--*  LE        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 9:     (x == 0 || x < 0) => x <= 0
-//          *  RETURN   int
-//          \--*  LE        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 10:     (x > 0 || x == 0) => x >= 0
-//          *  RETURN   int
-//          \--*  GE        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 11:     (x == 0 || x > 0) => x >= 0
-//          *  RETURN   int
-//          \--*  GE        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 12:     (x >= 0 && x != 0) => x > 0
-//          *  RETURN   int
-//          \--*  GT        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 13:     (x != 0 && x >= 0) => x > 0
-//          *  RETURN   int
-//          \--*  GT        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 14:     (x <= 0 && x != 0) => x < 0
-//          *  RETURN   int
-//          \--*  LT        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
-//
-//      Case 15:     (x != 0 && x <= 0) => x < 0
-//          *  RETURN   int
-//          \--*  LT        int
-//             +--*  LCL_VAR    int     V00 arg0
-//             \--*  CNS_INT    int     0
+//      For example, (x == 0 && y ==0) => (x | y) == 0
 //
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
@@ -1591,17 +1416,13 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 PhaseStatus Compiler::optOptimizeBools()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optOptimizeBools()\n");
-    }
-#endif
+    JITDUMP("*************** In optOptimizeBools()\n");
+
     bool         change    = false;
     bool         retry     = false;
     unsigned     numCond   = 0;
     unsigned     numPasses = 0;
-    unsigned     stress    = false;
+    bool         stress    = false;
     BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
     BitVec       ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
 
