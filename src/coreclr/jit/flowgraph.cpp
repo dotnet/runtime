@@ -989,11 +989,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    GenTree* op = addr;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    GenTree* op = gtPeelFieldAddrs(addr);
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
