@@ -11427,8 +11427,7 @@ class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDe
     CORDB_ADDRESS m_diagnosticIP;
     CORDB_ADDRESS m_continuationAddress;
     UINT32 m_state;
-    int m_nNumberOfVars;
-    DacDbiArrayList<AsyncLocalData> m_asyncVars;
+    CQuickArrayList<AsyncLocalData> m_asyncVars;
 
     Instantiation     m_genericArgs;        // the generics type arguments
     BOOL              m_genericArgsLoaded;  // whether we have loaded and cached the generics type arguments
