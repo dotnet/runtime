@@ -2030,5 +2030,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
             Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
+
+        [Fact]
+        public void OpenGenericDerivedType_DiagnosticEmittedOncePerOpenBase_EvenWithMultipleClosures()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    [JsonSerializable(typeof(MyBase<string>))]
+                    [JsonSerializable(typeof(MyBase<double>))]
+                    internal partial class JsonContext : JsonSerializerContext { }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "d")]
+                    public class MyBase<T> { }
+
+                    // Pins T to a specific specialization (string) of the base — non-universal,
+                    // so SYSLIB1229 fires. It should fire exactly once for the (MyBase<>, MyDerived<>)
+                    // pair, not once per closure of MyBase<>.
+                    public class MyDerived<T> : MyBase<string> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
     }
 }

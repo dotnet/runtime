@@ -57,7 +57,28 @@ namespace System.Text.Json.SourceGeneration
             private readonly Queue<TypeToGenerate> _typesToGenerate = new();
 #pragma warning disable RS1024 // Compare symbols correctly https://github.com/dotnet/roslyn-analyzers/issues/5804
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
+
+            // Tracks (open base definition, derived type definition) pairs for which an open-generic
+            // polymorphism diagnostic has already been emitted. Whether a derived registration is
+            // universally applicable to a generic base is a property of the open forms alone, so the
+            // diagnostic must fire at most once per (open base, derived) pair regardless of how many
+            // closed specializations of the base appear in [JsonSerializable] attributes.
+            private readonly HashSet<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)> _diagnosedOpenDerivedRegistrations =
+                new(s_baseDerivedDefinitionPairComparer);
 #pragma warning restore
+
+            private static readonly IEqualityComparer<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)> s_baseDerivedDefinitionPairComparer =
+                new BaseDerivedDefinitionPairComparer();
+
+            private sealed class BaseDerivedDefinitionPairComparer : IEqualityComparer<(ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition)>
+            {
+                public bool Equals((ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) x, (ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) y) =>
+                    SymbolEqualityComparer.Default.Equals(x.BaseDefinition, y.BaseDefinition) &&
+                    SymbolEqualityComparer.Default.Equals(x.DerivedDefinition, y.DerivedDefinition);
+
+                public int GetHashCode((ITypeSymbol BaseDefinition, ITypeSymbol DerivedDefinition) obj) =>
+                    unchecked(SymbolEqualityComparer.Default.GetHashCode(obj.BaseDefinition) * 397 ^ SymbolEqualityComparer.Default.GetHashCode(obj.DerivedDefinition));
+            }
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
@@ -73,6 +94,25 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Diagnostics.Add(Diagnostic.Create(descriptor, location, messageArgs));
+            }
+
+            /// <summary>
+            /// Emits a <see cref="DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved"/>
+            /// diagnostic at most once per (open base definition, open derived definition) pair across
+            /// the lifetime of this <see cref="Parser"/> instance (i.e., per <see cref="JsonSerializerContext"/>).
+            /// </summary>
+            /// <remarks>
+            /// Whether a derived registration applies universally to a generic base is a property of
+            /// the open forms alone; emitting it once per closed specialization referenced via
+            /// <see cref="JsonSerializableAttribute"/> would spam the user with the same warning for
+            /// every closure of the same base.
+            /// </remarks>
+            private void ReportOpenGenericDerivedTypeDiagnostic(ITypeSymbol baseType, ITypeSymbol derivedType, Location? location, string? failureReason)
+            {
+                if (_diagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, location, derivedType.ToDisplayString(), baseType.ToDisplayString(), failureReason);
+                }
             }
 
             public Parser(KnownTypeSymbols knownSymbols)
@@ -946,7 +986,7 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 // Open derived registered against a non-generic base: no
                                 // closure of the derived can ever be assignable to the base.
-                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), SR.Polymorphism_OpenGeneric_Reason_NotAssignable);
+                                ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), SR.Polymorphism_OpenGeneric_Reason_NotAssignable);
                                 continue;
                             }
 
@@ -954,7 +994,7 @@ namespace System.Text.Json.SourceGeneration
                                     unboundDerived, constructedBase,
                                     out INamedTypeSymbol? resolvedType, out string? failureReason))
                             {
-                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
+                                ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), failureReason);
                                 continue;
                             }
 
@@ -971,7 +1011,7 @@ namespace System.Text.Json.SourceGeneration
                             //
                             // Closed derived types on a NON-generic base continue to flow through
                             // to the normal PolymorphicTypeResolver assignability check below.
-                            ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase);
+                            ReportOpenGenericDerivedTypeDiagnostic(typeToGenerate.Type, derivedType, attributeData.GetLocation(), SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase);
                             continue;
                         }
 
