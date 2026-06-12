@@ -141,18 +141,39 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetRootAssembly()
     {
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        TargetPointer defaultAppDomain = ((ILoader)this).GetDomainInfo().DefaultAppDomain;
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(defaultAppDomain);
         return appDomain.RootAssembly;
     }
 
     string ILoader.GetAppDomainFriendlyName()
     {
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        TargetPointer defaultAppDomain = ((ILoader)this).GetDomainInfo().DefaultAppDomain;
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(defaultAppDomain);
         return appDomain.FriendlyName != TargetPointer.Null
             ? _target.ReadUtf16String(appDomain.FriendlyName)
             : DefaultDomainFriendlyName;
+    }
+
+    RuntimeDomainInfo ILoader.GetDomainInfo()
+    {
+        return new RuntimeDomainInfo
+        {
+            SystemDomain = TryReadGlobalIndirectPointer(_target, Constants.Globals.SystemDomain),
+            DefaultAppDomain = TryReadGlobalIndirectPointer(_target, Constants.Globals.AppDomain),
+            DefaultAppDomainId = _target.TryReadGlobal(Constants.Globals.DefaultADID, out uint? id) && id is not null ? id.Value : 0u,
+        };
+
+        // Tolerate missing-or-uninitialized globals: callers that only need one of
+        // the values shouldn't fail because an unrelated global is unavailable.
+        static TargetPointer TryReadGlobalIndirectPointer(Target target, string name)
+        {
+            if (!target.TryReadGlobalPointer(name, out TargetPointer? ptrPtr) || ptrPtr is null)
+                return TargetPointer.Null;
+            if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
+                return TargetPointer.Null;
+            return value;
+        }
     }
 
     TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -494,6 +515,8 @@ internal readonly struct Loader_1 : ILoader
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
+        uint tableDataOffset = (uint)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
         return new ModuleLookupTables(
             module.FieldDefToDescMap,
             module.ManifestModuleReferencesMap,
@@ -501,7 +524,8 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToDescMap,
             module.TypeDefToMethodTableMap,
             module.TypeRefToMethodTableMap,
-            module.MethodDefToILCodeVersioningStateMap);
+            module.MethodDefToILCodeVersioningStateMap,
+            tableDataOffset);
     }
 
     private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
@@ -585,15 +609,15 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetGlobalLoaderAllocator()
     {
-        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        TargetPointer systemDomainAddr = ((ILoader)this).GetDomainInfo().SystemDomain;
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(systemDomainAddr);
         return systemDomain.GlobalLoaderAllocator;
     }
 
     TargetPointer ILoader.GetSystemAssembly()
     {
-        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        TargetPointer systemDomainAddr = ((ILoader)this).GetDomainInfo().SystemDomain;
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(systemDomainAddr);
         return systemDomain.SystemAssembly;
     }
 

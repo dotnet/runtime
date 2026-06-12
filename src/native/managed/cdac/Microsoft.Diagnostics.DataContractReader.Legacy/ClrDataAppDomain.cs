@@ -103,7 +103,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             if (id is null)
                 throw new ArgumentNullException(nameof(id));
 
-            *id = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+            *id = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomainId;
         }
         catch (System.Exception ex)
         {

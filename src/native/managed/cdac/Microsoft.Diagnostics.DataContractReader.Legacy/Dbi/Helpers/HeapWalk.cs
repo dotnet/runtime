@@ -27,7 +27,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
     {
         _gc = target.Contracts.GC;
         _rts = target.Contracts.RuntimeTypeSystem;
-        _freeObjectMT = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        _freeObjectMT = _rts.GetWellKnownMethodTable(WellKnownMethodTable.Free);
         _cache = new LinearReadCache(target);
         // use these fields directly instead of through RuntimeTypeSystem so that we can use our cache that we really only need for heap walking
         _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
