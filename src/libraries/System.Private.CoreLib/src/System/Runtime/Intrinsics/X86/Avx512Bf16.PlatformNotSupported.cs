@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
@@ -13,84 +12,29 @@ namespace System.Runtime.Intrinsics.X86
         internal Avx512Bf16() { }
 
         /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
-        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
-        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        /// <summary>Provides access to the x86 AVX512-BF16 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Avx512F.X64
         {
             internal X64() { }
-
-            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
-            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
-            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
-        /// <summary>
-        ///   <para>__m512 _mm512_dpbf16_ps (__m512 src, __m512bh a, __m512bh b)</para>
-        ///   <para>  VDPBF16PS zmm1, zmm2, zmm3/m512</para>
-        /// </summary>
-        public static Vector512<float> MultiplyWideningAndAdd(Vector512<float> addend, Vector512<BFloat16> left, Vector512<BFloat16> right) { throw new PlatformNotSupportedException(); }
+        public static Vector512<float> MultiplyWideningAndAdd(Vector512<float> addend, Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector512<ushort> ConvertToBFloat16(Vector512<float> lower, Vector512<float> upper) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ConvertToBFloat16(Vector512<float> value) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        ///   <para>__m512bh _mm512_cvtne2ps_pbh (__m512 a, __m512 b)</para>
-        ///   <para>  VCVTNE2PS2BF16 zmm1, zmm2, zmm3/m512</para>
-        /// </summary>
-        public static Vector512<BFloat16> ConvertToBFloat16(Vector512<float> lower, Vector512<float> upper) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>__m256bh _mm512_cvtneps_pbh (__m512 a)</para>
-        ///   <para>  VCVTNEPS2BF16 ymm1, zmm2/m512</para>
-        /// </summary>
-        public static Vector256<BFloat16> ConvertToBFloat16(Vector512<float> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>Provides access to the x86 AVX512-BF16+VL hardware instructions via intrinsics.</summary>
         public new abstract class VL : Avx512F.VL
         {
             internal VL() { }
-
-            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
-            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
-            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-            /// <summary>
-            ///   <para>__m128 _mm_dpbf16_ps (__m128 src, __m128bh a, __m128bh b)</para>
-            ///   <para>  VDPBF16PS xmm1, xmm2, xmm3/m128</para>
-            /// </summary>
-            public static Vector128<float> MultiplyWideningAndAdd(Vector128<float> addend, Vector128<BFloat16> left, Vector128<BFloat16> right) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   <para>__m256 _mm256_dpbf16_ps (__m256 src, __m256bh a, __m256bh b)</para>
-            ///   <para>  VDPBF16PS ymm1, ymm2, ymm3/m256</para>
-            /// </summary>
-            public static Vector256<float> MultiplyWideningAndAdd(Vector256<float> addend, Vector256<BFloat16> left, Vector256<BFloat16> right) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   <para>__m128bh _mm_cvtne2ps_pbh (__m128 a, __m128 b)</para>
-            ///   <para>  VCVTNE2PS2BF16 xmm1, xmm2, xmm3/m128</para>
-            /// </summary>
-            public static Vector128<BFloat16> ConvertToBFloat16(Vector128<float> lower, Vector128<float> upper) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   <para>__m256bh _mm256_cvtne2ps_pbh (__m256 a, __m256 b)</para>
-            ///   <para>  VCVTNE2PS2BF16 ymm1, ymm2, ymm3/m256</para>
-            /// </summary>
-            public static Vector256<BFloat16> ConvertToBFloat16(Vector256<float> lower, Vector256<float> upper) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   <para>__m128bh _mm_cvtneps_pbh (__m128 a)</para>
-            ///   <para>  VCVTNEPS2BF16 xmm1, xmm2/m128</para>
-            /// </summary>
-            public static Vector128<BFloat16> ConvertToBFloat16(Vector128<float> value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   <para>__m128bh _mm256_cvtneps_pbh (__m256 a)</para>
-            ///   <para>  VCVTNEPS2BF16 xmm1, ymm2/m256</para>
-            /// </summary>
-            public static Vector128<BFloat16> ConvertToBFloat16(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<float> MultiplyWideningAndAdd(Vector128<float> addend, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+            public static Vector256<float> MultiplyWideningAndAdd(Vector256<float> addend, Vector256<ushort> left, Vector256<ushort> right) { throw new PlatformNotSupportedException(); }
+            public static Vector128<ushort> ConvertToBFloat16(Vector128<float> lower, Vector128<float> upper) { throw new PlatformNotSupportedException(); }
+            public static Vector256<ushort> ConvertToBFloat16(Vector256<float> lower, Vector256<float> upper) { throw new PlatformNotSupportedException(); }
+            public static Vector128<ushort> ConvertToBFloat16(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<ushort> ConvertToBFloat16(Vector256<float> value) { throw new PlatformNotSupportedException(); }
         }
     }
 }
