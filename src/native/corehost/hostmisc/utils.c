@@ -200,3 +200,40 @@ bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_cha
 
     return false;
 }
+
+pal_char_t* utils_get_runtime_id(void)
+{
+    pal_char_t* env_rid = pal_getenv(_X("DOTNET_RUNTIME_ID"));
+    if (env_rid != NULL)
+        return env_rid;
+
+    return pal_strdup(_STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME));
+}
+
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version)
+{
+    pal_char_t* rid = utils_get_runtime_id();
+
+    pal_char_t query[MAX_DOWNLOAD_URL_LEN / 2];
+    if (framework_name != NULL)
+    {
+        if (framework_version != NULL && framework_version[0] != _X('\0'))
+        {
+            pal_str_printf(query, ARRAY_SIZE(query), _X("framework=%s&framework_version=%s"), framework_name, framework_version);
+        }
+        else
+        {
+            pal_str_printf(query, ARRAY_SIZE(query), _X("framework=%s"), framework_name);
+        }
+    }
+    else
+    {
+        pal_str_printf(query, ARRAY_SIZE(query), _X("missing_runtime=true"));
+    }
+
+    pal_str_printf(out_url, out_url_len,
+        DOTNET_CORE_APPLAUNCH_URL _X("?%s&arch=") _STRINGIFY(CURRENT_ARCH_NAME) _X("&rid=%s&os=") _STRINGIFY(FALLBACK_HOST_OS),
+        query, rid);
+
+    free(rid);
+}

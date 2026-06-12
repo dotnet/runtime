@@ -238,11 +238,10 @@ const pal::char_t* get_current_arch_name()
 
 pal::string_t get_runtime_id()
 {
-    pal::string_t rid;
-    if (try_get_runtime_id_from_env(rid))
-        return rid;
-
-    return _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
+    pal_char_t* rid = utils_get_runtime_id();
+    pal::string_t result = rid;
+    free(rid);
+    return result;
 }
 
 bool try_get_runtime_id_from_env(pal::string_t& out_rid)
@@ -309,12 +308,12 @@ void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
-    pal_char_t* canonical = utils_get_file_path_from_env(env_key);
-    if (canonical == nullptr)
+    pal_char_t* file_path = utils_get_file_path_from_env(env_key);
+    if (file_path == nullptr)
         return false;
 
-    recv->assign(canonical);
-    free(canonical);
+    recv->assign(file_path);
+    free(file_path);
     return true;
 }
 
@@ -416,35 +415,8 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path)
 
 pal::string_t get_download_url(const pal::char_t* framework_name, const pal::char_t* framework_version)
 {
-    pal::string_t url = DOTNET_CORE_APPLAUNCH_URL _X("?");
-    if (framework_name != nullptr && pal::strlen(framework_name) > 0)
-    {
-        url.append(_X("framework="));
-        url.append(framework_name);
-        if (framework_version != nullptr && pal::strlen(framework_version) > 0)
-        {
-            url.append(_X("&framework_version="));
-            url.append(framework_version);
-        }
-    }
-    else
-    {
-        url.append(_X("missing_runtime=true"));
-    }
-
-    const pal::char_t* arch = get_current_arch_name();
-    url.append(_X("&arch="));
-    url.append(arch);
-    url.append(_X("&rid="));
-    url.append(get_runtime_id());
-
-    pal::string_t os = pal::get_current_os_rid_platform();
-    if (os.empty())
-        os = pal::get_current_os_fallback_rid();
-
-    url.append(_X("&os="));
-    url.append(os);
-
+    pal_char_t url[MAX_DOWNLOAD_URL_LEN];
+    utils_get_download_url(url, ARRAY_SIZE(url), framework_name, framework_version);
     return url;
 }
 
@@ -494,10 +466,4 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
     recv->assign(value);
     free(value);
     return true;
-}
-
-extern "C" pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version)
-{
-    pal::string_t url = get_download_url(framework_name, framework_version);
-    return pal_strdup(url.c_str());
 }

@@ -129,7 +129,6 @@ static void print_missing_runtime_error(
     pal_char_t* self_registered_dir = NULL;
     pal_char_t* registered_config_location = NULL;
     pal_char_t* default_install_location = NULL;
-    pal_char_t* download_url = NULL;
 
     // Build the message as an array of string fragments, then concatenate once
     // at the end. Current upper bound is ~24 message_parts; 32 is comfortable.
@@ -234,7 +233,8 @@ static void print_missing_runtime_error(
     }
     *dst = _X('\0');
 
-    download_url = utils_get_download_url(NULL, NULL);
+    pal_char_t download_url[MAX_DOWNLOAD_URL_LEN];
+    utils_get_download_url(download_url, ARRAY_SIZE(download_url), NULL, NULL);
 
     trace_error(
         MISSING_RUNTIME_ERROR_FORMAT,
@@ -251,7 +251,6 @@ static void print_missing_runtime_error(
     free(self_registered_dir);
     free(registered_config_location);
     free(default_install_location);
-    free(download_url);
 }
 
 bool fxr_resolver_try_get_path(

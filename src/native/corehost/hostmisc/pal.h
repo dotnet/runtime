@@ -220,6 +220,24 @@ pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 #define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
 #define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
 
+// When running on a platform that is not supported in RID fallback graph (because it was unknown
+// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
+// consuming the native assets.
+//
+// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
+// degree of compat across their respective releases is usually high.
+//
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
+
 // ============================================================================
 // C++ section (the original pal:: namespace surface)
 // ============================================================================
@@ -258,26 +276,8 @@ pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 
 #endif
 
-// When running on a platform that is not supported in RID fallback graph (because it was unknown
-// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
-// consuming the native assets.
-//
-// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
-// degree of compat across their respective releases is usually high.
-//
-// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
-#endif
-
-#if defined(TARGET_WINDOWS)
-    #define HOST_RID_PLATFORM "win"
-#elif defined(TARGET_OSX)
-    #define HOST_RID_PLATFORM "osx"
-#elif defined(TARGET_ANDROID)
-    #define HOST_RID_PLATFORM "linux-bionic"
-#else
-    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
 #endif
 
 namespace pal

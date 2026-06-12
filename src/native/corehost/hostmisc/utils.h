@@ -216,9 +216,6 @@ extern "C" {
 
 void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
-// Caller should free() the returned pointer.
-pal_char_t* utils_test_only_getenv(const pal_char_t* name);
-
 void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
 
 // Caller should free() the returned pointer.
@@ -235,6 +232,9 @@ pal_char_t* utils_get_directory(const pal_char_t* path);
 // Caller should free() the returned pointer.
 pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
 
+// Caller should free() the returned pointer.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
 // Find the .NET install root from environment variables in priority order:
 //  - DOTNET_ROOT_<ARCH>
 //  - If running Windows WOW64 only, DOTNET_ROOT(x86)
@@ -243,7 +243,10 @@ pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
 bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
 
 // Caller should free() the returned pointer.
-pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version);
+pal_char_t* utils_get_runtime_id(void);
+
+#define MAX_DOWNLOAD_URL_LEN 512
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version);
 
 #ifdef __cplusplus
 }
