@@ -1764,6 +1764,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                             reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
                         }
 
+                        spillSlotsToZeroAtEndOfBlock.push_back(spillSlot);
+
                         anyChanges = true;
                     }
 
@@ -1820,6 +1822,19 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             // We have a ref sourced from something like a call result or an indirection that hasn't been
             //  spilled yet, so record it for potential spilling at the next call.
             defs.push_back(tree);
+        }
+
+        if (spillSlotsToZeroAtEndOfBlock.size())
+        {
+            for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
+            {
+                GenTree* zero = gtNewZeroConNode(TYP_I_IMPL);
+                GenTree* store = gtNewStoreLclVarNode(lclNum, zero);
+                LIR::Range range = LIR::SeqTree(this, store);
+                LIR::InsertBeforeTerminator(block, std::move(range));
+            }
+
+            spillSlotsToZeroAtEndOfBlock.clear();
         }
     }
 
