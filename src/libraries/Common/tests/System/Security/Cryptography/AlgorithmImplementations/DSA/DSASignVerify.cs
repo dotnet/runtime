@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.Dsa.Tests
 {
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-    public sealed class DSASignVerify_Array : DSASignVerify
+    public abstract class DSASignVerify_Array : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(data, hashAlgorithm);
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-    public sealed class DSASignVerify_Stream : DSASignVerify
+    public abstract class DSASignVerify_Stream : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(new MemoryStream(data), hashAlgorithm);
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
 #if NET
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-    public sealed class DSASignVerify_Span : DSASignVerify
+    public abstract class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             TryWithOutputArray(dest => dsa.TrySignData(data, dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
@@ -112,6 +112,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract partial class DSASignVerify
     {
+        protected abstract DSAProvider DSAFactory { get; }
+
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
         public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
 
@@ -255,15 +257,25 @@ namespace System.Security.Cryptography.Dsa.Tests
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void SignAndVerifyDataExplicit2048()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void VerifyKnown_2048_SHA256()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             byte[] signature =
             {
                 0x92, 0x06, 0x0B, 0x57, 0xF1, 0x35, 0x20, 0x28,
@@ -285,9 +297,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void VerifyKnown_2048_SHA384()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             byte[] signature =
             {
                 0x56, 0xBA, 0x70, 0x48, 0x18, 0xBA, 0xE3, 0x43,
@@ -309,9 +326,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void VerifyKnown_2048_SHA512()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             byte[] signature =
             {
                 0x6F, 0x44, 0x68, 0x1F, 0x74, 0xF7, 0x90, 0x2F,
@@ -352,9 +374,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void Sign2048WithSha1()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             byte[] data = { 1, 2, 3, 4 };
 
             using (DSA dsa = DSAFactory.Create())
@@ -367,9 +394,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [Fact]
         public void Verify2048WithSha1()
         {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                return;
+            }
+
             byte[] data = { 1, 2, 3, 4 };
 
             byte[] signature = (
@@ -419,14 +451,6 @@ namespace System.Security.Cryptography.Dsa.Tests
                 Assert.Equal(expectedSignatureLength, signature.Length);
                 bool signatureMatched = VerifyData(dsa, data, signature, new HashAlgorithmName(hashAlgorithmName));
                 Assert.True(signatureMatched);
-            }
-        }
-
-        internal static bool SupportsFips186_3
-        {
-            get
-            {
-                return DSAFactory.SupportsFips186_3;
             }
         }
     }
