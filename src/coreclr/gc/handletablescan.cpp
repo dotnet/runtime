@@ -844,7 +844,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                         _UNCHECKED_OBJECTREF pSecondary = pUserDataBlock[handleIndexInBlock];
                         if (pSecondary)
                         {
-                            int secondaryAge = g_theGCHeap->WhichGeneration(pSecondary);
+                            int secondaryAge = GetConvertedGeneration(pSecondary);
                             if (minAge > secondaryAge)
                                 minAge = secondaryAge;
                         }
