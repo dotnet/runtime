@@ -43,6 +43,11 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_EPOLL
+#include <sys/epoll.h>
+#elif HAVE_KQUEUE
+#include <sys/event.h>
+#endif
 #if HAVE_STATFS_VFS // Linux
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
@@ -1250,66 +1255,7 @@ int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
     return Common_Read(fd, buffer, bufferSize);
 }
 
-int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize)
-{
-    while (1)
-    {
-        int32_t result = Common_Read(fd, buffer, bufferSize);
-        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            return result;
-        }
 
-        // The fd is non-blocking and no data is available yet.
-        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
-        {
-            // The pipe/socket was closed with no data available (EOF).
-            return 0;
-        }
-    }
-}
-
-int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize)
-{
-    while (1)
-    {
-        int32_t result = Common_Write(fd, buffer, bufferSize);
-        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            return result;
-        }
-
-        // The fd is non-blocking and the write buffer is full.
-        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
-        {
-            // The pipe/socket was closed.
-            errno = EPIPE;
-            return -1;
-        }
-    }
-}
 
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
@@ -2020,35 +1966,11 @@ int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     int fileDescriptor = ToFileDescriptor(fd);
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
-    while (1)
-    {
-        int64_t count;
-        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+    int64_t count;
+    while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
-        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            assert(count >= -1);
-            return count;
-        }
-
-        // The fd is non-blocking and no data is available yet.
-        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
-        {
-            // The pipe/socket was closed with no data available (EOF).
-            return 0;
-        }
-    }
+    assert(count >= -1);
+    return count;
 }
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
@@ -2100,36 +2022,11 @@ int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     int fileDescriptor = ToFileDescriptor(fd);
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
-    while (1)
-    {
-        int64_t count;
-        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+    int64_t count;
+    while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
-        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            assert(count >= -1);
-            return count;
-        }
-
-        // The fd is non-blocking and the write buffer is full.
-        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
-        {
-            // The pipe/socket was closed.
-            errno = EPIPE;
-            return -1;
-        }
-    }
+    assert(count >= -1);
+    return count;
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
@@ -2171,4 +2068,444 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
     assert(count >= -1);
     return count;
+}
+
+#if HAVE_KQUEUE
+#if KEVENT_HAS_VOID_UDATA
+static void* GetKeventUdata(uintptr_t udata)
+{
+    return (void*)udata;
+}
+static uintptr_t GetHandleEventData(void* udata)
+{
+    return (uintptr_t)udata;
+}
+#else
+static intptr_t GetKeventUdata(uintptr_t udata)
+{
+    return (intptr_t)udata;
+}
+static uintptr_t GetHandleEventData(intptr_t udata)
+{
+    return (uintptr_t)udata;
+}
+#endif
+#if KEVENT_REQUIRES_INT_PARAMS
+static int GetKeventNchanges(int nchanges)
+{
+    return nchanges;
+}
+static int16_t GetKeventFilter(int16_t filter)
+{
+    return filter;
+}
+static uint16_t GetKeventFlags(uint16_t flags)
+{
+    return flags;
+}
+#else
+static size_t GetKeventNchanges(int nchanges)
+{
+    return (size_t)nchanges;
+}
+static int16_t GetKeventFilter(uint32_t filter)
+{
+    return (int16_t)filter;
+}
+static uint16_t GetKeventFlags(uint32_t flags)
+{
+    return (uint16_t)flags;
+}
+#endif
+#endif
+
+#if HAVE_EPOLL
+
+static const size_t HandleEventBufferElementSize = sizeof(struct epoll_event) > sizeof(HandleEvent) ? sizeof(struct epoll_event) : sizeof(HandleEvent);
+
+static int GetHandleEvents(uint32_t events)
+{
+    int asyncEvents = (((events & EPOLLIN) != 0) ? HandleEvents_READ : 0) | (((events & EPOLLOUT) != 0) ? HandleEvents_WRITE : 0) |
+                      (((events & EPOLLRDHUP) != 0) ? HandleEvents_READCLOSE : 0) |
+                      (((events & EPOLLHUP) != 0) ? HandleEvents_CLOSE : 0) | (((events & EPOLLERR) != 0) ? HandleEvents_ERROR : 0);
+
+    return asyncEvents;
+}
+
+static uint32_t GetEPollEvents(HandleEvents events)
+{
+    return (((events & HandleEvents_READ) != 0) ? EPOLLIN : 0) | (((events & HandleEvents_WRITE) != 0) ? EPOLLOUT : 0) |
+           (((events & HandleEvents_READCLOSE) != 0) ? EPOLLRDHUP : 0) | (((events & HandleEvents_CLOSE) != 0) ? EPOLLHUP : 0) |
+           (((events & HandleEvents_ERROR) != 0) ? EPOLLERR : 0);
+}
+
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    assert(port != NULL);
+
+    int epollFd = epoll_create1(EPOLL_CLOEXEC);
+    if (epollFd == -1)
+    {
+        *port = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = epollFd;
+    return Error_SUCCESS;
+}
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents, uintptr_t data)
+{
+    assert(currentEvents != newEvents);
+
+    int op = EPOLL_CTL_MOD;
+    if (currentEvents == HandleEvents_NONE)
+    {
+        op = EPOLL_CTL_ADD;
+    }
+    else if (newEvents == HandleEvents_NONE)
+    {
+        op = EPOLL_CTL_DEL;
+    }
+
+    struct epoll_event evt;
+    memset(&evt, 0, sizeof(struct epoll_event));
+    evt.events = GetEPollEvents(newEvents) | (unsigned int)EPOLLET;
+    evt.data.ptr = (void*)data;
+    int err = epoll_ctl(port, op, socket, &evt);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static void ConvertEventEPollToSocketAsync(HandleEvent* sae, struct epoll_event* epoll)
+{
+    assert(sae != NULL);
+    assert(epoll != NULL);
+
+    // epoll does not play well with disconnected connection-oriented sockets, frequently
+    // reporting spurious EPOLLHUP events. Fortunately, EPOLLHUP may be handled as an
+    // EPOLLIN | EPOLLOUT event: the usual processing for these events will recognize and
+    // handle the HUP condition.
+    uint32_t events = epoll->events;
+    if ((events & EPOLLHUP) != 0)
+    {
+        events = (events & ((uint32_t)~EPOLLHUP)) | EPOLLIN | EPOLLOUT;
+    }
+
+    memset(sae, 0, sizeof(HandleEvent));
+    sae->Data = (uintptr_t)epoll->data.ptr;
+    sae->Events = GetHandleEvents(events);
+}
+
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    assert(buffer != NULL);
+    assert(count != NULL);
+    assert(*count >= 0);
+
+    struct epoll_event* events = (struct epoll_event*)buffer;
+    int numEvents;
+    while ((numEvents = epoll_wait(port, events, *count, -1)) < 0 && errno == EINTR);
+    if (numEvents == -1)
+    {
+        *count = 0;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, epoll_wait will never return
+    // 0 events even if there are no file descriptors registered with the epoll fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents <= *count);
+
+    if (sizeof(struct epoll_event) < sizeof(HandleEvent))
+    {
+        // Copy backwards to avoid overwriting earlier data.
+        for (int i = numEvents - 1; i >= 0; i--)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            struct epoll_event evt = events[i];
+            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+        }
+    }
+    else
+    {
+        // Copy forwards for better cache behavior
+        for (int i = 0; i < numEvents; i++)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            struct epoll_event evt = events[i];
+            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+        }
+    }
+
+    *count = numEvents;
+    return Error_SUCCESS;
+}
+
+#elif HAVE_KQUEUE
+
+c_static_assert(sizeof(HandleEvent) <= sizeof(struct kevent));
+static const size_t HandleEventBufferElementSize = sizeof(struct kevent);
+
+static HandleEvents GetHandleEvents(int16_t filter, uint16_t flags)
+{
+    int32_t events;
+    switch (filter)
+    {
+        case EVFILT_READ:
+            events = HandleEvents_READ;
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= HandleEvents_READCLOSE;
+            }
+            break;
+
+        case EVFILT_WRITE:
+            events = HandleEvents_WRITE;
+
+            // kqueue does not play well with disconnected connection-oriented sockets, frequently
+            // reporting spurious EOF events. Fortunately, EOF may be handled as an EVFILT_READ |
+            // EVFILT_WRITE event: the usual processing for these events will recognize and
+            // handle the EOF condition.
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= HandleEvents_READ;
+            }
+            break;
+
+        default:
+            assert_msg(0, "unexpected kqueue filter type", (int)filter);
+            return HandleEvents_NONE;
+    }
+
+    if ((flags & EV_ERROR) != 0)
+    {
+        events |= HandleEvents_ERROR;
+    }
+
+    return (HandleEvents)events;
+}
+
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    assert(port != NULL);
+
+    int kqueueFd = kqueue();
+    if (kqueueFd == -1)
+    {
+        *port = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = kqueueFd;
+    return Error_SUCCESS;
+}
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents, uintptr_t data)
+{
+#ifdef EV_RECEIPT
+    const uint16_t AddFlags = EV_ADD | EV_CLEAR | EV_RECEIPT;
+    const uint16_t RemoveFlags = EV_DELETE | EV_RECEIPT;
+#else
+    const uint16_t AddFlags = EV_ADD | EV_CLEAR;
+    const uint16_t RemoveFlags = EV_DELETE;
+#endif
+
+    assert(currentEvents != newEvents);
+
+    int32_t changes = currentEvents ^ newEvents;
+    int8_t readChanged = (changes & HandleEvents_READ) != 0;
+    int8_t writeChanged = (changes & HandleEvents_WRITE) != 0;
+
+    struct kevent events[2];
+    int err;
+
+    int i = 0;
+    if (readChanged)
+    {
+        EV_SET(&events[i++],
+               (uint64_t)socket,
+               EVFILT_READ,
+               (newEvents & HandleEvents_READ) == 0 ? RemoveFlags : AddFlags,
+               0,
+               0,
+               GetKeventUdata(data));
+#if defined(__FreeBSD__)
+        // Issue: #30698
+        // FreeBSD seems to have some issue when setting read/write events together.
+        // As a workaround use separate kevent() calls.
+        if (writeChanged)
+        {
+            while ((err = kevent(port, events, GetKeventNchanges(i), NULL, 0, NULL)) < 0 && errno == EINTR);
+            if (err != 0)
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+            i = 0;
+        }
+#endif
+    }
+
+    if (writeChanged)
+    {
+        EV_SET(&events[i++],
+               (uint64_t)socket,
+               EVFILT_WRITE,
+               (newEvents & HandleEvents_WRITE) == 0 ? RemoveFlags : AddFlags,
+               0,
+               0,
+               GetKeventUdata(data));
+    }
+
+    while ((err = kevent(port, events, GetKeventNchanges(i), NULL, 0, NULL)) < 0 && errno == EINTR);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    assert(buffer != NULL);
+    assert(count != NULL);
+    assert(*count >= 0);
+
+    struct kevent* events = (struct kevent*)buffer;
+    int numEvents;
+    while ((numEvents = kevent(port, NULL, 0, events, GetKeventNchanges(*count), NULL)) < 0 && errno == EINTR);
+    if (numEvents == -1)
+    {
+        *count = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, kevent will never return
+    // 0 events even if there are no file descriptors registered with the kqueue fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents <= *count);
+
+    for (int i = 0; i < numEvents; i++)
+    {
+        // This copy is made deliberately to avoid overwriting data.
+        struct kevent evt = events[i];
+        memset(&buffer[i], 0, sizeof(HandleEvent));
+        buffer[i].Data = GetHandleEventData(evt.udata);
+        buffer[i].Events = GetHandleEvents(GetKeventFilter(evt.filter), GetKeventFlags(evt.flags));
+    }
+
+    *count = numEvents;
+    return Error_SUCCESS;
+}
+
+#else // !HAVE_KQUEUE !HAVE_EPOLL
+
+static const size_t HandleEventBufferElementSize = 0;
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    return Error_ENOSYS;
+}
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    return Error_ENOSYS;
+}
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents,
+uintptr_t data)
+{
+    return Error_ENOSYS;
+}
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    return Error_ENOSYS;
+}
+#endif  // !HAVE_KQUEUE !HAVE_EPOLL
+
+int32_t SystemNative_CreateHandleEventPort(intptr_t* port)
+{
+    if (port == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd;
+    int32_t error = CreateHandleEventPortInner(&fd);
+    *port = fd;
+    return error;
+}
+
+int32_t SystemNative_CloseHandleEventPort(intptr_t port)
+{
+    return CloseHandleEventPortInner(ToFileDescriptor(port));
+}
+
+int32_t SystemNative_CreateHandleEventBuffer(int32_t count, HandleEvent** buffer)
+{
+    if (buffer == NULL || count < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    size_t bufferSize;
+    if (!multiply_s(HandleEventBufferElementSize, (size_t)count, &bufferSize) ||
+        (*buffer = (HandleEvent*)malloc(bufferSize)) == NULL)
+    {
+        return Error_ENOMEM;
+    }
+
+    return Error_SUCCESS;
+}
+
+int32_t SystemNative_FreeHandleEventBuffer(HandleEvent* buffer)
+{
+    free(buffer);
+    return Error_SUCCESS;
+}
+
+int32_t
+SystemNative_TryChangeHandleEventRegistration(intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
+{
+    int portFd = ToFileDescriptor(port);
+    int socketFd = ToFileDescriptor(socket);
+
+    const int32_t SupportedEvents = HandleEvents_READ | HandleEvents_WRITE | HandleEvents_READCLOSE | HandleEvents_CLOSE | HandleEvents_ERROR;
+
+    if ((currentEvents & ~SupportedEvents) != 0 || (newEvents & ~SupportedEvents) != 0)
+    {
+        return Error_EINVAL;
+    }
+
+    if (currentEvents == newEvents)
+    {
+        return Error_SUCCESS;
+    }
+
+    return TryChangeHandleEventRegistrationInner(
+        portFd, socketFd, (HandleEvents)currentEvents, (HandleEvents)newEvents, data);
+}
+
+int32_t SystemNative_WaitForHandleEvents(intptr_t port, HandleEvent* buffer, int32_t* count)
+{
+    if (buffer == NULL || count == NULL || *count < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(port);
+
+    return WaitForHandleEventsInner(fd, buffer, count);
 }

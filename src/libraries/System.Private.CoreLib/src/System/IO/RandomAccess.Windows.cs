@@ -132,7 +132,7 @@ namespace System.IO
             }
         }
 
-        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy = null)
         {
             if (buffer.IsEmpty)
             {
@@ -141,7 +141,7 @@ namespace System.IO
 
             if (handle.IsAsync)
             {
-                WriteSyncUsingAsyncHandle(handle, buffer, fileOffset);
+                WriteSyncUsingAsyncHandle(handle, buffer, fileOffset, strategy);
                 return;
             }
 
@@ -154,12 +154,14 @@ namespace System.IO
                     return;
                 }
 
+                strategy?.OnIncompleteOperation(buffer.Length - numBytesWritten, 0);
+
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
-        private static unsafe void WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        private static unsafe void WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy)
         {
             if (buffer.IsEmpty)
             {
@@ -205,6 +207,8 @@ namespace System.IO
                         // the callback would be invoked and decrement it.
                         resetEvent.ReleaseRefCount(overlapped);
                     }
+
+                    strategy?.OnIncompleteOperation(buffer.Length, 0);
 
                     throw errorCode switch
                     {
