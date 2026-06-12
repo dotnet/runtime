@@ -63,8 +63,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
-            private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations =>
-                field ??= new(s_typePairComparer);
+            private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations => field ??= new(s_typePairComparer);
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
