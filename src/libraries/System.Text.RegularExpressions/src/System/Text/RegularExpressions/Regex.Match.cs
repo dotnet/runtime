@@ -451,8 +451,8 @@ namespace System.Text.RegularExpressions
         ///
         /// ## The `startat` parameter
         ///
-        /// You can optionally specify a starting position in the string by using the `startat` parameter. In a left-to-right search, any matches that begin before `startat` in the string are ignored.
-        /// If you don't specify a starting position, the search begins at the default position, which is the left end of `input` in a left-to-right search, and the right end of `input` in a right-to-left search.
+        /// Use the `startat` parameter to specify the character position at which the search starts. In a left-to-right search, any matches that begin before `startat` in the string are ignored.
+        /// To start at the default position, use the <xref:System.Text.RegularExpressions.Regex.Match(System.String)> overload (or pass 0 for a left-to-right search and `input.Length` for a right-to-left search).
         /// Despite starting the search at `startat`, the index of any returned match is relative to the start of the string.
         ///
         /// Although the regular expression engine doesn't return any match starting before `startat`, it doesn't ignore the string before `startat`. This means that assertions
@@ -463,10 +463,10 @@ namespace System.Text.RegularExpressions
         /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Examples.cs#Match)]
         ///
         /// > [!TIP]
-        /// > - If a pattern starts with the `^` anchor but `startat` is greater than 0, no matches will ever be found in a single-line search since they are constrained by `^` to start at index 0.
+        /// > - If a pattern starts with the `^` anchor, `startat` is greater than 0, and the regular expression isn't using <xref:System.Text.RegularExpressions.RegexOptions.Multiline?displayProperty=nameWithType>, no matches will ever be found since they are constrained by `^` to start at index 0.
         /// > - The [`\G` anchor](https://learn.microsoft.com/dotnet/standard/base-types/anchors-in-regular-expressions#contiguous-matches-g) is satisfied at `startat`. Because of this, if you want to restrict
-        /// a match so that it begins exactly at a particular character position in the string, anchor the regular expression with a `\G` on the left for a left-to-right pattern.
-        /// This restricts the match so it must start exactly at `startat` (or, when multiple matches are desired, so the matches are contiguous).
+        /// >   a match so that it begins exactly at a particular character position in the string, anchor the regular expression with a `\G` on the left for a left-to-right pattern.
+        /// >   This restricts the match so it must start exactly at `startat` (or, when multiple matches are desired, so the matches are contiguous).
         ///
         /// ## Right-to-left searches
         ///
