@@ -1112,6 +1112,16 @@ namespace System.Text.Json.SourceGeneration
                         return false;
                     }
 
+                    // Closed derived registered against a non-generic base. This covers the common
+                    // sensible case (e.g. [JsonDerivedType(typeof(Cat))] class Animal; class Cat :
+                    // Animal;) AND outright invalid pairs (e.g. [JsonDerivedType(typeof(int))] class
+                    // Foo;) where declaredDerived isn't even assignable to baseType. The source
+                    // generator does not check assignability itself; it passes declaredDerived
+                    // through unchanged so the runtime PolymorphicTypeResolver constructor can
+                    // apply its IsAssignableFrom check (PolymorphicTypeResolver.cs ->
+                    // IsSupportedDerivedType -> ThrowInvalidOperationException_DerivedTypeNotSupported)
+                    // and reject any non-assignable registration the same way it does for the
+                    // reflection-built equivalent.
                     return true;
                 }
 
