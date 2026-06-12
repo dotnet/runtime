@@ -1718,7 +1718,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
@@ -2085,7 +2085,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
