@@ -14,8 +14,8 @@ namespace Microsoft.Extensions.Internal
     {
         private const int ESRCH = 3;
 #if NET
-        private static readonly int s_sigint = GetPlatformSignalNumber(PosixSignal.SIGINT);
-        private static readonly int s_sigterm = GetPlatformSignalNumber(PosixSignal.SIGTERM);
+        private static readonly int s_sigint = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : GetPlatformSignalNumber(PosixSignal.SIGINT);
+        private static readonly int s_sigterm = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 15 : GetPlatformSignalNumber(PosixSignal.SIGTERM);
 #endif
         private static readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
