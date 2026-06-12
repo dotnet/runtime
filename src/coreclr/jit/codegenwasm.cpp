@@ -2590,43 +2590,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    // For a fast tail call wasm requires the callee's result type to match the enclosing
-    // function's, so derive it from the caller's signature (call->gtType is TYP_VOID).
-    if (params.isJump)
-    {
-        if (m_compiler->info.compRetBuffArg != BAD_VAR_NUM)
-        {
-            // The enclosing method returns its struct via a retbuf arg, so the wasm-level
-            // return is empty.
-            typeStack.Push(CORINFO_WASM_TYPE_VOID);
-        }
-        else if (m_compiler->info.compRetType == TYP_VOID)
-        {
-            typeStack.Push(CORINFO_WASM_TYPE_VOID);
-        }
-        else if (m_compiler->info.compRetType == TYP_STRUCT)
-        {
-            typeStack.Push(
-                m_compiler->info.compCompHnd->getWasmLowering(m_compiler->info.compMethodInfo->args.retTypeClass));
-        }
-        else
-        {
-            // Normalize small ints (bool/byte/short/...).
-            typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(
-                ActualTypeToWasmValueType(m_compiler->info.compRetType)));
-        }
-    }
-    else if (call->TypeIs(TYP_STRUCT))
-    {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
-    }
-    else if (call->TypeIs(TYP_VOID))
+    // Compute the wasm-level result type for the call. Use call->gtReturnType
+    // (the call's "exact" return type) rather than call->gtType, since the latter is
+    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
+    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
+    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
+    const var_types callRetType = (var_types)call->gtReturnType;
+    if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
     }
+    else if (callRetType == TYP_STRUCT)
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
     else
     {
-        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+        // Normalize small ints (bool/byte/short/...).
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(ActualTypeToWasmValueType(callRetType)));
     }
 
     for (const CallArg& arg : call->gtArgs.Args())
