@@ -80,6 +80,8 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
+            // (1 << 18) is AVX512Bmm in cpufeatures.h; not mapped here
+            public const int Avx512Bf16 = (1 << 19);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -117,6 +119,8 @@ namespace ILCompiler
                 }
                 if ((flags & Avx512Vp2intersect) != 0)
                     builder.AddSupportedInstructionSet("avx512vp2intersect");
+                if ((flags & Avx512Bf16) != 0)
+                    builder.AddSupportedInstructionSet("avx512_bf16");
                 if ((flags & AvxIfma) != 0)
                     builder.AddSupportedInstructionSet("avxifma");
                 if ((flags & AvxVnni) != 0)
@@ -175,6 +179,9 @@ namespace ILCompiler
 
                     InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
                     InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,
+
+                    InstructionSet.X64_AVX512_BF16 => Avx512Bf16,
+                    InstructionSet.X64_AVX512_BF16_X64 => Avx512Bf16,
 
                     InstructionSet.X64_AVXIFMA => AvxIfma,
                     InstructionSet.X64_AVXIFMA_X64 => AvxIfma,

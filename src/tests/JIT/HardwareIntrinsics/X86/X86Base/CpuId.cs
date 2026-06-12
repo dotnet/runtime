@@ -319,10 +319,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
                 (eax, ebx, ecx, edx) = (maxFunctionId >= 0x00000007) ? X86Base.CpuId(0x00000007, 0x00000001) : (0, 0, 0, 0);
 
-                // if (IsBitIncorrect(eax, 5, typeof(Avx512Bf16), Avx512Bf16.IsSupported, "AVX10v1", ref isHierarchyDisabled))
-                // {
-                //     testResult = Fail;
-                // }
+                if (IsBitIncorrect(eax, 5, typeof(Avx512Bf16), Avx512Bf16.IsSupported, "AVX512_BF16", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
                 if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10v1", ref isHierarchyDisabled))
                 {

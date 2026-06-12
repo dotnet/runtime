@@ -10411,6 +10411,31 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract class Avx512Bf16 : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512Bf16() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<float> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<float> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector512<float> lower, System.Runtime.Intrinsics.Vector512<float> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
+        {
+            internal VL() { }
+            public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<float> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<float> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<float> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector128<float> lower, System.Runtime.Intrinsics.Vector128<float> upper) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector256<float> lower, System.Runtime.Intrinsics.Vector256<float> upper) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToBFloat16(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
         internal AvxVnni() { }

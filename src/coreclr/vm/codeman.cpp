@@ -1619,6 +1619,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Bf16) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512_BF16))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512_BF16);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
     {
         CPUCompileFlags.Set(InstructionSet_GFNI);
