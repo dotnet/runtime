@@ -525,91 +525,73 @@ namespace System.Text.Json.SourceGeneration
         }
 
         /// <summary>
-        /// Returns <see langword="true"/> if every constraint declared on
-        /// <paramref name="derivedParam"/> is implied by (i.e. weaker-than-or-equal-to) some
-        /// constraint declared on <paramref name="baseParam"/>, after applying
+        /// Returns <see langword="true"/> if <paramref name="derivedParam"/>'s declared constraints
+        /// match <paramref name="baseParam"/>'s declared constraints exactly, after applying
         /// <paramref name="substitution"/> to type-constraint references. Used by the
         /// "universal derived registration" check to verify that a derived type's parameter
         /// constraints will be satisfied for every valid specialization of the base.
         ///
-        /// Special-constraint subsumption rules:
-        ///   * <c>where T : class</c>  requires base parameter to also have <c>class</c>.
-        ///   * <c>where T : struct</c> requires base parameter to have <c>struct</c> OR <c>unmanaged</c>.
-        ///   * <c>where T : unmanaged</c> requires base parameter to have <c>unmanaged</c>.
-        ///   * <c>where T : new()</c> requires base parameter to have <c>new()</c>, <c>struct</c>, or <c>unmanaged</c>.
-        ///   * <c>notnull</c> is intentionally ignored (not runtime-enforced; matches <see cref="TryValidateGenericConstraints"/>).
+        /// "Exact match" is used in place of one-sided constraint subsumption because in the
+        /// universal-applicability regime the two are equivalent (C# already forces a derived
+        /// parameter that's identified with a base parameter to declare at least the base's
+        /// constraints), and an equality check is simpler, easier to reason about, and
+        /// forward-compatible with new C# constraint kinds.
+        ///
+        /// <list type="bullet">
+        ///   <item>Special constraint flags (<c>class</c>, <c>struct</c>, <c>unmanaged</c>,
+        ///         <c>new()</c>) must match exactly.</item>
+        ///   <item>The set of type constraints must match exactly after substitution
+        ///         (order-independent).</item>
+        ///   <item>The compile-time-only <c>notnull</c> constraint is intentionally ignored
+        ///         (it is not surfaced via reflection and is not runtime-enforced).</item>
+        /// </list>
         ///
         /// IMPORTANT: This implementation MIRRORS the reflection-side
-        /// <c>System.Text.Json.Reflection.ReflectionExtensions.AreConstraintsImpliedBy</c>.
-        /// Any change to subsumption rules MUST be applied on both sides.
+        /// <c>System.Text.Json.Reflection.ReflectionExtensions.AreConstraintsEquivalent</c>.
+        /// Any change to the equivalence rules MUST be applied on both sides.
         /// </summary>
-        public static bool AreConstraintsImpliedBy(
+        public static bool AreConstraintsEquivalent(
             this Compilation compilation,
             ITypeParameterSymbol derivedParam,
             ITypeParameterSymbol baseParam,
             IReadOnlyDictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
         {
-            bool baseGivesStruct = baseParam.HasValueTypeConstraint || baseParam.HasUnmanagedTypeConstraint;
-
-            if (derivedParam.HasReferenceTypeConstraint && !baseParam.HasReferenceTypeConstraint)
+            if (derivedParam.HasReferenceTypeConstraint != baseParam.HasReferenceTypeConstraint ||
+                derivedParam.HasValueTypeConstraint != baseParam.HasValueTypeConstraint ||
+                derivedParam.HasUnmanagedTypeConstraint != baseParam.HasUnmanagedTypeConstraint ||
+                derivedParam.HasConstructorConstraint != baseParam.HasConstructorConstraint)
             {
                 return false;
             }
 
-            if (derivedParam.HasValueTypeConstraint && !baseGivesStruct)
+            ImmutableArray<ITypeSymbol> derivedConstraints = derivedParam.ConstraintTypes;
+            ImmutableArray<ITypeSymbol> baseConstraints = baseParam.ConstraintTypes;
+            if (derivedConstraints.Length != baseConstraints.Length)
             {
                 return false;
             }
 
-            if (derivedParam.HasUnmanagedTypeConstraint && !baseParam.HasUnmanagedTypeConstraint)
+            if (derivedConstraints.Length == 0)
             {
-                return false;
+                return true;
             }
 
-            if (derivedParam.HasConstructorConstraint && !(baseParam.HasConstructorConstraint || baseGivesStruct))
-            {
-                return false;
-            }
-
-            foreach (ITypeSymbol derivedConstraint in derivedParam.ConstraintTypes)
+            // Compare type-constraint sets order-independently. Substitute each derived
+            // constraint into base-parameter terms via the canonical mapping, then check
+            // that the resulting multiset matches the base's constraint set. Length parity
+            // was already established above, so removing each substituted derived constraint
+            // from a fresh copy of the base set proves equality iff every Remove succeeds.
+            var baseSet = new HashSet<ITypeSymbol>(baseConstraints, SymbolEqualityComparer.Default);
+            foreach (ITypeSymbol derivedConstraint in derivedConstraints)
             {
                 ITypeSymbol substituted = compilation.SubstituteTypeParameters(derivedConstraint, substitution);
-                if (!IsBaseConstraintSetImplying(compilation, baseParam, substituted, baseGivesStruct))
+                if (!baseSet.Remove(substituted))
                 {
                     return false;
                 }
             }
 
             return true;
-
-            static bool IsBaseConstraintSetImplying(
-                Compilation compilation,
-                ITypeParameterSymbol baseParam,
-                ITypeSymbol target,
-                bool baseGivesStruct)
-            {
-                // System.ValueType is implied by the `struct`/`unmanaged` special constraint.
-                if (baseGivesStruct && target.SpecialType == SpecialType.System_ValueType)
-                {
-                    return true;
-                }
-
-                // Object is satisfied by every type parameter trivially.
-                if (target.SpecialType == SpecialType.System_Object)
-                {
-                    return true;
-                }
-
-                foreach (ITypeSymbol baseConstraint in baseParam.ConstraintTypes)
-                {
-                    if (compilation.HasImplicitConversion(baseConstraint, target))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
 
         /// <summary>

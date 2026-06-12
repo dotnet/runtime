@@ -689,8 +689,8 @@
   <data name="Polymorphism_OpenGeneric_Reason_ConstraintViolation" xml:space="preserve">
     <value>a type argument violates a generic constraint on the derived type</value>
   </data>
-  <data name="Polymorphism_OpenGeneric_Reason_ConstraintNarrowing" xml:space="preserve">
-    <value>the derived type's type parameter '{0}' declares constraints that are stricter than the constraints on the corresponding base type parameter '{1}'</value>
+  <data name="Polymorphism_OpenGeneric_Reason_ConstraintMismatch" xml:space="preserve">
+    <value>the derived type's type parameter '{0}' declares constraints that differ from the constraints on the corresponding base type parameter '{1}'</value>
   </data>
   <data name="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase" xml:space="preserve">
     <value>a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</value>

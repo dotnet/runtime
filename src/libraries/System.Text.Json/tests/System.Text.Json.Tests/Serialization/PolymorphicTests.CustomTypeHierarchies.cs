@@ -3197,7 +3197,7 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_Unbound<T1, T2> : OpenGenericBase_Unbound<T1>;
 
         [Fact]
-        public async Task OpenGenericDerivedType_ConstraintNarrowing_ThrowsForAllSpecializations()
+        public async Task OpenGenericDerivedType_ConstraintMismatch_ThrowsForAllSpecializations()
         {
             // The derived adds a `where T : struct` constraint that the base does not have.
             // This is rejected uniformly: even though the constraint happens to be satisfied
@@ -3614,7 +3614,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<Catalog_Reorder_Derived<string, int>>(roundTripped);
         }
 
-        // ---- Pattern C: constraint subsumption matrix ----
+        // ---- Pattern C: constraint equivalence matrix ----
 
         // C1: derived adds `where T : struct` where base has no constraint -- rejected.
         [JsonDerivedType(typeof(Catalog_C1_Derived<>), "d")]
@@ -3663,7 +3663,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Catalog_C2_Base<int>))]
         [InlineData(typeof(Catalog_C3_Base<object>))] // derived adds new() constraint
         [InlineData(typeof(Catalog_C4_Base<int>))]    // derived adds IDisposable constraint
-        public async Task Catalog_ConstraintNarrowing_ThrowsForAllSpecializations(Type closedBaseType)
+        public async Task Catalog_ConstraintMismatch_ThrowsForAllSpecializations(Type closedBaseType)
         {
             object value = Activator.CreateInstance(closedBaseType)!;
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -4121,13 +4121,13 @@ namespace System.Text.Json.Serialization.Tests
         // changed to use Compilation.HasImplicitConversion for the same parity.
 
         [Fact]
-        public async Task Variance_CovariantInterfaceConstraintSatisfied_ThrowsForConstraintNarrowing()
+        public async Task Variance_CovariantInterfaceConstraintSatisfied_ThrowsForConstraintMismatch()
         {
             // ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object>.
-            // The derived narrows the base's constraint (none) to require IEnumerable<object>.
-            // Even though specific closures (e.g. List<string> via variance) would satisfy the
-            // constraint, the registration is rejected under the universal-applicability rule
-            // because it does not apply to every specialization of the base.
+            // The derived has constraints the base doesn't (IEnumerable<object>). Even
+            // though specific closures (e.g. List<string> via variance) would satisfy the
+            // constraint, the registration is rejected under the universal-applicability
+            // rule because it does not apply to every specialization of the base.
             ConstraintBase<List<string>> value = new ConstraintImpl<List<string>> { Items = new List<string> { "hello" } };
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }

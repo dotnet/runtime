@@ -1212,17 +1212,19 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(canonical is not null);
 
-                // Constraint subsumption: every derived parameter's constraints must be implied
-                // by the constraints on the mapped base parameter so that any valid closure of
-                // the base also yields a valid closure of the derived.
+                // Constraint equivalence: every derived parameter's constraints must exactly
+                // match the constraints on the mapped base parameter (after substitution) so
+                // that any valid closure of the base also yields a valid closure of the
+                // derived. See ReflectionExtensions.AreConstraintsEquivalent for the rationale
+                // behind exact match (vs one-sided subsumption).
                 foreach (ITypeParameterSymbol derivedParam in requiredDerivedParams)
                 {
                     var mappedBaseParam = (ITypeParameterSymbol)canonical[derivedParam];
-                    if (!_knownSymbols.Compilation.AreConstraintsImpliedBy(derivedParam, mappedBaseParam, canonical))
+                    if (!_knownSymbols.Compilation.AreConstraintsEquivalent(derivedParam, mappedBaseParam, canonical))
                     {
                         failureReason = string.Format(
                             CultureInfo.InvariantCulture,
-                            SR.Polymorphism_OpenGeneric_Reason_ConstraintNarrowing,
+                            SR.Polymorphism_OpenGeneric_Reason_ConstraintMismatch,
                             derivedParam.Name,
                             mappedBaseParam.Name);
                         return false;

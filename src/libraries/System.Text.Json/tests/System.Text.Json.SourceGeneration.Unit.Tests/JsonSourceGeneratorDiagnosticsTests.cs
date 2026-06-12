@@ -1598,11 +1598,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_ReferenceTypeConstraintNarrowing_WarnsWithSYSLIB1229()
+        public void OpenGenericDerivedType_ReferenceTypeConstraintMismatch_WarnsWithSYSLIB1229()
         {
             // Derived<T> : Base<T> where T : class. Base has no constraint, so the
-            // derived's constraint is stricter than the base's. Rejected under the
-            // universal-applicability rule.
+            // derived's constraints don't match the base's exactly. Rejected under
+            // the universal-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1632,11 +1632,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_InterfaceConstraintNarrowing_WarnsWithSYSLIB1229()
+        public void OpenGenericDerivedType_InterfaceConstraintMismatch_WarnsWithSYSLIB1229()
         {
             // Derived<T> : Base<T> where T : IComparable<T>. Base has no constraint, so
-            // the derived's constraint is stricter than the base's. Rejected under the
-            // universal-applicability rule.
+            // the derived's constraints don't match the base's exactly. Rejected under
+            // the universal-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -2001,12 +2001,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_CovariantInterfaceConstraintNarrowing_WarnsWithSYSLIB1229()
+        public void OpenGenericDerivedType_CovariantInterfaceConstraintMismatch_WarnsWithSYSLIB1229()
         {
             // ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object>.
-            // The derived narrows the constraint (base has none). Even though specific
-            // closures (e.g. List<string> via variance) would satisfy the constraint,
-            // the registration is rejected under the universal-applicability rule.
+            // The derived has constraints the base doesn't. Even though specific closures
+            // (e.g. List<string> via variance) would satisfy the constraint, the
+            // registration is rejected under the universal-applicability rule.
             string source = """
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;

@@ -292,15 +292,17 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(canonical is not null);
 
-            // Constraint subsumption: every derived parameter's constraints must be implied
-            // by the constraints on the mapped base parameter so that any valid closure of
-            // the base also yields a valid closure of the derived.
+            // Constraint equivalence: every derived parameter's constraints must exactly
+            // match the constraints on the mapped base parameter (after substitution) so
+            // that any valid closure of the base also yields a valid closure of the derived.
+            // See ReflectionExtensions.AreConstraintsEquivalent for the rationale behind
+            // exact match (vs one-sided subsumption).
             foreach (Type derivedParam in requiredParams)
             {
                 Type mappedBaseParam = canonical[derivedParam];
-                if (!ReflectionExtensions.AreConstraintsImpliedBy(derivedParam, mappedBaseParam, canonical))
+                if (!ReflectionExtensions.AreConstraintsEquivalent(derivedParam, mappedBaseParam, canonical))
                 {
-                    failureReason = SR.Format(SR.Polymorphism_OpenGeneric_Reason_ConstraintNarrowing,
+                    failureReason = SR.Format(SR.Polymorphism_OpenGeneric_Reason_ConstraintMismatch,
                         derivedParam.Name, mappedBaseParam.Name);
                     return false;
                 }

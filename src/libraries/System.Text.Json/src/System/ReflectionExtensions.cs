@@ -321,26 +321,26 @@ namespace System.Text.Json.Reflection
         }
 
         /// <summary>
-        /// Returns <see langword="true"/> if the constraints on <paramref name="derivedParam"/>
-        /// (after substituting via <paramref name="substitution"/>) are implied by the
-        /// constraints on <paramref name="baseParam"/>. Used by the polymorphism resolver to
-        /// validate that every closure of the base type that respects the base's constraints
-        /// would also be a valid closure of the open derived type.
+        /// Returns <see langword="true"/> if <paramref name="derivedParam"/>'s declared constraints
+        /// match <paramref name="baseParam"/>'s declared constraints exactly, after applying
+        /// <paramref name="substitution"/> to type-constraint references. Used by the polymorphism
+        /// resolver to validate that every closure of the base type that respects the base's
+        /// constraints would also be a valid closure of the open derived type.
         ///
         /// IMPORTANT: This implementation MIRRORS
-        /// <c>System.Text.Json.SourceGeneration.RoslynExtensions.AreConstraintsImpliedBy</c>.
-        /// Any change to subsumption semantics must be applied on both sides.
+        /// <c>System.Text.Json.SourceGeneration.RoslynExtensions.AreConstraintsEquivalent</c>.
+        /// Any change to the equivalence rules must be applied on both sides.
         ///
         /// Known intentional asymmetry with the source-gen mirror: the C# <c>unmanaged</c>
         /// constraint is encoded as a modreq and is not surfaced through the standard
-        /// reflection API, so the reflection check cannot enforce that a derived
-        /// <c>unmanaged</c> constraint is matched by a base <c>unmanaged</c> constraint. The
-        /// polymorphism resolver falls back on <see cref="Type.MakeGenericType"/> to surface
-        /// any remaining constraint violations at closure time.
+        /// reflection API, so this check cannot enforce that a derived <c>unmanaged</c>
+        /// constraint is matched by a base <c>unmanaged</c> constraint. The polymorphism
+        /// resolver falls back on <see cref="Type.MakeGenericType"/> to surface any
+        /// remaining constraint violations at closure time.
         /// </summary>
         [RequiresUnreferencedCode("Reflects over derived and base generic parameter constraint types.")]
         [RequiresDynamicCode("Substitutes type parameters in constraint types.")]
-        public static bool AreConstraintsImpliedBy(
+        public static bool AreConstraintsEquivalent(
             Type derivedParam,
             Type baseParam,
             IReadOnlyDictionary<Type, Type> substitution)
@@ -348,80 +348,34 @@ namespace System.Text.Json.Reflection
             Debug.Assert(derivedParam.IsGenericParameter);
             Debug.Assert(baseParam.IsGenericParameter);
 
-            GenericParameterAttributes derivedFlags = derivedParam.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
-            GenericParameterAttributes baseFlags = baseParam.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
-
-            bool baseHasReferenceType = (baseFlags & GenericParameterAttributes.ReferenceTypeConstraint) != 0;
-            bool baseHasValueType = (baseFlags & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0;
-            bool baseHasDefaultCtor = (baseFlags & GenericParameterAttributes.DefaultConstructorConstraint) != 0;
-
-            if ((derivedFlags & GenericParameterAttributes.ReferenceTypeConstraint) != 0 && !baseHasReferenceType)
+            const GenericParameterAttributes Mask = GenericParameterAttributes.SpecialConstraintMask;
+            if ((derivedParam.GenericParameterAttributes & Mask) != (baseParam.GenericParameterAttributes & Mask))
             {
                 return false;
             }
 
-            if ((derivedFlags & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 && !baseHasValueType)
+            Type[] derivedConstraints = derivedParam.GetGenericParameterConstraints();
+            Type[] baseConstraints = baseParam.GetGenericParameterConstraints();
+            if (derivedConstraints.Length != baseConstraints.Length)
             {
                 return false;
             }
 
-            // 'struct' implies 'new()'.
-            if ((derivedFlags & GenericParameterAttributes.DefaultConstructorConstraint) != 0 && !baseHasDefaultCtor && !baseHasValueType)
+            if (derivedConstraints.Length == 0)
             {
-                return false;
+                return true;
             }
 
-            Type[] baseConstraintTypes = baseParam.GetGenericParameterConstraints();
-            foreach (Type derivedConstraint in derivedParam.GetGenericParameterConstraints())
+            // Compare type-constraint sets order-independently. Substitute each derived
+            // constraint into base-parameter terms via the canonical mapping, then check
+            // that the resulting multiset matches the base's constraint set. Length parity
+            // was already established above, so removing each substituted derived constraint
+            // from a fresh copy of the base set proves equality iff every Remove succeeds.
+            var baseSet = new HashSet<Type>(baseConstraints);
+            foreach (Type derivedConstraint in derivedConstraints)
             {
                 Type substituted = SubstituteTypeParameters(derivedConstraint, substitution);
-
-                // System.Object as a constraint is trivially implied by any reference whatsoever.
-                if (substituted == typeof(object))
-                {
-                    continue;
-                }
-
-                // System.ValueType is implied when the base has the 'struct' constraint.
-                if (substituted == typeof(ValueType) && baseHasValueType)
-                {
-                    continue;
-                }
-
-                if (substituted.IsGenericParameter)
-                {
-                    // The derived constraint substituted to (another) base parameter. That
-                    // parameter must literally appear in the base's own type constraints for
-                    // the substitution to be guaranteed valid for every closure.
-                    bool implied = false;
-                    foreach (Type bc in baseConstraintTypes)
-                    {
-                        if (bc == substituted)
-                        {
-                            implied = true;
-                            break;
-                        }
-                    }
-
-                    if (!implied)
-                    {
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                bool match = false;
-                foreach (Type baseConstraint in baseConstraintTypes)
-                {
-                    if (substituted.IsAssignableFrom(baseConstraint))
-                    {
-                        match = true;
-                        break;
-                    }
-                }
-
-                if (!match)
+                if (!baseSet.Remove(substituted))
                 {
                     return false;
                 }
