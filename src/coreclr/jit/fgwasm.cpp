@@ -1824,14 +1824,22 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             defs.push_back(tree);
         }
 
+        // For the spill slots we used, zero them at the end of the block to avoid keeping objects pinned way longer
+        //  than absolutely necessary.
         if (spillSlotsToZeroAtEndOfBlock.size())
         {
-            for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
+            // There's no point in wasting time zeroing slots immediately before a return at the end of the block
+            //  since the GC will have no opportunity to inspect the slots. We could potentially do this for throws
+            //  too, but it's possible the exception would be caught and the method would continue running
+            if (!block->KindIs(BBJ_RETURN))
             {
-                GenTree* zero = gtNewZeroConNode(TYP_I_IMPL);
-                GenTree* store = gtNewStoreLclVarNode(lclNum, zero);
-                LIR::Range range = LIR::SeqTree(this, store);
-                LIR::InsertBeforeTerminator(block, std::move(range));
+                for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
+                {
+                    GenTree* zero = gtNewZeroConNode(TYP_I_IMPL);
+                    GenTree* store = gtNewStoreLclVarNode(lclNum, zero);
+                    LIR::Range range = LIR::SeqTree(this, store);
+                    LIR::InsertBeforeTerminator(block, std::move(range));
+                }
             }
 
             spillSlotsToZeroAtEndOfBlock.clear();
