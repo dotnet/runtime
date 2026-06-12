@@ -55,7 +55,7 @@ record struct ThreadData (
     TargetPointer ThreadHandle;
     bool IsInteropDebuggingHijacked;
     TargetPointer DebuggerFilterContext;
-    TargetPointer? GCFrame; // optional: head of the GCFrame (GCPROTECT) chain, null when absent
+    TargetPointer? GCFrame;
 );
 ```
 
