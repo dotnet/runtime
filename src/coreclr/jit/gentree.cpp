@@ -30699,7 +30699,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
     return oper;
 }
 
-
 //------------------------------------------------------------------------------
 // GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
 //
@@ -35273,7 +35272,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         assert(opCount == 3);
 #ifndef TARGET_WASM
-// TODO-WASM: Implement gtFoldExprHWIntrinsic for Wasm SIMD ternary operations
+        // TODO-WASM: Implement gtFoldExprHWIntrinsic for Wasm SIMD ternary operations
         switch (ni)
         {
 #if defined(TARGET_XARCH)
