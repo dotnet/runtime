@@ -56,16 +56,17 @@ namespace SharedTypes.ComInterfaces
         public const int ElementIndirectionArrayLength = 4;
 
         // The property-level [MarshalUsing] supplies the per-element marshaller at depth 1
-        // (one indirection past the int[] value itself). The accessor-level [MarshalUsing]
-        // at depth 0 supplies only the constant collection size for the COM ABI. Both must
-        // flow through to the generator so that the depth-0 size info AND the depth-1
-        // element marshaller are honored.
+        // (one indirection past the int[] value itself). Each accessor-level [MarshalUsing]
+        // supplies the depth-0 marshaller for the array and the constant collection size for
+        // the COM ABI. The accessor-level depth-0 attribute must NOT displace the property-
+        // level depth-1 attribute: dedup of property-vs-accessor [MarshalUsing] is partitioned
+        // by ElementIndirectionDepth.
         [MarshalUsing(typeof(TrackedIntMarshaller), ElementIndirectionDepth = 1)]
         int[] ElementIndirectionArray
         {
-            [return: MarshalUsing(ConstantElementCount = ElementIndirectionArrayLength)]
+            [return: MarshalUsing(typeof(ArrayMarshaller<int, int>), ConstantElementCount = ElementIndirectionArrayLength)]
             get;
-            [param: MarshalUsing(ConstantElementCount = ElementIndirectionArrayLength)]
+            [param: MarshalUsing(typeof(ArrayMarshaller<int, int>), ConstantElementCount = ElementIndirectionArrayLength)]
             set;
         }
     }

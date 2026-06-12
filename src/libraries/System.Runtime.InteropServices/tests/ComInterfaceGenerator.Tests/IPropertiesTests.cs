@@ -315,11 +315,6 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void PropertyLevelMarshalling_ElementIndirection_PropertyDepth1AndAccessorDepth0Coexist()
         {
-            // The property carries [MarshalUsing(typeof(TrackedIntMarshaller), ElementIndirectionDepth = 1)]
-            // (the per-element marshaller) and each accessor carries [MarshalUsing(ConstantElementCount = N)]
-            // (depth-0 count info, no marshaller type). The accessor-level depth-0 MarshalUsing must NOT
-            // displace the property-level depth-1 MarshalUsing: dedup of property-vs-accessor MarshalUsing
-            // is partitioned by ElementIndirectionDepth.
             TrackedIntMarshaller.Reset();
 
             (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();

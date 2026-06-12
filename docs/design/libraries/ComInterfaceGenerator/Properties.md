@@ -7,7 +7,7 @@ The ComInterfaceGenerator allows COM interfaces declared with `[GeneratedComInte
 * Let users declare COM interface members using natural C# property and indexer syntax instead of hand-rolled `get_X` / `set_X` method pairs.
 * Match the vtable layout that the built-in COM CCW produces for `[ComVisible(true)]` managed interfaces, so source-generated and built-in COM remain wire-compatible for the common shapes.
 * Keep the implementation a layer on top of the existing per-method ABI pipeline; an accessor is, fundamentally, just an `IMethodSymbol` that happens to back a property declaration.
-* Provide a mechanism (default-implemented members, i.e. **DIM**) for users to declare properties or methods that are pure managed sugar and are *not* assigned vtable slots, so that a property can wrap a pair of unrelated or non-adjacent ABI methods.
+* Provide a mechanism (default-implemented members; see [DefaultImplementedMembers.md](./DefaultImplementedMembers.md)) for users to declare properties or methods that are pure managed sugar and are *not* assigned vtable slots, so that a property can wrap a pair of unrelated or non-adjacent ABI methods.
 
 ## Non-goals
 
@@ -70,7 +70,7 @@ The supported surface is intentionally narrow. Anything outside this list is rej
   }
   ```
 
-* Default-implemented properties (properties with accessor bodies). See [Default-implemented members](#default-implemented-members-dim) below.
+* Default-implemented properties (properties with accessor bodies). See [DefaultImplementedMembers.md](./DefaultImplementedMembers.md).
 
 **Disallowed (reported as `SYSLIB1091`):**
 
@@ -79,7 +79,7 @@ The supported surface is intentionally narrow. Anything outside this list is rej
 * Mixed accessor shapes where one accessor has a body and the other does not (e.g. `int Mixed { get; set { … } }`).
 * Property-level marshalling attributes other than `[MarshalUsing]`. `[MarshalAs]` is not allowed on a property.
 
-Property modifiers `virtual`, `abstract`, and `sealed` are not currently supported on `[GeneratedComInterface]` properties; the modifier story for properties is stricter than for methods. (`abstract` is the interface default and need not be written; `virtual` on an interface property requires a body, which would put it on the [DIM](#default-implemented-members-dim) path but isn't currently accepted; `sealed` is rejected outright.)
+Property modifiers `virtual`, `abstract`, and `sealed` are not currently supported on `[GeneratedComInterface]` properties; the modifier story for properties is stricter than for methods. (`abstract` is the interface default and need not be written; `virtual` on an interface property requires a body, which would put it on the [DIM](./DefaultImplementedMembers.md) path but isn't currently accepted; `sealed` is rejected outright.)
 
 ## Marshalling attributes on properties
 
@@ -123,82 +123,21 @@ public partial interface IFoo
 }
 ```
 
-**`[IndexerName]`.** The `[IndexerName(...)]` attribute on an indexer renames the IL accessor methods (e.g. `get_Element` / `set_Element` instead of `get_Item` / `set_Item`). The generator honors this on both ABI slot generation and derived-interface shadow generation, so a derived `[GeneratedComInterface]` that shadows an inherited indexer with the `new` modifier produces shadow accessors whose IL names match the base interface's `[IndexerName]`. Because all indexers on a single C# type must share one `[IndexerName]`, splitting an interface into multiple `[IndexerName]`-distinguished shapes requires declaring them on separate interfaces.
+**`[IndexerName]`.** The `[IndexerName(...)]` attribute on an indexer renames the IL accessor methods (e.g. `get_Element` / `set_Element` instead of `get_Item` / `set_Item`). The generator honors this on both ABI slot generation and the auto-emitted forwarding shadows it places on derived interfaces. A derived `[GeneratedComInterface]` that re-declares an inherited indexer with the `new` modifier **must** repeat the base interface's `[IndexerName]` value (or, if the base uses the default, omit the attribute on the derived); the two values cannot diverge.
+
+The reason is that the generator emits the inherited indexer onto the derived interface as an explicit-interface implementation (`int IBase.this[…] => throw new UnreachableException();`), which counts as an indexer member on the derived type for CS0668's "all indexers on one type share one `[IndexerName]`" rule. If the user-declared `new` shadow's `[IndexerName]` disagrees with the base's, the C# compiler rejects the derived interface with **CS0668**, **CS0111**, and related diagnostics. Splitting a single interface into multiple `[IndexerName]`-distinguished shapes therefore requires declaring them on separate, unrelated interfaces.
 
 **Supported modifiers and marshalling.** The lists of allowed and disallowed modifiers under [Supported property surface](#supported-property-surface) apply unchanged to indexers, replacing `int Foo { … }` with `int this[I i] { … }`. `[MarshalUsing]` on the indexer is propagated to both accessor stubs as parameter info on the value parameter and as return-value info on the getter, in the same way it is for properties.
 
-**Default-implemented indexers.** As with properties, an indexer whose accessors all carry bodies is treated as a [default-implemented member](#default-implemented-members-dim) and is not assigned a vtable slot. Mixed accessor bodies (`int this[int i] { get; set { … } }`) are rejected by the C# language itself with **CS0501** rather than by the generator — the equivalent property shape triggers **CS0525** instead, but either way the user-facing diagnostic surfaces before generator analysis runs.
+**Default-implemented indexers.** As with properties, an indexer whose accessors all carry bodies is treated as a [default-implemented member](./DefaultImplementedMembers.md) and is not assigned a vtable slot. Mixed accessor bodies (`int this[int i] { get; set { … } }`) are rejected by the C# language itself with **CS0501** rather than by the generator — the equivalent property shape triggers **CS0525** instead, but either way the user-facing diagnostic surfaces before generator analysis runs.
 
 ## Default-implemented members (DIM)
 
-A method or property accessor on a `[GeneratedComInterface]` interface that carries a user-supplied body is treated as a **default-implemented member**: it is pure managed sugar that ships on the interface, **and it is not assigned a vtable slot**.
-
-```csharp
-[GeneratedComInterface, Guid("…")]
-public partial interface IFoo
-{
-    // Two vtable slots — ABI methods.
-    double ReadValue();
-    void WriteValue(double value);
-
-    // Zero vtable slots — managed sugar wrapping the two ABI methods above.
-    double Value
-    {
-        get => ReadValue();
-        set => WriteValue(value);
-    }
-
-    // Also zero vtable slots — a managed-only helper.
-    double DoubleIt() => ReadValue() * 2;
-}
-```
-
-This is the user-facing escape hatch for the small set of scenarios the canonical "property &rarr; two adjacent vtable slots" rule cannot express, including:
-
-* Wrapping ABI methods whose names do not match the canonical `get_X` / `set_X` accessor naming.
-* Wrapping ABI methods that live on different vtable slots than two adjacent slots would imply.
-* Adding helper methods that the wire ABI does not need to know about.
-
-### DIM rules and diagnostics
-
-* **All accessors must agree.** A property must have either all-abstract accessors (`int X { get; set; }`) or all-bodied accessors (`int X { get => …; set => …; }`). Mixing the two emits the error `SYSLIB1091` `PropertyAccessorsMustBeAllOrNothing`. (Note: the C# compiler also rejects bare `get;` paired with a bodied `set { … }` with `CS0525`, because it interprets `get;` as an auto-property accessor and disallows auto-properties on interfaces.)
-
-* **`[MarshalUsing]` and `[MarshalAs]` on a DIM are a warning.** A DIM never participates in marshalling, so any marshal attribute on the DIM (the property itself, an accessor return, a method parameter, etc.) emits a `SYSLIB1091` warning `MarshalAttributeOnDefaultImplementedComInterfaceMember`. The DIM is still generated; only the marshal attribute is silently ignored at the ABI layer.
-
-* **Inherited DIMs are skipped from base-class CCW dispatch.** When the generator emits CCW dispatch for an inherited interface, accessor methods that are not `IsAbstract` (i.e. inherited DIMs) are excluded — the runtime resolves them through ordinary virtual dispatch on the managed object.
-
-### The `get_X` / `set_X` name reservation constraint
-
-The original issue described pairs of the form
-
-```csharp
-[GeneratedComInterface, Guid("…")]
-public partial interface IFoo
-{
-    double get_Value();                                                    // ABI method
-    void set_Value(double value);                                          // ABI method
-    double Value { get => get_Value(); set => set_Value(value); }          // DIM wrapping the ABI methods
-}
-```
-
-**This does not compile.** Whenever a C# interface declares a property `Value`, the language reserves the IL names `get_Value` and `set_Value` for the property's accessors. Declaring an explicit `double get_Value()` method on the same interface as a property `Value` fails with `CS0082` ("type already reserves a member called 'get_Value'") and related diagnostics.
-
-The workaround is to give the ABI methods names that do not collide with the property's accessor names, and have the DIM wrap them by call rather than by name:
-
-```csharp
-[GeneratedComInterface, Guid("…")]
-public partial interface IFoo
-{
-    double ReadValue();                                                   // ABI method
-    void WriteValue(double value);                                        // ABI method
-    double Value { get => ReadValue(); set => WriteValue(value); }        // DIM
-}
-```
-
-The same constraint applies to derived-interface shadowing: a derived interface cannot declare a DIM property `X` that shadows an inherited pair of ABI methods named `get_X` / `set_X`. ABI methods and properties with matching names cannot coexist on the same C# interface chain.
+Property accessors, indexer accessors, and methods on `[GeneratedComInterface]` may carry user-supplied bodies; the generator treats those as managed-only sugar that does **not** receive a vtable slot. The full contract — rules, diagnostics, the `get_X` / `set_X` name reservation pitfall — lives in [DefaultImplementedMembers.md](./DefaultImplementedMembers.md).
 
 ## References
 
 * [Compatibility.md](./Compatibility.md) — Rolling per-release semantic compatibility notes.
+* [DefaultImplementedMembers.md](./DefaultImplementedMembers.md) — DIM contract for properties, indexers, and methods on a `[GeneratedComInterface]`.
 * [DerivedComInterfaces.md](./DerivedComInterfaces.md) — Inheritance and shadowing rules that property declarations inherit from.
 * [VTableStubs.md](./VTableStubs.md) — The underlying `VirtualMethodIndexAttribute` building block that ABI accessor stubs ultimately consume.
