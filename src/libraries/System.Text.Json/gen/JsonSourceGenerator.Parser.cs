@@ -63,11 +63,11 @@ namespace System.Text.Json.SourceGeneration
             // universally applicable to a generic base is a property of the open forms alone, so the
             // diagnostic must fire at most once per (open base, derived) pair regardless of how many
             // closed specializations of the base appear in [JsonSerializable] attributes.
-            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_baseDerivedDefinitionPairComparer =
+            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
                 RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
 
             private readonly HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> _diagnosedOpenDerivedRegistrations =
-                new(s_baseDerivedDefinitionPairComparer);
+                new(s_typePairComparer);
 #pragma warning restore
 
             public List<Diagnostic> Diagnostics { get; } = new();
