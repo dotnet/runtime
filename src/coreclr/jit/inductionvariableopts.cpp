@@ -1394,11 +1394,32 @@ bool Compiler::optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraph
 
     // We must be able to insert the store-back of the final value into every
     // regular exit where the IV is live. Blocks that are part of a call-finally
-    // pair must remain empty, so we cannot sink into them.
+    // pair must remain empty, so we cannot sink into them. We also need all
+    // predecessors of such exits to come from inside the loop, since otherwise
+    // the store-back would incorrectly overwrite the original local on a
+    // non-loop path reaching the exit.
     BasicBlockVisit exitResult = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (optLocalIsLiveIntoBlock(lclNum, exit) && (exit->isBBCallFinallyPair() || exit->isBBCallFinallyPairTail()))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
+            return BasicBlockVisit::Continue;
+        }
+
+        if (exit->isBBCallFinallyPair() || exit->isBBCallFinallyPairTail())
+        {
+            JITDUMP("    Cannot replace V%02u; live regular exit " FMT_BB " is part of a call-finally pair\n", lclNum,
+                    exit->bbNum);
             return BasicBlockVisit::Abort;
+        }
+
+        for (BasicBlock* pred : exit->PredBlocks())
+        {
+            if (!loop->ContainsBlock(pred))
+            {
+                JITDUMP("    Cannot replace V%02u; live regular exit " FMT_BB " of " FMT_LP " has a non-loop pred " FMT_BB
+                        "\n",
+                        lclNum, exit->bbNum, loop->GetIndex(), pred->bbNum);
+                return BasicBlockVisit::Abort;
+            }
         }
 
         return BasicBlockVisit::Continue;
@@ -1406,7 +1427,6 @@ bool Compiler::optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraph
 
     if (exitResult == BasicBlockVisit::Abort)
     {
-        JITDUMP("    Cannot replace V%02u; a live regular exit is part of a call-finally pair\n", lclNum);
         return false;
     }
 
