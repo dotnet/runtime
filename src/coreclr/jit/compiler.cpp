@@ -5053,7 +5053,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Ensure that any refs or byrefs live at call sites are spilled
     // to pinned stack slots so the objects aren't moved.
     //
-    DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::WasmSpillRefs);
+    DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
 #endif
 
     FinalizeEH();

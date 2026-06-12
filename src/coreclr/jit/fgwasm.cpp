@@ -1671,12 +1671,13 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-PhaseStatus Compiler::WasmSpillRefs()
+PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
 
     size_t                   highWaterMark = 0;
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
+    jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
 
     for (BasicBlock* const block : Blocks())
     {
@@ -1798,7 +1799,7 @@ PhaseStatus Compiler::WasmSpillRefs()
 
             // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
             //  nodes appropriately
-            if (!tree->IsValue() || tree->IsUnusedValue() || tree->IsInvariant())
+            if (!tree->IsValue() || tree->IsUnusedValue() || tree->IsInvariant() || !tree->TypeIs(TYP_REF, TYP_BYREF))
             {
                 continue;
             }
@@ -1814,34 +1815,11 @@ PhaseStatus Compiler::WasmSpillRefs()
                 {
                     continue;
                 }
-
-                // We may have an address-exposed spill variable, in which case we don't want to spill it a
-                //  second time. Scan the spill slots list for this variable.
-                bool isSpillSlot = false;
-                if (m_wasmSpillSlots)
-                {
-                    for (WasmSpillSlot spillSlotDesc : *m_wasmSpillSlots)
-                    {
-                        if (spillSlotDesc.lclNum == lclVar->GetLclNum())
-                        {
-                            isSpillSlot = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (isSpillSlot)
-                {
-                    continue;
-                }
             }
 
             // We have a ref sourced from something like a call result or an indirection that hasn't been
             //  spilled yet, so record it for potential spilling at the next call.
-            if (tree->TypeIs(TYP_REF, TYP_BYREF))
-            {
-                defs.push_back(tree);
-            }
+            defs.push_back(tree);
         }
     }
 

@@ -6764,7 +6764,7 @@ public:
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmVirtualIP();
-    PhaseStatus WasmSpillRefs();
+    PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
