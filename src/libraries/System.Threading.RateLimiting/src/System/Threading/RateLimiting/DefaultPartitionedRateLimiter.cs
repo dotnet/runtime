@@ -245,20 +245,13 @@ namespace System.Threading.RateLimiting
                     continue;
                 }
                 LimiterEntry limiterEntry = rateLimiter.Value.Value;
-                // Fall back to our internally tracked last-access timestamp when the limiter
-                // does not report an idle duration (e.g. NoopLimiter always returns null).
-                // This ensures idle partitions are eventually evicted regardless of the limiter implementation.
-                // Use Volatile.Read so the value is read atomically on 32-bit platforms where 64-bit
-                // reads are not guaranteed to be atomic.
-                TimeSpan idleDuration = limiterEntry.Limiter.IdleDuration
-                    ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp));
+                TimeSpan? idleDuration = GetIdleDuration(limiterEntry);
                 if (idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
-                        idleDuration = limiterEntry.Limiter.IdleDuration
-                            ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp));
+                        idleDuration = GetIdleDuration(limiterEntry);
                         if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
@@ -307,9 +300,20 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        private static TimeSpan? GetIdleDuration(LimiterEntry limiterEntry)
+        {
+            // NoopLimiter always reports IdleDuration == null, but it is also always safe to evict.
+            // Fall back to our internally tracked last-access timestamp only for that known case.
+            // Use Volatile.Read so the value is read atomically on 32-bit platforms where 64-bit
+            // reads are not guaranteed to be atomic.
+            return limiterEntry.Limiter.IdleDuration ?? (limiterEntry.Limiter is NoopLimiter
+                ? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp))
+                : null);
+        }
+
         // Wraps a RateLimiter with a timestamp of when it was last accessed by the partitioned limiter.
-        // The timestamp is used by the Heartbeat to evict limiters whose IdleDuration is always null
-        // (e.g. NoopLimiter), which would otherwise never be cleaned up.
+        // The timestamp is used by the Heartbeat to evict NoopLimiter partitions, whose IdleDuration
+        // is always null and would otherwise never be cleaned up.
         private sealed class LimiterEntry
         {
             public LimiterEntry(RateLimiter limiter)

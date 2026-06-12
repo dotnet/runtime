@@ -530,23 +530,42 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public async Task IdleLimiterWithNullIdleDurationIsCleanedUp()
+        public async Task NoopLimiterPartitionIsCleanedUp()
         {
-            // Verifies that a limiter that always reports IdleDuration == null (e.g. NoopLimiter)
-            // is still evicted by the heartbeat once it has not been accessed for the idle window.
-            // Regression coverage for the NoopLimiter memory leak scenario.
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.GetNoLimiter(1);
+            });
+
+            var lease = limiter.AttemptAcquire("");
+            Assert.True(lease.IsAcquired);
+            Assert.NotNull(GetLazyLimiterEntry(limiter, key: 1));
+
+            // Backdate the internally-tracked last-access timestamp so the heartbeat treats the
+            // partition as idle even though NoopLimiter reports IdleDuration == null.
+            BackdateLastAccessTimestamp(limiter, key: 1);
+
+            await Utils.RunTimerFunc(limiter);
+            Assert.Null(GetLazyLimiterEntry(limiter, key: 1));
+
+            lease = limiter.AttemptAcquire("");
+            Assert.True(lease.IsAcquired);
+            Assert.NotNull(GetLazyLimiterEntry(limiter, key: 1));
+        }
+
+        [Fact]
+        public async Task LimiterWithNullIdleDurationIsNotCleanedUp()
+        {
             var factoryCallCount = 0;
-            CustomizableLimiter innerLimiter = null;
             using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
             {
                 return RateLimitPartition.Get(1, _ =>
                 {
                     factoryCallCount++;
-                    innerLimiter = new CustomizableLimiter
+                    return new CustomizableLimiter
                     {
                         IdleDurationImpl = () => null
                     };
-                    return innerLimiter;
                 });
             });
 
@@ -554,33 +573,41 @@ namespace System.Threading.RateLimiting.Tests
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, factoryCallCount);
 
-            var disposeTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            innerLimiter.DisposeAsyncCoreImpl = () =>
-            {
-                disposeTcs.SetResult(null);
-                return default;
-            };
-
-            // Backdate the internally-tracked last-access timestamp so the heartbeat treats the
-            // partition as idle even though the inner limiter reports IdleDuration == null.
             BackdateLastAccessTimestamp(limiter, key: 1);
 
             await Utils.RunTimerFunc(limiter);
 
-            // Limiter is disposed when timer runs and sees that the internal idle tracking is greater than the idle limit
-            await disposeTcs.Task;
-            innerLimiter.DisposeAsyncCoreImpl = () => default;
-
-            // Acquire will call limiter factory again as the limiter was disposed and removed
             lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
-            Assert.Equal(2, factoryCallCount);
+            Assert.Equal(1, factoryCallCount);
         }
 
         // Reaches into the internal _limiters dictionary of DefaultPartitionedRateLimiter and
         // backdates the LastAccessTimestamp on the LimiterEntry for the given key so the test
         // doesn't have to wait the real idle window before the heartbeat evicts the limiter.
         private static void BackdateLastAccessTimestamp<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
+        {
+            var entry = GetLimiterEntry(limiter, key);
+
+            // LastAccessTimestamp is a public mutable field on the internal LimiterEntry type.
+            var lastAccessField = entry.GetType().GetField("LastAccessTimestamp");
+            Assert.NotNull(lastAccessField);
+            lastAccessField.SetValue(entry, 0L);
+        }
+
+        private static object GetLimiterEntry<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
+        {
+            var lazyEntry = GetLazyLimiterEntry(limiter, key);
+            Assert.NotNull(lazyEntry);
+
+            // Force creation of the Lazy<LimiterEntry>.Value
+            var lazyType = lazyEntry.GetType();
+            var entry = lazyType.GetProperty("Value").GetValue(lazyEntry);
+            Assert.NotNull(entry);
+            return entry;
+        }
+
+        private static object GetLazyLimiterEntry<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
         {
             var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
             var limiterType = limiter.GetType();
@@ -591,18 +618,7 @@ namespace System.Threading.RateLimiting.Tests
             var limitersDict = (System.Collections.IDictionary)limitersField.GetValue(limiter);
             Assert.NotNull(limitersDict);
 
-            var lazyEntry = limitersDict[key];
-            Assert.NotNull(lazyEntry);
-
-            // Force creation of the Lazy<LimiterEntry>.Value
-            var lazyType = lazyEntry.GetType();
-            var entry = lazyType.GetProperty("Value").GetValue(lazyEntry);
-            Assert.NotNull(entry);
-
-            // LastAccessTimestamp is a public mutable field on the internal LimiterEntry type.
-            var lastAccessField = entry.GetType().GetField("LastAccessTimestamp");
-            Assert.NotNull(lastAccessField);
-            lastAccessField.SetValue(entry, 0L);
+            return limitersDict[key];
         }
 
         [Fact]
