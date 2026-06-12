@@ -1740,45 +1740,41 @@ public:
     // functions to get information about reference/handle referents for ICDValue
     // ----------------------------------------------------------------------------
 
-    // Get object information for a TypedByRef object. Initializes the objRef and typedByRefType fields of
-    // pObjectData (type info for the referent).
+    // Get object information for a TypedByRef object (System.TypedReference).
     // Arguments:
-    //     input:  pTypedByRef - pointer to a TypedByRef struct
-    //     output: pObjectData - information about the object referenced by pTypedByRef
+    //     input:  pTypedByRef     - address of the TypedByRef struct
+    //     output: pObjRef         - the managed pointer value (data field of TypedByRef)
+    //             pTypedByRefType - basic type information for the referent type
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, OUT CORDB_ADDRESS * pObjRef, OUT DebuggerIPCE_BasicTypeData * pTypedByRefType) = 0;
 
     // Get the string length and offset to string base for a string object
     // Arguments:
-    //     input:  objPtr - address of a string object
-    //     output: pObjectData - fills in the string fields stringInfo.offsetToStringBase and
-    //             stringInfo.length
+    //     input:  objectAddress        - address of a string object
+    //     output: pLength              - the string length in characters
+    //             pOffsetToStringBase  - byte offset from the object base to the first character
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, OUT UINT * pLength, OUT UINT * pOffsetToStringBase) = 0;
 
     // Get information for an array type referent of an objRef, including rank, upper and lower bounds,
     // element size and type, and the number of elements.
     // Arguments:
     //     input:  objectAddress - the address of an array object
-    //     output: pObjectData   - fills in the array-related fields:
-    //                             arrayInfo.offsetToArrayBase,
-    //                             arrayInfo.offsetToLowerBounds,
-    //                             arrayInfo.offsetToUpperBounds,
-    //                             arrayInfo.componentCount,
-    //                             arrayInfo.rank,
-    //                             arrayInfo.elementSize,
+    //     output: pIsValidArray - FALSE if the object is not actually an array
+    //             pArrayInfo    - filled with array layout information
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidArray, OUT DacDbiArrayInfo * pArrayInfo) = 0;
 
     // Get information about an object for which we have a reference, including the object size and
     // type information.
     // Arguments:
-    //     input:  objectAddress - address of the object for which we want information
-    //             type          - the basic type of the object (we may find more specific type
-    //                             information for the object)
-    //     output: pObjectData   - fills in the size and type information fields
+    //     input:  objectAddress    - address of the object for which we want information
+    //     output: pIsValidRef      - FALSE if the object reference is bad
+    //             pObjSize         - size of the object in bytes
+    //             pObjOffsetToVars - byte offset from the object base to the first field
+    //             pObjTypeData     - expanded type information for the object
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidRef, OUT UINT * pObjSize, OUT UINT * pObjOffsetToVars, OUT DebuggerIPCE_ExpandedTypeData * pObjTypeData) = 0;
 
     // Get the address of the Debugger control block on the helper thread. The debugger control block
     // contains information about the status of the debugger, handles to various events and space to hold
