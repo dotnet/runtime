@@ -1589,7 +1589,7 @@ private:
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
         ValueSize  lclSize   = m_compiler->lvaLclValueSize(lclNum);
-        ValueSize  indirSize = node->AsIndir()->GetValueSize();
+        ValueSize  indirSize = node->AsIndir()->ValueSize();
 
         if (indirSize.IsNull() || m_compiler->IsWideAccess(lclNum, offset, indirSize))
         {
@@ -2045,7 +2045,7 @@ private:
             return false;
         }
 
-        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->GetValueSize());
+        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->ValueSize());
         if (fieldLclNum == BAD_VAR_NUM)
         {
             return false;
