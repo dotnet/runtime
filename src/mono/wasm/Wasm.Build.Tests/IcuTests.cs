@@ -51,6 +51,7 @@ public class IcuTests : IcuTestsBase
     }
         
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129324")]
     [Theory]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { Configuration.Release })]
     [TestCategory("native")]
