@@ -539,18 +539,18 @@ namespace System.Threading.RateLimiting.Tests
 
             var lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
-            Assert.NotNull(GetLazyLimiterEntry(limiter, key: 1));
+            Assert.NotNull(GetLazyLimiterEntry<string, int>(limiter, key: 1));
 
             // Backdate the internally-tracked last-access timestamp so the heartbeat treats the
             // partition as idle even though NoopLimiter reports IdleDuration == null.
-            BackdateLastAccessTimestamp(limiter, key: 1);
+            BackdateLastAccessTimestamp<string, int>(limiter, key: 1);
 
-            await Utils.RunTimerFunc(limiter);
-            Assert.Null(GetLazyLimiterEntry(limiter, key: 1));
+            await Utils.RunTimerFunc<string, int>(limiter);
+            Assert.Null(GetLazyLimiterEntry<string, int>(limiter, key: 1));
 
             lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
-            Assert.NotNull(GetLazyLimiterEntry(limiter, key: 1));
+            Assert.NotNull(GetLazyLimiterEntry<string, int>(limiter, key: 1));
         }
 
         [Fact]
@@ -573,9 +573,9 @@ namespace System.Threading.RateLimiting.Tests
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, factoryCallCount);
 
-            BackdateLastAccessTimestamp(limiter, key: 1);
+            BackdateLastAccessTimestamp<string, int>(limiter, key: 1);
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
@@ -585,33 +585,43 @@ namespace System.Threading.RateLimiting.Tests
         // Reaches into the internal _limiters dictionary of DefaultPartitionedRateLimiter and
         // backdates the LastAccessTimestamp on the LimiterEntry for the given key so the test
         // doesn't have to wait the real idle window before the heartbeat evicts the limiter.
-        private static void BackdateLastAccessTimestamp<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
+        private static void BackdateLastAccessTimestamp<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
         {
-            var entry = GetLimiterEntry(limiter, key);
+            // Use Type.GetType with literal strings so trimming can see what types we're reflecting on.
+            var limiterEntryTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2+LimiterEntry, System.Threading.RateLimiting");
+            Assert.NotNull(limiterEntryTypeDef);
+            var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
 
             // LastAccessTimestamp is a public mutable field on the internal LimiterEntry type.
-            var lastAccessField = entry.GetType().GetField("LastAccessTimestamp");
+            var lastAccessField = limiterEntryType.GetField("LastAccessTimestamp");
             Assert.NotNull(lastAccessField);
+
+            var entry = GetLimiterEntry<TResource, TKey>(limiter, key);
             lastAccessField.SetValue(entry, 0L);
         }
 
-        private static object GetLimiterEntry<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
+        private static object GetLimiterEntry<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
         {
-            var lazyEntry = GetLazyLimiterEntry(limiter, key);
+            var lazyEntry = GetLazyLimiterEntry<TResource, TKey>(limiter, key);
             Assert.NotNull(lazyEntry);
 
-            // Force creation of the Lazy<LimiterEntry>.Value
-            var lazyType = lazyEntry.GetType();
+            // Force creation of the Lazy<LimiterEntry>.Value. Use Type.GetType with a literal string
+            // so trimming can see the LimiterEntry type, then construct the closed Lazy<LimiterEntry>.
+            var limiterEntryTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2+LimiterEntry, System.Threading.RateLimiting");
+            Assert.NotNull(limiterEntryTypeDef);
+            var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
+            var lazyType = typeof(Lazy<>).MakeGenericType(limiterEntryType);
             var entry = lazyType.GetProperty("Value").GetValue(lazyEntry);
             Assert.NotNull(entry);
             return entry;
         }
 
-        private static object GetLazyLimiterEntry<TResource>(PartitionedRateLimiter<TResource> limiter, int key)
+        private static object GetLazyLimiterEntry<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
         {
+            // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
             var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
-            var limiterType = limiter.GetType();
-            Assert.Equal(limiterTypeDef, limiterType.GetGenericTypeDefinition());
+            var limiterType = limiterTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
+            Assert.Equal(limiter.GetType(), limiterType);
 
             var limitersField = limiterType.GetField("_limiters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.NotNull(limitersField);
