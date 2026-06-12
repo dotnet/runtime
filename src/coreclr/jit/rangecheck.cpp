@@ -47,7 +47,6 @@ static const int MAX_VISIT_BUDGET = 8192;
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
     : m_preferredBound(ValueNumStore::NoVN)
-    , m_pOverflowMap(nullptr)
     , m_pRangeMap(nullptr)
     , m_pSearchPath(nullptr)
     , m_compiler(pCompiler)
@@ -77,24 +76,6 @@ void RangeCheck::ClearRangeMap()
     if (m_pRangeMap != nullptr)
     {
         m_pRangeMap->RemoveAll();
-    }
-}
-
-// Get the overflow map in which computed overflows are cached.
-RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
-{
-    if (m_pOverflowMap == nullptr)
-    {
-        m_pOverflowMap = new (m_alloc) OverflowMap(m_alloc);
-    }
-    return m_pOverflowMap;
-}
-
-void RangeCheck::ClearOverflowMap()
-{
-    if (m_pOverflowMap != nullptr)
-    {
-        m_pOverflowMap->RemoveAll();
     }
 }
 
@@ -276,97 +257,15 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GenTreeBoundsChk* bndsChk   = tree->AsBoundsChk();
     GenTree*          treeIndex = bndsChk->GetIndex();
 
-    // Take care of constant index first, like a[2], for example.
-    ValueNum idxVn    = m_compiler->optConservativeNormalVN(treeIndex);
     ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
 
     m_preferredBound = arrLenVn;
-
-    // Special case: arr[arr.Length - CNS] if we know that arr.Length >= CNS
-    // We assume that SUB(x, CNS) is canonized into ADD(x, -CNS)
-    ValueNum addOp0, addOp1;
-    if (m_compiler->vnStore->IsVNBinFunc(idxVn, VNF_ADD, &addOp0, &addOp1))
-    {
-        ValueNum cnsVN = ValueNumStore::NoVN;
-        if ((arrLenVn == addOp1) && m_compiler->vnStore->IsVNInt32Constant(addOp0))
-        {
-            // ADD(cnsVN, arrLenVn);
-            cnsVN = addOp0;
-        }
-        else if ((arrLenVn == addOp0) && m_compiler->vnStore->IsVNInt32Constant(addOp1))
-        {
-            // ADD(arrLenVn, cnsVN);
-            cnsVN = addOp1;
-        }
-
-        if (cnsVN != ValueNumStore::NoVN)
-        {
-            // Calculate range for arrLength from assertions, e.g. for
-            //
-            //   bool result = (arr.Length == 0) || (arr[arr.Length - 1] == 0);
-            //
-            // here for the array access we know that arr.Length >= 1
-            Range arrLenRange = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
-            if (arrLenRange.LowerLimit().IsConstant())
-            {
-                assert(arrLenRange.IsValid());
-
-                // Lower known limit of ArrLen:
-                const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
-
-                // Negative delta in the array access (ArrLen + -CNS)
-                const int delta = m_compiler->vnStore->GetConstantInt32(cnsVN);
-                if ((lenLowerLimit > 0) && (delta < 0) && (delta > -CORINFO_Array_MaxLength) &&
-                    (lenLowerLimit >= -delta))
-                {
-                    JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-                    m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-                    m_updateStmt = true;
-                    return;
-                }
-            }
-        }
-    }
-
-    ValueNum umodOp1;
-    if (m_compiler->vnStore->IsVNBinFunc(idxVn, VNF_UMOD, nullptr, &umodOp1) && (umodOp1 == arrLenVn))
-    {
-        // We can always omit bound checks for Arr[X u% Arr.Length] pattern (unsigned MOD).
-        //
-        // if arr.Length is 0 we technically should keep the bounds check, but since the expression
-        // has to throw DividedByZeroException anyway - no special handling needed.
-        JITDUMP("[RangeCheck::OptimizeRangeCheck] UMOD(X, ARR_LEN) is always between bounds\n");
-        m_compiler->optRemoveRangeCheck(bndsChk, comma, stmt);
-        m_updateStmt = true;
-        return;
-    }
 
     // Get the range for this index.
     Range range = Range(Limit(Limit::keUndef));
     if (!TryGetRange(block, treeIndex, &range))
     {
         JITDUMP("Failed to get range\n");
-        return;
-    }
-
-    assert(range.IsValid());
-
-    // If upper or lower limit is found to be unknown (top), or it was found to
-    // be unknown because of over budget or a deep search, then return early.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
-    {
-        // Note: If we had stack depth too deep in the GetRangeWorker call, we'd be
-        // too deep even in the DoesOverflow call. So return early.
-        return;
-    }
-
-    JITDUMP("Range value %s\n", range.ToString(m_compiler));
-    ClearSearchPath();
-    Widen(block, treeIndex, &range);
-
-    // If upper or lower limit is unknown, then return.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
-    {
         return;
     }
 
@@ -2094,12 +1993,12 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (!GetSearchPath()->Lookup(op1) && DoesOverflow(block, op1, range))
+    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, range))
     {
         return true;
     }
 
-    if (!GetSearchPath()->Lookup(op2) && DoesOverflow(block, op2, range))
+    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, range))
     {
         return true;
     }
@@ -2176,7 +2075,7 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
         return false;
     }
 
-    return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), range);
+    return ComputeDoesOverflow(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), range);
 }
 
 bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& range)
@@ -2188,7 +2087,7 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& 
         {
             continue;
         }
-        if (DoesOverflow(block, arg, range))
+        if (ComputeDoesOverflow(block, arg, range))
         {
             return true;
         }
@@ -2197,7 +2096,7 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& 
 }
 
 //------------------------------------------------------------------------
-// DoesOverflow: Check if the computation of "expr" may have overflowed.
+// ComputeDoesOverflow: Check if the computation of "expr" may have overflowed.
 //
 // Arguments:
 //   block - the block that contains `expr`
@@ -2209,16 +2108,6 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& 
 // Return value:
 //   True if the computation may have involved an impactful overflow.
 //
-bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
-{
-    bool overflows = false;
-    if (!GetOverflowMap()->Lookup(expr, &overflows))
-    {
-        overflows = ComputeDoesOverflow(block, expr, range);
-    }
-    return overflows;
-}
-
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
     ValueNumStore* vnStore = m_compiler->vnStore;
@@ -2281,7 +2170,6 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = ComputeDoesOverflow(block, expr->gtGetOp1(), range);
     }
-    GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     GetSearchPath()->Remove(expr);
     JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
     return overflows;
@@ -2456,20 +2344,31 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
 {
     // Reset the maps.
     ClearRangeMap();
-    ClearOverflowMap();
     ClearSearchPath();
 
     Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
     assert(range.IsValid());
-    if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
     {
         JITDUMP("Range is completely unknown.\n");
         return false;
     }
 
-    if (DoesOverflow(block, expr, range))
+    if (ComputeDoesOverflow(block, expr, range))
     {
         JITDUMP("Range determined to overflow.\n");
+        return false;
+    }
+
+    assert(range.IsValid());
+
+    JITDUMP("Range value %s\n", range.ToString(m_compiler));
+    ClearSearchPath();
+    Widen(block, expr, &range);
+
+    // If upper or lower limit is unknown, then return.
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
         return false;
     }
 
