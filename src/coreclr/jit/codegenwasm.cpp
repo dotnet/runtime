@@ -1743,7 +1743,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (treeNode->TypeIs(TYP_LONG))
     {
-        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        assert(genActualType(treeNode->gtGetOp2()->TypeGet()) == TYP_INT);
         // Zero-extend the shift amount to 64 bits for long shifts/rotates.
         // Wasteful if the amount was a constant, perhaps we should contain it if so.
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
