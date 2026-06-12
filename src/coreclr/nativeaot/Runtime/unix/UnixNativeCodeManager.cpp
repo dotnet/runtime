@@ -598,7 +598,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     pMethodInfo = &methodInfo;
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if (defined(TARGET_APPLE) && defined(TARGET_ARM64)) || defined(TARGET_ARM)
     // VirtualUnwind can't unwind epilogues and some prologues.
     return TrailingEpilogueInstructionsCount(pMethodInfo, pvAddress) == 0 && IsInProlog(pMethodInfo, pvAddress) != 1;
 #else
