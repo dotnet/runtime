@@ -1197,7 +1197,48 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = 0;
+            Contracts.IThread threadContract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = threadContract.GetThreadData(vmThread);
+
+            if (!threadData.IsInteropDebuggingHijacked)
+            {
+                TargetPointer filterContext = threadData.DebuggerFilterContext;
+                if (filterContext != TargetPointer.Null)
+                {
+                    *pRetVal = filterContext.Value;
+                }
+                else
+                {
+                    IStackWalk sw = _target.Contracts.StackWalk;
+                    TargetPointer redirectedContext = sw.GetRedirectedContextPointer(threadData);
+                    if (redirectedContext != TargetPointer.Null)
+                    {
+                        *pRetVal = redirectedContext.Value;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong pRetValLocal;
+            int hrLocal = _legacy.GetManagedStoppedContext(vmThread, &pRetValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal:x}, DAC: {pRetValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nuint* ppSFIHandle)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;
@@ -1465,7 +1506,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             uint allFlags = leafCtx.AllContextFlags;
-            byte[] leafContext = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.None, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] leafContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags);
             leafCtx.FillFromBuffer(leafContext);
 
             // Read the given context from the native buffer.
@@ -1499,7 +1541,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
-            byte[] context = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.Debugger, allFlags);
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] context = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
 
             context.AsSpan().CopyTo(new Span<byte>(pContextBuffer, context.Length));
         }
@@ -1821,11 +1864,281 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetClassInfo(ulong thExact, nint pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetClassInfo(thExact, pData) : HResults.E_NOTIMPL;
+    public int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
+    {
+        if (pObjectSize != null)
+            *pObjectSize = 0;
 
-    public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
+        nuint cdacObjectSize = 0;
+        List<FieldData>? cdacFields = null;
+#if DEBUG
+        if (_legacy is not null)
+            cdacFields = new();
+#endif
+        int hr = HResults.S_OK;
+        try
+        {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle thExactHandle = rts.GetTypeHandle(thExact);
+            // Native semantics: thApprox is the same TypeHandle that was passed in.
+            if (thExactHandle.IsNull)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
+            TypeHandle thApprox = thExactHandle;
+
+            // For Generic classes the object size only comes through with an instantiated type.
+            cdacObjectSize = 0;
+            if (rts.GetInstantiation(thApprox).Length == 0)
+            {
+                cdacObjectSize = rts.GetNumInstanceFieldBytes(thApprox);
+            }
+
+            CollectFieldsForDbi(rts, thExactHandle, thApprox, fpCallback, pUserData, cdacFields);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (hr == HResults.S_OK && pObjectSize != null)
+            *pObjectSize = cdacObjectSize;
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateEnumerateFieldsAgainstLegacy(
+                nameof(IDacDbiInterface.EnumerateClassFields),
+                cdacObjectSize,
+                cdacFields,
+                hr,
+                (pSize, pUser) => _legacy!.EnumerateClassFields(thExact, pSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, pUser));
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
+    {
+        if (pObjectSize != null)
+            *pObjectSize = 0;
+
+        nuint cdacObjectSize = 0;
+        List<FieldData>? cdacFields = null;
+#if DEBUG
+        if (_legacy is not null)
+            cdacFields = new();
+#endif
+        int hr = HResults.S_OK;
+        try
+        {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
+            TypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
+            if (thApproxHandle.IsNull)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
+            cdacObjectSize = rts.GetNumInstanceFieldBytes(thApproxHandle);
+
+            CollectFieldsForDbi(rts, thExactHandle, thApproxHandle, fpCallback, pUserData, cdacFields);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (hr == HResults.S_OK && pObjectSize != null)
+            *pObjectSize = cdacObjectSize;
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateEnumerateFieldsAgainstLegacy(
+                nameof(IDacDbiInterface.EnumerateInstantiationFields),
+                cdacObjectSize,
+                cdacFields,
+                hr,
+                (pSize, pUser) => _legacy!.EnumerateInstantiationFields(vmAssembly, vmThExact, vmThApprox, pSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, pUser));
+        }
+#endif
+        return hr;
+    }
+
+    // Mirrors native DacDbiInterfaceImpl::CollectFields. Iterates the regular FieldDescs first
+    // then EnC-added instance fields, then EnC-added static fields.
+    private void CollectFieldsForDbi(
+        IRuntimeTypeSystem rts,
+        TypeHandle thExact,
+        TypeHandle thApprox,
+        delegate* unmanaged<FieldData*, void*, void> fpCallback,
+        nint pUserData,
+        List<FieldData>? cdacFields)
+    {
+        TargetPointer gcStaticsBase = TargetPointer.Null;
+        TargetPointer nonGCStaticsBase = TargetPointer.Null;
+        if (!thExact.IsNull && !rts.IsCollectible(thExact))
+        {
+            gcStaticsBase = rts.GetGCStaticsBasePointer(thExact);
+            nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
+        }
+
+        IRuntimeMutableTypeSystem? mts = _target.Contracts.TryGetContract<IRuntimeMutableTypeSystem>(out IRuntimeMutableTypeSystem enc) ? enc : null;
+
+        foreach (TargetPointer fdPtr in rts.GetFieldDescList(thApprox))
+            EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+
+        if (mts is not null)
+        {
+            foreach (TargetPointer fdPtr in mts.EnumerateAddedFieldDescs(thApprox, staticFields: false))
+                EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+            foreach (TargetPointer fdPtr in mts.EnumerateAddedFieldDescs(thApprox, staticFields: true))
+                EmitFieldData(rts, mts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
+        }
+    }
+
+    // Mirrors native DacDbiInterfaceImpl::ComputeFieldData for one FieldDesc and then invokes the
+    // user callback.
+    private static void EmitFieldData(
+        IRuntimeTypeSystem rts,
+        IRuntimeMutableTypeSystem? mts,
+        TargetPointer fdPtr,
+        TargetPointer gcStaticsBase,
+        TargetPointer nonGCStaticsBase,
+        delegate* unmanaged<FieldData*, void*, void> fpCallback,
+        nint pUserData,
+        List<FieldData>? cdacFields)
+    {
+        bool isStatic = rts.IsFieldDescStatic(fdPtr);
+        CorElementType type = rts.GetFieldDescType(fdPtr);
+        bool isPrimitive = IsPrimitiveType(type);
+
+        FieldData fd = default;
+        fd.m_fldMetadataToken = rts.GetFieldDescMemberDef(fdPtr);
+        fd.m_fFldIsStatic = isStatic ? (byte)1 : (byte)0;
+        fd.m_fFldIsPrimitive = isPrimitive ? (byte)1 : (byte)0;
+        fd.m_fldSignatureCache = 0;
+        fd.m_fldSignatureCacheSize = 0;
+        fd.m_vmFieldDesc = fdPtr.Value;
+
+        bool isEnCNew = mts?.IsFieldDescEnCNew(fdPtr) ?? false;
+        if (isEnCNew)
+        {
+            // Mirrors native: storage not yet available; carry the FieldDesc pointer through
+            // m_vmFieldDesc and clear the address-related flags (TLS/RVA/collectible).
+            fd.m_fFldStorageAvailable = Interop.BOOL.FALSE;
+            fd.m_fFldIsTLS = 0;
+            fd.m_fFldIsRVA = 0;
+            fd.m_fFldIsCollectibleStatic = 0;
+        }
+        if (!isEnCNew)
+        {
+            fd.m_fFldStorageAvailable = Interop.BOOL.TRUE;
+            bool isTLS = rts.IsFieldDescThreadStatic(fdPtr);
+            bool isRVA = rts.IsFieldDescRVA(fdPtr);
+            bool isCollectibleStatic = false;
+            if (isStatic)
+            {
+                TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdPtr);
+                if (enclosingMT != TargetPointer.Null)
+                {
+                    TypeHandle enclosingTh = rts.GetTypeHandle(enclosingMT);
+                    isCollectibleStatic = rts.IsCollectible(enclosingTh);
+                }
+            }
+
+            fd.m_fFldIsTLS = isTLS ? (byte)1 : (byte)0;
+            fd.m_fFldIsRVA = isRVA ? (byte)1 : (byte)0;
+            fd.m_fFldIsCollectibleStatic = isCollectibleStatic ? (byte)1 : (byte)0;
+
+            if (isStatic)
+            {
+                if (isRVA)
+                {
+                    TargetPointer addr = rts.GetFieldDescStaticAddress(fdPtr, unboxValueTypes: false);
+                    fd.m_pFldStaticAddress = addr.Value;
+                }
+                else if (!isTLS && !isCollectibleStatic)
+                {
+                    TargetPointer baseAddr = isPrimitive ? nonGCStaticsBase : gcStaticsBase;
+                    if (baseAddr != TargetPointer.Null)
+                    {
+                        uint offset = rts.GetFieldDescOffset(fdPtr, null);
+                        fd.m_pFldStaticAddress = baseAddr + offset;
+                    }
+                }
+            }
+            else
+            {
+                // instance: store the offset
+                uint offset = rts.GetFieldDescOffset(fdPtr, null);
+                fd.m_fldInstanceOffset = offset;
+            }
+        }
+
+#if DEBUG
+        cdacFields?.Add(fd);
+#endif
+        fpCallback(&fd, (void*)pUserData);
+    }
+
+    private static bool IsPrimitiveType(CorElementType type)
+    {
+        return (type < CorElementType.Ptr)
+            || type == CorElementType.I
+            || type == CorElementType.U;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static void CollectFieldDataCallback(FieldData* data, void* pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
+        ((List<FieldData>)handle.Target!).Add(*data);
+    }
+
+    private delegate int LegacyEnumerateFieldsFn(nuint* pObjectSize, nint pUserData);
+
+    private static void ValidateEnumerateFieldsAgainstLegacy(string label, nuint cdacObjectSize, List<FieldData>? cdacFields, int hr, LegacyEnumerateFieldsFn legacyEnumerate)
+    {
+        List<FieldData> dacFields = new();
+        GCHandle dacHandle = GCHandle.Alloc(dacFields);
+        nuint dacObjectSize = 0;
+        int hrLocal = legacyEnumerate(&dacObjectSize, GCHandle.ToIntPtr(dacHandle));
+        dacHandle.Free();
+        Debug.ValidateHResult(hr, hrLocal);
+        if (hr == HResults.S_OK)
+        {
+            Debug.Assert(cdacObjectSize == dacObjectSize, $"{label} object size mismatch - cDAC: {cdacObjectSize}, DAC: {dacObjectSize}");
+            AssertFieldListsEqual(cdacFields, dacFields, label);
+        }
+    }
+
+    private static void AssertFieldListsEqual(List<FieldData>? cdacFields, List<FieldData> dacFields, string label)
+    {
+        Debug.Assert(cdacFields!.Count == dacFields.Count, $"{label} field count mismatch - cDAC: {cdacFields!.Count}, DAC: {dacFields.Count}");
+        int n = Math.Min(cdacFields!.Count, dacFields.Count);
+        for (int i = 0; i < n; i++)
+        {
+            FieldData c = cdacFields![i];
+            FieldData d = dacFields[i];
+            Debug.Assert(c.m_fldMetadataToken == d.m_fldMetadataToken, $"{label} field[{i}] m_fldMetadataToken mismatch - cDAC: 0x{c.m_fldMetadataToken:x}, DAC: 0x{d.m_fldMetadataToken:x}");
+            Debug.Assert(c.m_fFldStorageAvailable == d.m_fFldStorageAvailable, $"{label} field[{i}] m_fFldStorageAvailable mismatch - cDAC: {c.m_fFldStorageAvailable}, DAC: {d.m_fFldStorageAvailable}");
+            Debug.Assert(c.m_fFldIsStatic == d.m_fFldIsStatic, $"{label} field[{i}] m_fFldIsStatic mismatch - cDAC: {c.m_fFldIsStatic}, DAC: {d.m_fFldIsStatic}");
+            Debug.Assert(c.m_fFldIsRVA == d.m_fFldIsRVA, $"{label} field[{i}] m_fFldIsRVA mismatch - cDAC: {c.m_fFldIsRVA}, DAC: {d.m_fFldIsRVA}");
+            Debug.Assert(c.m_fFldIsTLS == d.m_fFldIsTLS, $"{label} field[{i}] m_fFldIsTLS mismatch - cDAC: {c.m_fFldIsTLS}, DAC: {d.m_fFldIsTLS}");
+            Debug.Assert(c.m_fFldIsPrimitive == d.m_fFldIsPrimitive, $"{label} field[{i}] m_fFldIsPrimitive mismatch - cDAC: {c.m_fFldIsPrimitive}, DAC: {d.m_fFldIsPrimitive}");
+            Debug.Assert(c.m_fFldIsCollectibleStatic == d.m_fFldIsCollectibleStatic, $"{label} field[{i}] m_fFldIsCollectibleStatic mismatch - cDAC: {c.m_fFldIsCollectibleStatic}, DAC: {d.m_fFldIsCollectibleStatic}");
+            Debug.Assert(c.m_fldInstanceOffset == d.m_fldInstanceOffset, $"{label} field[{i}] m_fldInstanceOffset mismatch - cDAC: 0x{c.m_fldInstanceOffset:x}, DAC: 0x{d.m_fldInstanceOffset:x}");
+            Debug.Assert(c.m_pFldStaticAddress == d.m_pFldStaticAddress, $"{label} field[{i}] m_pFldStaticAddress mismatch - cDAC: 0x{c.m_pFldStaticAddress:x}, DAC: 0x{d.m_pFldStaticAddress:x}");
+            Debug.Assert(c.m_vmFieldDesc == d.m_vmFieldDesc, $"{label} field[{i}] m_vmFieldDesc mismatch - cDAC: 0x{c.m_vmFieldDesc:x}, DAC: 0x{d.m_vmFieldDesc:x}");
+        }
+    }
+#endif
 
     public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
@@ -2818,10 +3131,55 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        *pRetVal = default;
+        try
+        {
+            DacDbiMonitorLockInfo info = default;
+            uint threadId = 0;
+            uint recursionCount = 0;
+            TargetPointer syncBlock = _target.Contracts.Object.GetSyncBlockAddress(vmObject);
 
-    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
+            if (syncBlock == TargetPointer.Null || !_target.Contracts.SyncBlock.TryGetLockInfo(syncBlock, out threadId, out recursionCount))
+            {
+                *pRetVal = info;
+            }
+            else
+            {
+                TargetPointer threadPtr = _target.Contracts.Thread.IdToThread(threadId);
+                Debug.Assert(threadPtr != TargetPointer.Null, "A thread should have been found");
+                if (threadPtr != TargetPointer.Null)
+                {
+                    info.lockOwner = threadPtr;
+                    info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+                }
+                *pRetVal = info;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiMonitorLockInfo pRetValLocal;
+            int hrLocal = _legacy.GetThreadOwningMonitorLock(vmObject, &pRetValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pRetVal->lockOwner == pRetValLocal.lockOwner,
+                    $"lockOwner mismatch: cDAC={pRetVal->lockOwner}, DAC={pRetValLocal.lockOwner}");
+                Debug.Assert(pRetVal->acquisitionCount == pRetValLocal.acquisitionCount,
+                    $"acquisitionCount mismatch: cDAC={pRetVal->acquisitionCount}, DAC={pRetValLocal.acquisitionCount}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => HResults.E_NOTIMPL;
 
     public int GetAttachStateFlags(int* pRetVal)
     {

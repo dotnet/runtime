@@ -91,6 +91,16 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
+         path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
+         app's own [UnmanagedCallersOnly] reverse thunks into dotnet.native.wasm; the runtime
+         pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 
@@ -522,10 +532,11 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a"                     Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
+      <!-- Use Condition="'$(InvariantGlobalization)' != 'true'" after fix for https://github.com/dotnet/runtime/issues/129242 -->
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 

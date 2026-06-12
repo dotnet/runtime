@@ -928,31 +928,27 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
 
-                        // TODO-Wasm: None of the IMAGE_REL type relocs should occur in Wasm
-                        // code, and we should add asserts for this once we've updated the necessary
-                        // dependency nodes to emit the proper reloc type on Wasm.
                         case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                             // No action required
                             break;
 
                         case RelocType.IMAGE_REL_BASED_DIR64:
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                            //       Debug.Assert(betweenWebcilSections);
                             // This is an ImageBase-relative value in PE, but our image base
                             // for Webcil is virtual address 0
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + 0 + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                            //       Debug.Assert(betweenWebcilSections);
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
-                            //      Debug.Assert(betweenWebcilSections);
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset - (virtualRelocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                            //       Debug.Assert(betweenWebcilSections && symbolWebcilSection != null);
                             Debug.Assert(symbolWebcilSection != null);
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);

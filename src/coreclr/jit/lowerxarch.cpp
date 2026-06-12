@@ -10461,7 +10461,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                            uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->IconValue());
                             const TernaryLogicInfo* info     = &TernaryLogicInfo::lookup(control);
                             TernaryLogicUseFlags    useFlags = info->GetAllUseFlags();
 

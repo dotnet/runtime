@@ -462,7 +462,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
@@ -479,6 +479,8 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
+    pRD->IsCallerContextValid = FALSE;
+
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
     pRD->pCurrentContext->InterpreterSP = GetSP();
 
@@ -532,7 +534,6 @@ EXTERN_C void JIT_StackProbe_End()
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
 {
-    PORTABILITY_ASSERT("ResetCurrentContext is not implemented on wasm");
 }
 
 extern "C" void STDCALL GenericPInvokeCalliHelper(void)
@@ -708,6 +709,18 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 void FlushWriteBarrierInstructionCache()
 {
     // Nothing to do - wasm has static write barriers
+}
+
+ULONG
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
+    )
+{
+    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
+    uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
+    return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
 }
 
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
@@ -1304,4 +1317,91 @@ void InvokeManagedMethod(ManagedMethodParam *pParam)
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
+}
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
+{
+    if (sp <= 0x1000)
+    {
+        // Sp has become set to the lowest page on the system. Or we're unwinding a TransitionBlock
+        // which is encoded without a StackPointer. In either case, just return 0 to indicate that nothing
+        // meaningful is here.
+        return 0;
+    }
+    else
+    {
+        if (*(int*)sp == 0)
+        {
+            sp = *(TADDR*)(sp + sizeof(TADDR));
+        }
+        if (*(int*)sp == TERMINATE_R2R_STACK_WALK)
+        {
+            return 0;
+        }
+        else
+        {
+            return sp;
+        }
+    }
+}
+
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
+{
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+
+    if (fp == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
+        uint32_t functionLocalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
+        if (baseVirtualIP == 0)
+            return 0;
+        return baseVirtualIP + functionLocalVirtualIP;
+    }
+}
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind (
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    _ASSERTE(FunctionEntry != NULL);
+    _ASSERTE(HandlerType == 0);
+    _ASSERTE(ExecutionManager::IsVirtualIP(ControlPc));
+    _ASSERTE(ImageBase != 0);
+
+    // CoreCLR callers currently do not use HandlerData or EstablisherFrame on WASM,
+    // so we set them to 0. If future callers require them, proper unwinding support
+    // can be added at that point.
+    *HandlerData = 0;
+    *EstablisherFrame = 0;
+
+    TADDR sp = ContextRecord->InterpreterSP;
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+    if (fp != 0)
+    {
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+        ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
+        ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
+    }
+    else
+    {
+        // Unwind failed!
+        _ASSERTE(FALSE);
+        ContextRecord->InterpreterIP = 0;
+        ContextRecord->InterpreterSP = 0;
+    }
+
+    return nullptr;
 }

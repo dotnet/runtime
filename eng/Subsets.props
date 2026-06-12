@@ -254,6 +254,7 @@
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
+    <SubsetName Include="Tools.CdacStressTests" OnDemand="true" Description="Stress integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
 
     <!-- Host -->
@@ -524,15 +525,20 @@
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj;
-                             $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+                             $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj;
+                             $(SharedNativeRoot)managed\cdac\tests\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DumpTests\Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" Test="true" Category="tools"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacstresstests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\StressTests\Microsoft.Diagnostics.DataContractReader.StressTests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
