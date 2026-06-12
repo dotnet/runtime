@@ -525,6 +525,94 @@ namespace System.Text.Json.SourceGeneration
         }
 
         /// <summary>
+        /// Returns <see langword="true"/> if every constraint declared on
+        /// <paramref name="derivedParam"/> is implied by (i.e. weaker-than-or-equal-to) some
+        /// constraint declared on <paramref name="baseParam"/>, after applying
+        /// <paramref name="substitution"/> to type-constraint references. Used by the
+        /// "universal derived registration" check to verify that a derived type's parameter
+        /// constraints will be satisfied for every valid specialization of the base.
+        ///
+        /// Special-constraint subsumption rules:
+        ///   * <c>where T : class</c>  requires base parameter to also have <c>class</c>.
+        ///   * <c>where T : struct</c> requires base parameter to have <c>struct</c> OR <c>unmanaged</c>.
+        ///   * <c>where T : unmanaged</c> requires base parameter to have <c>unmanaged</c>.
+        ///   * <c>where T : new()</c> requires base parameter to have <c>new()</c>, <c>struct</c>, or <c>unmanaged</c>.
+        ///   * <c>notnull</c> is intentionally ignored (not runtime-enforced; matches <see cref="TryValidateGenericConstraints"/>).
+        ///
+        /// IMPORTANT: This implementation MIRRORS the reflection-side
+        /// <c>System.Text.Json.Reflection.ReflectionExtensions.AreConstraintsImpliedBy</c>.
+        /// Any change to subsumption rules MUST be applied on both sides.
+        /// </summary>
+        public static bool AreConstraintsImpliedBy(
+            this Compilation compilation,
+            ITypeParameterSymbol derivedParam,
+            ITypeParameterSymbol baseParam,
+            IReadOnlyDictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
+        {
+            bool baseGivesStruct = baseParam.HasValueTypeConstraint || baseParam.HasUnmanagedTypeConstraint;
+
+            if (derivedParam.HasReferenceTypeConstraint && !baseParam.HasReferenceTypeConstraint)
+            {
+                return false;
+            }
+
+            if (derivedParam.HasValueTypeConstraint && !baseGivesStruct)
+            {
+                return false;
+            }
+
+            if (derivedParam.HasUnmanagedTypeConstraint && !baseParam.HasUnmanagedTypeConstraint)
+            {
+                return false;
+            }
+
+            if (derivedParam.HasConstructorConstraint && !(baseParam.HasConstructorConstraint || baseGivesStruct))
+            {
+                return false;
+            }
+
+            foreach (ITypeSymbol derivedConstraint in derivedParam.ConstraintTypes)
+            {
+                ITypeSymbol substituted = compilation.SubstituteTypeParameters(derivedConstraint, substitution);
+                if (!IsBaseConstraintSetImplying(compilation, baseParam, substituted, baseGivesStruct))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+            static bool IsBaseConstraintSetImplying(
+                Compilation compilation,
+                ITypeParameterSymbol baseParam,
+                ITypeSymbol target,
+                bool baseGivesStruct)
+            {
+                // System.ValueType is implied by the `struct`/`unmanaged` special constraint.
+                if (baseGivesStruct && target.SpecialType == SpecialType.System_ValueType)
+                {
+                    return true;
+                }
+
+                // Object is satisfied by every type parameter trivially.
+                if (target.SpecialType == SpecialType.System_Object)
+                {
+                    return true;
+                }
+
+                foreach (ITypeSymbol baseConstraint in baseParam.ConstraintTypes)
+                {
+                    if (compilation.HasImplicitConversion(baseConstraint, target))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Constructs <paramref name="typeDef"/> using <paramref name="allArgs"/>, accounting for
         /// nesting: the leading args bind enclosing-type parameters (outermost first) and the
         /// trailing args bind <paramref name="typeDef"/>'s own parameters. Non-generic intermediate

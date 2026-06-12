@@ -319,5 +319,179 @@ namespace System.Text.Json.Reflection
 
             return pattern == target;
         }
+
+        /// <summary>
+        /// Returns <see langword="true"/> if the constraints on <paramref name="derivedParam"/>
+        /// (after substituting via <paramref name="substitution"/>) are implied by the
+        /// constraints on <paramref name="baseParam"/>. Used by the polymorphism resolver to
+        /// validate that every closure of the base type that respects the base's constraints
+        /// would also be a valid closure of the open derived type.
+        ///
+        /// IMPORTANT: This implementation MIRRORS
+        /// <c>System.Text.Json.SourceGeneration.RoslynExtensions.AreConstraintsImpliedBy</c>.
+        /// Any change to subsumption semantics must be applied on both sides.
+        ///
+        /// Known intentional asymmetry with the source-gen mirror: the C# <c>unmanaged</c>
+        /// constraint is encoded as a modreq and is not surfaced through the standard
+        /// reflection API, so the reflection check cannot enforce that a derived
+        /// <c>unmanaged</c> constraint is matched by a base <c>unmanaged</c> constraint. The
+        /// polymorphism resolver falls back on <see cref="Type.MakeGenericType"/> to surface
+        /// any remaining constraint violations at closure time.
+        /// </summary>
+        [RequiresUnreferencedCode("Reflects over derived and base generic parameter constraint types.")]
+        [RequiresDynamicCode("Substitutes type parameters in constraint types.")]
+        public static bool AreConstraintsImpliedBy(
+            Type derivedParam,
+            Type baseParam,
+            IReadOnlyDictionary<Type, Type> substitution)
+        {
+            Debug.Assert(derivedParam.IsGenericParameter);
+            Debug.Assert(baseParam.IsGenericParameter);
+
+            GenericParameterAttributes derivedFlags = derivedParam.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+            GenericParameterAttributes baseFlags = baseParam.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+
+            bool baseHasReferenceType = (baseFlags & GenericParameterAttributes.ReferenceTypeConstraint) != 0;
+            bool baseHasValueType = (baseFlags & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0;
+            bool baseHasDefaultCtor = (baseFlags & GenericParameterAttributes.DefaultConstructorConstraint) != 0;
+
+            if ((derivedFlags & GenericParameterAttributes.ReferenceTypeConstraint) != 0 && !baseHasReferenceType)
+            {
+                return false;
+            }
+
+            if ((derivedFlags & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 && !baseHasValueType)
+            {
+                return false;
+            }
+
+            // 'struct' implies 'new()'.
+            if ((derivedFlags & GenericParameterAttributes.DefaultConstructorConstraint) != 0 && !baseHasDefaultCtor && !baseHasValueType)
+            {
+                return false;
+            }
+
+            Type[] baseConstraintTypes = baseParam.GetGenericParameterConstraints();
+            foreach (Type derivedConstraint in derivedParam.GetGenericParameterConstraints())
+            {
+                Type substituted = SubstituteTypeParameters(derivedConstraint, substitution);
+
+                // System.Object as a constraint is trivially implied by any reference whatsoever.
+                if (substituted == typeof(object))
+                {
+                    continue;
+                }
+
+                // System.ValueType is implied when the base has the 'struct' constraint.
+                if (substituted == typeof(ValueType) && baseHasValueType)
+                {
+                    continue;
+                }
+
+                if (substituted.IsGenericParameter)
+                {
+                    // The derived constraint substituted to (another) base parameter. That
+                    // parameter must literally appear in the base's own type constraints for
+                    // the substitution to be guaranteed valid for every closure.
+                    bool implied = false;
+                    foreach (Type bc in baseConstraintTypes)
+                    {
+                        if (bc == substituted)
+                        {
+                            implied = true;
+                            break;
+                        }
+                    }
+
+                    if (!implied)
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                bool match = false;
+                foreach (Type baseConstraint in baseConstraintTypes)
+                {
+                    if (substituted.IsAssignableFrom(baseConstraint))
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+
+                if (!match)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Walks a <see cref="Type"/> tree and substitutes any occurrence of a type parameter
+        /// (whose key is present in <paramref name="substitution"/>) with its mapped value.
+        /// </summary>
+        [RequiresUnreferencedCode("Reflects over the type tree to build a substituted constraint type.")]
+        [RequiresDynamicCode("Constructs a new substituted generic type via MakeGenericType.")]
+        private static Type SubstituteTypeParameters(Type type, IReadOnlyDictionary<Type, Type> substitution)
+        {
+            if (type.IsGenericParameter)
+            {
+                return substitution.TryGetValue(type, out Type? mapped) ? mapped : type;
+            }
+
+            if (type.IsArray)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                if (substitutedElement == element)
+                {
+                    return type;
+                }
+
+#if NET
+                return type.IsSZArray ? substitutedElement.MakeArrayType() : substitutedElement.MakeArrayType(type.GetArrayRank());
+#else
+                int rank = type.GetArrayRank();
+                return rank == 1 ? substitutedElement.MakeArrayType() : substitutedElement.MakeArrayType(rank);
+#endif
+            }
+
+            if (type.IsPointer)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                return substitutedElement == element ? type : substitutedElement.MakePointerType();
+            }
+
+            if (type.IsByRef)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                return substitutedElement == element ? type : substitutedElement.MakeByRefType();
+            }
+
+            if (type.IsGenericType)
+            {
+                Type[] args = type.GetGenericArguments();
+                Type[]? newArgs = null;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    Type substitutedArg = SubstituteTypeParameters(args[i], substitution);
+                    if (substitutedArg != args[i])
+                    {
+                        newArgs ??= (Type[])args.Clone();
+                        newArgs[i] = substitutedArg;
+                    }
+                }
+
+                return newArgs is null ? type : type.GetGenericTypeDefinition().MakeGenericType(newArgs);
+            }
+
+            return type;
+        }
     }
 }

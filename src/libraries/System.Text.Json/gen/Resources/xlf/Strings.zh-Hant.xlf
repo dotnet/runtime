@@ -142,9 +142,24 @@
         <target state="new">the derived type matches the base type through multiple ancestors</target>
         <note />
       </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase">
+        <source>a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</source>
+        <target state="new">a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintNarrowing">
+        <source>the derived type's type parameter '{0}' declares constraints that are stricter than the constraints on the corresponding base type parameter '{1}'</source>
+        <target state="new">the derived type's type parameter '{0}' declares constraints that are stricter than the constraints on the corresponding base type parameter '{1}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
         <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
         <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniversalPinning">
+        <source>the derived type does not apply universally to every specialization of the base type because it pins one or more base type arguments</source>
+        <target state="new">the derived type does not apply universally to every specialization of the base type because it pins one or more base type arguments</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">

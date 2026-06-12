@@ -75,62 +75,57 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void OpenGenericDerivedType_PartiallyConcrete_RoundTrips()
+        public static void OpenGenericDerivedType_NonUniversalPinning_IsDroppedFromMetadata()
         {
-            // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> registered on
-            // SourceGenOpenGenericBase<string, int>. Position 0 (T) unifies to string;
-            // position 1 (concrete int) matches. The generated metadata for the closed base
-            // must contain SourceGenOpenGenericDerived<string> as the resolved derived type.
+            // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> pins T2 to
+            // int -- non-universal w.r.t. SourceGenOpenGenericBase<T1, T2>. Source-gen
+            // emits SYSLIB1229 (suppressed on the fixture decoration) and drops the
+            // registration from the generated metadata; the closed base has no
+            // PolymorphismOptions and serializes plainly.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenOpenGenericBaseStringInt32;
-            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
-            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
-            Assert.Equal(typeof(SourceGenOpenGenericDerived<string>), derivedType.DerivedType);
-            Assert.Equal("derived", derivedType.TypeDiscriminator);
+            Assert.Null(typeInfo.PolymorphismOptions);
 
             SourceGenOpenGenericBase<string, int> value = new SourceGenOpenGenericDerived<string> { Extra = "hello" };
             string json = JsonSerializer.Serialize(value, typeInfo);
-            Assert.Contains("\"$type\":\"derived\"", json);
-
-            var result = JsonSerializer.Deserialize(json, typeInfo);
-            var d = Assert.IsType<SourceGenOpenGenericDerived<string>>(result);
-            Assert.Equal("hello", d.Extra);
+            Assert.DoesNotContain("$type", json);
         }
 
         [Fact]
-        public static void ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnIntSpec()
+        public static void ClosedDerivedOnGenericBase_IsDroppedOnIntSpec()
         {
-            // For SourceGenSpecAnimal<int>, only SourceGenSpecAnimal_Cat applies; the closed
-            // Dog : SourceGenSpecAnimal<string> registration is silently filtered.
+            // Under the universal-applicability rule, closed-derived registrations on an
+            // OPEN generic base (here SourceGenSpecAnimal_Cat : SourceGenSpecAnimal<int>
+            // and Dog : SourceGenSpecAnimal<string>) are non-universal -- they can never
+            // apply to every closure of the open base. Source-gen drops them from emitted
+            // metadata (with SYSLIB1229 suppressed on the fixture) so the closed base has
+            // no PolymorphismOptions and serializes plainly.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalInt;
-            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
-            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
-            Assert.Equal(typeof(SourceGenSpecAnimal_Cat), derivedType.DerivedType);
+            Assert.Null(typeInfo.PolymorphismOptions);
 
             SourceGenSpecAnimal<int> cat = new SourceGenSpecAnimal_Cat { Name = "Felix", Lives = 9 };
             string json = JsonSerializer.Serialize(cat, typeInfo);
-            Assert.Contains("\"$type\":\"cat\"", json);
+            Assert.DoesNotContain("$type", json);
         }
 
         [Fact]
-        public static void ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnStringSpec()
+        public static void ClosedDerivedOnGenericBase_IsDroppedOnStringSpec()
         {
-            // For SourceGenSpecAnimal<string>, only SourceGenSpecAnimal_Dog applies.
+            // Companion to ClosedDerivedOnGenericBase_IsDroppedOnIntSpec for the string
+            // closure. Same rejection regardless of which closure is constructed.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalString;
-            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
-            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
-            Assert.Equal(typeof(SourceGenSpecAnimal_Dog), derivedType.DerivedType);
+            Assert.Null(typeInfo.PolymorphismOptions);
 
             SourceGenSpecAnimal<string> dog = new SourceGenSpecAnimal_Dog { Name = "Rex", Breed = "Husky" };
             string json = JsonSerializer.Serialize(dog, typeInfo);
-            Assert.Contains("\"$type\":\"dog\"", json);
+            Assert.DoesNotContain("$type", json);
         }
 
         [Fact]
-        public static void ClosedDerivedTypes_AllFilteredForSpec_BecomesNonPolymorphic()
+        public static void ClosedDerivedOnGenericBase_IsDroppedOnUnrelatedSpec()
         {
-            // For SourceGenSpecAnimal<bool>, NEITHER Cat nor Dog applies; filtering empties
-            // the derived-type list, so the source-gen-emitted type info must omit
-            // polymorphism options entirely (otherwise we would throw at runtime).
+            // The bool closure of SourceGenSpecAnimal<T> -- no closed-derived registration
+            // would have matched even under per-closure filtering. The emitted typeInfo has
+            // no PolymorphismOptions and serializes plainly.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenSpecAnimalBool;
             Assert.Null(typeInfo.PolymorphismOptions);
 
@@ -140,13 +135,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void OpenDerivedWithConstraint_FailingConstraintIsDroppedFromEmittedMetadata()
+        public static void OpenDerivedWithNarrowerConstraint_IsDroppedOnUnsatisfyingSpec()
         {
             // SourceGenConstrainedDerived<T> where T : struct, registered on
-            // SourceGenConstrainedBase<string>. string is not a struct, so the source
-            // generator emits SYSLIB1229 (suppressed below) and drops the registration
-            // from generated metadata. The emitted typeInfo has no derived types and
-            // serializes the closed base as non-polymorphic.
+            // SourceGenConstrainedBase<T>. The derived's struct constraint is narrower
+            // than the base's (none), so the registration is non-universal under B-strict.
+            // Source-gen emits SYSLIB1229 (suppressed on the fixture) and drops the
+            // registration; every closure of the base has null PolymorphismOptions.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseString;
             Assert.Null(typeInfo.PolymorphismOptions);
 
@@ -155,29 +150,32 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void OpenDerivedWithConstraint_AppliesWhenConstraintIsSatisfied()
+        public static void OpenDerivedWithNarrowerConstraint_IsDroppedOnSatisfyingSpec()
         {
-            // SourceGenConstrainedDerived<T> where T : struct, registered on
-            // SourceGenConstrainedBase<int>. int satisfies struct -- the open derived
-            // resolves to SourceGenConstrainedDerived<int>.
+            // Same fixture as above, applied to a closure (int) where the derived's
+            // struct constraint happens to hold. Under per-closure filtering this would
+            // have been accepted; under B-strict universal applicability it is rejected
+            // uniformly so that introducing a new closure (e.g. <string>) cannot break a
+            // working serialization site.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseInt;
-            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
-            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
-            Assert.Equal(typeof(SourceGenConstrainedDerived<int>), derivedType.DerivedType);
+            Assert.Null(typeInfo.PolymorphismOptions);
 
-            SourceGenConstrainedBase<int> derived = new SourceGenConstrainedDerived<int> { Value = 1, Extra = 2 };
-            string json = JsonSerializer.Serialize(derived, typeInfo);
-            Assert.Contains("\"$type\":\"derived\"", json);
+            string json = JsonSerializer.Serialize(new SourceGenConstrainedBase<int> { Value = 1 }, typeInfo);
+            Assert.DoesNotContain("$type", json);
         }
 
         [Fact]
         public static void OpenDerivedWithExtraUnboundParameter_BadArmIsDroppedFromEmittedMetadata()
         {
-            // Two registrations on the same base: SourceGenExtraParam_Cat<T> resolves OK to
-            // SourceGenExtraParam_Cat<int>; SourceGenExtraParam_Cat<T, T2> has an unbound
-            // T2 that the base does not pin down, so the source generator emits SYSLIB1229
-            // (suppressed below) and drops it from the generated metadata. Only the well-
-            // formed "cat" arm survives in the emitted typeInfo.
+            // Two registrations on the same base: SourceGenExtraParam_Cat<T> is universal
+            // and resolves to SourceGenExtraParam_Cat<int>; SourceGenExtraParam_Cat<T, T2>
+            // has an extra unbound T2 that the single-parameter base cannot pin down, so
+            // source-gen emits SYSLIB1229 (suppressed below) and drops it from the
+            // generated metadata. Only the well-formed "cat" arm survives in the emitted
+            // typeInfo.
+            //
+            // This is the documented source-gen-vs-reflection asymmetry: source-gen drops
+            // bad arms per-attribute, reflection throws on the first bad arm.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenExtraParamAnimalInt;
             JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
             JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
@@ -205,7 +203,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
     }
 
+    // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> pins the second
+    // base parameter to a concrete type -- non-universal under B-strict. Source-gen emits
+    // SYSLIB1229 at compile time; suppress it here so we can verify the runtime drops the
+    // registration and the closed base serializes plainly.
+#pragma warning disable SYSLIB1229
     [JsonDerivedType(typeof(SourceGenOpenGenericDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
     public class SourceGenOpenGenericBase<T1, T2>
     {
         public T1? Value1 { get; set; }
@@ -217,10 +221,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         public T? Extra { get; set; }
     }
 
-    // Specialization-filtering fixtures (PR #127318 follow-up).
+    // Specialization-pinning fixtures (PR #129294, B-strict universal-applicability rule).
+    // Each closed-derived registration applies to a single specialization of the open base,
+    // which the shared attribute declaration cannot enforce universally. Source-gen emits
+    // SYSLIB1229; suppress here so we can verify the runtime drops the registration and the
+    // closed base serializes plainly.
 
+#pragma warning disable SYSLIB1229
     [JsonDerivedType(typeof(SourceGenSpecAnimal_Cat), "cat")]
     [JsonDerivedType(typeof(SourceGenSpecAnimal_Dog), "dog")]
+#pragma warning restore SYSLIB1229
     public class SourceGenSpecAnimal<T>
     {
         public string? Name { get; set; }
