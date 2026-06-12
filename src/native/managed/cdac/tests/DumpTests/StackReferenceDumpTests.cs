@@ -139,12 +139,16 @@ public class StackReferenceDumpTests : DumpTestBase
         Assert.True(expected.Count >= 1,
             $"NestedException debuggee should hold at least one superseded exception on its ExInfo chain; found {expected.Count}");
 
-        // WalkStackReferences must surface every in-flight exception object as a stack reference.
+        // WalkStackReferences must surface every in-flight exception object as a stack reference,
+        // reported with the Other source type (the ExInfo node is not a capital-F Frame).
         HashSet<ulong> reported = new();
         foreach (StackReferenceData r in stackWalk.WalkStackReferences(crashingThread))
         {
-            if (r.Object != TargetPointer.Null)
-                reported.Add(r.Object);
+            if (r.Object == TargetPointer.Null)
+                continue;
+            if (expected.Contains(r.Object))
+                Assert.Equal(StackSourceType.Other, r.SourceType);
+            reported.Add(r.Object);
         }
 
         foreach (ulong exc in expected)
@@ -173,12 +177,11 @@ public class StackReferenceDumpTests : DumpTestBase
 
         // Enumerate the thread's GCFrame chain node addresses; each reported GCFrame root carries the
         // GCFrame node address as its Source (UpdateScanContext(frame: pGCFrame)).
-        Target.TypeInfo threadType = Target.GetTypeInfo("Thread");
         Target.TypeInfo gcFrameType = Target.GetTypeInfo("GCFrame");
         TargetPointer terminator = TargetPointer.PlatformMaxValue(Target);
 
         HashSet<ulong> gcFrameNodes = new();
-        TargetPointer node = Target.ReadPointerFieldOrNull(crashingThread.ThreadAddress, threadType, "GCFrame");
+        TargetPointer node = crashingThread.GCFrame ?? TargetPointer.Null;
         while (node != TargetPointer.Null && node != terminator && gcFrameNodes.Add(node))
             node = Target.ReadPointerField(node, gcFrameType, "Next");
 
@@ -189,6 +192,9 @@ public class StackReferenceDumpTests : DumpTestBase
         {
             if (!gcFrameNodes.Contains(r.Source) || r.Object == TargetPointer.Null)
                 continue;
+
+            // GCFrame roots are reported with the Other source type.
+            Assert.Equal(StackSourceType.Other, r.SourceType);
 
             // A real heap object held alive by a GCFrame: its MethodTable must be readable. A reported
             // GCFrame root can be an interior pointer or otherwise unreadable, so guard the read.
