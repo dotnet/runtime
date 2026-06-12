@@ -1554,14 +1554,21 @@ void Compiler::optReplaceIVUses(unsigned                    lclNum,
                     return fgWalkResult::WALK_CONTINUE;
                 }
 
-                node->AsLclVar()->SetLclNum(m_newLclNum);
-                m_ssaBuilder->InsertDef(UseDefLocation(m_block, m_stmt, node->AsLclVar()));
+                // Create a fresh store node to avoid carrying over stale data
+                // (e.g. SSA numbers, value numbers) from the old local's node.
+                GenTreeLclVar* newStore = m_compiler->gtNewStoreLclVarNode(m_newLclNum, node->AsLclVar()->Data());
+                newStore->gtVNPair      = node->gtVNPair;
+                *use                    = newStore;
+                m_ssaBuilder->InsertDef(UseDefLocation(m_block, m_stmt, newStore));
                 MadeChanges = true;
             }
             else if (node->OperIs(GT_LCL_VAR) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
             {
-                node->AsLclVar()->SetLclNum(m_newLclNum);
-                m_uses->Emplace(m_block, m_stmt, node->AsLclVar());
+                // Create a fresh use node to avoid carrying over stale data
+                // (e.g. SSA numbers, value numbers) from the old local's node.
+                GenTreeLclVar* newUse = m_compiler->gtNewLclvNode(m_newLclNum, node->TypeGet());
+                *use                  = newUse;
+                m_uses->Emplace(m_block, m_stmt, newUse);
                 MadeChanges = true;
             }
 
