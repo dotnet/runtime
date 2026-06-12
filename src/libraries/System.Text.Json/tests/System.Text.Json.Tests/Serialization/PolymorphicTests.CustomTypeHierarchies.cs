@@ -2787,11 +2787,11 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_ComplexArg<T> : OpenGenericBase_ComplexArg<T>;
 
         [Fact]
-        public async Task OpenGenericDerivedType_WrappedTypeArg_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_WrappedTypeArg_ThrowsForNonUniformPinning()
         {
             // Derived<T> : Base<List<T>> structurally pins the base's only type parameter to
             // List<T>; this can never apply for a base specialization whose type argument is
-            // not itself a List<>. Under the universal-applicability rule the registration
+            // not itself a List<>. Under the uniform-applicability rule the registration
             // is rejected at metadata-resolution time regardless of which base specialization
             // is actually constructed.
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -2890,11 +2890,11 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_GroundMismatch<T> : OpenGenericBase_GroundMismatch<T, int>;
 
         [Fact]
-        public async Task OpenGenericDerivedType_PartiallyConcrete_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_PartiallyConcrete_ThrowsForNonUniformPinning()
         {
             // Derived<T> : Base<T, int> pins position 1 of the base to a concrete type. Even
             // though the registration could "work" for Base<X, int> closures, it does not
-            // apply to arbitrary closures of Base<T1, T2>. Under the universal rule we reject
+            // apply to arbitrary closures of Base<T1, T2>. Under the uniform rule we reject
             // the registration regardless of which closure is currently being constructed,
             // so registrations cannot silently work for one specialization and break for
             // another.
@@ -2972,7 +2972,7 @@ namespace System.Text.Json.Serialization.Tests
             // definition is necessarily inherited by every closure -- so a registration that
             // only applies to one specialization is rejected at metadata-resolution time.
             // The open OpenGenericDerived_Mixed<T> : OpenGenericBase_Mixed<T> registration is
-            // universal, but the rejection of the closed sibling throws before it surfaces.
+            // uniform, but the rejection of the closed sibling throws before it surfaces.
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper<OpenGenericBase_Mixed<int>>(
                     new OpenGenericDerived_Mixed<int> { Value = 1 }));
@@ -3021,7 +3021,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_ThrowsForNonUniformPinning()
         {
             // Impl<T> implements IBase<List<T>>: the interface ancestor pins the base's only
             // type parameter to a List<>. Even though IBase<List<string>> could be served by
@@ -3044,7 +3044,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_ArrayTypeArg_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_ArrayTypeArg_ThrowsForNonUniformPinning()
         {
             // Derived<T> : Base<T[]> pins the base's only type parameter to an array shape.
             // The registration cannot apply to closures whose argument is not itself an array,
@@ -3088,9 +3088,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_PartialConcretization_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_PartialConcretization_ThrowsForNonUniformPinning()
         {
-            // Companion of OpenGenericDerivedType_PartiallyConcrete_ThrowsForNonUniversalPinning
+            // Companion of OpenGenericDerivedType_PartiallyConcrete_ThrowsForNonUniformPinning
             // on a base whose second parameter is unused -- proves that the rejection is purely
             // structural at registration time and does not depend on whether the pinned base
             // parameter is referenced by the closure's property bag.
@@ -3108,11 +3108,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_KeyValuePairArg_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_KeyValuePairArg_ThrowsForNonUniformPinning()
         {
             // Derived<T> : Base<KeyValuePair<string, T>> pins the base's only type parameter
             // to a KeyValuePair<string, ?> shape AND pins the Key half of that pair to string.
-            // The registration cannot apply universally, so it is rejected at metadata-
+            // The registration cannot apply uniformly, so it is rejected at metadata-
             // resolution time.
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper<OpenGenericBase_KvpArg<KeyValuePair<string, int>>>(
@@ -3128,12 +3128,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_MultiLevelInheritance_ThrowsForTransitiveNonUniversalPinning()
+        public async Task OpenGenericDerivedType_MultiLevelInheritance_ThrowsForTransitiveNonUniformPinning()
         {
-            // The Leaf<T> -> Mid<T> -> Base<List<T>> chain is universal in the Leaf->Mid hop
-            // but non-universal in the Mid->Base hop (Mid<T> pins Base's parameter to List<T>).
-            // Universality is required end-to-end, so the registration is rejected even though
-            // the leaf's own immediate base is universal.
+            // The Leaf<T> -> Mid<T> -> Base<List<T>> chain is uniform in the Leaf->Mid hop
+            // but non-uniform in the Mid->Base hop (Mid<T> pins Base's parameter to List<T>).
+            // Uniformity is required end-to-end, so the registration is rejected even though
+            // the leaf's own immediate base is uniform.
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper<OpenGenericBase_MultiLevel<List<int>>>(
                     new OpenGenericLeaf_MultiLevel<int> { Items = [10, 20] }));
@@ -3150,11 +3150,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_TupleSyntax_ThrowsForNonUniversalPinning()
+        public async Task OpenGenericDerivedType_TupleSyntax_ThrowsForNonUniformPinning()
         {
             // Derived<T1, T2> : Base<(T1, T2)> pins the base's only type parameter to a
             // ValueTuple<,> shape (`(T1, T2)` is sugar for `ValueTuple<T1, T2>`). The
-            // registration is non-universal and rejected at metadata-resolution time.
+            // registration is non-uniform and rejected at metadata-resolution time.
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper<OpenGenericBase_Tuple<(int, string)>>(
                     new OpenGenericDerived_Tuple<int, string> { Pair = (5, "x") }));
@@ -3201,7 +3201,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // The derived adds a `where T : struct` constraint that the base does not have.
             // This is rejected uniformly: even though the constraint happens to be satisfied
-            // for some closures (e.g. Base<int>), the registration is non-universal and
+            // for some closures (e.g. Base<int>), the registration is non-uniform and
             // would mysteriously stop applying on closures the constraint excludes. Reject
             // at metadata-resolution time.
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -3240,7 +3240,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task OpenGenericDerivedType_DuplicateClosedAndOpenRegistration_ThrowsForClosedDerivedOnGenericBase()
         {
             // The closed Derived<int> registration on the open generic base is rejected
-            // outright under the universal-registration rule (a closed derived registered on
+            // outright under the uniform-registration rule (a closed derived registered on
             // a generic base only applies to one specialization, which the shared attribute
             // declaration cannot express). The throw masks any downstream duplicate-id check
             // that would otherwise have surfaced.
@@ -3340,11 +3340,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_MultipleInterfaceConstructions_NonUniversalPinning_Throws()
+        public async Task OpenGenericDerivedType_MultipleInterfaceConstructions_NonUniformPinning_Throws()
         {
-            // Impl<T> reaches IBase<> via two ancestors: directly (IBase<T>, universal) and
+            // Impl<T> reaches IBase<> via two ancestors: directly (IBase<T>, uniform) and
             // transitively through OpenGenericImpl_MultiCtor_IntBase : IBase<int> (pins to
-            // int). Universal applicability requires every matching ancestor to agree on a
+            // int). Uniform applicability requires every matching ancestor to agree on a
             // canonical substitution mapping each derived parameter to a base parameter; the
             // IBase<int> ancestor pins the base parameter to a concrete type, so the
             // registration is rejected uniformly even for closures where the IBase<T> leg
@@ -3367,9 +3367,9 @@ namespace System.Text.Json.Serialization.Tests
             public T? Item { get; set; }
         }
 
-        // ---- Universal-applicability tests (PR #129294, B-strict rule) ----
+        // ---- Uniform-applicability tests (PR #129294, B-strict rule) ----
         //
-        // Under the universal-applicability rule a derived registration on a generic base must
+        // Under the uniform-applicability rule a derived registration on a generic base must
         // apply to EVERY closed specialization of that base. Registrations that only apply to
         // some specializations -- closed derived types pinning a specific spec, open derived
         // types that pin a base parameter to a concrete type, or open derived types that
@@ -3379,7 +3379,7 @@ namespace System.Text.Json.Serialization.Tests
         // Scenario 1: Closed derived types on an OPEN generic base. The same [JsonDerivedType]
         // attribute lives on the open base definition and is shared across every closed
         // specialization, so a closed derived (which necessarily pins a single specialization)
-        // can never apply universally. Rejected.
+        // can never apply uniformly. Rejected.
 
         [JsonDerivedType(typeof(SpecAnimal_Cat), "cat")]
         [JsonDerivedType(typeof(SpecAnimal_Dog), "dog")]
@@ -3398,7 +3398,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ClosedDerivedOnGenericBase_ThrowsForEverySpecialization(Type closedBaseType)
         {
             // Whichever closure of SpecAnimal<T> the user constructs, resolution fails
-            // because the closed derived registrations are non-universal. There is no
+            // because the closed derived registrations are non-uniform. There is no
             // "happy" closure that suppresses the rejection.
             object baseValue = Activator.CreateInstance(closedBaseType)!;
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -3406,7 +3406,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // Scenario 2: Closed derived on a generic base, with [JsonPolymorphic] also declared
-        // (no behavior difference under universal applicability -- the rejection is the same).
+        // (no behavior difference under uniform applicability -- the rejection is the same).
 
         [JsonPolymorphic]
         [JsonDerivedType(typeof(SpecAnimal_Cat), "cat")]
@@ -3422,7 +3422,7 @@ namespace System.Text.Json.Serialization.Tests
             // Companion to ClosedDerivedOnGenericBase_ThrowsForEverySpecialization. The
             // explicit [JsonPolymorphic] attribute does not change the rejection -- whether
             // the user opted in via attribute or got an implicit options shape from
-            // [JsonDerivedType] alone, the same universal-applicability rule applies.
+            // [JsonDerivedType] alone, the same uniform-applicability rule applies.
             SpecAnimalExplicit<bool> animal = new() { Name = "Cookie" };
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper(animal));
@@ -3450,7 +3450,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task OpenDerivedWithNarrowerConstraint_ThrowsForAllSpecializations(Type closedBaseType)
         {
             // Both "string" (constraint fails) and "List<int>" (constraint holds) closures
-            // throw the same way -- universal applicability requires the constraint to hold
+            // throw the same way -- uniform applicability requires the constraint to hold
             // for EVERY closure, not just the one in front of us.
             object baseValue = Activator.CreateInstance(closedBaseType)!;
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -3494,7 +3494,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task OpenDerivedWithoutExtraParameter_Resolves()
         {
             // Sanity-check companion to the throw test below: ExtraParam_Cat<T> with no
-            // extra unbound parameter is universal -- it closes cleanly against any
+            // extra unbound parameter is uniform -- it closes cleanly against any
             // specialization of ExtraParamAnimal<T>.
             ExtraParamAnimal<int> value = new ExtraParam_Cat<int> { Name = "Felix", Tag = 7 };
             string json = await Serializer.SerializeWrapper(value);
@@ -3556,7 +3556,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // ---- Pattern catalog (B-strict additions) ----
         //
-        // Comprehensive coverage of the universal-applicability rule across pinning,
+        // Comprehensive coverage of the uniform-applicability rule across pinning,
         // collapse, reorder, multi-ancestor, constraint subsumption, and edge-case patterns.
 
         // ---- Pattern A: parameter collapse ----
@@ -3571,7 +3571,7 @@ namespace System.Text.Json.Serialization.Tests
         public class Catalog_ParamCollapse_Derived<T> : Catalog_ParamCollapse_Base<T, T>;
 
         [Fact]
-        public async Task Catalog_ParameterCollapse_ThrowsForNonUniversalPinning()
+        public async Task Catalog_ParameterCollapse_ThrowsForNonUniformPinning()
         {
             // Derived<T> : Base<T, T> "collapses" both base parameters to the same derived
             // parameter. For arbitrary Base<T1, T2> closures where T1 != T2 the derived
@@ -3598,7 +3598,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_ParameterReorder_IsUniversal()
+        public async Task Catalog_ParameterReorder_IsUniform()
         {
             // Derived<U1, U2> : Base<U2, U1> maps each base parameter to a distinct derived
             // parameter -- the substitution is bijective and applies to every closure.
@@ -3639,7 +3639,7 @@ namespace System.Text.Json.Serialization.Tests
         // C5: derived's constraint is identical to base's constraint -- accepted. (Under C#
         // language rules, derived must impose at-least-as-strict constraints as base, so
         // "exactly matching" is the only configuration that is BOTH compilable and
-        // universal. Tighter constraints on derived produce non-universality.)
+        // uniform. Tighter constraints on derived produce non-uniformity.)
         [JsonDerivedType(typeof(Catalog_C5_Derived<>), "d")]
         public class Catalog_C5_Base<T> where T : class
         {
@@ -3671,7 +3671,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_ConstraintIdentical_IsUniversal()
+        public async Task Catalog_ConstraintIdentical_IsUniform()
         {
             // C5: derived's `class` constraint matches base's `class` constraint exactly.
             Catalog_C5_Base<string> value = new Catalog_C5_Derived<string> { Value = "v", Extra = "e" };
@@ -3680,7 +3680,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_SelfReferentialInterfaceConstraint_IsUniversal()
+        public async Task Catalog_SelfReferentialInterfaceConstraint_IsUniform()
         {
             // C8: derived's `IComparable<T>` constraint, after substituting T with the base's
             // T, exactly matches the base's `IComparable<T>` constraint.
@@ -3693,7 +3693,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // D1: Impl<U1, U2> reaches IBase<> via two ancestors -- directly as IBase<U1> and
         // transitively through Helper<U2> : IBase<U2>. Each ancestor produces a substitution
-        // that leaves the other ancestor's parameter free, so neither is universal in
+        // that leaves the other ancestor's parameter free, so neither is uniform in
         // isolation and they disagree -- rejected.
 
         [JsonDerivedType(typeof(Catalog_D1_Impl<,>), "d")]
@@ -3726,9 +3726,9 @@ namespace System.Text.Json.Serialization.Tests
                 () => Serializer.SerializeWrapper<ICatalog_D2_Base<int, string>>(new Catalog_D2_Impl<int, string>()));
         }
 
-        // D3: Impl<U> reaches IBase<> via two ancestors -- directly as IBase<U> (universal)
+        // D3: Impl<U> reaches IBase<> via two ancestors -- directly as IBase<U> (uniform)
         // and transitively through HelperList<U> : IBase<List<U>> (pins to List<>). The
-        // pinning ancestor breaks universality even though the direct ancestor is fine.
+        // pinning ancestor breaks uniformity even though the direct ancestor is fine.
 
         [JsonDerivedType(typeof(Catalog_D3_Impl<>), "d")]
         public interface ICatalog_D3_Base<T>;
@@ -3743,7 +3743,7 @@ namespace System.Text.Json.Serialization.Tests
                 () => Serializer.SerializeWrapper<ICatalog_D3_Base<int>>(new Catalog_D3_Impl<int>()));
         }
 
-        // D4: D<U> : IBase<U>, IBase<U> -- two identical ancestors. Universal because the
+        // D4: D<U> : IBase<U>, IBase<U> -- two identical ancestors. Uniform because the
         // canonical substitutions agree on (U -> T).
 
         [JsonDerivedType(typeof(Catalog_D4_Impl<>), "d")]
@@ -3755,7 +3755,7 @@ namespace System.Text.Json.Serialization.Tests
         public class Catalog_D4_Impl<U> : ICatalog_D4_BaseA<U>, ICatalog_D4_BaseB<U>;
 
         [Fact]
-        public async Task Catalog_MultipleDistinctInterfaceBases_UniversalImpl_Works()
+        public async Task Catalog_MultipleDistinctInterfaceBases_UniformImpl_Works()
         {
             ICatalog_D4_BaseA<int> viaA = new Catalog_D4_Impl<int>();
             ICatalog_D4_BaseB<int> viaB = (Catalog_D4_Impl<int>)viaA;
@@ -3769,7 +3769,7 @@ namespace System.Text.Json.Serialization.Tests
         // ---- Pattern E: nested enclosing types ----
 
         // E1: Outer<T> + Outer<T>.Inner : Outer<T> -- the inner's enclosing T is implicitly
-        // the outer's T. Universal.
+        // the outer's T. Uniform.
 
         [JsonDerivedType(typeof(Catalog_E1_Outer<>.Inner), "inner")]
         public class Catalog_E1_Outer<T>
@@ -3780,7 +3780,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_NestedTypeUnderGenericEnclosing_IsUniversal()
+        public async Task Catalog_NestedTypeUnderGenericEnclosing_IsUniform()
         {
             Catalog_E1_Outer<int> value = new Catalog_E1_Outer<int>.Inner { Value = 7 };
             string json = await Serializer.SerializeWrapper(value);
@@ -3788,7 +3788,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // E2: Outer<int>.Inner<U> : SomeBase<U> -- enclosing type is closed but a different
-        // type parameter U is bound through SomeBase. Universal w.r.t. SomeBase<>.
+        // type parameter U is bound through SomeBase. Uniform w.r.t. SomeBase<>.
 
         [JsonDerivedType(typeof(Catalog_E2_Outer.Inner<>), "inner")]
         public class Catalog_E2_SomeBase<T>
@@ -3802,7 +3802,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_NestedDerivedUnderNonGenericEnclosing_IsUniversal()
+        public async Task Catalog_NestedDerivedUnderNonGenericEnclosing_IsUniform()
         {
             Catalog_E2_SomeBase<int> value = new Catalog_E2_Outer.Inner<int> { Value = 9 };
             string json = await Serializer.SerializeWrapper(value);
@@ -3811,7 +3811,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // ---- Pattern F: transitive inheritance through generic mid ----
 
-        // F1: Leaf<T> : Mid<T> : Base<T> -- universal at every hop. Accepted.
+        // F1: Leaf<T> : Mid<T> : Base<T> -- uniform at every hop. Accepted.
 
         [JsonDerivedType(typeof(Catalog_F1_Leaf<>), "leaf")]
         public class Catalog_F1_Base<T>;
@@ -3822,7 +3822,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Catalog_TransitiveInheritance_UniversalAtEveryHop_Works()
+        public async Task Catalog_TransitiveInheritance_UniformAtEveryHop_Works()
         {
             Catalog_F1_Base<int> value = new Catalog_F1_Leaf<int> { Value = 11 };
             string json = await Serializer.SerializeWrapper(value);
@@ -3877,7 +3877,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task Catalog_PartialPinning_TwoParameterBase_Throws(Type closedBaseType)
         {
             // Even on Base<string, int> (where the pinning happens to be consistent), the
-            // registration is rejected -- universality requires the substitution to be valid
+            // registration is rejected -- uniformity requires the substitution to be valid
             // for every closure, not just one.
             object value = Activator.CreateInstance(closedBaseType)!;
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -3919,10 +3919,10 @@ namespace System.Text.Json.Serialization.Tests
             public T? Value { get; set; }
         }
 
-        public class Catalog_K_NonUniversal_Derived<T> : Catalog_K_Base<int>;
+        public class Catalog_K_NonUniform_Derived<T> : Catalog_K_Base<int>;
 
         [Fact]
-        public async Task Catalog_ProgrammaticApi_NonUniversalRegistration_Throws()
+        public async Task Catalog_ProgrammaticApi_NonUniformRegistration_Throws()
         {
             // The same B-strict rejection applies whether the registration originates from
             // [JsonDerivedType] attribute or from a programmatic resolver modifier.
@@ -3940,7 +3940,7 @@ namespace System.Text.Json.Serialization.Tests
                                 {
                                     DerivedTypes =
                                     {
-                                        new JsonDerivedType(typeof(Catalog_K_NonUniversal_Derived<>), "d"),
+                                        new JsonDerivedType(typeof(Catalog_K_NonUniform_Derived<>), "d"),
                                     },
                                 };
                             }
@@ -4097,13 +4097,13 @@ namespace System.Text.Json.Serialization.Tests
         public class NestedDerivedEnclosingMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>>;
 
         [Fact]
-        public async Task NestedGeneric_TypeParameterInEnclosing_ThrowsForNonUniversalPinning()
+        public async Task NestedGeneric_TypeParameterInEnclosing_ThrowsForNonUniformPinning()
         {
             // Pattern: NestedDerivedParamInEnclosing<T> : NestedBaseB<NestedOuterB<T>.NestedBoxB<int>>.
             // The derived pins the leaf NestedBoxB's TInner to a concrete int. This makes
-            // the registration non-universal -- it only applies to closures of NestedBaseB
+            // the registration non-uniform -- it only applies to closures of NestedBaseB
             // whose argument is shaped as ...NestedBoxB<int>, not e.g. ...NestedBoxB<string>.
-            // Under the universal-applicability rule the registration is rejected uniformly.
+            // Under the uniform-applicability rule the registration is rejected.
             NestedBaseB<NestedOuterB<string>.NestedBoxB<int>> value =
                 new NestedDerivedParamInEnclosing<string> { Item = new NestedOuterB<string>.NestedBoxB<int> { Inner = 42 } };
 
@@ -4126,7 +4126,7 @@ namespace System.Text.Json.Serialization.Tests
             // ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object>.
             // The derived has constraints the base doesn't (IEnumerable<object>). Even
             // though specific closures (e.g. List<string> via variance) would satisfy the
-            // constraint, the registration is rejected under the universal-applicability
+            // constraint, the registration is rejected under the uniform-applicability
             // rule because it does not apply to every specialization of the base.
             ConstraintBase<List<string>> value = new ConstraintImpl<List<string>> { Items = new List<string> { "hello" } };
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));

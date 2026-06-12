@@ -75,10 +75,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void OpenGenericDerivedType_NonUniversalPinning_IsDroppedFromMetadata()
+        public static void OpenGenericDerivedType_NonUniformPinning_IsDroppedFromMetadata()
         {
             // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> pins T2 to
-            // int -- non-universal w.r.t. SourceGenOpenGenericBase<T1, T2>. Source-gen
+            // int -- non-uniform w.r.t. SourceGenOpenGenericBase<T1, T2>. Source-gen
             // emits SYSLIB1229 (suppressed on the fixture decoration) and drops the
             // registration from the generated metadata; the closed base has no
             // PolymorphismOptions and serializes plainly.
@@ -93,9 +93,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void ClosedDerivedOnGenericBase_IsDroppedOnIntSpec()
         {
-            // Under the universal-applicability rule, closed-derived registrations on an
+            // Under the uniform-applicability rule, closed-derived registrations on an
             // OPEN generic base (here SourceGenSpecAnimal_Cat : SourceGenSpecAnimal<int>
-            // and Dog : SourceGenSpecAnimal<string>) are non-universal -- they can never
+            // and Dog : SourceGenSpecAnimal<string>) are non-uniform -- they can never
             // apply to every closure of the open base. Source-gen drops them from emitted
             // metadata (with SYSLIB1229 suppressed on the fixture) so the closed base has
             // no PolymorphismOptions and serializes plainly.
@@ -139,7 +139,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             // SourceGenConstrainedDerived<T> where T : struct, registered on
             // SourceGenConstrainedBase<T>. The derived's struct constraint is narrower
-            // than the base's (none), so the registration is non-universal under B-strict.
+            // than the base's (none), so the registration is non-uniform under B-strict.
             // Source-gen emits SYSLIB1229 (suppressed on the fixture) and drops the
             // registration; every closure of the base has null PolymorphismOptions.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseString;
@@ -154,7 +154,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             // Same fixture as above, applied to a closure (int) where the derived's
             // struct constraint happens to hold. Under per-closure filtering this would
-            // have been accepted; under B-strict universal applicability it is rejected
+            // have been accepted; under B-strict uniform applicability it is rejected
             // uniformly so that introducing a new closure (e.g. <string>) cannot break a
             // working serialization site.
             JsonTypeInfo typeInfo = PolymorphismTestsContext.Default.SourceGenConstrainedBaseInt;
@@ -167,7 +167,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void OpenDerivedWithExtraUnboundParameter_BadArmIsDroppedFromEmittedMetadata()
         {
-            // Two registrations on the same base: SourceGenExtraParam_Cat<T> is universal
+            // Two registrations on the same base: SourceGenExtraParam_Cat<T> is uniform
             // and resolves to SourceGenExtraParam_Cat<int>; SourceGenExtraParam_Cat<T, T2>
             // has an extra unbound T2 that the single-parameter base cannot pin down, so
             // source-gen emits SYSLIB1229 (suppressed below) and drops it from the
@@ -204,7 +204,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     // SourceGenOpenGenericDerived<T> : SourceGenOpenGenericBase<T, int> pins the second
-    // base parameter to a concrete type -- non-universal under B-strict. Source-gen emits
+    // base parameter to a concrete type -- non-uniform under B-strict. Source-gen emits
     // SYSLIB1229 at compile time; suppress it here so we can verify the runtime drops the
     // registration and the closed base serializes plainly.
 #pragma warning disable SYSLIB1229
@@ -221,9 +221,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         public T? Extra { get; set; }
     }
 
-    // Specialization-pinning fixtures (PR #129294, B-strict universal-applicability rule).
+    // Specialization-pinning fixtures (PR #129294, B-strict uniform-applicability rule).
     // Each closed-derived registration applies to a single specialization of the open base,
-    // which the shared attribute declaration cannot enforce universally. Source-gen emits
+    // which the shared attribute declaration cannot enforce uniformly. Source-gen emits
     // SYSLIB1229; suppress here so we can verify the runtime drops the registration and the
     // closed base serializes plainly.
 

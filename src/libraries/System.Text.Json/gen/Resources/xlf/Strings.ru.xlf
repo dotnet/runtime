@@ -143,8 +143,8 @@
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase">
-        <source>a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</source>
-        <target state="new">a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</target>
+        <source>a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</source>
+        <target state="new">a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintMismatch">
@@ -157,9 +157,14 @@
         <target state="new">the constraint on type parameter '{0}' is not satisfied by '{1}'</target>
         <note />
       </trans-unit>
-      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniversalPinning">
-        <source>the derived type does not apply universally to every specialization of the base type because it pins one or more base type arguments</source>
-        <target state="new">the derived type does not apply universally to every specialization of the base type because it pins one or more base type arguments</target>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniformUnification">
+        <source>the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</source>
+        <target state="new">the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniformPinning">
+        <source>the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</source>
+        <target state="new">the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">

@@ -327,6 +327,16 @@ namespace System.Text.Json.Reflection
         /// resolver to validate that every closure of the base type that respects the base's
         /// constraints would also be a valid closure of the open derived type.
         ///
+        /// The substitution is applied to nested type-parameter positions, so for F-bounded
+        /// constraints a derived <c>where T : IComparable&lt;T&gt;</c> matches a base
+        /// <c>where U : IComparable&lt;U&gt;</c> only after the substitution
+        /// <c>{ T -&gt; U }</c> has been applied to both occurrences.
+        ///
+        /// The compile-time-only <c>notnull</c> constraint is not surfaced through the
+        /// standard reflection API, so it is invisible here. As a consequence, two
+        /// registrations whose constraints differ only in the presence of <c>notnull</c>
+        /// are accepted as equivalent.
+        ///
         /// IMPORTANT: This implementation MIRRORS
         /// <c>System.Text.Json.SourceGeneration.RoslynExtensions.AreConstraintsEquivalent</c>.
         /// Any change to the equivalence rules must be applied on both sides.

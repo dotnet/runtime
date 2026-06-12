@@ -677,8 +677,11 @@
   <data name="Polymorphism_OpenGeneric_Reason_UnificationFailed" xml:space="preserve">
     <value>the base type's arguments do not match the derived type's base specification</value>
   </data>
-  <data name="Polymorphism_OpenGeneric_Reason_NonUniversalPinning" xml:space="preserve">
-    <value>the derived type does not apply universally to every specialization of the base type because it pins one or more base type arguments</value>
+  <data name="Polymorphism_OpenGeneric_Reason_NonUniformUnification" xml:space="preserve">
+    <value>the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_NonUniformPinning" xml:space="preserve">
+    <value>the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</value>
   </data>
   <data name="Polymorphism_OpenGeneric_Reason_UnboundParameter" xml:space="preserve">
     <value>the type parameter '{0}' of the derived type is not bound by the base type's arguments</value>
@@ -693,7 +696,7 @@
     <value>the derived type's type parameter '{0}' declares constraints that differ from the constraints on the corresponding base type parameter '{1}'</value>
   </data>
   <data name="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase" xml:space="preserve">
-    <value>a closed derived type cannot serve a generic base type universally; the registration pins a specific specialization of the base</value>
+    <value>a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</value>
   </data>
   <data name="Polymorphism_TypeDicriminatorIdIsAlreadySpecified" xml:space="preserve">
     <value>The polymorphic type '{0}' has already specified a type discriminator '{1}'.</value>

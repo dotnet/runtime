@@ -529,11 +529,11 @@ namespace System.Text.Json.SourceGeneration
         /// Returns <see langword="true"/> if <paramref name="derivedParam"/>'s declared constraints
         /// match <paramref name="baseParam"/>'s declared constraints exactly, after applying
         /// <paramref name="substitution"/> to type-constraint references. Used by the
-        /// "universal derived registration" check to verify that a derived type's parameter
+        /// "uniform derived registration" check to verify that a derived type's parameter
         /// constraints will be satisfied for every valid specialization of the base.
         ///
         /// "Exact match" is used in place of one-sided constraint subsumption because in the
-        /// universal-applicability regime the two are equivalent (C# already forces a derived
+        /// uniform-applicability regime the two are equivalent (C# already forces a derived
         /// parameter that's identified with a base parameter to declare at least the base's
         /// constraints), and an equality check is simpler, easier to reason about, and
         /// forward-compatible with new C# constraint kinds.
@@ -542,9 +542,15 @@ namespace System.Text.Json.SourceGeneration
         ///   <item>Special constraint flags (<c>class</c>, <c>struct</c>, <c>unmanaged</c>,
         ///         <c>new()</c>) must match exactly.</item>
         ///   <item>The set of type constraints must match exactly after substitution
-        ///         (order-independent).</item>
+        ///         (order-independent). For F-bounded constraints, the substitution is
+        ///         applied to nested type-parameter positions as well, so a derived
+        ///         <c>where T : IComparable&lt;T&gt;</c> matches a base
+        ///         <c>where U : IComparable&lt;U&gt;</c> only after the substitution
+        ///         <c>{ T -&gt; U }</c> has been applied to both occurrences.</item>
         ///   <item>The compile-time-only <c>notnull</c> constraint is intentionally ignored
-        ///         (it is not surfaced via reflection and is not runtime-enforced).</item>
+        ///         (it is not surfaced via reflection and is not runtime-enforced). As a
+        ///         consequence, two registrations whose constraints differ only in the
+        ///         presence of <c>notnull</c> are accepted as equivalent.</item>
         /// </list>
         ///
         /// IMPORTANT: This implementation MIRRORS the reflection-side
@@ -666,19 +672,24 @@ namespace System.Text.Json.SourceGeneration
             => type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(namedType, namedType.ConstructedFrom);
 
         /// <summary>
-        /// Validates that <paramref name="unboundDerived"/> applies universally to every
+        /// Validates that <paramref name="unboundDerived"/> applies uniformly to every
         /// specialization of the open generic base type whose definition matches
         /// <c>constructedBase.OriginalDefinition</c>, and (when it does) produces the closed
         /// derived type for the closure identified by <paramref name="constructedBase"/>.
         ///
-        /// "Universal" means: there is a single canonical substitution mapping each derived
+        /// "Uniform" means: there is a single canonical substitution mapping each derived
         /// type parameter to a base type parameter that simultaneously satisfies every
         /// matching ancestor of the derived type, with every derived constraint exactly
-        /// matching the constraints on the corresponding base parameter. Registrations that
-        /// pin a particular specialization (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>)
-        /// are rejected: such registrations would silently work for one base specialization
-        /// and break for another, which we treat as a misregistration regardless of which
-        /// specialization is currently being generated.
+        /// matching the constraints on the corresponding base parameter. Per-ancestor
+        /// unifications are computed independently and then verified to coincide -- this is
+        /// what catches asymmetric multi-interface implementations like
+        /// <c>D&lt;U1, U2&gt; : IBase&lt;U1, U2&gt;, IBase&lt;U2, U1&gt;</c>, where each
+        /// ancestor admits a unifier on its own but no single canonical answer covers both.
+        /// Registrations that pin a particular specialization
+        /// (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>) are rejected: such registrations
+        /// would silently work for one base specialization and break for another, which we
+        /// treat as a misregistration regardless of which specialization is currently being
+        /// generated.
         ///
         /// Returns <see langword="true"/> with <paramref name="resolvedDerivedType"/> set to
         /// the closed derived type, or <see langword="false"/> with a localized
@@ -727,7 +738,7 @@ namespace System.Text.Json.SourceGeneration
             List<ITypeParameterSymbol> baseParams = baseDefinition.GetAllTypeParameters();
             var baseParamSet = new HashSet<ITypeParameterSymbol>(baseParams, SymbolEqualityComparer.Default);
 
-            // Per-ancestor independent substitutions; the universal answer must be a single
+            // Per-ancestor independent substitutions; the uniform answer must be a single
             // canonical substitution agreed upon by every ancestor.
             Dictionary<ITypeParameterSymbol, ITypeSymbol>? canonical = null;
 
@@ -738,9 +749,10 @@ namespace System.Text.Json.SourceGeneration
 
                 if (!ancestor.TryUnifyWith(baseDefinition, substitution))
                 {
-                    // Some position pins a concrete type (e.g. Base<T, int>) or a constructed
-                    // pattern (e.g. Base<List<T>>) that cannot match a free base parameter.
-                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                    // No unifier exists. Some position pins a concrete type (e.g. Base<T, int>)
+                    // or a constructed pattern (e.g. Base<List<T>>) that cannot match the base
+                    // type parameter at that position (the rigid target).
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformPinning;
                     return false;
                 }
 
@@ -758,11 +770,16 @@ namespace System.Text.Json.SourceGeneration
 
                     if (mapped is not ITypeParameterSymbol mappedBaseParam || !baseParamSet.Contains(mappedBaseParam))
                     {
-                        // Substitution value isn't one of the base's own type parameters --
-                        // happens when a derived ancestor binds a parameter to something
-                        // structural (which TryUnifyWith would have rejected) or pinned.
-                        // Treated as non-universal.
-                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                        // Defensive: a unifier exists but it would map a derived parameter to
+                        // something other than one of the base's own type parameters (i.e. the
+                        // result isn't a pure renaming). With the rigid-target unification used
+                        // here this is essentially unreachable -- TryUnifyWith binds derived
+                        // parameters only against the base definition's own type arguments,
+                        // which are all base parameters -- but we report it separately from
+                        // NonUniformPinning so any future relaxation of TryUnifyWith (e.g.
+                        // binding into nested constructed targets) surfaces with a precise
+                        // diagnostic instead of getting silently lumped under pinning.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformUnification;
                         return false;
                     }
                 }

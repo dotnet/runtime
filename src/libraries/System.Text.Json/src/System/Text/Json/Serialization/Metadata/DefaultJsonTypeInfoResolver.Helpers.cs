@@ -179,19 +179,24 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// Reflection-side resolver: validates that <paramref name="openDerivedType"/> applies
-        /// universally to every specialization of the open generic
+        /// uniformly to every specialization of the open generic
         /// <paramref name="baseTypeDefinition"/>, and (when it does) produces the closed
         /// derived type for the specific closure identified by
         /// <paramref name="baseTypeArgs"/>.
         ///
-        /// "Universal" means: there is a single canonical substitution mapping each derived
+        /// "Uniform" means: there is a single canonical substitution mapping each derived
         /// type parameter to a base type parameter that simultaneously satisfies every
         /// matching ancestor of the derived type, with every derived constraint implied by
         /// (i.e. weaker-than-or-equal-to) the constraints on the corresponding base parameter.
-        /// Registrations that pin a particular specialization (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>)
-        /// are rejected: such registrations would silently work for one base specialization
-        /// and break for another, which we treat as a misregistration regardless of which
-        /// specialization is currently being constructed.
+        /// Per-ancestor unifications are computed independently and then verified to coincide
+        /// -- this is what catches asymmetric multi-interface implementations like
+        /// <c>D&lt;U1, U2&gt; : IBase&lt;U1, U2&gt;, IBase&lt;U2, U1&gt;</c>, where each
+        /// ancestor admits a unifier on its own but no single canonical answer covers both.
+        /// Registrations that pin a particular specialization
+        /// (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>) are rejected: such registrations
+        /// would silently work for one base specialization and break for another, which we
+        /// treat as a misregistration regardless of which specialization is currently being
+        /// constructed.
         ///
         /// IMPORTANT: This implementation MIRRORS the source-gen resolver
         /// <c>RoslynExtensions.TryResolveOpenGenericDerivedType</c> in
@@ -242,7 +247,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type[] baseParams = baseTypeDefinition.GetGenericArguments();
             var baseParamSet = new HashSet<Type>(baseParams);
 
-            // Per-ancestor independent substitutions; the universal answer must be a single
+            // Per-ancestor independent substitutions; the uniform answer must be a single
             // canonical substitution agreed upon by every ancestor.
             Dictionary<Type, Type>? canonical = null;
 
@@ -251,9 +256,10 @@ namespace System.Text.Json.Serialization.Metadata
                 var substitution = new Dictionary<Type, Type>(requiredParams.Length);
                 if (!ancestor.TryUnifyWith(baseTypeDefinition, substitution))
                 {
-                    // Some position pins a concrete type (e.g. Base<T, int>) or a constructed
-                    // pattern (e.g. Base<List<T>>) that cannot match a free base parameter.
-                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                    // No unifier exists. Some position pins a concrete type (e.g. Base<T, int>)
+                    // or a constructed pattern (e.g. Base<List<T>>) that cannot match the base
+                    // type parameter at that position (the rigid target).
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformPinning;
                     return false;
                 }
 
@@ -268,10 +274,16 @@ namespace System.Text.Json.Serialization.Metadata
 
                     if (!mapped.IsGenericParameter || !baseParamSet.Contains(mapped))
                     {
-                        // Substitution value isn't one of the base's own type parameters --
-                        // happens when a derived ancestor binds a parameter to a non-parameter
-                        // structural target. Treated as non-universal.
-                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniversalPinning;
+                        // Defensive: a unifier exists but it would map a derived parameter to
+                        // something other than one of the base's own type parameters (i.e. the
+                        // result isn't a pure renaming). With the rigid-target unification used
+                        // here this is essentially unreachable -- TryUnifyWith binds derived
+                        // parameters only against the base definition's own type arguments,
+                        // which are all base parameters -- but we report it separately from
+                        // NonUniformPinning so any future relaxation of TryUnifyWith surfaces
+                        // with a precise diagnostic instead of getting silently lumped under
+                        // pinning.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformUnification;
                         return false;
                     }
                 }
