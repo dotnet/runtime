@@ -55,6 +55,10 @@ typedef int __ptrace_request;
 #include <machine/npx.h>
 #endif  // HAVE_MACHINE_NPX_H
 
+#ifdef __OpenBSD__
+#include <sys/ptrace.h>
+#endif  // __OpenBSD__
+
 #if HAVE_PT_REGS
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
@@ -499,7 +503,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 #if HAVE_PT_REGS
 #define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = PTREG_##reg(ptrace_registers);
 #elif HAVE_BSD_REGS_T
-#define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = BSDREG_##reg(ptrace_registers);
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(&registers)) = BSDREG_##reg(ptrace_registers);
 #else
 #define ASSIGN_REG(reg)
 	ASSERT("Don't know how to get the context of another process on this platform!");
@@ -701,7 +705,7 @@ Return value :
 --*/
 void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 {
-#define ASSIGN_REG(reg) MCREG_##reg(native->uc_mcontext) = lpContext->reg;
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(native)) = lpContext->reg;
     if ((lpContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -1043,7 +1047,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 {
     lpContext->ContextFlags = contextFlags;
 
-#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(native->uc_mcontext);
+#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(MCONTEXT_FROM_NATIVE(native));
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -1317,7 +1321,7 @@ Return value :
 LPVOID GetNativeContextPC(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rip(context->uc_mcontext);
+    return (LPVOID)MCREG_Rip(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
 #elif defined(HOST_S390X)
@@ -1345,7 +1349,7 @@ Return value :
 LPVOID GetNativeContextSP(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rsp(context->uc_mcontext);
+    return (LPVOID)MCREG_Rsp(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Esp(context->uc_mcontext);
 #elif defined(HOST_S390X)
