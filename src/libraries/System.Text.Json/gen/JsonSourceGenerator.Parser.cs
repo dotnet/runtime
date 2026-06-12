@@ -33,6 +33,10 @@ namespace System.Text.Json.SourceGeneration
             private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
                 SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(
                     SymbolDisplayGenericsOptions.IncludeTypeConstraints);
+
+            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
+                RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
+
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -58,9 +62,6 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning disable RS1024 // Compare symbols correctly https://github.com/dotnet/roslyn-analyzers/issues/5804
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
-
-            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
-                RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
 
             private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations =>
                 field ??= new(s_typePairComparer);
