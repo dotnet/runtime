@@ -945,6 +945,46 @@ internal static class R2RAssert
         diagnostic = $"Found '{kind}' fixup on method matching '{methodName}'.";
         return true;
     }
+
+    /// <summary>
+    /// Returns true if the R2R image contains a compiled method with a matching declaring type and method name.
+    /// Optionally checks method-level generic instantiation args.
+    /// </summary>
+    public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+    {
+        List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
+        List<ReadyToRunMethod> matchingMethods = allMethods
+            .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m =>
+            {
+                if (instanceArgs is null)
+                    return m.InstanceArgs is null;
+                if (m.InstanceArgs is null || m.InstanceArgs.Length != instanceArgs.Length)
+                    return false;
+                for (int i = 0; i < instanceArgs.Length; i++)
+                {
+                    if (m.InstanceArgs[i] != instanceArgs[i])
+                        return false;
+                }
+                return true;
+            })
+            .ToList();
+
+        string expected = instanceArgs is null
+            ? $"'{declaringType}.{methodName}'"
+            : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+
+        if (matchingMethods.Count > 0)
+        {
+            diagnostic = $"Found compiled method {expected}: [{string.Join(", ", matchingMethods.Select(m => m.SignatureString))}]";
+            return true;
+        }
+
+        diagnostic =
+            $"Expected compiled method {expected} not found.\n" +
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+        return false;
+    }
 }
 
 /// <summary>
