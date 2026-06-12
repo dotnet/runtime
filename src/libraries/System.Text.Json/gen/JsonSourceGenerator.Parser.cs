@@ -952,9 +952,8 @@ namespace System.Text.Json.SourceGeneration
 
                             derivedType = resolvedType!;
                         }
-                        else if (derivedType is INamedTypeSymbol namedDerived &&
-                                 typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true } &&
-                                 !_knownSymbols.Compilation.HasImplicitConversion(namedDerived, typeToGenerate.Type))
+                        else if (typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true } &&
+                                 !IsClosedDerivedAssignableToBase(derivedType, typeToGenerate.Type))
                         {
                             // Closed derived type whose base specialization differs from the
                             // current base specialization (e.g. closed Cat : Animal<int>
@@ -1051,6 +1050,19 @@ namespace System.Text.Json.SourceGeneration
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified);
                 }
+            }
+
+            /// <summary>
+            /// Mirrors <c>System.Type.IsAssignableFrom</c> for the closed-derived filter in
+            /// <c>ProcessTypeCustomAttributes</c>. Restricting to identity and implicit
+            /// reference conversions excludes user-defined <c>implicit operator</c>s that
+            /// <c>HasImplicitConversion</c> would otherwise admit, matching the runtime
+            /// polymorphism resolver's behavior.
+            /// </summary>
+            private bool IsClosedDerivedAssignableToBase(ITypeSymbol derivedType, ITypeSymbol baseType)
+            {
+                Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(derivedType, baseType);
+                return conversion.IsIdentity || (conversion.IsImplicit && conversion.IsReference);
             }
 
             /// <summary>

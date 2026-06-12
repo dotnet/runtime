@@ -3385,10 +3385,10 @@ namespace System.Text.Json.Serialization.Tests
         public sealed class SpecAnimal_Dog : SpecAnimal<string> { public string? Breed { get; set; } }
 
         [Fact]
-        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnAnimalOfInt()
+        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnSpecAnimalOfInt()
         {
-            // For SpecAnimal<int>, only SpecAnimal_Cat applies (Dog : Animal<string>
-            // does not match Animal<int> and must be filtered silently).
+            // For SpecAnimal<int>, only SpecAnimal_Cat applies (SpecAnimal_Dog : SpecAnimal<string>
+            // does not match SpecAnimal<int> and must be filtered silently).
             SpecAnimal<int> cat = new SpecAnimal_Cat { Name = "Felix", Lives = 9 };
             string json = await Serializer.SerializeWrapper(cat);
             JsonTestHelper.AssertJsonEqual("""{"$type":"cat","Lives":9,"Name":"Felix"}""", json);
@@ -3400,10 +3400,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnAnimalOfString()
+        public async Task ClosedDerivedTypes_MismatchedBaseSpecialization_AreFilteredOnSpecAnimalOfString()
         {
-            // For SpecAnimal<string>, only SpecAnimal_Dog applies (Cat : Animal<int>
-            // does not match Animal<string> and must be filtered silently).
+            // For SpecAnimal<string>, only SpecAnimal_Dog applies (SpecAnimal_Cat : SpecAnimal<int>
+            // does not match SpecAnimal<string> and must be filtered silently).
             SpecAnimal<string> dog = new SpecAnimal_Dog { Name = "Rex", Breed = "Husky" };
             string json = await Serializer.SerializeWrapper(dog);
             JsonTestHelper.AssertJsonEqual("""{"$type":"dog","Breed":"Husky","Name":"Rex"}""", json);
@@ -3428,6 +3428,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Cookie", roundTripped.Name);
         }
 
+        // Variant of SpecAnimal where the user explicitly declared [JsonPolymorphic].
+        // Even if all closed-derived registrations are filtered out for a given base
+        // specialization, the explicit opt-in must be preserved -- the runtime should
+        // surface the "no derived types specified" error rather than silently demote
+        // to non-polymorphic. This guards the polymorphicAttribute-is-null branch in
+        // PopulatePolymorphismMetadata against future regression.
+
+        [JsonPolymorphic]
+        [JsonDerivedType(typeof(SpecAnimal_Cat), "cat")]
+        [JsonDerivedType(typeof(SpecAnimal_Dog), "dog")]
+        public class SpecAnimalExplicit<T>
+        {
+            public string? Name { get; set; }
+        }
+
+        [Fact]
+        public async Task ClosedDerivedTypes_AllFilteredButPolymorphicAttributeExplicit_Throws()
+        {
+            // For SpecAnimalExplicit<bool>, both closed derived attributes are filtered.
+            // Because [JsonPolymorphic] is declared, the user's intent to participate in
+            // polymorphism is preserved and the empty-derived-set error surfaces.
+            SpecAnimalExplicit<bool> animal = new() { Name = "Cookie" };
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(animal));
+        }
+
         // Scenario 2: Open derived with a constraint that fails for the current base
         // specialization (Derived<T> : Base<T> where T : IEnumerable<int>, on Base<string>).
 
@@ -3437,7 +3463,7 @@ namespace System.Text.Json.Serialization.Tests
             public T? Value { get; set; }
         }
 
-        public class ConstrainedDerived<T> : ConstrainedBase<T> where T : System.Collections.Generic.IEnumerable<int>
+        public class ConstrainedDerived<T> : ConstrainedBase<T> where T : IEnumerable<int>
         {
             public int Extra { get; set; }
         }
@@ -3447,12 +3473,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             // List<int> satisfies IEnumerable<int>, so ConstrainedDerived<List<int>>
             // is a valid closure for ConstrainedBase<List<int>>.
-            var derived = new ConstrainedDerived<System.Collections.Generic.List<int>>
+            var derived = new ConstrainedDerived<List<int>>
             {
-                Value = new System.Collections.Generic.List<int> { 1, 2, 3 },
+                Value = new List<int> { 1, 2, 3 },
                 Extra = 42,
             };
-            ConstrainedBase<System.Collections.Generic.List<int>> value = derived;
+            ConstrainedBase<List<int>> value = derived;
             string json = await Serializer.SerializeWrapper(value);
             JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Extra":42,"Value":[1,2,3]}""", json);
         }
