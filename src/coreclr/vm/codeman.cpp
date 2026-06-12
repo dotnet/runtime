@@ -1568,7 +1568,7 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512v3);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_AVX512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
     {
         CPUCompileFlags.Set(InstructionSet_AVX512BMM);
     }
