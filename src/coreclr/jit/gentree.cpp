@@ -21695,11 +21695,14 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    if (OperIs(GT_LSH, GT_RSH, GT_RSZ))
     {
-        // Shift/Rotate instructions do not update the flags in case of count being zero.
+        // Shift instructions do not update the flags in case of count being zero.
         return gtGetOp2()->IsNeverZero();
     }
+    // Note: GT_ROL / GT_ROR are intentionally NOT in this list. On xarch,
+    // ROL/ROR/RCL/RCR only update CF (and OF in the 1-bit form); SF/ZF/AF/PF
+    // are not affected for any count.
 
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
