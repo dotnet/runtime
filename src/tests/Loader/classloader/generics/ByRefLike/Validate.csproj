@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Needed for MonoAotIncompatible so the project is excluded from merged test runners -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Validate.cs" />
