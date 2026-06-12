@@ -14,17 +14,17 @@ using Microsoft.DotNet.XUnitExtensions;
 namespace System.Net.NameResolution.Tests
 {
     /// <summary>
-    /// A minimal in-process DNS server for testing. Listens on the loopback DNS port (53)
+    /// A minimal in-process DNS server for testing. Listens on a loopback DNS endpoint
     /// and responds with preconfigured answers based on the query name and type.
     /// Self-contained: does not depend on any production DNS message types.
     /// </summary>
     /// <remarks>
     /// Windows' <c>DnsQueryEx</c> only ever contacts custom DNS servers on the standard
-    /// port 53 (the sockaddr port field must be 0), so the loopback server must bind 53.
-    /// Binding a privileged-looking low port does not require elevation on Windows, but
-    /// the port may already be in use (e.g. a local DNS service), in which case
-    /// <see cref="Start"/> throws <see cref="SkipTestException"/> so the test is skipped
-    /// rather than failed.
+    /// port 53 (the sockaddr port field must be 0), so the loopback server binds 53 on
+    /// Windows. On other platforms the managed resolver targets the server's actual
+    /// endpoint, so an ephemeral port is used instead. If the port cannot be bound (e.g.
+    /// a local DNS service already owns it), <see cref="Start"/> throws
+    /// <see cref="SkipTestException"/> so the test is skipped rather than failed.
     /// </remarks>
     internal sealed class LoopbackDnsServer : IAsyncDisposable
     {
@@ -64,7 +64,12 @@ namespace System.Net.NameResolution.Tests
             }
             try
             {
-                udp.Bind(new IPEndPoint(IPAddress.Loopback, DnsPort));
+                // Windows DnsQueryEx only contacts custom servers on port 53, so the
+                // server must bind 53 there. On other platforms the managed resolver
+                // targets the server's actual endpoint, so an ephemeral port (0) is used
+                // to avoid conflicts with any system DNS service.
+                int port = OperatingSystem.IsWindows() ? DnsPort : 0;
+                udp.Bind(new IPEndPoint(IPAddress.Loopback, port));
             }
             catch (SocketException ex)
             {

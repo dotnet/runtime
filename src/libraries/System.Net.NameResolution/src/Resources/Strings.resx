@@ -84,4 +84,7 @@
   <data name="net_dns_servers_contains_null" xml:space="preserve">
     <value>The DNS server list must not contain null entries.</value>
   </data>
+  <data name="net_invalid_dns_name" xml:space="preserve">
+    <value>The DNS name '{0}' is not a valid domain name.</value>
+  </data>
 </root>
