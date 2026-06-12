@@ -88,7 +88,14 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Managed.cs" />
+    <Compile Include="System\Net\ResolvConf.cs" />
+    <Compile Include="System\Net\DnsWireEnums.cs" />
+    <Compile Include="System\Net\DnsMessageHeader.cs" />
+    <Compile Include="System\Net\DnsMessageReader.cs" />
+    <Compile Include="System\Net\DnsMessageWriter.cs" />
+    <Compile Include="System\Net\DnsEncodedName.cs" />
+    <Compile Include="System\Net\DnsRecordParsing.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -167,6 +174,14 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\src\System.Threading.Overlapped.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <!-- Reference the Sockets reference assembly to avoid a circular project dependency
+         (System.Net.Sockets references System.Net.NameResolution). The implementation is
+         resolved from the shared framework at runtime. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\ref\System.Net.Sockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
   </ItemGroup>
 
 </Project>
