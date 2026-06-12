@@ -168,8 +168,10 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
 
    Branch on the result:
 
-   - Existing PR found -> emit `push_to_pull_request_branch` to add the new edits as a commit on that PR's branch, then emit `update_pull_request` to append a new dated section to its body. Do NOT call `create_pull_request`.
+   - Existing PR found -> emit `push_to_pull_request_branch` (with the existing PR's `pull_request_number` from the search above, since this is a scheduled run with no triggering PR) to add the new edits as a commit on that PR's branch, then emit `update_pull_request` (same `pull_request_number`) to append a new dated section to its body. Do NOT call `create_pull_request`.
    - No existing PR -> emit one `create_pull_request`. Title: `[ci-scan-feedback] <one-line summary>`.
+
+   **Emission order.** Emit the Step 7 tracker `update_issue` / `create_issue` BEFORE these PR safe-outputs. The safe-outputs processor runs messages in emission order and cancels every later message once one fails, so a PR-push or patch error here must never cancel the daily tracker snapshot.
 
    The PR body (or the appended section, when updating) MUST contain:
    - `## Triggering signals` — bullet list of `(issue/PR #, quoted maintainer comment or rubric finding, link)`.
@@ -323,7 +325,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
-   If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
+   If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
 
 ## Output to agent log
 
