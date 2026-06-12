@@ -1901,8 +1901,8 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 
     if (asyncInfoThis.ContextHandling != asyncInfoOther.ContextHandling)
     {
-        JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n",
-                asyncInfoThis.ContextHandling, asyncInfoOther.ContextHandling);
+        JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n", asyncInfoThis.ContextHandling,
+                asyncInfoOther.ContextHandling);
         return false;
     }
 

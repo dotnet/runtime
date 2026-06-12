@@ -7109,8 +7109,8 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     if (m_nextAwaitIsTail)
     {
         asyncInfo.ContextHandling = ContinuationContextHandling::None;
-        asyncInfo.IsTailAwait                 = true;
-        m_nextAwaitIsTail                     = false;
+        asyncInfo.IsTailAwait     = true;
+        m_nextAwaitIsTail         = false;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
