@@ -57,18 +57,19 @@ namespace System.Text.Json.SourceGeneration
             private readonly Queue<TypeToGenerate> _typesToGenerate = new();
 #pragma warning disable RS1024 // Compare symbols correctly https://github.com/dotnet/roslyn-analyzers/issues/5804
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
+#pragma warning restore
 
             // Tracks (open base definition, derived type definition) pairs for which an open-generic
             // polymorphism diagnostic has already been emitted. Whether a derived registration is
             // universally applicable to a generic base is a property of the open forms alone, so the
             // diagnostic must fire at most once per (open base, derived) pair regardless of how many
             // closed specializations of the base appear in [JsonSerializable] attributes.
+            // Lazily allocated since the diagnostic is rarely emitted.
             private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
                 RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
 
-            private readonly HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> _diagnosedOpenDerivedRegistrations =
-                new(s_typePairComparer);
-#pragma warning restore
+            private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations =>
+                field ??= new(s_typePairComparer);
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
@@ -1075,7 +1076,7 @@ namespace System.Text.Json.SourceGeneration
                 // JsonSerializableAttribute would spam the user with the same warning for every closure of the same base.
                 void ReportOpenGenericDerivedTypeDiagnostic(ITypeSymbol baseType, ITypeSymbol derivedType, Location? location, string? failureReason)
                 {
-                    if (_diagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
+                    if (DiagnosedOpenDerivedRegistrations.Add((baseType.OriginalDefinition, derivedType.OriginalDefinition)))
                     {
                         ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, location, derivedType.ToDisplayString(), baseType.ToDisplayString(), failureReason);
                     }
