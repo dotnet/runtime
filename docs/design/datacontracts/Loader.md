@@ -51,7 +51,16 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
+
+// Aggregate view of the runtime's domain singletons.
+readonly struct RuntimeDomainInfo
+{
+    TargetPointer SystemDomain { get; init; }
+    TargetPointer DefaultAppDomain { get; init; }
+    uint DefaultAppDomainId { get; init; }
+}
 
 readonly struct LoaderHeapBlockData
 {
@@ -82,6 +91,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
+RuntimeDomainInfo GetDomainInfo();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -243,6 +253,7 @@ enum ClrModifiableAssemblies : uint
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 | `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
+| `DefaultADID` | uint | Id of the default AppDomain |
 | `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
 
 
@@ -394,21 +405,40 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
 TargetPointer GetRootAssembly()
 {
-    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
-    AppDomain appDomain = // read AppDomain object starting at appDomainPointer
+    TargetPointer defaultAppDomain = GetDomainInfo().DefaultAppDomain;
+    AppDomain appDomain = // read AppDomain object starting at defaultAppDomain
     return appDomain.RootAssembly;
 }
 
 string ILoader.GetAppDomainFriendlyName()
 {
-    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
-    TargetPointer appDomain = target.ReadPointer(appDomainPointer)
-    TargetPointer namePtr = appDomain + /* AppDomain::FriendlyName offset */;
+    TargetPointer defaultAppDomain = GetDomainInfo().DefaultAppDomain;
+    TargetPointer namePtr = defaultAppDomain + /* AppDomain::FriendlyName offset */;
     // Match native AppDomain::GetFriendlyName(): return "DefaultDomain" when pointer is null.
     if (namePtr == TargetPointer.Null)
         return "DefaultDomain";
     char[] name = // Read<char> from target starting at namePtr until null terminator
     return new string(name);
+}
+
+RuntimeDomainInfo GetDomainInfo()
+{
+    // Tolerate missing-or-uninitialized globals: callers that only need one of
+    // the values shouldn't fail because an unrelated global is unavailable.
+    static TargetPointer TryReadGlobalIndirectPointer(string name)
+    {
+        if (!target.TryReadGlobalPointer(name, out TargetPointer? ptrPtr))
+            return TargetPointer.Null;
+        if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
+            return TargetPointer.Null;
+        return value;
+    }
+    return new RuntimeDomainInfo
+    {
+        SystemDomain = TryReadGlobalIndirectPointer("SystemDomain"),
+        DefaultAppDomain = TryReadGlobalIndirectPointer("AppDomain"),
+        DefaultAppDomainId = target.TryReadGlobal("DefaultADID", out uint? id) ? id.Value : 0u,
+    };
 }
 
 TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -678,6 +708,7 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
+    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
     return new ModuleLookupTables(
         FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
         ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
@@ -686,7 +717,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */));
+        Module::MethodDefToILCodeVersioningState */),
+        TableDataOffset: tableDataOffset);
 }
 
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
@@ -767,15 +799,13 @@ bool IsAssemblyLoaded(ModuleHandle handle)
 
 TargetPointer GetGlobalLoaderAllocator()
 {
-    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
-    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    TargetPointer systemDomain = GetDomainInfo().SystemDomain;
     return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
 }
 
 TargetPointer GetSystemAssembly()
 {
-    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
-    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    TargetPointer systemDomain = GetDomainInfo().SystemDomain;
     return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 
