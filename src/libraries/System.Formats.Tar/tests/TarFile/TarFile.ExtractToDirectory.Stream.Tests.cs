@@ -76,6 +76,7 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(TarEntryType.SymbolicLink)]
         [InlineData(TarEntryType.HardLink)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_LinkEntry_TargetOutsideDirectory(TarEntryType entryType)
         {
             using MemoryStream archive = new MemoryStream();
@@ -98,21 +99,25 @@ namespace System.Formats.Tar.Tests
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, null);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_HardLinkEntry_TargetInsideDirectory(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink, format, null);
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory_LongBaseDir(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, new string('a', 99));
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_HardLinkEntry_TargetInsideDirectory_LongBaseDir(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink, format, new string('a', 99));
 
         // This test would not pass for the V7 and Ustar formats in some OSs like MacCatalyst, tvOSSimulator and OSX, because the TempDirectory gets created in
@@ -152,6 +157,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(512)]
         [InlineData(512 + 1)]
         [InlineData(512 + 512 - 1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void Extract_UnseekableStream_BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize)
         {
             byte[] fileContents = new byte[contentSize];
@@ -208,6 +214,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetTestTarFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void UnseekableStreams_RoundTrip(TestTarFormat testFormat)
         {
             using TempDirectory root = new();
