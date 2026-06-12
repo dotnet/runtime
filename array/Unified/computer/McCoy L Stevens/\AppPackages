@@ -38,7 +38,7 @@
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-fetch-depth: 0
+fetch-depth: 10
 dotnet-version: 8.0.x
 
  
