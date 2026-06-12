@@ -124,7 +124,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
       - maccatalyst_arm64
     variables:
