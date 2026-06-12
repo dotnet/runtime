@@ -1125,7 +1125,7 @@ private:
             if ((fullOffs != 0) || (m_addrBaseOffsFldSeq != nullptr))
             {
                 GenTreeIntCon* offsetNode = comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
-                offsetNode->gtFieldSeq    = m_addrBaseOffsFldSeq;
+                offsetNode->SetFieldSeq(m_addrBaseOffsFldSeq);
 
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
                 addrUse            = comp->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
@@ -1257,7 +1257,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->GetFieldSeq());
                 }
 
                 *addr = op1;
@@ -1269,7 +1269,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(intCon->GetFieldSeq(), *fldSeq);
                 }
 
                 *addr = op2;

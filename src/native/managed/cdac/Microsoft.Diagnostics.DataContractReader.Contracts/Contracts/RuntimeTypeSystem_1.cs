@@ -1241,6 +1241,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsTypeDesc(TypeHandle typeHandle) => typeHandle.IsTypeDesc();
 
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        Data.TypedByRef typedByRefData = _target.ProcessedData.GetOrAdd<Data.TypedByRef>(typedByRef);
+        return new TypedByRefInfo(typedByRefData.Data, typedByRefData.Type);
+    }
+
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
         if (typeHandle.IsTypeDesc())
