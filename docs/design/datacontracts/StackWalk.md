@@ -180,6 +180,9 @@ Constants used:
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
 | `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| N/A | `REDIRECTSTUB_ESTABLISHER_OFFSET_RBP` | 0 | AMD64 offset for redirect stubs. |
+| N/A | `REDIRECTSTUB_SP_OFFSET_CONTEXT` | 0 | ARM, ARM64, Loongarch & RISCV64 offset for redirect stubs. |
+| N/A | `REDIRECTSTUB_EBP_OFFSET_CONTEXT` | -4 | X86 offset for redirect stubs. |
 
 Contracts used:
 | Contract Name |
@@ -638,7 +641,7 @@ The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which retur
 
 * `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special.
 * `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
-* `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_{SP,EBP,RBP}_OFFSET_CONTEXT` constants in `src/coreclr/vm/{arch}/asmconstants.h`.
+* `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
 
 When a non-`None` `HijackKind` is returned, the walker:
 
