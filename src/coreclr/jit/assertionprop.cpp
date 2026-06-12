@@ -1089,12 +1089,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp2()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp1()->gtEffectiveVal();
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp1()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp2()->gtEffectiveVal();
             }
             else
@@ -1228,7 +1228,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
                 AssertionDsc dsc =
                     AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals,
-                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->GetFieldSeq());
                 return optAddAssertion(dsc);
             }
 
@@ -2003,7 +2003,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     // Validate op1 and op2
     if (!op1->OperIs(GT_CALL) || !op1->AsCall()->IsHelperCall() || !op1->TypeIs(TYP_REF) || // op1
-        !op2->OperIs(GT_CNS_INT) || (op2->AsIntCon()->gtIconVal != 0))                      // op2
+        !op2->OperIs(GT_CNS_INT) || (op2->AsIntCon()->IconValue() != 0))                    // op2
     {
         return NO_ASSERTION_INDEX;
     }
@@ -4691,7 +4691,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     optOp1Kind op1Kind = O1K_LCLVAR;
     optOp2Kind op2Kind = O2K_CONST_INT;
-    ssize_t    cnsVal  = op2->AsIntCon()->gtIconVal;
+    ssize_t    cnsVal  = op2->AsIntCon()->IconValue();
     var_types  cmpType = op1->TypeGet();
 
     // Don't try to fold/optimize Floating Compares; there are multiple zero values.

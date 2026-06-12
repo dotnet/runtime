@@ -1201,7 +1201,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // (if it's set, Lower will emit a STORE_BLK for this LCLHEAP), but we still need to
                 // do stack-probing for large allocations.
                 //
-                size_t sizeVal = size->AsIntCon()->gtIconVal;
+                size_t sizeVal = size->AsIntCon()->IconValue();
                 if (AlignUp(sizeVal, STACK_ALIGN) >= m_compiler->eeGetPageSize())
                 {
                     // We need two registers: regCnt and RegTmp
