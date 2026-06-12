@@ -548,8 +548,8 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
             async () => await Serializer.DeserializeWrapper<BaseClassRecursive>(json, options));
     }
 
-    [JsonDerivedType(typeof(BaseClassWithPolymorphism), "base")]
-    [JsonDerivedType(typeof(DerivedClass_DerivingFrom_BaseClassWithPolymorphism), "derived")]
+    [JsonDerivedType(typeof(BaseClassRecursive), "base")]
+    [JsonDerivedType(typeof(DerivedClass_DerivingFrom_BaseClassRecursive), "derived")]
     public class BaseClassRecursive
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]

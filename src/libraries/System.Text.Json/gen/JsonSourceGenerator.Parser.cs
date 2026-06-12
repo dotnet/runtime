@@ -64,7 +64,7 @@ namespace System.Text.Json.SourceGeneration
 
             // SYSLIB1229 dedup set: emit at most once per (open base definition, open derived
             // definition) pair across the lifetime of this Parser. Whether a derived registration
-            // applies universally to a generic base is a property of the open forms alone; without
+            // applies uniformly to a generic base is a property of the open forms alone; without
             // dedup we'd spam the same diagnostic for every closure of the same base referenced via
             // JsonSerializableAttribute.
             private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations => field ??= new(s_typePairComparer);
@@ -1053,20 +1053,21 @@ namespace System.Text.Json.SourceGeneration
             /// <list type="bullet">
             ///   <item>Open derived + generic base: delegates to
             ///   <see cref="RoslynExtensions.TryResolveOpenGenericDerivedType"/> for
-            ///   universal-applicability validation and closure construction.</item>
+            ///   uniform-applicability validation and closure construction.</item>
             ///   <item>Open derived + non-generic base: rejected as unassignable.</item>
             ///   <item>Closed derived + generic base: rejected. The attribute lives on the open
             ///   base definition and is shared across every closure; a closed derived necessarily
             ///   pins one specialization and would silently work for that closure and break for
             ///   the others.</item>
-            ///   <item>Closed derived + non-generic base: passes through unchanged; the runtime
-            ///   <c>PolymorphicTypeResolver</c> assignability check applies downstream.</item>
+            ///   <item>Closed derived + non-generic base: the registration is accepted as-is,
+            ///   subject to the post-condition assignability check below.</item>
             /// </list>
             ///
             /// Returns <see langword="true"/> with <paramref name="resolvedDerivedType"/> set
             /// (either the closed derived type from unification, or <paramref name="declaredDerived"/>
-            /// as-is for the pass-through case). Returns <see langword="false"/> with a localized
-            /// <paramref name="failureReason"/> suitable for inclusion in <c>SYSLIB1229</c>.
+            /// as-is for the pass-through case) only if the resolved type is also a real subtype
+            /// of <paramref name="baseType"/>; otherwise returns <see langword="false"/> with a
+            /// localized <paramref name="failureReason"/> suitable for inclusion in <c>SYSLIB1229</c>.
             /// </summary>
             private bool TryResolveDerivedType(
                 ITypeSymbol declaredDerived,
@@ -1074,10 +1075,29 @@ namespace System.Text.Json.SourceGeneration
                 out ITypeSymbol? resolvedDerivedType,
                 out string? failureReason)
             {
-                resolvedDerivedType = declaredDerived;
+                resolvedDerivedType = null;
                 failureReason = null;
 
-                if (declaredDerived is not INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                if (declaredDerived is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                {
+                    if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                    {
+                        // Open derived registered against a non-generic base: no closure of the
+                        // derived can ever be assignable to the base.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                        return false;
+                    }
+
+                    if (!_knownSymbols.Compilation.TryResolveOpenGenericDerivedType(
+                            unboundDerived, constructedBase,
+                            out INamedTypeSymbol? closedDerivedType, out failureReason))
+                    {
+                        return false;
+                    }
+
+                    resolvedDerivedType = closedDerivedType;
+                }
+                else
                 {
                     if (baseType is INamedTypeSymbol { IsGenericType: true })
                     {
@@ -1092,38 +1112,33 @@ namespace System.Text.Json.SourceGeneration
                         return false;
                     }
 
-                    // Closed derived registered against a non-generic base. This covers the common
-                    // sensible case (e.g. [JsonDerivedType(typeof(Cat))] class Animal; class Cat :
-                    // Animal;) AND outright invalid pairs (e.g. [JsonDerivedType(typeof(int))] class
-                    // Foo;) where declaredDerived isn't even assignable to baseType. The source
-                    // generator does not check assignability itself; it passes declaredDerived
-                    // through unchanged so the runtime PolymorphicTypeResolver constructor can
-                    // apply its IsAssignableFrom check (PolymorphicTypeResolver.cs ->
-                    // IsSupportedDerivedType -> ThrowInvalidOperationException_DerivedTypeNotSupported)
-                    // and reject any non-assignable registration the same way it does for the
-                    // reflection-built equivalent.
-                    return true;
+                    // Closed derived registered against a non-generic base. The common sensible
+                    // case (e.g. [JsonDerivedType(typeof(Cat))] class Animal; class Cat : Animal;)
+                    // is accepted unchanged here; outright invalid pairs (e.g.
+                    // [JsonDerivedType(typeof(int))] class Foo;) are caught by the post-condition
+                    // assignability check below.
+                    resolvedDerivedType = declaredDerived;
                 }
 
-                resolvedDerivedType = null;
-
-                if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                // Post-condition: the resolved derived type must be a real subtype of the
+                // declared base type. For the open-derived / generic-base case this holds by
+                // construction (closure construction substitutes derived parameters with the
+                // matching base type arguments, so the matching ancestor of resolvedDerivedType
+                // is exactly baseType); the check is defensive and never expected to fail. For
+                // the closed-derived / non-generic-base case this is the only compile-time
+                // validation that the registration is well-formed and lifts a runtime-only
+                // failure (PolymorphicTypeResolver -> IsSupportedDerivedType ->
+                // ThrowInvalidOperationException_DerivedTypeNotSupported, surfaced at first
+                // serialization) to a SYSLIB1229 diagnostic at metadata-resolution time.
+                Debug.Assert(resolvedDerivedType is not null);
+                if (!baseType.IsAssignableFrom(resolvedDerivedType))
                 {
-                    // Open derived registered against a non-generic base: no closure of the
-                    // derived can ever be assignable to the base.
+                    resolvedDerivedType = null;
                     failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
                     return false;
                 }
 
-                if (_knownSymbols.Compilation.TryResolveOpenGenericDerivedType(
-                        unboundDerived, constructedBase,
-                        out INamedTypeSymbol? closedDerivedType, out failureReason))
-                {
-                    resolvedDerivedType = closedDerivedType;
-                    return true;
-                }
-
-                return false;
+                return true;
             }
 
             /// <summary>
