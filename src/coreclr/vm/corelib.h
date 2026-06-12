@@ -460,6 +460,9 @@ DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
+DEFINE_FIELD(OBJCMARSHAL, OBJECTS, s_objects)
+DEFINE_CLASS_U(ObjectiveC, ObjectiveCMarshal+ObjcTrackingInformation, ObjcTrackingInformationObject)
+DEFINE_FIELD_U(_memory, ObjcTrackingInformationObject, _memory)
 #endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
@@ -716,6 +719,7 @@ DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION, ValueTaskFromExcepti
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION_1, ValueTaskFromException, GM_Exception_RetValueTaskOfT)
 
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,            TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_OF_T,       TransparentAwaitOfT, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK,   TransparentAwaitValueTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK_OF_T, TransparentAwaitValueTaskOfT, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,     CompletedTaskResult, NoSig)

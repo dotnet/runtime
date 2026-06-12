@@ -4453,6 +4453,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Trim dead code that follows no-return calls introduced by inlining,
+        // so subsequent phases see a cleaner flow graph.
+        //
+        DoPhase(this, PHASE_POST_INLINE_NORETURN, &Compiler::fgPostInlineNoReturnCleanup);
+
         // Try and resolve GDV checks if improved types were found during inlining
         //
         DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
@@ -4512,10 +4517,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() {
             return fgHeadTailMerge(true);
         });
-
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
 
         // Run an early flow graph simplification pass
         //
@@ -4587,9 +4588,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
-
-        // Decide the kind of code we want to generate
-        fgSetOptions();
 
         fgExpandQmarkNodes(/*early*/ false);
 
@@ -4674,6 +4672,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Decide the kind of code we want to generate. Done here, after the second
+    // round of empty-EH removal above, so that EH eliminated post-morph doesn't
+    // force fully-interruptible codegen / a frame pointer.
+    //
+    fgSetOptions();
 
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
@@ -4813,6 +4817,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doAssertionProp)
             {
+                // Coalesce groups of constant-indexed bounds checks.
+                //
+                DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, &Compiler::optBoundsCheckCoalesce);
+
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
@@ -5725,6 +5733,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
+    }
+
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
+        patchpointInfo->SetAsyncThreadOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async thread object V%02u virtual offset is %d\n", lvaAsyncThreadObjectVar,
+                patchpointInfo->AsyncThreadOffset());
     }
 
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
@@ -10438,7 +10454,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
                 (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
@@ -10472,6 +10488,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncThreadObjectVar)
+    {
+        return info.compPatchpointInfo->AsyncThreadOffset();
     }
     if (varNum == lvaAsyncExecutionContextVar)
     {

@@ -81,6 +81,7 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="___stack_pointer" />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>

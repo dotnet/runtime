@@ -915,6 +915,15 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
             &nextContinuation,
             &state));
 
+        // Skip continuations with null DiagnosticIP. These are infrastructure
+        // continuations (e.g. RuntimeAsyncTaskContinuation) that have no user code
+        // associated with them and cannot be represented as a debug frame.
+        if (diagnosticIP == 0)
+        {
+            m_continuationAddress = nextContinuation;
+            continue;
+        }
+
         NativeCodeFunctionData codeData;
         VMPTR_Module pModule;
         mdMethodDef methodDef;

@@ -4154,8 +4154,17 @@ PhaseStatus Compiler::fgSetBlockOrder()
 
     if (fgHasCycleWithoutGCSafePoint())
     {
+#if defined(TARGET_WASM)
+        // TODO-WASM: insert GC polls for loops, and arrange it so the
+        // polling overhead is tolerable.
+        //
+        JITDUMP("NOTE: Method requires GC polls -- Wasm does not insert these yet\n");
+#else
+
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
+
+#endif // defined(TARGET_WASM)
     }
 
     for (BasicBlock* const block : Blocks())
@@ -5566,19 +5575,31 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 // the loop.
 //
 // Parameters:
-//   info - [out] Loop information
+//   info                 - [out] Loop information
+//   allowMissingBaseCase - If true, succeed even when we cannot prove that the
+//                          loop condition [IterVar TestOper Limit] holds on
+//                          entry, provided the limit form is one we know how
+//                          to materialize at runtime. The caller is then
+//                          responsible for emitting a runtime entry guard
+//                          equivalent to that condition when
+//                          info->NeedsZeroTripGuard is set on return.
+//                          Defaults to false; existing callers retain the
+//                          stronger guarantees described below.
 //
 // Returns:
 //   True if the structure was analyzed and we can make guarantees about it;
 //   otherwise false.
 //
 // Remarks:
-//   On a true return, the function guarantees that the loop invariant is true
-//   and maintained at all points within the loop, except possibly right after
-//   the update of the iterator variable (NaturalLoopIterInfo::IterTree). The
-//   function guarantees that the test (NaturalLoopIterInfo::TestTree) occurs
-//   immediately after the update, so no IR in the loop is executed without the
-//   loop invariant being true, except for the test.
+//   On a true return with allowMissingBaseCase == false (or with the flag set
+//   but info->NeedsZeroTripGuard == false), the function guarantees that the
+//   loop invariant is true and maintained at all points within the loop,
+//   except possibly right after the update of the iterator variable
+//   (NaturalLoopIterInfo::IterTree). optExtractTestIncr permits the IV update
+//   to be separated from the loop test by other statements, but it rejects
+//   any candidate where an intervening statement references the iterator
+//   variable, so no IR in the loop is executed observing the post-update
+//   value of the iterator except the test itself.
 //
 //   The loop invariant is defined as the expression obtained by
 //   [info->IterVar] [info->TestOper()] [info->Limit()]. Note that
@@ -5599,7 +5620,19 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   In some cases we also know the initial value on entry to the loop; see
 //   ::HasConstInit and ::ConstInitValue.
 //
-bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
+//   When allowMissingBaseCase is true and the function would otherwise fail
+//   because the loop condition [IterVar TestOper Limit] cannot be proven to
+//   hold on entry (no suitable preheader BBJ_COND guard and no constant
+//   init/limit pair that proves the base case), the function may instead
+//   succeed with info->NeedsZeroTripGuard set. In that mode the above
+//   invariant only holds conditionally: it is the caller's obligation to
+//   insert a runtime test equivalent to [IterVar TestOper() Limit] on the
+//   path that reaches the analyzed loop body. Loop cloning uses this to emit
+//   the guard as an extra cloning condition on the fast-path version. Note
+//   that this includes do/while-style loops that are guaranteed to execute
+//   at least once but whose loop condition may be false on entry.
+//
+bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase)
 {
     JITDUMP("Analyzing iteration for " FMT_LP " with header " FMT_BB "\n", m_index, m_header->bbNum);
 
@@ -5613,7 +5646,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     GenTree* test = nullptr;
 
-    info->IterVar = BAD_VAR_NUM;
+    info->IterVar            = BAD_VAR_NUM;
+    info->NeedsZeroTripGuard = false;
 
     for (FlowEdge* exitEdge : ExitEdges())
     {
@@ -5700,8 +5734,21 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(preheader, info))
     {
-        JITDUMP("  Loop condition may not be true on the first iteration\n");
-        return false;
+        // If the caller can emit its own runtime guard for the case where the
+        // loop body might not execute on the first iteration, allow the loop
+        // through provided we have enough symbolic info about init and limit
+        // to express the guard.
+        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit))
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration; deferring to caller "
+                    "(NeedsZeroTripGuard)\n");
+            info->NeedsZeroTripGuard = true;
+        }
+        else
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration\n");
+            return false;
+        }
     }
 
 #ifdef DEBUG
@@ -6801,9 +6848,20 @@ genTreeOps NaturalLoopIterInfo::TestOper()
 bool NaturalLoopIterInfo::IsIncreasingLoop()
 {
     // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0))));
+    // We also recognize "!=" against a limit when the IV step is exactly +1 (or -1 with GT_SUB):
+    // such loops visit indices [init, limit) provided that "init <= limit" holds on entry.
+    // Stride must be ±1 to avoid parity/overflow issues where the IV could skip past the limit
+    // (e.g. "for (i = 0; i != 5; i += 2)" never terminates and wraps around).
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_LT, GT_LE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == 1)) || ((IterOper() == GT_SUB) && (IterConst() == -1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6817,9 +6875,18 @@ bool NaturalLoopIterInfo::IsDecreasingLoop()
 {
     // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
     // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0))));
+    // As with IsIncreasingLoop, we also recognize "!=" against a limit when the IV step is exactly -1
+    // (or +1 with GT_SUB); the stride must be exactly +/-1 to avoid parity/overflow issues.
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_GT, GT_GE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == -1)) || ((IterOper() == GT_SUB) && (IterConst() == 1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6905,8 +6972,9 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
     // Check if we have a.length or a[i][j].length
     if (limit->AsArrLen()->ArrRef()->OperIs(GT_LCL_VAR))
     {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
+        index->arrLcl  = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
+        index->arrType = limit->AsArrLen()->ArrRef()->TypeGet();
+        index->rank    = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
@@ -7696,6 +7764,19 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
     for (BasicBlock* block : comp->Blocks())
     {
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+
         if (!block->hasTryIndex())
         {
             continue;
@@ -7768,6 +7849,16 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                 if (region != nullptr)
                 {
+                    // If this block lives in a different handler region than the
+                    // parent try's begin block, the block is inside a funclet
+                    // that is nested inside the parent try's IL range but is
+                    // not part of the parent try's code body. Don't add it to
+                    // the parent region.
+                    //
+                    if (!includeHandlerBlocks && !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    {
+                        break;
+                    }
                     tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
@@ -7776,19 +7867,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             // This is a handler block inside a try.
             // For flow purposes we may consider it to be outside the try.
-        }
-
-        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
-        // as requiring runtime resumption.
-        //
-        if (block->KindIs(BBJ_EHCATCHRET))
-        {
-            assert(block->hasHndIndex());
-            unsigned const            ehRegionIndex        = block->getHndIndex();
-            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
-            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
-
-            dispatchingTryRegion->SetRequiresRuntimeResumption();
         }
     }
 

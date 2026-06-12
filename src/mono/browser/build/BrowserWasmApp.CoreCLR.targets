@@ -91,6 +91,16 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
+         path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
+         app's own [UnmanagedCallersOnly] reverse thunks into dotnet.native.wasm; the runtime
+         pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 
@@ -555,7 +565,6 @@
 
       <!-- ES6 module output -->
       <_EmccLinkStepArgs Include="-s EXPORT_ES6=1" />
-      <_EmccLinkStepArgs Include="-lexports.js" />
 
       <!-- Memory configuration -->
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
@@ -597,6 +606,11 @@
 
       <!-- Extra user flags -->
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+
+      <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
+      <_EmccLinkStepArgs Include="-lexports.js" />
+      <!-- Ensure the __stack_pointer global is exported -->
+      <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />

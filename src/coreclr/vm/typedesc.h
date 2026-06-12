@@ -472,7 +472,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return PTR_TypeHandle(m_RetAndArgTypes);
+        return dac_cast<PTR_TypeHandle>(
+            PTR_HOST_MEMBER_TADDR(FnPtrTypeDesc, this, m_RetAndArgTypes));
     }
 
     BOOL IsSharedByGenericInstantiations();

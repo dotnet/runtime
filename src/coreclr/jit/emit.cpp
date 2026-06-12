@@ -1054,7 +1054,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
-    INDEBUG(ig->igDataSize = gs;)
+    INDEBUG(ig->igDataSize = sz;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -8464,7 +8464,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 BYTE* target = emitOffsetToPtr(lab->igOffs);
 
 #ifdef TARGET_ARM
-                target = (BYTE*)((size_t)target | 1); // Or in thumb bit
+                if (!m_compiler->opts.compReloc)
+                {
+                    target = (BYTE*)((size_t)target | 1); // Or in thumb bit
+                }
 #endif
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (m_compiler->opts.compReloc)
@@ -8516,40 +8519,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 if (m_compiler->opts.compReloc)
                 {
-#ifdef TARGET_ARM
-                    // The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
-                    // either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
-                    // to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
-                    // thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
-                    // the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
-                    // emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
-                    // (while regular method calls could not do this) because the async method and its resumption stub
-                    // are tightly coupled and effectively funclets of the same method. However, this means that
-                    // crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
-                    // unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
-                    // reloc with the addend for the thumb bit.
-                    if (m_compiler->IsReadyToRun())
-                    {
-                        emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
-                                                          CorInfoReloc::DIRECT, 1);
-                    }
-                    else
-#endif
-                    {
-                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
-                    }
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
-#ifdef TARGET_ARM
-                        if (m_compiler->IsReadyToRun())
-                        {
-                            emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
-                        }
-                        else
-#endif
-                        {
-                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
-                        }
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
 
@@ -10755,10 +10728,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // emitGetGCRegsKilledByNoGCCall: Gets a register mask that represents the set of registers that no longer
 // contain GC or byref pointers, for "NO GC" helper calls. This is used by the emitter when determining
 // what registers to remove from the current live GC/byref sets (and thus what to report as dead in the
-// GC info). Note that for the CORINFO_HELP_ASSIGN_BYREF helper, in particular, the kill set reported by
-// compHelperCallKillSet() doesn't match this kill set. compHelperCallKillSet() reports the dst/src
-// address registers as killed for liveness purposes, since their values change. However, they still are
-// valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
+// GC info).
 //
 // Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
 //
@@ -10777,10 +10747,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
-
-        case CORINFO_HELP_ASSIGN_BYREF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

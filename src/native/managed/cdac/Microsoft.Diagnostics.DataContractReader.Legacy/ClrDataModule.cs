@@ -128,9 +128,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         private TypeDefinitionHandle? _typeHandle;
         private string? _methodName;
         public IEnumerator<uint> Enumerator { get; set; } = Enumerable.Empty<uint>().GetEnumerator();
-        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+        public nuint LegacyHandle { get; set; } = 0;
 
-        public EnumMethodDefinitions(MetadataReader reader, uint flags, TargetPointer legacyHandle)
+        public EnumMethodDefinitions(MetadataReader reader, uint flags, nuint legacyHandle)
         {
             _reader = reader;
             _flags = flags;
@@ -300,7 +300,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
             MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
 
-            EnumMethodDefinitions emd = new(reader, flags, handleLocal);
+            EnumMethodDefinitions emd = new(reader, flags, (nuint)handleLocal);
             emd.Start(fullName);
             *handle = (ulong)((IEnum<uint>)emd).GetHandle();
         }
@@ -346,7 +346,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyModule.EnumMethodDefinitionByName(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emd.LegacyHandle = legacyHandle;
+            emd.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -393,7 +393,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-        if (_legacyModule != null && emd.LegacyHandle != TargetPointer.Null)
+        if (_legacyModule != null && emd.LegacyHandle != 0)
         {
             int hrLocal = _legacyModule.EndEnumMethodDefinitionsByName(emd.LegacyHandle);
             if (hrLocal < 0)

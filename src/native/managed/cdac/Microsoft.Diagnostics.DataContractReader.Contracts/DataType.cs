@@ -97,6 +97,9 @@ public enum DataType
     InterpMethod,
     InterpMethodContextFrame,
     Array,
+    Delegate,
+    StackTraceArrayHeader,
+    StackTraceElement,
     SyncBlock,
     SyncTableEntry,
     ObjectHeader,
@@ -197,6 +200,10 @@ public enum DataType
     TableSegment,
     CardTableInfo,
     RegionFreeList,
+
+    EnCEEClassData,
+    EnCAddedFieldElement,
+    UnorderedArrayBase,
 }
 
 public static class DataTypeTargetExtensions

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -55,12 +56,15 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         {
             TargetPointer assemblyPtr = loader.GetAssembly(module);
             TargetPointer expectedModulePtr = loader.GetModule(module);
+            bool expectedIsLoaded = loader.IsAssemblyLoaded(module);
 
             ulong resultModule;
-            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule);
+            Interop.BOOL resultIsLoaded;
+            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule, &resultIsLoaded);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.NotEqual(0UL, resultModule);
             Assert.Equal(expectedModulePtr.Value, resultModule);
+            Assert.Equal(expectedIsLoaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, resultIsLoaded);
             testedAtLeastOne = true;
         }
         Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
@@ -74,9 +78,56 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         DacDbiImpl dbi = CreateDacDbi();
 
         ulong resultModule = ulong.MaxValue;
-        int hr = dbi.GetModuleForAssembly(0, &resultModule);
+        Interop.BOOL resultIsLoaded = Interop.BOOL.TRUE;
+        int hr = dbi.GetModuleForAssembly(0, &resultModule, &resultIsLoaded);
         Assert.NotEqual(System.HResults.S_OK, hr);
         Assert.Equal(0UL, resultModule);
+        Assert.Equal(Interop.BOOL.FALSE, resultIsLoaded);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetAssemblyFromModule_RoundtripsWithGetModuleForAssembly(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer expectedAssemblyPtr = loader.GetAssembly(module);
+            TargetPointer modulePtr = loader.GetModule(module);
+
+            ulong resultAssembly;
+            int hr = dbi.GetAssemblyFromModule(modulePtr.Value, &resultAssembly);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(expectedAssemblyPtr.Value, resultAssembly);
+
+            // Roundtrip: feeding the assembly back into GetModuleForAssembly should
+            // produce the original module pointer.
+            ulong roundtripModule;
+            Interop.BOOL roundtripIsLoaded;
+            hr = dbi.GetModuleForAssembly(resultAssembly, &roundtripModule, &roundtripIsLoaded);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(modulePtr.Value, roundtripModule);
+
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetAssemblyFromModule_InvalidModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        ulong resultAssembly = ulong.MaxValue;
+        int hr = dbi.GetAssemblyFromModule(0, &resultAssembly);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, resultAssembly);
     }
 
     [ConditionalTheory]

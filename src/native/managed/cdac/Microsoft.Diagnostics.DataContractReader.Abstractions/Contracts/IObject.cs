@@ -5,6 +5,18 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public enum DelegateType
+{
+    Unknown,
+    Closed,
+    Open,
+}
+
+public readonly record struct DelegateInfo(
+    TargetPointer TargetObject,
+    TargetCodePointer TargetMethodPtr,
+    DelegateType DelegateType);
+
 public interface IObject : IContract
 {
     static string IContract.Name { get; } = nameof(Object);
@@ -15,6 +27,7 @@ public interface IObject : IContract
     int TryGetHashCode(TargetPointer address) => throw new NotImplementedException();
     // Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
     TargetPointer GetSyncBlockAddress(TargetPointer address) => throw new NotImplementedException();
+    DelegateInfo GetDelegateInfo(TargetPointer address) => throw new NotImplementedException();
 }
 
 public readonly struct Object : IObject

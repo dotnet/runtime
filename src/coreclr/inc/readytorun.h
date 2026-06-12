@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0007
+#define READYTORUN_MAJOR_VERSION 22
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 18
+#define MINIMUM_READYTORUN_MAJOR_VERSION 22
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -58,6 +58,10 @@
 // R2R Version 18.5 adds READYTORUN_FLAG_STRIPPED_IL_BODIES, READYTORUN_FLAG_STRIPPED_INLINING_INFO, and READYTORUN_FLAG_STRIPPED_DEBUG_INFO flags
 // R2R Version 18.6 adds READYTORUN_FIXUP_InjectStringThunks for mapping strings to pregenerated code thunks
 // R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
+// R2R Version 19 removes the READYTORUN_HELPER_ByRefWriteBarrier helper
+// R2R Version 20 changes NativeVarInfo encoding to include ASYNC_CONTINUATION_ILNUM
+// R2R Version 21 updates GC info version to 5 which adds isAsync to x86 GC info
+// R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
 
 struct READYTORUN_CORE_HEADER
 {
@@ -363,7 +367,7 @@ enum ReadyToRunHelper
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
-    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
     READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
 
     // Array helpers
