@@ -1415,8 +1415,8 @@ bool Compiler::optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraph
         {
             if (!loop->ContainsBlock(pred))
             {
-                JITDUMP("    Cannot replace V%02u; live regular exit " FMT_BB " of " FMT_LP " has a non-loop pred " FMT_BB
-                        "\n",
+                JITDUMP("    Cannot replace V%02u; live regular exit " FMT_BB " of " FMT_LP
+                        " has a non-loop pred " FMT_BB "\n",
                         lclNum, exit->bbNum, loop->GetIndex(), pred->bbNum);
                 return BasicBlockVisit::Abort;
             }
