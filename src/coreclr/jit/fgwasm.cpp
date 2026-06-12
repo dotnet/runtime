@@ -1685,7 +1685,7 @@ PhaseStatus Compiler::WasmSpillRefs()
         if (m_wasmSpillSlots != nullptr)
         {
             // Flag all our spill slot vars as no longer in use so they can be reused in the new block
-            for (int s = 0; s < m_wasmSpillSlots->size(); s++)
+            for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
             {
                 m_wasmSpillSlots->at(s).inUse = false;
             }
@@ -1716,7 +1716,7 @@ PhaseStatus Compiler::WasmSpillRefs()
 
                         int spillSlot = -1;
                         // Find an existing spill slot of the right type (byref or ref) that isn't in use
-                        for (int s = 0; s < m_wasmSpillSlots->size(); s++)
+                        for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
                         {
                             WasmSpillSlot* slot = &(m_wasmSpillSlots->at(s));
                             if (slot->inUse)
