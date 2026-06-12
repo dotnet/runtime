@@ -30,6 +30,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512v2_X64;
         case InstructionSet_AVX512v3:
             return InstructionSet_AVX512v3_X64;
+        case InstructionSet_AVX512_BF16:
+            return InstructionSet_AVX512_BF16_X64;
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v2:
@@ -74,6 +76,7 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512v2:
         case InstructionSet_AVX512v3:
+        case InstructionSet_AVX512_BF16:
         case InstructionSet_AVX10v1:
         {
             // These nested ISAs aren't tracked by the JIT support
@@ -209,7 +212,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
                     }
                     else if (strcmp(className + 7, "f16") == 0)
                     {
-                        return InstructionSet_AVX10v1;
+                        return InstructionSet_AVX512_BF16;
                     }
                     else if (strcmp(className + 7, "W") == 0)
                     {

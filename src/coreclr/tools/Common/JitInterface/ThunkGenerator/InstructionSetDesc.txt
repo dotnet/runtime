@@ -73,8 +73,8 @@ instructionset     ,X86   ,                     ,Avx512Vnni         ,79 ,AVX512v
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq    ,82 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq_VL ,83 ,AVX512v3              ,avx512v3
 
-instructionset     ,X86   ,                     ,Avx512Bf16         ,72 ,AVX10v1               ,avx10v1
-instructionset     ,X86   ,                     ,Avx512Bf16_VL      ,73 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,Avx512Bf16           ,Avx512Bf16         ,72 ,AVX512_BF16           ,avx512_bf16
+instructionset     ,X86   ,Avx512Bf16_VL        ,Avx512Bf16_VL      ,73 ,AVX512_BF16           ,avx512_bf16
 instructionset     ,X86   ,                     ,Avx512Fp16         ,74 ,AVX10v1               ,avx10v1
 instructionset     ,X86   ,                     ,Avx512Fp16_VL      ,75 ,AVX10v1               ,avx10v1
 instructionset     ,X86   ,Avx10v1              ,                   ,44 ,AVX10v1               ,avx10v1
@@ -142,6 +142,7 @@ instructionset64bit,X86   ,AES
 instructionset64bit,X86   ,AVX512VP2INTERSECT
 instructionset64bit,X86   ,AVXIFMA
 instructionset64bit,X86   ,AVXVNNI
+instructionset64bit,X86   ,AVX512_BF16
 
 instructionset64bit,X86   ,GFNI
 instructionset64bit,X86   ,SHA
@@ -188,6 +189,9 @@ implication        ,X86   ,X86Serialize         ,X86Base
 
 implication        ,X86   ,AVXVNNIINT           ,AVX2
 implication        ,X86   ,AVXVNNIINT_V512      ,AVX10v2
+
+implication        ,X86   ,AVX512_BF16          ,AVX512v3
+implication        ,X86   ,AVX10v1              ,AVX512_BF16
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first

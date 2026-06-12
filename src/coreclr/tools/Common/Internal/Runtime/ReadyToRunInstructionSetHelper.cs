@@ -94,8 +94,10 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.X64_AVX512v2_X64: return ReadyToRunInstructionSet.Avx512Ifma;
                         case InstructionSet.X64_AVX512v3: return ReadyToRunInstructionSet.Avx512Bitalg;
                         case InstructionSet.X64_AVX512v3_X64: return ReadyToRunInstructionSet.Avx512Bitalg;
-                        case InstructionSet.X64_AVX10v1: return ReadyToRunInstructionSet.Avx512Bf16;
-                        case InstructionSet.X64_AVX10v1_X64: return ReadyToRunInstructionSet.Avx512Bf16;
+                        case InstructionSet.X64_AVX512_BF16: return ReadyToRunInstructionSet.Avx512Bf16;
+                        case InstructionSet.X64_AVX512_BF16_X64: return ReadyToRunInstructionSet.Avx512Bf16;
+                        case InstructionSet.X64_AVX10v1: return ReadyToRunInstructionSet.Avx512Fp16;
+                        case InstructionSet.X64_AVX10v1_X64: return ReadyToRunInstructionSet.Avx512Fp16;
                         case InstructionSet.X64_AVX10v2: return ReadyToRunInstructionSet.Avx10v2;
                         case InstructionSet.X64_AVX10v2_X64: return ReadyToRunInstructionSet.Avx10v2;
                         case InstructionSet.X64_APX: return ReadyToRunInstructionSet.Apx;
@@ -149,7 +151,9 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.X86_AVX512v2_X64: return null;
                         case InstructionSet.X86_AVX512v3: return ReadyToRunInstructionSet.Avx512Bitalg;
                         case InstructionSet.X86_AVX512v3_X64: return null;
-                        case InstructionSet.X86_AVX10v1: return ReadyToRunInstructionSet.Avx512Bf16;
+                        case InstructionSet.X86_AVX512_BF16: return ReadyToRunInstructionSet.Avx512Bf16;
+                        case InstructionSet.X86_AVX512_BF16_X64: return null;
+                        case InstructionSet.X86_AVX10v1: return ReadyToRunInstructionSet.Avx512Fp16;
                         case InstructionSet.X86_AVX10v1_X64: return null;
                         case InstructionSet.X86_AVX10v2: return ReadyToRunInstructionSet.Avx10v2;
                         case InstructionSet.X86_AVX10v2_X64: return null;

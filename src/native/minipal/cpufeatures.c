@@ -429,6 +429,12 @@ int minipal_getcpufeatures(void)
                 result |= XArchIntrinsicConstants_AvxIfma;
             }
 
+            if (((result & XArchIntrinsicConstants_Avx512v3) != 0) &&
+                ((cpuidInfo[CPUID_EAX] & (1 << 5)) != 0))                                                       // AVX512-BF16
+            {
+                result |= XArchIntrinsicConstants_Avx512Bf16;
+            }
+
             if (hasAvx10v1Dependencies)
             {
                 if (((cpuidInfo[CPUID_EAX] & (1 << 5)) == 0) ||                                                 // AVX512-BF16
