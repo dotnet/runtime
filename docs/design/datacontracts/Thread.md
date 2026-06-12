@@ -304,7 +304,9 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
                 TargetPointer collectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsArrayData offset */);
                 // The collectible TLS array slot holds an OBJECTHANDLE; dereference the handle to the object
                 TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * target.PointerSize);
-                threadLocalStaticBase = target.ReadPointer(target.ReadPointer(handleSlotAddress));
+                TargetPointer handle = target.ReadPointer(handleSlotAddress);
+                if (handle != TargetPointer.Null && target.TryReadPointer(handle, out TargetPointer obj))
+                    threadLocalStaticBase = obj;
             }
             break;
         case TLSIndexType.DirectOnThreadLocalData:
