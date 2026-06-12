@@ -118,7 +118,10 @@ public partial class ZipArchiveEntry
             // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
             // Validate up front before attempting the (int) cast.
             if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+            {
+                _currentlyOpenForWrite = false;
                 throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+            }
 
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 

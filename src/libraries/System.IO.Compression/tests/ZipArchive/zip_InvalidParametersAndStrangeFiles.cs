@@ -417,7 +417,8 @@ namespace System.IO.Compression.Tests
             // therefore bounded by Array.MaxLength). The entry must be rejected up front
             // with a descriptive InvalidDataException when opened in Update mode, rather
             // than failing later from the MemoryStream constructor with a misleading
-            // argument-out-of-range exception caused by the (int) cast wrapping negative.
+            // argument-out-of-range exception caused by the (int) cast wrapping negative
+            // when _uncompressedSize exceeds int.MaxValue.
             byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
             MemoryStream stream = new MemoryStream();
 
@@ -434,7 +435,7 @@ namespace System.IO.Compression.Tests
 
             FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(uncompressedSizeField);
-            uncompressedSizeField.SetValue(entry, (long)Array.MaxLength + 1L);
+            uncompressedSizeField.SetValue(entry, (long)int.MaxValue + 1L);
 
             if (async)
             {
