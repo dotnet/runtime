@@ -4096,7 +4096,7 @@ public sealed unsafe partial class SOSDacImpl
                         StackSourceType.InstructionPointer => SOSStackSourceType.SOS_StackSourceIP,
                         StackSourceType.Frame => SOSStackSourceType.SOS_StackSourceFrame,
                         StackSourceType.Other => SOSStackSourceType.SOS_StackSourceOther,
-                        _ => throw new NotImplementedException(),
+                        _ => throw new UnreachableException($"Unexpected {nameof(StackSourceType)}: {refs[i].SourceType}"),
                     },
                     StackPointer = refs[i].StackPointer.Value,
                 };
