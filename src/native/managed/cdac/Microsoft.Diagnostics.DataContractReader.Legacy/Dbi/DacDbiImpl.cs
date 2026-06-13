@@ -245,10 +245,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         if (!resolved && hr == HResults.S_OK)
         {
-            // The cDAC fast paths could not resolve the reference (for example it requires a
-            // by-name lookup in the module's available-types hash, which the cDAC does not yet
-            // implement). Defer to the legacy DAC when present; otherwise report the type as
-            // not loaded, matching the native CORDBG_E_CLASS_NOT_LOADED behavior.
+            // The cDAC could not resolve the reference (for example the referenced assembly is not
+            // loaded, or its metadata is unavailable in the dump). Defer to the legacy DAC when
+            // present; otherwise report the type as not loaded, matching the native
+            // CORDBG_E_CLASS_NOT_LOADED behavior.
             if (LegacyFallbackHelper.CanFallback() && _legacy is not null)
                 return _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo);
 
@@ -298,26 +298,267 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (tokenType != (uint)EcmaMetadataUtils.TokenType.mdtTypeRef)
             return false;
 
-        // Tier 1: the TypeRef is already cached in the referencing module's TypeRef->MethodTable
-        // map (the equivalent of Module::LookupTypeRef). On a hit, translate the MethodTable back to
-        // its defining module and TypeDef token and return immediately, matching the native
-        // pfUsesTypeForwarder == NULL early-return.
-        Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
-        TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
-        if (methodTable != TargetPointer.Null)
+        try
         {
-            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
-            TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
-            Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
-            targetAssembly = loader.GetAssembly(typeDefModule);
-            targetTypeDef = rts.GetTypeDefToken(typeHandle);
+            // Tier 1: the TypeRef is already cached in the referencing module's TypeRef->MethodTable
+            // map (the equivalent of Module::LookupTypeRef). On a hit, translate the MethodTable back
+            // to its defining module and TypeDef token and return immediately, matching the native
+            // pfUsesTypeForwarder == NULL early-return.
+            Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
+            TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
+            if (methodTable != TargetPointer.Null)
+            {
+                Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+                TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
+                Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
+                targetAssembly = loader.GetAssembly(typeDefModule);
+                targetTypeDef = rts.GetTypeDefToken(typeHandle);
+                return true;
+            }
+
+            // Tier 2: resolve the TypeRef's resolution scope to the module that should define (or
+            // export) the type, mirroring Assembly::FindModuleByTypeRef with Loader::SafeLookup. While
+            // doing so, collect the (namespace, name) chain from the outermost enclosing type down to
+            // the leaf so that Tier 3 can match nested types.
+            Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+            if (!TryGetTypeRefScopeAndName(loader, ecmaMetadata, referencingModule, typeToken,
+                    out Contracts.ModuleHandle foundModule, out List<(string Namespace, string Name)> nameChain))
+            {
+                return false;
+            }
+
+            // Tier 3: search the found module (following type-forwarder chains) for a TypeDef whose
+            // (possibly nested) name matches, mirroring ClassLoader::ResolveNameToTypeDefThrowing /
+            // FindClassModuleThrowing over the module's available-types hash.
+            return TrySearchModulesForTypeDef(loader, ecmaMetadata, foundModule, nameChain, out targetAssembly, out targetTypeDef);
+        }
+        catch (System.Exception ex) when (ex is InvalidOperationException or BadImageFormatException)
+        {
+            // The cDAC could not read the metadata or lookup data it needs (for example the module
+            // image is not available in the dump). Treat this as "the fast paths could not resolve the
+            // reference" and let the caller fall back to the legacy DAC / report the type as not loaded.
+            return false;
+        }
+    }
+
+    // ECMA-335 II.22: the AssemblyRef metadata table index, used to build mdtAssemblyRef tokens.
+    private const uint AssemblyRefTokenType = 0x23u << 24;
+
+    // Mirrors const_cMaxTypeForwardingChainSize in src/coreclr/vm/clsload.cpp.
+    private const int MaxTypeForwardingChainSize = 1024;
+
+    /// <summary>
+    /// Walks the resolution scope of <paramref name="typeRefToken"/> (an mdtTypeRef) to the module
+    /// that should define or export the type, mirroring Assembly::FindModuleByTypeRef with
+    /// Loader::SafeLookup. Also produces the outermost-to-innermost (namespace, name) chain of the
+    /// referenced type so that nested types can be matched during the by-name search.
+    /// </summary>
+    private static bool TryGetTypeRefScopeAndName(
+        Contracts.ILoader loader,
+        Contracts.IEcmaMetadata ecmaMetadata,
+        Contracts.ModuleHandle referencingModule,
+        uint typeRefToken,
+        out Contracts.ModuleHandle foundModule,
+        out List<(string Namespace, string Name)> nameChain)
+    {
+        foundModule = default;
+        nameChain = new List<(string Namespace, string Name)>();
+
+        MetadataReader? reader = ecmaMetadata.GetMetadata(referencingModule);
+        if (reader is null)
+            return false;
+
+        TypeReferenceHandle handle = MetadataTokens.TypeReferenceHandle((int)EcmaMetadataUtils.GetRowId(typeRefToken));
+        if (handle.IsNil)
+            return false;
+
+        // Walk the (possibly nested) TypeRef chain. The resolution scope of a nested TypeRef is the
+        // enclosing TypeRef; the outermost TypeRef's resolution scope identifies the module/assembly.
+        EntityHandle scope;
+        while (true)
+        {
+            TypeReference typeRef = reader.GetTypeReference(handle);
+            nameChain.Add((reader.GetString(typeRef.Namespace), reader.GetString(typeRef.Name)));
+            scope = typeRef.ResolutionScope;
+            if (scope.Kind == HandleKind.TypeReference)
+            {
+                handle = (TypeReferenceHandle)scope;
+                continue;
+            }
+            break;
+        }
+
+        // Recorded innermost-to-outermost; reverse so nameChain[0] is the top-level enclosing type.
+        nameChain.Reverse();
+
+        // Resolve the outermost resolution scope to a module:
+        // - Nil scope or ModuleDefinition: the type is defined/exported in the referencing module.
+        // - AssemblyReference: resolve via the referencing module's AssemblyRef -> Module map.
+        // - ModuleReference / anything else: not supported by the cDAC fast paths; fall back.
+        if (scope.IsNil || scope.Kind == HandleKind.ModuleDefinition)
+        {
+            foundModule = referencingModule;
             return true;
         }
 
-        // Tier 2/3 (resolution-scope module lookup followed by a by-name search of the module's
-        // available-types hash, including exported-type/type-forwarder walking) are not yet
-        // implemented in the cDAC. Signal the caller to fall back to the legacy DAC.
+        if (scope.Kind == HandleKind.AssemblyReference)
+        {
+            return TryResolveAssemblyRefToModule(loader, referencingModule, (AssemblyReferenceHandle)scope, out foundModule);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Resolves an AssemblyRef token (defined in <paramref name="referencingModule"/>'s metadata) to
+    /// the referenced assembly's module via the module's AssemblyRef -> Module map, mirroring
+    /// Module::LookupAssemblyRef (no load).
+    /// </summary>
+    private static bool TryResolveAssemblyRefToModule(
+        Contracts.ILoader loader,
+        Contracts.ModuleHandle referencingModule,
+        AssemblyReferenceHandle assemblyRef,
+        out Contracts.ModuleHandle foundModule)
+    {
+        foundModule = default;
+
+        uint rid = (uint)MetadataTokens.GetRowNumber(assemblyRef);
+        if (rid == 0)
+            return false;
+
+        Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
+        TargetPointer modulePtr = loader.GetModuleLookupMapElement(tables.ManifestModuleReferences, AssemblyRefTokenType | rid, out _);
+        if (modulePtr == TargetPointer.Null)
+            return false; // AssemblyRef not resolved/loaded (matches LookupAssemblyRef == NULL).
+
+        foundModule = loader.GetModuleHandleFromModulePtr(modulePtr);
+        return true;
+    }
+
+    /// <summary>
+    /// Searches <paramref name="module"/> (following type-forwarder chains) for the type described by
+    /// <paramref name="nameChain"/>, mirroring ClassLoader::ResolveNameToTypeDefThrowing. The
+    /// top-level type is resolved first (and may be forwarded to another module); nested types are
+    /// then resolved within the defining module.
+    /// </summary>
+    private static bool TrySearchModulesForTypeDef(
+        Contracts.ILoader loader,
+        Contracts.IEcmaMetadata ecmaMetadata,
+        Contracts.ModuleHandle module,
+        List<(string Namespace, string Name)> nameChain,
+        out TargetPointer targetAssembly,
+        out uint targetTypeDef)
+    {
+        targetAssembly = TargetPointer.Null;
+        targetTypeDef = 0;
+
+        (string Namespace, string Name) topLevel = nameChain[0];
+
+        MetadataReader? definingReader = null;
+        TypeDefinitionHandle typeDefHandle = default;
+        bool foundTopLevel = false;
+
+        // Follow the type-forwarder chain to the module that defines the top-level type.
+        for (int i = 0; i < MaxTypeForwardingChainSize; i++)
+        {
+            MetadataReader? reader = ecmaMetadata.GetMetadata(module);
+            if (reader is null)
+                return false;
+
+            if (TryFindTopLevelTypeDef(reader, topLevel.Namespace, topLevel.Name, out typeDefHandle))
+            {
+                definingReader = reader;
+                foundTopLevel = true;
+                break;
+            }
+
+            if (TryFindTopLevelExportedForwarder(loader, reader, module, topLevel.Namespace, topLevel.Name, out Contracts.ModuleHandle nextModule))
+            {
+                module = nextModule;
+                continue;
+            }
+
+            // Not defined or forwarded by this module.
+            return false;
+        }
+
+        if (!foundTopLevel)
+            return false; // Type-forwarding chain too long.
+
+        // Descend into nested types within the defining module.
+        for (int level = 1; level < nameChain.Count; level++)
+        {
+            if (!TryFindNestedTypeDef(definingReader!, typeDefHandle, nameChain[level].Name, out typeDefHandle))
+                return false;
+        }
+
+        targetAssembly = loader.GetAssembly(module);
+        targetTypeDef = (uint)MetadataTokens.GetToken(typeDefHandle);
+        return true;
+    }
+
+    /// <summary>Finds a top-level TypeDef in <paramref name="reader"/> matching the given namespace and name.</summary>
+    private static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
+    {
+        foreach (TypeDefinitionHandle handle in reader.TypeDefinitions)
+        {
+            TypeDefinition typeDef = reader.GetTypeDefinition(handle);
+            if (!typeDef.GetDeclaringType().IsNil)
+                continue; // Nested types are matched separately.
+            if (reader.StringComparer.Equals(typeDef.Name, name) && reader.StringComparer.Equals(typeDef.Namespace, @namespace))
+            {
+                result = handle;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Finds a top-level ExportedType type forwarder (Implementation is an AssemblyReference) matching
+    /// the given namespace and name, and resolves the forwarding target module.
+    /// </summary>
+    private static bool TryFindTopLevelExportedForwarder(
+        Contracts.ILoader loader,
+        MetadataReader reader,
+        Contracts.ModuleHandle module,
+        string @namespace,
+        string name,
+        out Contracts.ModuleHandle nextModule)
+    {
+        foreach (ExportedTypeHandle handle in reader.ExportedTypes)
+        {
+            ExportedType exportedType = reader.GetExportedType(handle);
+            if (exportedType.Implementation.Kind != HandleKind.AssemblyReference)
+                continue; // File-based (multi-module) or nested exported types are not forwarders here.
+            if (reader.StringComparer.Equals(exportedType.Name, name) && reader.StringComparer.Equals(exportedType.Namespace, @namespace))
+            {
+                return TryResolveAssemblyRefToModule(loader, module, (AssemblyReferenceHandle)exportedType.Implementation, out nextModule);
+            }
+        }
+
+        nextModule = default;
+        return false;
+    }
+
+    /// <summary>Finds a nested TypeDef named <paramref name="name"/> directly enclosed by <paramref name="declaringType"/>.</summary>
+    private static bool TryFindNestedTypeDef(MetadataReader reader, TypeDefinitionHandle declaringType, string name, out TypeDefinitionHandle result)
+    {
+        TypeDefinition declaring = reader.GetTypeDefinition(declaringType);
+        foreach (TypeDefinitionHandle handle in declaring.GetNestedTypes())
+        {
+            TypeDefinition nested = reader.GetTypeDefinition(handle);
+            if (reader.StringComparer.Equals(nested.Name, name))
+            {
+                result = handle;
+                return true;
+            }
+        }
+
+        result = default;
         return false;
     }
 
