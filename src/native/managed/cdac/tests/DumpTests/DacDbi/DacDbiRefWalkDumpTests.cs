@@ -40,17 +40,13 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
             while (true)
             {
                 uint fetched = 0;
-                int walkHr;
-                fixed (DacGcReference* bufPtr = buffer)
-                {
-                    walkHr = dbi.WalkRefs(handle, batchSize, bufPtr, &fetched);
-                }
+                int walkHr = dbi.WalkRefs(handle, (uint)batchSize, buffer, &fetched);
 
                 Assert.True(
                     walkHr == System.HResults.S_OK || walkHr == System.HResults.S_FALSE,
                     $"WalkRefs returned 0x{walkHr:x}");
 
-                for (uint i = 0; i < fetched; i++)
+                for (int i = 0; i < (int)fetched; i++)
                     refs.Add(buffer[i]);
 
                 if (walkHr == System.HResults.S_FALSE)
