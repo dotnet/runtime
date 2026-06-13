@@ -4714,17 +4714,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     if ((typeHnd != NO_CLASS_HANDLE) && isExact)
                     {
                         assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
-                        if ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_SHAREDINST) == 0)
+                        if (!eeIsSharedInst(typeHnd) && notNull && !fgAddrCouldBeNull(tree))
                         {
-                            if (notNull && !fgAddrCouldBeNull(tree))
-                            {
-                                JITDUMP("Optimizing object.GetType() with known type to typeof\n");
-                                impPopStack();
-                                GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
-                                GenTree* helper =
-                                    gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
-                                retNode = gtWrapWithSideEffects(helper, tree, GTF_ALL_EFFECT, true);
-                            }
+                            JITDUMP("Optimizing object.GetType() with known type to typeof\n");
+                            impPopStack();
+                            GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
+                            GenTree* helper = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                            retNode = gtWrapWithSideEffects(helper, tree, GTF_ALL_EFFECT, true);
                         }
                     }
                 }
