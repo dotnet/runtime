@@ -198,4 +198,39 @@ void sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
 #endif // DEBUG
     }
 }
+
+// Reorders the elements in the range [first, last) in such a way that all elements for which the predicate returns true
+// precede all elements for which predicate returns false. Relative order of the elements is not preserved.
+// Returns the first element in the right group. Equivalent to std::partition.
+template <typename Iterator, typename Pred>
+Iterator partition(Iterator first, Iterator last, Pred pred)
+{
+    while (true)
+    {
+        // Skip all left items which are already correct
+        while (first < last && pred(*first))
+        {
+            first++;
+        }
+
+        if (first == last)
+        {
+            return first;
+        }
+
+        // Predicate was false, the item is left but should be right!
+        // Find an item on the right which also needs swaping and swap them
+        do
+        {
+            --last;
+            if (first == last)
+            {
+                return first;
+            }
+        } while (!pred(*last));
+
+        std::swap(*first, *last);
+        first++;
+    }
+}
 }
