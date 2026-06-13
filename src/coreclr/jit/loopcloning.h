@@ -576,7 +576,7 @@ struct LC_Ident
 private:
     union
     {
-        unsigned constant;
+        ssize_t constant;
         struct
         {
             unsigned lclNum;
@@ -607,8 +607,9 @@ public:
     var_types lclType;
 
     // Constant added to the materialized value. Used by Var and ArrAccess
-    // to represent `lcl + k` and `arr.Length + k`.
-    int offset;
+    // to represent `lcl + k` and `arr.Length + k`. Width matches the value's
+    // type (int-sized for TYP_INT, long-sized for TYP_LONG).
+    ssize_t offset;
 
     LC_Ident()
         : type(Invalid)
@@ -663,14 +664,17 @@ public:
         switch (type)
         {
             case Const:
-                printf("%u", constant);
+                if (lclType == TYP_LONG)
+                    printf("%lldL", (long long)constant);
+                else
+                    printf("%u", (unsigned)constant);
                 break;
             case Var:
                 printf("V%02u", lclNum);
                 if (offset > 0)
-                    printf("+%d", offset);
+                    printf("+%lld", (long long)offset);
                 else if (offset < 0)
-                    printf("%d", offset);
+                    printf("%lld", (long long)offset);
                 break;
             case IndirOfLocal:
                 if (indirOffs != 0)
@@ -688,9 +692,9 @@ public:
             case ArrAccess:
                 arrAccess.Print();
                 if (offset > 0)
-                    printf("+%d", offset);
+                    printf("+%lld", (long long)offset);
                 else if (offset < 0)
-                    printf("%d", offset);
+                    printf("%lld", (long long)offset);
                 break;
             case SpanAccess:
                 spanAccess.Print();
@@ -714,7 +718,7 @@ public:
     // Convert this symbolic representation into a tree node.
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 
-    static LC_Ident CreateVar(unsigned lclNum, var_types lclType, int offset = 0)
+    static LC_Ident CreateVar(unsigned lclNum, var_types lclType, ssize_t offset = 0)
     {
         LC_Ident id(Var);
         id.lclNum  = lclNum;
@@ -735,11 +739,20 @@ public:
     static LC_Ident CreateConst(unsigned value)
     {
         LC_Ident id(Const);
-        id.constant = value;
+        id.constant = (ssize_t)value;
+        id.lclType  = TYP_INT;
         return id;
     }
 
-    static LC_Ident CreateArrAccess(const LC_Array& arrLen, int offset = 0)
+    static LC_Ident CreateLongConst(int64_t value)
+    {
+        LC_Ident id(Const);
+        id.constant = (ssize_t)value;
+        id.lclType  = TYP_LONG;
+        return id;
+    }
+
+    static LC_Ident CreateArrAccess(const LC_Array& arrLen, ssize_t offset = 0)
     {
         LC_Ident id(ArrAccess);
         id.arrAccess = arrLen;

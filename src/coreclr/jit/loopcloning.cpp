@@ -162,14 +162,20 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
     switch (type)
     {
         case Const:
-            assert(constant <= INT32_MAX);
-            return comp->gtNewIconNode(constant);
+            if (lclType == TYP_LONG)
+            {
+                return comp->gtNewLconNode((int64_t)constant);
+            }
+            assert((constant >= INT32_MIN) && (constant <= INT32_MAX));
+            return comp->gtNewIconNode((int32_t)constant);
         case Var:
         {
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                GenTree* offNode = (node->TypeGet() == TYP_LONG) ? comp->gtNewLconNode((int64_t)offset)
+                                                                 : comp->gtNewIconNode((int32_t)offset);
+                node             = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, offNode);
             }
             return node;
         }
@@ -178,7 +184,9 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = arrAccess.ToGenTree(comp, bb);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                GenTree* offNode = (node->TypeGet() == TYP_LONG) ? comp->gtNewLconNode((int64_t)offset)
+                                                                 : comp->gtNewIconNode((int32_t)offset);
+                node             = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, offNode);
             }
             return node;
         }
@@ -261,6 +269,19 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 {
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
+
+    // Widen the int side via cast when comparing against a long operand
+    // (e.g. arr.Length compared against a long IV).
+    const var_types op1Act = genActualType(op1Tree->TypeGet());
+    const var_types op2Act = genActualType(op2Tree->TypeGet());
+    if ((op1Act == TYP_INT) && (op2Act == TYP_LONG))
+    {
+        op1Tree = comp->gtNewCastNode(TYP_LONG, op1Tree, /* fromUnsigned */ true, TYP_LONG);
+    }
+    else if ((op2Act == TYP_INT) && (op1Act == TYP_LONG))
+    {
+        op2Tree = comp->gtNewCastNode(TYP_LONG, op2Tree, /* fromUnsigned */ true, TYP_LONG);
+    }
 
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
 
@@ -1203,6 +1224,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     NaturalLoopIterInfo* iterInfo = context->GetLoopIterInfo(loop->GetIndex());
+    const var_types      ivType   = genActualType(iterInfo->IterTree);
+    assert((ivType == TYP_INT) || (ivType == TYP_LONG));
+
     // Loop tests we can reason about for cloning: ordered relops (LT/LE/GT/GE) and
     // NE limits (treated as LT/GT-equivalent when stride is exactly +/-1; see
     // NaturalLoopIterInfo::IsIncreasingLoop/IsDecreasingLoop).
@@ -1277,9 +1301,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             else
             {
                 const unsigned limitLcl = iterInfo->VarLimit();
-                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
                 {
-                    JITDUMP("> Span stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    JITDUMP("> Span stride %d: limit var V%02u type does not match IV\n", stride, limitLcl);
                     return false;
                 }
 
@@ -1335,9 +1359,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             // address-exposed and has no extraneous defs inside the loop, so
             // reading it in the preheader gives the entry value).
             const unsigned initLcl = iterInfo->IterVar;
-            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            if (genActualType(lvaGetDesc(initLcl)->TypeGet()) != ivType)
             {
-                JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
+                JITDUMP("> NeedsZeroTripGuard: iter var V%02u type does not match IV\n", initLcl);
                 return false;
             }
             initIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
@@ -1357,9 +1381,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         else if (iterInfo->HasInvariantLocalLimit)
         {
             const unsigned limitLcl = iterInfo->VarLimit();
-            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
             {
-                JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                JITDUMP("> NeedsZeroTripGuard: limit var V%02u type does not match IV\n", limitLcl);
                 return false;
             }
             limitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
@@ -1415,9 +1439,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     {
         // iterVar >= 0
         const unsigned initLcl = iterInfo->IterVar;
-        if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+        if (genActualType(lvaGetDesc(initLcl)->TypeGet()) != ivType)
         {
-            JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
+            JITDUMP("> Init var V%02u type does not match IV\n", initLcl);
             return false;
         }
 
@@ -1455,9 +1479,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     else if (iterInfo->HasInvariantLocalLimit)
     {
         const unsigned limitLcl = iterInfo->VarLimit();
-        if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+        if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
         {
-            JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
+            JITDUMP("> Limit var V%02u type does not match IV\n", limitLcl);
             return false;
         }
 
@@ -1612,7 +1636,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         else
         {
             const unsigned initLcl = iterInfo->IterVar;
-            assert(genActualTypeIsInt(lvaGetDesc(initLcl)));
+            assert(genActualType(lvaGetDesc(initLcl)->TypeGet()) == ivType);
             neInitIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
         }
 
@@ -1626,7 +1650,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         else if (iterInfo->HasInvariantLocalLimit)
         {
             const unsigned limitLcl = iterInfo->VarLimit();
-            assert(genActualTypeIsInt(lvaGetDesc(limitLcl)));
+            assert(genActualType(lvaGetDesc(limitLcl)->TypeGet()) == ivType);
             neLimitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
         }
         else
@@ -2509,17 +2533,30 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
 
+    // A long-IV bounds check has the length wrapped in a non-overflowing
+    // `CAST long <- uint(ARR_LENGTH)` to match the index's type. Peel it so
+    // the form check below sees the underlying ARR_LENGTH.
+    GenTree* arrayLen = arrBndsChk->GetArrayLength();
+    if (arrayLen->OperIs(GT_CAST) && arrayLen->TypeIs(TYP_LONG))
+    {
+        GenTreeCast* cast = arrayLen->AsCast();
+        if ((cast->CastToType() == TYP_LONG) && (genActualType(cast->CastOp()) == TYP_INT) && !cast->gtOverflow())
+        {
+            arrayLen = cast->CastOp();
+        }
+    }
+
     // For span we may see the array length is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (arrayLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->GetArrayLength()->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrayLen->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned arrLcl = arrayLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
@@ -2530,7 +2567,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl  = arrLcl;
-        result->arrType = arrBndsChk->GetArrayLength()->gtGetOp1()->TypeGet();
+        result->arrType = arrayLen->gtGetOp1()->TypeGet();
     }
     result->indLcls.Push(indLcl);
     result->bndsChks.Push(tree);
@@ -3227,6 +3264,11 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
         if (loop->AnalyzeIteration(&iterInfo, /* allowMissingBaseCase */ true))
         {
             context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
+
+            if (genActualType(iterInfo.IterTree) == TYP_LONG)
+            {
+                Metrics.LoopsWithLongIV++;
+            }
         }
 
         if (optIsLoopClonable(loop, context) && optIdentifyLoopOptInfo(loop, context))
