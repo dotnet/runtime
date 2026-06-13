@@ -8350,7 +8350,16 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
             if (!isDiv)
             {
                 // divisor UMOD dividend = dividend SUB (div MUL divisor)
-                GenTree* divisor = m_compiler->gtNewIconNode(divisorValue, type);
+                // For TYP_INT, divisorValue was masked to UINT32_MAX above; if the
+                // original divisor has bit 31 set then divisorValue does not fit in
+                // int32_t. Sign-extend via int32_t so gtNewIconNode's FitsIn<int32_t>
+                // invariant holds and the constant round-trips correctly (analogous
+                // to the importercalls.cpp fix in #129136 for the Rotate{Left,Right}
+                // const-fold path).
+                ssize_t newDivisorValue = (type == TYP_INT)
+                    ? static_cast<ssize_t>(static_cast<int32_t>(divisorValue))
+                    : static_cast<ssize_t>(divisorValue);
+                GenTree* divisor = m_compiler->gtNewIconNode(newDivisorValue, type);
                 GenTree* mul     = m_compiler->gtNewOperNode(GT_MUL, type, mulhi, divisor);
                 dividend         = m_compiler->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
