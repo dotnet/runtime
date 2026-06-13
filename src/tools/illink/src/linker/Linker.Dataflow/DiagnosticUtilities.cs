@@ -10,10 +10,16 @@ namespace Mono.Linker.Dataflow
         internal static string GetParameterNameForErrorMessage(ParameterDefinition parameterDefinition) =>
             string.IsNullOrEmpty(parameterDefinition.Name) ? $"#{parameterDefinition.Index}" : parameterDefinition.Name;
 
-        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameter genericParameter) =>
-            genericParameter.DeclaringMethod != null ?
-                genericParameter.DeclaringMethod.GetDisplayName() :
-                genericParameter.DeclaringType.GetDisplayName();
+        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameter genericParameter)
+        {
+            if (genericParameter.DeclaringMethod is MethodReference declaringMethod)
+                return declaringMethod.Name;
+
+            if (genericParameter.DeclaringType is TypeReference declaringType)
+                return declaringType.Name;
+
+            return genericParameter.Name;
+        }
 
         internal static string GetMethodSignatureDisplayName(IMethodSignature methodSignature) =>
             (methodSignature is MethodReference method) ? method.GetDisplayName() : (methodSignature.ToString() ?? string.Empty);
