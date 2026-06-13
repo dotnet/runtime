@@ -5209,7 +5209,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         // multiple that avoids code-size regressions (measured via SPMI asmdiffs).
         //
         const int effectiveLimit = (commSucc != nullptr) ? mergeLimit : (4 * mergeLimit);
-        if (predInfo.size() > effectiveLimit)
+        if (predInfo.size() > static_cast<size_t>(effectiveLimit))
         {
             // Too many preds to consider
             return optimizedCount;
