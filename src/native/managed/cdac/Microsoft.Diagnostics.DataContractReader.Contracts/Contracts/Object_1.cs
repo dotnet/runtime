@@ -53,6 +53,19 @@ internal readonly struct Object_1 : IObject
         return new string(MemoryMarshal.Cast<byte, char>(span));
     }
 
+    public void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
+        if (mt != _stringMethodTable)
+            throw new ArgumentException("Address does not represent a string object", nameof(address));
+
+        Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
+        length = str.StringLength;
+        offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
+    }
+
     public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
     {
         TargetPointer mt = GetMethodTableAddress(address);
@@ -174,5 +187,25 @@ internal readonly struct Object_1 : IObject
             TargetObject: targetObject,
             TargetMethodPtr: targetMethodPtr,
             DelegateType: delegateType);
+    }
+
+    public ulong GetSize(TargetPointer address)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a free object");
+        Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+
+        ulong size = typeSystemContract.GetBaseSize(typeHandle);
+        uint componentSize = typeSystemContract.GetComponentSize(typeHandle);
+        if (componentSize > 0)
+        {
+            // Variable-size object (array or string): add the component data size.
+            // Both Array and String share the m_NumComponents/m_StringLength field layout.
+            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)arr.NumComponents * componentSize;
+        }
+        return size;
     }
 }
