@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // DacDbiImpl.h
-//
-
 //
 // Implement the interface between the DAC and DBI.
 //*****************************************************************************
@@ -161,6 +160,11 @@ private:
 
     // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
     SIZE_T GetArgCount(MethodDesc * pMD);
+
+    // True if pFrame's Next() chain reaches a FuncEvalFrame through only
+    // InlinedCallFrames (funceval trampoline scaffolding). Member of this
+    // class so it can call the private Frame::Next() via friendship.
+    static bool IsFuncEvalScaffoldingChain(Frame *pFrame);
 
     // Get locations and code offsets for local variables and arguments in a function
     void GetNativeVarData(MethodDesc *    pMethodDesc,

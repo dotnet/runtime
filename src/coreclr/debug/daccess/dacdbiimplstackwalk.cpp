@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// DacDbiImplStackWalk.cpp
-//
 
+// DacDbiImplStackWalk.cpp
 //
 // This file contains the implementation of the stackwalking-related functions on the DacDbiInterface.
 //
@@ -27,6 +25,30 @@
 
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
+// See declaration in dacdbiimpl.h.
+bool DacDbiInterfaceImpl::IsFuncEvalScaffoldingChain(Frame *pFrame)
+{
+    SUPPORTS_DAC;
+
+    for (int hops = 0; hops < 8; hops++)
+    {
+        if (pFrame == NULL || pFrame == FRAME_TOP)
+        {
+            return false;
+        }
+        FrameIdentifier id = pFrame->GetFrameIdentifier();
+        if (id == FrameIdentifier::FuncEvalFrame)
+        {
+            return true;
+        }
+        if (id != FrameIdentifier::InlinedCallFrame)
+        {
+            return false;
+        }
+        pFrame = pFrame->Next();
+    }
+    return false;
+}
 
 // Persistent data needed to do a stackwalk. This is allocated on the forDbi heap.
 // It can survive across multiple DD calls.
@@ -407,6 +429,17 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                         {
                             ftResult = kRuntimeEntryPointFrame;
                         }
+                        // RuntimeHelpers.InvokeFuncEval (managed funceval trampoline)
+                        else if (pMD == g_pInvokeFuncEvalMethodDesc)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
+                        }
+                        // Skip IL stubs (e.g. LibraryImport P/Invoke stubs) on the funceval chain;
+                        // they otherwise surface as "[IL Method without Metadata]".
+                        else if (pMD->IsILStub() && IsFuncEvalScaffoldingChain(pIter->m_crawl.GetFrame()))
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
+                        }
                         else
                         {
                             ftResult = kManagedStackFrame;
@@ -420,8 +453,25 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     // fall through
                     //
                 case StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION:
-                    ftResult = kExplicitFrame;
-                    fInitFrameData = TRUE;
+                    {
+                        // Skip funceval trampoline scaffolding.
+                        Frame *pCurFrame = pIter->m_crawl.GetFrame();
+                        bool isFuncEvalScaffolding = false;
+                        if (pCurFrame != NULL && pCurFrame != FRAME_TOP &&
+                            pCurFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame)
+                        {
+                            isFuncEvalScaffolding = IsFuncEvalScaffoldingChain(pCurFrame->Next());
+                        }
+                        if (isFuncEvalScaffolding)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
+                        }
+                        else
+                        {
+                            ftResult = kExplicitFrame;
+                            fInitFrameData = TRUE;
+                        }
+                    }
                     break;
 
                 case StackFrameIterator::SFITER_NO_FRAME_TRANSITION:
@@ -514,6 +564,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Th
             }
 #endif // FEATURE_INTERPRETER
 
+            // Skip funceval trampoline scaffolding.
+            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame &&
+                IsFuncEvalScaffoldingChain(pFrame))
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
+
             CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
             if (ift != STUBFRAME_NONE)
             {
@@ -576,6 +634,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                 continue;
             }
 #endif // FEATURE_INTERPRETER
+
+            // Skip funceval trampoline scaffolding.
+            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame &&
+                IsFuncEvalScaffoldingChain(pFrame))
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
 
             // check if the internal frame is interesting
             frameData.stubFrame.frameType = GetInternalFrameType(pFrame);

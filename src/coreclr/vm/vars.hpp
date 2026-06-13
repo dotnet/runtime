@@ -389,6 +389,7 @@ GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
 
 GPTR_DECL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
+GPTR_DECL(MethodDesc,       g_pInvokeFuncEvalMethodDesc);
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);

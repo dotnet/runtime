@@ -1178,7 +1178,7 @@ namespace System
         [DebuggerStepThrough]
         [DebuggerHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
-        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
+        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, void* rawThisByRef, ObjectHandleOnStack result);
 
         [DebuggerStepThrough]
         [DebuggerHidden]
@@ -1190,6 +1190,25 @@ namespace System
                 arguments,
                 ObjectHandleOnStack.Create(ref sig),
                 isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                rawThisByRef: null,
+                ObjectHandleOnStack.Create(ref result));
+            return result;
+        }
+
+        // Overload used by debugger func-eval when the receiver is a byref-like type
+        // (e.g. Span<T>). There is no `object` representation of `ref Span<T>`, so the
+        // caller passes a raw byref into a stable, GC-reported carrier instead.
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor, void* rawThisByRef)
+        {
+            object? result = null;
+            InvokeMethod(
+                ObjectHandleOnStack.Create(ref target),
+                arguments,
+                ObjectHandleOnStack.Create(ref sig),
+                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                rawThisByRef,
                 ObjectHandleOnStack.Create(ref result));
             return result;
         }

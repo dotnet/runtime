@@ -126,6 +126,7 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass,
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnvironmentCallEntryPointMethodDesc, ::g_pEnvironmentCallEntryPointMethodDesc)
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pInvokeFuncEvalMethodDesc, ::g_pInvokeFuncEvalMethodDesc)
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
