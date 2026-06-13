@@ -526,9 +526,8 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 1, "Instrument Tier
 
 // When set, JIT'd methods that are not optimization-disabled use a separate
 // per-LoaderAllocator code heap from non-optimized code (Tier0, MinOpts, etc.).
-// LCG and interpreter heaps are unaffected. Default 0: all JIT'd code shares
-// one heap per LoaderAllocator.
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_SeparateOptimizedCodeHeaps, W("SeparateOptimizedCodeHeaps"), 0, "When non-zero, use a separate code heap for optimized JIT'd code")
+// LCG and interpreter heaps are unaffected.
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_SeparateOptimizedCodeHeaps, W("SeparateOptimizedCodeHeaps"), 1, "When non-zero, use a separate code heap for optimized JIT'd code")
 
 // TieredPGO_InstrumentOnlyHotCode values:
 //
