@@ -292,10 +292,10 @@ namespace System
                         }
                         catch
                         {
-                            // If ToString() fails (for example, due to OOM), fall back to printing just the type name.
+                            // If ToString() fails (for example, due to OOM), fall back to a simpler message.
                             try
                             {
-                                Internal.Console.Error.Write(exception.GetType().FullName);
+                                Internal.Console.Error.Write(exception is OutOfMemoryException ? "Out of memory." : exception.GetType().FullName);
                                 Internal.Console.Error.WriteLine();
                             }
                             catch { }
