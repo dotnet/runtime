@@ -3256,12 +3256,17 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
-    // Optionally route optimized (Tier1+) code to its own per-LoaderAllocator
-    // heap. LCG (dynamic-domain) methods are excluded because they are not
-    // tiering-eligible: every LCG method within a single process uses the same
-    // JIT optimization level, so splitting their heap would create at most one
-    // pool of each kind anyway. Gated off by default (DOTNET_SeparateOptimizedCodeHeaps).
+    // Optionally route JIT-optimized code to its own per-LoaderAllocator
+    // heap, separate from code where the JIT can't optimize (Tier0,
+    // global MinOpts, /clr DisableOpts, MethodImplOptions.NoOptimization).
+    // The split is keyed off MethodDesc::IsJitOptimizationDisabled(), not the
+    // current compilation tier, so e.g. fully-optimized non-tiered methods
+    // land in the optimized pool too. LCG (dynamic-domain) is excluded
+    // because every LCG method within a single process uses the same
+    // optimization level, and interpreter requests are excluded because
+    // their heaps use a separate code path entirely.
     if (!requestInfo.IsDynamicDomain()
+        && !requestInfo.IsInterpreted()
         && !pMD->IsJitOptimizationDisabled()
         && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
     {
