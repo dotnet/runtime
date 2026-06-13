@@ -1186,16 +1186,23 @@ namespace System.Diagnostics
         {
             Close();
 
-            ProcessStartInfo startInfo = StartInfo;
+            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
+            CheckDisposed();
+
+            return StartCore(StartInfo, callback: null);
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private bool StartCore(ProcessStartInfo startInfo, Func<ProcessStartArguments, SafeProcessHandle>? callback)
+        {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
-
-            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
-            CheckDisposed();
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
@@ -1283,7 +1290,7 @@ namespace System.Diagnostics
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, callback))
                 {
                     return false;
                 }
@@ -1408,6 +1415,53 @@ namespace System.Diagnostics
             return process.Start() ?
                 process :
                 null;
+        }
+
+        /// <summary>
+        /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
+        /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
+        /// The callback receives a <see cref="ProcessStartArguments"/> instance with the prepared data and must return a
+        /// <see cref="SafeProcessHandle"/> representing the created process.
+        /// </summary>
+        /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
+        /// <param name="callback">
+        /// A function that receives the prepared <see cref="ProcessStartArguments"/> and creates the process using any system call of the user's choice.
+        /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
+        /// The memory referenced by pointer properties in <see cref="ProcessStartArguments"/> is only valid for the duration of the callback.
+        /// </param>
+        /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The <see cref="SafeProcessHandle"/> returned by the callback is invalid.</exception>
+        /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        [CLSCompliant(false)]
+        public static Process Start(ProcessStartInfo startInfo, Func<ProcessStartArguments, SafeProcessHandle> callback)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            if (startInfo.UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.Format(SR.UseShellExecuteNotSupportedForScenario, nameof(Start)));
+            }
+
+            Process process = new();
+            process._startInfo = startInfo;
+
+            try
+            {
+                process.StartCore(startInfo, callback);
+            }
+            catch
+            {
+                process.Dispose();
+
+                throw;
+            }
+
+            return process;
         }
 
         /// <devdoc>

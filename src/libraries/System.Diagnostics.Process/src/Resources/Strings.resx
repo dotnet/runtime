@@ -375,4 +375,7 @@
   <data name="NotSupportedForNonChildProcess" xml:space="preserve">
     <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
   </data>
+  <data name="Argument_InvalidHandle" xml:space="preserve">
+    <value>The callback must return a valid SafeProcessHandle for the newly created process.</value>
+  </data>
 </root>

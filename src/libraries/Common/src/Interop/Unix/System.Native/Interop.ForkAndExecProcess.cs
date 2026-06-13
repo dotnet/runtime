@@ -111,7 +111,7 @@ internal static partial class Interop
         /// Allocates a single native memory block containing both a null-terminated pointer array
         /// and the UTF-8 encoded string data for the given array of strings.
         /// </summary>
-        private static unsafe void AllocArgvArray(string[] arr, ref byte** arrPtr)
+        internal static unsafe void AllocArgvArray(string[] arr, ref byte** arrPtr)
         {
             int count = arr.Length;
 
@@ -150,7 +150,7 @@ internal static partial class Interop
         /// Allocates a single native memory block containing both a null-terminated pointer array
         /// and the UTF-8 encoded "key=value\0" data for all non-null entries in the environment dictionary.
         /// </summary>
-        private static unsafe void AllocEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
+        internal static unsafe void AllocEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
         {
             // First pass: count entries with non-null values and compute total buffer size.
             int count = 0;
