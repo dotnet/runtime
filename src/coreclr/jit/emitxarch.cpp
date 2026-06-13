@@ -120,6 +120,7 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         case INS_vpermt2w:
         case INS_vpermi2b:
         case INS_vpermt2b:
+        case INS_vdpbf16ps:
         {
             return true;
         }
