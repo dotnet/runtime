@@ -3592,15 +3592,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     // Should be called repeatedly until it returns S_FALSE.
-    public int WalkRefs(nuint handle, uint count, DacGcReference* refs, uint* pFetched)
+    public int WalkRefs(nuint handle, uint count, [In, MarshalUsing(CountElementName = "count"), Out] DacGcReference[] refs, uint* pFetched)
     {
         RefWalk walk;
         try
         {
             if (pFetched is null)
                 throw new NullReferenceException(nameof(pFetched));
-            if (refs is null && count > 0)
-                throw new NullReferenceException(nameof(refs));
             if (handle == 0)
                 throw new ArgumentException("Handle is invalid.", nameof(handle));
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
@@ -3636,7 +3634,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
         {
             // Parity check covers the handle prefix only.
-            DacGcReference* legacyRefs = new DacGcReference[(int)count];
+            DacGcReference[] legacyRefs = new DacGcReference[(int)count];
             uint legacyFetched = 0;
             int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
             Debug.ValidateHResult(hr, hrLocal);
@@ -3661,7 +3659,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
         }
 
-        static uint CountHandlePrefix(DacGcReference* buffer, uint length)
+        static uint CountHandlePrefix(DacGcReference[] buffer, uint length)
         {
             for (uint j = 0; j < length; j++)
             {

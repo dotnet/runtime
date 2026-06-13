@@ -698,7 +698,7 @@ public unsafe partial interface IDacDbiInterface
     int DeleteRefWalk(nuint handle);
 
     [PreserveSig]
-    int WalkRefs(nuint handle, uint count, DacGcReference* refs, uint* pFetched);
+    int WalkRefs(nuint handle, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacGcReference[] refs, uint* pFetched);
 
     [PreserveSig]
     int GetTypeID(ulong obj, COR_TYPEID* pType);
