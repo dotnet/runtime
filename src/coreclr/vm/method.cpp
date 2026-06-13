@@ -2502,6 +2502,15 @@ BOOL MethodDesc::ShouldCallPrestub()
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     methodEntryPoint = GetStableEntryPoint();
+    // When the .override directive remaps this method's vtable slot, the entry point
+    // may be a different method's PortableEntryPoint (the overriding method). In that case, check this
+    // method's own PortableEntryPoint instead.
+    if (IsVtableSlot())
+    {
+        PCODE ownEntryPoint = GetPortableEntryPointIfExists();
+        if (ownEntryPoint != (PCODE)NULL && ownEntryPoint != methodEntryPoint)
+            methodEntryPoint = ownEntryPoint;
+    }
     return methodEntryPoint == (PCODE)NULL
         || (!PortableEntryPoint::HasInterpreterData(methodEntryPoint)
             && !PortableEntryPoint::HasNativeEntryPoint(methodEntryPoint));
