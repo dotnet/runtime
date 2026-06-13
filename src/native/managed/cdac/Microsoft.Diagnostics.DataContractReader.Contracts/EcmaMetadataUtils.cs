@@ -23,6 +23,7 @@ public static class EcmaMetadataUtils
         mdtFieldDef = 0x04 << 24,
         mdtMethodDef = 0x06 << 24,
         mdtSignature = 0x11 << 24,
+        mdtAssemblyRef = 0x23 << 24,
     }
 
     public const uint TokenTypeMask = 0xff000000;
