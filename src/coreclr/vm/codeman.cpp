@@ -2950,7 +2950,13 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     if (pInfo->IsOptimizedCode())
     {
+        // Optimized code is mutually exclusive with both interpreter and dynamic
+        // (LCG) domain because callers gate SetOptimizedCode() on neither being
+        // set. Tagging the RangeSection lets CanUseCodeHeap reject mismatched
+        // requests, keeping optimized and non-optimized JIT'd code in separate
+        // per-LoaderAllocator heaps.
         _ASSERTE(!pInfo->IsInterpreted());
+        _ASSERTE(!pInfo->IsDynamicDomain());
         flags |= RangeSection::RANGE_SECTION_OPTIMIZEDCODE;
     }
     else if (pInfo->IsInterpreted())
@@ -3061,12 +3067,6 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
-        // if (pInfo->IsOptimizedCode())
-        // {
-        //     pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap;
-        //     pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap = NULL;
-        // }
-        // else
         {
             pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap;
             pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap = NULL;
@@ -3153,11 +3153,6 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
-        // if (pInfo->IsOptimizedCode())
-        // {
-        //     pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap = pCodeHeap;
-        // }
-        // else
         {
             pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap = pCodeHeap;
         }
@@ -3256,7 +3251,11 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
-    if (!pMD->IsJitOptimizationDisabled())
+    // LCG (dynamic domain) methods are not tiering-eligible: every LCG method
+    // within a single process uses the same JIT optimization level. Splitting
+    // their heap by optimization level would create at most one pool of each
+    // kind, so we skip the classification and let all LCG code share one heap.
+    if (!requestInfo.IsDynamicDomain() && !pMD->IsJitOptimizationDisabled())
     {
         requestInfo.SetOptimizedCode();
     }
@@ -3413,8 +3412,11 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
 
     if ((pInfo->GetLoAddr() == 0) && (pInfo->GetHiAddr() == 0))
     {
-        // Don't mix optimized and non-optimized code in the same heap.
-        // The flag is recorded on the heap's RangeSection at creation time.
+        // Don't mix optimized and non-optimized code in the same heap. LCG and
+        // interpreter requests never set IsOptimizedCode(), so dynamic-domain
+        // and interpreter heaps don't carry the flag either, and this check
+        // is a no-op for them. TODO: cache the optimized bit on HeapList
+        // itself to avoid the RangeSection lookup on every cache check.
         const RangeSection* pRS = ExecutionManager::FindCodeRange(pCodeHeap->startAddress, ExecutionManager::GetScanFlags());
         _ASSERTE(pRS != NULL);
         const bool isOptimizedHeap = (pRS->_flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
