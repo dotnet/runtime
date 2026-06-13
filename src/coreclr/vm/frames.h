@@ -2427,6 +2427,20 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+#ifndef TARGET_WASM
+    void SetInterpExecMethodSP(TADDR sp)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_SP = sp;
+    }
+
+    TADDR GetInterpExecMethodSP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_SP;
+    }
+#endif // TARGET_WASM
+
     void SetIsFaulting(bool isFaulting)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2471,6 +2485,9 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
+#ifndef TARGET_WASM
+    TADDR m_SP;
+#endif // TARGET_WASM
     PTR_Object m_continuation;
 
     friend struct cdac_data<InterpreterFrame>;

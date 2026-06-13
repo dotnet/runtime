@@ -249,6 +249,24 @@ namespace System.Diagnostics.Tests
             Assert.Null(baggage);
         }
 
+        [Theory]
+        [InlineData("valid1=value1,bad,valid2=value2")]
+        [InlineData("valid1=value1,=bad,valid2=value2")]
+        [InlineData("valid1=value1,bad=,valid2=value2")]
+        [InlineData("bad,valid1=value1,valid2=value2")]
+        public void TestMalformedBaggageEntriesAreSkipped(string input)
+        {
+            IEnumerable<KeyValuePair<string, string?>>? baggage = DecodeBaggage(input);
+
+            Assert.Equal(
+                new[]
+                {
+                    new KeyValuePair<string, string?>("valid2", "value2"),
+                    new KeyValuePair<string, string?>("valid1", "value1"),
+                },
+                baggage);
+        }
+
         [Fact]
         public void TestBaggagePropagationLimits()
         {

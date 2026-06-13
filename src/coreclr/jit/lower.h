@@ -96,6 +96,9 @@ private:
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
+#if defined(TARGET_ARM64)
+    bool TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next);
+#endif
 #ifdef TARGET_RISCV64
     bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
     bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
@@ -217,12 +220,11 @@ private:
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
-    void         LowerArg(GenTreeCall* call, CallArg* callArg);
-    void         SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg);
-    ClassLayout* SliceLayout(ClassLayout* layout, unsigned offset, unsigned size);
-    void         InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
-    void         InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
-    void         LegalizeArgPlacement(GenTreeCall* call);
+    void LowerArg(GenTreeCall* call, CallArg* callArg);
+    void SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg);
+    void InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
+    void InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
