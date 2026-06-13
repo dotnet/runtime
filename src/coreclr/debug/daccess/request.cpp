@@ -1613,11 +1613,8 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
                 stringData[0] = W('\0');
             }
         }
-        else
-        {
-            hr = E_INVALIDARG;
-        }
 
+        // A size-only query (no output buffer) reports the needed size via pNeeded and succeeds.
         if (pNeeded)
             *pNeeded = needed;
     }
