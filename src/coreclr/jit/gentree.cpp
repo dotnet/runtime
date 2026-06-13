@@ -21701,8 +21701,11 @@ bool GenTree::SupportsSettingZeroFlag()
         return gtGetOp2()->IsNeverZero();
     }
     // Note: GT_ROL / GT_ROR are intentionally NOT in this list. On xarch,
-    // ROL/ROR/RCL/RCR only update CF (and OF in the 1-bit form); SF/ZF/AF/PF
-    // are not affected for any count.
+    // ROL/ROR leave SF/ZF/AF/PF unchanged regardless of the rotate count, so
+    // they cannot be used to skip a TEST/CMP before a branch on the rotate
+    // result. (Per the Intel SDM, CF -- and OF in the 1-bit form -- are only
+    // updated when the count is non-zero, but those aren't useful for a
+    // zero-flag check either.)
 
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
