@@ -5184,7 +5184,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 return GenTree::Compare(candidateA.m_stmt->GetRootNode(), candidateB.m_stmt->GetRootNode());
             });
 
-            int matchesCount = static_cast<int>(std::distance(matchesBegin, matchesEnd));
+            int matchesCount = static_cast<int>(matchesEnd - matchesBegin);
             if (matchesCount < 2)
             {
                 continue;
