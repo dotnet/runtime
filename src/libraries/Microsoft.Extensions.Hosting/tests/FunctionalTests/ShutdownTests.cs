@@ -140,10 +140,15 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void WaitForExitOrKill(Process process)
         {
-            process.WaitForExit((int)s_shutdownExitTimeout.TotalMilliseconds);
-            if (!process.HasExited)
+            bool exited = process.WaitForExit((int)s_shutdownExitTimeout.TotalMilliseconds);
+            if (!exited)
             {
-                process.Kill();
+                try
+                {
+                    process.Kill();
+                }
+                catch (InvalidOperationException) { } // Process may have exited between WaitForExit and Kill
+
                 // Wait for the process to actually exit after Kill() before accessing ExitCode
                 if (!process.WaitForExit(5000))
                 {
