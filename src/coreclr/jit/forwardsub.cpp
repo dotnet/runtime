@@ -106,9 +106,11 @@
 //    tree     - candidate tree
 //
 // Returns:
-//    true if `tree` is a FIELD_ADDR chain (instance fields only) rooted
-//    at a LCL_VAR or LCL_ADDR, with no side effects other than GTF_EXCEPT
-//    (the standard FIELD_ADDR null-check).
+//    true if `tree` is a (possibly empty) chain of instance FIELD_ADDR
+//    nodes wrapping a LCL_VAR or LCL_ADDR of type BYREF/I_IMPL, with no
+//    side effects other than GTF_EXCEPT (the standard FIELD_ADDR null
+//    check). The zero-hop case (a bare LCL_VAR/LCL_ADDR address-of-local)
+//    is included.
 //
 // Remarks:
 //    Such trees morph into a single `ADD(base, constOffset)` per copy plus
@@ -1097,7 +1099,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fgForwardSubMultiUse(nextStmt, lclNum, fwdSubNode))
         {
-            JITDUMP(" multi-use sub found too few or too many uses\n");
+            JITDUMP(" multi-use sub failed (count out of range, indirect-call context, or clone failed)\n");
             return false;
         }
 
