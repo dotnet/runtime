@@ -197,7 +197,7 @@ namespace System.IO
         }
 
         public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(ValidateArgsAndOpenPath(path, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+            : this(ValidateArgsAndOpenPath(path, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize == -1 ? DefaultBufferSize : bufferSize, leaveOpen: false)
         {
         }
 

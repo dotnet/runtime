@@ -145,7 +145,7 @@ namespace System.IO
         }
 
         public StreamWriter(string path, bool append, Encoding? encoding, int bufferSize) :
-            this(ValidateArgsAndOpenPath(path, append, bufferSize), encoding, bufferSize, leaveOpen: false)
+            this(ValidateArgsAndOpenPath(path, append, bufferSize), encoding, bufferSize == -1 ? DefaultBufferSize : bufferSize, leaveOpen: false)
         {
         }
 
