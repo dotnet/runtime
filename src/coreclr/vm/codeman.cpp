@@ -2840,6 +2840,7 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     , m_isCollectible{ false }
     , m_isInterpreted{ false }
     , m_throwOnOutOfMemoryWithinRange{ true }
+    , m_isOptimizedCode{ false }
 {
     CONTRACTL
     {
@@ -2947,7 +2948,12 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     DWORD flags = RangeSection::RANGE_SECTION_CODEHEAP;
 
-    if (pInfo->IsInterpreted())
+    if (pInfo->IsOptimizedCode())
+    {
+        _ASSERTE(!pInfo->IsInterpreted());
+        flags |= RangeSection::RANGE_SECTION_OPTIMIZEDCODE;
+    }
+    else if (pInfo->IsInterpreted())
     {
         flags |= RangeSection::RANGE_SECTION_INTERPRETER;
     }
@@ -3055,6 +3061,12 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        // if (pInfo->IsOptimizedCode())
+        // {
+        //     pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap;
+        //     pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap = NULL;
+        // }
+        // else
         {
             pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap;
             pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap = NULL;
@@ -3070,6 +3082,12 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap;
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = NULL;
+        }
+        else
         {
             pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedCodeHeap;
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = NULL;
@@ -3135,6 +3153,11 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        // if (pInfo->IsOptimizedCode())
+        // {
+        //     pInfo->m_pAllocator->m_pLastUsedDynamicOptimizedCodeHeap = pCodeHeap;
+        // }
+        // else
         {
             pInfo->GetAllocator()->m_pLastUsedDynamicCodeHeap = pCodeHeap;
         }
@@ -3148,6 +3171,11 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = pCodeHeap;
+        }
+        else
         {
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = pCodeHeap;
         }
@@ -3226,6 +3254,11 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
+    }
+
+    if (!pMD->IsJitOptimizationDisabled())
+    {
+        requestInfo.SetOptimizedCode();
     }
 
     // Scope the lock
@@ -3380,6 +3413,16 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
 
     if ((pInfo->GetLoAddr() == 0) && (pInfo->GetHiAddr() == 0))
     {
+        // Don't mix optimized and non-optimized code in the same heap.
+        // The flag is recorded on the heap's RangeSection at creation time.
+        const RangeSection* pRS = ExecutionManager::FindCodeRange(pCodeHeap->startAddress, ExecutionManager::GetScanFlags());
+        _ASSERTE(pRS != NULL);
+        const bool isOptimizedHeap = (pRS->_flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
+        if (isOptimizedHeap != pInfo->IsOptimizedCode())
+        {
+            return false;
+        }
+
         // We have no constraint so this non empty heap will be able to satisfy our request
         if (pInfo->IsDynamicDomain())
         {

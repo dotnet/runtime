@@ -404,6 +404,8 @@ public:
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;
+    void * m_pLastUsedOptimizedCodeHeap;
+    void * m_pLastUsedDynamicOptimizedCodeHeap;
 #ifdef FEATURE_INTERPRETER
     void * m_pLastUsedInterpreterCodeHeap;
     void * m_pLastUsedInterpreterDynamicCodeHeap;
