@@ -25498,7 +25498,7 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types type,
         if (simdBaseType == TYP_FLOAT)
         {
             simdBaseType = TYP_UINT;
-            cnsNode      = gtNewIconNode(0xFF800000);
+            cnsNode      = gtNewIconNode(static_cast<int32_t>(0xFF800000));
         }
         else
         {

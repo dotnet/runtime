@@ -812,7 +812,7 @@ void Lowering::LowerCast(GenTree* tree)
                         convertIntrinsic = TargetArchitecture::Is64Bit
                                                ? NI_X86Base_X64_ConvertToInt64WithTruncation
                                                : NI_X86Base_ConvertToVector128Int32WithTruncation;
-                        maxIntegralValue = m_compiler->gtNewIconNode(static_cast<ssize_t>(UINT32_MAX));
+                        maxIntegralValue = m_compiler->gtNewIconNode(static_cast<int32_t>(UINT32_MAX));
                         minFloatOverflow = 4294967296.0; // 2^32;
                         break;
                     }
