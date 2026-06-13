@@ -3826,7 +3826,7 @@ emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, Mo
 		/* b == -1 && a == 0x80000000 */
 		if (is_signed) {
 			LLVMValueRef c = (LLVMTypeOf (lhs) == LLVMInt32Type ()) ? LLVMConstInt (LLVMTypeOf (lhs), 0x80000000, FALSE) : LLVMConstInt (LLVMTypeOf (lhs), 0x8000000000000000LL, FALSE);
-			LLVMValueRef cond1 = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), -1, FALSE), "");
+			LLVMValueRef cond1 = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstAllOnes (LLVMTypeOf (rhs)), "");
 			LLVMValueRef cond2 = LLVMBuildICmp (builder, LLVMIntEQ, lhs, c, "");
 
 			cmp = LLVMBuildICmp (builder, LLVMIntEQ, LLVMBuildAnd (builder, cond1, cond2, ""), LLVMConstInt (LLVMInt1Type (), 1, FALSE), "");
@@ -4369,7 +4369,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		index [0] = const_int32 (0);
 		index [1] = const_int32 (1);
 		addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
-		LLVMBuildStore (ctx->builder, LLVMConstInt (types [1], -1, FALSE), addr);
+		LLVMBuildStore (ctx->builder, LLVMConstAllOnes (types [1]), addr);
 
 		/*
 		 * Set il_state->data [i] to either the address of the arg/local, or NULL.
