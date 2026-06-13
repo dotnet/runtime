@@ -628,8 +628,9 @@
 
       <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLinkStepArgs Include="-lexports.js" />
-      <!-- Ensure the __stack_pointer global is exported -->
+      <!-- Ensure the CoreCLR WASM globals/tags are exported -->
       <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
+      <_EmccLinkStepArgs Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
