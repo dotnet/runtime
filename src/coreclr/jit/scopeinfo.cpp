@@ -1736,7 +1736,24 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            varLocation.storeVariableInRegisters(reg1, reg2);
+            if (genIsValidFloatReg(reg1))
+            {
+                // FP parameter in XMM/V register — encode as VLT_REG_FP with
+                // 0-based FP register index.
+                varLocation.vlType       = VLT_REG_FP;
+                varLocation.vlReg.vlrReg = (regNumber)(reg1 - REG_FP_FIRST);
+            }
+            else
+            {
+                // Integer register parameter. On SysV x64, the second segment
+                // may be in an XMM register for mixed struct passing — drop it
+                // since VLT_REG_REG cannot encode FP registers.
+                if (reg2 != REG_NA && !genIsValidIntReg(reg2))
+                {
+                    reg2 = REG_NA;
+                }
+                varLocation.storeVariableInRegisters(reg1, reg2);
+            }
         }
         else
         {
