@@ -543,6 +543,50 @@ public unsafe class DacDbiImplTests
         Assert.Equal(SymbolFormat.None, symbolFormat);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeDef_PassesThrough(MockTarget.Architecture arch)
+    {
+        // A token that is already an mdtTypeDef resolves to (referencing module's assembly, same token).
+        ulong assemblyAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+        });
+
+        uint typeDefToken = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef | 0x000002;
+        DacDbiTypeRefData input = new() { vmAssembly = assemblyAddr, typeToken = typeDefToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(assemblyAddr, output.vmAssembly);
+        Assert.Equal(typeDefToken, output.typeToken);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
+    {
+        // An mdtTypeRef that is not present in the module's TypeRef->MethodTable cache cannot be
+        // resolved by the cDAC fast paths. With no legacy DAC available, the type is reported as not
+        // loaded (CORDBG_E_CLASS_NOT_LOADED), matching the native behavior.
+        ulong assemblyAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+        });
+
+        uint typeRefToken = (uint)EcmaMetadataUtils.TokenType.mdtTypeRef | 0x000003;
+        DacDbiTypeRefData input = new() { vmAssembly = assemblyAddr, typeToken = typeRefToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED, hr);
+    }
+
     public static IEnumerable<object[]> TargetArchitectures()
     {
         string[] architectures = ["x64", "arm64", "arm", "x86", "loongarch64", "riscv64"];

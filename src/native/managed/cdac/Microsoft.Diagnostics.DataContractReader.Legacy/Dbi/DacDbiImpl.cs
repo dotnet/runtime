@@ -218,7 +218,108 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveTypeReference(DacDbiTypeRefData* pTypeRefInfo, DacDbiTypeRefData* pTargetRefInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
+    {
+        // Mirrors the native DacDbiInterfaceImpl::ResolveTypeReference, which calls
+        // ClassLoader::ResolveTokenToTypeDefThrowing with Loader::SafeLookup (no load, no locks,
+        // no allocations). The input vmAssembly is the referencing Assembly*; the output vmAssembly
+        // is the resolved target module's Assembly* and typeToken is always an mdtTypeDef.
+        int hr = HResults.S_OK;
+        bool resolved = false;
+        try
+        {
+            resolved = TryResolveTypeReference(
+                pTypeRefInfo->vmAssembly,
+                pTypeRefInfo->typeToken,
+                out TargetPointer targetAssembly,
+                out uint targetTypeDef);
+            if (resolved)
+            {
+                pTargetRefInfo->vmAssembly = targetAssembly.Value;
+                pTargetRefInfo->typeToken = targetTypeDef;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (!resolved && hr == HResults.S_OK)
+        {
+            // The cDAC fast paths could not resolve the reference (for example it requires a
+            // by-name lookup in the module's available-types hash, which the cDAC does not yet
+            // implement). Defer to the legacy DAC when present; otherwise report the type as
+            // not loaded, matching the native CORDBG_E_CLASS_NOT_LOADED behavior.
+            if (LegacyFallbackHelper.CanFallback() && _legacy is not null)
+                return _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo);
+
+            hr = CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED;
+        }
+
+#if DEBUG
+        if (resolved && _legacy is not null)
+        {
+            DacDbiTypeRefData targetLocal = default;
+            int hrLocal = _legacy.ResolveTypeReference(pTypeRefInfo, &targetLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(pTargetRefInfo->vmAssembly == targetLocal.vmAssembly, $"cDAC: {pTargetRefInfo->vmAssembly:x}, DAC: {targetLocal.vmAssembly:x}");
+                Debug.Assert(pTargetRefInfo->typeToken == targetLocal.typeToken, $"cDAC: {pTargetRefInfo->typeToken:x}, DAC: {targetLocal.typeToken:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    /// <summary>
+    /// Attempts to resolve a type reference (or type definition) token to its defining
+    /// (module Assembly*, mdTypeDef) pair using the cDAC contracts only (no load).
+    /// Mirrors ClassLoader::ResolveTokenToTypeDefThrowing with pfUsesTypeForwarder == NULL.
+    /// </summary>
+    /// <returns><c>true</c> if the reference was resolved; otherwise <c>false</c>.</returns>
+    private bool TryResolveTypeReference(ulong referencingAssembly, uint typeToken, out TargetPointer targetAssembly, out uint targetTypeDef)
+    {
+        targetAssembly = TargetPointer.Null;
+        targetTypeDef = 0;
+
+        Contracts.ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle referencingModule = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(referencingAssembly));
+
+        uint tokenType = typeToken & EcmaMetadataUtils.TokenTypeMask;
+
+        // It's a TypeDef already: passthrough (ClassLoader::ResolveTokenToTypeDefThrowing).
+        if (tokenType == (uint)EcmaMetadataUtils.TokenType.mdtTypeDef)
+        {
+            targetAssembly = loader.GetAssembly(referencingModule);
+            targetTypeDef = typeToken;
+            return true;
+        }
+
+        if (tokenType != (uint)EcmaMetadataUtils.TokenType.mdtTypeRef)
+            return false;
+
+        // Tier 1: the TypeRef is already cached in the referencing module's TypeRef->MethodTable
+        // map (the equivalent of Module::LookupTypeRef). On a hit, translate the MethodTable back to
+        // its defining module and TypeDef token and return immediately, matching the native
+        // pfUsesTypeForwarder == NULL early-return.
+        Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
+        TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
+        if (methodTable != TargetPointer.Null)
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+            TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
+            Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
+            targetAssembly = loader.GetAssembly(typeDefModule);
+            targetTypeDef = rts.GetTypeDefToken(typeHandle);
+            return true;
+        }
+
+        // Tier 2/3 (resolution-scope module lookup followed by a by-name search of the module's
+        // available-types hash, including exported-type/type-forwarder walking) are not yet
+        // implemented in the cDAC. Signal the caller to fall back to the legacy DAC.
+        return false;
+    }
 
     public int GetModulePath(ulong vmModule, nint pStrFilename, Interop.BOOL* pResult)
     {
