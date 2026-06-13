@@ -68,6 +68,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129339")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void NullArguments()
         {
@@ -81,6 +82,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentNullException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, null));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129339")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void EmptyNameThroughNullCharacter()
         {
@@ -93,6 +95,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129339")]
         [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
         public static void EmptyUriThroughNullCharacter()
         {
