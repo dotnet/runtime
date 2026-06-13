@@ -70,6 +70,8 @@ public readonly struct MethodDescHandle
     public TargetPointer Address { get; }
 }
 
+public readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 public enum ArrayFunctionType
 {
     Get = 0,
@@ -201,6 +203,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 

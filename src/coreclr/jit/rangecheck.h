@@ -821,13 +821,12 @@ public:
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
-    static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
+    static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
 
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);
 
 private:
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
 
@@ -915,8 +914,6 @@ private:
     bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
 
     // Does the current "expr", which is a use, involve a definition that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
-
     bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Widen the range by first checking if the induction variable is monotonically increasing.
@@ -939,11 +936,6 @@ private:
 
     // When we have this bound and a constant, we prefer to use this bound (if set)
     ValueNum m_preferredBound;
-
-    // Get the cached overflow values.
-    OverflowMap* GetOverflowMap();
-    void         ClearOverflowMap();
-    OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();
