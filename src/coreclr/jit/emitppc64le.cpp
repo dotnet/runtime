@@ -962,7 +962,6 @@ void emitter::emitIns_R_R_I(instruction ins,
                             ssize_t     imm,
                             insOpts     opt /* = INS_OPTS_NONE */)
 {   
-	
     // Debug: Print when we see negative offsets with r31
     if (reg2 == REG_R31 && imm < 0 && (ins == INS_stw || ins == INS_lwz))
     {
@@ -971,11 +970,10 @@ void emitter::emitIns_R_R_I(instruction ins,
     }
     
     // Validate registers based on instruction type
-    // Floating-point load/store instructions use FP registers for reg1
     if (ins == INS_lfs || ins == INS_lfd || ins == INS_stfs || ins == INS_stfd)
     {
-        assert(isFloatReg(reg1));  // FP register for data
-        assert(isGeneralRegister(reg2));  // GPR for address
+        assert(isFloatReg(reg1));
+        assert(isGeneralRegister(reg2));
     }
     else
     {
@@ -983,23 +981,100 @@ void emitter::emitIns_R_R_I(instruction ins,
         assert(isGeneralRegister(reg2));
     }
 
-    // Validate immediate range based on instruction type
-    // D-form instructions use 16-bit signed immediate
-    // DS-form instructions use 14-bit aligned immediate
-    if (ins == INS_ld || ins == INS_lwa)
+    // Check if immediate fits in instruction encoding
+    bool fitsInImmediate = false;
+    
+    if (ins == INS_ld || ins == INS_lwa || ins == INS_std)
     {
-        // DS-form: must be 4-byte aligned
-        assert((imm & 0x3) == 0);
-        assert(imm >= -32768 && imm <= 32764);
+        // DS-form: 14-bit aligned (must be multiple of 4)
+        fitsInImmediate = ((imm & 0x3) == 0) && (imm >= -32768) && (imm <= 32764);
+    }
+    else if (ins == INS_lwz || ins == INS_lbz || ins == INS_lhz || 
+             ins == INS_stw || ins == INS_stb || ins == INS_sth ||
+             ins == INS_lfs || ins == INS_lfd || ins == INS_stfs || ins == INS_stfd)
+    {
+        // D-form load/store: 16-bit signed
+        fitsInImmediate = (imm >= -32768) && (imm <= 32767);
     }
     else
     {
-        // D-form: 16-bit signed
-        assert(imm >= -32768 && imm <= 32767);
+        // Other instructions (addi, ori, etc.): 16-bit signed
+        fitsInImmediate = (imm >= -32768) && (imm <= 32767);
     }
 
-    // Create instruction descriptor with immediate value
-    // Use small descriptor for small constants, otherwise use emitNewInstrCns for large constants
+    // If immediate doesn't fit, use a temporary register
+    // IMPORTANT: Only do this for load/store instructions!
+    bool isLoadStore = (ins == INS_ld || ins == INS_lwa || ins == INS_std ||
+                        ins == INS_lwz || ins == INS_lbz || ins == INS_lhz ||
+                        ins == INS_stw || ins == INS_stb || ins == INS_sth ||
+                        ins == INS_lfs || ins == INS_lfd || ins == INS_stfs || ins == INS_stfd);
+    
+    if (!fitsInImmediate && isLoadStore)
+    {
+        // Use R0 as temporary register for address calculation
+        regNumber tempReg = REG_R0;
+        
+        // Manually emit: lis r0, imm_high
+        instrDesc* id1 = emitNewInstrSmall(EA_PTRSIZE);
+        id1->idIns(INS_lis);
+        id1->idReg1(tempReg);
+        id1->idSmallCns((imm >> 16) & 0xFFFF);
+        id1->idInsFmt(IF_RI_1B);  // lis format
+        dispIns(id1);
+        appendToCurIG(id1);
+        
+        // Manually emit: ori r0, r0, imm_low (if needed)
+        if ((imm & 0xFFFF) != 0)
+        {
+            instrDesc* id2 = emitNewInstrSmall(EA_PTRSIZE);
+            id2->idIns(INS_ori);
+            id2->idReg1(tempReg);
+            id2->idReg2(tempReg);
+            id2->idSmallCns(imm & 0xFFFF);
+            id2->idInsFmt(IF_RI_1D);  // ori format
+            dispIns(id2);
+            appendToCurIG(id2);
+        }
+        
+        // Manually emit: add r0, base_reg, r0
+        instrDesc* id3 = emitNewInstr(EA_PTRSIZE);
+        id3->idIns(INS_add);
+        id3->idReg1(tempReg);
+        id3->idReg2(reg2);
+        id3->idReg3(tempReg);
+        id3->idInsFmt(IF_RR_2A);  // add format
+        dispIns(id3);
+        appendToCurIG(id3);
+        
+        // Manually emit: load/store with 0 offset from temp register
+        instrDesc* id4 = emitNewInstrSmall(attr);
+        id4->idIns(ins);
+        id4->idReg1(reg1);
+        id4->idReg2(tempReg);
+        id4->idSmallCns(0);
+        
+        // Set format based on instruction
+        insFormat fmt4 = IF_NONE;
+        switch (ins)
+        {
+            case INS_ld:   fmt4 = IF_LS_2C; break;
+            case INS_lwa:  fmt4 = IF_LS_2E; break;
+            case INS_std:  fmt4 = IF_LS_2D; break;
+            case INS_lwz:  fmt4 = IF_LS_2A; break;
+            case INS_stw:  fmt4 = IF_LS_2B; break;
+            case INS_lfs:  fmt4 = IF_LS_2G; break;
+            case INS_lfd:  fmt4 = IF_LS_2H; break;
+            case INS_stfs: fmt4 = IF_LS_2I; break;
+            case INS_stfd: fmt4 = IF_LS_2J; break;
+            default:       fmt4 = IF_LS_2A; break;  // Default
+        }
+        id4->idInsFmt(fmt4);
+        
+        dispIns(id4);
+        appendToCurIG(id4);
+        return;
+    }
+
     instrDesc* id;
     if (instrDesc::fitsInSmallCns(imm))
     {
@@ -1014,55 +1089,31 @@ void emitter::emitIns_R_R_I(instruction ins,
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    
     // Set instruction format based on instruction type
     insFormat fmt = IF_NONE;
     switch (ins)
     {
-        case INS_lwz:
-            fmt = IF_LS_2A;  // lwz rD, disp(rA)
-            break;
-        case INS_stw:
-            fmt = IF_LS_2B;  // stw rS, disp(rA)
-            break;
-        case INS_ld:
-            fmt = IF_LS_2C;  // ld rD, disp(rA)
-            break;
-        case INS_std:
-            fmt = IF_LS_2D;  // std rS, disp(rA)
-            break;
-        case INS_lwa:
-            fmt = IF_LS_2E;  // lwa rD, disp(rA)
-            break;
-        case INS_stdu:
-            fmt = IF_LS_2F;  // stdu rS, disp(rA)
-            break;
-        case INS_lfs:
-            fmt = IF_LS_2G;  // lfs fD, disp(rA)
-            break;
-        case INS_lfd:
-            fmt = IF_LS_2H;  // lfd fD, disp(rA)
-            break;
-        case INS_stfs:
-            fmt = IF_LS_2I;  // stfs fS, disp(rA)
-            break;
-        case INS_stfd:
-            fmt = IF_LS_2J;  // stfd fS, disp(rA)
-            break;
-        case INS_addi:
-            fmt = IF_RI_1C;  // addi rD, rA, imm16
-            break;
-        case INS_ori:
-        case INS_oris:
-            fmt = IF_RI_1D;  // ori rD, rA, imm16
-            break;
-        default:
-            fmt = IF_RI_1C;  // Generic register-register-immediate
-            break;
+        case INS_ld:   fmt = IF_LS_2C; break;  // ld  rD, disp(rA)
+        case INS_lwa:  fmt = IF_LS_2E; break;  // lwa rD, disp(rA)
+        case INS_std:  fmt = IF_LS_2D; break;  // std rS, disp(rA)
+        case INS_lwz:  fmt = IF_LS_2A; break;  // lwz rD, disp(rA)
+        case INS_stw:  fmt = IF_LS_2B; break;  // stw rS, disp(rA)
+        case INS_lfs:  fmt = IF_LS_2G; break;  // lfs fD, disp(rA)
+        case INS_lfd:  fmt = IF_LS_2H; break;  // lfd fD, disp(rA)
+        case INS_stfs: fmt = IF_LS_2I; break;  // stfs fS, disp(rA)
+        case INS_stfd: fmt = IF_LS_2J; break;  // stfd fS, disp(rA)
+        case INS_addi: fmt = IF_RI_1C; break;  // addi rD, rA, imm16
+        case INS_ori:  fmt = IF_RI_1D; break;  // ori rD, rA, imm16
+        default:       fmt = IF_LS_2A; break;  // Default to lwz format
     }
+    
     id->idInsFmt(fmt);
+    
+    dispIns(id);
     appendToCurIG(id);
-
 }
+
 
 /*****************************************************************************
  *
