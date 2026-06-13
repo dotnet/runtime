@@ -8762,15 +8762,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
-
-        // If we devirtualized into a default interface method on a generic type, we should actually return an
-        // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-        if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-            return false;
-        }
     }
     else
     {
@@ -8832,53 +8823,67 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
     bool isGenericVirtual = false;
-
-    if (pApproxMT->IsInterface())
-    {
-        // As noted above, we can't yet handle generic interfaces
-        // with default methods.
-        _ASSERTE(!pDevirtMD->HasClassInstantiation());
-
-    }
-    else if (pBaseMT->IsInterface() && pObjMT->IsArray())
+    
+    if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
     }
-    else
+    else if (!pApproxMT->IsInterface())
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
+
+    MethodDesc* pInstantiatedMD = pDevirtMD;
 
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         MethodDesc* pPrimaryMD = pDevirtMD;
+
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
+        
+        pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
         isGenericVirtual = true;
     }
 
-    if (isArray || isGenericVirtual)
+    MethodDesc* pUnboxedDevirtMD = pDevirtMD->IsUnboxingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+
+    if (!pUnboxedDevirtMD->AcquiresInstMethodTableFromThis())
     {
-        if (pDevirtMD->IsInstantiatingStub())
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
         {
-            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
-            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
         }
 
-        info->tokenLookupContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // TODO: Support for runtime lookup
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
     }
-    else
+
+    if (pUnboxedDevirtMD->RequiresInstMethodDescArg())
     {
-        info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
+    else if (pUnboxedDevirtMD->RequiresInstMethodTableArg())
+    {
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pExactMT;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    }
+
+    pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+    info->tokenLookupContext = (isArray || isGenericVirtual)
+        ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pInstantiatedMD)
+        : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
 
     // Success! Pass back the results.
     //

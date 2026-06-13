@@ -1484,6 +1484,64 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
+            bool isArray = decl.OwningType.IsInterface && objType.IsArray;
+            bool isGenericVirtual = !isArray && decl.HasInstantiation;
+
+            if (!impl.AcquiresInstMethodTableFromThis())
+            {
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                if (originalImpl.IsSharedByGenericInstantiations)
+                {
+                    // TODO: Support for runtime lookup
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+            }
+
+            if (isArray)
+            {
+#if READYTORUN
+                // Array interface devirt is not yet supported by R2R.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+#else
+                // NativeAOT handles arrays in a different way that doesn't require an instantiating stub.
+#endif
+            }
+
+            if (impl.RequiresInstMethodDescArg())
+            {
+                if (unboxingStub)
+                {
+                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+#if READYTORUN
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+
+#else
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+#endif
+            }
+            else if (impl.RequiresInstMethodTableArg())
+            {
+#if READYTORUN
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+
+#else
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+#endif
+            }
+
 #if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
@@ -1498,7 +1556,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = contextFromType(owningType);
+            info->tokenLookupContext = (isArray || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
