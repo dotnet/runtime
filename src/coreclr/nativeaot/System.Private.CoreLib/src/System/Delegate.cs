@@ -41,12 +41,10 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        // New Delegate Implementation
-
-        private object _firstParameter;
         private object _helperObject;
-        private nint _extraFunctionPointerOrData;
+        private object _firstParameter; // Keep _firstParameter and _functionPointer next to each other for optimal delegate invoke performance
         private IntPtr _functionPointer;
+        private nint _extraFunctionPointerOrData;
 
         // _helperObject may point to an array of delegates if this is a multicast delegate. We use this wrapper to distinguish between
         // our own array of delegates and user provided Wrapper[]. As a added benefit, this wrapper also eliminates array co-variance
