@@ -1287,16 +1287,17 @@ DONE:
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
-        //
-        if (call->AsCall()->IsDevirtualizationCandidate(this))
+        // Also save for shared generic returns so that we can know their types.
+        if (call->AsCall()->IsDevirtualizationCandidate(this) ||
+            (sig->retTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_BYREF && eeIsSharedInst(sig->retTypeSigClass)))
         {
             JITDUMP("\nSaving late devirtualization info for call [%06u]\n", dspTreeID(call->AsCall()));
             assert(call->AsCall()->gtInlineContext == impCurStmtDI.GetInlineContext());
-            LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
-            info->methodHnd                            = callInfo->hMethod;
-            info->exactContextHnd                      = exactContextHnd;
-            info->ilLocation                           = impCurStmtDI.GetLocation();
-            call->AsCall()->gtLateDevirtualizationInfo = info;
+            ExactContextInfo* const info       = new (this, CMK_Inlining) ExactContextInfo;
+            info->methodHnd                    = callInfo->hMethod;
+            info->exactContextHnd              = exactContextHnd;
+            info->ilLocation                   = impCurStmtDI.GetLocation();
+            call->AsCall()->gtExactContextInfo = info;
         }
     }
 
