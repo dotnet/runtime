@@ -2735,6 +2735,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
 #if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
@@ -2986,6 +2987,10 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     _ASSERTE (pHp != NULL);
     _ASSERTE (pHp->maxCodeHeapSize >= initialRequestSize);
+
+    // Cache the optimized-code bit on the HeapList so CanUseCodeHeap
+    // doesn't have to do a FindCodeRange lookup on every cache check.
+    pHp->isOptimizedCode = (flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
 
     // Append the current code heap to the new code heap element.
     pHp->SetNext(m_pAllCodeHeaps);
@@ -3418,12 +3423,8 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
         // Don't mix optimized and non-optimized code in the same heap. LCG and
         // interpreter requests never set IsOptimizedCode(), so dynamic-domain
         // and interpreter heaps don't carry the flag either, and this check
-        // is a no-op for them. TODO: cache the optimized bit on HeapList
-        // itself to avoid the RangeSection lookup on every cache check.
-        const RangeSection* pRS = ExecutionManager::FindCodeRange(pCodeHeap->startAddress, ExecutionManager::GetScanFlags());
-        _ASSERTE(pRS != NULL);
-        const bool isOptimizedHeap = (pRS->_flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
-        if (isOptimizedHeap != pInfo->IsOptimizedCode())
+        // is a no-op for them.
+        if (pCodeHeap->isOptimizedCode != pInfo->IsOptimizedCode())
         {
             return false;
         }

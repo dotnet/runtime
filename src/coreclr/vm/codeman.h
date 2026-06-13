@@ -536,6 +536,12 @@ struct HeapList
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
 
+    // Cached copy of the RANGE_SECTION_OPTIMIZEDCODE bit on the heap's
+    // RangeSection. Lets CanUseCodeHeap reject heap/request mismatches
+    // without a per-allocation FindCodeRange lookup. Set at heap creation
+    // time in NewCodeHeap; never changes afterwards.
+    bool                isOptimizedCode;
+
     TADDR GetModuleBase()
     {
 #if defined(TARGET_64BIT)
