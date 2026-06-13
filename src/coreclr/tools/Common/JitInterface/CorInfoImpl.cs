@@ -3451,8 +3451,13 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
-            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
+#if READYTORUN
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize; // Delegate._target
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._methodPtr
+#else            
+            pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize; // Delegate._firstParameter
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._functionPointer
+#endif
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
