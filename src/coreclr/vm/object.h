@@ -607,7 +607,7 @@ class Array : public ArrayBase
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return PTR_KIND(m_Array);
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
