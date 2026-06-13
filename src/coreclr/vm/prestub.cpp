@@ -2092,7 +2092,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
 #ifdef TARGET_WASM
-    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here. 
+    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here.
     // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
     // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
     // be incorrect.
@@ -2141,8 +2141,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-                ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
-                InvokeManagedMethod(&param);
+                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */);
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
