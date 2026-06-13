@@ -3138,6 +3138,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: compilation is an async state machine\n");
         }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
+        }
     }
 #endif
 

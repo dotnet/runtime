@@ -2274,6 +2274,13 @@ bool InterpCompiler::CompileMethod()
     {
         INTERP_DUMP("Method is async with context save/restore\n");
     }
+
+    m_isAsyncVersionOfSyncMethod = m_methodInfo->options & CORINFO_ASYNC_VERSION;
+    if (m_isAsyncVersionOfSyncMethod)
+    {
+        INTERP_DUMP("Method is an async version of a synchronous method; IL belongs to synchronous method\n");
+    }
+
     CreateILVars();
 
     GenerateCode(m_methodInfo);
@@ -4628,7 +4635,13 @@ static OpcodePeepElement peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L[] =
     // LDC_I4_0 or LDC_I4_1 goes here (at offset 10)
     { 11, CEE_CALL},
     { 16, CEE_CALL },
-    { 19, CEE_ILLEGAL } // End marker
+    { 21, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepRuntimeAsyncCallRetInAsyncVersion[] = {
+    // call or callvirt at the start
+    { 5, CEE_RET },
+    { 6, CEE_ILLEGAL } // End marker
 };
 
 class InterpAsyncCallPeeps
@@ -4641,9 +4654,10 @@ class InterpAsyncCallPeeps
     OpcodePeep peepCallConfigureAwaitValueTask_S_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_S_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_S_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_L = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_L" };
+    OpcodePeep peepCallRetInAsyncVersion = { peepRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion, "CallRetInAsyncVersion" };
 
 public:
-    OpcodePeep* Peeps[9] = {
+    OpcodePeep* Peeps[10] = {
         &peepCall,
         &peepCallConfigureAwaitTask,
         &peepCallConfigureAwaitValueTask_L_L,
@@ -4652,6 +4666,7 @@ public:
         &peepCallConfigureAwaitValueTask_S_S,
         &peepCallConfigureAwaitValueTask_EXACT_S,
         &peepCallConfigureAwaitValueTask_EXACT_L,
+        &peepCallRetInAsyncVersion,
         NULL };
 
 
@@ -4937,7 +4952,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
-        const uint8_t* origIP = m_ip;
+        // We expect this bool to be reset when we handle the RET instruction after it gets set.
+        assert(!m_matchedAsyncCallRetInAsyncVersion);
+
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
             resolvedCallToken = m_resolvedAsyncCallToken;
@@ -4966,26 +4983,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
             BADCODE("We're trying to emit an async call, but the async resolved context didn't find one");
-        }
-
-        if (continuationContextHandling != ContinuationContextHandling::None && callInfo.kind == CORINFO_CALL)
-        {
-            bool isSyncCallThunk;
-            m_compHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-            if (!isSyncCallThunk)
-            {
-                // The async variant that we got is a thunk. Switch back to the
-                // non-async task-returning call. There is no reason to create
-                // and go through the thunk.
-                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
-
-                // Reset back to the IP after the original call instruction.
-                // FindAndApplyPeep above modified it to be after the "Await"
-                // call, but now we want to process the await separately.
-                m_ip = origIP + 5;
-                continuationContextHandling = ContinuationContextHandling::None;
-                m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
-            }
         }
 
         if (callInfo.sig.isVarArg())
@@ -5356,7 +5353,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (continuationArgLocation != INT_MAX)
     {
-        PushStackType(StackTypeI, NULL);
+        PushStackType(StackTypeO, NULL);
         m_pStackPointer--;
         int32_t continuationArg = m_pStackPointer[0].var;
 
@@ -5720,7 +5717,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
-        EmitSuspend(callInfo, continuationContextHandling);
+        EmitSuspend(callInfo.sig.retType, continuationContextHandling);
     }
 }
 
@@ -5728,6 +5725,30 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
 {
     CORINFO_SIG_INFO sig = methodInfo->args;
     InterpType retType = GetInterpType(sig.retType);
+
+    if (m_isAsyncVersionOfSyncMethod)
+    {
+        if (m_matchedAsyncCallRetInAsyncVersion)
+        {
+            m_matchedAsyncCallRetInAsyncVersion = false;
+
+            if (retType == InterpTypeVoid && m_pStackPointer > m_pStackBase)
+            {
+                INTERP_DUMP("Popping stack for Task<T> in void-returning async version\n");
+                // For covariant cases like a tailcall to a Task<int>-returning
+                // callee from a Task-returning function we will have a
+                // superfluous value on the stack after the call.
+                m_pStackPointer--;
+            }
+        }
+        else
+        {
+            CheckStackExact(1);
+
+            INTERP_DUMP("Wrapping top of stack in await\n");
+            WrapTopOfStackInAwait();
+        }
+    }
 
     if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
     {
@@ -5835,7 +5856,98 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
-void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
+void InterpCompiler::WrapTopOfStackInAwait()
+{
+    CORINFO_LOOKUP instArgLookup;
+    CORINFO_METHOD_HANDLE awaitMethod = m_compHnd->getAwaitReturnCall(m_methodHnd, &instArgLookup);
+
+    CORINFO_SIG_INFO awaitSig;
+    m_compHnd->getMethodSig(awaitMethod, &awaitSig);
+
+    assert(awaitSig.isAsyncCall());
+    assert(awaitSig.numArgs == 1);
+    assert(!awaitSig.hasThis());
+
+    // Pop the awaitable off the stack; it becomes the last argument.
+    int32_t awaitableVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+
+    int extraParamArgLocation = awaitSig.hasTypeArg() ? 0 : INT_MAX;
+    int continuationArgLocation = awaitSig.hasTypeArg() ? 1 : 0;
+    int numArgs = 1 + (awaitSig.hasTypeArg() ? 1 : 0) + 1; // task + (optional inst) + continuation
+
+    int32_t* callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
+
+    if (awaitSig.hasTypeArg())
+    {
+        int32_t instParamVar;
+        if (instArgLookup.lookupKind.needsRuntimeLookup)
+        {
+            EmitPushCORINFO_LOOKUP(instArgLookup);
+            m_pStackPointer--;
+            instParamVar = m_pStackPointer[0].var;
+        }
+        else
+        {
+            assert(instArgLookup.constLookup.accessType == IAT_VALUE);
+            PushStackType(StackTypeI, NULL);
+            m_pStackPointer--;
+            instParamVar = m_pStackPointer[0].var;
+            AddIns(INTOP_LDPTR);
+            m_pLastNewIns->SetDVar(instParamVar);
+            m_pLastNewIns->data[0] = GetDataItemIndex(instArgLookup.constLookup.handle);
+        }
+        callArgs[extraParamArgLocation] = instParamVar;
+    }
+
+    // Continuation arg: pass null; the suspend logic emitted below sets it up.
+    PushStackType(StackTypeO, NULL);
+    m_pStackPointer--;
+    int32_t continuationArg = m_pStackPointer[0].var;
+    AddIns(INTOP_LDNULL);
+    m_pLastNewIns->SetDVar(continuationArg);
+    callArgs[continuationArgLocation] = continuationArg;
+
+    callArgs[numArgs - 1] = awaitableVar;
+    callArgs[numArgs] = CALL_ARGS_TERMINATOR;
+
+    // Result var. Must be on top of the stack so EmitSuspend treats it as the
+    // return value of the call (and not as an unrelated live stack var).
+    int32_t dVar;
+    if (awaitSig.retType != CORINFO_TYPE_VOID)
+    {
+        InterpType interpType = GetInterpType(awaitSig.retType);
+        if (interpType == InterpTypeVT)
+        {
+            int32_t size = m_compHnd->getClassSize(awaitSig.retTypeClass);
+            PushTypeVT(awaitSig.retTypeClass, size);
+        }
+        else
+        {
+            PushInterpType(interpType, NULL);
+        }
+        dVar = m_pStackPointer[-1].var;
+    }
+    else
+    {
+        // Create a new dummy var to serve as the dVar of the call.
+        PushStackType(StackTypeI4, NULL);
+        m_pStackPointer--;
+        dVar = m_pStackPointer[0].var;
+    }
+
+    AddIns(INTOP_CALL);
+    m_pLastNewIns->data[0] = GetMethodDataItemIndex(awaitMethod);
+    m_pLastNewIns->SetDVar(dVar);
+    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
+    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    EmitSuspend(awaitSig.retType, ContinuationContextHandling::None);
+}
+
+static void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
 {
     assert(slotOffset % sizeof(void*) == 0);
     int32_t slotIndex = slotOffset / sizeof(void*);
@@ -5849,7 +5961,7 @@ void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
     gcRefMap.Set(slotIndex, true);
 }
 
-void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling continuationContextHandling)
+void InterpCompiler::EmitSuspend(CorInfoType callRetType, ContinuationContextHandling continuationContextHandling)
 {
     if (m_nextAwaitIsTail)
     {
@@ -5899,7 +6011,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     // Step 2: Handle live stack vars (excluding return value)
     int32_t stackDepth = (int32_t)(m_pStackPointer - m_pStackBase);
     int32_t returnValueVar = -1;
-    if (stackDepth > 0 && callInfo.sig.retType != CORINFO_TYPE_VOID)
+    if (stackDepth > 0 && callRetType != CORINFO_TYPE_VOID)
     {
         // The return value var is written explicitly during resume, it is not included in the set of liveVars
         returnValueVar = m_pStackPointer[-1].var;
@@ -6319,7 +6431,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     // Once we've resumed, if the return type is a primitive integral type which
     // isn't an I4/U4 but is represented as such on the evaluation stack, sign/zero
     // extend it to the proper size.
-    switch (callInfo.sig.retType)
+    switch (callRetType)
     {
         case CORINFO_TYPE_UBYTE:
         case CORINFO_TYPE_BOOL:
@@ -7439,6 +7551,29 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
     }
 
     return ResolveAsyncCallToken(ip);
+}
+
+bool InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    if (!m_isAsyncVersionOfSyncMethod)
+    {
+        return false;
+    }
+
+    if (!ResolveAsyncCallToken(ip))
+    {
+        return false;
+    }
+
+    m_currentContinuationContextHandling = ContinuationContextHandling::None;
+    m_matchedAsyncCallRetInAsyncVersion = true;
+    return true;
+}
+
+int InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Only skip the call, not the RET we matched.
+    return 5;
 }
 
 int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)

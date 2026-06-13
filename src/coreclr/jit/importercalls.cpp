@@ -7062,23 +7062,37 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail)
+        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
+        // For async versions of synchronous methods all async calls are in
+        // tail position. Inlining is simple for these cases: we can just
+        // inherit all context handling from the inlining call.
+        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
         GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
         assert(inlCall->IsAsync());
 
         asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
-        m_nextAwaitIsTail = false;
 
-        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+        asyncInfo.IsTailAwait =
+            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+        m_nextAwaitIsTail = false;
+    }
+    else
+    {
+        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0))
+        {
+            // We can only do an actual tail await if the caller and callee agree on return type.
+            asyncInfo.IsTailAwait = call->gtReturnType == info.compRetType;
+        }
     }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;

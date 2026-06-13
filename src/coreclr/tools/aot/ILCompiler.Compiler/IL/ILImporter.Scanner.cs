@@ -70,7 +70,9 @@ namespace Internal.IL
         private DependencyList _dependencies;
         private BasicBlock _lateBasicBlocks;
 
+        private int _prevMatchedAwaitTailCallRetPostOffset;
         private bool _asyncDependenciesReported;
+        private bool _wrappingAwaitReported;
 
         private sealed class ExceptionRegion
         {
@@ -80,6 +82,7 @@ namespace Internal.IL
 
         public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL = null)
         {
+
             if (methodIL == null)
             {
                 methodIL = compilation.GetMethodIL(method);
@@ -180,7 +183,7 @@ namespace Internal.IL
                 }
             }
 
-            if (_canonMethod.IsAsyncCall())
+            if (_canonMethod.RequiresSaveRestoreOfAsyncContexts())
             {
                 const string reason = "Async state machine";
                 DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
@@ -342,12 +345,7 @@ namespace Internal.IL
             //    call       <Await>
 
             // Find where this basic block ends
-            int nextBBOffset = _currentOffset;
-            while (nextBBOffset < _basicBlocks.Length && _basicBlocks[nextBBOffset] == null)
-                nextBBOffset++;
-
-            // Create ILReader for what's left in the basic block
-            var reader = new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
+            ILReader reader = GetRemainingBlockIL();
 
             if (!reader.HasNext)
                 return false;
@@ -414,6 +412,34 @@ namespace Internal.IL
                 && IsAsyncHelpersAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
         }
 
+        private ILReader GetRemainingBlockIL()
+        {
+            int nextBBOffset = _currentOffset;
+            while (nextBBOffset < _basicBlocks.Length && _basicBlocks[nextBBOffset] == null)
+                nextBBOffset++;
+
+            // Create ILReader for what's left in the basic block
+            return new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
+        }
+
+        private bool MatchTailCallAwait(MethodDesc method)
+        {
+            // Create ILReader for what's left in the basic block
+            var reader = GetRemainingBlockIL();
+
+            if (!reader.HasNext)
+                return false;
+
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (opcode == ILOpcode.ret && method.Signature.ReturnsTaskOrValueTask())
+            {
+                _prevMatchedAwaitTailCallRetPostOffset = _currentOffset + reader.Offset;
+                return true;
+            }
+
+            return false;
+        }
+
         private void ImportCall(ILOpcode opcode, int token)
         {
             // We get both the canonical and runtime determined form - JitInterface mostly operates
@@ -434,31 +460,8 @@ namespace Internal.IL
             }
 
             // Are we scanning a call within a state machine?
-            if (opcode is ILOpcode.call or ILOpcode.callvirt
-                && _canonMethod.IsAsyncCall())
+            if (opcode is ILOpcode.call or ILOpcode.callvirt && _canonMethod.IsAsyncCall())
             {
-                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
-                if (!_asyncDependenciesReported && method.IsAsync)
-                {
-                    _asyncDependenciesReported = true;
-
-                    const string asyncReason = "Async state machine";
-
-                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
-
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
-
-                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
-                }
-
                 // If this is the task await pattern, the JIT will first resolve the call to the
                 // async variant, then may switch back to the original if the async variant is just
                 // a thunk (for non-runtime-async methods). Report both variants as dependencies such
@@ -471,7 +474,7 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
-                if (allowAsyncVariant && MatchTaskAwaitPattern())
+                if (allowAsyncVariant && (_canonMethod.SupportsAsyncVersionCodegen() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
                 {
                     MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
                     MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -484,6 +487,12 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
         {
+            // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+            if (!_asyncDependenciesReported && _canonMethod.IsAsyncCall() && method.IsAsyncCall())
+            {
+                RegisterDependenciesOnAsyncCall();
+            }
+
             string reason = null;
             switch (opcode)
             {
@@ -952,6 +961,28 @@ namespace Internal.IL
                         _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
                 }
             }
+        }
+
+        private void RegisterDependenciesOnAsyncCall()
+        {
+            Debug.Assert(!_asyncDependenciesReported);
+            _asyncDependenciesReported = true;
+
+            const string asyncReason = "Async state machine";
+
+            AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+            _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1754,6 +1785,69 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
+        private void ImportReturn()
+        {
+            if (_wrappingAwaitReported || !_canonMethod.SupportsAsyncVersionCodegen() || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
+            {
+                return;
+            }
+
+            _wrappingAwaitReported = true;
+
+            MethodDesc taskReturningMethod = _canonMethod.GetTargetOfAsyncVariant();
+            TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
+            bool isValueTask = taskReturnType.IsValueType;
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            MethodDesc runtimeDeterminedCaller = _canonMethod.GetSharedRuntimeFormMethodTarget();
+
+            TypeDesc returnType = runtimeDeterminedCaller.Signature.ReturnType;
+            MethodDesc runtimeDeterminedResult;
+            if (returnType.IsVoid)
+            {
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature);
+            }
+            else
+            {
+                TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature).MakeInstantiatedMethod(returnType);
+            }
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            const string reason = "Wrapped Task return";
+
+            if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedResult), reason);
+                _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+            }
+            else
+            {
+                if (targetMethod.RequiresInstArg())
+                {
+                    _dependencies.Add(_compilation.NodeFactory.MethodGenericDictionary(runtimeDeterminedResult), reason);
+                }
+
+                _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
+            }
+
+            if (!_asyncDependenciesReported)
+            {
+                RegisterDependenciesOnAsyncCall();
+            }
+        }
+
         private static void ImportNop() { }
         private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }
@@ -1762,7 +1856,6 @@ namespace Internal.IL
         private static void ImportDup() { }
         private static void ImportPop() { }
         private static void ImportLoadNull() { }
-        private static void ImportReturn() { }
         private static void ImportLoadInt(long value, StackValueKind kind) { }
         private static void ImportLoadFloat(double value) { }
         private static void ImportLoadIndirect(int token) { }

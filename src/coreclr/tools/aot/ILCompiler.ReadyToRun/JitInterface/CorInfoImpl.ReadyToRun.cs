@@ -582,6 +582,14 @@ namespace Internal.JitInterface
                 return true;
             }
 
+            // Currently crossgen2 does not support compiling async versions of synchronous Task-returning functions.
+            // We would compile a wrapper thunk but that comes with different perf characteristics and diagnostics
+            // that we do not want to deal with.
+            if (methodNeedingCode.SupportsAsyncVersionCodegen())
+            {
+                return true;
+            }
+
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
@@ -3436,7 +3444,7 @@ namespace Internal.JitInterface
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
 
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation)
-                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncEcmaMethodIL))
+                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncMethodIL))
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic.
                         // Add the typicalMethod (which may be an AsyncMethodVariant) so that
