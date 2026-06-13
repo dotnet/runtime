@@ -1297,6 +1297,44 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     }
 }
 
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs: Peel any chain of instance GT_FIELD_ADDR nodes off the
+// specified address and return the underlying base node.
+//
+// Arguments:
+//   addr - The address node.
+//
+// Returns:
+//   The first node along the chain that is not an instance GT_FIELD_ADDR.
+//   For example, given FIELD_ADDR(FIELD_ADDR(LCL_VAR this, a), b), returns
+//   the LCL_VAR.
+//
+// Remarks:
+//   Static field addresses (where `IsInstance()` is false) are not peeled,
+//   since they carry a runtime helper call rather than a simple
+//   constant-offset addend.
+//
+GenTree* Compiler::gtPeelFieldAddrs(GenTree* addr) const
+{
+    while (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance())
+    {
+        addr = addr->AsFieldAddr()->GetFldObj();
+    }
+    return addr;
+}
+
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs (const overload): see the non-const variant above.
+//
+// GenTreeFieldAddr::GetFldObj() returns a mutable GenTree* even from a const
+// receiver, so we localize the const_cast here rather than asking every
+// const-correct caller to perform one at the use site.
+//
+const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
+{
+    return gtPeelFieldAddrs(const_cast<GenTree*>(addr));
+}
+
 // HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
