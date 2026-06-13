@@ -6,9 +6,12 @@
 
 #include "pal.h"
 #include "trace.h"
-#include <type_traits>
 #include <runtime_version.h>
 #include <minipal/utils.h>
+
+#ifdef __cplusplus
+#include <type_traits>
+#endif
 
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
@@ -46,6 +49,8 @@
 #define _QUOTE(x) _TEXT(x)
 
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
+
+#ifdef __cplusplus
 
 namespace utils
 {
@@ -197,5 +202,24 @@ size_t to_size_t_dbgchecked(T value)
     assert(static_cast<T>(result) == value);
     return result;
 }
+
+#endif // __cplusplus
+
+// ============================================================================
+// C-compatible declarations
+// ============================================================================
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Writes the trailing path component (i.e. text after the last DIR_SEPARATOR)
+// of `path` into `out_name`. Returns false if the result does not fit in the
+// caller-supplied buffer (out_name is set to empty).
+bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

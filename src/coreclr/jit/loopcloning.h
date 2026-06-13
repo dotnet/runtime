@@ -597,6 +597,7 @@ private:
     LC_Ident(IdentType type)
         : type(type)
         , lclType(TYP_UNDEF)
+        , offset(0)
     {
     }
 
@@ -605,9 +606,14 @@ public:
     IdentType type;
     var_types lclType;
 
+    // Constant added to the materialized value. Used by Var and ArrAccess
+    // to represent `lcl + k` and `arr.Length + k`.
+    int offset;
+
     LC_Ident()
         : type(Invalid)
         , lclType(TYP_UNDEF)
+        , offset(0)
     {
     }
 
@@ -626,11 +632,11 @@ public:
             case ClassHandle:
                 return (clsHnd == that.clsHnd);
             case Var:
-                return (lclNum == that.lclNum) && (lclType == that.lclType);
+                return (lclNum == that.lclNum) && (lclType == that.lclType) && (offset == that.offset);
             case IndirOfLocal:
                 return (lclNum == that.lclNum) && (indirOffs == that.indirOffs) && (lclType == that.lclType);
             case ArrAccess:
-                return (arrAccess == that.arrAccess);
+                return (arrAccess == that.arrAccess) && (offset == that.offset);
             case SpanAccess:
                 return (spanAccess == that.spanAccess);
             case Null:
@@ -661,6 +667,10 @@ public:
                 break;
             case Var:
                 printf("V%02u", lclNum);
+                if (offset > 0)
+                    printf("+%d", offset);
+                else if (offset < 0)
+                    printf("%d", offset);
                 break;
             case IndirOfLocal:
                 if (indirOffs != 0)
@@ -677,6 +687,10 @@ public:
                 break;
             case ArrAccess:
                 arrAccess.Print();
+                if (offset > 0)
+                    printf("+%d", offset);
+                else if (offset < 0)
+                    printf("%d", offset);
                 break;
             case SpanAccess:
                 spanAccess.Print();
@@ -700,11 +714,12 @@ public:
     // Convert this symbolic representation into a tree node.
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 
-    static LC_Ident CreateVar(unsigned lclNum, var_types lclType)
+    static LC_Ident CreateVar(unsigned lclNum, var_types lclType, int offset = 0)
     {
         LC_Ident id(Var);
         id.lclNum  = lclNum;
         id.lclType = lclType;
+        id.offset  = offset;
         return id;
     }
 
@@ -724,10 +739,11 @@ public:
         return id;
     }
 
-    static LC_Ident CreateArrAccess(const LC_Array& arrLen)
+    static LC_Ident CreateArrAccess(const LC_Array& arrLen, int offset = 0)
     {
         LC_Ident id(ArrAccess);
         id.arrAccess = arrLen;
+        id.offset    = offset;
         return id;
     }
 

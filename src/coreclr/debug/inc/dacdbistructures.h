@@ -899,5 +899,41 @@ struct MSLAYOUT DacThreadAllocInfo
     ULONG64 m_allocBytesUOH;
 };
 
+// Array layout info returned by IDacDbiInterface::GetArrayData.
+struct DacDbiArrayInfo
+{
+    UINT rank;
+    UINT componentCount;
+    UINT offsetToArrayBase;
+    UINT offsetToUpperBounds;   // 0 for SZArray
+    UINT offsetToLowerBounds;   // 0 for SZArray
+    UINT elementSize;
+};
+
+struct MSLAYOUT DacDbiObjectData
+{
+    CORDB_ADDRESS   objRef;
+    BOOL            objRefBad;
+    UINT            objSize;
+
+    // Offset from the beginning of the object to the beginning of the first field
+    UINT            objOffsetToVars;
+
+    // The type of the object....
+    struct DebuggerIPCE_ExpandedTypeData objTypeData;
+
+    union MSLAYOUT
+    {
+        struct MSLAYOUT
+        {
+            UINT          length;
+            UINT          offsetToStringBase;
+        } stringInfo;
+
+        DacDbiArrayInfo arrayInfo;
+        DebuggerIPCE_BasicTypeData typedByrefType; // the type of the thing contained in a typedByref...
+    };
+};
+
 #include "dacdbistructures.inl"
 #endif // DACDBISTRUCTURES_H_
