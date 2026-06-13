@@ -5196,7 +5196,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Find all matching candidates and partition them to
             // be continous in memory at [matchesBegin, matchesEnd - 1]
             //
-            matchesEnd = jitstd::partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
+            matchesEnd = std::partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
                 if (!BasicBlock::sameEHRegion(candidateA.m_block, candidateB.m_block))
@@ -5232,7 +5232,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 for (auto it = matchesBegin; it < matchesEnd; it++)
                 {
-                    PredInfo          info      = *it;
+                    PredInfo& const   info      = *it;
                     Statement* const  stmt      = info.m_stmt;
                     BasicBlock* const predBlock = info.m_block;
 
@@ -5280,9 +5280,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             for (auto it = matchesBegin; it < matchesEnd; it++)
             {
-                PredInfo          candidate = *it;
-                Statement* const  stmt      = candidate.m_stmt;
-                BasicBlock* const predBlock = candidate.m_block;
+                PredInfo& const   info      = *it;
+                Statement* const  stmt      = info.m_stmt;
+                BasicBlock* const predBlock = info.m_block;
 
                 // Never pick the init block as the victim as that would
                 // cause us to add a predecessor to it, which is invalid.
@@ -5349,9 +5349,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             //
             for (auto it = matchesBegin; it < matchesEnd; it++)
             {
-                PredInfo          candidate = *it;
-                BasicBlock* const predBlock = candidate.m_block;
-                Statement* const  stmt      = candidate.m_stmt;
+                PredInfo& const   info      = *it;
+                BasicBlock* const predBlock = info.m_block;
+                Statement* const  stmt      = info.m_stmt;
 
                 if (predBlock == crossJumpVictim)
                 {

@@ -33,7 +33,7 @@ public:
     typedef T value_type;
 
     // nested classes
-    class iterator : public jitstd::iterator<random_access_iterator_tag, T>
+    class iterator : public jitstd::iterator<std::random_access_iterator_tag, T>
     {
         iterator(T* ptr);
     public:
