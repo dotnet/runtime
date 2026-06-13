@@ -4719,7 +4719,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             JITDUMP("Optimizing object.GetType() with known type to typeof\n");
                             impPopStack();
                             GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
-                            GenTree* helper = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                            GenTree* helper =
+                                gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                             retNode = gtWrapWithSideEffects(helper, tree, GTF_ALL_EFFECT, true);
                         }
                     }
