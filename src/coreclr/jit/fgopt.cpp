@@ -5232,7 +5232,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 for (auto it = matchesBegin; it < matchesEnd; it++)
                 {
-                    PredInfo& const   info      = *it;
+                    const PredInfo&   info      = *it;
                     Statement* const  stmt      = info.m_stmt;
                     BasicBlock* const predBlock = info.m_block;
 
@@ -5280,7 +5280,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             for (auto it = matchesBegin; it < matchesEnd; it++)
             {
-                PredInfo& const   info      = *it;
+                const PredInfo&   info      = *it;
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
@@ -5349,7 +5349,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             //
             for (auto it = matchesBegin; it < matchesEnd; it++)
             {
-                PredInfo& const   info      = *it;
+                const PredInfo&   info      = *it;
                 BasicBlock* const predBlock = info.m_block;
                 Statement* const  stmt      = info.m_stmt;
 
