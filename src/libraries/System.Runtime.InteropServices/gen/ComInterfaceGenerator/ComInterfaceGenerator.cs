@@ -5,6 +5,7 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -341,14 +342,29 @@ namespace Microsoft.Interop
                 owningInterfaceInfo.Type,
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
-                ComInterfaceDispatchMarshallingInfo.Instance);
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                ClassifyMemberKind(symbol));
         }
 
-        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        private static StubMemberKind ClassifyMemberKind(IMethodSymbol symbol) => (symbol.MethodKind, symbol.AssociatedSymbol) switch
         {
-            ISignatureDiagnosticLocations locations = syntax is null
-                ? NoneSignatureDiagnosticLocations.Instance
-                : new MethodSignatureDiagnosticLocations(syntax);
+            (MethodKind.PropertyGet, IPropertySymbol { IsIndexer: true }) => StubMemberKind.IndexerGetter,
+            (MethodKind.PropertySet, IPropertySymbol { IsIndexer: true }) => StubMemberKind.IndexerSetter,
+            (MethodKind.PropertyGet, _) => StubMemberKind.PropertyGetter,
+            (MethodKind.PropertySet, _) => StubMemberKind.PropertySetter,
+            _ => StubMemberKind.Method,
+        };
+
+        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MemberDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        {
+            ISignatureDiagnosticLocations locations = syntax switch
+            {
+                null => NoneSignatureDiagnosticLocations.Instance,
+                MethodDeclarationSyntax methodSyntax => new MethodSignatureDiagnosticLocations(methodSyntax),
+                PropertyDeclarationSyntax propertySyntax => CreatePropertyAccessorDiagnosticLocations(propertySyntax, symbol),
+                IndexerDeclarationSyntax indexerSyntax => CreateIndexerAccessorDiagnosticLocations(indexerSyntax, symbol),
+                _ => throw new UnreachableException(),
+            };
 
             var sourcelessStubInformation = CalculateSharedStubInformation(
                 symbol,
@@ -362,11 +378,24 @@ namespace Microsoft.Interop
                 return sourcelessStubInformation;
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-            var methodSyntaxTemplate = new ContainingSyntax(
-                new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword) && !m.IsKind(SyntaxKind.PartialKeyword) && !m.IsKind(SyntaxKind.VirtualKeyword))).StripAccessibilityModifiers(),
-                SyntaxKind.MethodDeclaration,
-                syntax.Identifier,
-                syntax.TypeParameterList);
+            ContainingSyntax methodSyntaxTemplate = syntax switch
+            {
+                MethodDeclarationSyntax methodSyntax => new ContainingSyntax(
+                    new SyntaxTokenList(methodSyntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword) && !m.IsKind(SyntaxKind.PartialKeyword) && !m.IsKind(SyntaxKind.VirtualKeyword))).StripAccessibilityModifiers(),
+                    SyntaxKind.MethodDeclaration,
+                    methodSyntax.Identifier,
+                    methodSyntax.TypeParameterList),
+                // Property / indexer accessors are emitted as plain methods named e.g. 'get_Foo' / 'set_Foo'
+                // ('get_Item' / 'set_Item' for indexers, or the [IndexerName]-renamed value).
+                PropertyDeclarationSyntax or IndexerDeclarationSyntax => new ContainingSyntax(
+                    TokenList(),
+                    SyntaxKind.MethodDeclaration,
+                    Identifier(symbol.Name),
+                    typeParameters: null),
+                _ => throw new UnreachableException(),
+            };
+
+            StubMemberKind memberKind = ClassifyMemberKind(symbol);
 
             return new SourceAvailableIncrementalMethodStubGenerationContext(
                 sourcelessStubInformation.SignatureContext,
@@ -380,7 +409,43 @@ namespace Microsoft.Interop
                 sourcelessStubInformation.TypeKeyOwner,
                 sourcelessStubInformation.DeclaringType,
                 sourcelessStubInformation.Diagnostics,
-                ComInterfaceDispatchMarshallingInfo.Instance);
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                memberKind);
+        }
+
+        // For a property accessor, the user-visible source location is the property's identifier.
+        // The getter has no managed parameters; the setter has the implicit 'value' parameter which we report at
+        // the property identifier (it has no source location of its own).
+        private static MethodSignatureDiagnosticLocations CreatePropertyAccessorDiagnosticLocations(PropertyDeclarationSyntax propertySyntax, IMethodSymbol accessor)
+        {
+            Location identifierLocation = propertySyntax.Identifier.GetLocation();
+            ImmutableArray<Location> parameterLocations = accessor.MethodKind is MethodKind.PropertySet
+                ? ImmutableArray.Create(identifierLocation)
+                : ImmutableArray<Location>.Empty;
+            return new MethodSignatureDiagnosticLocations(accessor.Name, parameterLocations, identifierLocation);
+        }
+
+        // For an indexer accessor, the user-visible source location is the 'this' keyword (indexers have no
+        // identifier token). Diagnostics that index into ManagedParameterLocations must see one entry per
+        // index parameter, plus the implicit 'value' parameter for the setter, with 'value' falling back to
+        // the 'this' location since it has no syntactic representation.
+        private static MethodSignatureDiagnosticLocations CreateIndexerAccessorDiagnosticLocations(IndexerDeclarationSyntax indexerSyntax, IMethodSymbol accessor)
+        {
+            Location thisLocation = indexerSyntax.ThisKeyword.GetLocation();
+            var indexParameters = indexerSyntax.ParameterList.Parameters;
+            int parameterCount = accessor.MethodKind is MethodKind.PropertySet
+                ? indexParameters.Count + 1
+                : indexParameters.Count;
+            var builder = ImmutableArray.CreateBuilder<Location>(parameterCount);
+            foreach (var parameter in indexParameters)
+            {
+                builder.Add(parameter.GetLocation());
+            }
+            if (accessor.MethodKind is MethodKind.PropertySet)
+            {
+                builder.Add(thisLocation);
+            }
+            return new MethodSignatureDiagnosticLocations(accessor.Name, builder.MoveToImmutable(), thisLocation);
         }
 
         private static MarshalDirection GetDirectionFromOptions(ComInterfaceOptions options)
@@ -561,12 +626,12 @@ namespace Microsoft.Interop
                 writer.WriteLine('}');
             }
 
+            BasePropertyDeclarationSyntax? bufferedDeclaredGetter = null;
             foreach (ComMethodContext declaredMethod in data.DeclaredMethods)
             {
                 if (declaredMethod.ManagedToUnmanagedStub is GeneratedStubCodeContext managedToUnmanagedContext)
                 {
-                    writer.InnerWriter.WriteLine();
-                    writer.WriteMultilineNode(managedToUnmanagedContext.Stub.Node.NormalizeWhitespace());
+                    EmitMemberHonoringPropertyMerge(writer, managedToUnmanagedContext.Stub.Node, ref bufferedDeclaredGetter);
                 }
 
                 if (declaredMethod.UnmanagedToManagedStub is GeneratedStubCodeContext unmanagedToManagedContext &&
@@ -576,7 +641,10 @@ namespace Microsoft.Interop
                     writer.WriteMultilineNode(unmanagedToManagedContext.Stub.Node.NormalizeWhitespace());
                 }
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedDeclaredGetter);
 
+            BasePropertyDeclarationSyntax? bufferedShadowGetter = null;
+            string derivedInterfaceName = data.Interface.Info.Type.FullTypeName;
             foreach (ComMethodContext inheritedStub in data.InheritedMethods)
             {
                 if (inheritedStub is not { IsExternallyDefined: false, ManagedToUnmanagedStub: GeneratedStubCodeContext shadowImplementationContextContext })
@@ -584,15 +652,30 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                MethodDeclarationSyntax preparedNode = shadowImplementationContextContext.Stub.Node
-                    .WithExplicitInterfaceSpecifier(
-                        ExplicitInterfaceSpecifier(ParseName(data.Interface.Info.Type.FullTypeName)))
-                    .NormalizeWhitespace();
-
-                writer.InnerWriter.WriteLine();
-                writer.WriteMultilineNode(preparedNode);
+                MemberDeclarationSyntax stubNode = shadowImplementationContextContext.Stub.Node;
+                if (stubNode is BasePropertyDeclarationSyntax basePropertyNode)
+                {
+                    // The accessor stub was generated for the base interface; rewrite its explicit-interface
+                    // specifier to point at the derived interface before emitting/merging. Both property and
+                    // indexer declarations expose a WithExplicitInterfaceSpecifier on the base type.
+                    basePropertyNode = basePropertyNode.WithExplicitInterfaceSpecifier(
+                        ExplicitInterfaceSpecifier(ParseName(derivedInterfaceName)));
+                    EmitMemberHonoringPropertyMerge(writer, basePropertyNode, ref bufferedShadowGetter);
+                }
+                else if (stubNode is MethodDeclarationSyntax methodNode)
+                {
+                    FlushBufferedPropertyGetter(writer, ref bufferedShadowGetter);
+                    MethodDeclarationSyntax preparedNode = methodNode
+                        .WithExplicitInterfaceSpecifier(
+                            ExplicitInterfaceSpecifier(ParseName(derivedInterfaceName)))
+                        .NormalizeWhitespace();
+                    writer.InnerWriter.WriteLine();
+                    writer.WriteMultilineNode(preparedNode);
+                }
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedShadowGetter);
 
+            BasePropertyDeclarationSyntax? bufferedUnreachableGetter = null;
             foreach (ComMethodContext inheritedStub in data.InheritedMethods)
             {
                 if (inheritedStub.IsExternallyDefined)
@@ -600,14 +683,180 @@ namespace Microsoft.Interop
                     continue;
                 }
 
+                if (inheritedStub.GenerationContext is { MemberKind: var kind } && kind.IsPropertyOrIndexerAccessor())
+                {
+                    // Property/indexer accessors must be emitted as one explicit-interface declaration per
+                    // get/set pair. Synthesize a single-accessor declaration here and let the merge helper
+                    // collapse a getter+setter pair into one declaration.
+                    BasePropertyDeclarationSyntax synthesized = SynthesizeUnreachableInheritedPropertyAccessor(inheritedStub);
+                    EmitMemberHonoringPropertyMerge(writer, synthesized, ref bufferedUnreachableGetter);
+                    continue;
+                }
+
+                FlushBufferedPropertyGetter(writer, ref bufferedUnreachableGetter);
                 writer.InnerWriter.WriteLine();
                 writer.Write($"{inheritedStub.GenerationContext.SignatureContext.StubReturnType} {inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName}.{inheritedStub.MethodInfo.MethodName}");
                 writer.Write($"({string.Join(", ", inheritedStub.GenerationContext.SignatureContext.StubParameters.Select(p => p.NormalizeWhitespace().ToString()))})");
                 writer.WriteLine(" => throw new global::System.Diagnostics.UnreachableException();");
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedUnreachableGetter);
 
             writer.Indent--;
             writer.WriteLine('}');
+        }
+
+        private static void EmitMemberHonoringPropertyMerge(
+            IndentedTextWriter writer,
+            MemberDeclarationSyntax node,
+            ref BasePropertyDeclarationSyntax? bufferedGetter)
+        {
+            // Property and indexer accessor stubs arrive one per accessor (get then set when both exist).
+            // Merge consecutive get+set halves of the same property/indexer into a single declaration
+            // before emitting, so the resulting code is a valid explicit interface implementation.
+            //
+            // Three cases below:
+            //   (1) Incoming node is a getter accessor — flush any prior buffered getter
+            //       (an orphan with no matching setter) and stash this one to wait for a paired setter.
+            //   (2) Incoming node is a setter accessor that pairs with the buffered getter (same
+            //       target property/indexer) — merge them into a single declaration and emit.
+            //   (3) Anything else (orphan setter, setter targeting a different property/indexer than
+            //       the buffered getter, or a non-property syntax node) — flush any buffered getter
+            //       and emit the incoming node as-is.
+            if (node is BasePropertyDeclarationSyntax basePropertyDecl)
+            {
+                bool isGetter = basePropertyDecl.AccessorList!.Accessors[0].Kind() is SyntaxKind.GetAccessorDeclaration;
+                if (isGetter)
+                {
+                    // Case (1): buffer the getter; wait for a possible paired setter.
+                    FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                    bufferedGetter = basePropertyDecl;
+                    return;
+                }
+                if (bufferedGetter is not null
+                    && IsSameAccessorTarget(bufferedGetter, basePropertyDecl))
+                {
+                    // Case (2): setter pairs with the buffered getter — merge and emit one declaration.
+                    BasePropertyDeclarationSyntax merged = MergePropertyAccessors(bufferedGetter, basePropertyDecl);
+                    writer.InnerWriter.WriteLine();
+                    writer.WriteMultilineNode(merged.NormalizeWhitespace());
+                    bufferedGetter = null;
+                    return;
+                }
+            }
+            // Case (3): flush any buffered getter and emit the incoming node as-is.
+            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+            writer.InnerWriter.WriteLine();
+            writer.WriteMultilineNode(node.NormalizeWhitespace());
+        }
+
+        // The buffer holds either a property getter or an indexer getter. Two consecutive accessor stubs
+        // merge into one declaration iff they target the SAME underlying property/indexer:
+        //  - same explicit-interface specifier (or both unqualified),
+        //  - same syntactic shape (both PropertyDeclaration or both IndexerDeclaration),
+        //  - for properties: same identifier text (the property name).
+        //  - for indexers: same index-parameter type signature (overloads must NOT cross-pair).
+        private static bool IsSameAccessorTarget(BasePropertyDeclarationSyntax getter, BasePropertyDeclarationSyntax setter)
+        {
+            string getterExplicit = getter.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty;
+            string setterExplicit = setter.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty;
+            if (getterExplicit != setterExplicit)
+            {
+                return false;
+            }
+            return (getter, setter) switch
+            {
+                (PropertyDeclarationSyntax g, PropertyDeclarationSyntax s) => g.Identifier.Text == s.Identifier.Text,
+                (IndexerDeclarationSyntax g, IndexerDeclarationSyntax s) => HaveSameParameterTypes(g.ParameterList, s.ParameterList),
+                _ => false,
+            };
+        }
+
+        private static bool HaveSameParameterTypes(BaseParameterListSyntax a, BaseParameterListSyntax b)
+        {
+            var aParams = a.Parameters;
+            var bParams = b.Parameters;
+            if (aParams.Count != bParams.Count)
+            {
+                return false;
+            }
+            for (int i = 0; i < aParams.Count; i++)
+            {
+                if (aParams[i].Type!.NormalizeWhitespace().ToString() != bParams[i].Type!.NormalizeWhitespace().ToString())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static BasePropertyDeclarationSyntax SynthesizeUnreachableInheritedPropertyAccessor(ComMethodContext inheritedStub)
+        {
+            IncrementalMethodStubGenerationContext genCtx = inheritedStub.GenerationContext;
+            Debug.Assert(genCtx.MemberKind.IsPropertyOrIndexerAccessor());
+
+            bool isSetter = genCtx.MemberKind.IsAccessorSetter();
+            bool isIndexer = genCtx.MemberKind.IsIndexerAccessor();
+
+            ImmutableArray<ParameterSyntax> stubParameters = genCtx.SignatureContext.StubParameters.ToImmutableArray();
+            TypeSyntax valueType;
+            ImmutableArray<ParameterSyntax> indexParameters;
+            if (isSetter)
+            {
+                valueType = stubParameters[stubParameters.Length - 1].Type!;
+                indexParameters = stubParameters.RemoveAt(stubParameters.Length - 1);
+            }
+            else
+            {
+                valueType = genCtx.SignatureContext.StubReturnType;
+                indexParameters = stubParameters;
+            }
+
+            AccessorDeclarationSyntax accessor = AccessorDeclaration(
+                isSetter ? SyntaxKind.SetAccessorDeclaration : SyntaxKind.GetAccessorDeclaration)
+                .WithExpressionBody(ArrowExpressionClause(
+                    ThrowExpression(
+                        ObjectCreationExpression(ParseTypeName("global::System.Diagnostics.UnreachableException"))
+                            .WithArgumentList(ArgumentList()))))
+                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+
+            ExplicitInterfaceSpecifierSyntax explicitSpecifier = ExplicitInterfaceSpecifier(
+                ParseName(inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName));
+
+            if (isIndexer)
+            {
+                return IndexerDeclaration(valueType)
+                    .WithExplicitInterfaceSpecifier(explicitSpecifier)
+                    .WithParameterList(BracketedParameterList(SeparatedList(indexParameters)))
+                    .WithAccessorList(AccessorList(SingletonList(accessor)));
+            }
+
+            string accessorName = inheritedStub.MethodInfo.MethodName;
+            string propertyName = IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(accessorName);
+
+            return PropertyDeclaration(valueType, Identifier(propertyName))
+                .WithExplicitInterfaceSpecifier(explicitSpecifier)
+                .WithAccessorList(AccessorList(SingletonList(accessor)));
+        }
+
+        private static void FlushBufferedPropertyGetter(IndentedTextWriter writer, ref BasePropertyDeclarationSyntax? bufferedGetter)
+        {
+            if (bufferedGetter is null)
+            {
+                return;
+            }
+            writer.InnerWriter.WriteLine();
+            writer.WriteMultilineNode(bufferedGetter.NormalizeWhitespace());
+            bufferedGetter = null;
+        }
+
+        private static BasePropertyDeclarationSyntax MergePropertyAccessors(
+            BasePropertyDeclarationSyntax getter,
+            BasePropertyDeclarationSyntax setter)
+        {
+            var combined = new List<AccessorDeclarationSyntax>(2);
+            combined.AddRange(getter.AccessorList!.Accessors);
+            combined.AddRange(setter.AccessorList!.Accessors);
+            return getter.WithAccessorList(AccessorList(List(combined)));
         }
 
         private static void WriteIUnknownDerivedOriginalInterfacePart(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
@@ -621,10 +870,97 @@ namespace Microsoft.Interop
                 writer.WriteLine('{');
                 writer.Indent++;
 
+                // Buffered getter state for merging consecutive get+set pairs into one declaration.
+                // For ordinary properties IndexParamList / IndexArgList are null; for indexers they hold
+                // the formatted parameter list (e.g. "int i, string s") and the argument-forwarding list
+                // (e.g. "i, s") respectively. The parameter list also serves as part of the merge identity
+                // so that overloaded indexers do not accidentally cross-pair.
+                (string? PropName, string? DeclaringType, string? PropType,
+                    SequenceEqualImmutableArray<AttributeInfo> PropAttrs,
+                    string? IndexParamList, string? IndexArgList) pendingGetter = default;
+
                 foreach (ComMethodContext shadow in shadowingMethods)
                 {
                     IncrementalMethodStubGenerationContext generationContext = shadow.GenerationContext;
                     SignatureContext sigContext = generationContext.SignatureContext;
+
+                    if (generationContext.MemberKind.IsPropertyOrIndexerAccessor())
+                    {
+                        bool isSetter = generationContext.MemberKind.IsAccessorSetter();
+                        bool isIndexer = generationContext.MemberKind.IsIndexerAccessor();
+                        string accessorName = shadow.MethodInfo.MethodName;
+                        string propName = IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(accessorName);
+                        string declaringType = shadow.OriginalDeclaringInterface.Info.Type.FullTypeName;
+
+                        // Materialize the parameter sequences once — StubParameters / ManagedParameters
+                        // are IEnumerable<T>, not lists.
+                        ImmutableArray<ParameterSyntax> stubParams = sigContext.StubParameters.ToImmutableArray();
+                        ImmutableArray<TypePositionInfo> managedParams = sigContext.ManagedParameters.ToImmutableArray();
+
+                        // The value type for an accessor is the StubReturnType for a getter and the LAST
+                        // managed parameter type for a setter (the implicit 'value'). For both ordinary
+                        // properties (one managed parameter) and indexer setters (index params + value),
+                        // the value entry is always last.
+                        TypeSyntax valueTypeSyntax = isSetter
+                            ? stubParams[stubParams.Length - 1].Type!
+                            : sigContext.StubReturnType;
+                        string propType = valueTypeSyntax.NormalizeWhitespace().ToString();
+                        SequenceEqualImmutableArray<AttributeInfo> propAttrs = shadow.MethodInfo.AssociatedAttributes;
+
+                        string? indexParamList = null;
+                        string? indexArgList = null;
+                        if (isIndexer)
+                        {
+                            // For indexers the index parameter list is the StubParameters minus the
+                            // implicit value entry (for setters). For getters, all StubParameters are
+                            // index parameters.
+                            int indexCount = isSetter ? stubParams.Length - 1 : stubParams.Length;
+                            indexParamList = string.Join(", ", stubParams.Take(indexCount).Select(p => p.NormalizeWhitespace().ToString()));
+                            indexArgList = string.Join(", ", managedParams.Take(indexCount).Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"));
+                        }
+
+                        if (!isSetter)
+                        {
+                            FlushPendingGetter(writer, ref pendingGetter);
+                            pendingGetter = (propName, declaringType, propType, propAttrs, indexParamList, indexArgList);
+                            continue;
+                        }
+
+                        // Setter: try to pair with a buffered getter. Identity includes the index parameter
+                        // list so overloaded indexers (same name, different param types) stay separate.
+                        if (pendingGetter.PropName == propName
+                            && pendingGetter.DeclaringType == declaringType
+                            && pendingGetter.IndexParamList == indexParamList)
+                        {
+                            EmitPropertyAttributes(writer, pendingGetter.PropAttrs);
+                            EmitDeclarationHead(writer, pendingGetter.PropType!, pendingGetter.PropName!, pendingGetter.IndexParamList);
+                            writer.WriteLine('{');
+                            writer.Indent++;
+                            EmitAccessor(writer, isSetter: false, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList);
+                            EmitAccessor(writer, isSetter: true, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList);
+                            writer.Indent--;
+                            writer.WriteLine('}');
+                            pendingGetter = default;
+                            continue;
+                        }
+
+                        FlushPendingGetter(writer, ref pendingGetter);
+                        EmitPropertyAttributes(writer, propAttrs);
+                        EmitDeclarationHead(writer, propType, propName, indexParamList);
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        EmitAccessor(writer, isSetter: true, declaringType, propName, indexArgList);
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                        continue;
+                    }
+
+                    FlushPendingGetter(writer, ref pendingGetter);
+
+                    // AssociatedAttributes is currently populated only for property/indexer accessors;
+                    // ordinary method stubs must not carry any. If this fires, a new producer is feeding
+                    // the field for a non-property member and the emitter needs to decide how to consume it.
+                    Debug.Assert(shadow.MethodInfo.AssociatedAttributes.Array.IsEmpty);
 
                     foreach (AttributeListSyntax additionalAttr in sigContext.AdditionalAttributes)
                     {
@@ -642,8 +978,75 @@ namespace Microsoft.Interop
                     writer.WriteLine($"({string.Join(", ", sigContext.ManagedParameters.Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"))});");
                 }
 
+                FlushPendingGetter(writer, ref pendingGetter);
+
                 writer.Indent--;
                 writer.WriteLine('}');
+
+                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs, string? IndexParamList, string? IndexArgList) pending)
+                {
+                    if (pending.PropName is null)
+                    {
+                        return;
+                    }
+                    EmitPropertyAttributes(writer, pending.PropAttrs);
+                    EmitDeclarationHead(writer, pending.PropType!, pending.PropName!, pending.IndexParamList);
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    EmitAccessor(writer, isSetter: false, pending.DeclaringType!, pending.PropName!, pending.IndexArgList);
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                    pending = default;
+                }
+
+                // Writes either `new T Name` (property) or `new T this[<paramList>]` (indexer) on its own line.
+                static void EmitDeclarationHead(IndentedTextWriter writer, string propType, string propName, string? indexParamList)
+                {
+                    if (indexParamList is null)
+                    {
+                        writer.WriteLine($"new {propType} {propName}");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"new {propType} this[{indexParamList}]");
+                    }
+                }
+
+                // Writes either `get => ((Base)this).Name;` / `set => ((Base)this).Name = value;` for properties
+                // or `get => ((Base)this)[<argList>];` / `set => ((Base)this)[<argList>] = value;` for indexers.
+                // For indexers the propName isn't part of the access expression (the IL-level naming comes
+                // from `[IndexerName]` propagated via AssociatedAttributes).
+                static void EmitAccessor(IndentedTextWriter writer, bool isSetter, string declaringType, string propName, string? indexArgList)
+                {
+                    string access = indexArgList is null
+                        ? $"(({declaringType})this).{propName}"
+                        : $"(({declaringType})this)[{indexArgList}]";
+                    writer.WriteLine(isSetter
+                        ? $"set => {access} = value;"
+                        : $"get => {access};");
+                }
+
+                static void EmitPropertyAttributes(IndentedTextWriter writer, SequenceEqualImmutableArray<AttributeInfo> attrs)
+                {
+                    // The derived-interface property shadow is a pure C# forwarder: its accessors are
+                    // `get => ((Base)this).Prop;` / `set => ((Base)this).Prop = value;`, with no COM call
+                    // and therefore no marshalling. Marshalling attributes declared on the source property
+                    // are intentionally suppressed here so the shadow only carries semantically-meaningful
+                    // user attributes (e.g. attributes used for documentation, tooling, or reflection).
+                    //
+                    // `[IndexerName("X")]` (for indexers) is NOT marshalling and must be propagated so the
+                    // shadow's IL accessor names (get_X / set_X) match the source's — otherwise the runtime
+                    // sees `get_Item` / `set_Item` and the shadow loses identity with the base indexer.
+                    foreach (AttributeInfo attrInfo in attrs)
+                    {
+                        if (attrInfo.Type is "global::" + TypeNames.MarshalUsingAttribute
+                            or "global::" + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)
+                        {
+                            continue;
+                        }
+                        writer.WriteLine($"[{attrInfo.Type}({string.Join(", ", attrInfo.Arguments)})]");
+                    }
+                }
             });
         }
     }
