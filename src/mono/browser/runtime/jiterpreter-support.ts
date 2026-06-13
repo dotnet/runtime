@@ -856,15 +856,24 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.end);
     }
 
+    // Returns the index of an imported tag within the wasm tag index space, which is SEPARATE
+    //  from the type index space (so getTypeIndex must not be used for catch/throw immediates).
+    //  The jiterpreter module imports exactly one tag, __cpp_exception, so it is at tag index 0.
+    getTagIndex (name: string): number {
+        if (name !== "__cpp_exception")
+            throw new Error(`Unknown wasm tag '${name}'`);
+        return 0;
+    }
+
     // Emits a try_table block (standardized exnref EH proposal) with a single
     //  'catch <tag> -> label' clause. On catch, the tag's parameters are pushed and control
     //  branches out by catchLabelDepth levels. Must be closed with endBlock().
-    tryTable (type: WasmValtype, catchTagTypeName: string, catchLabelDepth: number) {
+    tryTable (type: WasmValtype, catchTagName: string, catchLabelDepth: number) {
         this.appendU8(WasmOpcode.try_table);
         this.appendU8(type);
         this.appendULeb(1); // one catch clause
         this.appendU8(0x00); // 0x00 = catch (tag): push tag params, then branch
-        this.appendULeb(this.getTypeIndex(catchTagTypeName));
+        this.appendULeb(this.getTagIndex(catchTagName)); // tag index (separate index space from types)
         this.appendULeb(catchLabelDepth);
         this.activeBlocks++;
     }
