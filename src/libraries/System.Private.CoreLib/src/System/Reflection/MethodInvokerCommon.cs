@@ -105,8 +105,12 @@ namespace System.Reflection
             ref InvokeFunc_ObjSpanArgs?
             invokeFunc_ObjSpanArgs,
             MethodBase method,
+#if MONO
             bool needsByRefStrategy,
             bool backwardsCompat)
+#else
+            bool needsByRefStrategy)
+#endif
         {
             if (needsByRefStrategy)
             {
@@ -123,7 +127,11 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
+#if MONO
                     invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
+#else
+                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method);
+#endif
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
@@ -134,8 +142,12 @@ namespace System.Reflection
             ref InvokerStrategy strategy,
             ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args,
             MethodBase method,
+#if MONO
             bool needsByRefStrategy,
             bool backwardsCompat)
+#else
+            bool needsByRefStrategy)
+#endif
         {
             if (needsByRefStrategy)
             {
@@ -152,7 +164,11 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
+#if MONO
                     invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
+#else
+                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method);
+#endif
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
@@ -162,9 +178,46 @@ namespace System.Reflection
         internal static void DetermineStrategy_RefArgs(
             ref InvokerStrategy strategy,
             ref InvokeFunc_RefArgs? invokeFunc_RefArgs,
+#if MONO
             MethodBase method,
             bool backwardsCompat)
+#else
+            MethodBase method)
+#endif
         {
+#if !MONO
+            if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
+            {
+                // The first time, ignoring race conditions, use the interpreted path (already assigned
+                // in the constructor). This avoids the cost of emit+JIT for single-use invocations.
+                strategy |= InvokerStrategy.HasBeenInvoked_RefArgs;
+            }
+            else
+            {
+                // Skip caching for collectible assemblies: the DynamicMethod holds token
+                // references to types that would prevent the assembly from being unloaded.
+                bool isCollectible = method.DeclaringType is { Assembly.IsCollectible: true };
+                if (RuntimeFeature.IsDynamicCodeSupported && !isCollectible)
+                {
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method);
+                }
+
+                strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
+            }
+
+            return;
+#else
+            if (!backwardsCompat)
+            {
+                if (RuntimeFeature.IsDynamicCodeSupported)
+                {
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
+                }
+
+                strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
+                return;
+            }
+
             if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
             {
                 // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
@@ -175,11 +228,16 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
+#if MONO
                     invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
+#else
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method);
+#endif
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
             }
+#endif
         }
     }
 }

@@ -993,7 +993,11 @@ OBJECTREF EEException::CreateThrowable()
     {
         ThreadPreventAsyncHolder preventAbort(m_kind == kThreadAbortException ||
                                               m_kind == kThreadInterruptedException);
-        CallDefaultConstructor(throwable);
+
+        _ASSERTE(pMT->HasDefaultConstructor());
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
+        defaultCtorInvoker.InvokeThrowing(&throwable, pMD->GetSingleCallableAddrOfCode());
     }
 
     HRESULT hr = GetHR();
