@@ -856,6 +856,19 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.end);
     }
 
+    // Emits a try_table block (standardized exnref EH proposal) with a single
+    //  'catch <tag> -> label' clause. On catch, the tag's parameters are pushed and control
+    //  branches out by catchLabelDepth levels. Must be closed with endBlock().
+    tryTable (type: WasmValtype, catchTagTypeName: string, catchLabelDepth: number) {
+        this.appendU8(WasmOpcode.try_table);
+        this.appendU8(type);
+        this.appendULeb(1); // one catch clause
+        this.appendU8(0x00); // 0x00 = catch (tag): push tag params, then branch
+        this.appendULeb(this.getTypeIndex(catchTagTypeName));
+        this.appendULeb(catchLabelDepth);
+        this.activeBlocks++;
+    }
+
     arg (name: string | number, opcode?: WasmOpcode) {
         const index = typeof (name) === "string"
             ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
@@ -1969,7 +1982,7 @@ export type JiterpreterOptions = {
     enableJitCall: boolean;
     enableBackwardBranches: boolean;
     enableCallResume: boolean;
-    enableWasmEh: boolean;
+    enableWasmFinalEh: boolean;
     enableSimd: boolean;
     enableAtomics: boolean;
     zeroPageOptimization: boolean;
