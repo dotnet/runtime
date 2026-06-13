@@ -1796,3 +1796,23 @@ public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
         reader.ReadEndElement();
     }
 }
+
+public class TypeWithXmlTextSeparatorOnChoiceMixedContent
+{
+    [XmlChoiceIdentifier(nameof(Choices))]
+    [XmlText(typeof(string), Separator = ',')]
+    [XmlElement("Number", typeof(int))]
+    [XmlElement("DecimalNumber", typeof(double))]
+    public object[] All;
+
+    [XmlIgnore]
+    public XmlTextSeparatorChoice[] Choices;
+}
+
+[XmlType(IncludeInSchema = false)]
+public enum XmlTextSeparatorChoice
+{
+    None,
+    Number,
+    DecimalNumber
+}

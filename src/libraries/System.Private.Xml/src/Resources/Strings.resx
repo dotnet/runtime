@@ -2313,6 +2313,12 @@
   <data name="XmlInvalidFormUnqualified" xml:space="preserve">
     <value>The Form property may not be 'Unqualified' when an explicit Namespace property is present.</value>
   </data>
+  <data name="XmlInvalidTextSeparatorChar" xml:space="preserve">
+    <value>The specified Separator character is not valid in XML text content and cannot be used as a separator for member '{0}'.</value>
+  </data>
+  <data name="XmlInvalidAttributeSeparatorChar" xml:space="preserve">
+    <value>The specified Separator character is not valid in an XML attribute value and cannot be used as a separator for member '{0}'.</value>
+  </data>
   <data name="XmlDuplicateNamespace" xml:space="preserve">
     <value>The namespace, {0}, is a duplicate.</value>
   </data>
@@ -2606,6 +2612,9 @@
   </data>
   <data name="XmlIllegalArrayTextAttribute" xml:space="preserve">
     <value>Member '{0}' cannot be encoded using the XmlText attribute. You may use the XmlText attribute to encode primitives, enumerations, arrays of strings, or arrays of XmlNode.</value>
+  </data>
+  <data name="XmlIllegalArrayTextSeparator" xml:space="preserve">
+    <value>Member '{0}' cannot use the XmlText attribute Separator property. You may use the Separator property to encode arrays of strings.</value>
   </data>
   <data name="XmlIllegalTypedTextAttribute" xml:space="preserve">
     <value>Cannot serialize object of type '{0}'. Consider changing type of XmlText member '{0}.{1}' from {2} to string or string array.</value>

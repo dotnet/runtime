@@ -696,14 +696,20 @@ namespace System.Xml.Serialization
                 {
                     if (anyTextMapping.TypeDesc!.IsArrayLike)
                     {
-                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        string rawText = text.Mapping!.TypeDesc!.CollapseWhitespace
+                            ? CollapseWhitespace(Reader.ReadString())
+                            : Reader.ReadString();
+
+                        if (text.Separator.HasValue)
                         {
-                            value = CollapseWhitespace(Reader.ReadString());
+                            foreach (string part in rawText.Split(text.Separator.Value))
+                            {
+                                anyText.Source!(part);
+                            }
+                            return true;
                         }
-                        else
-                        {
-                            value = Reader.ReadString();
-                        }
+
+                        value = rawText;
                     }
                     else
                     {
@@ -1993,7 +1999,9 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    string[] vals = listValues.Split(null);
+                    string[] vals = attribute.Separator.HasValue
+                        ? listValues.Split(attribute.Separator.Value)
+                        : listValues.Split((char[]?)null);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {

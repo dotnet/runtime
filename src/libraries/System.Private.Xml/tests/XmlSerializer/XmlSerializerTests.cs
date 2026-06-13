@@ -802,6 +802,46 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XML_XmlTextSeparator_ChoiceMixedContent_NullBetweenText_RoundTrips()
+    {
+        var original = new TypeWithXmlTextSeparatorOnChoiceMixedContent
+        {
+            All = new object[] { "a", null, "b" },
+            Choices = new XmlTextSeparatorChoice[] { XmlTextSeparatorChoice.None, XmlTextSeparatorChoice.None, XmlTextSeparatorChoice.None }
+        };
+
+        var actual = SerializeAndDeserialize(original,
+            WithXmlHeader("<TypeWithXmlTextSeparatorOnChoiceMixedContent xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">a,b</TypeWithXmlTextSeparatorOnChoiceMixedContent>"));
+
+        Assert.NotNull(actual.All);
+        Assert.Equal(2, actual.All.Length);
+        Assert.Equal("a", actual.All[0]);
+        Assert.Equal("b", actual.All[1]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_XmlNodeMixedContent_ThrowsWithReflectingFieldMessage()
+    {
+        Exception ex = Record.Exception(() =>
+        {
+#if XMLSERIALIZERGENERATORTESTS
+            new XmlReflectionImporter().ImportTypeMapping(typeof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent));
+#else
+            var serializer = new XmlSerializer(typeof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent));
+#if ReflectionOnly
+            // The reflection-based serializer doesn't perform xml/type mapping in the constructor;
+            // mapping (and therefore separator validation) happens during the first Serialize/Deserialize
+            // call. Force the mapping to happen by serializing a default instance.
+            using var sw = new StringWriter();
+            serializer.Serialize(sw, new TypeWithXmlTextSeparatorOnXmlNodeMixedContent());
+#endif
+#endif
+        });
+
+        AssertXmlMappingException(ex, nameof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent), nameof(TypeWithXmlTextSeparatorOnXmlNodeMixedContent.All), "Separator");
+    }
+
+    [Fact]
     public static void Xml_TypeWithSchemaFormInXmlAttribute()
     {
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };
@@ -3382,6 +3422,13 @@ internal sealed class BlockingAfterBufferStream : Stream
     public override void SetLength(long value) => throw new NotSupportedException();
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     public override void Flush() { }
+}
+
+public class TypeWithXmlTextSeparatorOnXmlNodeMixedContent
+{
+    [XmlText(typeof(XmlNode), Separator = ',')]
+    [XmlElement(typeof(int))]
+    public object[] All = new object[] { 1 };
 }
 
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable

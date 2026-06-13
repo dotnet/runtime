@@ -3667,6 +3667,158 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.Number, actual.Number);
     }
 
+    // Positive [XmlText] round-trip cases for string[] members, parameterised by the
+    // wrapper type (which fixes the Separator). A single [XmlText] per type is the
+    // XmlSerializer's hard rule, so each separator needs its own wrapper class --
+    // only the array shape and the expected inner text varies per row.
+    //
+    // The Quote case (last row) verifies a separator that is valid in XML text but
+    // illegal as an XmlAttribute value -- the XmlText path must not reject it.
+    //
+    // Without a separator the wire format concatenates and deserialization returns a
+    // single-element array (legacy behavior); the single-element row locks in the
+    // unchanged wire format when only one item is present.
+    [Theory]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "a", "b", "c" }, "a,b,c", new[] { "a", "b", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorCommaOnStringArray), new[] { "a", "", "c" }, "a,,c", new[] { "a", "", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorSpaceOnStringArray), new[] { "a", "b", "c" }, "a b c", new[] { "a", "b", "c" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorSpaceOnStringArray), new[] { "a", "", "c" }, "a  c", new[] { "a", "", "c" })]
+    [InlineData(typeof(TypeWithXmlTextNoSeparatorOnStringArray), new[] { "abc", "def", "ghi" }, "abcdefghi", new[] { "abcdefghi" })]
+    [InlineData(typeof(TypeWithXmlTextNoSeparatorOnStringArray), new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(typeof(TypeWithXmlTextSeparatorQuote), new[] { "a", "b", "c" }, "a\"b\"c", new[] { "a", "b", "c" })]
+    public static void XML_XmlText_StringArray_RoundTrips(Type type, string[] input, string expectedInner, string[] expected)
+    {
+        FieldInfo field = type.GetField("Text");
+        object original = Activator.CreateInstance(type);
+        field.SetValue(original, input);
+
+        string baseline = $"<?xml version=\"1.0\"?><{type.Name} xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{expectedInner}</{type.Name}>";
+        object actual = SerializeAndDeserialize<object>(original, baseline, () => new XmlSerializer(type));
+
+        string[] actualText = (string[])field.GetValue(actual);
+        Assert.NotNull(actualText);
+        Assert.Equal(expected, actualText);
+    }
+
+    [Theory]
+    [InlineData(new[] { "x", "y", "z" }, "x,y,z", new[] { "x", "y", "z" })]
+    [InlineData(new[] { "only" }, "only", new[] { "only" })]
+    [InlineData(new[] { "a", "", "c" }, "a,,c", new[] { "a", "", "c" })]
+    public static void XML_XmlAttributeSeparator_Comma_StringArray_RoundTrips(string[] input, string expectedAttrValue, string[] expected)
+    {
+        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = input };
+        var actual = SerializeAndDeserialize(original,
+            $"<?xml version=\"1.0\"?><MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"{expectedAttrValue}\" />");
+        Assert.NotNull(actual.Items);
+        Assert.Equal(expected, actual.Items);
+    }
+
+    // Locks in that, when no Separator is specified for [XmlAttribute], the wire format
+    // and round-trip behavior are exactly the same as before the Separator property was
+    // added. Mirrors XML_TypeWithArrayLikeXmlAttribute (which covers the 2-element case)
+    // for the single-element edge case.
+    [Fact]
+    public static void XML_XmlAttributeNoSeparator_SingleElement_ProducesUnchangedWireFormat()
+    {
+        var original = new TypeWithStringArrayAsXmlAttribute { XmlAttributeForms = new string[] { "OnlyValue" } };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" XmlAttributeForms=\"OnlyValue\" />");
+        Assert.NotNull(actual.XmlAttributeForms);
+        Assert.Equal(new string[] { "OnlyValue" }, actual.XmlAttributeForms);
+    }
+
+    [Fact]
+    public static void XML_XmlAttributeSeparator_CloseBracketIsValidInAttribute_RoundTrips()
+    {
+        // ']' is valid in XML attribute values but not in text content.
+        var original = new TypeWithXmlAttributeSeparatorCloseBracket { Items = new string[] { "x", "y", "z" } };
+        var actual = SerializeAndDeserialize(original,
+            "<?xml version=\"1.0\"?><TypeWithXmlAttributeSeparatorCloseBracket xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" Items=\"x]y]z\" />");
+        Assert.NotNull(actual.Items);
+        Assert.Equal(new string[] { "x", "y", "z" }, actual.Items);
+    }
+
+    [Theory]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparator), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAngleBracket), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorAmpersand), "Text")]
+    [InlineData(typeof(TypeWithXmlTextInvalidSeparatorCloseBracket), "Text")]
+    [InlineData(typeof(TypeWithXmlAttributeInvalidSeparatorQuote), "Items")]
+    public static void XML_XmlSeparator_InvalidChar_ThrowsWithReflectingFieldMessage(Type type, string fieldName)
+    {
+        Exception ex = Record.Exception(() =>
+        {
+            var serializer = new XmlSerializer(type);
+#if ReflectionOnly
+            // The reflection-based serializer doesn't perform xml/type mapping in the constructor;
+            // mapping (and therefore separator validation) happens during the first Serialize/Deserialize
+            // call. Force the mapping to happen by serializing a default instance.
+            using var sw = new StringWriter();
+            serializer.Serialize(sw, Activator.CreateInstance(type));
+#endif
+        });
+
+        AssertXmlMappingException(ex, type.Name, fieldName);
+    }
+
+    public static IEnumerable<object[]> MixedContentRoundTripData() => new[]
+    {
+        // Full mixed content with separator: every text run is bounded by elements on at least one side,
+        // so the separator only appears between adjacent text items (One,Plus,One).
+        new object[]
+        {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" },
+            "<int>321</int>One,Plus,One<int>2</int><double>3.14</double>Two",
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" }
+        },
+        // A null item produces no XML output. It must not write a stray separator and must
+        // preserve the lastWasText status quo so surrounding text items are still correctly
+        // separated. (Null doesn't survive the round-trip; the separated text becomes two items.)
+        new object[]
+        {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object?[] { "a", null, "b" },
+            "a,b",
+            new object[] { "a", "b" }
+        },
+        // When a null item follows an element, the status quo (lastWasText = false) must be
+        // preserved so the following text item does not get a leading separator.
+        new object[]
+        {
+            typeof(TypeWithXmlTextSeparatorOnMixedContentWithElement),
+            new object?[] { 1, null, "a" },
+            "<int>1</int>a",
+            new object[] { 1, "a" }
+        },
+        // Mixed content without a Separator: consecutive text items concatenate
+        // (matching the non-mixed string-array behavior) and elements remain separate.
+        new object[]
+        {
+            typeof(TypeWithXmlTextNoSeparatorOnMixedContentWithElement),
+            new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" },
+            "<int>321</int>OnePlusOne<int>2</int><double>3.14</double>Two",
+            new object[] { 321, "OnePlusOne", 2, 3.14, "Two" }
+        },
+    };
+
+    [Theory]
+    [MemberData(nameof(MixedContentRoundTripData))]
+    public static void XML_XmlText_MixedContent_RoundTrips(Type type, object[] input, string expectedInner, object[] expected)
+    {
+        FieldInfo field = type.GetField("All");
+        object original = Activator.CreateInstance(type);
+        field.SetValue(original, input);
+
+        string baseline = $"<?xml version=\"1.0\"?><{type.Name} xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{expectedInner}</{type.Name}>";
+        object actual = SerializeAndDeserialize<object>(original, baseline, () => new XmlSerializer(type));
+
+        object[] actualAll = (object[])field.GetValue(actual);
+        Assert.NotNull(actualAll);
+        Assert.Equal(expected, actualAll);
+    }
+
     [Theory]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]

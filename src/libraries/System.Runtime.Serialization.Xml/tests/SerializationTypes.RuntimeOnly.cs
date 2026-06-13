@@ -4642,3 +4642,88 @@ public class PrimiveAttributeTestDerived : PrimiveAttributeTestBase
     [XmlText]
     public int Number { get; set; }
 }
+
+public class TypeWithXmlTextNoSeparatorOnStringArray
+{
+    [XmlText]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextSeparatorSpaceOnStringArray
+{
+    [XmlText(Separator = ' ')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextSeparatorCommaOnStringArray
+{
+    [XmlText(Separator = ',')]
+    public string[] Text;
+}
+
+[XmlType(TypeName = "MyXmlType")]
+public class TypeWithXmlAttributeWithSeparatorComma
+{
+    [XmlAttribute(Form = XmlSchemaForm.Qualified, Separator = ',')]
+    public string[] Items;
+}
+
+public class TypeWithXmlTextInvalidSeparator
+{
+    [XmlText(Separator = '\x01')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextInvalidSeparatorAngleBracket
+{
+    [XmlText(Separator = '<')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextInvalidSeparatorAmpersand
+{
+    [XmlText(Separator = '&')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextSeparatorQuote
+{
+    [XmlText(Separator = '"')]
+    public string[] Text;
+}
+
+public class TypeWithXmlAttributeSeparatorCloseBracket
+{
+    [XmlAttribute(Separator = ']')]
+    public string[] Items;
+}
+
+public class TypeWithXmlTextInvalidSeparatorCloseBracket
+{
+    [XmlText(Separator = ']')]
+    public string[] Text;
+}
+
+public class TypeWithXmlAttributeInvalidSeparatorQuote
+{
+    [XmlAttribute(Separator = '"')]
+    public string[] Items;
+}
+
+public class TypeWithXmlTextSeparatorOnMixedContentWithElement
+{
+    [XmlText(typeof(string), Separator = ',')]
+    [XmlElement(typeof(int))]
+    [XmlElement(typeof(double))]
+    public object[] All = new object[] { 321, "One", "Plus", "One", 2, 3.14, "Two" };
+}
+
+public class TypeWithXmlTextNoSeparatorOnMixedContentWithElement
+{
+    [XmlText(typeof(string))]
+    [XmlElement(typeof(int))]
+    [XmlElement(typeof(double))]
+    public object[] All;
+}
+
+

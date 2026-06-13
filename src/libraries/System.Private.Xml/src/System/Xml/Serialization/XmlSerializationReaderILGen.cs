@@ -2067,11 +2067,6 @@ namespace System.Xml.Serialization
                 {
                     LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
-                    MethodInfo String_Split = typeof(string).GetMethod(
-                        "Split",
-                        CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(char[]) }
-                        )!;
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
                         CodeGenerator.InstanceBindingFlags,
@@ -2087,8 +2082,29 @@ namespace System.Xml.Serialization
                     ilg.Call(XmlReader_get_Value);
                     ilg.Stloc(locListValues);
                     ilg.Ldloc(locListValues);
-                    ilg.Load(null);
-                    ilg.Call(String_Split);
+                    if (attribute.Separator.HasValue)
+                    {
+                        // listValues.Split(separatorChar, StringSplitOptions.None)
+                        MethodInfo String_Split_char = typeof(string).GetMethod(
+                            "Split",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(char), typeof(StringSplitOptions) }
+                            )!;
+                        ilg.Ldc(attribute.Separator.Value);
+                        ilg.Ldc(StringSplitOptions.None);
+                        ilg.Call(String_Split_char);
+                    }
+                    else
+                    {
+                        // listValues.Split((char[])null) -- splits on whitespace (existing behavior)
+                        MethodInfo String_Split_chararr = typeof(string).GetMethod(
+                            "Split",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(char[]) }
+                            )!;
+                        ilg.Load(null);
+                        ilg.Call(String_Split_chararr);
+                    }
                     ilg.Stloc(locVals);
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
                     ilg.For(localI, 0, locVals);
@@ -2355,27 +2371,29 @@ namespace System.Xml.Serialization
             {
                 if (member.IsArrayLike)
                 {
-                    WriteSourceBegin(member.ArraySource);
-                    if (text.Mapping!.TypeDesc!.CollapseWhitespace)
-                    {
-                        ilg.Ldarg(0); // for calling CollapseWhitespace
-                    }
-                    else
-                    {
-                    }
+                    // Read the (optionally whitespace-collapsed) text content into a local first,
+                    // matching the original behavior. Then either add the whole string as a single
+                    // element (existing concat behavior when no separator is specified) or split
+                    // on the configured separator and add each part.
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
                          CodeGenerator.InstanceBindingFlags,
                          Type.EmptyTypes
                          )!;
-                    MethodInfo XmlReader_ReadString = typeof(XmlReader).GetMethod(
+                    MethodInfo XmlReader_ReadContentAsString = typeof(XmlReader).GetMethod(
                         "ReadContentAsString",
                         CodeGenerator.InstanceBindingFlags,
                         Type.EmptyTypes
                         )!;
+
+                    LocalBuilder rawTextLoc = ilg.DeclareOrGetLocal(typeof(string), "rawText");
+                    if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                    {
+                        ilg.Ldarg(0); // pre-push 'this' for the CollapseWhitespace instance call
+                    }
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
-                    ilg.Call(XmlReader_ReadString);
+                    ilg.Call(XmlReader_ReadContentAsString);
                     if (text.Mapping.TypeDesc.CollapseWhitespace)
                     {
                         MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
@@ -2384,6 +2402,39 @@ namespace System.Xml.Serialization
                             new Type[] { typeof(string) }
                             )!;
                         ilg.Call(XmlSerializationReader_CollapseWhitespace);
+                    }
+                    ilg.Stloc(rawTextLoc);
+
+                    if (text.Separator.HasValue)
+                    {
+                        // Split rawText on the separator and add each part individually.
+                        MethodInfo String_Split = typeof(string).GetMethod(
+                            "Split",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(char), typeof(StringSplitOptions) }
+                            )!;
+                        LocalBuilder valsLoc = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
+                        ilg.Ldloc(rawTextLoc);
+                        ilg.Ldc(text.Separator.Value);
+                        ilg.Ldc(StringSplitOptions.None);
+                        ilg.Call(String_Split);
+                        ilg.Stloc(valsLoc);
+
+                        LocalBuilder iLoc = ilg.DeclareOrGetLocal(typeof(int), "i");
+                        ilg.For(iLoc, 0, valsLoc);
+                        WriteSourceBegin(member.ArraySource);
+                        ilg.Ldloc(valsLoc);
+                        ilg.Ldloc(iLoc);
+                        ilg.Ldelem(typeof(string));
+                        WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
+                        ilg.EndFor();
+                    }
+                    else
+                    {
+                        // No separator: add the entire text as a single element (existing behavior).
+                        WriteSourceBegin(member.ArraySource);
+                        ilg.Ldloc(rawTextLoc);
+                        WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
                     }
                 }
                 else
@@ -2410,8 +2461,8 @@ namespace System.Xml.Serialization
                         WriteSourceBegin(member.ArraySource);
                         WritePrimitive(text.Mapping, "Reader.ReadString()");
                     }
+                    WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
                 }
-                WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
             }
         }
 

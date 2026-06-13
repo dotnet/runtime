@@ -3873,7 +3873,16 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    if (attribute.Separator.HasValue)
+                    {
+                        Writer.Write("string[] vals = listValues.Split(");
+                        WriteQuotedCSharpChar(attribute.Separator.Value);
+                        Writer.WriteLine(");");
+                    }
+                    else
+                    {
+                        Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    }
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4132,19 +4141,56 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.XmlInternalError);
                 }
                 WriteSourceEnd(member.ArraySource);
+                Writer.WriteLine(";");
             }
             else
             {
                 if (member.IsArrayLike)
                 {
-                    WriteSourceBegin(member.ArraySource);
-                    if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                    if (text.Separator.HasValue)
                     {
-                        Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        // Read the (optionally whitespace-collapsed) text content into a local, then
+                        // split on the configured separator and add each part to the collection.
+                        Writer.WriteLine("{");
+                        Writer.Indent++;
+                        Writer.Write("string rawText = ");
+                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        {
+                            Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        }
+                        else
+                        {
+                            Writer.Write("Reader.ReadString()");
+                        }
+                        Writer.WriteLine(";");
+                        Writer.Write("string[] vals = rawText.Split(");
+                        WriteQuotedCSharpChar(text.Separator.Value);
+                        Writer.WriteLine(");");
+                        Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                        Writer.Indent++;
+                        WriteSourceBegin(member.ArraySource);
+                        Writer.Write("vals[i]");
+                        WriteSourceEnd(member.ArraySource);
+                        Writer.WriteLine(";");
+                        Writer.Indent--;
+                        Writer.WriteLine("}");
+                        Writer.Indent--;
+                        Writer.WriteLine("}");
                     }
                     else
                     {
-                        Writer.Write("Reader.ReadString()");
+                        // No separator: add the entire text as a single element (existing behavior).
+                        WriteSourceBegin(member.ArraySource);
+                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        {
+                            Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        }
+                        else
+                        {
+                            Writer.Write("Reader.ReadString()");
+                        }
+                        WriteSourceEnd(member.ArraySource);
+                        Writer.WriteLine(";");
                     }
                 }
                 else
@@ -4165,11 +4211,10 @@ namespace System.Xml.Serialization
                         WriteSourceBegin(member.ArraySource);
                         WritePrimitive(text.Mapping, "Reader.ReadString()");
                     }
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
                 }
-                WriteSourceEnd(member.ArraySource);
             }
-
-            Writer.WriteLine(";");
         }
 
         private void WriteMemberElementsCheckType(string? checkTypeHrefsSource)
