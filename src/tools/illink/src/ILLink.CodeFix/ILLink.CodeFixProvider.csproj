@@ -21,4 +21,26 @@
     <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
   </ItemGroup>
 
+  <!-- Keep this in sync with the '#if DEBUG' gate on UnsafeEvolutionAnalyzer and its
+       descriptors: AnalyzerReleases.Unshipped.md declares IL5005/IL5006, which are
+       only supported when the analyzer is compiled in Debug.
+       Microsoft.CodeAnalysis.Analyzers auto-includes AnalyzerReleases.*.md when the
+       file exists; we Remove the unshipped one in non-Debug builds inside a Target
+       so the Remove runs after the SDK package has done its auto-include, otherwise
+       RS2002 fires ("rule X is part of the next unshipped analyzer release, but is
+       not a supported diagnostic for any analyzer"). -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <Target Name="_RemoveUnshippedAnalyzerReleasesOutsideDebug"
+          BeforeTargets="CoreCompile"
+          Condition="'$(Configuration)' != 'Debug'">
+    <ItemGroup>
+      <AdditionalFiles Remove="@(AdditionalFiles)"
+                       Condition="'%(Filename)%(Extension)' == 'AnalyzerReleases.Unshipped.md'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

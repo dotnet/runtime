@@ -26,6 +26,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             builder.Add(new RequiresAssemblyFilesAnalyzer());
             builder.Add(new RequiresUnreferencedCodeAnalyzer());
             builder.Add(new DynamicallyAccessedMembersAnalyzer());
+#if DEBUG
+            builder.Add(new ILLink.CodeFix.UnsafeEvolution.UnsafeEvolutionAnalyzer());
+#endif
             return builder.ToImmutable();
         }
 
