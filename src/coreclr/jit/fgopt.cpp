@@ -7,7 +7,8 @@
 #pragma hdrstop
 #endif
 
-#include "lower.h" // for LowerRange()
+#include "lower.h"            // for LowerRange()
+#include "jitstd/algorithm.h" // for partition()
 
 // Flowgraph Optimization
 
@@ -5056,38 +5057,6 @@ unsigned Compiler::fgMeasureIR()
 
 #endif // FEATURE_JIT_METHOD_PERF
 
-template <typename Iterator, typename Pred>
-void partition(Iterator first, Iterator last, Pred pred)
-{
-    while (true)
-    {
-        // Skip all left items which are already correct
-        while (first < last && pred(first))
-        {
-            first++;
-        }
-
-        if (first == last)
-        {
-            return first;
-        }
-
-        // Predicate was false, the item is left but should be right!
-        // Find an item on the right which also needs swaping and swap them
-        do
-        {
-            --last;
-            if (first == last)
-            {
-                return first;
-            }
-        } while (!pred(last));
-
-        std::swap(*first, *last);
-        first++;
-    }
-}
-
 //------------------------------------------------------------------------
 // fgHeadTailMerge: merge common sequences of statements in block predecessors/successors
 //
@@ -5204,7 +5173,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Find all matching candidates and partition them to
             // be continous in memory at [matchesBegin, matchesEnd - 1]
             //
-            matchesEnd = std::partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
+            matchesEnd = jitstd::partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
                 if (!BasicBlock::sameEHRegion(candidateA.m_block, candidateB.m_block))
@@ -5436,13 +5405,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
             if (predBlock->GetUniqueSucc() != block)
-            {
-                continue;
-            }
-
-            // If this block was already processed, skip it
-            //
-            if (predBlock->isEmpty())
             {
                 continue;
             }
