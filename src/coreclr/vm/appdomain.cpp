@@ -136,7 +136,15 @@ PinnedHeapHandleBucket::~PinnedHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyStrongHandle(m_hndHandleArray);
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyStrongHandle(m_hndHandleArray);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(m_hndHandleArray, HNDTYPE_STRONG);
+        }
         m_hndHandleArray = NULL;
     }
 }

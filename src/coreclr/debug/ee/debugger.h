@@ -536,7 +536,7 @@ class EMPTY_BASES ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<
         }
         static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
         {
-            DestroyLongWeakHandle(e);
+            DestroyHandleInPreemptiveMode(e, HNDTYPE_WEAK_LONG);
         }
 };
 typedef SHash<ForceCatchHandlerFoundSHashTraits> ForceCatchHandlerFoundTable;
