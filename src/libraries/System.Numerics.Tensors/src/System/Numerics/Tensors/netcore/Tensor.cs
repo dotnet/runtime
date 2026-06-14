@@ -1620,7 +1620,7 @@ namespace System.Numerics.Tensors
 
             if (tensor.IsDense)
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsReadOnlyTensorSpan()._reference, (int)tensor.FlattenedLength);
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
                 if (newSize >= span.Length)
                 {
