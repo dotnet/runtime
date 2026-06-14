@@ -80,6 +80,7 @@ else()
                 LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             if (CORERUN_IN_BROWSER)
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=1)
                 # Include the virtual file system data for the browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
                 if (EXISTS "${WASM_PRELOAD_DIR}")
