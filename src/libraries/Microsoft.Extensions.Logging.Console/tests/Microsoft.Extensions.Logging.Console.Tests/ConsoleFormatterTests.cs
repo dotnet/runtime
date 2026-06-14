@@ -189,6 +189,56 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentNullException>(() => new NullNameConsoleFormatter());
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(FormatterNames))]
+        public void Log_ControlCharacters_AreSanitized(string formatterName)
+        {
+            // Arrange
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { SanitizeControlCharacters = true, ColorBehavior = LoggerColorBehavior.Enabled },
+                new ConsoleFormatterOptions { SanitizeControlCharacters = true },
+                new JsonConsoleFormatterOptions { SanitizeControlCharacters = true });
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u202E\r\n\tsuffix");
+
+            // Assert
+            string output = GetMessage(sink.Writes);
+            Assert.DoesNotContain('\u001b', output);
+            Assert.DoesNotContain('\u0008', output);
+            Assert.DoesNotContain('\u202E', output);
+            Assert.Contains("\\u001B", output);
+            Assert.Contains("\\u0008", output);
+            Assert.Contains("\\u202E", output);
+            Assert.Contains("\\u000D", output);
+            Assert.Contains("\\u000A", output);
+            Assert.Contains("\\u0009", output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_ControlCharacters_SanitizationCanBeDisabled(string formatterName)
+        {
+            // Arrange
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { SanitizeControlCharacters = false, ColorBehavior = LoggerColorBehavior.Enabled },
+                new ConsoleFormatterOptions { SanitizeControlCharacters = false },
+                new JsonConsoleFormatterOptions { SanitizeControlCharacters = false });
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            logger.LogInformation("Payload: {Value}", "prefix\u202Esuffix");
+
+            // Assert
+            string output = GetMessage(sink.Writes);
+            Assert.Contains('\u202E', output);
+        }
+
         private class NullNameConsoleFormatter : ConsoleFormatter
         {
             public NullNameConsoleFormatter() : base(null) { }
@@ -222,6 +272,17 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 data.Add(ConsoleFormatterNames.Simple);
                 data.Add(ConsoleFormatterNames.Systemd);
                 data.Add(ConsoleFormatterNames.Json);
+                return data;
+            }
+        }
+
+        public static TheoryData<string> NonJsonFormatterNames
+        {
+            get
+            {
+                var data = new TheoryData<string>();
+                data.Add(ConsoleFormatterNames.Simple);
+                data.Add(ConsoleFormatterNames.Systemd);
                 return data;
             }
         }
