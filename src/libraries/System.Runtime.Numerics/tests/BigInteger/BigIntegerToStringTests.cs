@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Tests;
 using System.Text;
 using Xunit;
@@ -874,7 +875,8 @@ namespace System.Numerics.Tests
                 {
                     temp[i] = '0';
                     i--;
-                };
+                }
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1417,7 +1419,8 @@ namespace System.Numerics.Tests
                 {
                     temp[i] = '0';
                     i--;
-                };
+                }
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1492,7 +1495,8 @@ namespace System.Numerics.Tests
                 {
                     temp[i] = '0';
                     i--;
-                };
+                }
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1913,7 +1917,8 @@ namespace System.Numerics.Tests
                 {
                     temp[i] = '0';
                     i--;
-                };
+                }
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -2133,6 +2138,33 @@ namespace System.Numerics.Tests
     [Collection(nameof(DisableParallelization))]
     public class ToStringTestThreshold
     {
+        [Fact]
+        public static void PowerOfTenCacheTests()
+        {
+            FieldInfo field = typeof(BigInteger).Assembly.GetType("System.Number")
+                .GetField("s_cachedPowersOf1e9", BindingFlags.NonPublic | BindingFlags.Static);
+
+            field.SetValue(null, null);
+
+            (BigInteger.One << 99991).ToString();
+            nuint[] cache99991 = (nuint[])field.GetValue(null);
+            Assert.NotNull(cache99991);
+
+            (BigInteger.One << 20000).ToString();
+            nuint[] cache20000 = (nuint[])field.GetValue(null);
+            Assert.Same(cache99991, cache20000);
+
+            field.SetValue(null, null);
+            (BigInteger.One << 20000).ToString();
+            cache20000 = (nuint[])field.GetValue(null);
+            Assert.True(cache20000.Length < cache99991.Length);
+
+            (BigInteger.One << 99989).ToString();
+            nuint[] cache99989 = (nuint[])field.GetValue(null);
+            Assert.Equal(cache99991, cache99989);
+            Assert.NotSame(cache99991, cache99989);
+        }
+
         [Fact]
         public static void RunSimpleToStringTests()
         {
