@@ -204,8 +204,8 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                 return comp->gtNewMethodTableLookup(addr);
             }
 
-            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+            addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -1248,7 +1248,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // We already know that this is either increasing or decreasing loop and the
     // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
     // is beyond the limit.
-    int stride = abs(iterInfo->IterConst());
+    ssize_t stride = abs(iterInfo->IterConst());
 
     static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
@@ -1261,6 +1261,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // Helper: build an LC_Ident constant whose width matches the IV.
+    auto makeIvConst = [ivType](ssize_t value) {
+        return (ivType == TYP_LONG) ? LC_Ident::CreateLongConst((int64_t)value)
+                                    : LC_Ident::CreateConst(static_cast<unsigned>(value));
+    };
+
     // Span<>.Length can be INT32_MAX, unlike Array.MaxLength. For an
     // increasing loop with stride > 1, the IV after the final in-loop
     // increment is at most `limit + s` (LE) or `limit + s - 1` (LT), so
@@ -1272,17 +1278,17 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     if (hasSpans && (stride > 1) && isIncreasingLoop)
     {
         const int     adjustForLE    = (iterInfo->TestOper() == GT_LE) ? 1 : 0;
-        const int     offset         = iterInfo->LimitOffset;
+        const ssize_t offset         = iterInfo->LimitOffset;
         const int64_t maxLimitBase64 = (int64_t)INT32_MAX - stride + 1 - adjustForLE - offset;
 
         if (iterInfo->HasConstLimit)
         {
             assert(offset == 0);
-            const int limitVal = iterInfo->ConstLimit();
+            const ssize_t limitVal = iterInfo->ConstLimit();
             if ((int64_t)limitVal > maxLimitBase64)
             {
-                JITDUMP("> Span stride %d: const limit %d exceeds overflow bound %lld\n", stride, limitVal,
-                        (long long)maxLimitBase64);
+                JITDUMP("> Span stride %lld: const limit %lld exceeds overflow bound %lld\n", (long long)stride,
+                        (long long)limitVal, (long long)maxLimitBase64);
                 return false;
             }
         }
@@ -1347,10 +1353,10 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         {
             if (iterInfo->ConstInitValue < 0)
             {
-                JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+                JITDUMP("> NeedsZeroTripGuard: init %lld is invalid\n", (long long)iterInfo->ConstInitValue);
                 return false;
             }
-            initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            initIdent = makeIvConst(iterInfo->ConstInitValue);
         }
         else
         {
@@ -1370,13 +1376,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Ident limitIdent;
         if (iterInfo->HasConstLimit)
         {
-            int limit = iterInfo->ConstLimit();
+            ssize_t limit = iterInfo->ConstLimit();
             if (limit < 0)
             {
-                JITDUMP("> NeedsZeroTripGuard: limit %d is invalid\n", limit);
+                JITDUMP("> NeedsZeroTripGuard: limit %lld is invalid\n", (long long)limit);
                 return false;
             }
-            limitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            limitIdent = makeIvConst(limit);
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
@@ -1425,14 +1431,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         // and array indices must be non-negative.
         if (iterInfo->ConstInitValue < 0)
         {
-            JITDUMP("> Init %d is invalid\n", iterInfo->ConstInitValue);
+            JITDUMP("> Init %lld is invalid\n", (long long)iterInfo->ConstInitValue);
             return false;
         }
 
         if (!isIncreasingLoop)
         {
             // For decreasing loop, the init value needs to be checked against the array length
-            ident = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            ident = makeIvConst(iterInfo->ConstInitValue);
         }
     }
     else
@@ -1463,17 +1469,17 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // Limit Conditions
     if (iterInfo->HasConstLimit)
     {
-        int limit = iterInfo->ConstLimit();
+        ssize_t limit = iterInfo->ConstLimit();
         if (limit < 0)
         {
-            JITDUMP("> limit %d is invalid\n", limit);
+            JITDUMP("> limit %lld is invalid\n", (long long)limit);
             return false;
         }
 
         if (isIncreasingLoop)
         {
             // For increasing loop, thelimit value needs to be checked against the array length
-            ident = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            ident = makeIvConst(limit);
         }
     }
     else if (iterInfo->HasInvariantLocalLimit)
@@ -1631,7 +1637,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         if (iterInfo->HasConstInit)
         {
             assert(iterInfo->ConstInitValue >= 0);
-            neInitIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            neInitIdent = makeIvConst(iterInfo->ConstInitValue);
         }
         else
         {
@@ -1643,9 +1649,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Ident neLimitIdent;
         if (iterInfo->HasConstLimit)
         {
-            const int limit = iterInfo->ConstLimit();
+            const ssize_t limit = iterInfo->ConstLimit();
             assert(limit >= 0);
-            neLimitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            neLimitIdent = makeIvConst(limit);
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
