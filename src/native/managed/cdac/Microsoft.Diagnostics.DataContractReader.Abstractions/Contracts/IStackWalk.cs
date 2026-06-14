@@ -68,13 +68,20 @@ public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
 
+[Flags]
+public enum StackwalkFlag
+{
+    Default = 0,
+    X86ESPIgnoresCalleePoppedArgs = 0x1,
+}
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
-
-    public virtual IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
+    IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
+    IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst = true) => throw new NotImplementedException();
     IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData) => throw new NotImplementedException();
-    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags = StackwalkFlag.Default) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
@@ -84,7 +91,7 @@ public interface IStackWalk : IContract
     bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
     TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
-    byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
+    void GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

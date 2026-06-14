@@ -7,6 +7,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 public interface IPlatformAgnosticContext
 {
+    // Required alignment, in bytes, of any memory buffer passed to Win32 GetThreadContext
+    // (or its cross-platform equivalents) as a CONTEXT*.
+    public const uint ContextAlignment = 16;
+
     public abstract uint Size { get; }
     public abstract uint ContextControlFlags { get; }
     public abstract uint FullContextFlags { get; }

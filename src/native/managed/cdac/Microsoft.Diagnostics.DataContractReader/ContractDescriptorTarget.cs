@@ -550,7 +550,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         int hr = _dataTargetDelegates.AllocVirtual(size, out ulong allocatedAddress);
         if (hr < 0)
-            throw Marshal.GetExceptionForHR(hr) ?? new InvalidOperationException($"Failed to allocate {size} bytes in the target process (HRESULT: 0x{hr:x8}).");
+            throw Marshal.GetExceptionForHR((int)hr) ?? new InvalidOperationException($"Failed to allocate {size} bytes in the target process (HRESULT: 0x{(int)hr:x8}).");
         if (allocatedAddress == 0)
             throw new OutOfMemoryException($"Failed to allocate {size} bytes in the target process (AllocVirtual returned S_OK but no address).");
 
