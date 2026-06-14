@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography.Dsa.Tests;
+using System.Security.Cryptography.Csp.Tests;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Csp.Tests
+namespace System.Security.Cryptography.Dsa.Tests
 {
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSACryptoServiceProviderTests

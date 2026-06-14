@@ -11,23 +11,23 @@ using Xunit;
 namespace System.Security.Cryptography.Dsa.Tests
 {
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-    public static class DSAKeyFileTests
+    public abstract class DSAKeyFileTests
     {
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
+        protected abstract DSAProvider DSAFactory { get; }
 
         [Fact]
-        public static void UseAfterDispose_NewKey()
+        public void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
         }
 
         [Fact]
-        public static void UseAfterDispose_ImportedKey()
+        public void UseAfterDispose_ImportedKey()
         {
             UseAfterDispose(true);
         }
 
-        private static void UseAfterDispose(bool importKey)
+        private void UseAfterDispose(bool importKey)
         {
             DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
 
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void ReadWriteDsa512Pkcs8()
+        public void ReadWriteDsa512Pkcs8()
         {
             ReadWriteBase64Pkcs8(
                 @"
@@ -87,9 +87,11 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
                 DSATestData.Dsa512Parameters);
         }
 
-        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
-        public static void ReadWriteDsa2048DeficientXPkcs8()
+        [ConditionalFact]
+        public void ReadWriteDsa2048DeficientXPkcs8()
         {
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+
             ReadWriteBase64Pkcs8(
                 @"
 MIICZAIBADCCAjkGByqGSM44BAEwggIsAoIBAQCU0+SznxcnPo8nsyaS98NNNWGL
@@ -109,7 +111,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
         }
 
         [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-        public static void ReadWriteDsa512EncryptedPkcs8()
+        public void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
             ReadBase64EncryptedPkcs8(
@@ -129,7 +131,7 @@ UCouQg==",
         }
 
         [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-        public static void ReadWriteDsa576EncryptedPkcs8()
+        public void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)
             ReadBase64EncryptedPkcs8(
@@ -149,7 +151,7 @@ itsfZ16jNKxoJbAx3psVTGdzxnw8",
         }
 
         [Fact]
-        public static void ReadWriteDsa1024EncryptedPkcs8()
+        public void ReadWriteDsa1024EncryptedPkcs8()
         {
             // pbeWithSHA1AndDES-CBC (PBES1)
             ReadBase64EncryptedPkcs8(
@@ -171,7 +173,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
         }
 
         [Fact]
-        public static void ReadWriteDsa1024EncryptedPkcs8_PasswordBytes()
+        public void ReadWriteDsa1024EncryptedPkcs8_PasswordBytes()
         {
             // pbeWithSHA1AndDES-CBC (PBES1)
             ReadBase64EncryptedPkcs8(
@@ -192,9 +194,11 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
-        public static void ReadWriteDsa2048EncryptedPkcs8()
+        [ConditionalFact]
+        public void ReadWriteDsa2048EncryptedPkcs8()
         {
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+
             ReadBase64EncryptedPkcs8(
                 @"
 MIICkTAbBgkqhkiG9w0BBQMwDgQIiFvwvRtsR00CAggABIICcLdrPIpSA2oPwA7S
@@ -219,9 +223,11 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
                 DSATestData.GetDSA2048Params());
         }
 
-        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
-        public static void ReadWriteDsa2048DeficientXEncryptedPkcs8()
+        [ConditionalFact]
+        public void ReadWriteDsa2048DeficientXEncryptedPkcs8()
         {
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+
             ReadBase64EncryptedPkcs8(
                 @"
 MIICkjAcBgoqhkiG9w0BDAEDMA4ECIE+VJLKiCq5AgIIAASCAnDa5K+uH8d1SVg6
@@ -247,7 +253,7 @@ dOwrkyNhKY+C3S3Hrg+1jGkxn95eJRPX7giU2GBUdc535JhKZH4=",
         }
 
         [Fact]
-        public static void ReadWriteDsa576SubjectPublicKeyInfo()
+        public void ReadWriteDsa576SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
@@ -261,7 +267,7 @@ ZfDP+UTj7VaoW3WVPrFpASSJhbtfiROY6rXjlkXn",
         }
 
         [Fact]
-        public static void ReadWriteDsa1024SubjectPublicKeyInfo()
+        public void ReadWriteDsa1024SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
@@ -278,9 +284,11 @@ pfTBO6zjtLRN4Q==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
-        public static void ReadWriteDsa2048SubjectPublicKeyInfo()
+        [ConditionalFact]
+        public void ReadWriteDsa2048SubjectPublicKeyInfo()
         {
+            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
 MIIDRjCCAjkGByqGSM44BAEwggIsAoIBAQCvj7mysUfJbzkjYGOb2qZUT/LNCGtg
@@ -305,7 +313,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void ImportNonsensePublicParameters()
+        public void ImportNonsensePublicParameters()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
@@ -374,7 +382,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void ImportNonsensePrivateParameters()
+        public void ImportNonsensePrivateParameters()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
@@ -448,7 +456,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void NoFuzzySubjectPublicKeyInfo()
+        public void NoFuzzySubjectPublicKeyInfo()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -479,7 +487,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void NoFuzzyPkcs8()
+        public void NoFuzzyPkcs8()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -510,7 +518,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void NoFuzzyEncryptedPkcs8()
+        public void NoFuzzyEncryptedPkcs8()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -535,7 +543,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void NoPrivKeyFromPublicOnly()
+        public void NoPrivKeyFromPublicOnly()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -564,7 +572,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void BadPbeParameters()
+        public void BadPbeParameters()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -688,7 +696,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        public static void DecryptPkcs12WithBytes()
+        public void DecryptPkcs12WithBytes()
         {
             using (DSA key = DSAFactory.Create())
             {
@@ -711,7 +719,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void DecryptPkcs12PbeTooManyIterations()
+        public void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
             byte[] high3DesIterationKey = Convert.FromBase64String(@"
@@ -732,7 +740,7 @@ KaC843/LqYiSNoD7rBPpSpkyLtldwhqc7o2Wz7tyb1Oj8WF47AJD5OI=");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void ReadWriteDsa1024EncryptedPkcs8_Pbes2HighIterations()
+        public void ReadWriteDsa1024EncryptedPkcs8_Pbes2HighIterations()
         {
             // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
             ReadBase64EncryptedPkcs8(@"
@@ -752,7 +760,7 @@ aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
                 DSATestData.GetDSA1024Params());
         }
 
-        private static void ReadBase64EncryptedPkcs8(
+        private void ReadBase64EncryptedPkcs8(
             string base64EncPkcs8,
             string password,
             PbeParameters pbeParameters,
@@ -769,7 +777,7 @@ aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
                 isEncrypted: true);
         }
 
-        private static void ReadBase64EncryptedPkcs8(
+        private void ReadBase64EncryptedPkcs8(
             string base64EncPkcs8,
             byte[] passwordBytes,
             PbeParameters pbeParameters,
@@ -786,7 +794,7 @@ aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
                 isEncrypted: true);
         }
 
-        private static void ReadWriteBase64SubjectPublicKeyInfo(
+        private void ReadWriteBase64SubjectPublicKeyInfo(
             string base64SubjectPublicKeyInfo,
             in DSAParameters expected)
         {
@@ -808,7 +816,7 @@ aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
                     dsa.TryExportSubjectPublicKeyInfo(destination, out written));
         }
 
-        private static void ReadWriteBase64Pkcs8(string base64Pkcs8, in DSAParameters expected)
+        private void ReadWriteBase64Pkcs8(string base64Pkcs8, in DSAParameters expected)
         {
             ReadWriteKey(
                 base64Pkcs8,
@@ -820,7 +828,7 @@ aylTdOmNGHG+7yEVFQ+sgvJJVIG9mz+YP9tBbzm65UvbzPrXSvNldgm2XUF0Z8LZMRqrurKLYjLE
                     dsa.TryExportPkcs8PrivateKey(destination, out written));
         }
 
-        private static void ReadWriteKey(
+        private void ReadWriteKey(
             string base64,
             in DSAParameters expected,
             ReadKeyAction readAction,

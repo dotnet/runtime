@@ -12,11 +12,13 @@ namespace System.Security.Cryptography.Dsa.Tests
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
+        protected abstract DSAProvider DSAFactory { get; }
+
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;
         protected override string HashParameterName => "rgbHash";
         protected override string SignatureParameterName => "rgbSignature";
 
-        private static KeyDescription CreateKey(int keySize)
+        private KeyDescription CreateKey(int keySize)
         {
             DSA dsa = DSAFactory.Create(keySize);
             int fieldSize;
@@ -40,7 +42,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 fieldSize);
         }
 
-        private static KeyDescription OpenKey(in DSAParameters dsaParameters)
+        private KeyDescription OpenKey(in DSAParameters dsaParameters)
         {
             return new KeyDescription(
                 DSAFactory.Create(dsaParameters),
@@ -48,7 +50,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 dsaParameters.Q.Length * 8);
         }
 
-        protected static IEnumerable<KeyDescription> LocalGenerateTestKeys()
+        protected IEnumerable<KeyDescription> LocalGenerateTestKeys()
         {
             yield return CreateKey(1024);
 
@@ -62,11 +64,8 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    public sealed class DsaArraySignatureFormatTests : DSASignatureFormatTests
+    public abstract class DsaArraySignatureFormatTests : DSASignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -106,11 +105,8 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    public sealed class DsaArrayOffsetSignatureFormatTests : DSASignatureFormatTests
+    public abstract class DsaArrayOffsetSignatureFormatTests : DSASignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -227,11 +223,8 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    public sealed class DsaSpanSignatureFormatTests : DSASignatureFormatTests
+    public abstract class DsaSpanSignatureFormatTests : DSASignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => false;
 
         protected override byte[] SignHash(
