@@ -8748,7 +8748,7 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 
             if (fgGlobalMorph)
             {
-                fgMorphTreeDone(cmp->gtOp2);
+                fgMorphTreeDone(cmp->gtGetOp2());
             }
         }
     }
