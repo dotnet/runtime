@@ -2720,6 +2720,213 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
     return result;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------------
+// AllComponentsEitherZeroOrAllBitsSet: Checks whether a value number represents
+// a SIMD value where each component is either zero or all-bits-set.
+//
+// Arguments:
+//    comp     - Compiler object
+//    vn       - The value number to check
+//    baseType - The expected SIMD element base type
+//
+// Return Value:
+//    true if the VN is known to produce 0/AllBitsSet per element.
+//
+static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var_types baseType)
+{
+    // Check for SIMD constant vectors (all-zero or all-bits-set)
+    // TODO: we can be less conservative and allow components to be
+    // either all-zero or all-bits-set, but not necessarily the same across the entire vector.
+    if (comp->vnStore->IsVNConstant(vn) && (comp->vnStore->TypeOfVN(vn) == TYP_SIMD16))
+    {
+        simd16_t val = comp->vnStore->GetConstantSimd16(vn);
+        return val.IsAllBitsSet() || val.IsZero();
+    }
+
+    VNFuncApp funcApp;
+    if (!comp->vnStore->GetVNFunc(vn, &funcApp) || (funcApp.m_func < VNF_HWI_FIRST) || (funcApp.m_func > VNF_HWI_LAST))
+    {
+        return false;
+    }
+
+    bool           isScalar;
+    NamedIntrinsic ni = static_cast<NamedIntrinsic>(funcApp.m_func - VNF_HWI_FIRST + NI_HW_INTRINSIC_START + 1);
+    genTreeOps     op = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(ni, baseType, &isScalar);
+
+    if (isScalar)
+    {
+        return false;
+    }
+
+    switch (op)
+    {
+        case GT_EQ:
+        case GT_NE:
+        case GT_GT:
+        case GT_GE:
+        case GT_LE:
+        case GT_LT:
+            if ((funcApp.m_arity == 3) && varTypeIsIntegral(baseType))
+            {
+                // Check if the 3rd argument (base type) matches the expected base type for the intrinsic.
+                // It can actually be even wider than the base type of the vector.
+                VNFuncApp baseTypeFuncApp;
+                if (comp->vnStore->GetVNFunc(funcApp.m_args[2], &baseTypeFuncApp) &&
+                    (baseTypeFuncApp.FuncIs(VNF_SimdType)))
+                {
+                    return genTypeSize(baseType) <=
+                           genTypeSize((var_types)comp->vnStore->GetConstantInt32(baseTypeFuncApp.m_args[1]));
+                }
+            }
+            return false;
+
+            // For these operations we don't need to check the base type, as they are guaranteed to produce 0/AllBitsSet
+            // if the inputs do.
+
+        case GT_NOT:
+            // ~0 = AllBitsSet, ~AllBitsSet = 0
+            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.m_args[0], baseType);
+
+        case GT_OR:
+        case GT_AND:
+        case GT_XOR:
+        case GT_AND_NOT:
+            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.m_args[0], baseType) &&
+                   AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.m_args[1], baseType);
+
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr_HWIntrinsic: Folds given HWIntrinsic using VN to a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    hw     -  The HWIntrinsic to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_HWIntrinsic(BasicBlock* block, GenTree* parent, GenTreeHWIntrinsic* hw)
+{
+    // IndexOfWhereAllBitsSet and LastIndexOfWhereAllBitsSet can be simplified if
+    // we know that the input vector has only 0/AllBitsSet components.
+    // This is only needed for ARM64 where we don't have a movemask-like instruction.
+#ifdef TARGET_ARM64
+    if (hw->OperIsHWIntrinsic(NI_Vector128_IndexOfWhereAllBitsSet) ||
+        hw->OperIsHWIntrinsic(NI_Vector128_LastIndexOfWhereAllBitsSet))
+    {
+        var_types baseType = hw->GetSimdBaseType();
+
+        auto vnVisitor = [this, baseType](ValueNum vn) -> ValueNumStore::VNVisit {
+            if (AllComponentsEitherZeroOrAllBitsSet(this, vn, baseType))
+            {
+                return ValueNumStore::VNVisit::Continue;
+            }
+            return ValueNumStore::VNVisit::Abort;
+        };
+
+        // Check via VNVisitReachingVNs so we also cover cases where the input is a PHI node.
+        if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(hw->Op(1)), vnVisitor) ==
+            ValueNumStore::VNVisit::Continue)
+        {
+            bool isLastIndex = hw->OperIsHWIntrinsic(NI_Vector128_LastIndexOfWhereAllBitsSet);
+
+            // Expand using the SHRN trick: SHRN narrows each element by shifting right #4,
+            // producing a packed 64-bit mask. Then CTZ/CLZ to find the element index.
+            //
+            // Each element contributes a fixed number of bits to the mask:
+            //   byte  -> 4 bits (16 elements → 64 bits), divisor = 4 (>> 2)
+            //   short -> 8 bits (8 elements → 64 bits),  divisor = 8 (>> 3)
+            //   int   -> 16 bits (4 elements → 64 bits), divisor = 16 (>> 4)
+            //   long  -> 32 bits (2 elements → 64 bits), divisor = 32 (>> 5)
+
+            var_types shrnBaseType;
+            int       ctzDivisorLog2;
+
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    shrnBaseType   = TYP_UBYTE;
+                    ctzDivisorLog2 = 2;
+                    break;
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    shrnBaseType   = TYP_UBYTE;
+                    ctzDivisorLog2 = 3;
+                    break;
+                case TYP_INT:
+                case TYP_UINT:
+                    shrnBaseType   = TYP_USHORT;
+                    ctzDivisorLog2 = 4;
+                    break;
+                case TYP_LONG:
+                case TYP_ULONG:
+                    shrnBaseType   = TYP_UINT;
+                    ctzDivisorLog2 = 5;
+                    break;
+                default:
+                    return nullptr;
+            }
+
+            GenTree* op1 = hw->Op(1);
+
+            // SHRN(input, #4) → Vector64
+            GenTree* shrn = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, gtNewIconNode(4),
+                                                     NI_AdvSimd_ShiftRightLogicalNarrowingLower, shrnBaseType, 8);
+
+            // ToScalar as uint64
+            GenTree* mask = gtNewSimdHWIntrinsicNode(TYP_LONG, shrn, NI_Vector64_ToScalar, TYP_ULONG, 8);
+
+            // Store mask in temp (needed for both bit-scan and condition)
+            unsigned maskTmp         = lvaGrabTemp(true DEBUGARG("SHRN mask temp"));
+            lvaTable[maskTmp].lvType = TYP_LONG;
+            GenTree* maskStore       = gtNewTempStore(maskTmp, mask);
+            GenTree* maskLcl1        = gtNewLclvNode(maskTmp, TYP_LONG);
+            GenTree* maskLcl2        = gtNewLclvNode(maskTmp, TYP_LONG);
+
+            GenTree* idx;
+
+            if (isLastIndex)
+            {
+                // (63 - CLZ64(mask)) >> ctzDivisorLog2
+                GenTree* clz = gtNewScalarHWIntrinsicNode(TYP_INT, maskLcl1, NI_ArmBase_Arm64_LeadingZeroCount);
+                GenTree* sub = gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(63), clz);
+                idx          = gtNewOperNode(GT_RSZ, TYP_INT, sub, gtNewIconNode(ctzDivisorLog2));
+            }
+            else
+            {
+                // CTZ64(mask) >> ctzDivisorLog2
+                GenTree* rbit = gtNewScalarHWIntrinsicNode(TYP_LONG, maskLcl1, NI_ArmBase_Arm64_ReverseElementBits);
+                GenTree* clz  = gtNewScalarHWIntrinsicNode(TYP_INT, rbit, NI_ArmBase_Arm64_LeadingZeroCount);
+                idx           = gtNewOperNode(GT_RSZ, TYP_INT, clz, gtNewIconNode(ctzDivisorLog2));
+            }
+
+            // mask != 0 ? idx : -1
+            GenTree* cond   = gtNewOperNode(GT_NE, TYP_INT, maskLcl2, gtNewIconNode(0, TYP_LONG));
+            GenTree* select = gtNewConditionalNode(GT_SELECT, cond, idx, gtNewIconNode(-1, TYP_INT), TYP_INT);
+
+            // COMMA chain: (maskTmp = mask, mask != 0 ? idx : -1)
+            GenTree* result = gtNewOperNode(GT_COMMA, TYP_INT, maskStore, select);
+
+            JITDUMP("Expanding NI_Vector128_IndexOfWhereAllBitsSet or NI_Vector128_LastIndexOfWhereAllBitsSet to:\n");
+            DISPTREE(result);
+            JITDUMP("\n");
+
+            return result;
+        }
+    }
+#endif // TARGET_ARM64
+
+    return nullptr;
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
@@ -2829,6 +3036,11 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
     {
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return optVNBasedFoldExpr_HWIntrinsic(block, parent, tree->AsHWIntrinsic());
+#endif
 
             // We can add more VN-based foldings here.
 

@@ -65,6 +65,9 @@ private:
 #endif // TARGET_XARCH
 
     void RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
+#if defined(TARGET_ARM64)
+    void RewriteHWIntrinsicIndexOfWhereAllBitsSet(GenTree** use, Compiler::GenTreeStack& parents);
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
