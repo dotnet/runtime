@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -12,13 +11,15 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    // This node represents the concept of a virtual method being used.
-    // It has no direct dependencies, but may be referred to by conditional static
-    // dependencies, or static dependencies from elsewhere.
-    //
-    // It is used to keep track of uses of virtual methods to ensure that the
-    // vtables are properly constructed
-    internal sealed class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
+    /// <summary>
+    /// This node represents the concept of a virtual method being used.
+    /// It has no direct dependencies, but may be referred to by conditional static
+    /// dependencies, or static dependencies from elsewhere.
+    ///
+    /// It is used to keep track of uses of virtual methods to ensure that the
+    /// vtables are properly constructed.
+    /// </summary>
+    public sealed class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _decl;
 
@@ -42,6 +43,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => $"VirtualMethodUse {_decl}";
 
+#if !READYTORUN
         protected override void OnMarked(NodeFactory factory)
         {
             // If the VTable slice is getting built on demand, the fact that the virtual method is used means
@@ -49,6 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
             lazyVTableSlice?.AddEntry(_decl);
         }
+#endif
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
@@ -56,6 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+#if !READYTORUN
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
@@ -75,6 +79,9 @@ namespace ILCompiler.DependencyAnalysis
 
             return dependencies;
         }
+#else
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
+#endif
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
