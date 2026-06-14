@@ -1491,6 +1491,21 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_NullableDataContractStructAsRoot()
+    {
+        NullableRootDataContractStruct? value = new NullableRootDataContractStruct();
+        var serializer = new DataContractSerializer(typeof(NullableRootDataContractStruct?));
+
+        using var stream = new MemoryStream();
+        serializer.WriteObject(stream, value);
+
+        stream.Position = 0;
+        var roundTripped = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
+
+        Assert.True(roundTripped.HasValue);
+    }
+
+    [Fact]
     public static void DCS_SimpleStructWithProperties()
     {
         SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
@@ -1547,6 +1562,11 @@ public static partial class DataContractSerializerTests
     }
 
 #region private type has to be in with in the class
+    [DataContract]
+    private struct NullableRootDataContractStruct
+    {
+    }
+
     [DataContract]
     private class PrivateType
     {
