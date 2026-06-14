@@ -76,6 +76,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>

@@ -107,6 +107,72 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Process"/> class from an existing process handle,
+        /// with optional standard I/O stream handles.
+        /// </summary>
+        /// <param name="processHandle">A <see cref="SafeProcessHandle"/> representing the process.</param>
+        /// <param name="startInfo">A <see cref="ProcessStartInfo"/> containing encoding information for the streams.</param>
+        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process.
+        /// The handle must support write access. The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process.
+        /// The handle must support read access and must be opened for asynchronous I/O on Windows.
+        /// The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process.
+        /// The handle must support read access and must be opened for asynchronous I/O on Windows.
+        /// The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        public Process(SafeProcessHandle processHandle, ProcessStartInfo startInfo, SafeFileHandle? standardInput = null, SafeFileHandle? standardOutput = null, SafeFileHandle? standardError = null)
+        {
+            ArgumentNullException.ThrowIfNull(processHandle);
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            if (processHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(processHandle));
+            }
+
+            GC.SuppressFinalize(this);
+            _machineName = ".";
+            _outputStreamReadMode = StreamReadMode.Undefined;
+            _errorStreamReadMode = StreamReadMode.Undefined;
+            _startInfo = startInfo;
+
+            SetProcessHandle(processHandle);
+            SetProcessId(processHandle.ProcessId);
+
+            if (standardInput is not null)
+            {
+                _standardInput = new StreamWriter(OpenStream(standardInput, FileAccess.Write),
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                {
+                    AutoFlush = true
+                };
+            }
+            if (standardOutput is not null)
+            {
+                if (OperatingSystem.IsWindows() && !standardOutput.IsAsync)
+                {
+                    throw new ArgumentException(SR.Argument_HandleNotAsync, nameof(standardOutput));
+                }
+
+                _standardOutput = new StreamReader(OpenStream(standardOutput, FileAccess.Read),
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (standardError is not null)
+            {
+                if (OperatingSystem.IsWindows() && !standardError.IsAsync)
+                {
+                    throw new ArgumentException(SR.Argument_HandleNotAsync, nameof(standardError));
+                }
+
+                _standardError = new StreamReader(OpenStream(standardError, FileAccess.Read),
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+        }
+
         private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo? processInfo)
         {
             GC.SuppressFinalize(this);

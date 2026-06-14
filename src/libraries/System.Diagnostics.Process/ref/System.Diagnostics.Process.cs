@@ -63,6 +63,7 @@ namespace System.Diagnostics
     public partial class Process : System.ComponentModel.Component, System.IDisposable
     {
         public Process() { }
+        public Process(Microsoft.Win32.SafeHandles.SafeProcessHandle processHandle, System.Diagnostics.ProcessStartInfo startInfo, Microsoft.Win32.SafeHandles.SafeFileHandle? standardInput = null, Microsoft.Win32.SafeHandles.SafeFileHandle? standardOutput = null, Microsoft.Win32.SafeHandles.SafeFileHandle? standardError = null) { }
         public int BasePriority { get { throw null; } }
         public bool EnableRaisingEvents { get { throw null; } set { } }
         public int ExitCode { get { throw null; } }
