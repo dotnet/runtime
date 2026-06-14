@@ -16,16 +16,6 @@
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
-  <Target Name="DisableWasmBigInt" BeforeTargets="GenerateEmccExports">
-    <!-- 
-    corerun does not link with -sWASM_BIGINT, so it must not export the BigInt-based HEAP64/HEAPU64 views. 
-    This is workaround for nodejs dwarf debugger issue
-    -->
-    <PropertyGroup>
-      <_WasmDisableBigInt>true</_WasmDisableBigInt>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="BuildRuntime"
           DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
