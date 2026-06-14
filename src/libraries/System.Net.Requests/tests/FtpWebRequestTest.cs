@@ -29,6 +29,17 @@ namespace System.Net.Tests
             }
         }
 
+        [Theory]
+        [InlineData("ftp://foo.com/bar\r\nbaz")]
+        [InlineData("ftp://foo.com/bar%0D%0Abaz")]
+        [InlineData("ftp://foo.com/bar%0d%0abaz")]
+        [InlineData("ftp://foo.com/bar%0D%0abaz")]
+        public void Ctor_NewLineInUri_ThrowsFormatException(string uriString)
+        {
+            Uri uri = new Uri(uriString, UriKind.Absolute);
+            Assert.Throws<FormatException>(() => WebRequest.Create(uri));
+        }
+
         [Fact]
         public void Ctor_VerifyDefaults_Success()
         {
