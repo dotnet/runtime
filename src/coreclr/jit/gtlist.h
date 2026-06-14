@@ -107,6 +107,10 @@ GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Lea
 
 GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
 
+#ifdef TARGET_WASM
+GTNODE(PARTIALLY_CONTAINED_LCL_ADDR, GenTreeOp, 0,0,GTK_UNOP)             // Unary wrapper around a LCL_ADDR
+#endif
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------

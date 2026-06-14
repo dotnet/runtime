@@ -459,6 +459,22 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
+
+    GenTree* addr = indirNode->Addr();
+    if (addr->OperIs(GT_LCL_ADDR) &&
+        IsContainableLclAddr(addr->AsLclFld(), indirNode->Size() DEBUGARG(true /* disableAssertion */)))
+    {
+        // An indir through a lcl_addr should never have a multiply-used address since it doesn't need a null check
+        //  and can't fault. If it does, this transform is incorrect.
+        assert((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None);
+        // For containable lcl addresses we want to 'partially contain' them, where we replace them with a node
+        //  that pushes the frame pointer onto the stack but doesn't emit an i32.const + i32.add. We do this by
+        //  wrapping and containing the LCL_ADDR inside of a node that emits the FP.
+        GenTreeUnOp* wrapper = m_compiler->gtNewOperNode(GT_PARTIALLY_CONTAINED_LCL_ADDR, addr->TypeGet(), addr);
+        addr->SetContained();
+        indirNode->SetAddr(wrapper);
+        BlockRange().InsertAfter(addr, wrapper);
+    }
 }
 
 //------------------------------------------------------------------------

@@ -790,6 +790,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
+        case GT_PARTIALLY_CONTAINED_LCL_ADDR:
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            WasmProduceReg(treeNode);
+            break;
+
         case GT_LCL_FLD:
             genCodeForLclFld(treeNode->AsLclFld());
             break;
@@ -2521,6 +2526,23 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     WasmProduceReg(tree);
 }
 
+static bool getOffsetForPossiblyContainedAddress(Compiler* comp, GenTree* addr, int* varx, int* offs)
+{
+    if (addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
+    {
+        GenTreeLclFld* lclFld = addr->gtGetOp1()->AsLclFld();
+        *varx                 = lclFld->GetLclNum();
+        *offs                 = lclFld->GetLclOffs();
+        return true;
+    }
+    else
+    {
+        *varx = 0;
+        *offs = 0;
+        return false;
+    }
+}
+
 //------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
@@ -2533,12 +2555,21 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     var_types   type = tree->TypeGet();
     instruction ins  = ins_Load(type);
+    GenTree*    addr = tree->Addr();
 
-    genConsumeAddress(tree->Addr());
+    genConsumeAddress(addr);
 
     // TODO-WASM: Memory barriers
 
-    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    int varx, offs;
+    if (getOffsetForPossiblyContainedAddress(m_compiler, addr, &varx, &offs))
+    {
+        GetEmitter()->emitIns_S(ins, emitActualTypeSize(type), varx, offs);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    }
 
     WasmProduceReg(tree);
 }
@@ -2570,6 +2601,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
+        assert(!addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR));
         genGCWriteBarrier(tree, writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
@@ -2579,7 +2611,16 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         // TODO-WASM: Memory barriers
 
-        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+        int varx, offs;
+
+        if (getOffsetForPossiblyContainedAddress(m_compiler, addr, &varx, &offs))
+        {
+            GetEmitter()->emitIns_S(ins, emitActualTypeSize(type), varx, offs);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+        }
     }
 
     genUpdateLife(tree);

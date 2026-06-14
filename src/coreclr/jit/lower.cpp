@@ -12079,20 +12079,24 @@ void Lowering::UnmarkTree(GenTree* node)
 // Both of these requirements are imposed by the emitter.
 //
 // Arguments:
-//    lclAddr    - The local address node
-//    accessSize - The access size (of an indirection)
+//    lclAddr          - The local address node
+//    accessSize       - The access size (of an indirection)
+//    disableAssertion - Disable checking whether the local's address-exposed
 //
 // Return Value:
 //    Whether an indirection of "accessSize" may contain "lclAddr".
 //
-bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const
+bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize DEBUGARG(bool disableAssertion)) const
 {
     if (CheckedOps::AddOverflows<int32_t>(lclAddr->GetLclOffs(), accessSize, CheckedOps::Unsigned) ||
         !m_compiler->IsValidLclAddr(lclAddr->GetLclNum(), lclAddr->GetLclOffs() + accessSize - 1))
     {
+#if DEBUG
         // We depend on containment for correctness of liveness updates in codegen. Therefore, all
         // locals that may "return false" here MUST be address-exposed. Local morph ensures this.
-        assert(m_compiler->lvaGetDesc(lclAddr)->IsAddressExposed());
+        if (!disableAssertion)
+            assert(m_compiler->lvaGetDesc(lclAddr)->IsAddressExposed());
+#endif
         return false;
     }
 
