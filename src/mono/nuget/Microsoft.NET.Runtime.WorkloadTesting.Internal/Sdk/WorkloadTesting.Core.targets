@@ -89,7 +89,7 @@
     <ReadLinesFromFile File="$(_DotNetInstallScriptPath)">
       <Output TaskParameter="Lines" ItemName="_DotNetInstallScriptLines" />
     </ReadLinesFromFile>
-    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="$(_DotNetInstallScriptLines->'%(Identity)'.Replace('ci.dot.net/public', 'ci.dot.net/dev'))" Overwrite="true" />
+    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="@(_DotNetInstallScriptLines->'%(Identity)'.Replace('ci.dot.net/public', 'ci.dot.net/dev'))" Overwrite="true" />
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
