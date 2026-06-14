@@ -1459,6 +1459,8 @@ namespace Internal.IL
             CheckIsNotPointer(varType);
 
             var stackValue = StackValue.CreateFromType(varType);
+            if (varType.IsByRefLike || (argument && varType.IsByRef))
+                stackValue.SetIsPermanentHome();
             if (index == 0 && argument && _thisType != null)
             {
                 Debug.Assert(varType == _thisType);
