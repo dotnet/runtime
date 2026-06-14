@@ -4544,6 +4544,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_LOCAL_MORPH, &Compiler::fgLocalMorph);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Optimize away conversions to/from masks in local variables.
     //
     DoPhase(this, PHASE_OPTIMIZE_MASK_CONVERSIONS, &Compiler::fgOptimizeMaskConversions);
