@@ -50,7 +50,7 @@ Descriptor XML can also be passed to the trimmer on the command via the [`-x` pa
 ```xml
 <linker>
   <assembly fullname="Assembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Assembly.Foo" preserve="all" />
+    <type fullname="Namespace.Foo" preserve="all" />
   </assembly>
 </linker>
 ```
@@ -62,25 +62,25 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A" preserve="all" />
+    <type fullname="Namespace.A" preserve="all" />
     
     <!-- No "preserve" attribute and no members specified means preserve all members -->
-    <type fullname="Assembly.B" /> 
+    <type fullname="Namespace.B" /> 
     
     <!-- Preserve the type declaration only -->
-    <type fullname="Assembly.C" preserve="nothing" /> 
+    <type fullname="Namespace.C" preserve="nothing" /> 
 
     <!-- Preserve a nested type -->
-    <type fullname="Assembly.D/Nested" preserve="all" />
+    <type fullname="Namespace.D/Nested" preserve="all" />
 
     <!-- Preserve all types with the prefix in their name -->
-    <type fullname="Assembly.Prefix*" />
+    <type fullname="Namespace.Prefix*" />
 
     <!-- Preserve the type if the type is used. If the type is not used it will be removed -->
-    <type fullname="Assembly.E" required="false" />
+    <type fullname="Namespace.E" required="false" />
 
     <!-- Type with generics in the signature -->
-    <type fullname="Assembly.G`1" />
+    <type fullname="Namespace.G`1" />
   </assembly>
 </linker>
 ```
@@ -92,10 +92,10 @@ The `required` attribute specifies that if the type is not marked, during the ma
   <assembly fullname="Assembly">
     
     <!-- Preserve all fields on a type -->
-    <type fullname="Assembly.A" preserve="fields" />
+    <type fullname="Namespace.A" preserve="fields" />
     
     <!-- Preserve all methods on a type -->
-    <type fullname="Assembly.B" preserve="methods" /> 
+    <type fullname="Namespace.B" preserve="methods" /> 
   </assembly>
 </linker>
 ```
@@ -107,7 +107,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
   <assembly fullname="Assembly">
     
     <!-- Preserves all types who's fully qualified type name matches the regular expression -->
-    <type fullname="Assembly.Namespace*" />
+    <type fullname="Namespace.Namespace*" />
     
     <!-- Preserve all types within the specified namespace -->
     <namespace fullname="Assembly.Namespace" /> 
@@ -120,7 +120,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <field signature="System.Int32 field1" />
       
       <!-- Field by name rather than signature -->
@@ -139,7 +139,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <method signature="System.Void Method1()" />
       <method signature="System.Void Method2(System.Int32,System.String)" />
 
@@ -161,7 +161,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">      
+    <type fullname="Namespace.A">      
       <!-- Preserve the property, its backing field (if present), getter, and setter methods -->    
       <property signature="System.Int32 Property1" />
 
@@ -188,7 +188,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <!-- Preserve the event, it's backing field (if present), add, and remove methods -->
       <event signature="System.EventHandler Event1" />
 
@@ -232,7 +232,7 @@ The `value` attribute is optional and only required when the method should be ha
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <method signature="System.String TestMethod()" body="stub" value="abcd" />
     </type>
   </assembly>
@@ -246,7 +246,7 @@ Entire method body is replaces with `throw` instruction when method is reference
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <method signature="System.String TestMethod()" body="remove" />
     </type>
   </assembly>
@@ -273,7 +273,7 @@ are applied, based on feature settings passed via `--feature FeatureName bool`
 <linker>
   <assembly fullname="Assembly">
     <!-- This substitution will apply only if "EnableOptionalFeature" is set to "false" -->
-    <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
+    <type fullname="Namespace.A" feature="EnableOptionalFeature" featurevalue="false">
       <method signature="System.String TestMethod()" body="stub" />
     </type>
   </assembly>
@@ -288,11 +288,11 @@ Note that this will only have an effect where it is applied - the default value 
 <linker>
   <assembly fullname="Assembly">
     <!-- This method will be preserved if "EnableDefaultFeature" is "true" or unspecified -->
-    <type fullname="Assembly.A" feature="EnableDefaultFeature" featurevalue="true" featuredefault="true">
+    <type fullname="Namespace.A" feature="EnableDefaultFeature" featurevalue="true" featuredefault="true">
       <method signature="System.String TestMethod()" />
     </type>
     <!-- This method will only be preserved if "EnableDefaultFeature" is "true", not if it is unspecified-->
-    <type fullname="Assembly.A" feature="EnableDefaultFeature" featurevalue="true">
+    <type fullname="Namespace.A" feature="EnableDefaultFeature" featurevalue="true">
       <method signature="System.String TestMethod2()" />
     </type>
   </assembly>
@@ -351,7 +351,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <attribute fullname="CustomAttributeName" assembly="AssemblyName">
         <argument>Argument</argument>
       </attribute>
@@ -365,7 +365,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <field name="MyTypeField">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
           <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
@@ -381,7 +381,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <property name="MyTypeProperty">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
           <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
@@ -397,7 +397,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <event name="MyTypeEvent">
         <attribute fullname="CustomAttribute" assembly="AssemblyName">
           <argument>ArgumentValue</argument>
@@ -413,7 +413,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <method signature="System.Void Method1(System.Type)">
         <parameter name="typeParameter">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
@@ -445,7 +445,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <method signature="System.Void Method1(System.Type, System.Type, System.Type)">
         <parameter name="typeParameter1">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
@@ -473,7 +473,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">
+    <type fullname="Namespace.A">
       <type name="NestedType">
         <property name="MyTypeField">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
@@ -510,7 +510,7 @@ attributes are applied.
 <linker>
   <assembly fullname="Assembly">
     <!-- The attribute will apply only if "EnableOptionalFeature" is set to "false" -->
-    <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
+    <type fullname="Namespace.A" feature="EnableOptionalFeature" featurevalue="false">
       <method signature="System.String TestMethod()">
         <return>
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
