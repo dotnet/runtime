@@ -23,6 +23,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
@@ -108,7 +110,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pRetVal = vmAppDomain == 0 ? 0u : _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+            *pRetVal = vmAppDomain == 0 ? 0u : DefaultAppDomainId;
         }
         catch (System.Exception ex)
         {
@@ -1140,8 +1142,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            *pRetVal = _target.ReadPointer(appDomainPtr);
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            *pRetVal = defaultAppDomain;
         }
         catch (System.Exception ex)
         {
@@ -1342,7 +1344,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             TargetPointer threadPtr = new TargetPointer(vmThread);
-            TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
             IStackWalk stackwalk = _target.Contracts.StackWalk;
 
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
@@ -2542,7 +2544,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pcGenericClassTypeParams = cClassParams;
 
             // Resolve the System.__Canon TypeHandle for per-parameter fallback.
-            TargetPointer canonMtPtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.CanonMethodTable));
+            TargetPointer canonMtPtr = rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
             TypeHandle thCanon = rts.GetTypeHandle(canonMtPtr);
 
             DebuggerIPCE_ExpandedTypeData entry;
@@ -2802,7 +2804,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer objectAddress = new TargetPointer(vmObject);
             TargetPointer parentMT = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
-            TargetPointer exceptionMT = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
+            TargetPointer exceptionMT = rts.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
 
             while (parentMT != TargetPointer.Null)
             {
@@ -2858,8 +2860,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (fpCallback is null)
                 throw new ArgumentNullException(nameof(fpCallback));
 
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            ulong vmAppDomain = _target.ReadPointer(appDomainPointer).Value;
+            ulong vmAppDomain = _target.Contracts.Loader.GetAppDomain().Value;
 
             IException exceptionContract = _target.Contracts.Exception;
             foreach (ExceptionStackFrameInfo frame in exceptionContract.GetExceptionStackFrames(new TargetPointer(vmObject)))
