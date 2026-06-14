@@ -592,8 +592,8 @@ namespace System.Threading.RateLimiting.Tests
             Assert.NotNull(limiterEntryTypeDef);
             var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
 
-            // LastAccessTimestamp is a public mutable field on the internal LimiterEntry type.
-            var lastAccessField = limiterEntryType.GetField("LastAccessTimestamp");
+            // LastAccessTimestamp is a non-public mutable field on the internal LimiterEntry type.
+            var lastAccessField = limiterEntryType.GetField("LastAccessTimestamp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.NotNull(lastAccessField);
 
             var entry = GetLimiterEntry<TResource, TKey>(limiter, key);

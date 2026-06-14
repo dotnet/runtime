@@ -323,7 +323,7 @@ namespace System.Threading.RateLimiting
             }
 
             public RateLimiter Limiter { get; }
-            public long LastAccessTimestamp;
+            internal long LastAccessTimestamp;
         }
     }
 }
