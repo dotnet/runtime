@@ -353,6 +353,11 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
+                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    AsyncTaskDispatcherInfo.ResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                }
+
                 bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
@@ -421,6 +426,23 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
+
+            bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            {
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint)
+                {
+                    methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
+                    state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
+                    nextContinuation = this.ContinuationForDiagnostics;
+                    return true;
+                }
+
+                methodId = 0;
+                state = -1;
+                nextContinuation = null;
+                return false;
+            }
+
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
@@ -486,6 +508,14 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
+            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            {
+                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags))
+                {
+                    AsyncTaskDispatcherInfo.CompleteAsyncMethod();
+                }
+            }
+
             if (TplEventSource.Log.IsEnabled())
             {
                 TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
@@ -515,6 +545,14 @@ namespace System.Runtime.CompilerServices
 
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
+
+            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            {
+                if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(AsyncInstrumentation.ActiveFlags))
+                {
+                    AsyncTaskDispatcherInfo.UnwindAsyncFrame();
+                }
+            }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?

@@ -4,15 +4,48 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Threading.Tasks;
 using Serializer = System.Runtime.CompilerServices.AsyncProfiler.EventBuffer.Serializer;
 
 namespace System.Runtime.CompilerServices
 {
     internal static partial class AsyncProfiler
     {
+        internal static class RuntimeAsyncIds
+        {
+            public static ulong GetDispatcherId(Task dispatcher) => (ulong)dispatcher.Id;
+
+            public static ulong GetDispatcherId(ref AsyncDispatcherInfo info)
+            {
+                if (info.CurrentTask != null)
+                {
+                    return (ulong)info.CurrentTask.Id;
+                }
+                return 0;
+            }
+        }
+
+        internal static unsafe ulong CaptureParentDispatcherId()
+        {
+            AsyncDispatcherInfo* v2 = AsyncDispatcherInfo.t_current;
+            AsyncTaskDispatcherInfo* v1 = AsyncTaskDispatcherInfo.t_current;
+
+            Task? parent = null;
+            if (v2 != null && (v1 == null || (void*)v2 < (void*)v1))
+            {
+                parent = v2->CurrentTask;
+            }
+            else if (v1 != null)
+            {
+                parent = v1->Dispatcher;
+            }
+
+            return parent != null ? (ulong)parent.Id : 0;
+        }
+
         internal static partial class CreateAsyncContext
         {
-            public static void Create(ulong id, Continuation nextContinuation)
+            public static void Create(Task dispatcher, Continuation nextContinuation)
             {
                 Info info = default;
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
@@ -22,15 +55,18 @@ namespace System.Runtime.CompilerServices
                 EventKeywords eventKeywords = context.ActiveEventKeywords;
                 if (IsEnabled.AnyAsyncEvents(eventKeywords))
                 {
+                    ulong parentDispatcherId = CaptureParentDispatcherId();
+                    ulong dispatcherId = RuntimeAsyncIds.GetDispatcherId(dispatcher);
                     long currentTimestamp = Stopwatch.GetTimestamp();
+
                     if (IsEnabled.CreateAsyncContextEvent(eventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp, id);
+                        EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.RuntimeAsync_CreateAsyncContext);
                     }
 
-                    if (IsEnabled.CreateAsyncCallstackEvent(eventKeywords))
+                    if (IsEnabled.CreateAsyncCallstackEvent(eventKeywords) && nextContinuation != null)
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.CreateAsyncCallstack, id, nextContinuation);
+                        AsyncCallstack.EmitCreateEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, nextContinuation);
                     }
                 }
 
@@ -40,25 +76,16 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ResumeAsyncContext
         {
-            public static ulong GetId(ref AsyncDispatcherInfo info)
-            {
-                if (info.CurrentTask != null)
-                {
-                    return (ulong)info.CurrentTask.Id;
-                }
-                return 0;
-            }
-
             public static void Resume(ref AsyncDispatcherInfo info)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
-                Resume(ref info, context, GetId(ref info), context.ActiveEventKeywords);
+                Resume(ref info, context, RuntimeAsyncIds.GetDispatcherId(ref info), context.ActiveEventKeywords);
 
                 AsyncThreadContext.Release(context);
             }
 
-            public static void Resume(ref AsyncDispatcherInfo info, AsyncThreadContext context, ulong id, EventKeywords activeEventKeywords)
+            public static void Resume(ref AsyncDispatcherInfo info, AsyncThreadContext context, ulong dispatcherId, EventKeywords activeEventKeywords)
             {
                 if (SyncPoint.Check(context))
                 {
@@ -70,12 +97,13 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeAsyncContextEvent(activeEventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp, id);
+                        EmitEvent(context, currentTimestamp, dispatcherId, AsyncEventID.RuntimeAsync_ResumeAsyncContext);
                     }
 
                     if (IsEnabled.ResumeAsyncCallstackEvent(activeEventKeywords))
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, id, info.NextContinuation);
+                        byte wrapperIndex = (byte)(info.AsyncProfilerInfo.ContinuationIndex & ContinuationWrapper.COUNT_MASK);
+                        AsyncCallstack.EmitResumeEvent(context, currentTimestamp, dispatcherId, wrapperIndex, info.NextContinuation);
                     }
                 }
             }
@@ -93,27 +121,108 @@ namespace System.Runtime.CompilerServices
                 if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
-                    if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
+
+                    if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords) && nextContinuation != null)
                     {
-                        EmitEvent(context, currentTimestamp);
+                        AsyncCallstack.EmitSuspendEvent(context, currentTimestamp, RuntimeAsyncIds.GetDispatcherId(ref info), nextContinuation);
                     }
 
-                    if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords))
+                    if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
                     {
-                        AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.SuspendAsyncCallstack, GetId(ref info), nextContinuation);
+                        EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_SuspendAsyncContext);
                     }
                 }
 
                 AsyncThreadContext.Release(context);
             }
 
-            private static ulong GetId(ref AsyncDispatcherInfo info)
+            private static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
             {
-                if (info.CurrentTask != null)
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID, 0);
+            }
+        }
+
+        internal static partial class CompleteAsyncContext
+        {
+            public static void Complete(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                SyncPoint.Check(context);
+
+                if (IsEnabled.CompleteAsyncContextEvent(context.ActiveEventKeywords))
                 {
-                    return (ulong)info.CurrentTask.Id;
+                    EmitEvent(context, Stopwatch.GetTimestamp(), AsyncEventID.RuntimeAsync_CompleteAsyncContext);
                 }
-                return 0;
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class AsyncMethodException
+        {
+            public static void Unhandled(ref AsyncDispatcherInfo info, uint unwindedFrames)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                {
+                    long currentTimestamp = Stopwatch.GetTimestamp();
+                    if (IsEnabled.UnwindAsyncExceptionEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp, unwindedFrames, AsyncEventID.RuntimeAsync_UnwindAsyncException);
+                    }
+
+                    if (IsEnabled.CompleteAsyncContextEvent(activeEventKeywords))
+                    {
+                        CompleteAsyncContext.EmitEvent(context, currentTimestamp, AsyncEventID.RuntimeAsync_CompleteAsyncContext);
+                    }
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
+            public static void Handled(ref AsyncDispatcherInfo info, uint unwindedFrames)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.UnwindAsyncExceptionEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp(), unwindedFrames, AsyncEventID.RuntimeAsync_UnwindAsyncException);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class ResumeAsyncMethod
+        {
+            public static void Resume(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.ResumeAsyncMethodEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, AsyncEventID.RuntimeAsync_ResumeAsyncMethod);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+        }
+
+        internal static partial class CompleteAsyncMethod
+        {
+            public static void Complete(ref AsyncDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                if (IsEnabled.CompleteAsyncMethodEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+                }
+
+                AsyncThreadContext.Release(context);
             }
         }
 
@@ -146,12 +255,6 @@ namespace System.Runtime.CompilerServices
             /// Must match the actual method names below (e.g., Continuation_Wrapper_0, Continuation_Wrapper_1, ...).
             /// </summary>
             public const string NameTemplate = "Continuation_Wrapper_{0}";
-
-            /// <summary>
-            /// Number of distinct wrapper methods. The wrapper index rotates modulo this value.
-            /// </summary>
-            public const byte COUNT = 32;
-            public const byte COUNT_MASK = COUNT - 1;
 
             public static void InitInfo(ref Info info)
             {
@@ -408,48 +511,95 @@ namespace System.Runtime.CompilerServices
             private static ContinuationWrapperTable s_continuationWrappers = InitContinuationWrappers();
         }
 
-        private static partial class SyncPoint
+        internal static partial class SyncPoint
         {
             private static unsafe void ResumeAsyncCallstacks(AsyncThreadContext context)
             {
-                //Write recursively all the resume async callstack events.
-                AsyncDispatcherInfo* info = AsyncDispatcherInfo.t_current;
-                if (info != null)
-                {
-                    ResumeRuntimeAsyncCallstacks(info, context);
-                }
+                // Replay suspended dispatchers in original execution (push) order. Both TLS chains
+                // (V2 AsyncDispatcherInfo and V1 AsyncTaskDispatcherInfo) are linked head=most-recent,
+                // so head has the smallest stack address (downward-growing stacks). The walker
+                // recurses to Next BEFORE emitting, producing oldest-first emission, and merges the
+                // two chains by always recursing on the smaller-address node first.
+                AsyncDispatcherInfo* runtimeAsyncInfo = AsyncDispatcherInfo.t_current;
+                AsyncTaskDispatcherInfo* taskAsyncInfo = AsyncTaskDispatcherInfo.t_current;
 
+                ResumeAsyncCallstacks(runtimeAsyncInfo, taskAsyncInfo, context);
             }
 
-            private static unsafe void ResumeRuntimeAsyncCallstacks(AsyncDispatcherInfo* info, AsyncThreadContext context)
+            private static unsafe void ResumeAsyncCallstacks(AsyncDispatcherInfo* runtimeAsyncInfo, AsyncTaskDispatcherInfo* taskAsyncInfo, AsyncThreadContext context)
             {
-                if (info != null)
+                if (runtimeAsyncInfo == null && taskAsyncInfo == null)
                 {
-                    ResumeRuntimeAsyncCallstacks(info->Next, context);
-                    ResumeAsyncContext.Resume(ref *info, context, ResumeAsyncContext.GetId(ref *info), Config.ActiveEventKeywords);
+                    return;
+                }
+
+                if (taskAsyncInfo == null || (runtimeAsyncInfo != null && (void*)runtimeAsyncInfo < (void*)taskAsyncInfo))
+                {
+                    ResumeAsyncCallstacks(runtimeAsyncInfo->Next, taskAsyncInfo, context);
+                    ResumeAsyncContext.Resume(ref *runtimeAsyncInfo, context, RuntimeAsyncIds.GetDispatcherId(ref *runtimeAsyncInfo), Config.ActiveEventKeywords);
+                }
+                else
+                {
+                    ResumeAsyncCallstacks(runtimeAsyncInfo, taskAsyncInfo->Next, context);
+                    ResumeAsyncContext.Resume(ref *taskAsyncInfo, context, TaskAsyncIds.GetDispatcherId(ref *taskAsyncInfo), Config.ActiveEventKeywords);
                 }
             }
         }
 
         private static partial class AsyncCallstack
         {
-            private const int MaxAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size;
+            private const int MaxRuntimeAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size;
 
-            public ref struct CaptureRuntimeAsyncCallstackState
+            private ref struct CaptureRuntimeAsyncCallstackState : ICaptureAsyncCallstack
             {
                 public Continuation? Continuation;
                 public ulong LastNativeIP;
                 public byte Count;
+
+                public bool Capture(byte[] buffer, ref int index, out byte count)
+                {
+                    bool result = CaptureRuntimeAsyncCallstack(buffer, ref index, ref this);
+                    count = Count;
+                    return result;
+                }
+
+                public static int MaxAsyncMethodFrameSize => MaxRuntimeAsyncMethodFrameSize;
             }
 
-            public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
+            public static void EmitCreateEvent(AsyncThreadContext context, long currentTimestamp, ulong parentDispatcherId, ulong dispatcherId, Continuation? asyncCallstack)
             {
-                if (index > buffer.Length || state.Continuation == null)
+                CaptureRuntimeAsyncCallstackState state = default;
+                state.Continuation = asyncCallstack;
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.RuntimeAsync_CreateAsyncCallstack, parentDispatcherId, dispatcherId, 0, ref state);
+            }
+
+            public static void EmitSuspendEvent(AsyncThreadContext context, long currentTimestamp, ulong dispatcherId, Continuation? asyncCallstack)
+            {
+                CaptureRuntimeAsyncCallstackState state = default;
+                state.Continuation = asyncCallstack;
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, 0, dispatcherId, 0, ref state);
+            }
+
+            public static void EmitResumeEvent(AsyncThreadContext context, long currentTimestamp, ulong dispatcherId, byte continuationIndex, Continuation? asyncCallstack)
+            {
+                CaptureRuntimeAsyncCallstackState state = default;
+                state.Continuation = asyncCallstack;
+                EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, 0, dispatcherId, continuationIndex, ref state);
+            }
+
+            private static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
+            {
+                if (index > buffer.Length)
                 {
                     return false;
                 }
 
-                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxAsyncMethodFrameSize);
+                if (state.Continuation == null)
+                {
+                    return true;
+                }
+
+                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxRuntimeAsyncMethodFrameSize);
                 if (maxAsyncCallstackFrames == 0)
                 {
                     return false;
@@ -479,8 +629,6 @@ namespace System.Runtime.CompilerServices
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
                 }
 
-                // Handrolled continuations (like RuntimeAsyncTaskContinuation) are indicated with a null DiagnosticIP. For these we always write 0 as the state since the state number is not meaningful.
-                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
                 state.Count++;
 
                 state.Continuation = state.Continuation.Next;
@@ -494,7 +642,6 @@ namespace System.Runtime.CompilerServices
                     }
 
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
-                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
@@ -504,130 +651,6 @@ namespace System.Runtime.CompilerServices
                 index += callstackSpanIndex;
 
                 return state.Continuation == null || state.Count == byte.MaxValue;
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, AsyncCallstackType.Runtime, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, eventID, id, AsyncCallstackType.Runtime, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, AsyncCallstackType type, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, type, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, AsyncCallstackType type, Continuation? asyncCallstack)
-            {
-                if (asyncCallstack != null)
-                {
-                    ref EventBuffer eventBuffer = ref context.EventBuffer;
-
-                    // Max callstack data that can fit in the buffer after flush.
-                    int maxCallstackBytes = Math.Min(
-                        byte.MaxValue * MaxAsyncMethodFrameSize,
-                        eventBuffer.Data.Length);
-
-                    CaptureRuntimeAsyncCallstackState state = default;
-                    state.Continuation = asyncCallstack;
-
-                    // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
-                    const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
-
-                    if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out Serializer.AsyncEventHeaderRollbackData rollbackData))
-                    {
-                        int frameCountOffset = CallstackHeader(ref eventBuffer, id, type, 0);
-
-                        byte[] buffer = eventBuffer.Data;
-                        int startIndex = eventBuffer.Index;
-                        int currentIndex = startIndex;
-
-                        if (!CaptureRuntimeAsyncCallstack(buffer, ref currentIndex, ref state))
-                        {
-                            byte[]? rentedArray = RentArray(maxCallstackBytes);
-                            if (rentedArray != null)
-                            {
-                                int length = currentIndex - startIndex;
-                                int index = length;
-
-                                Buffer.BlockCopy(buffer, startIndex, rentedArray, 0, length);
-                                CaptureRuntimeAsyncCallstack(rentedArray, ref index, ref state);
-
-                                // Rollback async event header before flushing.
-                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
-                                context.Flush();
-
-                                // Write the callstack again.
-                                if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index))
-                                {
-                                    CallstackHeader(ref eventBuffer, id, type, state.Count);
-                                    CallstackData(ref eventBuffer, rentedArray, index);
-                                }
-
-                                ArrayPool<byte>.Shared.Return(rentedArray);
-                            }
-                            else
-                            {
-                                // Rollback async event header since we can't write the callstack.
-                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
-                            }
-                        }
-                        else
-                        {
-                            // Patch frame count in the event buffer using the offset from CallstackHeader.
-                            eventBuffer.Data[frameCountOffset] = state.Count;
-                            eventBuffer.Index += currentIndex - startIndex;
-                        }
-                    }
-                }
-            }
-
-            private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte callstackFrameCount)
-            {
-                // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + frameCount (1 byte) + id (max 10 bytes compressed).
-                const int MaxCallstackHeaderSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
-
-                ref int index = ref eventBuffer.Index;
-
-                Span<byte> callstackHeaderSpan = eventBuffer.Data.AsSpan(index, MaxCallstackHeaderSize);
-                int spanIndex = 0;
-
-                callstackHeaderSpan[spanIndex++] = (byte)type;
-                callstackHeaderSpan[spanIndex++] = 0; // Reserved callstack ID for future callstack interning.
-
-                int frameCountOffset = index + spanIndex;
-                callstackHeaderSpan[spanIndex++] = callstackFrameCount;
-
-                spanIndex += Serializer.WriteCompressedUInt64(callstackHeaderSpan.Slice(spanIndex), id);
-                eventBuffer.Index += spanIndex;
-
-                return frameCountOffset;
-            }
-
-            private static void CallstackData(ref EventBuffer eventBuffer, byte[] callstackData, int callstackDataByteCount)
-            {
-                ref int index = ref eventBuffer.Index;
-                Buffer.BlockCopy(callstackData, 0, eventBuffer.Data, index, callstackDataByteCount);
-                index += callstackDataByteCount;
-            }
-
-            private static byte[]? RentArray(int minimumLength)
-            {
-                byte[]? rentedArray = null;
-                try
-                {
-                    rentedArray = ArrayPool<byte>.Shared.Rent(minimumLength);
-                }
-                catch
-                {
-                    //AsyncProfiler can't throw, return null if renting fails.
-                }
-
-                return rentedArray;
             }
         }
     }

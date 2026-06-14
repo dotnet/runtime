@@ -116,6 +116,11 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(box != null);
 
+                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    box = AsyncTaskDispatcher.Create(box);
+                }
+
                 // If tracing is enabled, delegate the Action-based implementation.
                 if (TplEventSource.Log.IsEnabled())
                 {
