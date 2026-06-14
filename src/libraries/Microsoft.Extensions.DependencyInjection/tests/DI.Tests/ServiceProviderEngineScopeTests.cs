@@ -131,6 +131,84 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
         }
 
+        [Fact]
+        public void Dispose_DoesNotDisposeSameSingletonInstanceResolvedAsMultipleServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<MultipleServiceImpl>();
+            services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+
+            var serviceProvider = services.BuildServiceProvider();
+            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+
+            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService1>());
+            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService2>());
+
+            serviceProvider.Dispose();
+
+            Assert.Equal(1, service.DisposeCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_DoesNotDisposeSameSingletonInstanceResolvedAsMultipleServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<MultipleServiceImpl>();
+            services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+
+            var serviceProvider = services.BuildServiceProvider();
+            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+
+            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService1>());
+            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService2>());
+
+            await ((IAsyncDisposable)serviceProvider).DisposeAsync();
+
+            Assert.Equal(1, service.DisposeCount);
+        }
+
+        [Fact]
+        public void Dispose_DisposesSharedSingletonAfterDependents()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<MultipleServiceImpl>();
+            services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<DependsOnMultipleService>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            _ = serviceProvider.GetRequiredService<DependsOnMultipleService>();
+            _ = serviceProvider.GetRequiredService<IMultipleService2>();
+            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+
+            serviceProvider.Dispose();
+
+            Assert.Equal(1, service.DisposeCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_DisposesSharedSingletonAfterDependents()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<MultipleServiceImpl>();
+            services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            services.AddSingleton<DependsOnMultipleService>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            _ = serviceProvider.GetRequiredService<DependsOnMultipleService>();
+            _ = serviceProvider.GetRequiredService<IMultipleService2>();
+            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+
+            await ((IAsyncDisposable)serviceProvider).DisposeAsync();
+
+            Assert.Equal(1, service.DisposeCount);
+        }
+
         private class TestDisposable : IDisposable, IAsyncDisposable
         {
             public const string ErrorMessage = "Dispose failed.";
@@ -171,6 +249,54 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     await Task.Yield();
                     Dispose();
                 }
+            }
+        }
+
+        private interface IMultipleService1
+        {
+        }
+
+        private interface IMultipleService2
+        {
+        }
+
+        private sealed class MultipleServiceImpl : IMultipleService1, IMultipleService2, IDisposable, IAsyncDisposable
+        {
+            public int DisposeCount { get; private set; }
+
+            public void Dispose() => DisposeCount++;
+
+            public ValueTask DisposeAsync()
+            {
+                DisposeCount++;
+                return default;
+            }
+        }
+
+        private sealed class DependsOnMultipleService : IDisposable, IAsyncDisposable
+        {
+            private readonly MultipleServiceImpl _service;
+
+            public DependsOnMultipleService(IMultipleService1 service)
+            {
+                _service = (MultipleServiceImpl)service;
+            }
+
+            public void Dispose()
+            {
+                if (_service.DisposeCount != 0)
+                {
+                    throw new InvalidOperationException("Shared service should be disposed after dependents.");
+                }
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                if (_service.DisposeCount != 0)
+                {
+                    throw new InvalidOperationException("Shared service should be disposed after dependents.");
+                }
+                return default;
             }
         }
     }
