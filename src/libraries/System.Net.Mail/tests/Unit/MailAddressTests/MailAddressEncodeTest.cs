@@ -136,8 +136,11 @@ namespace System.Net.Mail.Tests
                 + "\r\n =?utf-8?Q?=60abcdefghijklmnopqrstuvwxyz=7B=7C=7D=7E?= <test@example.com>", result);
 
             result = testAddress.Encode(0, true);
+            // The literal '\' in the input is RFC 5322-escaped as '\\' in the
+            // resulting quoted-string when allowUnicode permits the quoted-string
+            // form (i.e. no Q-encoding).
             Assert.Equal(
-                "\"\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
+                "\"\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
                 + "<test@example.com>", result);
         }
 
@@ -212,6 +215,53 @@ namespace System.Net.Mail.Tests
             result = collection.Encode(0, true);
             Assert.Equal("\"test\" <test@example.com>, \"test\u00DC\" <test2@example.com>, test5@example2.com,"
                 + " \"test\u00DC\" <test2@example.com>", result);
+        }
+
+        public static IEnumerable<object[]> DisplayNamesWithSpecialChars()
+        {
+            // displayName, expected encoded form (without the address suffix).
+            // Both '"' and '\' are RFC 5322 quoted-string specials and must be
+            // escaped as quoted-pairs ('\"' and '\\').
+            yield return new object[] { "Henry \"The Fonz\" Winkler", "\"Henry \\\"The Fonz\\\" Winkler\"" };
+            yield return new object[] { "with \" quote", "\"with \\\" quote\"" };
+            yield return new object[] { "with \\ backslash", "\"with \\\\ backslash\"" };
+            yield return new object[] { "with \\\" both", "\"with \\\\\\\" both\"" };
+            yield return new object[] { "C:\\path\\to\\file", "\"C:\\\\path\\\\to\\\\file\"" };
+            yield return new object[] { "\\", "\"\\\\\"" };
+            yield return new object[] { "\"", "\"\\\"\"" };
+        }
+
+        [Theory]
+        [MemberData(nameof(DisplayNamesWithSpecialChars))]
+        public void EncodeSingleMailAddress_WithDisplayNameContainingSpecials_ShouldEscapeAsQuotedPairs(string displayName, string expectedEncodedDisplayName)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/52439:
+            // embedded '"' and '\' in the DisplayName must be escaped as quoted-pairs
+            // when produced for SMTP headers, otherwise the header is corrupted.
+            string expected = $"{expectedEncodedDisplayName} <test@example.com>";
+
+            MailAddress ctorAddress = new MailAddress("test@example.com", displayName);
+            Assert.Equal(expected, ctorAddress.Encode(0, false));
+            Assert.Equal(expected, ctorAddress.Encode(0, true));
+            Assert.Equal(expected, ctorAddress.ToString());
+
+            Assert.True(MailAddress.TryCreate("test@example.com", displayName, out MailAddress tryCreateAddress));
+            Assert.Equal(expected, tryCreateAddress.Encode(0, false));
+            Assert.Equal(expected, tryCreateAddress.Encode(0, true));
+            Assert.Equal(expected, tryCreateAddress.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(DisplayNamesWithSpecialChars))]
+        public void EncodeMultipleMailAddress_WithDisplayNameContainingSpecials_ShouldEscapeAsQuotedPairs(string displayName, string expectedEncodedDisplayName)
+        {
+            MailAddress testAddress = new MailAddress("test@example.com", displayName);
+            MailAddressCollection collection = new MailAddressCollection();
+            collection.Add(testAddress);
+
+            string expected = $"{expectedEncodedDisplayName} <test@example.com>";
+            Assert.Equal(expected, collection.Encode(0, false));
+            Assert.Equal(expected, collection.Encode(0, true));
         }
 
         [Fact]
