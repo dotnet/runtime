@@ -162,14 +162,20 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
     switch (type)
     {
         case Const:
-            assert(constant <= INT32_MAX);
-            return comp->gtNewIconNode(constant);
+            if (lclType == TYP_LONG)
+            {
+                return comp->gtNewLconNode((int64_t)constant);
+            }
+            assert((constant >= INT32_MIN) && (constant <= INT32_MAX));
+            return comp->gtNewIconNode((int32_t)constant);
         case Var:
         {
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                GenTree* offNode = (node->TypeGet() == TYP_LONG) ? comp->gtNewLconNode((int64_t)offset)
+                                                                 : comp->gtNewIconNode((int32_t)offset);
+                node             = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, offNode);
             }
             return node;
         }
@@ -178,7 +184,9 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = arrAccess.ToGenTree(comp, bb);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                GenTree* offNode = (node->TypeGet() == TYP_LONG) ? comp->gtNewLconNode((int64_t)offset)
+                                                                 : comp->gtNewIconNode((int32_t)offset);
+                node             = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, offNode);
             }
             return node;
         }
@@ -196,8 +204,8 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                 return comp->gtNewMethodTableLookup(addr);
             }
 
-            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+            addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -261,6 +269,19 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 {
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
+
+    // Widen the int side via cast when comparing against a long operand
+    // (e.g. arr.Length compared against a long IV).
+    const var_types op1Act = genActualType(op1Tree->TypeGet());
+    const var_types op2Act = genActualType(op2Tree->TypeGet());
+    if ((op1Act == TYP_INT) && (op2Act == TYP_LONG))
+    {
+        op1Tree = comp->gtNewCastNode(TYP_LONG, op1Tree, /* fromUnsigned */ true, TYP_LONG);
+    }
+    else if ((op2Act == TYP_INT) && (op1Act == TYP_LONG))
+    {
+        op2Tree = comp->gtNewCastNode(TYP_LONG, op2Tree, /* fromUnsigned */ true, TYP_LONG);
+    }
 
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
 
@@ -1203,6 +1224,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     NaturalLoopIterInfo* iterInfo = context->GetLoopIterInfo(loop->GetIndex());
+    const var_types      ivType   = genActualType(iterInfo->IterTree);
+    assert((ivType == TYP_INT) || (ivType == TYP_LONG));
+
     // Loop tests we can reason about for cloning: ordered relops (LT/LE/GT/GE) and
     // NE limits (treated as LT/GT-equivalent when stride is exactly +/-1; see
     // NaturalLoopIterInfo::IsIncreasingLoop/IsDecreasingLoop).
@@ -1224,7 +1248,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // We already know that this is either increasing or decreasing loop and the
     // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
     // is beyond the limit.
-    int stride = abs(iterInfo->IterConst());
+    ssize_t stride = abs(iterInfo->IterConst());
 
     static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
@@ -1237,6 +1261,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // Helper: build an LC_Ident constant whose width matches the IV.
+    auto makeIvConst = [ivType](ssize_t value) {
+        return (ivType == TYP_LONG) ? LC_Ident::CreateLongConst((int64_t)value)
+                                    : LC_Ident::CreateConst(static_cast<unsigned>(value));
+    };
+
     // Span<>.Length can be INT32_MAX, unlike Array.MaxLength. For an
     // increasing loop with stride > 1, the IV after the final in-loop
     // increment is at most `limit + s` (LE) or `limit + s - 1` (LT), so
@@ -1248,17 +1278,17 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     if (hasSpans && (stride > 1) && isIncreasingLoop)
     {
         const int     adjustForLE    = (iterInfo->TestOper() == GT_LE) ? 1 : 0;
-        const int     offset         = iterInfo->LimitOffset;
+        const ssize_t offset         = iterInfo->LimitOffset;
         const int64_t maxLimitBase64 = (int64_t)INT32_MAX - stride + 1 - adjustForLE - offset;
 
         if (iterInfo->HasConstLimit)
         {
             assert(offset == 0);
-            const int limitVal = iterInfo->ConstLimit();
+            const ssize_t limitVal = iterInfo->ConstLimit();
             if ((int64_t)limitVal > maxLimitBase64)
             {
-                JITDUMP("> Span stride %d: const limit %d exceeds overflow bound %lld\n", stride, limitVal,
-                        (long long)maxLimitBase64);
+                JITDUMP("> Span stride %lld: const limit %lld exceeds overflow bound %lld\n", (long long)stride,
+                        (long long)limitVal, (long long)maxLimitBase64);
                 return false;
             }
         }
@@ -1277,9 +1307,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             else
             {
                 const unsigned limitLcl = iterInfo->VarLimit();
-                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
                 {
-                    JITDUMP("> Span stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    JITDUMP("> Span stride %d: limit var V%02u type does not match IV\n", stride, limitLcl);
                     return false;
                 }
 
@@ -1323,10 +1353,10 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         {
             if (iterInfo->ConstInitValue < 0)
             {
-                JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+                JITDUMP("> NeedsZeroTripGuard: init %lld is invalid\n", (long long)iterInfo->ConstInitValue);
                 return false;
             }
-            initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            initIdent = makeIvConst(iterInfo->ConstInitValue);
         }
         else
         {
@@ -1335,9 +1365,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             // address-exposed and has no extraneous defs inside the loop, so
             // reading it in the preheader gives the entry value).
             const unsigned initLcl = iterInfo->IterVar;
-            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            if (genActualType(lvaGetDesc(initLcl)->TypeGet()) != ivType)
             {
-                JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
+                JITDUMP("> NeedsZeroTripGuard: iter var V%02u type does not match IV\n", initLcl);
                 return false;
             }
             initIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
@@ -1346,20 +1376,20 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Ident limitIdent;
         if (iterInfo->HasConstLimit)
         {
-            int limit = iterInfo->ConstLimit();
+            ssize_t limit = iterInfo->ConstLimit();
             if (limit < 0)
             {
-                JITDUMP("> NeedsZeroTripGuard: limit %d is invalid\n", limit);
+                JITDUMP("> NeedsZeroTripGuard: limit %lld is invalid\n", (long long)limit);
                 return false;
             }
-            limitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            limitIdent = makeIvConst(limit);
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
             const unsigned limitLcl = iterInfo->VarLimit();
-            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
             {
-                JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                JITDUMP("> NeedsZeroTripGuard: limit var V%02u type does not match IV\n", limitLcl);
                 return false;
             }
             limitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
@@ -1401,23 +1431,23 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         // and array indices must be non-negative.
         if (iterInfo->ConstInitValue < 0)
         {
-            JITDUMP("> Init %d is invalid\n", iterInfo->ConstInitValue);
+            JITDUMP("> Init %lld is invalid\n", (long long)iterInfo->ConstInitValue);
             return false;
         }
 
         if (!isIncreasingLoop)
         {
             // For decreasing loop, the init value needs to be checked against the array length
-            ident = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            ident = makeIvConst(iterInfo->ConstInitValue);
         }
     }
     else
     {
         // iterVar >= 0
         const unsigned initLcl = iterInfo->IterVar;
-        if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+        if (genActualType(lvaGetDesc(initLcl)->TypeGet()) != ivType)
         {
-            JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
+            JITDUMP("> Init var V%02u type does not match IV\n", initLcl);
             return false;
         }
 
@@ -1439,25 +1469,25 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // Limit Conditions
     if (iterInfo->HasConstLimit)
     {
-        int limit = iterInfo->ConstLimit();
+        ssize_t limit = iterInfo->ConstLimit();
         if (limit < 0)
         {
-            JITDUMP("> limit %d is invalid\n", limit);
+            JITDUMP("> limit %lld is invalid\n", (long long)limit);
             return false;
         }
 
         if (isIncreasingLoop)
         {
             // For increasing loop, thelimit value needs to be checked against the array length
-            ident = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            ident = makeIvConst(limit);
         }
     }
     else if (iterInfo->HasInvariantLocalLimit)
     {
         const unsigned limitLcl = iterInfo->VarLimit();
-        if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+        if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
         {
-            JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
+            JITDUMP("> Limit var V%02u type does not match IV\n", limitLcl);
             return false;
         }
 
@@ -1607,26 +1637,26 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         if (iterInfo->HasConstInit)
         {
             assert(iterInfo->ConstInitValue >= 0);
-            neInitIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+            neInitIdent = makeIvConst(iterInfo->ConstInitValue);
         }
         else
         {
             const unsigned initLcl = iterInfo->IterVar;
-            assert(genActualTypeIsInt(lvaGetDesc(initLcl)));
+            assert(genActualType(lvaGetDesc(initLcl)->TypeGet()) == ivType);
             neInitIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
         }
 
         LC_Ident neLimitIdent;
         if (iterInfo->HasConstLimit)
         {
-            const int limit = iterInfo->ConstLimit();
+            const ssize_t limit = iterInfo->ConstLimit();
             assert(limit >= 0);
-            neLimitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+            neLimitIdent = makeIvConst(limit);
         }
         else if (iterInfo->HasInvariantLocalLimit)
         {
             const unsigned limitLcl = iterInfo->VarLimit();
-            assert(genActualTypeIsInt(lvaGetDesc(limitLcl)));
+            assert(genActualType(lvaGetDesc(limitLcl)->TypeGet()) == ivType);
             neLimitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
         }
         else
@@ -2509,17 +2539,30 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
 
+    // A long-IV bounds check has the length wrapped in a non-overflowing
+    // `CAST long <- uint(ARR_LENGTH)` to match the index's type. Peel it so
+    // the form check below sees the underlying ARR_LENGTH.
+    GenTree* arrayLen = arrBndsChk->GetArrayLength();
+    if (arrayLen->OperIs(GT_CAST) && arrayLen->TypeIs(TYP_LONG))
+    {
+        GenTreeCast* cast = arrayLen->AsCast();
+        if ((cast->CastToType() == TYP_LONG) && (genActualType(cast->CastOp()) == TYP_INT) && !cast->gtOverflow())
+        {
+            arrayLen = cast->CastOp();
+        }
+    }
+
     // For span we may see the array length is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->GetArrayLength()->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (arrayLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->GetArrayLength()->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrayLen->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->GetArrayLength()->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned arrLcl = arrayLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
@@ -2530,7 +2573,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl  = arrLcl;
-        result->arrType = arrBndsChk->GetArrayLength()->gtGetOp1()->TypeGet();
+        result->arrType = arrayLen->gtGetOp1()->TypeGet();
     }
     result->indLcls.Push(indLcl);
     result->bndsChks.Push(tree);
@@ -3227,6 +3270,11 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
         if (loop->AnalyzeIteration(&iterInfo, /* allowMissingBaseCase */ true))
         {
             context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
+
+            if (genActualType(iterInfo.IterTree) == TYP_LONG)
+            {
+                Metrics.LoopsWithLongIV++;
+            }
         }
 
         if (optIsLoopClonable(loop, context) && optIdentifyLoopOptInfo(loop, context))

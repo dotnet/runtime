@@ -5750,10 +5750,10 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
 #ifdef DEBUG
     if (comp->verbose)
     {
-        printf("  IterVar = V%02u\n", info->IterVar);
+        printf("  IterVar = V%02u (%s)\n", info->IterVar, varTypeName(genActualType(info->IterTree)));
 
         if (info->HasConstInit)
-            printf("  Const init with value %d (at [%06u])\n", info->ConstInitValue,
+            printf("  Const init with value %lld (at [%06u])\n", (long long)info->ConstInitValue,
                    Compiler::dspTreeID(info->InitTree));
 
         printf("  Test is [%06u] (", Compiler::dspTreeID(info->TestTree));
@@ -5766,7 +5766,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
         if (info->HasArrayLengthLimit)
             printf("array length limit ");
         if (info->LimitOffset != 0)
-            printf("offset %d ", info->LimitOffset);
+            printf("offset %lld ", (long long)info->LimitOffset);
         printf(")\n");
     }
 #endif
@@ -5836,7 +5836,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         return false;
     }
 
-    if (!iterOp->TypeIs(TYP_INT))
+    if (!iterOp->TypeIs(TYP_INT, TYP_LONG))
     {
         return false;
     }
@@ -5845,32 +5845,29 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     // peeling the constant into LimitOffset and form-checking the base.
     // Morph canonicalizes commutative ops so that any constant operand sits on
     // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
-    int      peeledOffset = 0;
+    ssize_t  peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
-    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && (limitOp->TypeGet() == limitOp->gtGetOp1()->TypeGet()))
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();
-        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT) && !lop1->IsCnsIntOrI())
+        if (lop2->IsCnsIntOrI() && (lop2->TypeGet() == lop1->TypeGet()) && !lop1->IsCnsIntOrI())
         {
             ssize_t cns = lop2->AsIntCon()->IconValue();
-            if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
+            if (limitOp->OperIs(GT_SUB))
             {
-                int signedCns = (int)cns;
-                if (limitOp->OperIs(GT_SUB))
+                // Guard against signed negation overflow at the type's minimum.
+                const ssize_t typeMin = (lop1->TypeGet() == TYP_INT) ? (ssize_t)INT32_MIN : SSIZE_T_MIN;
+                if (cns != typeMin)
                 {
-                    // Guard against the -INT32_MIN overflow.
-                    if (signedCns != INT32_MIN)
-                    {
-                        peeledOffset = -signedCns;
-                        peeledBase   = lop1;
-                    }
-                }
-                else
-                {
-                    peeledOffset = signedCns;
+                    peeledOffset = -cns;
                     peeledBase   = lop1;
                 }
+            }
+            else
+            {
+                peeledOffset = cns;
+                peeledBase   = lop1;
             }
         }
     }
@@ -5879,6 +5876,18 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     {
         limitOp           = peeledBase;
         info->LimitOffset = peeledOffset;
+    }
+
+    // A TYP_LONG IV often compares against an int-typed limit (e.g.
+    // `arr.Length`) widened via a non-overflowing CAST. Peel that cast so
+    // the underlying form-check sees the int operand.
+    if (iterOp->TypeIs(TYP_LONG) && limitOp->OperIs(GT_CAST))
+    {
+        GenTreeCast* cast = limitOp->AsCast();
+        if ((cast->CastToType() == TYP_LONG) && (genActualType(cast->CastOp()) == TYP_INT) && !cast->gtOverflow())
+        {
+            limitOp = cast->CastOp();
+        }
     }
 
     // Check what type of limit we have - constant, variable or arr-len.
@@ -5979,10 +5988,10 @@ bool FlowGraphNaturalLoop::FindConstInit(BasicBlock* preheader, NaturalLoopIterI
                 {
                     GenTreeLclVarCommon* store = tree->AsLclVarCommon();
                     GenTree*             data  = store->Data();
-                    if ((store->GetLclNum() == info->IterVar) && data->IsCnsIntOrI() && data->TypeIs(TYP_INT))
+                    if ((store->GetLclNum() == info->IterVar) && data->IsCnsIntOrI() && data->TypeIs(TYP_INT, TYP_LONG))
                     {
                         info->HasConstInit   = true;
-                        info->ConstInitValue = (int)data->AsIntCon()->IconValue();
+                        info->ConstInitValue = data->AsIntCon()->IconValue();
                         INDEBUG(info->InitTree = tree);
                         return true;
                     }
@@ -6073,19 +6082,32 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
     // Is it trivially true?
     if (info->HasConstInit && info->HasConstLimit)
     {
-        int initVal  = info->ConstInitValue;
-        int limitVal = info->ConstLimit();
+        ssize_t initVal  = info->ConstInitValue;
+        ssize_t limitVal = info->ConstLimit();
 
-        assert(genActualType(info->TestTree->gtGetOp1()) == TYP_INT);
+        const var_types testType = genActualType(info->TestTree->gtGetOp1());
+        assert((testType == TYP_INT) || (testType == TYP_LONG));
 
-        bool isTriviallyTrue = info->TestTree->IsUnsigned()
-                                   ? EvaluateRelop<uint32_t>((uint32_t)initVal, (uint32_t)limitVal, info->TestOper())
-                                   : EvaluateRelop<int32_t>(initVal, limitVal, info->TestOper());
+        bool isTriviallyTrue;
+        if (testType == TYP_INT)
+        {
+            isTriviallyTrue =
+                info->TestTree->IsUnsigned()
+                    ? EvaluateRelop<uint32_t>((uint32_t)(int)initVal, (uint32_t)(int)limitVal, info->TestOper())
+                    : EvaluateRelop<int32_t>((int32_t)initVal, (int32_t)limitVal, info->TestOper());
+        }
+        else
+        {
+            isTriviallyTrue = info->TestTree->IsUnsigned()
+                                  ? EvaluateRelop<uint64_t>((uint64_t)initVal, (uint64_t)limitVal, info->TestOper())
+                                  : EvaluateRelop<int64_t>((int64_t)initVal, (int64_t)limitVal, info->TestOper());
+        }
 
         if (isTriviallyTrue)
         {
-            JITDUMP("  Condition is trivially true on entry (%d %s%s %d)\n", initVal,
-                    info->TestTree->IsUnsigned() ? "(uns)" : "", GenTree::OpName(info->TestOper()), limitVal);
+            JITDUMP("  Condition is trivially true on entry (%lld %s%s %lld)\n", (long long)initVal,
+                    info->TestTree->IsUnsigned() ? "(uns)" : "", GenTree::OpName(info->TestOper()),
+                    (long long)limitVal);
             return true;
         }
     }
@@ -6810,15 +6832,17 @@ bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, Bas
 }
 
 //------------------------------------------------------------------------
-// IterConst: Get the constant with which the iterator is modified
+// IterConst: Get the constant with which the iterator is modified.
 //
 // Returns:
-//   Constant value.
+//   Constant value, as a signed value sized for the IV's type. For a
+//   TYP_INT IV the value fits in int; for TYP_LONG the full ssize_t may
+//   be needed.
 //
-int NaturalLoopIterInfo::IterConst()
+ssize_t NaturalLoopIterInfo::IterConst()
 {
     GenTree* value = IterTree->AsLclVar()->Data();
-    return (int)value->gtGetOp2()->AsIntCon()->IconValue();
+    return value->gtGetOp2()->AsIntCon()->IconValue();
 }
 
 //------------------------------------------------------------------------
@@ -6840,7 +6864,7 @@ genTreeOps NaturalLoopIterInfo::IterOper()
 //
 var_types NaturalLoopIterInfo::IterOperType()
 {
-    assert(genActualType(IterTree) == TYP_INT);
+    assert((genActualType(IterTree) == TYP_INT) || (genActualType(IterTree) == TYP_LONG));
     return IterTree->TypeGet();
 }
 
@@ -6961,20 +6985,35 @@ GenTree* NaturalLoopIterInfo::Limit()
 GenTree* NaturalLoopIterInfo::LimitBase()
 {
     GenTree* lim = Limit();
-    if (LimitOffset == 0)
+
+    // Mirror MatchLimit's peels (offset first, then a long-from-int cast) so
+    // VarLimit / ArrLenLimit see the actual form-checked subtree.
+    if (LimitOffset != 0)
     {
-        return lim;
+        assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT, TYP_LONG));
+        GenTree* op1 = lim->gtGetOp1();
+        GenTree* op2 = lim->gtGetOp2();
+        if (op2->IsCnsIntOrI())
+        {
+            lim = op1;
+        }
+        else
+        {
+            assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
+            lim = op2;
+        }
     }
 
-    assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT));
-    GenTree* op1 = lim->gtGetOp1();
-    GenTree* op2 = lim->gtGetOp2();
-    if (op2->IsCnsIntOrI())
+    if (lim->OperIs(GT_CAST) && lim->TypeIs(TYP_LONG))
     {
-        return op1;
+        GenTreeCast* cast = lim->AsCast();
+        if ((cast->CastToType() == TYP_LONG) && (genActualType(cast->CastOp()) == TYP_INT) && !cast->gtOverflow())
+        {
+            lim = cast->CastOp();
+        }
     }
-    assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
-    return op2;
+
+    return lim;
 }
 
 //------------------------------------------------------------------------
@@ -6987,13 +7026,13 @@ GenTree* NaturalLoopIterInfo::LimitBase()
 // Remarks:
 //   Only valid if HasConstLimit is true.
 //
-int NaturalLoopIterInfo::ConstLimit()
+ssize_t NaturalLoopIterInfo::ConstLimit()
 {
     assert(HasConstLimit);
     assert(LimitOffset == 0);
     GenTree* limit = LimitBase();
     assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->IconValue();
+    return limit->AsIntCon()->IconValue();
 }
 
 //------------------------------------------------------------------------

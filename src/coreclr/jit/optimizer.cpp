@@ -260,9 +260,9 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
                 return BAD_VAR_NUM;
         }
 
-        // Increment should be by a const int.
+        // Increment should be an integral constant matching the IV's type.
         // TODO-CQ: CLONE: allow variable increments.
-        if (!incrVal->OperIs(GT_CNS_INT) || !incrVal->TypeIs(TYP_INT))
+        if (!incrVal->OperIs(GT_CNS_INT) || !varTypeIsIntegral(incrVal) || incrVal->TypeIs(TYP_REF))
         {
             return BAD_VAR_NUM;
         }
@@ -1369,11 +1369,19 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     //  - increment operation type (i.e. ADD, SUB, etc...)
     //  - loop test type (i.e. GT_GE, GT_LT, etc...)
 
-    int        lbeg         = iterInfo.ConstInitValue;
-    int        llim         = iterInfo.ConstLimit();
+    // Unrolling currently only handles TYP_INT IVs end-to-end (optComputeLoopRep
+    // and the cloned body iteration both assume int-sized arithmetic).
+    if (genActualType(iterInfo.IterTree) != TYP_INT)
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": non-TYP_INT IV not yet handled\n", loop->GetIndex());
+        return false;
+    }
+
+    int        lbeg         = (int)iterInfo.ConstInitValue;
+    int        llim         = (int)iterInfo.ConstLimit();
     genTreeOps testOper     = iterInfo.TestOper();
     unsigned   lvar         = iterInfo.IterVar;
-    int        iterInc      = iterInfo.IterConst();
+    int        iterInc      = (int)iterInfo.IterConst();
     genTreeOps iterOper     = iterInfo.IterOper();
     var_types  iterOperType = iterInfo.IterOperType();
     bool       unsTest      = iterInfo.TestTree->IsUnsigned();

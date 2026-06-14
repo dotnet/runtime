@@ -1960,8 +1960,9 @@ struct NaturalLoopIterInfo
 #endif
 
     // Constant value that the induction variable is initialized with, outside
-    // the loop. Only valid if HasConstInit is true.
-    int ConstInitValue = 0;
+    // the loop. Only valid if HasConstInit is true. Width matches the IV
+    // (TYP_INT IV: int-sized; TYP_LONG IV: long-sized).
+    ssize_t ConstInitValue = 0;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
@@ -2004,8 +2005,9 @@ struct NaturalLoopIterInfo
 
     // Constant peeled from the loop limit so that the effective limit is
     // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
-    // and HasArrayLengthLimit.
-    int LimitOffset = 0;
+    // and HasArrayLengthLimit. Width matches the IV: a TYP_INT IV has an
+    // int-sized offset; a TYP_LONG IV has a long-sized offset.
+    ssize_t LimitOffset = 0;
 
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
@@ -2018,7 +2020,7 @@ struct NaturalLoopIterInfo
     {
     }
 
-    int IterConst();
+    ssize_t IterConst();
     genTreeOps IterOper();
     var_types IterOperType();
     genTreeOps TestOper();
@@ -2027,7 +2029,7 @@ struct NaturalLoopIterInfo
     GenTree* Iterator();
     GenTree* Limit();
     GenTree* LimitBase();
-    int ConstLimit();
+    ssize_t ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
 
