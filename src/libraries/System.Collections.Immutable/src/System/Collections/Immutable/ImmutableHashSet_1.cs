@@ -296,6 +296,10 @@ namespace System.Collections.Immutable
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
+            if (this.Origin.Root.IsEmpty)
+            {
+                return other.Any();
+            }
 
             return IsProperSubsetOf(other, this.Origin);
         }
@@ -925,52 +929,55 @@ namespace System.Collections.Immutable
             return new MutationResult(result, count, CountType.FinalValue);
         }
 
-        /// <summary>
-        /// Performs the set operation on a given data structure.
-        /// </summary>
         private static bool IsProperSubsetOf(IEnumerable<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
 
-            if (origin.Root.IsEmpty)
+            // For a proper subset, the 'other' collection must strictly exceed 'origin.Count'.
+            // We use '<=' as an early exit to reject smaller or equal-sized collections.
+            // This is safe even for non-unique collections (ICollection<T>): if the raw count
+            // is already insufficient, it cannot become a proper superset after deduplication.
+           switch (other)
             {
-                return other.Any();
+                case ImmutableHashSet<T> otherAsImmutableHashSet:
+                    if (otherAsImmutableHashSet.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
+                    {
+                        return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+                    break;
+
+                case HashSet<T> otherAsHashset:
+                    if (otherAsHashset.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
+                    {
+                        return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+                    break;
+
+                case ICollection<T> otherAsICollectionGeneric:
+                    if (otherAsICollectionGeneric.Count <= origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
             }
 
-            // To determine whether everything we have is also in another sequence,
-            // we enumerate the sequence and "tag" whether it's in this collection,
-            // then consider whether every element in this collection was tagged.
-            // Since this collection is immutable we cannot directly tag.  So instead
-            // we simply count how many "hits" we have and ensure it's equal to the
-            // size of this collection.  Of course for this to work we need to ensure
-            // the uniqueness of items in the given sequence, so we create a set based
-            // on the sequence first.
             var otherSet = new HashSet<T>(other, origin.EqualityComparer);
-            if (origin.Count >= otherSet.Count)
+            if (otherSet.Count <= origin.Count)
             {
                 return false;
             }
 
-            int matches = 0;
-            bool extraFound = false;
-            foreach (T item in otherSet)
-            {
-                if (Contains(item, origin))
-                {
-                    matches++;
-                }
-                else
-                {
-                    extraFound = true;
-                }
-
-                if (matches == origin.Count && extraFound)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return SetEqualsWithHashset(otherSet, origin);
         }
 
         /// <summary>
