@@ -1106,6 +1106,8 @@ class SuperPMICollect:
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
                             # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
                             rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
+                            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported once wasm codegen covers all SIMD cases
+                            rsp_write_handle.write("--codegenopt:JitWasmSimdNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1730,6 +1732,13 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
+            if self.coreclr_args.target_arch == "wasm":
+                # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+                repro_flags += [
+                    "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                    "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                ]
+
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 if not self.coreclr_args.parallelism:
                     common_flags += [ "-p" ]
@@ -2288,7 +2297,9 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.target_arch == "wasm":
                         flags += [
                             "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
+                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1",
+                            "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
                         ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.

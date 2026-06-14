@@ -810,3 +810,26 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
         SetMultiplyUsed(thisArg->GetNode() DEBUGARG("AfterLowerArgsForCall thisArg (null check)"));
     }
 }
+
+// --------------------------------------------------------
+// LowerHWIntrinsic: Lower a hardware intrinsic node.
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
+    return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
+// ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NYI_WASM_SIMD("Lowering::ContainCheckHWIntrinsic");
+}
