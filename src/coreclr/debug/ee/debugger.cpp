@@ -8859,6 +8859,10 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+        return;
+    pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
+
     // We just need to send a VMPTR_Thread. The RS will get everything else it needs from DAC.
     //
 
@@ -8883,6 +8887,37 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     {
             g_pEEInterface->MarkThreadForDebugSuspend(pRuntimeThread);
     }
+}
+
+
+void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(pRuntimeThread != NULL);
+    }
+    CONTRACTL_END;
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+    if (!CORDebuggerAttached())
+        return;
+
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+        return;
+
+    SENDIPCEVENT_BEGIN(this, pRuntimeThread);
+
+    if (CORDebuggerAttached())
+    {
+        ThreadStarted(pRuntimeThread);
+    }
+
+    SENDIPCEVENT_END;
 }
 
 

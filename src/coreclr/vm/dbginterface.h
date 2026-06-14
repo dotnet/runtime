@@ -58,6 +58,8 @@ public:
 
     virtual void ThreadStarted(Thread* pRuntimeThread) = 0;
 
+    virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
     virtual void DetachThread(Thread *pRuntimeThread) = 0;
 
     virtual void AppDomainCreated(AppDomain * pAppDomain) = 0;
