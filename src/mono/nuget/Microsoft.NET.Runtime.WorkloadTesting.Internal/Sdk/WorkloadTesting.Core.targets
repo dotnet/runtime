@@ -84,13 +84,19 @@
                   Retries="3"
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
 
-    <!-- Replace ci.dot.net/public in the script with ci.dot.net/dev using MSBuild -->
-    <PropertyGroup>
-      <_DotNetInstallScriptContent>$([System.IO.File]::ReadAllText('$(_DotNetInstallScriptPath)'))</_DotNetInstallScriptContent>
-      <_DotNetInstallScriptContent>$(_DotNetInstallScriptContent.Replace('ci.dot.net/public', 'ci.dot.net/dev'))</_DotNetInstallScriptContent>
-    </PropertyGroup>
-    <!-- Escape the content so the WriteLinesToFile 'Lines' item-vector doesn't split the script on ';' (which would corrupt the shell script). -->
-    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="$([MSBuild]::Escape($(_DotNetInstallScriptContent)))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- Replace ci.dot.net/public with ci.dot.net/dev in the script using the platform's native tools.
+         This avoids MSBuild's string/item-list parsing pitfalls (e.g. ';' splitting in WriteLinesToFile,
+         line-ending and escaping issues) when round-tripping an entire shell/PowerShell script through
+         MSBuild properties. We're already invoking these shells right after, so leverage them directly. -->
+    <Message Text="** Replacing ci.dot.net/public with ci.dot.net/dev in $(_DotNetInstallScriptPath)" Importance="High" />
+
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="sed -i.bak 's|ci\.dot\.net/public|ci.dot.net/dev|g' $(_DotNetInstallScriptPath) &amp;&amp; rm -f $(_DotNetInstallScriptPath).bak" />
+
+    <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -Command "(Get-Content -Raw -LiteralPath ''$(_DotNetInstallScriptPath)'').Replace(''ci.dot.net/public'', ''ci.dot.net/dev'') | Set-Content -NoNewline -LiteralPath ''$(_DotNetInstallScriptPath)''"' />
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
