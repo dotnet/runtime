@@ -228,7 +228,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
             setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
 
 
-        // this push is un-balanced for short while until runtimeReady = true. Accepted trade-off.
+        // this push is unbalanced for short while until runtimeReady = true. Accepted trade-off.
         Module.runtimeKeepalivePush();
         keepAlivePushed = true;
 
