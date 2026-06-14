@@ -3149,7 +3149,7 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls = nullptr;
+        funcInfo[i].funWasmLocalDecls       = nullptr;
         funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
     }

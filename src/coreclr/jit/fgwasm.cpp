@@ -1367,8 +1367,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // `catch_ref TAG 0` from inside try_table has a valid target.
             // The sort tiebreaker places the wrapper just outside the TRY.
             //
-            WasmInterval* const wrapperInterval =
-                WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
+            WasmInterval* const wrapperInterval = WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
             fgWasmIntervals->push_back(wrapperInterval);
         }
 
