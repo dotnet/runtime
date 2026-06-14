@@ -135,6 +135,8 @@
     <Compile Include="Span\TryWrite.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceStream.ConformanceTests.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceStreamTests.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.byte.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Default.cs" />
@@ -290,5 +292,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>
