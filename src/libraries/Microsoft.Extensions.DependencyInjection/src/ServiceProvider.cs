@@ -32,6 +32,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal CallSiteFactory CallSiteFactory { get; }
 
+        internal int ResolvedServicesCapacity { get; }
+
         internal ServiceProviderEngineScope Root { get; }
 
         [FeatureSwitchDefinition("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability")]
@@ -51,6 +53,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
+            ResolvedServicesCapacity = CalculateResolvedServicesCapacity(serviceDescriptors);
+
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
             Root = new ServiceProviderEngineScope(this, isRootScope: true);
             _engine = GetEngine();
@@ -93,6 +97,21 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             DependencyInjectionEventSource.Log.ServiceProviderBuilt(this);
+        }
+
+        private static int CalculateResolvedServicesCapacity(ICollection<ServiceDescriptor> serviceDescriptors)
+        {
+            int scopedServices = 0;
+
+            foreach (ServiceDescriptor serviceDescriptor in serviceDescriptors)
+            {
+                if (serviceDescriptor.Lifetime == ServiceLifetime.Scoped)
+                {
+                    scopedServices++;
+                }
+            }
+
+            return Math.Min(scopedServices, 36);
         }
 
         /// <summary>
