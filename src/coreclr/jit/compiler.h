@@ -7927,6 +7927,7 @@ public:
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
 #define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
+#define OMF_HAS_FASTSTRINGALLOC                0x00800000 // Method contains String.FastAllocateString calls
 
     // clang-format on
 

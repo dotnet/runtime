@@ -187,9 +187,10 @@ void ObjectAllocator::DumpIndex(unsigned bvIndex)
 //
 PhaseStatus ObjectAllocator::DoPhase()
 {
-    if ((m_compiler->optMethodFlags & OMF_HAS_NEWOBJ) == 0 && (m_compiler->optMethodFlags & OMF_HAS_NEWARRAY) == 0)
+    if ((m_compiler->optMethodFlags & OMF_HAS_NEWOBJ) == 0 && (m_compiler->optMethodFlags & OMF_HAS_NEWARRAY) == 0 &&
+        (m_compiler->optMethodFlags & OMF_HAS_FASTSTRINGALLOC) == 0)
     {
-        JITDUMP("no newobjs or newarr in this method; punting\n");
+        JITDUMP("no newobjs, newarr or string allocations in this method; punting\n");
         m_compiler->fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -1161,12 +1162,14 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
     bool enableArrays            = true;
+    bool enableStrings           = true;
     *reason                      = "[ok]";
 
 #ifdef DEBUG
     enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
     enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
     enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
+    enableStrings           = (JitConfig.JitObjectStackAllocationString() != 0);
 #endif
 
     unsigned classSize = 0;
@@ -1199,6 +1202,37 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 
         ClassLayout* const layout = m_compiler->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
+    }
+    else if (allocType == OAT_NEWSTR)
+    {
+        if (!enableStrings)
+        {
+            *reason = "[disabled by config]";
+            return false;
+        }
+
+        if (length < 0)
+        {
+            *reason = "[invalid string length]";
+            return false;
+        }
+
+        // String layout is [MT][int stringLen][chars...][null terminator]. Compute the
+        // size needed, guarding against overflow before the size cap check below.
+        //
+        ClrSafeInt<unsigned> stringSize((unsigned)length);
+        stringSize += 1u; // null terminator
+        stringSize *= 2u; // sizeof(WCHAR)
+        stringSize += (unsigned)OFFSETOF__CORINFO_String__chars;
+        stringSize.AlignUp(TARGET_POINTER_SIZE);
+
+        if (stringSize.IsOverflow() || (stringSize.Value() > m_StackAllocMaxSize))
+        {
+            *reason = "[string is too large]";
+            return false;
+        }
+
+        classSize = stringSize.Value();
     }
     else if (allocType == OAT_NEWOBJ)
     {
@@ -1276,7 +1310,6 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 //
 ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* tree)
 {
-    ObjectAllocationType allocType = OAT_NONE;
     if (tree->OperIs(GT_ALLOCOBJ))
     {
         GenTreeAllocObj* const allocObj = tree->AsAllocObj();
@@ -1284,33 +1317,60 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         assert(clsHnd != NO_CLASS_HANDLE);
         const bool isValueClass = m_compiler->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
-        allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+        return canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+
+    // Arrays and strings are both modelled as a call whose second user arg is the
+    // element/char count, and can only be stack allocated when that count is a
+    // compile-time constant. Arrays are newarr helper calls; strings are the
+    // FastAllocateString special intrinsic. Neither is supported under R2R yet.
+    //
+    if (m_isR2R || !tree->IsCall())
     {
-        GenTreeCall* const call = tree->AsCall();
+        return OAT_NONE;
+    }
+
+    GenTreeCall* const   call      = tree->AsCall();
+    ObjectAllocationType allocType = OAT_NONE;
+
+    if (call->IsHelperCall())
+    {
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
-            {
-                if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
-                {
-                    allocType = OAT_NEWARR;
-                }
+                allocType = OAT_NEWARR;
                 break;
-            }
-
             default:
-            {
-                break;
-            }
+                return OAT_NONE;
         }
     }
+    else if (call->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString))
+    {
+        allocType = OAT_NEWSTR;
+    }
+    else
+    {
+        return OAT_NONE;
+    }
 
-    return allocType;
+    if (call->gtArgs.CountUserArgs() != 2)
+    {
+        return OAT_NONE;
+    }
+
+    // Strings may carry a widening cast over the length that has not been folded yet;
+    // arrays always have a direct constant here.
+    //
+    GenTree* len = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    if ((allocType == OAT_NEWSTR) && len->OperIs(GT_CAST))
+    {
+        len = len->AsCast()->CastOp();
+    }
+
+    return len->IsCnsIntOrI() ? allocType : OAT_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -1329,13 +1389,18 @@ bool ObjectAllocator::MorphAllocObjNodes()
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
+    // String allocation sites are not flagged per-block, so when the method contains any
+    // we have to scan all blocks for them.
+    //
+    const bool methodHasFastStringAlloc = (m_compiler->optMethodFlags & OMF_HAS_FASTSTRINGALLOC) != 0;
+
     for (BasicBlock* const block : m_compiler->Blocks())
     {
         const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
         const bool basicBlockHasNewArr       = block->HasFlag(BBF_HAS_NEWARR);
         const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
 
-        if (!basicBlockHasNewObj && !basicBlockHasNewArr)
+        if (!basicBlockHasNewObj && !basicBlockHasNewArr && !methodHasFastStringAlloc)
         {
             continue;
         }
@@ -1534,6 +1599,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
+        case OAT_NEWSTR:
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
@@ -1546,82 +1612,112 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 }
 
 //------------------------------------------------------------------------
-// MorphAllocObjNodeHelperArr: See if we can stack allocate a GT_NEWARR
+// MorphAllocObjNodeHelperArr: See if we can stack allocate a GT_NEWARR helper call
+//    or a String.FastAllocateString call.
 //
 // Arguments:
-//    candidate -- allocation candidate
+//    candidate -- allocation candidate (OAT_NEWARR or OAT_NEWSTR)
 //
 // Return Value:
 //    True if candidate was stack allocated
 //    If false, candidate reason is updated to explain why not
 //
+// Notes:
+//    Strings are modelled as FastAllocateString(pMT, length) and are treated like
+//    single-dimensional arrays of char: both are a call whose second user arg is the
+//    element/char count, and both share the same stack allocation machinery (see
+//    MorphNewArrNodeIntoStackAlloc and fgExpandStackArrayAllocations). The only
+//    differences are how the object type is determined and which metrics are bumped.
+//
 bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
-    assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
+    const bool isString = candidate.m_allocType == OAT_NEWSTR;
+
+    assert(isString || candidate.m_block->HasFlag(BBF_HAS_NEWARR));
 
     // R2R not yet supported
     //
     if (m_isR2R)
     {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
+        candidate.m_onHeapReason = isString ? "[R2R string not yet supported]" : "[R2R array not yet supported]";
         return false;
     }
 
-    GenTree* const data = candidate.m_tree->AsLclVar()->Data();
-
     //------------------------------------------------------------------------
-    // We expect the following expression tree at this point
-    // For non-ReadyToRun:
-    //  STMTx (IL 0x... ???)
+    // We expect the following expression tree at this point (a newarr helper call or
+    // String.FastAllocateString, whose second user arg is the element/char count):
     //    * STORE_LCL_VAR   ref
-    //    \--*  CALL help  ref
-    //       +--*  CNS_INT(h) long
-    //       \--*  CNS_INT long
-    // For ReadyToRun:
-    //  STMTx (IL 0x... ???)
-    //    * STORE_LCL_VAR   ref
-    //    \--*  CALL help  ref
-    //       \--*  CNS_INT long
+    //    \--*  CALL  ref
+    //       +--*  CNS_INT(h) long   <method table>
+    //       \--*  <length>   long
     //------------------------------------------------------------------------
 
-    bool                 isExact   = false;
-    bool                 isNonNull = false;
-    CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+    GenTreeCall* const call = candidate.m_tree->AsLclVar()->Data()->AsCall();
+    assert(call->gtArgs.CountUserArgs() == 2);
 
-    assert(len != nullptr);
-
-    unsigned int blockSize = 0;
-    m_compiler->Metrics.NewArrayHelperCalls++;
-
-    if (!isExact || !isNonNull)
+    // Strings always have a known exact type (System.String); for arrays we must verify
+    // the helper call's type is exact and non-null.
+    //
+    CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+    if (isString)
     {
-        candidate.m_onHeapReason = "[array type is either non-exact or null]";
-        return false;
+        assert(call->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString));
+        m_compiler->Metrics.NewStringAllocations++;
+    }
+    else
+    {
+        bool isExact   = false;
+        bool isNonNull = false;
+        clsHnd         = m_compiler->gtGetHelperCallClassHandle(call, &isExact, &isNonNull);
+        m_compiler->Metrics.NewArrayHelperCalls++;
+
+        if (!isExact || !isNonNull)
+        {
+            candidate.m_onHeapReason = "[array type is either non-exact or null]";
+            return false;
+        }
+    }
+
+    // The element/char count is the second user arg. Unwrap a widening cast so we can
+    // recognize a constant that has not been folded yet.
+    //
+    GenTree* len = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    if (len->OperIs(GT_CAST))
+    {
+        len = len->AsCast()->CastOp();
     }
 
     if (!len->IsCnsIntOrI())
     {
-        candidate.m_onHeapReason = "[non-constant array size]";
+        candidate.m_onHeapReason = isString ? "[non-constant string length]" : "[non-constant array size]";
         return false;
     }
 
-    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, len->AsIntCon()->IconValue(),
-                                  &blockSize, &candidate.m_onHeapReason))
+    const ssize_t length = len->AsIntCon()->IconValue();
+
+    unsigned int blockSize = 0;
+    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, length, &blockSize,
+                                  &candidate.m_onHeapReason))
     {
         // reason set by the call
         return false;
     }
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
-    const unsigned int stackLclNum =
-        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
-                                      candidate.m_block, candidate.m_statement);
+    const unsigned int stackLclNum = MorphNewArrNodeIntoStackAlloc(call, clsHnd, (unsigned int)length, blockSize,
+                                                                   candidate.m_block, candidate.m_statement);
 
     // Keep track of this new local for later type updates.
     //
     m_HeapLocalToStackArrLocalMap.AddOrUpdate(candidate.m_lclNum, stackLclNum);
-    m_compiler->Metrics.StackAllocatedArrays++;
+    if (isString)
+    {
+        m_compiler->Metrics.StackAllocatedStrings++;
+    }
+    else
+    {
+        m_compiler->Metrics.StackAllocatedArrays++;
+    }
 
     return true;
 }
@@ -1748,12 +1844,13 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 }
 
 //------------------------------------------------------------------------
-// MorphNewArrNodeIntoStackAlloc: Morph a newarray helper call node into stack allocation.
+// MorphNewArrNodeIntoStackAlloc: Morph a newarray helper call or a String.FastAllocateString
+//    call node into stack allocation.
 //
 // Arguments:
 //    newArr       - GT_CALL that will be replaced by helper call.
-//    clsHnd       - class representing the type of the array
-//    length       - length of the array
+//    clsHnd       - class representing the type of the array (NO_CLASS_HANDLE for strings)
+//    length       - length of the array (unused for strings; the layout is given by blockSize)
 //    blockSize    - size of the layout
 //    block        - a basic block where newArr is
 //    stmt         - a statement where newArr is
@@ -1773,21 +1870,30 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 {
     assert(newArr != nullptr);
     assert(m_AnalysisDone);
-    assert(clsHnd != NO_CLASS_HANDLE);
-    assert(newArr->IsHelperCall());
-    assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
+
+    // Strings are modelled as the special intrinsic FastAllocateString(pMT, length) rather
+    // than a newarray helper call, but otherwise share the same stack allocation path.
+    //
+    const bool isString = newArr->IsSpecialIntrinsic(m_compiler, NI_System_String_FastAllocateString);
+
+    assert(isString || (clsHnd != NO_CLASS_HANDLE));
+    assert(isString || newArr->IsHelperCall());
+    assert(isString || (newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN));
 
     const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
-    const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
-    LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
+    const bool         alignTo8      = !isString && (newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8);
+    const unsigned int lclNum        = m_compiler->lvaGrabTemp(
+        shortLifetime DEBUGARG(isString ? "stack allocated string temp" : "stack allocated array temp"));
+    LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
 
     if (alignTo8)
     {
         blockSize = AlignUp(blockSize, 8);
     }
 
-    m_compiler->lvaSetStruct(lclNum, m_compiler->typGetArrayLayout(clsHnd, length), /* unsafe */ false);
+    ClassLayout* const layout =
+        isString ? m_compiler->typGetBlkLayout(blockSize) : m_compiler->typGetArrayLayout(clsHnd, length);
+    m_compiler->lvaSetStruct(lclNum, layout, /* unsafe */ false);
     lclDsc->lvStackAllocatedObject = true;
 
     // Initialize the object memory if necessary.
