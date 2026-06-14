@@ -721,6 +721,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 //
 GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
 {
+    // Canonicalize
+    if (select->gtCond->OperIsCompare())
+    {
+        // SELECT(cnd, cns, op) -> SELECT(cnd, op, cns)
+        if (select->gtOp1->OperIsConst() && !select->gtOp2->OperIsConst())
+        {
+            if (m_compiler->gtCanSwapOrder(select->gtOp1, select->gtOp2))
+            {
+                std::swap(select->gtOp1, select->gtOp2);
+                select->gtCond = m_compiler->gtReverseCond(select->gtCond);
+            }
+        }
+    }
+
     GenTree* opt = TrySelectToCnsOpCond(select);
     if (opt != nullptr)
     {
