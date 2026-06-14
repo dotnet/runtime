@@ -108,6 +108,7 @@ public class Test
     static bool s_takeLock = false;
     static bool s_contention = false;
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint() => Run(new string[0]);
 

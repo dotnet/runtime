@@ -12,6 +12,7 @@ public class Test
     static ManualResetEvent _mre;
     static AutoResetEvent _are = new AutoResetEvent(false);
 
+    [SkipOnCoreClr("This test isn't technically incompatible with GC stress, but it runs very slowly in some configurations, e.g. GCStress=3 on Linux/arm32 measured at 20 minutes.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

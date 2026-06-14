@@ -10,6 +10,7 @@ class UserException : Exception {
 }
 
 public class RecursiveException {
+	[SkipOnCoreClr("This test is not compatible with GC stress. See https://github.com/dotnet/runtime/issues/22339.", RuntimeTestModes.AnyGCStress)]
 	[Fact]
 	public static int TestEntryPoint() {
 		String s = "Done";

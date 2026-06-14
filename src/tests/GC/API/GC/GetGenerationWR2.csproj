@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for CLRTestExecutionArguments -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestExecutionArguments />
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
@@ -11,5 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetGenerationWR2.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

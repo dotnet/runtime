@@ -12,6 +12,7 @@ using Xunit;
 
 public class Test_expandheap
 {
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

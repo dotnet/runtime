@@ -17,6 +17,7 @@ namespace DefaultNamespace {
 
     public class SimpObject
     {
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestEntryPoint()
         {
