@@ -358,23 +358,28 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-            buffer.Span.Clear(); // Rented arrays aren't clean
-
-            Task task = entry.Format switch
+            try
             {
-                TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
-                TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
-            await task.ConfigureAwait(false);
+                Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+                buffer.Span.Clear(); // Rented arrays aren't clean
 
-            _wroteEntries = true;
+                Task task = entry.Format switch
+                {
+                    TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
+                    TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
+                    _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
+                };
+                await task.ConfigureAwait(false);
 
-            ArrayPool<byte>.Shared.Return(rented);
+                _wroteEntries = true;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         // The spec indicates that the end of the archive is indicated
@@ -396,11 +401,16 @@ namespace System.Formats.Tar
             const int TwoRecordSize = TarHelpers.RecordSize * 2;
 
             byte[] twoEmptyRecords = ArrayPool<byte>.Shared.Rent(TwoRecordSize);
-            Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
+            try
+            {
+                Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
 
-            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
-
-            ArrayPool<byte>.Shared.Return(twoEmptyRecords);
+                await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(twoEmptyRecords);
+            }
         }
 
         private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)

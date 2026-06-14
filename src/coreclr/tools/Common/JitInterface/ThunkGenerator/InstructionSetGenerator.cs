@@ -121,6 +121,8 @@ namespace Thunkerator
                 return "AMD64";
             if (arch == "RiscV64")
                 return "RISCV64";
+            if (arch == "Wasm32")
+                return "WASM";
             return arch;
         }
 

@@ -2002,6 +2002,11 @@ struct NaturalLoopIterInfo
     // allowMissingBaseCase=true.
     bool NeedsZeroTripGuard : 1;
 
+    // Constant peeled from the loop limit so that the effective limit is
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
+    // and HasArrayLengthLimit.
+    int LimitOffset = 0;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -2021,6 +2026,7 @@ struct NaturalLoopIterInfo
     bool IsDecreasingLoop();
     GenTree* Iterator();
     GenTree* Limit();
+    GenTree* LimitBase();
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
@@ -3238,6 +3244,10 @@ public:
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
+#if defined(TARGET_ARM64)
+    GenTreeBfm* gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width);
+#endif
+
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
                                 GenTree*   op1  = nullptr,
@@ -3934,6 +3944,9 @@ public:
         LclVarDsc* fieldVarDsc, ssize_t offset, ValueSize size, ssize_t* pFieldRelativeOffset, ValueSize* pFieldAffectedBytes);
 
     void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr) const;
+
+    GenTree*       gtPeelFieldAddrs(GenTree* addr) const;
+    const GenTree* gtPeelFieldAddrs(const GenTree* addr) const;
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -5955,8 +5968,6 @@ public:
 
     void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
-    PhaseStatus fgTailMergeThrows();
-
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
                                                   BlockToBlockMap& continuationMap);
@@ -7384,6 +7395,7 @@ private:
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
@@ -8976,13 +8988,14 @@ public:
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc           = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind        = FromVNFunc(relop);
-            dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1VN;
-            dsc.m_op2.m_kind           = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn             = checkedBndVN;
-            dsc.m_op2.m_icon.m_iconVal = cns;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = FromVNFunc(relop);
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal    = cns;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9021,7 +9034,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = op2VN;
             dsc.m_op2.m_icon.m_iconVal    = 0; // TODO-CQ: consider decomposing VN to VN* + CNS if beneficial.
-            dsc.m_op2.m_isVNNeverNegative = false;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(op2VN);
             return dsc;
         }
     };
@@ -9076,7 +9089,6 @@ public:
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
     Statement*  optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
-    bool        optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP*  optInitAssertionDataflowFlags();
     ASSERT_TP*  optComputeAssertionGen();
 
@@ -9546,19 +9558,22 @@ public:
 
     void eeGetVars();
 
-    unsigned eeVarsCount;
+    unsigned eeVarsCount    = 0;
+    unsigned eeVarsCapacity = 0;
 
     struct VarResultInfo
     {
         UNATIVE_OFFSET             startOffset;
         UNATIVE_OFFSET             endOffset;
+        uint32_t                   callReturnValueILOffset;
         DWORD                      varNumber;
         CodeGenInterface::siVarLoc loc;
     }*   eeVars;
-    void eeSetLVcount(unsigned count);
+    void eeAllocateLVs(unsigned count);
     void eeSetLVinfo(unsigned                          which,
                      UNATIVE_OFFSET                    startOffs,
-                     UNATIVE_OFFSET                    length,
+                     UNATIVE_OFFSET                    endOffs,
+                     uint32_t                          callReturnValILOffs,
                      unsigned                          varNum,
                      const CodeGenInterface::siVarLoc& loc);
     void eeSetLVdone();

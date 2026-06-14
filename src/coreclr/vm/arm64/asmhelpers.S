@@ -160,11 +160,16 @@ NESTED_END OnHijackTripThread, _TEXT
 // void* PacStripPtr(void *);
 // This function strips the pointer of PAC info that is passed as an argument.
 // We prefer to strip a pointer where it's not going to be used to branch execution to.
+// It is a no-op on non-PAC enabled machines.
 .arch_extension pauth
-    LEAF_ENTRY PacStripPtr, _TEXT
-        xpaci x0
-        ret
-    LEAF_END PacStripPtr, _TEXT
+    NESTED_ENTRY PacStripPtr, _TEXT, NoHandler
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+        mov lr, x0
+        xpaclri
+        mov x0, lr
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+        EPILOG_RETURN
+    NESTED_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
 // This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.

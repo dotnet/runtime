@@ -1365,11 +1365,11 @@ GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleF
 
         if (handle != nullptr)
         {
-            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->AsIntCon()->SetTargetHandle(handleToTrack);
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->gtGetOp1()->AsIntCon()->SetTargetHandle(handleToTrack);
         }
 #endif
         return addr;
@@ -2729,7 +2729,10 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                                         runtimeMethodHandle);
     }
 
-#ifdef FEATURE_READYTORUN
+    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
+    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
+#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
     else if (IsAot())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
@@ -2746,7 +2749,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif
+#endif // FEATURE_READYTORUN && !TARGET_WASM
 
     if (call == nullptr)
     {
@@ -4400,7 +4403,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             isHoistable = true;
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
-            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            INDEBUG(op1->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(pResolvedToken->hField)));
 
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -7750,7 +7753,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->gtIconVal != 0;
+                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->IconValue() != 0;
                         FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
                         FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
 
@@ -8009,7 +8012,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && op1->OperIs(GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->IconValue();
                     unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
@@ -8233,7 +8236,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op2->OperIs(GT_CNS_INT))
                     {
-                        ssize_t ival = op2->AsIntCon()->gtIconVal;
+                        ssize_t ival = op2->AsIntCon()->IconValue();
                         ssize_t mask, umask;
 
                         switch (lclTyp)
@@ -12942,11 +12945,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    const GenTree* op = gtPeelFieldAddrs(tree);
 
     if (op->OperIs(GT_LCL_ADDR))
     {
@@ -13361,7 +13360,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->IconValue() == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);

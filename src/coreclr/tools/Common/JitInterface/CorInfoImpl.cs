@@ -12,6 +12,8 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
+using Internal.Text;
+
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
 #endif
@@ -1155,7 +1157,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8))
+            if (method.OwningType.IsDelegate && method.Name == "Invoke"u8)
             {
                 // This is now used to emit efficient invoke code for any delegate invoke,
                 // including multicast.
@@ -1769,7 +1771,7 @@ namespace Internal.JitInterface
                     Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
-                        (owningMethod.Name.SequenceEqual("CreateDefaultInstance"u8) && methodContext.Name.SequenceEqual("CreateInstance"u8)));
+                        (owningMethod.Name == "CreateDefaultInstance"u8 && methodContext.Name == "CreateInstance"u8));
                     Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
@@ -2093,8 +2095,8 @@ namespace Internal.JitInterface
             else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(SpanToPinnableBytes(mdType.Namespace));
-                return (byte*)GetPin(SpanToPinnableBytes(mdType.Name));
+                    *namespaceName = (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Namespace));
+                return (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -2583,8 +2585,8 @@ namespace Internal.JitInterface
             // not care about since they are considered primitives by the JIT.
             if (type.IsIntrinsic)
             {
-                ReadOnlySpan<byte> ns = type.Namespace;
-                if (ns.SequenceEqual("System.Runtime.Intrinsics"u8) || ns.SequenceEqual("System.Numerics"u8))
+                Utf8Span ns = type.Namespace;
+                if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
                 {
                     parNode->simdTypeHnd = ObjectToHandle(type);
                     if (parentIndex != uint.MaxValue)
@@ -3065,9 +3067,9 @@ namespace Internal.JitInterface
             // non-candidates before we compare names.
             if (type.IsIntrinsic && type is MetadataType mdType)
             {
-                ReadOnlySpan<byte> name = mdType.Name;
-                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
-                    mdType.Namespace.SequenceEqual("System"u8))
+                Utf8Span name = mdType.Name;
+                if ((name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
+                    mdType.Namespace == "System"u8)
                 {
                     return false;
                 }
@@ -3265,16 +3267,16 @@ namespace Internal.JitInterface
             var owningType = field.OwningType;
             if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
                     owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                        field.Name.SequenceEqual("Zero"u8))
+                        field.Name == "Zero"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
             }
-            else if (owningType.IsString && field.Name.SequenceEqual("Empty"u8))
+            else if (owningType.IsString && field.Name == "Empty"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
-            else if (owningType.Name.SequenceEqual("BitConverter"u8) && owningType.Namespace.SequenceEqual("System"u8) &&
-                field.Name.SequenceEqual("IsLittleEndian"u8))
+            else if (owningType.Name == "BitConverter"u8 && owningType.Namespace == "System"u8 &&
+                field.Name == "IsLittleEndian"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
             }
@@ -3449,8 +3451,13 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
-            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
+#if READYTORUN
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize; // Delegate._target
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._methodPtr
+#else            
+            pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize; // Delegate._firstParameter
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._functionPointer
+#endif
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
@@ -3536,10 +3543,10 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private static byte[] SpanToPinnableBytes(ReadOnlySpan<byte> s)
+        private static byte[] Utf8SpanToPinnableBytes(Utf8Span s)
         {
             byte[] bytes = new byte[s.Length + 1];
-            s.CopyTo(bytes);
+            s.AsSpan().CopyTo(bytes);
             return bytes;
         }
 
@@ -4267,6 +4274,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
+                CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
