@@ -450,9 +450,14 @@ Key points: each section has multiple outcome variants (pick the one that matche
 
   When posting any content to GitHub under a user's credentials (not a dedicated bot account), you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
-- **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or `gh pr review --approve`/`--request-changes` **unless the user explicitly asks you to** after picking an outcome.
+- **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or
+  `gh pr review --approve`/`--request-changes` **unless the user explicitly
+  asks you to** after picking an outcome.
 
-- **Security concerns are out of scope.** Do not assess, discuss, or make recommendations about potential security implications. Security assessment is handled through separate processes.
+- **Security concerns are out of scope.** This skill does not assess, discuss, or
+  make recommendations about potential security implications of issues. If you
+  believe an issue may have security implications, do not mention this in the
+  triage report. Security assessment is handled through separate processes.
 
 - **Do not guess area labels.** Always cross-reference with `docs/area-owners.md`.
 
