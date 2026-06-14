@@ -4961,6 +4961,54 @@ void CodeGen::genUnknownSizeFrame()
         GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
     }
 }
+
+//----------------------------------------------------------------------------
+//
+// genZeroInitializeUnknownSizeFrame: Zero-initialize the UnknownSizeFrame stack space.
+//
+// Remarks:
+//     This function emits code that assumes the state of sp has not been modified since
+//     establishing the UnknownSizeFrame. sp must point to the end of the UnknownSizeFrame.
+//
+void CodeGen::genZeroInitializeUnknownSizeFrame()
+{
+    assert(m_compiler->compUsesUnknownSizeFrame);
+
+    unsigned vectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    assert(vectorCount > 0);
+
+    // z9 <== {0, 0, ...}
+    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, 0, INS_OPTS_SCALABLE_B);
+
+    // For small vector counts, emit unrolled loop of vector stores.
+    // Unrolling to a maximum of 5 stores optimizes for code size rather than performance.
+    // TODO-SVE: Does unrolling further improve performance?
+    if (vectorCount <= 5)
+    {
+        for (unsigned i = 0; i < vectorCount; i++)
+        {
+            // str z9, [sp, #i MUL VL]
+            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SP, i);
+        }
+    }
+    else
+    {
+        // $cursor <== x19
+        inst_Mov(TYP_BYREF, REG_SCRATCH, REG_UNKBASE, false);
+        BasicBlock* loop = genCreateTempLabel();
+        // loop:
+        genDefineInlineTempLabel(loop);
+        // addvl $cursor, $cursor, #-1
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, -1);
+        // str z9, [$cursor]
+        GetEmitter()->emitIns_R_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SCRATCH);
+        // cmp sp, $cursor
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_SP, REG_SCRATCH, INS_OPTS_UXTX);
+        // b.ne loop
+        GetEmitter()->emitIns_J(INS_bne, loop);
+    }
+}
 #endif
 
 /*****************************************************************************

@@ -470,14 +470,24 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
-    // Emit poisoning into the init BB that comes right after prolog.
-    // We cannot emit this code in the prolog as it might make the prolog too large.
-    if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
+    // Emit any code that needs to occur straight after the prolog, but does not want
+    // to be part of the prolog itself.
+    if (block->IsFirst())
     {
-        genPoisonFrame(newLiveRegSet);
-    }
+#ifdef TARGET_ARM64
+        if (m_compiler->compUsesUnknownSizeFrame)
+        {
+            genZeroInitializeUnknownSizeFrame();
+        }
+#endif
+
+#ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
+        if (m_compiler->compShouldPoisonFrame())
+        {
+            genPoisonFrame(newLiveRegSet);
+        }
 #endif // !TARGET_WASM
+    }
 
     // Traverse the block in linear order, generating code for each node as we
     // as we encounter it.
