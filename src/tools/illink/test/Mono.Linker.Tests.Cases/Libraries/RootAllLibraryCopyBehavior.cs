@@ -38,9 +38,9 @@ namespace Mono.Linker.Tests.Cases.Libraries
     [KeptTypeInAssembly("library.dll", "Mono.Linker.Tests.Cases.Libraries.Dependencies.NonPublicType")]
     [KeptTypeInAssembly("library.dll", "Mono.Linker.Tests.Cases.Libraries.Dependencies.RootAllLibrary/NestedType")]
 
-    // Type forwarders are kept (but not necessarily the type definition that the forwarder points to)
+    // Type forwarders are kept together with the forwarded-to type definition.
     [KeptTypeInAssembly("library.dll", typeof(RootAllLibrary_ExportedType))]
-    [RemovedAssembly("exportedtype.dll")]
+    [KeptTypeInAssembly("exportedtype.dll", typeof(RootAllLibrary_ExportedType))]
 
     // Substitutions and branch removal don't work in copy assemblies. Dependencies are kept, even if only referenced from reachable branches.
     [KeptMemberInAssembly("optionaldependency.dll", typeof(RootAllLibrary_OptionalDependency), "Use()")]
