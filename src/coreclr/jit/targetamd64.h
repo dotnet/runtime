@@ -439,6 +439,11 @@
 #define RBM_SPBASE               RBM_ESP
 #define STR_SPBASE               "rsp"
 
+// Secondary stack base pointer register (see JitSecondFramePtr). A low callee-saved register
+// (RBX) avoids REX.B / SIB encoding complications.
+#define REG_OPT_RSVD2            REG_EBX
+#define RBM_OPT_RSVD2            RBM_EBX
+
 #define FIRST_ARG_STACK_OFFS     (REGSIZE_BYTES)   // return address
 
 #ifdef UNIX_AMD64_ABI
