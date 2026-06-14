@@ -901,4 +901,113 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(0UL, retVal);
     }
+
+    [Theory]
+    [InlineData(DebugVarLocKind.Register, false, VarLocType.VLT_REG)]
+    [InlineData(DebugVarLocKind.Register, true, VarLocType.VLT_REG_BYREF)]
+    [InlineData(DebugVarLocKind.Stack, false, VarLocType.VLT_STK)]
+    [InlineData(DebugVarLocKind.Stack, true, VarLocType.VLT_STK_BYREF)]
+    [InlineData(DebugVarLocKind.RegisterRegister, false, VarLocType.VLT_REG_REG)]
+    [InlineData(DebugVarLocKind.RegisterStack, false, VarLocType.VLT_REG_STK)]
+    [InlineData(DebugVarLocKind.StackRegister, false, VarLocType.VLT_STK_REG)]
+    [InlineData(DebugVarLocKind.DoubleStack, false, VarLocType.VLT_STK2)]
+    public void ConvertToVarLoc_MapsVarLocTypeCorrectly(DebugVarLocKind kind, bool isByRef, VarLocType expected)
+    {
+        var varInfo = new DebugVarInfo { Kind = kind, IsByRef = isByRef };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(expected, result.vlType);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_Register_SetsRegisterField()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Register, Register = 7 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(7u, result.vlrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_Stack_SetsBaseRegAndOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Stack, BaseRegister = 5, StackOffset = -0x28 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(5u, result.vlsBaseReg);
+        Assert.Equal(-0x28, result.vlsOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterRegister_SetsBothRegisters()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.RegisterRegister, Register = 3, Register2 = 4 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(3u, result.vlrrReg1);
+        Assert.Equal(4u, result.vlrrReg2);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterStack_SetsRegAndStack()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.RegisterStack, Register = 2, BaseRegister2 = 6, StackOffset2 = 0x10 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(2u, result.vlrsReg);
+        Assert.Equal(6u, result.vlrssBaseReg);
+        Assert.Equal(0x10, result.vlrssOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_StackRegister_SetsStackAndReg()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.StackRegister, BaseRegister = 5, StackOffset = -8, Register = 1 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(5u, result.vlsrsBaseReg);
+        Assert.Equal(-8, result.vlsrsOffset);
+        Assert.Equal(1u, result.vlsrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_DoubleStack_SetsBaseRegAndOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.DoubleStack, BaseRegister = 4, StackOffset = 0x20 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_STK2, result.vlType);
+        Assert.Equal(4u, result.vlsBaseReg);
+        Assert.Equal(0x20, result.vlsOffset);
+    }
+
+    [Theory]
+    [InlineData(SourceTypes.Default, 0x00u)]
+    [InlineData(SourceTypes.StackEmpty, 0x02u)]
+    [InlineData(SourceTypes.CallInstruction, 0x10u)]
+    [InlineData(SourceTypes.Async, 0x20u)]
+    [InlineData(SourceTypes.StackEmpty | SourceTypes.CallInstruction, 0x12u)]
+    [InlineData(SourceTypes.StackEmpty | SourceTypes.CallInstruction | SourceTypes.Async, 0x32u)]
+    public void ConvertSourceTypesToNative_MapsCorrectly(SourceTypes source, uint expected)
+    {
+        uint result = DacDbiImpl.ConvertSourceTypesToNative(source);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void ConvertToNativeVarInfo_MapsAllFields()
+    {
+        var varInfo = new DebugVarInfo
+        {
+            Kind = DebugVarLocKind.Stack,
+            IsByRef = false,
+            StartOffset = 10,
+            EndOffset = 50,
+            CallReturnValueILOffset = 42,
+            VarNumber = 3,
+            BaseRegister = 5,
+            StackOffset = -0x28,
+        };
+        NativeVarInfo nvi = DacDbiImpl.ConvertToNativeVarInfo(varInfo);
+        Assert.Equal(10u, nvi.startOffset);
+        Assert.Equal(50u, nvi.endOffset);
+        Assert.Equal(42u, nvi.callReturnValueILOffset);
+        Assert.Equal(3u, nvi.varNumber);
+        Assert.Equal(VarLocType.VLT_STK, nvi.loc.vlType);
+        Assert.Equal(5u, nvi.loc.vlsBaseReg);
+        Assert.Equal(-0x28, nvi.loc.vlsOffset);
+    }
 }

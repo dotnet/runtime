@@ -1058,22 +1058,27 @@ public:
     // for a function.
     // Arguments:
     //    input:
-    //       vmMethodDesc    MethodDesc of the function
-    //       startAddr       starting address of the function--this serves to
-    //                       differentiate various EnC versions of the function
+    //       vmMethodDesc       MethodDesc of the function
+    //       startAddr          starting address of the function--this serves to
+    //                          differentiate various EnC versions of the function
     //       fCodeAvailable
+    //       fpVarInfoCallback  callback invoked once per native variable info entry
+    //       fpSeqPointCallback callback invoked once per sequence point entry
+    //       pUserData          user data passed to the callbacks
     //    output:
-    //       pNativeVarData  space for the native code offset information for locals
-    //       pSequencePoints space for the IL/native sequence points
+    //       pFixedArgCount     number of fixed arguments (explicit args + this)
     // Return value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     // Assumptions:
-    //    vmMethodDesc, pNativeVarInfo and pSequencePoints are non-NULL
+    //    vmMethodDesc is non-NULL
 
     // Notes:
     //-----------------------------------------------------------------------------
 
-    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints) = 0;
+    typedef void (*FP_NATIVEVARINFO_CALLBACK)(ICorDebugInfo::NativeVarInfo *pVarInfo, CALLBACK_DATA pUserData);
+    typedef void (*FP_SEQUENCEPOINT_CALLBACK)(ICorDebugInfo::OffsetMapping *pMapping, CALLBACK_DATA pUserData);
+
+    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData) = 0;
 
     //
     // Get the filter CONTEXT on the LS.  Once we move entirely over to the new managed pipeline

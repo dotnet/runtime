@@ -1193,8 +1193,75 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
+    public int GetNativeCodeSequencePointsAndVarInfo(
+        ulong vmMethodDesc,
+        ulong startAddress,
+        Interop.BOOL fCodeAvailable,
+        uint* pFixedArgCount,
+        delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback,
+        delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback,
+        nint pUserData)
+    {
+#if DEBUG
+        List<NativeVarInfo> cdacVarInfos = new();
+        List<DbiOffsetMapping> cdacSeqPoints = new();
+#endif
+        int hr = HResults.S_OK;
+        if (pFixedArgCount != null)
+            *pFixedArgCount = 0;
+        try
+        {
+            Debug.Assert(vmMethodDesc != 0, $"vmMethodDesc is null");
+            Debug.Assert(fCodeAvailable != 0, $"fCodeAvailable is false");
+
+            Contracts.IDebugInfo debugInfo = _target.Contracts.DebugInfo;
+            TargetCodePointer codePointer = new TargetCodePointer(startAddress);
+
+            if (pFixedArgCount != null)
+                *pFixedArgCount = GetArgCount(vmMethodDesc);
+
+            // Get native variable info and invoke callback for each entry
+            if (fpVarInfoCallback != null)
+            {
+                IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out _);
+                foreach (DebugVarInfo varInfo in varInfos)
+                {
+                    NativeVarInfo nvi = ConvertToNativeVarInfo(varInfo);
+                    fpVarInfoCallback(&nvi, (void*)pUserData);
+#if DEBUG
+                    cdacVarInfos.Add(nvi);
+#endif
+                }
+            }
+
+            // Get sequence points and invoke callback for each entry
+            if (fpSeqPointCallback != null)
+            {
+                IEnumerable<Contracts.OffsetMapping> sequencePoints = debugInfo.GetMethodNativeMap(codePointer, preferUninstrumented: true, out _);
+                foreach (Contracts.OffsetMapping mapping in sequencePoints)
+                {
+                    DbiOffsetMapping nativeMapping = ConvertToDbiOffsetMapping(mapping);
+                    fpSeqPointCallback(&nativeMapping, (void*)pUserData);
+#if DEBUG
+                    cdacSeqPoints.Add(nativeMapping);
+#endif
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateNativeCodeInfoAgainstLegacy(
+                vmMethodDesc, startAddress, fCodeAvailable,
+                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr);
+        }
+#endif
+        return hr;
+    }
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
     {
