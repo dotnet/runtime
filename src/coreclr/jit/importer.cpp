@@ -9696,6 +9696,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("static access on an instance field");
                 }
 
+                // Remember static-readonly fields written from a cctor; the late
+                // `fgPromoteCctorAllocsToFrozenHeap` phase uses this set to identify
+                // candidates without needing to re-resolve the field token.
+                //
+                // Restrict to fields whose owning class is the cctor's class. Verifiable
+                // IL forbids cross-class stsfld of initonly fields, but unverifiable IL
+                // can do it -- promoting such allocations could leave a frozen object
+                // orphaned if some other writer overwrites the field later.
+                if (isStoreStatic && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED) &&
+                    ((fieldInfo.fieldFlags & (CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL)) ==
+                     (CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL)) &&
+                    !eeIsSharedInst(info.compClassHnd) &&
+                    (info.compCompHnd->getFieldClass(resolvedToken.hField) == info.compClassHnd))
+                {
+                    if (m_cctorFinalStaticFields == nullptr)
+                    {
+                        m_cctorFinalStaticFields =
+                            new (this, CMK_Generic) CctorFinalStaticFieldSet(getAllocator(CMK_Generic));
+                    }
+                    m_cctorFinalStaticFields->Set(resolvedToken.hField, true, CctorFinalStaticFieldSet::Overwrite);
+                }
+
                 // We are using stfld on a static field.
                 // We allow it, but need to eval any side-effects for obj
                 if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) && obj != nullptr)
@@ -9918,54 +9941,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // So if we have an int, explicitly extend it to be a native int.
                 op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-                bool isFrozenAllocator = false;
-                // If we're jitting a static constructor and detect the following code pattern:
-                //
-                //  newarr
-                //  stsfld
-                //  ret
-                //
-                // we emit a "frozen" allocator for newarr to, hopefully, allocate that array on a frozen segment.
-                // This is a very simple and conservative implementation targeting Array.Empty<T>()'s shape
-                // Ideally, we want to be able to use frozen allocators more broadly, but such an analysis is
-                // not trivial.
-                //
-                if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-                    // Does VM allow us to use frozen allocators?
-                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
-                {
-                    // Check next two opcodes (have to be STSFLD and RET)
-                    const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
-                    const BYTE* nextOpcode2 = nextOpcode1 + sizeof(mdToken) + 1;
-                    if ((nextOpcode2 < codeEndp) && (getU1LittleEndian(nextOpcode1) == CEE_STSFLD))
-                    {
-                        if (getU1LittleEndian(nextOpcode2) == CEE_RET)
-                        {
-                            // Check that the field is "static readonly", we don't want to waste memory
-                            // for potentially mutable fields.
-                            CORINFO_RESOLVED_TOKEN fldToken;
-                            impResolveToken(nextOpcode1 + 1, &fldToken, CORINFO_TOKENKIND_Field);
-                            CORINFO_FIELD_INFO fi;
-                            eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
-                            unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
-                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) && !eeIsSharedInst(info.compClassHnd))
-                            {
 #ifdef FEATURE_READYTORUN
-                                if (IsAot())
-                                {
-                                    // Need to restore array classes before creating array objects on the heap
-                                    op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
-                                }
-#endif
-                                op1 = gtNewHelperCallNode(CORINFO_HELP_NEWARR_1_MAYBEFROZEN, TYP_REF, op1, op2);
-                                isFrozenAllocator = true;
-                            }
-                        }
-                    }
-                }
-
-#ifdef FEATURE_READYTORUN
-                if (IsAot() && !isFrozenAllocator)
+                if (IsAot())
                 {
                     helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
                     op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, op2);
@@ -9988,7 +9965,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                if (!usingReadyToRunHelper && !isFrozenAllocator)
+                if (!usingReadyToRunHelper)
 #endif
                 {
                     /* Create a call to 'new' */

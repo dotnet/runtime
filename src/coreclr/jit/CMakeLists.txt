@@ -169,6 +169,7 @@ set( JIT_SOURCES
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
+  promotefrozenstaticalloc.cpp
   promotion.cpp
   promotiondecomposition.cpp
   promotionliveness.cpp

@@ -4833,6 +4833,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
+            // For class constructors, promote stsfld allocations to the frozen-heap
+            // allocator helpers. Requires SSA + a settled IR.
+            if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
+            {
+                DoPhase(this, PHASE_PROMOTE_CCTOR_ALLOCS, &Compiler::fgPromoteCctorAllocsToFrozenHeap);
+            }
+
             if (doOptimizeIVs)
             {
                 // Simplify and optimize induction variables used in natural loops
@@ -6959,6 +6967,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
             reason = "loop";
+        }
+        else if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                 opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED) &&
+                 (JitConfig.JitOptimizeCctors() != 0))
+        {
+            // Cctors run at most once, and we want SSA / VN available so the frozen-heap
+            // promotion phase can analyze the stsfld -> alloc patterns.
+            reason = "cctor frozen-heap promotion";
         }
 
         if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
