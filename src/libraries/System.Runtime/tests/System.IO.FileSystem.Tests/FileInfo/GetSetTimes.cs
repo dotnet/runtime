@@ -60,7 +60,7 @@ namespace System.IO.Tests
                 fileinfo.LastWriteTime = dt;
             }
 
-            Assert.True(HasNonZeroNanoseconds(fileinfo.LastWriteTime));
+            Assert.True(HasNonZeroNanoseconds(fileinfo.LastWriteTime), "Expected non-zero nanoseconds, got: " + fileinfo.LastWriteTime.Ticks);
             return fileinfo;
         }
 
@@ -140,7 +140,7 @@ namespace System.IO.Tests
             output = input.CopyTo(output.FullName, true);
 
             Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
-            Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
+            Assert.True(HasNonZeroNanoseconds(output.LastWriteTime), "Expected non-zero nanoseconds, got: " + output.LastWriteTime.Ticks);
         }
 
         [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(LowTemporalResolution))]
@@ -153,13 +153,8 @@ namespace System.IO.Tests
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
-            // On Browser, we sometimes see a difference of exactly 10M, eg.,
-            // Expected: 637949564520000000
-            // Actual:   637949564530000000
-            double tolerance = PlatformDetection.IsBrowser ? 10_000_000 : 0;
-
-            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks, tolerance);
-            Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
+            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            Assert.False(HasNonZeroNanoseconds(output.LastWriteTime), "Expected zero nanoseconds, got: " + output.LastWriteTime.Ticks);
         }
 
         [ConditionalFact(typeof(FileInfo_GetSetTimes), nameof(LowTemporalResolution))]
