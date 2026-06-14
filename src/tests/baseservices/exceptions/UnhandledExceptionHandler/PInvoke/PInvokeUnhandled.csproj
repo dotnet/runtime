@@ -6,6 +6,7 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
     <CLRTestPriority>0</CLRTestPriority>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeUnhandled.cs" />
