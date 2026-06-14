@@ -20,9 +20,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
-    <!-- UsePureLLVMToolchain links exclusively with the LLVM toolchain (lld + compiler-rt)
+    <!-- UsePureLlvmToolchain links exclusively with the LLVM toolchain (lld + compiler-rt)
          instead of the GNU toolchain (ld + libgcc). Default the linker flavor to lld. -->
-    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(UsePureLLVMToolchain)' == 'true'">lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(UsePureLlvmToolchain)' == 'true'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'openbsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
@@ -246,7 +246,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
       <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" Shim="true" />
       <!-- Use the LLVM compiler runtime (compiler-rt) instead of libgcc. -->
-      <LinkerArg Include="--rtlib=compiler-rt" Condition="'$(UsePureLLVMToolchain)' == 'true'" Shim="true" />
+      <LinkerArg Include="--rtlib=compiler-rt" Condition="'$(UsePureLlvmToolchain)' == 'true'" Shim="true" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" Shim="true" />
       <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" Shim="true" />
@@ -340,16 +340,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true' and '$(NativeLib)' != 'Static'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
-
-    <!-- Validate that the full LLVM toolchain (lld + compiler-rt) is usable before relying on it.
-         The probe compiles and links a trivial program; if either lld or compiler-rt is missing
-         the link fails and we surface an actionable error. -->
-    <Exec Command="echo &quot;int main(void) {}&quot; | &quot;$(CppLinker)&quot; -fuse-ld=lld --rtlib=compiler-rt -xc - -o /dev/null" Condition="'$(UsePureLLVMToolchain)' == 'true' and '$(NativeLib)' != 'Static'" IgnoreExitCode="true" StandardOutputImportance="Low" StandardErrorImportance="Low">
-      <Output TaskParameter="ExitCode" PropertyName="_PureLLVMToolchainProbeExitCode" />
-    </Exec>
-
-    <Error Condition="'$(UsePureLLVMToolchain)' == 'true' and '$(NativeLib)' != 'Static' and '$(_PureLLVMToolchainProbeExitCode)' != '0'"
-      Text="UsePureLLVMToolchain mode requires compiler-rt and lld to be present. Install the LLVM lld linker and the compiler-rt runtime, or unset UsePureLLVMToolchain." />
 
     <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld' and '$(NativeLib)' != 'Static'" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
