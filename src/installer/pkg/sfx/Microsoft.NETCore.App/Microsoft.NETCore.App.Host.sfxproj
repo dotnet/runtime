@@ -88,4 +88,41 @@
     <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
+
+  <!--
+    Generate a catalog file (.cat) containing SHA256 hashes of the unsigned apphost template files.
+    These templates are intentionally unsigned because the .NET SDK modifies them at build time
+    via HostWriter.CreateAppHost(). The signed catalog provides integrity verification for
+    Visual Studio signing compliance without breaking the SDK workflow.
+    See https://github.com/dotnet/runtime/issues/3694
+  -->
+  <Target Name="GenerateAppHostTemplateCatalog"
+          BeforeTargets="GetFilesToPackage"
+          Condition="'$(TargetOS)' == 'windows'">
+    <PropertyGroup>
+      <_CatStagingDir>$(IntermediateOutputPath)apphost-catalog/</_CatStagingDir>
+      <_CatalogFilePath>$(IntermediateOutputPath)apphost-templates.cat</_CatalogFilePath>
+      <_PowerShellCommand Condition="'$(_PowerShellCommand)' == '' and Exists('$(SystemRoot)\System32\WindowsPowerShell\v1.0\powershell.exe')">"$(SystemRoot)\System32\WindowsPowerShell\v1.0\powershell.exe"</_PowerShellCommand>
+      <_PowerShellCommand Condition="'$(_PowerShellCommand)' == ''">powershell.exe</_PowerShellCommand>
+    </PropertyGroup>
+
+    <!-- Stage the unsigned template files in an isolated directory for catalog generation -->
+    <RemoveDir Directories="$(_CatStagingDir)" />
+    <MakeDir Directories="$(_CatStagingDir)" />
+    <Copy SourceFiles="$(DotNetHostBinDir)apphost.exe" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)apphost.exe')" />
+    <Copy SourceFiles="$(DotNetHostBinDir)singlefilehost.exe" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)singlefilehost.exe')" />
+    <Copy SourceFiles="$(DotNetHostBinDir)comhost.dll" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)comhost.dll')" />
+
+    <!-- Guard: only generate catalog if at least one template file was staged -->
+    <ItemGroup>
+      <_StagedTemplateFiles Include="$(_CatStagingDir)**/*" />
+    </ItemGroup>
+
+    <Exec Command="$(_PowerShellCommand) -NoProfile -NonInteractive -Command &quot;New-FileCatalog -Path '$(_CatStagingDir)' -CatalogFilePath '$(_CatalogFilePath)' -CatalogVersion 2&quot;"
+          Condition="'@(_StagedTemplateFiles)' != ''" />
+
+    <ItemGroup>
+      <FilesToPackage Include="$(_CatalogFilePath)" Condition="Exists('$(_CatalogFilePath)')" />
+    </ItemGroup>
+  </Target>
 </Project>
