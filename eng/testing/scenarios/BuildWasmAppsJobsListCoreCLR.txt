@@ -23,3 +23,4 @@ Wasm.Build.Tests.MemoryTests
 Wasm.Build.Tests.AppSettingsTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.DownloadThenInitTests
+Wasm.Build.Tests.InvariantGlobalizationTests
