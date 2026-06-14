@@ -98,3 +98,20 @@ extends:
             displayNameArgs: Composite_LargeVersionBubble
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - osx_x64
+          jobParameters:
+            testGroup: innerloop
+            readyToRun: true
+            compositeBuildMode: true
+            crossgen2OutputFormat: macho
+            displayNameArgs: Composite_MachO
+            liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
