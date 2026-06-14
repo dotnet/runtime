@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -672,6 +673,204 @@ namespace System.IO.Compression
             }
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
+        }
+
+        /// <summary>
+        /// Parsed data from a local file header for forward-read mode.
+        /// </summary>
+        internal readonly struct ForwardReadHeaderData(
+            ushort versionNeeded, ushort generalPurposeBitFlags, ZipCompressionMethod compressionMethod,
+            DateTimeOffset lastModified, uint crc32, long compressedSize, long uncompressedSize,
+            string fullName, ReadOnlyMemory<byte> filenameBytes, bool isZip64SizeFields)
+        {
+            internal readonly ushort VersionNeeded = versionNeeded;
+            internal readonly ushort GeneralPurposeBitFlags = generalPurposeBitFlags;
+            internal readonly ZipCompressionMethod CompressionMethod = compressionMethod;
+            internal readonly DateTimeOffset LastModified = lastModified;
+            internal readonly uint Crc32 = crc32;
+            internal readonly long CompressedSize = compressedSize;
+            internal readonly long UncompressedSize = uncompressedSize;
+            internal readonly string FullName = fullName;
+            internal readonly ReadOnlyMemory<byte> FilenameBytes = filenameBytes;
+            internal readonly bool IsZip64SizeFields = isZip64SizeFields;
+
+            internal bool HasDataDescriptor => (GeneralPurposeBitFlags & 0x0008) != 0;
+            internal bool IsEncrypted => (GeneralPurposeBitFlags & 0x0001) != 0;
+        }
+
+        /// <summary>
+        /// Returns true if the given signature indicates the end of local file entries
+        /// (central directory, EOCD, or Zip64 EOCD).
+        /// </summary>
+        internal static bool IsEndOfEntriesSignature(uint sig) =>
+            sig == 0x02014B50    // Central directory
+            || sig == 0x06054B50 // EOCD
+            || sig == 0x06064B50; // Zip64 EOCD
+
+        /// <summary>
+        /// Tries to read a local file header for forward-read mode.
+        /// Returns null if EOF is reached or a non-local-header signature is encountered.
+        /// </summary>
+        internal static unsafe ForwardReadHeaderData? TryReadForForwardRead(Stream stream, Encoding? entryNameEncoding)
+        {
+            Span<byte> header = stackalloc byte[SizeOfLocalHeader];
+            int bytesRead = stream.ReadAtLeast(header, SizeOfLocalHeader, throwOnEndOfStream: false);
+
+            if (bytesRead == 0)
+                return null;
+            if (bytesRead < SizeOfLocalHeader)
+            {
+                if (bytesRead >= FieldLengths.Signature && IsEndOfEntriesSignature(BinaryPrimitives.ReadUInt32LittleEndian(header)))
+                    return null;
+                throw new InvalidDataException(SR.ForwardReadInvalidLocalFileHeader);
+            }
+
+            if (!header[..FieldLengths.Signature].SequenceEqual(SignatureConstantBytes))
+            {
+                uint sig = BinaryPrimitives.ReadUInt32LittleEndian(header);
+                if (IsEndOfEntriesSignature(sig))
+                    return null;
+                throw new InvalidDataException(SR.ForwardReadInvalidLocalFileHeader);
+            }
+
+            return ParseForwardReadHeader(header, stream, entryNameEncoding);
+
+            static ForwardReadHeaderData ParseForwardReadHeader(ReadOnlySpan<byte> header, Stream stream, Encoding? entryNameEncoding)
+            {
+                ushort versionNeeded = BinaryPrimitives.ReadUInt16LittleEndian(header[FieldLocations.VersionNeededToExtract..]);
+                ushort generalPurposeBitFlags = BinaryPrimitives.ReadUInt16LittleEndian(header[FieldLocations.GeneralPurposeBitFlags..]);
+                ushort compressionMethodValue = BinaryPrimitives.ReadUInt16LittleEndian(header[FieldLocations.CompressionMethod..]);
+                uint lastModified = BinaryPrimitives.ReadUInt32LittleEndian(header[FieldLocations.LastModified..]);
+                uint crc32 = BinaryPrimitives.ReadUInt32LittleEndian(header[FieldLocations.Crc32..]);
+                uint compressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(header[FieldLocations.CompressedSize..]);
+                uint uncompressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(header[FieldLocations.UncompressedSize..]);
+                ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(header[FieldLocations.FilenameLength..]);
+                ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(header[FieldLocations.ExtraFieldLength..]);
+
+                byte[] filenameBytes = new byte[filenameLength];
+                if (filenameLength > 0)
+                    stream.ReadExactly(filenameBytes);
+
+                byte[] extraFieldBytes = new byte[extraFieldLength];
+                if (extraFieldLength > 0)
+                    stream.ReadExactly(extraFieldBytes);
+
+                long compressedSize = compressedSizeSmall;
+                long uncompressedSize = uncompressedSizeSmall;
+                bool isZip64SizeFields = false;
+
+                if (compressedSizeSmall == ZipHelper.Mask32Bit || uncompressedSizeSmall == ZipHelper.Mask32Bit)
+                {
+                    isZip64SizeFields = true;
+                    Zip64ExtraField zip64 = Zip64ExtraField.GetJustZip64Block(extraFieldBytes,
+                        readUncompressedSize: uncompressedSizeSmall == ZipHelper.Mask32Bit,
+                        readCompressedSize: compressedSizeSmall == ZipHelper.Mask32Bit,
+                        readLocalHeaderOffset: false,
+                        readStartDiskNumber: false);
+
+                    if (zip64.UncompressedSize.HasValue)
+                        uncompressedSize = zip64.UncompressedSize.Value;
+                    if (zip64.CompressedSize.HasValue)
+                        compressedSize = zip64.CompressedSize.Value;
+                }
+
+                bool isUtf8 = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.UnicodeFileNameAndComment) != 0;
+                Encoding nameEncoding = isUtf8 ? Encoding.UTF8 : (entryNameEncoding ?? Encoding.UTF8);
+                string fullName = nameEncoding.GetString(filenameBytes);
+
+                DateTimeOffset lastModifiedDto = new DateTimeOffset(ZipHelper.DosTimeToDateTime(lastModified));
+
+                return new ForwardReadHeaderData(
+                    versionNeeded, generalPurposeBitFlags, (ZipCompressionMethod)compressionMethodValue,
+                    lastModifiedDto, crc32, compressedSize, uncompressedSize,
+                    fullName, filenameBytes, isZip64SizeFields);
+            }
+        }
+
+        /// <summary>
+        /// Reads a data descriptor using signature-first parsing. No seek operations.
+        /// </summary>
+        internal static unsafe (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptor(Stream stream, bool isZip64)
+        {
+            Span<byte> firstFour = stackalloc byte[4];
+            stream.ReadExactly(firstFour);
+
+            uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(firstFour);
+            bool hasSignature = firstWord == 0x08074B50;
+
+            int remainingSize = (hasSignature ? 4 : 0) + (isZip64 ? 16 : 8);
+            Span<byte> remaining = stackalloc byte[20];
+            stream.ReadExactly(remaining[..remainingSize]);
+
+            return ParseDataDescriptor(remaining[..remainingSize], hasSignature, isZip64, firstWord);
+        }
+
+        /// <summary>
+        /// Reads a data descriptor whose size (32-bit or Zip64) is unknown.
+        /// Parses as 32-bit first; if the CRC and uncompressed size don't match
+        /// the expected values, reads additional bytes and re-parses as Zip64.
+        /// </summary>
+        /// <remarks>
+        /// Some writers (including .NET on non-seekable streams) emit a Zip64
+        /// data descriptor without setting any Zip64 indicator in the local
+        /// file header, because the final sizes are not known at header-write
+        /// time. The known values from the decompressor let us detect the
+        /// correct layout without relying on header signals.
+        /// </remarks>
+        internal static unsafe (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptorAdaptive(
+            Stream stream, uint knownCrc32, long knownUncompressedSize)
+        {
+            Span<byte> firstFour = stackalloc byte[4];
+            stream.ReadExactly(firstFour);
+
+            uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(firstFour);
+            bool hasSignature = firstWord == 0x08074B50;
+
+            // Read enough for the 32-bit layout: CRC(4) + CompSize(4) + UncompSize(4),
+            // plus CRC(4) again if the signature consumed firstWord.
+            int smallSize = (hasSignature ? 4 : 0) + 8;
+            Span<byte> buf = stackalloc byte[20];
+            stream.ReadExactly(buf[..smallSize]);
+
+            var small = ParseDataDescriptor(buf[..smallSize], hasSignature, isZip64: false, firstWord);
+            if (small.Crc32 == knownCrc32 && small.UncompressedSize == knownUncompressedSize)
+                return small;
+
+            // 32-bit interpretation didn't match — read 8 more bytes for the Zip64 layout.
+            stream.ReadExactly(buf.Slice(smallSize, 8));
+            int fullSize = smallSize + 8;
+
+            return ParseDataDescriptor(buf[..fullSize], hasSignature, isZip64: true, firstWord);
+        }
+
+        private static (uint Crc32, long CompressedSize, long UncompressedSize) ParseDataDescriptor(
+            ReadOnlySpan<byte> remaining, bool hasSignature, bool isZip64, uint firstWord)
+        {
+            int pos = 0;
+            uint crc32;
+            if (hasSignature)
+            {
+                crc32 = BinaryPrimitives.ReadUInt32LittleEndian(remaining[pos..]);
+                pos += 4;
+            }
+            else
+            {
+                crc32 = firstWord;
+            }
+
+            long compressedSize, uncompressedSize;
+            if (isZip64)
+            {
+                compressedSize = BinaryPrimitives.ReadInt64LittleEndian(remaining[pos..]);
+                uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(remaining[(pos + 8)..]);
+            }
+            else
+            {
+                compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(remaining[pos..]);
+                uncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(remaining[(pos + 4)..]);
+            }
+
+            return (crc32, compressedSize, uncompressedSize);
         }
     }
 
