@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -18,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents an entry in the Custom Attribute metadata table.
     /// </summary>
-    public sealed class CustomAttributeNode : TokenBasedNode
+    public sealed partial class CustomAttributeNode : TokenBasedNode
     {
         // Set when dependency-time custom attribute decoding fails.
         // Rewrite then preserves the original blob for this node.
@@ -43,6 +44,44 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public static void AddDependenciesDueToAssemblyCustomAttributes(ref DependencyList dependencies, ref IReadOnlyCollection<CombinedDependencyListEntry> conditionalDependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
+        {
+            List<CombinedDependencyListEntry> conditions = null;
+
+            foreach (CustomAttributeHandle customAttribute in handles)
+            {
+                if (factory.Settings.StripSecurity && IsCustomAttributeForSecurity(module, customAttribute))
+                    continue;
+
+                if (IsDebuggerAttribute(module, customAttribute))
+                {
+                    TypeDesc targetType = GetDebuggerAttributeTargetType(module, customAttribute);
+                    if (targetType?.GetTypeDefinition() is EcmaType targetEcmaType && factory.IsModuleTrimmed(targetEcmaType.Module))
+                    {
+                        conditions ??= new List<CombinedDependencyListEntry>();
+                        conditions.Add(new(
+                            factory.CustomAttribute(module, customAttribute),
+                            factory.TypeDefinition(targetEcmaType.Module, targetEcmaType.Handle),
+                            "Debugger attribute target type"));
+                    }
+                    else if (targetType is not null)
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(factory.CustomAttribute(module, customAttribute), "Debugger attribute target type");
+                    }
+
+                    continue;
+                }
+
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.CustomAttribute(module, customAttribute), "Custom attribute");
+            }
+
+            conditionalDependencies = conditions is not null
+                ? conditions
+                : Array.Empty<CombinedDependencyListEntry>();
+        }
+
         public static bool IsCustomAttributeForSecurity(EcmaModule module, CustomAttributeHandle handle)
         {
             MetadataReader metadataReader = module.MetadataReader;
@@ -61,6 +100,15 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return false;
+        }
+
+        public static bool IsDebuggerAttribute(EcmaModule module, CustomAttributeHandle handle)
+        {
+            MetadataReader metadataReader = module.MetadataReader;
+            return metadataReader.GetAttributeNamespaceAndName(handle, out StringHandle namespaceHandle, out StringHandle nameHandle)
+                && metadataReader.StringEquals(namespaceHandle, "System.Diagnostics"u8)
+                && (metadataReader.StringEquals(nameHandle, "DebuggerDisplayAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "DebuggerTypeProxyAttribute"u8));
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -86,6 +134,8 @@ namespace ILCompiler.DependencyAnalysis
                 return dependencies;
             }
 
+            AddDependenciesForDebuggerAttribute(dependencies, factory, customAttribute, decodedValue);
+
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
                 GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
@@ -107,6 +157,220 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return dependencies;
+        }
+
+        private void AddDependenciesForDebuggerAttribute(DependencyList dependencies, NodeFactory factory, CustomAttribute customAttribute, CustomAttributeValue<TypeDesc> decodedValue)
+        {
+            if (!factory.Settings.KeepMembersForDebugger || !IsDebuggerAttribute(_module, Handle))
+                return;
+
+            TypeDesc targetType;
+            if (customAttribute.Parent.Kind == HandleKind.TypeDefinition)
+            {
+                targetType = _module.GetType((TypeDefinitionHandle)customAttribute.Parent);
+            }
+            else if (customAttribute.Parent.Kind == HandleKind.AssemblyDefinition)
+            {
+                targetType = GetDebuggerAttributeTargetType(_module, decodedValue);
+            }
+            else
+            {
+                return;
+            }
+
+            if (targetType?.GetTypeDefinition() is not EcmaType targetEcmaType)
+                return;
+
+            MetadataReader metadataReader = _module.MetadataReader;
+            metadataReader.GetAttributeNamespaceAndName(Handle, out _, out StringHandle nameHandle);
+
+            if (metadataReader.StringEquals(nameHandle, "DebuggerDisplayAttribute"u8))
+            {
+                if (decodedValue.FixedArguments.Length > 0 && decodedValue.FixedArguments[0].Value is string displayString)
+                    AddDependenciesForDebuggerDisplayAttributeValue(dependencies, factory, targetEcmaType, displayString);
+
+                foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
+                {
+                    if (namedArg.Name is "Name" or "Type" && namedArg.Value is string namedDisplayString)
+                        AddDependenciesForDebuggerDisplayAttributeValue(dependencies, factory, targetEcmaType, namedDisplayString);
+                }
+            }
+            else
+            {
+                TypeDesc proxyType = null;
+                if (decodedValue.FixedArguments.Length > 0)
+                {
+                    object constructorArgument = decodedValue.FixedArguments[0].Value;
+                    proxyType = constructorArgument as TypeDesc;
+                    if (proxyType is null && constructorArgument is string proxyTypeName)
+                        proxyType = targetEcmaType.Module.GetTypeByCustomAttributeTypeName(proxyTypeName, throwIfNotFound: false);
+                }
+
+                if (proxyType?.GetTypeDefinition() is EcmaType proxyEcmaType)
+                {
+                    dependencies.Add(factory.ReflectedType(proxyEcmaType), "Referenced by debugger attribute");
+                    AddDependenciesForAllMethodsAndFields(dependencies, factory, proxyEcmaType);
+                }
+            }
+        }
+
+        private static TypeDesc GetDebuggerAttributeTargetType(EcmaModule module, CustomAttributeHandle customAttribute)
+        {
+            try
+            {
+                return GetDebuggerAttributeTargetType(module, module.MetadataReader.GetCustomAttribute(customAttribute).DecodeValue(new CustomAttributeTypeProvider(module)));
+            }
+            catch (Exception ex) when (ex is TypeSystemException or BadImageFormatException)
+            {
+                return null;
+            }
+        }
+
+        private static TypeDesc GetDebuggerAttributeTargetType(EcmaModule module, CustomAttributeValue<TypeDesc> decodedValue)
+        {
+            foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
+            {
+                if (namedArg.Name == "Target")
+                    return namedArg.Value as TypeDesc;
+
+                if (namedArg.Name == "TargetTypeName" && namedArg.Value is string targetTypeName)
+                    return module.GetTypeByCustomAttributeTypeName(targetTypeName, throwIfNotFound: false);
+            }
+
+            return null;
+        }
+
+        private static void AddDependenciesForDebuggerDisplayAttributeValue(DependencyList dependencies, NodeFactory factory, EcmaType type, string displayString)
+        {
+            if (string.IsNullOrEmpty(displayString))
+                return;
+
+            foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches(displayString))
+            {
+                ReadOnlySpan<char> realMatch = match.Value.AsSpan(1, match.Value.Length - 2);
+
+                if (ContainsNqSuffixRegex.IsMatch(realMatch))
+                {
+                    int commaIndex = realMatch.LastIndexOf(',');
+                    if (commaIndex >= 0)
+                        realMatch = realMatch[..commaIndex];
+                }
+
+                if (realMatch.EndsWith("()", StringComparison.Ordinal))
+                {
+                    ReadOnlySpan<char> methodName = realMatch[..^2];
+
+                    // Calls to methods on some member are not supported.
+                    if (methodName.Contains('.'))
+                        continue;
+
+                    if (TryAddDependencyForMethodWithNoParameters(dependencies, factory, type, methodName.ToString()))
+                        continue;
+                }
+                else
+                {
+                    string memberName = realMatch.ToString();
+
+                    if (TryAddDependencyForField(dependencies, factory, type, memberName))
+                        continue;
+
+                    if (TryAddDependencyForProperty(dependencies, factory, type, memberName))
+                        continue;
+                }
+
+                for (TypeDesc currentType = type; currentType?.GetTypeDefinition() is EcmaType ecmaType; currentType = currentType.BaseType)
+                    AddDependenciesForAllMethodsAndFields(dependencies, factory, ecmaType);
+
+                return;
+            }
+        }
+
+        private static bool TryAddDependencyForMethodWithNoParameters(DependencyList dependencies, NodeFactory factory, EcmaType type, string methodName)
+        {
+            for (TypeDesc currentType = type; currentType?.GetTypeDefinition() is EcmaType ecmaType; currentType = currentType.BaseType)
+            {
+                MetadataReader reader = ecmaType.MetadataReader;
+                TypeDefinition typeDef = reader.GetTypeDefinition(ecmaType.Handle);
+
+                foreach (MethodDefinitionHandle methodHandle in typeDef.GetMethods())
+                {
+                    MethodDefinition methodDefinition = reader.GetMethodDefinition(methodHandle);
+                    if (!reader.StringComparer.Equals(methodDefinition.Name, methodName))
+                        continue;
+
+                    MethodDesc method = ecmaType.Module.GetMethod(methodHandle);
+                    if (method.Signature.Length == 0)
+                    {
+                        dependencies.Add(factory.ReflectedMethod(method), "Referenced by debugger attribute");
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        [GeneratedRegex("{[^{}]+}")]
+        private static partial Regex DebuggerDisplayAttributeValueRegex { get; }
+
+        [GeneratedRegex(@".+,\s*nq")]
+        private static partial Regex ContainsNqSuffixRegex { get; }
+
+        private static bool TryAddDependencyForField(DependencyList dependencies, NodeFactory factory, EcmaType type, string fieldName)
+        {
+            byte[] fieldNameBytes = Encoding.UTF8.GetBytes(fieldName);
+
+            for (TypeDesc currentType = type; currentType?.GetTypeDefinition() is EcmaType ecmaType; currentType = currentType.BaseType)
+            {
+                FieldDesc field = ecmaType.GetField(fieldNameBytes);
+                if (field is not null)
+                {
+                    dependencies.Add(factory.ReflectedField(field), "Referenced by debugger attribute");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryAddDependencyForProperty(DependencyList dependencies, NodeFactory factory, EcmaType type, string propertyName)
+        {
+            for (TypeDesc currentType = type; currentType?.GetTypeDefinition() is EcmaType ecmaType; currentType = currentType.BaseType)
+            {
+                MetadataReader reader = ecmaType.MetadataReader;
+                TypeDefinition typeDef = reader.GetTypeDefinition(ecmaType.Handle);
+
+                foreach (PropertyDefinitionHandle propertyHandle in typeDef.GetProperties())
+                {
+                    PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
+                    if (!reader.StringComparer.Equals(property.Name, propertyName))
+                        continue;
+
+                    dependencies.Add(factory.PropertyDefinition(ecmaType.Module, propertyHandle), "Referenced by debugger attribute");
+
+                    PropertyAccessors accessors = property.GetAccessors();
+                    if (!accessors.Getter.IsNil)
+                        dependencies.Add(factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Getter)), "Referenced by debugger attribute");
+                    if (!accessors.Setter.IsNil)
+                        dependencies.Add(factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter)), "Referenced by debugger attribute");
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddDependenciesForAllMethodsAndFields(DependencyList dependencies, NodeFactory factory, EcmaType type)
+        {
+            MetadataReader reader = type.MetadataReader;
+            TypeDefinition typeDef = reader.GetTypeDefinition(type.Handle);
+
+            foreach (MethodDefinitionHandle methodHandle in typeDef.GetMethods())
+                dependencies.Add(factory.ReflectedMethod(type.Module.GetMethod(methodHandle)), "Referenced by debugger attribute");
+
+            foreach (FieldDefinitionHandle fieldHandle in typeDef.GetFields())
+                dependencies.Add(factory.ReflectedField(type.Module.GetField(fieldHandle)), "Referenced by debugger attribute");
         }
 
         private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
