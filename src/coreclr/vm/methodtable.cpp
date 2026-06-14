@@ -6461,13 +6461,8 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    MethodTable * pMatchingParent = GetMethodTableMatchingParentClass(pWhichParent);
-    if (pMatchingParent != NULL)
-    {
-        return pMatchingParent->GetInstantiation();
-    }
 
-    pMatchingParent = pWhichParent->GetMethodTableMatchingParentClass(this);
+    MethodTable * pMatchingParent = GetMethodTableMatchingParentClass(pWhichParent);
     if (pMatchingParent != NULL)
     {
         return pMatchingParent->GetInstantiation();
