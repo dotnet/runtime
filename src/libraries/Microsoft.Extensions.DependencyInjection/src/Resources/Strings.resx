@@ -198,4 +198,8 @@
   <data name="NoKeyedServiceRegistered" xml:space="preserve">
     <value>No keyed service for type '{0}' using key type '{1}' has been registered.</value>
   </data>
+  <data name="ValidatorsFailedWithErrors" xml:space="preserve">
+    <value>Some service registrations failed validation:
+{0}</value>
+  </data>
 </root>
