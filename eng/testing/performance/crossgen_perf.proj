@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
+  <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
+  </PropertyGroup>
+
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
       <PayloadDirectory>%(Identity)</PayloadDirectory>
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <!-- 
-    Crossgen and Crossgen2 Scenario WorkItems 
+  <!--
+    Crossgen and Crossgen2 Scenario WorkItems
   -->
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>python</Python>
@@ -44,14 +48,14 @@
     <Composite Include="framework-r2r.dll.rsp"/>
   </ItemGroup>
 
-  <ItemGroup> 
+  <ItemGroup>
     <Crossgen2WorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity) $(ScenarioArgs)</Command>
     </Crossgen2WorkItem>
   </ItemGroup>
 
-  <ItemGroup> 
+  <ItemGroup>
     <Crossgen2SingleThreadedWorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity) --singlethreaded True $(ScenarioArgs)</Command>
@@ -76,12 +80,12 @@
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="Crossgen2 Composite Framework R2R">
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>	
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --composite $(Crossgen2Directory)framework-r2r.dll.rsp $(ScenarioArgs)</Command>
-      <Timeout>1:00</Timeout>  
+      <Timeout>1:00</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="@(Crossgen2SizeOnDiskWorkItem -> 'Crossgen2 Size on Disk %(Identity)')">
-      <Timeout>4:00</Timeout>  
+      <Timeout>4:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 </Project>
