@@ -3221,5 +3221,77 @@ namespace System.Runtime.Intrinsics
 
             return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
         }
+
+        public static TVectorDouble AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // The AMD AOCL-LibM scalar acosh implementation (acosh.c) uses range-based
+            // polynomial lookup tables which cannot be trivially vectorized due to the cost
+            // of gather instructions. Instead, this uses the mathematical identity:
+            //   acosh(x) = log(x + sqrt((x - 1) * (x + 1)))
+            // using (x-1)*(x+1) instead of x^2-1 to avoid catastrophic cancellation near x=1,
+            // with special handling for large x for improved accuracy.
+
+            const double LN2 = 0.693147180559945309417;
+            const double LARGE_THRESHOLD = 268435456.0; // 2^28
+
+            // Return NaN for x < 1
+            TVectorDouble nanMask = TVectorDouble.LessThan(x, TVectorDouble.One);
+
+            // For large values (x > 2^28), use log(2) + log(x)
+            TVectorDouble largeMask = TVectorDouble.GreaterThan(x, TVectorDouble.Create(LARGE_THRESHOLD));
+
+            // Normal case: log(x + sqrt((x - 1) * (x + 1)))
+            // Using (x-1)*(x+1) avoids catastrophic cancellation when x is near 1
+            TVectorDouble xm1 = x - TVectorDouble.One;
+            TVectorDouble xp1 = x + TVectorDouble.One;
+            TVectorDouble normal = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(x + TVectorDouble.Sqrt(xm1 * xp1));
+
+            // Large value case: log(2) + log(x)
+            TVectorDouble large = TVectorDouble.Create(LN2) + LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(x);
+
+            // Select appropriate result based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(largeMask, large, normal);
+            result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
+
+            return result;
+        }
+
+        public static TVectorSingle AcoshSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `acoshf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // This implementation computes single-precision acosh by widening the
+            // input to double precision, calling AcoshDouble, and then narrowing
+            // the result back to single precision. AcoshDouble uses mathematical
+            // identities (no polynomial approximation) for improved accuracy.
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxLo),
+                    AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxHi)
+                );
+            }
+        }
     }
 }
