@@ -2120,8 +2120,9 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, 0, Comparer<int>.Default));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(0, -1, Comparer<int>.Default));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(array.Length + 1, 0, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(array.Length + 1, 0, Comparer<int>.Default));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(0, array.Length + 1, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(0, int.MaxValue, Comparer<int>.Default));
         }
 
         [Theory]
