@@ -627,6 +627,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "X86TailCallSpecialArg";
         case WellKnownArg::StackArrayLocal:
             return "StackArrayLocal";
+        case WellKnownArg::StackArrayElemSize:
+            return "StackArrayElemSize";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
         case WellKnownArg::AsyncExecutionContext:

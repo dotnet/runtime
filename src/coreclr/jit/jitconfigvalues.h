@@ -716,6 +716,12 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStac
 CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationLocalloc, "JitObjectStackAllocationLocalloc", 1)
+// Maximum cumulative bytes of conditional (localloc) stack allocations per method invocation.
+// Once the running total would exceed this, further conditional allocations fall back to heap.
+// Default is 8x JitObjectStackAllocationSize.
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationFrameSize, "JitObjectStackAllocationFrameSize", 8 * 528)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationInLoop, "JitObjectStackAllocationInLoop", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
 CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)

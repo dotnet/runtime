@@ -68,7 +68,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             {
                 internalIntCount = 0;
             }
-            else if (!m_compiler->info.compInitMem)
+            else if (!m_compiler->gtMustZeroLocalloc(tree))
             {
                 // No need to initialize allocated stack space.
                 if (sizeVal < m_compiler->eeGetPageSize())

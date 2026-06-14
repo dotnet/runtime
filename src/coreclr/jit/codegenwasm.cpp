@@ -3047,7 +3047,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     assert(m_compiler->compLocallocUsed);
     assert(isFramePointerUsed());
 
-    bool const     needsZeroing = m_compiler->info.compInitMem;
+    bool const     needsZeroing = m_compiler->gtMustZeroLocalloc(tree);
     GenTree* const size         = tree->AsOp()->gtOp1;
 
     // We reserve this amount of space below any allocation for
