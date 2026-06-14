@@ -162,7 +162,7 @@ struct BasicBlock;
 enum BasicBlockFlags : uint64_t;
 struct InlineCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
-struct LateDevirtualizationInfo;
+struct ExactContextInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -5897,7 +5897,7 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
-    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
+    ExactContextInfo* gtExactContextInfo; // Always available for user virtual/shared generic calls
 
     // expression evaluated after args are placed which determines the control target
     GenTree*              gtControlExpr; // Applicable to any call type

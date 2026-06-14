@@ -9817,9 +9817,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
     INDEBUG_OR_WASM(node->callSig = nullptr;)
-    node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
-    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    node->tailCallInfo       = nullptr;
+    node->gtRetClsHnd        = nullptr;
+    node->gtExactContextInfo = nullptr;
+    node->gtCallMoreFlags    = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
@@ -11431,8 +11432,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
     }
 
-    copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
-    copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
+    copy->gtInlineInfoCount  = tree->gtInlineInfoCount;
+    copy->gtExactContextInfo = tree->gtExactContextInfo;
 
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
@@ -20844,12 +20845,30 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             else if (call->gtCallType == CT_USER_FUNC)
             {
                 // For user calls, we can fetch the approximate return
-                // type info from the method handle. Unfortunately
-                // we've lost the exact context, so this is the best
-                // we can do for now.
+                // type info from the method handle.
                 CORINFO_METHOD_HANDLE method     = call->gtCallMethHnd;
-                CORINFO_CLASS_HANDLE  exactClass = nullptr;
-                CORINFO_SIG_INFO      sig;
+                CORINFO_CLASS_HANDLE  exactClass = NO_CLASS_HANDLE;
+
+                ExactContextInfo* contextInfo = call->gtExactContextInfo;
+                if (contextInfo != nullptr)
+                {
+                    SIZE_T contextType  = (SIZE_T)contextInfo->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK;
+                    SIZE_T contextValue = (SIZE_T)contextInfo->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK;
+                    if (contextValue == 0)
+                    {
+                        // we don't have a valid context saved, ignore
+                    }
+                    else if (contextType == CORINFO_CONTEXTFLAGS_CLASS)
+                    {
+                        exactClass = CORINFO_CLASS_HANDLE(contextValue);
+                    }
+                    else
+                    {
+                        method = CORINFO_METHOD_HANDLE(contextValue);
+                    }
+                }
+
+                CORINFO_SIG_INFO sig;
                 eeGetMethodSig(method, &sig, exactClass);
                 if (sig.retType == CORINFO_TYPE_VOID)
                 {
