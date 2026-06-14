@@ -37,9 +37,7 @@
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_WasmDefaultFlags>
-    <!-- true: use the standardized Wasm EH proposal (exnref), not the legacy one. -->
-    <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions -s WASM_LEGACY_EXCEPTIONS=0</_WasmDefaultFlags>
-    <!-- Append SIMD; do not overwrite the exception-handling flag selected above. -->
+    <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions -s WASM_LEGACY_EXCEPTIONS=1</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(_WasmDefaultFlags) -msimd128</_WasmDefaultFlags>
 
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
@@ -180,14 +178,10 @@
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
-      <!-- JavaScript-based (Emscripten) exception handling. Keep both flags: -fexceptions is the
-           modern spelling, -s DISABLE_EXCEPTION_CATCHING=0 keeps catching enabled. This avoids
-           emitting native Wasm EH (try/catch) instructions for older engines. -->
       <_EmccCommonFlags Include="-fexceptions"                             Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <!-- Standardized Wasm EH (exnref), not legacy. [compile+link] -->
-      <_EmccCommonFlags Include="-s WASM_LEGACY_EXCEPTIONS=0"              Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
+      <_EmccCommonFlags Include="-s WASM_LEGACY_EXCEPTIONS=1"              Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
       <_EmccCommonFlags Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" Condition="'$(EmccMaximumHeapSize)' != ''" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
@@ -474,7 +468,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="$(V8ScriptShebang);v8 --experimental-wasm-exnref $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Lines="$(V8ScriptShebang);v8 $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 

@@ -474,12 +474,10 @@ if(HOST_BROWSER)
   set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions")
   install(TARGETS mono-wasm-eh-js LIBRARY)
 
-  # Use the standardized Wasm EH proposal (exnref / try_table / throw_ref), not the legacy one.
-  # WASM_LEGACY_EXCEPTIONS is a [compile+link] setting, so it must be set on both.
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
-  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0")
-  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=1")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=1")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 

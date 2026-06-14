@@ -6,7 +6,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { simd, relaxedSimd, exceptionsFinal } from "wasm-feature-detect";
+import { exceptions, simd, relaxedSimd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
@@ -131,7 +131,7 @@ export function setLoaderGlobals (
         isDebuggingSupported,
 
         // from wasm-feature-detect npm package
-        exceptionsFinal,
+        exceptions,
         simd,
         relaxedSimd
     };

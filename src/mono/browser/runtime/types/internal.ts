@@ -174,7 +174,7 @@ export type LoaderHelpers = {
     isFirefox: boolean
 
     // from wasm-feature-detect npm package
-    exceptionsFinal: () => Promise<boolean>,
+    exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
     relaxedSimd: () => Promise<boolean>,
 }
@@ -226,7 +226,7 @@ export type RuntimeHelpers = {
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
-    featureWasmFinalEh: boolean,
+    featureWasmEh: boolean,
     featureWasmSimd: boolean,
     featureWasmRelaxedSimd: boolean,
 
