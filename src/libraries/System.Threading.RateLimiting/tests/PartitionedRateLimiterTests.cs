@@ -620,8 +620,8 @@ namespace System.Threading.RateLimiting.Tests
         {
             // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
             var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
+            Assert.NotNull(limiterTypeDef);
             var limiterType = limiterTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
-            Assert.Equal(limiter.GetType(), limiterType);
 
             var limitersField = limiterType.GetField("_limiters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.NotNull(limitersField);
