@@ -205,6 +205,7 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
                 using ActivitySource source = new ActivitySource("RefreshDisposeRaceSource");
 
                 using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
@@ -218,7 +219,7 @@ namespace System.Diagnostics.Tests
                         {
                             insideShouldListenTo.Set();
                             // Block phase 1 until the main thread has fully disposed the listener.
-                            disposeFinished.Wait();
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
                             return true;
                         }
                         return false;
@@ -229,11 +230,11 @@ namespace System.Diagnostics.Tests
 
                 Task refresher = Task.Run(() => listener.RefreshSources());
 
-                insideShouldListenTo.Wait();
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
                 listener.Dispose();
                 disposeFinished.Set();
 
-                refresher.Wait();
+                Assert.True(refresher.Wait(timeout), "RefreshSources task did not complete within timeout.");
 
                 Assert.False(source.HasListeners());
                 Assert.Null(source.StartActivity("after-dispose-during-refresh"));
@@ -245,6 +246,7 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
                 using ActivitySource source = new ActivitySource("AddListenerDisposeRaceSource");
 
                 using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
@@ -257,7 +259,7 @@ namespace System.Diagnostics.Tests
                         if (ReferenceEquals(source, activitySource))
                         {
                             insideShouldListenTo.Set();
-                            disposeFinished.Wait();
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
                             return true;
                         }
                         return false;
@@ -268,11 +270,11 @@ namespace System.Diagnostics.Tests
 
                 Task adder = Task.Run(() => ActivitySource.AddActivityListener(listener));
 
-                insideShouldListenTo.Wait();
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
                 listener.Dispose();
                 disposeFinished.Set();
 
-                adder.Wait();
+                Assert.True(adder.Wait(timeout), "AddActivityListener task did not complete within timeout.");
 
                 Assert.False(source.HasListeners());
                 Assert.Null(source.StartActivity("after-dispose-during-add"));
@@ -284,6 +286,7 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
                 using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
                 using ManualResetEventSlim disposeFinished = new ManualResetEventSlim();
 
@@ -294,7 +297,7 @@ namespace System.Diagnostics.Tests
                         if (activitySource.Name == "CtorDisposeRaceSource")
                         {
                             insideShouldListenTo.Set();
-                            disposeFinished.Wait();
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
                             return true;
                         }
                         return false;
@@ -308,11 +311,11 @@ namespace System.Diagnostics.Tests
                 ActivitySource? source = null;
                 Task ctor = Task.Run(() => source = new ActivitySource("CtorDisposeRaceSource"));
 
-                insideShouldListenTo.Wait();
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
                 listener.Dispose();
                 disposeFinished.Set();
 
-                ctor.Wait();
+                Assert.True(ctor.Wait(timeout), "ActivitySource constructor task did not complete within timeout.");
 
                 Assert.NotNull(source);
                 Assert.False(source!.HasListeners());
