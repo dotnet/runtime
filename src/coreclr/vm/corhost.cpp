@@ -615,6 +615,13 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
+    {
+        // Initialize the InvariantCulture such that it can be safely used when creating
+        // stack traces under high memory pressure.
+        GCX_COOP();
+        CoreLibBinder::GetClass(CLASS__CULTURE_INFO)->CheckRunClassInitThrowing();
+    }
+
 #if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)
     {
