@@ -1222,10 +1222,11 @@ namespace Internal.JitInterface
                     {
                         method = ((ArrayType)type).GetArrayMethod(((ArrayMethod)method).Kind);
                     }
-                    else if (type is InstantiatedType instantiatedType && method.OwningType.HasSameTypeDefinition(instantiatedType))
+                    else
                     {
+                        Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
                         Instantiation methodInst = method.Instantiation;
-                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedType);
+                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
                         if (methodInst.Length > 0)
                         {
                             method = method.MakeInstantiatedMethod(methodInst);
@@ -3453,7 +3454,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize; // Delegate._target
             pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._methodPtr
-#else
+#else            
             pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize; // Delegate._firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._functionPointer
 #endif
