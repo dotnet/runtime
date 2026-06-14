@@ -708,6 +708,7 @@ RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyProfScale, "JitExtDefaultPolicyProfSca
 RELEASE_CONFIG_INTEGER(JitInlinePolicyModel, "JitInlinePolicyModel", 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfile, "JitInlinePolicyProfile", 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, "JitInlinePolicyProfileThreshold", 40)
+RELEASE_CONFIG_INTEGER(JitFrameLayoutMaxSavingsThreshold, "JitFrameLayoutMaxSavingsThreshold", 0)
 CONFIG_STRING(JitObjectStackAllocationRange, "JitObjectStackAllocationRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, "JitObjectStackAllocation", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, "JitObjectStackAllocationRefClass", 1)
