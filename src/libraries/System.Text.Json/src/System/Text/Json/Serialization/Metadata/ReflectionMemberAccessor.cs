@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -167,7 +168,15 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
             };
         }
 
@@ -177,7 +186,15 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TDeclaringType obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
             };
         }
 
@@ -187,7 +204,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj, TProperty value)
             {
-                setMethodInfo.Invoke(obj, new object[] { value! });
+                try
+                {
+                    setMethodInfo.Invoke(obj, new object[] { value! });
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
             };
         }
 
