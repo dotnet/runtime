@@ -560,8 +560,12 @@ HARDWARE_INTRINSIC(Sve,           ReverseElement_Predicates,                    
 //                                                                                                                  {TYP_BYTE,           TYP_UBYTE,          TYP_SHORT,          TYP_USHORT,         TYP_INT,            TYP_UINT,           TYP_LONG,           TYP_ULONG,          TYP_FLOAT,          TYP_DOUBLE}
 // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
 // SVE Implementation of VectorT Intrinsics
-#define FIRST_NI_VectorT          NI_Illegal
-#define LAST_NI_VectorT           NI_Illegal
+#define FIRST_NI_VectorT          NI_VectorT_Create
+HARDWARE_INTRINSIC(VectorT,       Create,                                                           -1,      1,     {INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_SpecialImport|HW_Flag_SpecialCodeGen)
+HARDWARE_INTRINSIC(VectorT,       CreateScalar,                                                     -1,      1,     {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_SpecialImport|HW_Flag_NoCodeGen)
+HARDWARE_INTRINSIC(VectorT,       CreateScalarUnsafe,                                               -1,      1,     {INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup,        INS_sve_dup},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_SpecialImport|HW_Flag_SpecialCodeGen)
+HARDWARE_INTRINSIC(VectorT,       CreateSequence,                                                   -1,      2,     {INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index,      INS_sve_index},   HW_Category_Helper,                HW_Flag_Scalable|HW_Flag_SpecialImport|HW_Flag_SpecialCodeGen)
+#define LAST_NI_VectorT           NI_VectorT_CreateSequence
 
 #endif // FEATURE_HW_INTRINSIC
 

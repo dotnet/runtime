@@ -472,7 +472,11 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 
     if (simdBaseType != TYP_UNDEF)
     {
-        assert(size == info.compCompHnd->getClassSize(typeHnd));
+#if defined(TARGET_ARM64)
+        assert((size == info.compCompHnd->getClassSize(typeHnd)) || (size == SIZE_UNKNOWN));
+#else
+        assert((size == info.compCompHnd->getClassSize(typeHnd)));
+#endif // TARGET_ARM64
         setUsesSIMDTypes(true);
     }
 
@@ -513,4 +517,119 @@ void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
 
+#if defined(TARGET_ARM64)
+
+uint64_t SimdAllBitsSetForElementType(var_types baseType)
+{
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            return 0xFF;
+        case 2:
+            return 0xFFFF;
+        case 4:
+            return 0xFFFFFFFFull;
+        case 8:
+            return 0xFFFFFFFFFFFFFFFFull;
+        default:
+            unreached();
+    }
+}
+
+bool simdscalable_t::IsAllBitsSet() const
+{
+    if (gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+    const unsigned elementBitSize = genTypeSize(gtSimdScalableBaseType) * 8;
+    const uint64_t allBitsSetMask = (elementBitSize == 64) ? UINT64_MAX : (((uint64_t)1 << elementBitSize) - 1);
+    return gtSimdScalableIndex == allBitsSetMask;
+}
+
+bool simdmaskscalable_t::IsAllBitsSet(var_types simdBaseType) const
+{
+    return (gtSimdMaskScalableIndex == 1) && (genTypeSize(simdBaseType) == genTypeSize(gtSimdMaskScalableBaseType));
+}
+
+bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon)
+{
+    // All zero can always be converted to a mask, regardless of types
+    if (vecCon.IsZero())
+    {
+        maskCon->gtSimdMaskScalableBaseType = baseType;
+        maskCon->gtSimdMaskScalableIndex    = 0;
+        return true;
+    }
+
+    if (vecCon.gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+
+    // size of the basetype must match
+    if (genTypeSize(baseType) != genTypeSize(vecCon.gtSimdScalableBaseType))
+    {
+        return false;
+    }
+
+    uint64_t allBitsSet = SimdAllBitsSetForElementType(baseType);
+
+    maskCon->gtSimdMaskScalableBaseType = baseType;
+    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == allBitsSet);
+    return true;
+}
+
+bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon)
+{
+    // All zero can always be converted to a vector, regardless of types
+    if (maskCon.IsZero())
+    {
+        vecCon->gtSimdScalableBaseType = baseType;
+        vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+        vecCon->gtSimdScalableIndex    = 0;
+        vecCon->gtSimdScalableStep     = 0;
+        return true;
+    }
+
+    // size of the basetype must match
+    // TODO: We could work around this for masks?
+    if (genTypeSize(baseType) != genTypeSize(maskCon.gtSimdMaskScalableBaseType))
+    {
+        return false;
+    }
+
+    // Only zero and one are valid
+    if (maskCon.gtSimdMaskScalableIndex != 1)
+    {
+        assert(false);
+        return false;
+    }
+
+    vecCon->gtSimdScalableBaseType = baseType;
+    vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+    vecCon->gtSimdScalableStep     = 0;
+
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            vecCon->gtSimdScalableIndex = 0xFF;
+            break;
+        case 2:
+            vecCon->gtSimdScalableIndex = 0xFFFF;
+            break;
+        case 4:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFull;
+            break;
+        case 8:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFFFFFFFFFull;
+            break;
+        default:
+            unreached();
+    }
+
+    return true;
+}
+
+#endif // TARGET_ARM64
 #endif // FEATURE_SIMD
