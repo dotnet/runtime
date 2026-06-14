@@ -4091,9 +4091,13 @@ public sealed unsafe partial class SOSDacImpl
                     Object = refs[i].Object.Value,
                     Flags = refs[i].Flags,
                     Source = refs[i].Source.Value,
-                    SourceType = refs[i].IsStackSourceFrame
-                        ? SOSStackSourceType.SOS_StackSourceFrame
-                        : SOSStackSourceType.SOS_StackSourceIP,
+                    SourceType = refs[i].SourceType switch
+                    {
+                        StackSourceType.InstructionPointer => SOSStackSourceType.SOS_StackSourceIP,
+                        StackSourceType.Frame => SOSStackSourceType.SOS_StackSourceFrame,
+                        StackSourceType.Other => SOSStackSourceType.SOS_StackSourceOther,
+                        _ => throw new UnreachableException($"Unexpected {nameof(StackSourceType)}: {refs[i].SourceType}"),
+                    },
                     StackPointer = refs[i].StackPointer.Value,
                 };
             }
