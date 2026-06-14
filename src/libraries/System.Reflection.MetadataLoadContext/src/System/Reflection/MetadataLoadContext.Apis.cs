@@ -115,7 +115,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a specific path on the disk and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a specific path on the disk into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
@@ -129,7 +129,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a byte array and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a byte array into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
@@ -143,7 +143,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a stream and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a stream into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
