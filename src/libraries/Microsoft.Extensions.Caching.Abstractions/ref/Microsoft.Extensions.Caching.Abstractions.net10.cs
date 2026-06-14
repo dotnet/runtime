@@ -34,5 +34,31 @@ namespace Microsoft.Extensions.Caching.Hybrid
             Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
             System.Collections.Generic.IEnumerable<string>? tags = null,
             System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(
+            System.ReadOnlySpan<char> key,
+            System.Func<Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+            System.Collections.Generic.IEnumerable<string>? tags = null,
+            System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(
+            System.ReadOnlySpan<char> key,
+            TState state,
+            System.Func<TState, Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+            System.Collections.Generic.IEnumerable<string>? tags = null,
+            System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(
+            ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler key,
+            System.Func<Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+            System.Collections.Generic.IEnumerable<string>? tags = null,
+            System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(
+            ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler key,
+            TState state,
+            System.Func<TState, Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+            System.Collections.Generic.IEnumerable<string>? tags = null,
+            System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 }
