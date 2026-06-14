@@ -15,27 +15,28 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     // mac.init(key);
 
     JNIEnv* env = GetJNIEnv();
+    jobject macObj = NULL;
+    bool success = false;
 
-    jstring macName = NULL;
+    INIT_LOCALS(loc, macName, keyBytes, sksObj);
+
     if (type == CryptoNative_EvpSha1())
-        macName = make_java_string(env, "HmacSHA1");
+        loc[macName] = make_java_string(env, "HmacSHA1");
     else if (type == CryptoNative_EvpSha256())
-        macName = make_java_string(env, "HmacSHA256");
+        loc[macName] = make_java_string(env, "HmacSHA256");
     else if (type == CryptoNative_EvpSha384())
-        macName = make_java_string(env, "HmacSHA384");
+        loc[macName] = make_java_string(env, "HmacSHA384");
     else if (type == CryptoNative_EvpSha512())
-        macName = make_java_string(env, "HmacSHA512");
+        loc[macName] = make_java_string(env, "HmacSHA512");
     else if (type == CryptoNative_EvpMd5())
-        macName = make_java_string(env, "HmacMD5");
+        loc[macName] = make_java_string(env, "HmacMD5");
     else
-        return FAIL;
-
-    jbyteArray keyBytes;
+        goto cleanup;
 
     if (key && keyLen > 0)
     {
-        keyBytes = make_java_byte_array(env, keyLen);
-        (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
+        loc[keyBytes] = make_java_byte_array(env, keyLen);
+        (*env)->SetByteArrayRegion(env, loc[keyBytes], 0, keyLen, (jbyte*)key);
     }
     else
     {
@@ -43,30 +44,33 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
         // so instead create an empty 1-byte length byte array that's initialized to 0.
         // the HMAC algorithm pads keys with zeros until the key is block-length,
         // so this effectively creates the same key as if it were a zero byte-length key.
-        keyBytes = make_java_byte_array(env, 1);
+        loc[keyBytes] = make_java_byte_array(env, 1);
     }
 
-    jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
-    if (CheckJNIExceptions(env) || sksObj == NULL)
+    loc[sksObj] = (*env)->NewObject(env, g_sksClass, g_sksCtor, loc[keyBytes], loc[macName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[sksObj] == NULL)
     {
-        if(sksObj == NULL)
-        {
-            LOG_WARN ("Unable to create an instance of SecretKeySpec");
-        }
+        LOG_WARN ("Unable to create an instance of SecretKeySpec");
+        goto cleanup;
+    }
 
-        (*env)->DeleteLocalRef(env, keyBytes);
-        (*env)->DeleteLocalRef(env, sksObj);
-        (*env)->DeleteLocalRef(env, macName);
+    macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, loc[macName]));
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    (*env)->CallVoidMethod(env, macObj, g_MacInit, loc[sksObj]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    success = true;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    if (!success)
+    {
+        ReleaseGRef(env, macObj);
         return FAIL;
     }
-
-    jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
-    (*env)->CallVoidMethod(env, macObj, g_MacInit, sksObj);
-    (*env)->DeleteLocalRef(env, keyBytes);
-    (*env)->DeleteLocalRef(env, sksObj);
-    (*env)->DeleteLocalRef(env, macName);
-
-    return CheckJNIExceptions(env) ? FAIL : macObj;
+    return macObj;
 }
 
 int32_t CryptoNative_HmacReset(jobject ctx)
