@@ -1876,7 +1876,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
-            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1931,16 +1930,12 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
-            if (ohThrowable != NULL)
-            {
-                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
-            }
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -2043,25 +2038,23 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         frames.interpMethodContextFrame.pStack = sp;
         frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
 
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
         InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
-        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
 
-#if defined(TARGET_AMD64)
+    #if defined(TARGET_AMD64)
         pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM64)
+    #elif defined(TARGET_ARM64)
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM)
+    #elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_WASM)
+    #elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
-#else
+    #else
         #error Unsupported architecture
-#endif
+    #endif
 
         frames.interpreterFrame.Pop();
 
@@ -2722,7 +2715,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pEMFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -3014,7 +3006,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
@@ -3697,7 +3688,6 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     pFrame->Push(CURRENT_THREAD);
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -3794,7 +3784,6 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 
