@@ -343,6 +343,32 @@ CreateFileWrapper(
     return ret;
 }
 
+MemoryMappedFile* CreateMappedFileWrapper(const WCHAR* filename)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
+    
+    EX_TRY
+    {
+        LongPathString path(LongPathString::Literal, filename);
+
+        if (SUCCEEDED(LongFile::NormalizePath(path)))
+        {
+            return MemoryMappedFile::Open(path.GetUnicode());
+        }
+    }
+    EX_CATCH
+    {
+        // Swallow all exceptions
+    }
+    EX_END_CATCH
+
+    return nullptr;
+}
+
 int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 {
     CONTRACTL
@@ -362,7 +388,7 @@ int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
     }
     EX_CATCH
     {
-        return -1;
+        // Swallow all exceptions
     }
     EX_END_CATCH
 
