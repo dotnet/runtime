@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.ServerSentEvents
 {
-    /// <summary>Provides a parser for server-sent events information.</summary>
+    /// <summary>Provides a parser for server-sent events information read from a trustworthy stream.</summary>
     /// <typeparam name="T">Specifies the type of data parsed from an event.</typeparam>
     public sealed class SseParser<T>
     {
