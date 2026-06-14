@@ -493,6 +493,31 @@ jmethodID g_DotnetX509KeyManagerCtor;
 jclass    g_PalPbkdf2;
 jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
+// java/net/ProxySelector
+jclass    g_ProxySelector;
+jmethodID g_ProxySelector_getDefault;
+jmethodID g_ProxySelector_select;
+
+// java/net/Proxy
+jclass    g_Proxy;
+jmethodID g_ProxyType_method;
+jmethodID g_Proxy_address;
+
+// java/net/Proxy$Type
+jclass    g_ProxyType;
+jfieldID  g_ProxyType_DIRECT;
+jfieldID  g_ProxyType_HTTP;
+jfieldID  g_ProxyType_SOCKS;
+
+// java/net/InetSocketAddress
+jclass    g_InetSocketAddress;
+jmethodID g_InetSocketAddress_getHostString;
+jmethodID g_InetSocketAddress_getPort;
+
+// java/net/URI
+jclass    g_URI;
+jmethodID g_URI_create;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -680,6 +705,21 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
     (*env)->DeleteLocalRef(env, enumObj);
     return value;
+}
+
+uint16_t* AllocateString(JNIEnv* env, jstring source)
+{
+    if (source == NULL)
+        return NULL;
+
+    // GetStringLength is in 16-bit Java code-units, which is exactly the format we copy
+    // out via GetStringRegion. The buffer holds (len + 1) uint16_t for the NUL terminator.
+    jsize len = (*env)->GetStringLength(env, source);
+    uint16_t* buffer = xmalloc(sizeof(uint16_t) * (size_t)(len + 1));
+    buffer[len] = '\0';
+
+    (*env)->GetStringRegion(env, source, 0, len, (jchar*)buffer);
+    return buffer;
 }
 
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
@@ -1089,6 +1129,26 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
     g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
+
+    g_ProxySelector            = GetClassGRef(env, "java/net/ProxySelector");
+    g_ProxySelector_getDefault = GetMethod(env, true,  g_ProxySelector, "getDefault", "()Ljava/net/ProxySelector;");
+    g_ProxySelector_select     = GetMethod(env, false, g_ProxySelector, "select",     "(Ljava/net/URI;)Ljava/util/List;");
+
+    g_Proxy             = GetClassGRef(env, "java/net/Proxy");
+    g_ProxyType_method  = GetMethod(env, false, g_Proxy, "type",    "()Ljava/net/Proxy$Type;");
+    g_Proxy_address     = GetMethod(env, false, g_Proxy, "address", "()Ljava/net/SocketAddress;");
+
+    g_ProxyType        = GetClassGRef(env, "java/net/Proxy$Type");
+    g_ProxyType_DIRECT = GetField(env, true, g_ProxyType, "DIRECT", "Ljava/net/Proxy$Type;");
+    g_ProxyType_HTTP   = GetField(env, true, g_ProxyType, "HTTP",   "Ljava/net/Proxy$Type;");
+    g_ProxyType_SOCKS  = GetField(env, true, g_ProxyType, "SOCKS",  "Ljava/net/Proxy$Type;");
+
+    g_InetSocketAddress               = GetClassGRef(env, "java/net/InetSocketAddress");
+    g_InetSocketAddress_getHostString = GetMethod(env, false, g_InetSocketAddress, "getHostString", "()Ljava/lang/String;");
+    g_InetSocketAddress_getPort       = GetMethod(env, false, g_InetSocketAddress, "getPort",       "()I");
+
+    g_URI        = GetClassGRef(env, "java/net/URI");
+    g_URI_create = GetMethod(env, true, g_URI, "create", "(Ljava/lang/String;)Ljava/net/URI;");
 
     return JNI_VERSION_1_6;
 }
