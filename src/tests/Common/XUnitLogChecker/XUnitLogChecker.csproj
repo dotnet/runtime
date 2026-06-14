@@ -5,9 +5,9 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(SelfContained)' != 'false'">true</PublishTrimmed>
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
-    <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
+    <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true' And '$(SelfContained)' != 'false'">true</PublishSingleFile>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
