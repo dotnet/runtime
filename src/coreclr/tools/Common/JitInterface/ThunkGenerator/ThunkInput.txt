@@ -190,8 +190,6 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection, bool*                       isRelative);
     bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
-    CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-    CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
     CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
