@@ -11,28 +11,18 @@ namespace System.IO.Tests
 {
     public abstract class BaseGetSetTimes<T> : FileSystemTest
     {
-        protected const string HFS = "hfs";
         public delegate void SetTime(T item, DateTime time);
         public delegate DateTime GetTime(T item);
         // AppContainer restricts access to DriveFormat (::GetVolumeInformation)
         private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
 
-        protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
+        private static bool isHFS => driveFormat != null && driveFormat.Equals("hfs", StringComparison.InvariantCultureIgnoreCase);
 
-        protected static bool LowTemporalResolution => isHFS;
-        protected static bool HighTemporalResolution => !LowTemporalResolution;
-
-        private static void CheckHighTemporalResolution()
-        {
-            if (!HighTemporalResolution)
-                throw new SkipTestException(nameof(HighTemporalResolution));
-        }
-
-        private static void CheckLowTemporalResolution()
-        {
-            if (!LowTemporalResolution)
-                throw new SkipTestException(nameof(LowTemporalResolution));
-        }
+        protected static bool SecondTemporalResolution => true;
+        protected static bool MilliSecondTemporalResolution => SecondTemporalResolution && !isHFS;  // HFS only supports temporal resolution of 1 second
+        protected static bool NanoSecondTemporalResolution => MilliSecondTemporalResolution && !PlatformDetection.IsBrowser; // Browser does not support nanosecond resolution
+        protected static bool NotMilliSecondTemporalResolution => !MilliSecondTemporalResolution;
+        protected static bool NotNanoSecondTemporalResolution => !NanoSecondTemporalResolution;
 
         protected abstract bool CanBeReadOnly { get; }
 
@@ -83,7 +73,7 @@ namespace System.IO.Tests
                 bool isLink = linkTarget is not null;
 
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
 
                 T getTarget = !isLink || ApiTargetsLink ? item : linkTarget;
@@ -217,9 +207,9 @@ namespace System.IO.Tests
                 bool reverse = functions.reverse;
 
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
                 if (reverse) //reverse the order of setting dates
                 {
                     (dt1, dt3) = (dt3, dt1);
@@ -243,10 +233,12 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact] // OSX HFS driver format does not support millisec granularity
+        [ConditionalFact]
         public void TimesIncludeMillisecondPart()
         {
-            CheckHighTemporalResolution();
+            if (!MilliSecondTemporalResolution)
+                throw new SkipTestException(nameof(MilliSecondTemporalResolution));
+
             T item = GetExistingItem();
             Assert.All(TimeFunctions(), (function) =>
             {
@@ -277,11 +269,12 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact]
-        public void TimesIncludeMillisecondPart_LowTempRes()
+        public void TimesNotIncludeMillisecondPart()
         {
-            CheckLowTemporalResolution();
+            if (MilliSecondTemporalResolution)
+                throw new SkipTestException(nameof(MilliSecondTemporalResolution));
+
             T item = GetExistingItem();
-            // OSX HFS driver format does not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>
             {
                 DateTime time = function.Getter(item);
