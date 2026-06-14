@@ -481,13 +481,13 @@ export class WasmBuilder {
         if (includeFunctionTable !== false)
             throw new Error("function table imports are disabled");
 
-        const enableWasmEh = this.getExceptionTag() !== undefined;
+        const enableWasmFinalEh = this.getExceptionTag() !== undefined;
 
         // Import section
         this.beginSection(2);
         this.appendULeb(
             1 + // memory
-            (enableWasmEh ? 1 : 0) + // c++ exception tag
+            (enableWasmFinalEh ? 1 : 0) + // c++ exception tag
             importsToEmit.length +
             ((includeFunctionTable !== false) ? 1 : 0)
         );
@@ -520,7 +520,7 @@ export class WasmBuilder {
             this.appendULeb(0x01);
         }
 
-        if (enableWasmEh) {
+        if (enableWasmFinalEh) {
             // import the c++ exception tag
             this.appendName("x");
             this.appendName("e");
@@ -2038,7 +2038,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableJitCall": "jiterpreter-jit-call-enabled",
     "enableBackwardBranches": "jiterpreter-backward-branch-entries-enabled",
     "enableCallResume": "jiterpreter-call-resume-enabled",
-    "enableWasmEh": "jiterpreter-wasm-eh-enabled",
+    "enableWasmFinalEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
     "enableAtomics": "jiterpreter-atomics-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",
