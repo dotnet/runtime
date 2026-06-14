@@ -7389,6 +7389,8 @@ private:
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
     PhaseStatus fgOptimizeMaskConversions();
+    PhaseStatus fgOptimizeConstantMaskReuse();
+    PhaseStatus fgPostLowering();
 
     PhaseStatus PhysicalPromotion();
 
