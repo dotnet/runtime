@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
@@ -108,8 +109,7 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetNativeVariantForObject_InvalidArrayType_TestData))]
         public void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
         {
-            Variant v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
