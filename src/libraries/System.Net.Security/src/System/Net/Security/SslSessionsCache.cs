@@ -114,15 +114,14 @@ namespace System.Net.Security
             bool allowRsaPssPadding,
             bool allowRsaPkcs1Padding)
         {
+            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation, allowTlsResume, allowRsaPssPadding, allowRsaPkcs1Padding);
+
             if (s_cachedCreds.IsEmpty)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
             }
 
-            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation, allowTlsResume, allowRsaPssPadding, allowRsaPkcs1Padding);
-
-            //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
             if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < DateTime.UtcNow)
             {

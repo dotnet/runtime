@@ -83,6 +83,9 @@ namespace System.Net.Security
         private bool _disposed;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
+        // True when the transport reported EOF before NW signalled a clean close_notify;
+        // any pending or future app receive should surface as IOException(net_io_eof) rather than 0.
+        private bool _transportEofUnclean;
 
         private ResettableValueTaskSource _appWriteTcs = new ResettableValueTaskSource()
         {
@@ -100,7 +103,6 @@ namespace System.Net.Security
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
         {
             _sslStream = stream;
-            ValidateSslAuthenticationOptions(SslAuthenticationOptions);
             _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
             ConnectionHandle = CreateConnectionHandle(SslAuthenticationOptions, _thisHandle);
 
@@ -148,6 +150,17 @@ namespace System.Net.Security
                                 // EOF reached, signal completion
                                 _transportReadTcs.TrySetResult(final: true);
 
+                                // If NW hasn't already signalled a clean TLS close, treat this as
+                                // an unclean EOF (possibly mid-frame) and fault any pending app
+                                // receive directly. NW's pending nw_connection_receive may never
+                                // complete once the framer has buffered a partial TLS record.
+                                if (!_connectionClosedTcs.Task.IsCompleted)
+                                {
+                                    _transportEofUnclean = true;
+                                    _appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
+                                    _handshakeCompletionSource.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
+                                }
+
                                 // TODO: can this race with actual handshake completion?
                                 Interop.NetworkFramework.Tls.NwConnectionCancel(ConnectionHandle);
                                 break;
@@ -165,9 +178,13 @@ namespace System.Net.Security
                 }
                 catch (Exception ex)
                 {
-                    // Propagate transport stream exceptions to the handshake
+                    // Propagate transport stream exceptions to the handshake / pending write.
+                    // Swallow on this task so a fire-and-forget Dispose can't surface an
+                    // UnobservedTaskException; the exception is observed through the TCSes.
                     _handshakeCompletionSource.TrySetException(ex);
                     _currentWriteCompletionSource?.TrySetException(ex);
+                    _appReceiveBufferTcs.TrySetException(ex);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Transport read loop terminated: {ex}");
                 }
             }, cancellationToken);
 
@@ -318,6 +335,13 @@ namespace System.Net.Security
                     if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
                         error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
                     {
+                        if (thisContext._transportEofUnclean)
+                        {
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled after unclean transport EOF");
+                            thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
+                            return;
+                        }
+
                         // We cancelled the connection, so this is expected as pending read will be cancelled.
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled, no data to process");
                         thisContext._appReceiveBufferTcs.TrySetResult();
@@ -359,23 +383,6 @@ namespace System.Net.Security
             }
         }
 
-        private static void ValidateSslAuthenticationOptions(SslAuthenticationOptions options)
-        {
-            switch (options.EncryptionPolicy)
-            {
-                case EncryptionPolicy.RequireEncryption:
-#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-                case EncryptionPolicy.AllowNoEncryption:
-                    // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
-                    // since AllowNoEncryption intersect OS-supported isn't nothing,
-                    // let it pass.
-                    break;
-#pragma warning restore SYSLIB0040
-                default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, options.EncryptionPolicy));
-            }
-        }
-
         private static SafeNwHandle CreateConnectionHandle(SslAuthenticationOptions options, GCHandle thisHandle)
         {
             int alpnLength = GetAlpnProtocolListSerializedLength(options.ApplicationProtocols);
@@ -409,12 +416,19 @@ namespace System.Net.Security
 
                 string idnHost = TargetHostNameHelper.NormalizeHostName(options.TargetHost);
 
+                // For server-side TLS, hand the SecIdentityRef of the server certificate down to the
+                // native layer. On macOS, X509Certificate2.Handle returns the SecIdentityRef when the
+                // certificate has an associated private key.
+                IntPtr serverIdentity = options.IsServer
+                    ? options.CertificateContext?.TargetCertificate.Handle ?? IntPtr.Zero
+                    : IntPtr.Zero;
+
                 unsafe
                 {
                     fixed (byte* alpnPtr = alpn)
                     fixed (uint* ciphersPtr = ciphers)
                     {
-                        return Interop.NetworkFramework.Tls.NwConnectionCreate(options.IsServer, GCHandle.ToIntPtr(thisHandle), idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length);
+                        return Interop.NetworkFramework.Tls.NwConnectionCreate(options.IsServer, GCHandle.ToIntPtr(thisHandle), idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length, serverIdentity);
                     }
                 }
             }
@@ -503,13 +517,24 @@ namespace System.Net.Security
 
                 Shutdown();
 
-                // Wait for the transport read task to complete
+                // Bounded wait: the task usually exits within a few ms after Shutdown()
+                // (NwConnectionCancel unblocks any framer await). If the loop is parked
+                // in TransportStream.ReadAsync on a stream that ignores cancellation,
+                // it will unwind once the inner stream is closed (base.Dispose below
+                // when leaveInnerStreamOpen=false, or by the caller). The task swallows
+                // all exceptions internally so it cannot raise UnobservedTaskException.
+                bool transportCompleted = true;
                 if (_transportReadTask is Task transportTask)
                 {
-                    // Ignore exceptions from the transport task
-                    transportTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
+                    try
+                    {
+                        transportCompleted = transportTask.Wait(TimeSpan.FromMilliseconds(250));
+                    }
+                    catch
+                    {
+                        transportCompleted = transportTask.IsCompleted;
+                    }
                 }
-
 
                 // Wait for any pending app receive tasks so that we may safely dispose the app receive buffer.
                 if (_pendingAppReceiveBufferFillTask is Task t)
@@ -536,13 +561,35 @@ namespace System.Net.Security
                     writeCompletion.TrySetException(new ObjectDisposedException(nameof(SafeDeleteNwContext)));
                 }
 
-                ConnectionHandle.Dispose();
+                ConnectionHandle?.Dispose();
                 _framerHandle?.Dispose();
                 _peerCertChainHandle?.Dispose();
                 _shutdownCts?.Dispose();
 
-                // now that we know all callbacks are done, we can free the handle
-                _thisHandle.Free();
+                // The GCHandle is the resolution target for native callbacks (framer
+                // completion, status updates). Only free it once we know the transport
+                // read loop has stopped issuing native calls. If it did not finish in
+                // the bounded wait above, defer the free via a continuation (same
+                // pattern used by SocketsHttpHandler for orphaned tasks).
+                if (transportCompleted)
+                {
+                    if (_thisHandle.IsAllocated)
+                    {
+                        _thisHandle.Free();
+                    }
+                }
+                else
+                {
+                    GCHandle handleToFree = _thisHandle;
+                    _transportReadTask!.ContinueWith(static (_, state) =>
+                    {
+                        GCHandle h = (GCHandle)state!;
+                        if (h.IsAllocated)
+                        {
+                            h.Free();
+                        }
+                    }, handleToFree, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
             }
             base.Dispose(disposing);
         }
@@ -660,7 +707,7 @@ namespace System.Net.Security
             }
         }
 
-        public override bool IsInvalid => ConnectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
+        public override bool IsInvalid => ConnectionHandle is null || ConnectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
         [UnmanagedCallersOnly]
         private static unsafe void StatusUpdateCallback(IntPtr thisHandle, NetworkFrameworkStatusUpdates statusUpdate, IntPtr data, IntPtr data2, Interop.NetworkFramework.NetworkFrameworkError* error)

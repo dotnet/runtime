@@ -64,6 +64,22 @@
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.IO.cs" />
     <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
+    <Compile Include="System\Net\Security\SslStream.TlsSessionWedge.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="System\Net\Security\SslStream.NotUnix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd' and '$(TargetPlatformIdentifier)' != 'windows'" />
+    <Compile Include="System\Net\Security\TlsContext.cs" />
+    <Compile Include="System\Net\Security\TlsContext.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+    <Compile Include="System\Net\Security\SslAuthenticationOptions.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+    <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
+    <Compile Include="System\Net\Security\TlsSession.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows' or '$(UseAppleCrypto)' == 'true'" />
+    <Compile Include="System\Net\Security\TlsSession.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'" />
+    <Compile Include="System\Net\Security\TlsSession.Stub.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAppleCrypto)' != 'true'" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />

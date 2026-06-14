@@ -9,7 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal sealed class SslAuthenticationOptions : IDisposable
+    internal sealed partial class SslAuthenticationOptions : IDisposable
     {
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
@@ -193,16 +193,51 @@ namespace System.Net.Security
             OwnsCertificateContext = true;
         }
 
+        // Shallow copy of the configuration carried by this bag. Per-handle/per-stream
+        // state (SafeSslHandle, SslStream, RemoteCertificateValidator) is intentionally
+        // not propagated, and the clone does not take ownership of CertificateContext
+        // even if the source did.
+        internal SslAuthenticationOptions Clone()
+        {
+            SslAuthenticationOptions copy = new SslAuthenticationOptions
+            {
+                AllowRenegotiation = AllowRenegotiation,
+                TargetHost = TargetHost,
+                ClientCertificates = ClientCertificates,
+                ApplicationProtocols = ApplicationProtocols,
+                IsServer = IsServer,
+                CertificateContext = CertificateContext,
+                OwnsCertificateContext = false,
+                EnabledSslProtocols = EnabledSslProtocols,
+                CertificateRevocationCheckMode = CertificateRevocationCheckMode,
+                EncryptionPolicy = EncryptionPolicy,
+                RemoteCertRequired = RemoteCertRequired,
+                CheckCertName = CheckCertName,
+                CertValidationDelegate = CertValidationDelegate,
+                CertSelectionDelegate = CertSelectionDelegate,
+                ServerCertSelectionDelegate = ServerCertSelectionDelegate,
+                CipherSuitesPolicy = CipherSuitesPolicy,
+                UserState = UserState,
+                ServerOptionDelegate = ServerOptionDelegate,
+                CertificateChainPolicy = CertificateChainPolicy,
+                AllowTlsResume = AllowTlsResume,
+                AllowRsaPssPadding = AllowRsaPssPadding,
+                AllowRsaPkcs1Padding = AllowRsaPkcs1Padding,
+                ForceSyncPal = ForceSyncPal,
+            };
+            return copy;
+        }
+
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal bool IsClient => !IsServer;
-        internal SslStreamCertificateContext? CertificateContext { get; private set; }
+        internal SslStreamCertificateContext? CertificateContext { get; set; }
         // If true, the certificate context was created by the SslStream and
         // certificates inside should be disposed when no longer needed.
-        internal bool OwnsCertificateContext { get; private set; }
+        internal bool OwnsCertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }
@@ -218,6 +253,9 @@ namespace System.Net.Security
         internal bool AllowTlsResume { get; set; }
         internal bool AllowRsaPssPadding { get; set; }
         internal bool AllowRsaPkcs1Padding { get; set; }
+        // Set by callers (e.g. TlsSession) whose state machine is intrinsically synchronous
+        // and cannot use the async Network Framework PAL path on macOS.
+        internal bool ForceSyncPal { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
@@ -225,6 +263,25 @@ namespace System.Net.Security
 
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
         internal SslStream? SslStream { get; set; }
+
+        // Set by SafeSslHandle.Create so OpenSSL's CertVerifyCallback can stash
+        // a CertificateValidationException on the handle when validation fails.
+        // Typed as the base SafeHandle so this file compiles in test projects
+        // that don't include the OpenSSL interop sources.
+        internal System.Runtime.InteropServices.SafeHandle? SafeSslHandle { get; set; }
+
+        // Hook invoked by OpenSSL's CertVerifyCallback to drive remote
+        // certificate validation. Set by SslStream and by standalone TlsSession
+        // so both flows share the same callback plumbing.
+        internal delegate bool VerifyRemoteCertificateCallback(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            out SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus);
+
+        internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
 #endif
 
         public void Dispose()

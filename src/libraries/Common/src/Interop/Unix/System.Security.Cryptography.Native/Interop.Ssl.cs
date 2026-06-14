@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -116,6 +117,12 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd", SetLastError = true)]
+        internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
+        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(
@@ -422,6 +429,7 @@ internal static partial class Interop
             SSL_ERROR_WANT_X509_LOOKUP = 4,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
+            SSL_ERROR_WANT_RETRY_VERIFY = 12,
 
             // NOTE: this SslErrorCode value doesn't exist in OpenSSL, but
             // we use it to distinguish when a renegotiation is pending.
@@ -478,13 +486,16 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            SafeBioHandle readBio = Interop.Ssl.BioNewManagedSpan();
-            SafeBioHandle writeBio = Interop.Ssl.BioNewManagedSpan();
+            SafeSocketHandle? socket = options.SocketHandle;
+            bool useFd = socket is not null && !socket.IsInvalid;
+
+            SafeBioHandle? readBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
+            SafeBioHandle? writeBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
-            if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
+            if ((!useFd && (readBio!.IsInvalid || writeBio!.IsInvalid)) || handle.IsInvalid)
             {
-                readBio.Dispose();
-                writeBio.Dispose();
+                readBio?.Dispose();
+                writeBio?.Dispose();
                 handle.Dispose(); // will make IsInvalid==true if it's not already
                 return handle;
             }
@@ -492,21 +503,36 @@ namespace Microsoft.Win32.SafeHandles
             handle._authOptionsHandle = new WeakGCHandle<SslAuthenticationOptions>(options);
             Interop.Ssl.SslSetData(handle, WeakGCHandle<SslAuthenticationOptions>.ToIntPtr(handle._authOptionsHandle));
 
-            // SslSetBio will transfer ownership of the BIO handles to the SSL context
-            try
+            // CertVerifyCallback needs the SafeSslHandle to stash a
+            // CertificateValidationException; expose it via the options.
+            options.SafeSslHandle = handle;
+
+            if (useFd)
             {
-                readBio.TransferOwnershipToParent(handle);
-                writeBio.TransferOwnershipToParent(handle);
-                handle._readBio = readBio;
-                handle._writeBio = writeBio;
-                Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                if (Interop.Ssl.SslSetFd(handle, socket!) != 1)
+                {
+                    handle.Dispose();
+                    throw Interop.OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
             }
-            catch (Exception exc)
+            else
             {
-                // The only way this should be able to happen without thread aborts is if we hit OOMs while
-                // manipulating the safe handles, in which case we may leak the bio handles.
-                Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
-                throw;
+                // SslSetBio will transfer ownership of the BIO handles to the SSL context
+                try
+                {
+                    readBio!.TransferOwnershipToParent(handle);
+                    writeBio!.TransferOwnershipToParent(handle);
+                    handle._readBio = readBio;
+                    handle._writeBio = writeBio;
+                    Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+                }
+                catch (Exception exc)
+                {
+                    // The only way this should be able to happen without thread aborts is if we hit OOMs while
+                    // manipulating the safe handles, in which case we may leak the bio handles.
+                    Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
+                    throw;
+                }
             }
 
             if (options.IsServer)

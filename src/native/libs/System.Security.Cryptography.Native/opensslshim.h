@@ -767,6 +767,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
+    REQUIRED_FUNCTION(SSL_set_fd) \
     REQUIRED_FUNCTION(SSL_set_cert_cb) \
     REQUIRED_FUNCTION(SSL_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
@@ -1369,6 +1370,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_SESSION_set_ex_data SSL_SESSION_set_ex_data_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
+#define SSL_set_fd SSL_set_fd_ptr
 #define SSL_set_cert_cb  SSL_set_cert_cb_ptr
 #define SSL_set_cipher_list SSL_set_cipher_list_ptr
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr

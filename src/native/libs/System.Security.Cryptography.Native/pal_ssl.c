@@ -19,6 +19,10 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+#ifndef SSL_ERROR_WANT_RETRY_VERIFY
+#define SSL_ERROR_WANT_RETRY_VERIFY 12
+#endif
+c_static_assert(PAL_SSL_ERROR_WANT_RETRY_VERIFY == SSL_ERROR_WANT_RETRY_VERIFY);
 c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
 c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
@@ -486,6 +490,20 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_bio(ssl, rbio, wbio);
+}
+
+int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd)
+{
+    ERR_clear_error();
+    return SSL_set_fd(ssl, (int)fd);
+}
+
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
+{
+    ERR_clear_error();
+    int32_t ret = SSL_do_handshake(ssl);
+    *errorCode = (ret <= 0) ? SSL_get_error(ssl, ret) : 0;
+    return ret;
 }
 
 int32_t CryptoNative_SslHandshake(

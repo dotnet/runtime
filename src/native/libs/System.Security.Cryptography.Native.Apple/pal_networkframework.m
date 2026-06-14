@@ -17,6 +17,10 @@
 #include <Foundation/Foundation.h>
 #include <Network/Network.h>
 #include <Security/Security.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 static WriteCallback _writeFunc;
 static StatusUpdateCallback _statusFunc;
@@ -150,22 +154,39 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
     return descriptionToRelease;
 }
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
+// Build nw_parameters_t with our framer + TLS layered on top of UDP. The framer
+// fully absorbs handshake/app data before it reaches the transport, so the choice
+// of UDP is purely a vehicle for getting an nw_connection_t object — no packets
+// ever traverse the network. UDP is used on both sides so the server's listener
+// can be cancelled while keeping the delivered inbound connection alive
+// (connectionless semantics mean the inbound has no upstream peer to depend on).
+static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const char* targetName, void* serverIdentity,
+    const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol,
+    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue)
 {
-    if (isServer != 0)  // the current implementation only supports client
-        return NULL;
-
-    nw_parameters_t parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunreachable-code"
-    //return connection;
+    nw_parameters_t parameters = nw_parameters_create_secure_udp(
+        NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
 
     nw_protocol_options_t tls_options = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tls_options);
-    if (targetName != NULL)
+
+    if (!isServer && targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
+    }
+
+    if (isServer && serverIdentity != NULL)
+    {
+        sec_identity_t identity = sec_identity_create((SecIdentityRef)serverIdentity);
+        if (identity != NULL)
+        {
+            sec_protocol_options_set_local_identity(sec_options, identity);
+            sec_release(identity);
+        }
+        else
+        {
+            LOG_ERROR(context, "sec_identity_create returned NULL");
+        }
     }
 
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
@@ -268,7 +289,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         }
 
         complete(NULL);
-    }, _tlsQueue);
+    }, sessionQueue);
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete)
@@ -282,7 +303,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         (void)metadata;
         (void)trust_ref;
         complete(true);
-    }, _tlsQueue);
+    }, sessionQueue);
 
     nw_release(sec_options);
 
@@ -297,6 +318,34 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     nw_release(protocol_stack);
     nw_release(tls_options);
 
+    return parameters;
+}
+
+// Forward declaration for server bootstrap.
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+    PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength);
+
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity)
+{
+    if (isServer != 0)
+    {
+        return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
+    }
+
+    // Per-session serial queue targeting the concurrent root. NW serializes all
+    // callbacks (state changes, framer events) for a single connection on this
+    // queue, while distinct sessions run on different worker threads in parallel.
+    dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
+        "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
+
+    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    if (parameters == NULL)
+    {
+        LOG_ERROR(context, "Failed to build TLS parameters");
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
     nw_connection_t connection = nw_connection_create(_endpoint, parameters);
 
     nw_release(parameters);
@@ -304,10 +353,182 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     if (connection == NULL)
     {
         LOG_ERROR(context, "Failed to create Network Framework connection");
+        dispatch_release(sessionQueue);
         return NULL;
     }
 
+    // Bind the queue to the connection so the caller's NwConnectionStart sees it.
+    // The connection retains the queue; we drop our reference here.
+    nw_connection_set_queue(connection, sessionQueue);
+    dispatch_release(sessionQueue);
+
     return connection;
+}
+
+// Server-side bootstrap. Network.framework can only perform server-role TLS on a
+// connection delivered by a listener, so we stand up an ephemeral UDP listener on
+// 127.0.0.1 with our framer+TLS+identity stack, fire a single 1-byte UDP datagram
+// from a plain BSD socket to provoke an inbound connection, then return that
+// inbound connection. The framer above UDP swallows all TLS bytes (no input
+// handler is wired, so the UDP transport never carries any real bytes), while
+// managed code feeds the ClientHello via nw_framer_deliver_input.
+//
+// Because UDP is connectionless, the listener and the trigger socket can both
+// be torn down immediately after the inbound is delivered — the inbound
+// connection survives independently. Net cost: 1 fd per session (the inbound),
+// vs the 3 fds (listener+TCP-trigger+inbound) we held alive previously.
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+    PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
+{
+    if (serverIdentity == NULL)
+    {
+        LOG_ERROR(context, "Server identity is required for server-side TLS");
+        return NULL;
+    }
+
+    // Per-session serial queue (see client-side comment). The listener and the
+    // inbound connection it delivers share this queue so that all callbacks for
+    // this session are ordered, but separate sessions run in parallel.
+    dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
+        "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
+
+    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    if (listenerParams == NULL)
+    {
+        LOG_ERROR(context, "Failed to build server TLS parameters");
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    // Bind the listener to 127.0.0.1 (loopback only) on an ephemeral port.
+    nw_endpoint_t localEndpoint = nw_endpoint_create_host("127.0.0.1", "0");
+    nw_parameters_set_local_endpoint(listenerParams, localEndpoint);
+    nw_release(localEndpoint);
+
+    nw_listener_t listener = nw_listener_create(listenerParams);
+    nw_release(listenerParams);
+
+    if (listener == NULL)
+    {
+        LOG_ERROR(context, "Failed to create server listener");
+        return NULL;
+    }
+
+    __block nw_connection_t inbound = NULL;
+    dispatch_semaphore_t inboundSem = dispatch_semaphore_create(0);
+    dispatch_semaphore_t listenerReadySem = dispatch_semaphore_create(0);
+    __block int listenerFailed = 0;
+
+    nw_listener_set_queue(listener, sessionQueue);
+
+    nw_listener_set_state_changed_handler(listener, ^(nw_listener_state_t state, nw_error_t error)
+    {
+        PAL_NetworkFrameworkError errorInfo;
+        CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
+        LOG_INFO(context, "Listener state changed: %d, errorCode: %d", (int)state, errorInfo.errorCode);
+
+        if (state == nw_listener_state_ready)
+        {
+            dispatch_semaphore_signal(listenerReadySem);
+        }
+        else if (state == nw_listener_state_failed || state == nw_listener_state_cancelled)
+        {
+            listenerFailed = 1;
+            dispatch_semaphore_signal(listenerReadySem);
+            dispatch_semaphore_signal(inboundSem);
+        }
+
+        if (cfStringToRelease != NULL)
+        {
+            CFRelease(cfStringToRelease);
+        }
+    });
+
+    nw_listener_set_new_connection_handler(listener, ^(nw_connection_t conn)
+    {
+        if (inbound == NULL)
+        {
+            // Inherit the same per-session serial queue so framer/state callbacks
+            // for the inbound stay ordered with respect to the listener's setup.
+            nw_connection_set_queue(conn, sessionQueue);
+            inbound = conn;
+            nw_retain(inbound);
+            dispatch_semaphore_signal(inboundSem);
+        }
+        // Any subsequent inbound connections are ignored (we should only ever get one).
+    });
+
+    nw_listener_start(listener);
+
+    // Wait for the listener to bind to a real port (or fail).
+    if (dispatch_semaphore_wait(listenerReadySem, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)) != 0 || listenerFailed)
+    {
+        LOG_ERROR(context, "Listener failed to become ready");
+        nw_listener_cancel(listener);
+        nw_release(listener);
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    uint16_t port = nw_listener_get_port(listener);
+    if (port == 0)
+    {
+        LOG_ERROR(context, "Listener has no port");
+        nw_listener_cancel(listener);
+        nw_release(listener);
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    // Fire a single 1-byte UDP datagram from a plain BSD socket to provoke the
+    // listener into minting a new connection. The socket is closed immediately —
+    // UDP is connectionless so the listener-side inbound is unaffected.
+    int triggerFd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (triggerFd < 0)
+    {
+        LOG_ERROR(context, "Failed to create trigger socket (errno=%d)", errno);
+        nw_listener_cancel(listener);
+        nw_release(listener);
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    uint8_t triggerByte = 0;
+    ssize_t sent = sendto(triggerFd, &triggerByte, sizeof(triggerByte), 0, (struct sockaddr*)&addr, sizeof(addr));
+    close(triggerFd);
+    if (sent != (ssize_t)sizeof(triggerByte))
+    {
+        LOG_ERROR(context, "Trigger sendto failed (errno=%d)", errno);
+        nw_listener_cancel(listener);
+        nw_release(listener);
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    // Wait for the listener to deliver the inbound connection.
+    if (dispatch_semaphore_wait(inboundSem, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)) != 0 || inbound == NULL)
+    {
+        LOG_ERROR(context, "Inbound connection not delivered");
+        nw_listener_cancel(listener);
+        nw_release(listener);
+        dispatch_release(sessionQueue);
+        return NULL;
+    }
+
+    // Listener is no longer needed: the inbound is independent because UDP is
+    // connectionless. Cancelling here releases the listener fd while the
+    // inbound continues to live on its own kernel UDP socket. The session queue
+    // remains retained by the inbound connection.
+    nw_listener_cancel(listener);
+    nw_release(listener);
+    dispatch_release(sessionQueue);
+
+    return inbound;
 }
 
 // This writes encrypted TLS frames to the safe handle. It is executed on NW Thread pool
@@ -437,7 +658,9 @@ PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, vo
         }
     });
 
-    nw_connection_set_queue(connection, _tlsQueue);
+    // Queue was assigned at create time (per-session serial queue targeting the
+    // concurrent root) so handshake/state callbacks for this connection are
+    // ordered, while sessions run in parallel.
     nw_connection_start(connection);
 
     return 0;
@@ -584,7 +807,8 @@ PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteC
     _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
         NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
     _tlsDefinition = nw_protocol_copy_tls_definition();
-    _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
+    _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue",
+        dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_CONCURRENT, QOS_CLASS_USER_INITIATED, 0));
     _inputQueue = _tlsQueue;
 
     // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
