@@ -5316,6 +5316,10 @@ protected:
                                   bool hasFullRangeImm,
                                   bool *useFallback);
 
+#if defined(TARGET_XARCH)
+    static var_types getHWIntrinsicWidenType(var_types simdBaseType);
+#endif // TARGET_XARCH
+
 #if defined(TARGET_ARM64)
 
     void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
