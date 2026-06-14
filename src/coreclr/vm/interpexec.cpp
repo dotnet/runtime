@@ -1372,6 +1372,18 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
     stack = pFrame->pStack;
 
+#ifdef DEBUGGING_SUPPORTED
+    if (CORDebuggerAttached())
+    {
+        Thread *pCurThread = GetThread();
+        if (!pCurThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+        {
+            _ASSERTE(g_pDebugInterface != NULL);
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(pCurThread);
+        }
+    }
+#endif // DEBUGGING_SUPPORTED
+
     if ((pExceptionClauseArgs != NULL) && pExceptionClauseArgs->isFilter)
     {
         // * Filter funclets are executed in the current frame, because they are executed
