@@ -2735,6 +2735,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
 #if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
@@ -2840,6 +2841,7 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     , m_isCollectible{ false }
     , m_isInterpreted{ false }
     , m_throwOnOutOfMemoryWithinRange{ true }
+    , m_isOptimizedCode{ false }
 {
     CONTRACTL
     {
@@ -2947,7 +2949,18 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     DWORD flags = RangeSection::RANGE_SECTION_CODEHEAP;
 
-    if (pInfo->IsInterpreted())
+    if (pInfo->IsOptimizedCode())
+    {
+        // Optimized code is mutually exclusive with both interpreter and dynamic
+        // (LCG) domain because callers gate SetOptimizedCode() on neither being
+        // set. Tagging the RangeSection lets CanUseCodeHeap reject mismatched
+        // requests, keeping optimized and non-optimized JIT'd code in separate
+        // per-LoaderAllocator heaps.
+        _ASSERTE(!pInfo->IsInterpreted());
+        _ASSERTE(!pInfo->IsDynamicDomain());
+        flags |= RangeSection::RANGE_SECTION_OPTIMIZEDCODE;
+    }
+    else if (pInfo->IsInterpreted())
     {
         flags |= RangeSection::RANGE_SECTION_INTERPRETER;
     }
@@ -2974,6 +2987,10 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     _ASSERTE (pHp != NULL);
     _ASSERTE (pHp->maxCodeHeapSize >= initialRequestSize);
+
+    // Cache the optimized-code bit on the HeapList so CanUseCodeHeap
+    // doesn't have to do a FindCodeRange lookup on every cache check.
+    pHp->isOptimizedCode = (flags & RangeSection::RANGE_SECTION_OPTIMIZEDCODE) != 0;
 
     // Append the current code heap to the new code heap element.
     pHp->SetNext(m_pAllCodeHeaps);
@@ -3070,6 +3087,12 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap;
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = NULL;
+        }
+        else
         {
             pCodeHeap = (HeapList *)pInfo->GetAllocator()->m_pLastUsedCodeHeap;
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = NULL;
@@ -3148,6 +3171,11 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         }
         else
 #endif // FEATURE_INTERPRETER
+        if (pInfo->IsOptimizedCode())
+        {
+            pInfo->GetAllocator()->m_pLastUsedOptimizedCodeHeap = pCodeHeap;
+        }
+        else
         {
             pInfo->GetAllocator()->m_pLastUsedCodeHeap = pCodeHeap;
         }
@@ -3226,6 +3254,23 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
+    }
+
+    // Optionally route JIT-optimized code to its own per-LoaderAllocator
+    // heap, separate from code where the JIT can't optimize (Tier0,
+    // global MinOpts, /clr DisableOpts, MethodImplOptions.NoOptimization).
+    // The split is keyed off MethodDesc::IsJitOptimizationDisabled(), not the
+    // current compilation tier, so e.g. fully-optimized non-tiered methods
+    // land in the optimized pool too. LCG (dynamic-domain) is excluded
+    // because every LCG method within a single process uses the same
+    // optimization level, and interpreter requests are excluded because
+    // their heaps use a separate code path entirely.
+    if (!requestInfo.IsDynamicDomain()
+        && !requestInfo.IsInterpreted()
+        && !pMD->IsJitOptimizationDisabled()
+        && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
+    {
+        requestInfo.SetOptimizedCode();
     }
 
     // Scope the lock
@@ -3380,6 +3425,15 @@ bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCod
 
     if ((pInfo->GetLoAddr() == 0) && (pInfo->GetHiAddr() == 0))
     {
+        // Don't mix optimized and non-optimized code in the same heap. LCG and
+        // interpreter requests never set IsOptimizedCode(), so dynamic-domain
+        // and interpreter heaps don't carry the flag either, and this check
+        // is a no-op for them.
+        if (pCodeHeap->isOptimizedCode != pInfo->IsOptimizedCode())
+        {
+            return false;
+        }
+
         // We have no constraint so this non empty heap will be able to satisfy our request
         if (pInfo->IsDynamicDomain())
         {
