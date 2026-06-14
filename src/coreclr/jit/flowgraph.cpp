@@ -5855,9 +5855,11 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();
-        if (lop2->IsCnsIntOrI() && (lop2->TypeGet() == lop1->TypeGet()) && !lop1->IsCnsIntOrI())
+        // Long constants are GT_CNS_LNG on 32-bit targets, GT_CNS_INT
+        // (TYP_LONG) on 64-bit; IsIntegralConst accepts both.
+        if (lop2->IsIntegralConst() && (lop2->TypeGet() == lop1->TypeGet()) && !lop1->IsIntegralConst())
         {
-            int64_t cns = lop2->AsIntCon()->IntegralValue();
+            int64_t cns = lop2->AsIntConCommon()->IntegralValue();
             if (limitOp->OperIs(GT_SUB))
             {
                 // Guard against signed negation overflow at the type's minimum.
@@ -5895,7 +5897,9 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     }
 
     // Check what type of limit we have - constant, variable or arr-len.
-    if (limitOp->IsCnsIntOrI())
+    // IsIntegralConst accepts both GT_CNS_INT (TYP_INT/TYP_I_IMPL) and
+    // GT_CNS_LNG (TYP_LONG on 32-bit targets).
+    if (limitOp->IsIntegralConst())
     {
         info->HasConstLimit = true;
         if ((limitOp->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
@@ -5992,10 +5996,11 @@ bool FlowGraphNaturalLoop::FindConstInit(BasicBlock* preheader, NaturalLoopIterI
                 {
                     GenTreeLclVarCommon* store = tree->AsLclVarCommon();
                     GenTree*             data  = store->Data();
-                    if ((store->GetLclNum() == info->IterVar) && data->IsCnsIntOrI() && data->TypeIs(TYP_INT, TYP_LONG))
+                    if ((store->GetLclNum() == info->IterVar) && data->IsIntegralConst() &&
+                        data->TypeIs(TYP_INT, TYP_LONG))
                     {
                         info->HasConstInit   = true;
-                        info->ConstInitValue = data->AsIntCon()->IconValue();
+                        info->ConstInitValue = data->AsIntConCommon()->IntegralValue();
                         INDEBUG(info->InitTree = tree);
                         return true;
                     }
@@ -6846,7 +6851,7 @@ bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, Bas
 int64_t NaturalLoopIterInfo::IterConst()
 {
     GenTree* value = IterTree->AsLclVar()->Data();
-    return value->gtGetOp2()->AsIntCon()->IntegralValue();
+    return value->gtGetOp2()->AsIntConCommon()->IntegralValue();
 }
 
 //------------------------------------------------------------------------
@@ -6997,13 +7002,15 @@ GenTree* NaturalLoopIterInfo::LimitBase()
         assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT, TYP_LONG));
         GenTree* op1 = lim->gtGetOp1();
         GenTree* op2 = lim->gtGetOp2();
-        if (op2->IsCnsIntOrI())
+        // IsIntegralConst handles both GT_CNS_INT and GT_CNS_LNG, matching
+        // the form MatchLimit peeled.
+        if (op2->IsIntegralConst())
         {
             lim = op1;
         }
         else
         {
-            assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
+            assert(op1->IsIntegralConst() && lim->OperIs(GT_ADD));
             lim = op2;
         }
     }
@@ -7035,8 +7042,8 @@ int64_t NaturalLoopIterInfo::ConstLimit()
     assert(HasConstLimit);
     assert(LimitOffset == 0);
     GenTree* limit = LimitBase();
-    assert(limit->OperIsConst());
-    return limit->AsIntCon()->IntegralValue();
+    assert(limit->IsIntegralConst());
+    return limit->AsIntConCommon()->IntegralValue();
 }
 
 //------------------------------------------------------------------------

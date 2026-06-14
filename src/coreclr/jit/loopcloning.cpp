@@ -204,8 +204,8 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                 return comp->gtNewMethodTableLookup(addr);
             }
 
-            addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -1249,10 +1249,16 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
-    // We already know that this is either increasing or decreasing loop and the
-    // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
-    // is beyond the limit.
-    int64_t stride = std::abs(iterInfo->IterConst());
+    // We already know that this is either increasing or decreasing loop and
+    // the stride is (> 0) or (< 0). Take the magnitude here and reject the
+    // INT64_MIN edge case explicitly (negating it is UB) along with any
+    // value beyond the per-iteration array safety limit.
+    const int64_t rawStride = iterInfo->IterConst();
+    if (rawStride == INT64_MIN)
+    {
+        return false;
+    }
+    int64_t stride = (rawStride < 0) ? -rawStride : rawStride;
 
     static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
@@ -1301,11 +1307,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             if (maxLimitBase64 >= INT32_MAX)
             {
                 // Offset already absorbs the stride; guard is vacuous.
-                JITDUMP("Span stride>1 overflow guard trivially holds (offset %d)\n", offset);
+                JITDUMP("Span stride>1 overflow guard trivially holds (offset %lld)\n", (long long)offset);
             }
             else if (maxLimitBase64 < 0)
             {
-                JITDUMP("> Span stride %d, offset %d: overflow guard unsatisfiable\n", stride, offset);
+                JITDUMP("> Span stride %lld, offset %lld: overflow guard unsatisfiable\n", (long long)stride,
+                        (long long)offset);
                 return false;
             }
             else
@@ -1313,7 +1320,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 const unsigned limitLcl = iterInfo->VarLimit();
                 if (genActualType(lvaGetDesc(limitLcl)->TypeGet()) != ivType)
                 {
-                    JITDUMP("> Span stride %d: limit var V%02u type does not match IV\n", stride, limitLcl);
+                    JITDUMP("> Span stride %lld: limit var V%02u type does not match IV\n", (long long)stride,
+                            limitLcl);
                     return false;
                 }
 
