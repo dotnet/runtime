@@ -111,6 +111,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskDebugView))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}")]
+    [DataContract]
     public class Task : IAsyncResult, IDisposable
     {
         [ThreadStatic]
@@ -118,14 +119,18 @@ namespace System.Threading.Tasks
 
         private static int s_taskIdCounter; // static counter used to generate unique task IDs
 
+        [DataContract]
         private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
+        [DataContract]
         internal Delegate? m_action;
+        [DataContract]
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
+        [DataContract]
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
@@ -164,6 +169,7 @@ namespace System.Threading.Tasks
 
         // Can be null, a single continuation, a list of continuations, or s_taskCompletionSentinel,
         // in that order. The logic arround this object assumes it will never regress to a previous state.
+        [DataContract]
         private volatile object? m_continuationObject; // SOS DumpAsync command depends on this name
 
         // m_continuationObject is set to this when the task completes.
