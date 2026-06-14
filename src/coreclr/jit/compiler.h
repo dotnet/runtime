@@ -1961,8 +1961,9 @@ struct NaturalLoopIterInfo
 
     // Constant value that the induction variable is initialized with, outside
     // the loop. Only valid if HasConstInit is true. Width matches the IV
-    // (TYP_INT IV: int-sized; TYP_LONG IV: long-sized).
-    ssize_t ConstInitValue = 0;
+    // (TYP_INT IV: int-sized; TYP_LONG IV: long-sized). Stored as int64_t so
+    // 64-bit IV constants are representable on a 32-bit JIT host.
+    int64_t ConstInitValue = 0;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
@@ -2006,8 +2007,9 @@ struct NaturalLoopIterInfo
     // Constant peeled from the loop limit so that the effective limit is
     // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
     // and HasArrayLengthLimit. Width matches the IV: a TYP_INT IV has an
-    // int-sized offset; a TYP_LONG IV has a long-sized offset.
-    ssize_t LimitOffset = 0;
+    // int-sized offset; a TYP_LONG IV has a long-sized offset. Stored as
+    // int64_t so 64-bit offsets are representable on a 32-bit JIT host.
+    int64_t LimitOffset = 0;
 
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
@@ -2020,7 +2022,7 @@ struct NaturalLoopIterInfo
     {
     }
 
-    ssize_t IterConst();
+    int64_t IterConst();
     genTreeOps IterOper();
     var_types IterOperType();
     genTreeOps TestOper();
@@ -2029,7 +2031,7 @@ struct NaturalLoopIterInfo
     GenTree* Iterator();
     GenTree* Limit();
     GenTree* LimitBase();
-    ssize_t ConstLimit();
+    int64_t ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
 
@@ -9278,7 +9280,7 @@ public:
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
+#error ("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -9636,11 +9638,9 @@ public:
     template <typename Functor>
     bool eeRunFunctorWithSPMIErrorTrap(Functor f)
     {
-        return eeRunWithSPMIErrorTrap<Functor>(
-            [](Functor* pf) {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) {
             (*pf)();
-        },
-            &f);
+        }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);

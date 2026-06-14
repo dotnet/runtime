@@ -576,7 +576,7 @@ struct LC_Ident
 private:
     union
     {
-        ssize_t constant;
+        int64_t constant;
         struct
         {
             unsigned lclNum;
@@ -608,8 +608,9 @@ public:
 
     // Constant added to the materialized value. Used by Var and ArrAccess
     // to represent `lcl + k` and `arr.Length + k`. Width matches the value's
-    // type (int-sized for TYP_INT, long-sized for TYP_LONG).
-    ssize_t offset;
+    // type (int-sized for TYP_INT, long-sized for TYP_LONG). Stored as
+    // int64_t so 64-bit IV offsets are representable on a 32-bit JIT host.
+    int64_t offset;
 
     LC_Ident()
         : type(Invalid)
@@ -718,7 +719,7 @@ public:
     // Convert this symbolic representation into a tree node.
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 
-    static LC_Ident CreateVar(unsigned lclNum, var_types lclType, ssize_t offset = 0)
+    static LC_Ident CreateVar(unsigned lclNum, var_types lclType, int64_t offset = 0)
     {
         LC_Ident id(Var);
         id.lclNum  = lclNum;
@@ -739,7 +740,7 @@ public:
     static LC_Ident CreateConst(unsigned value)
     {
         LC_Ident id(Const);
-        id.constant = (ssize_t)value;
+        id.constant = (int64_t)value;
         id.lclType  = TYP_INT;
         return id;
     }
@@ -747,12 +748,12 @@ public:
     static LC_Ident CreateLongConst(int64_t value)
     {
         LC_Ident id(Const);
-        id.constant = (ssize_t)value;
+        id.constant = value;
         id.lclType  = TYP_LONG;
         return id;
     }
 
-    static LC_Ident CreateArrAccess(const LC_Array& arrLen, ssize_t offset = 0)
+    static LC_Ident CreateArrAccess(const LC_Array& arrLen, int64_t offset = 0)
     {
         LC_Ident id(ArrAccess);
         id.arrAccess = arrLen;

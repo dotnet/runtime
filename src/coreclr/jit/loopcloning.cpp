@@ -204,8 +204,8 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                 return comp->gtNewMethodTableLookup(addr);
             }
 
-            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+            addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -271,16 +271,20 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
 
     // Widen the int side via cast when comparing against a long operand
-    // (e.g. arr.Length compared against a long IV).
+    // (e.g. arr.Length compared against a long IV). Respect the comparison's
+    // signedness: zero-extend for unsigned comparisons (preserves the
+    // unsigned numeric value); sign-extend for signed comparisons (preserves
+    // the signed numeric value, important when the int operand could be
+    // negative).
     const var_types op1Act = genActualType(op1Tree->TypeGet());
     const var_types op2Act = genActualType(op2Tree->TypeGet());
     if ((op1Act == TYP_INT) && (op2Act == TYP_LONG))
     {
-        op1Tree = comp->gtNewCastNode(TYP_LONG, op1Tree, /* fromUnsigned */ true, TYP_LONG);
+        op1Tree = comp->gtNewCastNode(TYP_LONG, op1Tree, /* fromUnsigned */ compareUnsigned, TYP_LONG);
     }
     else if ((op2Act == TYP_INT) && (op1Act == TYP_LONG))
     {
-        op2Tree = comp->gtNewCastNode(TYP_LONG, op2Tree, /* fromUnsigned */ true, TYP_LONG);
+        op2Tree = comp->gtNewCastNode(TYP_LONG, op2Tree, /* fromUnsigned */ compareUnsigned, TYP_LONG);
     }
 
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
@@ -1248,7 +1252,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // We already know that this is either increasing or decreasing loop and the
     // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
     // is beyond the limit.
-    ssize_t stride = abs(iterInfo->IterConst());
+    int64_t stride = std::abs(iterInfo->IterConst());
 
     static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
@@ -1262,7 +1266,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
 
     // Helper: build an LC_Ident constant whose width matches the IV.
-    auto makeIvConst = [ivType](ssize_t value) {
+    auto makeIvConst = [ivType](int64_t value) {
         return (ivType == TYP_LONG) ? LC_Ident::CreateLongConst((int64_t)value)
                                     : LC_Ident::CreateConst(static_cast<unsigned>(value));
     };
@@ -1278,13 +1282,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     if (hasSpans && (stride > 1) && isIncreasingLoop)
     {
         const int     adjustForLE    = (iterInfo->TestOper() == GT_LE) ? 1 : 0;
-        const ssize_t offset         = iterInfo->LimitOffset;
+        const int64_t offset         = iterInfo->LimitOffset;
         const int64_t maxLimitBase64 = (int64_t)INT32_MAX - stride + 1 - adjustForLE - offset;
 
         if (iterInfo->HasConstLimit)
         {
             assert(offset == 0);
-            const ssize_t limitVal = iterInfo->ConstLimit();
+            const int64_t limitVal = iterInfo->ConstLimit();
             if ((int64_t)limitVal > maxLimitBase64)
             {
                 JITDUMP("> Span stride %lld: const limit %lld exceeds overflow bound %lld\n", (long long)stride,
@@ -1376,7 +1380,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Ident limitIdent;
         if (iterInfo->HasConstLimit)
         {
-            ssize_t limit = iterInfo->ConstLimit();
+            int64_t limit = iterInfo->ConstLimit();
             if (limit < 0)
             {
                 JITDUMP("> NeedsZeroTripGuard: limit %lld is invalid\n", (long long)limit);
@@ -1469,7 +1473,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // Limit Conditions
     if (iterInfo->HasConstLimit)
     {
-        ssize_t limit = iterInfo->ConstLimit();
+        int64_t limit = iterInfo->ConstLimit();
         if (limit < 0)
         {
             JITDUMP("> limit %lld is invalid\n", (long long)limit);
@@ -1649,7 +1653,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Ident neLimitIdent;
         if (iterInfo->HasConstLimit)
         {
-            const ssize_t limit = iterInfo->ConstLimit();
+            const int64_t limit = iterInfo->ConstLimit();
             assert(limit >= 0);
             neLimitIdent = makeIvConst(limit);
         }

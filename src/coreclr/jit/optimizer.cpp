@@ -260,9 +260,18 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
                 return BAD_VAR_NUM;
         }
 
-        // Increment should be an integral constant matching the IV's type.
+        // Increment should be an integral constant whose type matches the
+        // IV's actual type. IsLclVarUpdateTree only matches an integral lcl
+        // (so iter's type is integral), and IR is type-consistent for ADD/SUB
+        // etc., but require an explicit match so we don't admit a mismatched
+        // pair (e.g. long IV + int-typed const) on a malformed tree.
         // TODO-CQ: CLONE: allow variable increments.
-        if (!incrVal->OperIs(GT_CNS_INT) || !varTypeIsIntegral(incrVal) || incrVal->TypeIs(TYP_REF))
+        if (!incrVal->OperIs(GT_CNS_INT))
+        {
+            return BAD_VAR_NUM;
+        }
+        const var_types iterType = genActualType(lvaGetDesc(iterVar)->TypeGet());
+        if ((genActualType(incrVal) != iterType) || (iterType != TYP_INT && iterType != TYP_LONG))
         {
             return BAD_VAR_NUM;
         }

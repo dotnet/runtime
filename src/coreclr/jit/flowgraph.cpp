@@ -5849,7 +5849,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     // peeling the constant into LimitOffset and form-checking the base.
     // Morph canonicalizes commutative ops so that any constant operand sits on
     // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
-    ssize_t  peeledOffset = 0;
+    int64_t  peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
     if (limitOp->OperIs(GT_ADD, GT_SUB) && (limitOp->TypeGet() == limitOp->gtGetOp1()->TypeGet()))
     {
@@ -5857,11 +5857,11 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         GenTree* lop2 = limitOp->gtGetOp2();
         if (lop2->IsCnsIntOrI() && (lop2->TypeGet() == lop1->TypeGet()) && !lop1->IsCnsIntOrI())
         {
-            ssize_t cns = lop2->AsIntCon()->IconValue();
+            int64_t cns = lop2->AsIntCon()->IntegralValue();
             if (limitOp->OperIs(GT_SUB))
             {
                 // Guard against signed negation overflow at the type's minimum.
-                const ssize_t typeMin = (lop1->TypeGet() == TYP_INT) ? (ssize_t)INT32_MIN : SSIZE_T_MIN;
+                const int64_t typeMin = (lop1->TypeGet() == TYP_INT) ? (int64_t)INT32_MIN : INT64_MIN;
                 if (cns != typeMin)
                 {
                     peeledOffset = -cns;
@@ -6086,8 +6086,8 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
     // Is it trivially true?
     if (info->HasConstInit && info->HasConstLimit)
     {
-        ssize_t initVal  = info->ConstInitValue;
-        ssize_t limitVal = info->ConstLimit();
+        int64_t initVal  = info->ConstInitValue;
+        int64_t limitVal = info->ConstLimit();
 
         const var_types testType = genActualType(info->TestTree->gtGetOp1());
         assert((testType == TYP_INT) || (testType == TYP_LONG));
@@ -6840,13 +6840,13 @@ bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, Bas
 //
 // Returns:
 //   Constant value, as a signed value sized for the IV's type. For a
-//   TYP_INT IV the value fits in int; for TYP_LONG the full ssize_t may
+//   TYP_INT IV the value fits in int; for TYP_LONG the full 64 bits may
 //   be needed.
 //
-ssize_t NaturalLoopIterInfo::IterConst()
+int64_t NaturalLoopIterInfo::IterConst()
 {
     GenTree* value = IterTree->AsLclVar()->Data();
-    return value->gtGetOp2()->AsIntCon()->IconValue();
+    return value->gtGetOp2()->AsIntCon()->IntegralValue();
 }
 
 //------------------------------------------------------------------------
@@ -7030,13 +7030,13 @@ GenTree* NaturalLoopIterInfo::LimitBase()
 // Remarks:
 //   Only valid if HasConstLimit is true.
 //
-ssize_t NaturalLoopIterInfo::ConstLimit()
+int64_t NaturalLoopIterInfo::ConstLimit()
 {
     assert(HasConstLimit);
     assert(LimitOffset == 0);
     GenTree* limit = LimitBase();
     assert(limit->OperIsConst());
-    return limit->AsIntCon()->IconValue();
+    return limit->AsIntCon()->IntegralValue();
 }
 
 //------------------------------------------------------------------------
