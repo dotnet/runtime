@@ -245,14 +245,13 @@ namespace System.Threading.RateLimiting
                     continue;
                 }
                 LimiterEntry limiterEntry = rateLimiter.Value.Value;
-                TimeSpan? idleDuration = GetIdleDuration(limiterEntry);
-                if (idleDuration.HasValue && idleDuration.Value > s_idleTimeLimit)
+                if (GetIdleDuration(limiterEntry) is TimeSpan idleDuration && idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
-                        idleDuration = GetIdleDuration(limiterEntry);
-                        if (idleDuration.HasValue && idleDuration.Value > s_idleTimeLimit)
+                        idleDuration = GetIdleDuration(limiterEntry) ?? TimeSpan.Zero;
+                        if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
                             // If a request for this partition comes in it will have to create a new limiter now
