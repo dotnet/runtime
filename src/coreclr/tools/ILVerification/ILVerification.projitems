@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VerifierError.cs" />
   </ItemGroup>
   <PropertyGroup>
+    <DefineConstants>ILVERIFICATION;$(DefineConstants)</DefineConstants>
     <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
   </PropertyGroup>
   <ItemGroup>

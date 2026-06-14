@@ -453,4 +453,7 @@
   <data name="LocallocStackNotEmpty" xml:space="preserve">
     <value>Stack must be empty before localloc, except for the size item.</value>
   </data>
+  <data name="InvalidBaseType" xml:space="preserve">
+    <value>Type '{0}' has invalid base type '{1}'.</value>
+  </data>
 </root>
