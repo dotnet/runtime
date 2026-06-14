@@ -106,8 +106,7 @@ else()
                         --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
-                # Node.js doesn't have good support for WASM_BIGINT
-                # so it only is added when running in the browser.
+                # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell scenario.
                 target_link_options(corerun PRIVATE
                     -sWASM_BIGINT=0)
                 # If not running in the browser, add
