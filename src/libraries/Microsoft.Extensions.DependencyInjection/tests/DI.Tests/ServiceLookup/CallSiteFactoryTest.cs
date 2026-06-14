@@ -138,6 +138,126 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Fact]
+        public void ServiceProvider_UsesDeclarationOrderForSameArityConstructorsWithSameParameterTypes()
+        {
+            var collection = new ServiceCollection();
+            collection.AddTransient<TypeWithSameArityConstructorsWithSameParameterTypes>();
+            collection.AddTransient<IFakeService, FakeService>();
+            collection.AddTransient<IFakeMultipleService, FakeService>();
+
+            using ServiceProvider provider = collection.BuildServiceProvider();
+            var service = provider.GetRequiredService<TypeWithSameArityConstructorsWithSameParameterTypes>();
+
+            Assert.Equal(1, service.SelectedConstructor);
+        }
+
+        [Fact]
+        public void CreateCallSite_ThrowsIfMultipleSameArityDisjointConstructorsCanBeResolved()
+        {
+            // Arrange
+            var type = typeof(TypeWithSameArityDisjointConstructors);
+            var expectedMessage =
+                string.Join(
+                    Environment.NewLine,
+                    $"Unable to activate type '{type}'. The following constructors are ambiguous:",
+                    GetConstructor(type, new[] { typeof(IFakeService), typeof(IFakeScopedService) }),
+                    GetConstructor(type, new[] { typeof(IFactoryService), typeof(IFakeMultipleService) }));
+
+            var callSiteFactory = GetCallSiteFactory(
+                new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeScopedService), typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFactoryService), typeof(TransientFactoryService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeMultipleService), typeof(FakeService), ServiceLifetime.Transient));
+
+            // Act and Assert
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => callSiteFactory(type));
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(TypeWithCrossArityDisjointConstructorsLongFirst))]
+        [InlineData(typeof(TypeWithCrossArityDisjointConstructorsShortFirst))]
+        public void CreateCallSite_ThrowsIfCrossArityDisjointConstructorsCanBeResolved(Type type)
+        {
+            // Arrange
+            var expectedMessage =
+                string.Join(
+                    Environment.NewLine,
+                    $"Unable to activate type '{type}'. The following constructors are ambiguous:",
+                    GetConstructor(type, new[] { typeof(IFakeService), typeof(IFactoryService), typeof(IFakeScopedService) }),
+                    GetConstructor(type, new[] { typeof(IFakeOuterService) }));
+
+            var callSiteFactory = GetCallSiteFactory(
+                new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFactoryService), typeof(TransientFactoryService), ServiceLifetime.Transient));
+
+            // Act and Assert
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => callSiteFactory(type));
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Fact]
+        public void CreateCallSite_ThrowsIfSameTypeParametersUseDifferentServiceKeys()
+        {
+            // Arrange
+            var type = typeof(TypeWithSameTypeDifferentServiceKeyConstructors);
+            var callSiteFactory = GetCallSiteFactory(
+                new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("a"),
+                ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("b"));
+
+            // Act and Assert
+            var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(type));
+            Assert.StartsWith($"Unable to activate type '{type}'. The following constructors are ambiguous:", ex.Message);
+        }
+
+        [Fact]
+        public void CreateCallSite_IgnoresSmallerConstructorWhenBestUsesDefaultAndSmallerNeedsContainer()
+        {
+            // Arrange
+            var type = typeof(TypeWithDefaultInBestAndNonDefaultInSmallerConstructors);
+            var callSiteFactory = GetCallSiteFactory(
+                new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient));
+
+            // Act
+            var callSite = (ServiceCallSite)callSiteFactory(type);
+
+            // Assert
+            var constructorCallSite = Assert.IsType<ConstructorCallSite>(callSite);
+            Assert.Equal(new[] { typeof(IFakeService), typeof(IFakeScopedService) }, GetParameters(constructorCallSite));
+        }
+
+        [Theory]
+        [InlineData(typeof(TypeWithShortThenLongResolvableConstructors), true)]
+        [InlineData(typeof(TypeWithShortThenLongUnresolvableConstructors), false)]
+        public void CreateCallSite_UsesLongestResolvableConstructorWhenDeclaredAfterShorter(Type type, bool expectLongConstructor)
+        {
+            // Arrange
+            var descriptor = new ServiceDescriptor(type, type, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(
+                descriptor,
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFactoryService), typeof(TransientFactoryService), ServiceLifetime.Transient));
+
+            Type[] expectedParameters = expectLongConstructor
+                ? new[] { typeof(IFakeService), typeof(IFactoryService) }
+                : new[] { typeof(IFakeService) };
+
+            // Act
+            var callSite = (ServiceCallSite)callSiteFactory(type);
+
+            // Assert
+            Assert.Equal(CallSiteResultCacheLocation.Dispose, callSite.Cache.Location);
+            var constructorCallSite = Assert.IsType<ConstructorCallSite>(callSite);
+            Assert.Equal(expectedParameters, GetParameters(constructorCallSite));
+        }
+
+        [Fact]
         public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyStructGenericConstraint()
         {
             // Arrange
@@ -1021,6 +1141,97 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private class Class3 { }
         private class Class4 { public Class4(Class3 c3) { } }
         private class Class5 { public Class5(Class2 c2) { } }
+        private class TypeWithSameArityConstructorsWithSameParameterTypes
+        {
+            public TypeWithSameArityConstructorsWithSameParameterTypes(IFakeService fakeService, IFakeMultipleService fakeMultipleService)
+            {
+                SelectedConstructor = 1;
+            }
+
+            public TypeWithSameArityConstructorsWithSameParameterTypes(IFakeMultipleService fakeMultipleService, IFakeService fakeService)
+            {
+                SelectedConstructor = 2;
+            }
+
+            public int SelectedConstructor { get; }
+        }
+
+        private class TypeWithSameArityDisjointConstructors
+        {
+            public TypeWithSameArityDisjointConstructors(IFakeService fakeService, IFakeScopedService fakeScopedService)
+            {
+            }
+
+            public TypeWithSameArityDisjointConstructors(IFactoryService factoryService, IFakeMultipleService fakeMultipleService)
+            {
+            }
+        }
+
+        private class TypeWithShortThenLongResolvableConstructors
+        {
+            public TypeWithShortThenLongResolvableConstructors(IFakeService fakeService)
+            {
+            }
+
+            public TypeWithShortThenLongResolvableConstructors(IFakeService fakeService, IFactoryService factoryService)
+            {
+            }
+        }
+
+        private class TypeWithShortThenLongUnresolvableConstructors
+        {
+            public TypeWithShortThenLongUnresolvableConstructors(IFakeService fakeService)
+            {
+            }
+
+            public TypeWithShortThenLongUnresolvableConstructors(IFakeService fakeService, IFakeOuterService fakeOuterService)
+            {
+            }
+        }
+
+        private class TypeWithCrossArityDisjointConstructorsLongFirst
+        {
+            public TypeWithCrossArityDisjointConstructorsLongFirst(IFakeService fakeService, IFactoryService factoryService, IFakeScopedService fakeScopedService = null)
+            {
+            }
+
+            public TypeWithCrossArityDisjointConstructorsLongFirst(IFakeOuterService fakeOuterService = null)
+            {
+            }
+        }
+
+        private class TypeWithCrossArityDisjointConstructorsShortFirst
+        {
+            public TypeWithCrossArityDisjointConstructorsShortFirst(IFakeOuterService fakeOuterService = null)
+            {
+            }
+
+            public TypeWithCrossArityDisjointConstructorsShortFirst(IFakeService fakeService, IFactoryService factoryService, IFakeScopedService fakeScopedService = null)
+            {
+            }
+        }
+
+        private class TypeWithSameTypeDifferentServiceKeyConstructors
+        {
+            public TypeWithSameTypeDifferentServiceKeyConstructors([FromKeyedServices("a")] IFakeService service)
+            {
+            }
+
+            public TypeWithSameTypeDifferentServiceKeyConstructors([FromKeyedServices("b")] IFakeService service)
+            {
+            }
+        }
+
+        private class TypeWithDefaultInBestAndNonDefaultInSmallerConstructors
+        {
+            public TypeWithDefaultInBestAndNonDefaultInSmallerConstructors(IFakeService fakeService, IFakeScopedService fakeScopedService = null)
+            {
+            }
+
+            public TypeWithDefaultInBestAndNonDefaultInSmallerConstructors(IFakeScopedService fakeScopedService)
+            {
+            }
+        }
 
         private record struct Struct1(int Value) { }
 
