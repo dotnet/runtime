@@ -180,7 +180,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as there is only 1 effective time store.
         public void SettingUpdatesPropertiesAfterAnother()
         {
             T item = GetExistingItem();
