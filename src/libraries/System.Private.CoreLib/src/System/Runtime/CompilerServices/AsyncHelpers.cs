@@ -14,7 +14,9 @@ namespace System.Runtime.CompilerServices
     public static partial class AsyncHelpers
     {
 #if CORECLR || NATIVEAOT
-        // "BypassReadyToRun" is until AOT/R2R typesystem has support for MethodImpl.Async
+        // "BypassReadyToRun" keeps these MethodImpl.Async helpers out of AOT/R2R images on platforms
+        // that don't support runtime-async (RUNTIME_ASYNC_SUPPORTED is not defined there). On those
+        // platforms the JIT cannot emit code for runtime-async returns, so the helpers must be JITted.
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
 
@@ -23,7 +25,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static unsafe void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
@@ -43,7 +47,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static unsafe void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
@@ -61,7 +67,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The result type produced by the task.</typeparam>
         /// <param name="task">The task to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(Task<T> task)
@@ -81,7 +89,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="task">The task to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(Task task)
@@ -102,7 +112,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The result type produced by the value task.</typeparam>
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
@@ -141,7 +153,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ValueTask task)
@@ -182,7 +196,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
@@ -206,7 +222,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
         [StackTraceHidden]
         private static void AwaitTaskWithRareOptions(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter)
@@ -224,7 +242,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="configuredAwaitable">The configured value task awaitable to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
@@ -267,7 +287,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The result type produced by the awaitable.</typeparam>
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
@@ -292,7 +314,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The result type produced by the awaitable.</typeparam>
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
+#if !RUNTIME_ASYNC_SUPPORTED
         [BypassReadyToRun]
+#endif
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
