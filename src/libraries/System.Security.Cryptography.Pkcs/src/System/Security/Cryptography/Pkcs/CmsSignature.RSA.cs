@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Pkcs
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength);
 
-            private protected static bool SignCore(
+            private protected bool SignCore(
 #if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
@@ -109,13 +109,15 @@ namespace System.Security.Cryptography.Pkcs
                 object? key,
                 bool silent,
                 RSASignaturePadding signaturePadding,
-                [NotNullWhen(true)] out byte[]? signatureValue)
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
                 using (GetSigningKey(key, certificate, silent, RSACertificateExtensions.GetRSAPublicKey, out RSA? privateKey))
                 {
                     if (privateKey is null)
                     {
                         signatureValue = null;
+                        signatureParameters = null;
                         return false;
                     }
 
@@ -141,12 +143,20 @@ namespace System.Security.Cryptography.Pkcs
                                 {
                                     // key did not match certificate
                                     signatureValue = null;
+                                    signatureParameters = null;
                                     return false;
                                 }
                             }
                         }
 
-                        return true;
+                        if (GetSignatureParameters(privateKey, hashAlgorithmName, out signatureParameters))
+                        {
+                            return true;
+                        }
+
+                        signatureValue = null;
+                        signatureParameters = null;
+                        return false;
                     }
 #endif
                     signatureValue = privateKey.SignHash(
@@ -166,14 +176,23 @@ namespace System.Security.Cryptography.Pkcs
                             {
                                 // key did not match certificate
                                 signatureValue = null;
+                                signatureParameters = null;
                                 return false;
                             }
                         }
                     }
 
-                    return true;
+                    if (GetSignatureParameters(privateKey, hashAlgorithmName, out signatureParameters))
+                    {
+                        return true;
+                    }
+                    signatureValue = null;
+                    signatureParameters = null;
+                    return false;
                 }
             }
+
+            protected abstract bool GetSignatureParameters(RSA publicKey, HashAlgorithmName hashAlgorithmName, out byte[]? signatureParameters);
         }
 
         private sealed class RSAPkcs1CmsSignature : RSACmsSignature
@@ -206,6 +225,14 @@ namespace System.Security.Cryptography.Pkcs
                 throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
             }
 
+            protected override bool GetSignatureParameters(RSA publicKey,
+                HashAlgorithmName hashAlgorithmName,
+                out byte[]? signatureParameters)
+            {
+                signatureParameters = null;
+                return true;
+            }
+
             protected override bool Sign(
 #if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
@@ -227,10 +254,10 @@ namespace System.Security.Cryptography.Pkcs
                     key,
                     silent,
                     RSASignaturePadding.Pkcs1,
-                    out signatureValue);
+                    out signatureValue,
+                    out signatureParameters);
 
                 signatureAlgorithm = result ? Oids.Rsa : null;
-                signatureParameters = null;
                 return result;
             }
         }
@@ -294,12 +321,19 @@ namespace System.Security.Cryptography.Pkcs
                 0x01, 0x40,
             };
 
-            internal override RSASignaturePadding? SignaturePadding => RSASignaturePadding.Pss;
+            internal override RSASignaturePadding SignaturePadding { get; }
 
             public RSAPssCmsSignature() : base(null, null)
             {
+               SignaturePadding = RSASignaturePadding.Pss;
             }
 
+#if NET11_0_OR_GREATER
+            public RSAPssCmsSignature(int saltLength) : base(null, null)
+            {
+                SignaturePadding = RSASignaturePadding.CreatePss(saltLength);
+            }
+#endif
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
                 string? digestAlgorithmOid,
@@ -351,38 +385,13 @@ namespace System.Security.Cryptography.Pkcs
                     certificate,
                     key,
                     silent,
-                    RSASignaturePadding.Pss,
-                    out signatureValue);
+                    SignaturePadding,
+                    out signatureValue,
+                    out signatureParameters);
 
                 if (result)
                 {
                     signatureAlgorithm = Oids.RsaPss;
-
-                    if (hashAlgorithmName == HashAlgorithmName.SHA1)
-                    {
-                        signatureParameters = s_rsaPssSha1Parameters;
-                    }
-                    else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-                    {
-                        signatureParameters = s_rsaPssSha256Parameters;
-                    }
-                    else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-                    {
-                        signatureParameters = s_rsaPssSha384Parameters;
-                    }
-                    else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-                    {
-                        signatureParameters = s_rsaPssSha512Parameters;
-                    }
-                    else
-                    {
-                        // The only hash algorithm we don't support is MD5.
-                        // We shouldn't get here with anything other than MD5.
-                        Debug.Assert(hashAlgorithmName == HashAlgorithmName.MD5, $"Unsupported digest algorithm '{hashAlgorithmName.Name}'");
-                        signatureAlgorithm = null;
-                        signatureParameters = null;
-                        return false;
-                    }
                 }
                 else
                 {
@@ -392,6 +401,74 @@ namespace System.Security.Cryptography.Pkcs
 
                 return result;
             }
+
+            protected override bool GetSignatureParameters(RSA publicKey,
+                HashAlgorithmName hashAlgorithmName,
+                out byte[]? signatureParameters)
+            {
+#if NET11_0_OR_GREATER
+                if (SignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
+                {
+                    signatureParameters = GetSignaturePaddingForCustomPssSaltLength(publicKey, hashAlgorithmName);
+                }
+#endif
+                if (hashAlgorithmName == HashAlgorithmName.SHA1)
+                {
+                    signatureParameters = s_rsaPssSha1Parameters;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                {
+                    signatureParameters = s_rsaPssSha256Parameters;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                {
+                    signatureParameters = s_rsaPssSha384Parameters;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                {
+                    signatureParameters = s_rsaPssSha512Parameters;
+                }
+                else
+                {
+                    // The only hash algorithm we don't support is MD5.
+                    // We shouldn't get here with anything other than MD5.
+                    Debug.Assert(hashAlgorithmName == HashAlgorithmName.MD5, $"Unsupported digest algorithm '{hashAlgorithmName.Name}'");
+                    signatureParameters = null;
+                    return false;
+                }
+
+                return true;
+            }
+
+#if NET11_0_OR_GREATER
+            private byte[] GetSignaturePaddingForCustomPssSaltLength(RSA publicKey, HashAlgorithmName hashAlgorithmName)
+            {
+                string digestOid = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithmName);
+                Debug.Assert(publicKey != null, "Expected a public key to be present for PSS parameters.");
+
+                ValuePssParamsAsn parameters = new ValuePssParamsAsn
+                {
+                    HashAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = digestOid },
+                    MaskGenAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
+                    SaltLength = RsaPaddingProcessor.CalculatePssSaltLength(SignaturePadding.PssSaltLength, publicKey.KeySize, hashAlgorithmName),
+                    TrailerField = 1
+                };
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifierForCrypto(digestOid);
+                }
+
+                parameters.MaskGenAlgorithm.Parameters = writer.Encode();
+                writer.Reset();
+
+                parameters.Encode(writer);
+
+                return writer.Encode();
+            }
+#endif
         }
     }
 }

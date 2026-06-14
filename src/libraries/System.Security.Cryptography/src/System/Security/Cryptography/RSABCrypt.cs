@@ -294,6 +294,7 @@ namespace System.Security.Cryptography
                         hash,
                         destination,
                         hashAlgorithmName,
+                        RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm),
                         out written);
 
                     break;
@@ -346,7 +347,8 @@ namespace System.Security.Cryptography
                         key,
                         hash,
                         signature,
-                        hashAlgorithmName);
+                        hashAlgorithmName,
+                        RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm));
                 default:
                     throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
             }

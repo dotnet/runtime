@@ -87,13 +87,19 @@ namespace System.Security.Cryptography.Pkcs
                     // The processor is RSA, but does not agree with the specified signature padding, so override.
                     if (processor.SignaturePadding != rsaSignaturePadding)
                     {
-                        if (rsaSignaturePadding == RSASignaturePadding.Pkcs1)
+                        if (rsaSignaturePadding.Mode == RSASignaturePaddingMode.Pkcs1)
                         {
                             processor = s_lookup[Oids.Rsa];
                             Debug.Assert(processor is not null);
                         }
-                        else if (rsaSignaturePadding == RSASignaturePadding.Pss)
+                        else if (rsaSignaturePadding.Mode == RSASignaturePaddingMode.Pss)
                         {
+#if NET11_0_OR_GREATER
+                            if (rsaSignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
+                            {
+                                return new RSAPssCmsSignature(rsaSignaturePadding.PssSaltLength);
+                            }
+#endif
                             processor = s_lookup[Oids.RsaPss];
                             Debug.Assert(processor is not null);
                         }
