@@ -145,6 +145,12 @@ probePaths() {
   local include_path_string=""
   local found_applying_changes=false
 
+  echo ""
+  echo "Temporarily forcing changed files for $_subset"
+  echo "Setting pipeline variable $_azure_devops_var_name=true"
+  Write-PipelineSetVariable -name $_azure_devops_var_name -value true
+  return 0
+
   if [[ ${#exclude_paths[@]} -gt 0 ]]; then
     echo ""
     echo "******* Collecting $_subset exclude paths *******";
