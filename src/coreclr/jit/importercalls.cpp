@@ -1289,7 +1289,8 @@ DONE:
         // If the call is virtual, extra information for possible use during late devirt inlining.
         // Also save for shared generic returns so that we can know their types.
         if (call->AsCall()->IsDevirtualizationCandidate(this) ||
-            (sig->retTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_BYREF && eeIsSharedInst(sig->retTypeSigClass)))
+            (sig->retTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_BYREF &&
+             eeIsSharedInst(sig->retTypeSigClass)))
         {
             JITDUMP("\nSaving late devirtualization info for call [%06u]\n", dspTreeID(call->AsCall()));
             assert(call->AsCall()->gtInlineContext == impCurStmtDI.GetInlineContext());
