@@ -3720,14 +3720,150 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
+    public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, CorGCReferenceType handleWalkMask)
+    {
+        int hr = HResults.S_OK;
+        RefWalk? walk = null;
+        try
+        {
+            if (pHandle is null)
+                throw new NullReferenceException(nameof(pHandle));
+            walk = new RefWalk(_target, walkStacks != Interop.BOOL.FALSE, handleWalkMask);
+            *pHandle = (nuint)((IEnum<DacGcReference>)walk).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            nuint legacyHandle = 0;
+            int hrLocal = _legacy.CreateRefWalk(&legacyHandle, walkStacks, handleWalkMask);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hrLocal == HResults.S_OK && walk is not null)
+                walk.LegacyHandle = legacyHandle;
+            else if (hrLocal == HResults.S_OK)
+                _legacy.DeleteRefWalk(legacyHandle);
+        }
+#endif
+        return hr;
+    }
 
     public int DeleteRefWalk(nuint handle)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteRefWalk(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.S_OK;
 
-    public int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkRefs(handle, count, refs, pFetched) : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not RefWalk walk)
+                throw new ArgumentException("Handle does not reference a valid RefWalk instance.", nameof(handle));
+            legacyHandle = walk.LegacyHandle;
+            ((IEnum<DacGcReference>)walk).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != 0)
+        {
+            int hrLocal = _legacy.DeleteRefWalk(legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
+    // Should be called repeatedly until it returns S_FALSE.
+    public int WalkRefs(nuint handle, uint count, [In, MarshalUsing(CountElementName = "count"), Out] DacGcReference[] refs, uint* pFetched)
+    {
+        RefWalk walk;
+        try
+        {
+            if (pFetched is null)
+                throw new NullReferenceException(nameof(pFetched));
+            if (handle == 0)
+                throw new ArgumentException("Handle is invalid.", nameof(handle));
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not RefWalk rw)
+                throw new ArgumentException("Handle does not reference a valid RefWalk instance.", nameof(handle));
+            walk = rw;
+            *pFetched = 0;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        int hr = HResults.S_OK;
+        uint i = 0;
+        try
+        {
+            while (i < count && walk.Enumerator.MoveNext())
+                refs[i++] = walk.Enumerator.Current;
+
+            // A clean batch reports S_FALSE iff we couldn't fill the caller's request.
+            if (i < count)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        *pFetched = i;
+
+#if DEBUG
+        if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
+        {
+            // Parity check covers the handle prefix only.
+            DacGcReference[] legacyRefs = new DacGcReference[(int)count];
+            uint legacyFetched = 0;
+            int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            uint cdacHandlePrefix = CountHandlePrefix(refs, i);
+            uint legacyHandlePrefix = CountHandlePrefix(legacyRefs, legacyFetched);
+            Debug.Assert(
+                cdacHandlePrefix == legacyHandlePrefix,
+                $"cDAC handle-prefix count {cdacHandlePrefix}, legacy {legacyHandlePrefix}");
+
+            uint compare = Math.Min(cdacHandlePrefix, legacyHandlePrefix);
+            for (uint j = 0; j < compare; j++)
+            {
+                Debug.Assert(refs[j].dwType == legacyRefs[j].dwType,
+                    $"refs[{j}].dwType cDAC={refs[j].dwType:X}, legacy={legacyRefs[j].dwType:X}");
+                Debug.Assert(refs[j].vmDomain == legacyRefs[j].vmDomain,
+                    $"refs[{j}].vmDomain cDAC=0x{refs[j].vmDomain:X}, legacy=0x{legacyRefs[j].vmDomain:X}");
+                Debug.Assert(refs[j].objHnd == legacyRefs[j].objHnd,
+                    $"refs[{j}].objHnd cDAC=0x{refs[j].objHnd:X}, legacy=0x{legacyRefs[j].objHnd:X}");
+                Debug.Assert(refs[j].i64ExtraData == legacyRefs[j].i64ExtraData,
+                    $"refs[{j}].i64ExtraData cDAC=0x{refs[j].i64ExtraData:X}, legacy=0x{legacyRefs[j].i64ExtraData:X}");
+            }
+        }
+
+        static uint CountHandlePrefix(DacGcReference[] buffer, uint length)
+        {
+            for (uint j = 0; j < length; j++)
+            {
+                CorGCReferenceType dwType = buffer[j].dwType;
+                if (dwType == CorGCReferenceType.CorReferenceStack)
+                {
+                    return j;
+                }
+            }
+            return length;
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetTypeID(ulong obj, COR_TYPEID* pType)
     {

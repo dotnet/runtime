@@ -271,6 +271,7 @@ internal partial class StackWalk_1 : IStackWalk
         return scanContext.StackRefs.Select(r => new StackReferenceData
         {
             HasRegisterInformation = r.HasRegisterInformation,
+            IsInteriorPointer = r.IsInteriorPointer,
             Register = r.Register,
             Offset = r.Offset,
             Address = r.Address,

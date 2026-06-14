@@ -37,6 +37,7 @@ public enum StackWalkState
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
+    public bool IsInteriorPointer { get; init; }
     public int Register { get; init; }
     public int Offset { get; init; }
     public TargetPointer Address { get; init; }

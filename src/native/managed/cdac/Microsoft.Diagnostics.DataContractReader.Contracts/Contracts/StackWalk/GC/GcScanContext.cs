@@ -34,6 +34,7 @@ internal class GcScanContext
         StackRefs.Add(new StackRefData
         {
             HasRegisterInformation = false,
+            IsInteriorPointer = false,
             Register = 0,
             Offset = 0,
             Address = 0,
@@ -71,6 +72,7 @@ internal class GcScanContext
         StackRefData data = new()
         {
             HasRegisterInformation = true,
+            IsInteriorPointer = flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR),
             Register = loc.Reg,
             Offset = loc.RegOffset,
             Address = addr,
@@ -109,6 +111,7 @@ internal class GcScanContext
         StackRefData data = new()
         {
             HasRegisterInformation = false,
+            IsInteriorPointer = flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR),
             Register = 0,
             Offset = 0,
             Address = ppObj,

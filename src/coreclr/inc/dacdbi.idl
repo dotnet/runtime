@@ -385,7 +385,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
-    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);
+    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] UINT32 handleWalkMask);
     HRESULT DeleteRefWalk([in] RefWalkHandle handle);
     HRESULT WalkRefs([in] RefWalkHandle handle, [in] ULONG count, [out] struct DacGcReference * refs, [out] ULONG * pFetched);
 
