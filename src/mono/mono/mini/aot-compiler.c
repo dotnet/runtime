@@ -5570,6 +5570,8 @@ MONO_RESTORE_WARNING
 		fprintf (export_symbols_outfile, "%s", export_symbols_out);
 		g_free (export_symbols_out);
 		fclose (export_symbols_outfile);
+	} else {
+		g_string_free(export_symbols, TRUE);
 	}
 }
 
