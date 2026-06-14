@@ -10345,7 +10345,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -10361,7 +10361,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -10387,7 +10387,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -10403,7 +10403,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 case NI_System_Math_Pow:
                 {
@@ -10479,10 +10479,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_MaxInt_UN;
                 break;
 
-            case NI_System_Math_MaxNative:
-                vnf = VNF_MaxNumber;
-                break;
-
             case NI_System_Math_Min:
                 vnf = VNF_MinInt;
                 break;
@@ -10490,11 +10486,17 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             case NI_System_Math_MinUnsigned:
                 vnf = VNF_MinInt_UN;
                 break;
+#endif // TARGET_RISCV64
+
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+            case NI_System_Math_MaxNative:
+                vnf = VNF_MaxNumber;
+                break;
 
             case NI_System_Math_MinNative:
                 vnf = VNF_MinNumber;
                 break;
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
@@ -13694,6 +13696,36 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
+    }
+    else if ((intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt16))
+    {
+        // Unary integer-domain saturating conversions used by morph for non-FEATURE_HW_INTRINSICS
+        // float/double -> small integral cast lowering. Model as an opaque unary VN function so
+        // CSE/PRE work correctly without attempting constant folding here.
+        assert(intrinsic->AsOp()->gtOp2 == nullptr);
+        VNFunc vnf = VNF_Boundary;
+        switch (intrinsic->gtIntrinsicName)
+        {
+            case NI_PRIMITIVE_SaturateToInt8:
+                vnf = VNF_SaturateToInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToInt16:
+                vnf = VNF_SaturateToInt16;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt8:
+                vnf = VNF_SaturateToUInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt16:
+                vnf = VNF_SaturateToUInt16;
+                break;
+            default:
+                unreached();
+        }
+        intrinsic->gtVNPair =
+            vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), vnf, arg0VNP), arg0VNPx);
     }
     else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
     {

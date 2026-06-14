@@ -310,19 +310,51 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
+            NamedIntrinsic intrinsicName = tree->AsIntrinsic()->gtIntrinsicName;
+            noway_assert((intrinsicName == NI_System_Math_Abs) ||
+                         (intrinsicName == NI_System_Math_Ceiling) ||
+                         (intrinsicName == NI_System_Math_Floor) ||
+                         (intrinsicName == NI_System_Math_MaxNative) ||
+                         (intrinsicName == NI_System_Math_MinNative) ||
+                         (intrinsicName == NI_System_Math_Round) ||
+                         (intrinsicName == NI_System_Math_Sqrt) ||
+                         (intrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
+                         (intrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
+                         (intrinsicName == NI_PRIMITIVE_SaturateToUInt8) ||
+                         (intrinsicName == NI_PRIMITIVE_SaturateToUInt16));
 
-            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
+            GenTree* op2 = tree->gtGetOp2IfPresent();
 
             BuildUse(op1);
             srcCount = 1;
+
+            if (op2 != nullptr)
+            {
+                BuildUse(op2);
+                srcCount++;
+            }
+
+            // Integer-domain saturation intrinsics need a temp register for bound constants.
+            if ((intrinsicName == NI_PRIMITIVE_SaturateToInt8) || (intrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
+                (intrinsicName == NI_PRIMITIVE_SaturateToUInt8) || (intrinsicName == NI_PRIMITIVE_SaturateToUInt16))
+            {
+                assert(op2 == nullptr);
+                assert(varTypeIsIntegral(op1));
+                assert(varTypeIsIntegral(tree));
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+            else
+            {
+                assert(varTypeIsFloating(op1));
+                assert(op1->TypeGet() == tree->TypeGet());
+                if (op2 != nullptr)
+                {
+                    assert(op2->TypeGet() == tree->TypeGet());
+                }
+            }
+
             assert(dstCount == 1);
             BuildDef(tree);
         }

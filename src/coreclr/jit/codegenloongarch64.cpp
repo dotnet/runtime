@@ -4450,7 +4450,94 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI("unimplemented on LOONGARCH64 yet");
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    // Handle integer-domain saturation intrinsics separately; they use branches
+    // and a temporary register rather than the single-instruction FP pattern below.
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
+        {
+            ssize_t minVal, maxVal;
+            switch (treeNode->gtIntrinsicName)
+            {
+                case NI_PRIMITIVE_SaturateToInt8:
+                    minVal = INT8_MIN;
+                    maxVal = INT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToInt16:
+                    minVal = INT16_MIN;
+                    maxVal = INT16_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt8:
+                    minVal = 0;
+                    maxVal = UINT8_MAX;
+                    break;
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    minVal = 0;
+                    maxVal = UINT16_MAX;
+                    break;
+                default:
+                    unreached();
+            }
+
+            genConsumeOperands(treeNode->AsOp());
+            regNumber dst    = treeNode->GetRegNum();
+            regNumber src    = op1->GetRegNum();
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+            emitter*  emit   = GetEmitter();
+
+            // Copy src to dst, normalizing to a sign-extended 32-bit value so the
+            // subsequent full-register bge compares against the (signed) clamp bounds
+            // are well-defined. `slli.w rd, rs, 0` sign-extends bits[31:0] into rd[63:0].
+            emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, dst, src, 0);
+
+            // Clamp lower bound: if dst < minVal, dst = minVal.
+            BasicBlock* skipLo = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, minVal);
+            emit->emitIns_J_cond_la(INS_bge, skipLo, dst, tmpReg); // skip if dst >= minVal
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = minVal
+            genDefineTempLabel(skipLo);
+
+            // Clamp upper bound: if dst > maxVal, dst = maxVal.
+            BasicBlock* skipHi = genCreateTempLabel();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, maxVal);
+            emit->emitIns_J_cond_la(INS_bge, skipHi, tmpReg, dst); // skip if maxVal >= dst
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dst, tmpReg);   // dst = maxVal
+            genDefineTempLabel(skipHi);
+
+            genProduceReg(treeNode);
+            return;
+        }
+
+        default:
+            break;
+    }
+
+    emitAttr    attr = emitActualTypeSize(treeNode);
+    instruction instr;
+
+    // All remaining intrinsics are binary floating-point operations.
+    assert(op2 != nullptr);
+
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_MaxNative:
+            instr = (attr == EA_4BYTE) ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_System_Math_MinNative:
+            instr = (attr == EA_4BYTE) ? INS_fmin_s : INS_fmin_d;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+    genConsumeOperands(treeNode->AsOp());
+    GetEmitter()->emitIns_R_R_R(instr, attr, treeNode->GetRegNum(), op1->GetRegNum(), op2->GetRegNum());
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------

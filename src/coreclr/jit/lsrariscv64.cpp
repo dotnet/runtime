@@ -407,6 +407,18 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(varTypeIsIntegral(tree));
                     break;
 
+                // Integer-domain saturation: clamp int32 to small type range.
+                // Needs a temporary register to hold the min/max bound constant.
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    assert(op2 == nullptr);
+                    assert(op1->TypeIs(TYP_INT));
+                    assert(tree->TypeIs(TYP_INT));
+                    buildInternalIntRegisterDefForNode(tree);
+                    break;
+
                 default:
                     NO_WAY("Unknown intrinsic");
             }
@@ -418,6 +430,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 BuildUse(op2);
                 srcCount++;
             }
+            buildInternalRegisterUses();
             assert(dstCount == 1);
             BuildDef(tree);
         }

@@ -5974,9 +5974,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsSmall(tgtType))
             {
-                res = gtNewCastNodeL(retType, op1, /* uns */ false, retType);
-                res = gtFoldExpr(res);
-                res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+                if (intrinsic == NI_PRIMITIVE_ConvertToInteger)
+                {
+                    // Preserve saturating semantics for floating-point -> small integral conversions.
+                    res = gtNewCastNodeL(retType, op1, /* uns */ false, tgtType);
+                }
+                else
+                {
+                    res = gtNewCastNodeL(retType, op1, /* uns */ false, retType);
+                    res = gtFoldExpr(res);
+                    res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+                }
             }
             else
             {
@@ -8710,6 +8718,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         default:
@@ -8729,6 +8741,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         case NI_System_Math_MinUnsigned:
@@ -8752,8 +8768,14 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
         }
 
+        case NI_System_Math_MaxNative:
+        case NI_System_Math_MinNative:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         default:
