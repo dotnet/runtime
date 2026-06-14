@@ -2255,14 +2255,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
         assert(EHblkDsc::ebdIsSameTry(ehGetDsc(catchingTryIndex), ehGetDsc(innermostDispatchingTryIndex)));
 
         // If the continuationBlock is within the dispatching try, we have to bail out for now.
-        // Note bbFindInnermostCommonTryRegion takes and returns a biased index.
         //
-        unsigned const biasedCommonEnclosingTryIndex =
-            bbFindInnermostCommonTryRegion(innermostDispatchingTryIndex + 1, continuationBlock);
-        unsigned const commonEnclosingTryIndex =
-            (biasedCommonEnclosingTryIndex == 0) ? EHblkDsc::NO_ENCLOSING_INDEX : (biasedCommonEnclosingTryIndex - 1);
-
-        if (commonEnclosingTryIndex == innermostDispatchingTryIndex)
+        if (bbInTryRegions(innermostDispatchingTryIndex, continuationBlock))
         {
             JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u, marking as catch resumption\n",
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
@@ -2452,6 +2446,15 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         cases[i] = nullptr;
     }
 
+    // Track the unique edge per continuation block. When many cases share the
+    // same continuation (e.g. a large mutual-protect catch set whose handlers
+    // all `leave` to the same target) this avoids an O(N^2) cost in
+    // fgAddRefPred (which must do an O(preds) scan of the destination's
+    // pred list per call) -- we just bump dup counts directly for duplicates.
+    //
+    BlockToFlowEdgeMap* const continuationEdges =
+        new (this, CMK_FlowEdge) BlockToFlowEdgeMap(getAllocator(CMK_FlowEdge));
+
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
@@ -2462,13 +2465,28 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         assert(biasedCaseIndex < caseCount);
 
         JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
-        FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
+
+        FlowEdge* caseEdge;
+        if (continuationEdges->Lookup(continuation, &caseEdge))
+        {
+            // Edge from switchBlock to this continuation already exists; just
+            // bump the dup count (and the destination's ref count) instead of
+            // doing another linear pred-list scan via fgAddRefPred.
+            //
+            caseEdge->incrementDupCount();
+            continuation->bbRefs++;
+        }
+        else
+        {
+            caseEdge = fgAddRefPred(continuation, switchBlock);
+            continuationEdges->Set(continuation, caseEdge);
+
+            // We only get here on exception
+            caseEdge->setLikelihood(0);
+        }
 
         assert(cases[biasedCaseIndex] == nullptr);
         cases[biasedCaseIndex] = caseEdge;
-
-        // We only get here on exception
-        caseEdge->setLikelihood(0);
         caseNumber++;
     }
 
@@ -2516,7 +2534,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         BasicBlock* const continuation = catchRetBlock->GetTarget();
         if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
         {
-            succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
+            FlowEdge*  edge  = nullptr;
+            bool const found = continuationEdges->Lookup(continuation, &edge);
+            assert(found);
+            succs[succNumber] = edge;
             succNumber++;
         }
     }

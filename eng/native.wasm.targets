@@ -82,6 +82,7 @@
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave" />
       <EmccExportedFunction Include="___stack_pointer" />
+      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>

@@ -1003,7 +1003,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -1465,7 +1465,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -1864,7 +1864,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Check divisorOp first as we can always allow it to be a contained immediate
         if (divisorOp->isContainedIntOrIImmed())
         {
-            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->IconValue());
             if (!emitter::isGeneralRegister(divisorReg))
             {
                 tempReg    = internalRegisters.GetSingle(tree);
@@ -3114,8 +3114,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (oper == GT_LE && op2->isContainedIntOrIImmed())
         {
             oper = GT_LT;
-            assert(op2->AsIntCon()->gtIconVal == 0);
-            op2->AsIntCon()->gtIconVal = 1;
+            assert(op2->AsIntCon()->IconValue() == 0);
+            op2->AsIntCon()->SetIconValue(1);
         }
 
         isReversed = (oper == GT_LE || oper == GT_GE);
@@ -3135,7 +3135,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = isUnsigned ? INS_sltiu : INS_slti;
-            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->gtIconVal);
+            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->IconValue());
         }
         else
         {
@@ -4652,7 +4652,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 assert(shiftByImm < immWidth);
                 if (!isR)
                 {
@@ -4684,7 +4684,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             }
             else
             {
-                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
                 if (shiftByImm >= 32 && shiftByImm < 64)
                 {
                     immWidth = 64;
@@ -4716,7 +4716,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             assert(isImmed(tree));
             instruction ins        = genGetInsForOper(tree);
-            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
 
             // should check shiftByImm for riscv64-ins.
             shiftByImm &= (immWidth - 1);
@@ -5979,7 +5979,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 
     assert(shiftBy->IsCnsIntOrI());
 
-    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->IconValue();
 
     GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
 
