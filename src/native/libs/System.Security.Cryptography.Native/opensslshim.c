@@ -111,6 +111,13 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+#elif defined(__OpenBSD__)
+    // OpenBSD has LibreSSL in base and must use OpenSSL from ports
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("37.0"));
+    }
 #endif
 
     if (libssl == NULL)
