@@ -952,6 +952,14 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
+
+    friend struct cdac_data<ResolveHelperFrame>;
+};
+
+template<>
+struct cdac_data<ResolveHelperFrame>
+{
+    static constexpr size_t TransitionBlockPtr = offsetof(ResolveHelperFrame, m_pTransitionBlock);
 };
 
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH

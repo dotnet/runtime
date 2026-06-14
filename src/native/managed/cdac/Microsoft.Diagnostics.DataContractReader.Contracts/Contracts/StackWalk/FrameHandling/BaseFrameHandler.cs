@@ -42,18 +42,31 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     }
 
     public virtual void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+        => HandleTransitionBlock(framedMethodFrame.TransitionBlockPtr);
+
+    public virtual void HandleResolveHelperFrame(ResolveHelperFrame frame)
+        => HandleTransitionBlock(frame.TransitionBlockPtr);
+
+    public virtual void HandleTransitionBlock(TargetPointer transitionBlockPtr)
     {
-        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlockPtr);
         if (_target.GetTypeInfo(DataType.TransitionBlock).Size is not uint transitionBlockSize)
         {
             throw new InvalidOperationException("TransitionBlock size is not set");
         }
 
         _context.InstructionPointer = transitionBlock.ReturnAddress;
-        _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
+        _context.StackPointer = transitionBlockPtr + transitionBlockSize;
 
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(transitionBlock.CalleeSavedRegisters);
         UpdateFromRegisterDict(calleeSavedRegisters.Registers);
+    }
+
+    protected void UpdateArgumentRegisters(TargetPointer transitionBlockPtr)
+    {
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlockPtr);
+        Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(transitionBlock.ArgumentRegisters);
+        UpdateFromRegisterDict(argumentRegisters.Registers);
     }
 
     public virtual void HandleFuncEvalFrame(FuncEvalFrame funcEvalFrame)

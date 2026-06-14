@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -16,8 +17,10 @@ public unsafe class StackWalkTests
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,
-        Action<MockFrameBuilder>? configureFrames = null)
+        Action<MockFrameBuilder>? configureFrames = null,
+        RuntimeInfoArchitecture? runtimeArchOverride = null)
     {
+        RuntimeInfoArchitecture runtimeArch = runtimeArchOverride ?? GetRuntimeInfoArchitecture(arch);
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
         configure(threadBuilder);
@@ -25,12 +28,15 @@ public unsafe class StackWalkTests
         MockFrameBuilder? frameBuilder = null;
         if (configureFrames is not null)
         {
-            frameBuilder = new MockFrameBuilder(targetBuilder.MemoryBuilder);
+            frameBuilder = runtimeArch == RuntimeInfoArchitecture.Arm64
+                ? new MockFrameBuilder(targetBuilder.MemoryBuilder, MockRegisterSet.Arm64CalleeSavedRegisterName, MockRegisterSet.Arm64ArgumentRegisterName)
+                : new MockFrameBuilder(targetBuilder.MemoryBuilder);
             configureFrames(frameBuilder);
         }
 
         targetBuilder
             .AddTypes(CreateThreadTypes(threadBuilder))
+            .AddGlobalStrings((Constants.Globals.Architecture, runtimeArch.ToString().ToLowerInvariant()))
             .AddGlobals(
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
@@ -50,20 +56,24 @@ public unsafe class StackWalkTests
                     ("SoftwareExceptionFrameIdentifier", MockFrameBuilder.SoftwareExceptionFrameIdentifierValue),
                     ("DebuggerU2MCatchHandlerFrameIdentifier", MockFrameBuilder.DebuggerU2MCatchHandlerFrameIdentifierValue),
                     ("InterpreterFrameIdentifier", MockFrameBuilder.InterpreterFrameIdentifierValue),
-                    ("HijackFrameIdentifier", MockFrameBuilder.HijackFrameIdentifierValue));
+                    ("HijackFrameIdentifier", MockFrameBuilder.HijackFrameIdentifierValue),
+                    ("ResolveHelperFrameIdentifier", MockFrameBuilder.ResolveHelperFrameIdentifierValue));
         }
 
         return targetBuilder
             .AddContract<IThread>(version: "c1")
+            .AddContract<IRuntimeInfo>(version: "c1")
             .AddContract<IStackWalk>(version: "c1")
             // StackWalk_1's constructor reads these contracts via target.Contracts.{ExecutionManager,GCInfo}
-            // when constructing its GcScanner. Our tests only exercise GetFrames /
-            // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
-            // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
+            // when constructing its GcScanner. These tests don't enumerate GC references,
+            // so empty mocks satisfy construction.
             .AddMockContract(Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .Build();
     }
+
+    private static RuntimeInfoArchitecture GetRuntimeInfoArchitecture(MockTarget.Architecture arch)
+        => arch.Is64Bit ? RuntimeInfoArchitecture.X64 : RuntimeInfoArchitecture.X86;
 
     private static Dictionary<DataType, Target.TypeInfo> CreateThreadTypes(MockThreadBuilder threadBuilder)
         => new()
@@ -82,8 +92,12 @@ public unsafe class StackWalkTests
             [DataType.Frame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FrameLayout),
             [DataType.InlinedCallFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InlinedCallFrameLayout),
             [DataType.FramedMethodFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FramedMethodFrameLayout),
+            [DataType.ResolveHelperFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.ResolveHelperFrameLayout),
             [DataType.FuncEvalFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FuncEvalFrameLayout),
             [DataType.DebuggerEval] = TargetTestHelpers.CreateTypeInfo(frameBuilder.DebuggerEvalLayout),
+            [DataType.TransitionBlock] = TargetTestHelpers.CreateTypeInfo(frameBuilder.TransitionBlockLayout),
+            [DataType.CalleeSavedRegisters] = TargetTestHelpers.CreateTypeInfo(frameBuilder.CalleeSavedRegistersLayout),
+            [DataType.ArgumentRegisters] = TargetTestHelpers.CreateTypeInfo(frameBuilder.ArgumentRegistersLayout),
         };
 
     [Theory]
@@ -126,6 +140,7 @@ public unsafe class StackWalkTests
         ulong u2mAddr = 0;
         ulong interpAddr = 0;
         ulong hijackAddr = 0;
+        ulong resolveHelperAddr = 0;
 
         TestPlaceholderTarget target = CreateTarget(
             arch,
@@ -145,15 +160,18 @@ public unsafe class StackWalkTests
                 u2mAddr = frameBuilder.AddFrame(MockFrameBuilder.DebuggerU2MCatchHandlerFrameIdentifierValue, "DebuggerU2MCatchHandlerFrame").Address;
                 interpAddr = frameBuilder.AddFrame(MockFrameBuilder.InterpreterFrameIdentifierValue, "InterpreterFrame").Address;
                 hijackAddr = frameBuilder.AddFrame(MockFrameBuilder.HijackFrameIdentifierValue, "HijackFrame").Address;
+                MockTransitionBlock transitionBlock = frameBuilder.AddTransitionBlock(0, 0, 0);
+                resolveHelperAddr = frameBuilder.AddResolveHelperFrame(transitionBlock.Address).Address;
 
                 thread!.Frame = frameBuilder.LinkChain(
                     framedMethodAddr, prestubAddr, funcEvalAddr, debuggerExitAddr,
-                    classInitAddr, softwareExAddr, u2mAddr, interpAddr, hijackAddr);
+                    classInitAddr, softwareExAddr, u2mAddr, interpAddr, hijackAddr,
+                    resolveHelperAddr);
             });
 
         IStackWalk contract = target.Contracts.StackWalk;
         StackFrameData[] frames = contract.GetFrames(new TargetPointer(thread!.Address)).ToArray();
-        Assert.Equal(9, frames.Length);
+        Assert.Equal(10, frames.Length);
 
         Assert.Equal(framedMethodAddr, frames[0].FrameAddress.Value);
         Assert.Equal(InternalFrameType.M2U, frames[0].InternalFrameType);
@@ -183,6 +201,46 @@ public unsafe class StackWalkTests
 
         Assert.Equal(hijackAddr, frames[8].FrameAddress.Value);
         Assert.Equal(InternalFrameType.None, frames[8].InternalFrameType);
+
+        Assert.Equal(resolveHelperAddr, frames[9].FrameAddress.Value);
+        Assert.Equal(InternalFrameType.None, frames[9].InternalFrameType);
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X64, MockRegisterSet.CalleeSavedRegisterName, MockRegisterSet.ArgumentRegisterName)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, MockRegisterSet.Arm64CalleeSavedRegisterName, MockRegisterSet.Arm64ArgumentRegisterName)]
+    public void GetContext_ResolveHelperFrame_UpdatesContextFromTransitionBlock(RuntimeInfoArchitecture runtimeArch, string calleeSavedRegisterName, string argumentRegisterName)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        MockThread? thread = null;
+        const ulong returnAddress = 0x1234_5678_9ABC_DEF0;
+        const ulong calleeSavedRegister = 0x1111_2222_3333_4444;
+        const ulong argumentRegister = 0xAAAA_BBBB_CCCC_DDDD;
+        ulong expectedStackPointer = 0;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                MockTransitionBlock transitionBlock = frameBuilder.AddTransitionBlock(returnAddress, calleeSavedRegister, argumentRegister);
+                MockResolveHelperFrame resolveHelperFrame = frameBuilder.AddResolveHelperFrame(transitionBlock.Address);
+                expectedStackPointer = transitionBlock.Address + (ulong)frameBuilder.TransitionBlockLayout.Size;
+                thread!.Frame = frameBuilder.LinkChain(resolveHelperFrame.Address);
+            },
+            runtimeArchOverride: runtimeArch);
+
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        byte[] contextBytes = target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, 0);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.FillFromBuffer(contextBytes);
+
+        Assert.Equal(returnAddress, context.InstructionPointer.Value);
+        Assert.Equal(expectedStackPointer, context.StackPointer.Value);
+        Assert.True(context.TryReadRegister(calleeSavedRegisterName, out TargetNUInt actualCalleeSavedRegister));
+        Assert.Equal(calleeSavedRegister, actualCalleeSavedRegister.Value);
+        Assert.True(context.TryReadRegister(argumentRegisterName, out TargetNUInt actualArgumentRegister));
+        Assert.Equal(argumentRegister, actualArgumentRegister.Value);
     }
 
     [Theory]

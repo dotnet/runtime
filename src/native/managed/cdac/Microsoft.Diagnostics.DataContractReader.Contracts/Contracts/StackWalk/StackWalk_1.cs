@@ -77,7 +77,8 @@ internal partial class StackWalk_1 : IStackWalk
             // HijackFrame should be conditioned on the target architecture.
             return ft is FrameType.ResumableFrame
                       or FrameType.RedirectedThreadFrame
-                      or FrameType.HijackFrame;
+                      or FrameType.HijackFrame
+                      or FrameType.ResolveHelperFrame;
         }
 
         /// <summary>
