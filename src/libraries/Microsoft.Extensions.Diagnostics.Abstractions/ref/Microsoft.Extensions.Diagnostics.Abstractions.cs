@@ -73,3 +73,41 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public IList<InstrumentRule> Rules { get; } = null!;
     }
 }
+namespace Microsoft.Extensions.Diagnostics.Tracing
+{
+    public interface ITracingBuilder
+    {
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    }
+    public class TracingRule
+    {
+        public TracingRule(string? sourceName, string? operationName, string? listenerName, ActivitySourceScopes scopes, bool enable) { }
+        public string? SourceName { get; }
+        public string? OperationName { get; }
+        public string? ListenerName { get; }
+        public ActivitySourceScopes Scopes { get; }
+        public bool Enable { get; }
+    }
+    [Flags]
+    public enum ActivitySourceScopes
+    {
+        None = 0,
+        Global = 1,
+        Local = 2
+    }
+    public static partial class TracingBuilderExtensions
+    {
+        public static ITracingBuilder AddListener(this ITracingBuilder builder, Func<IServiceProvider, System.Diagnostics.ActivityListener> factory) { throw null!; }
+        public static ITracingBuilder ClearListeners(this ITracingBuilder builder) { throw null!; }
+
+        public static ITracingBuilder EnableTracing(this ITracingBuilder builder, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+        public static TracingOptions EnableTracing(this TracingOptions options, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+
+        public static ITracingBuilder DisableTracing(this ITracingBuilder builder, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+        public static TracingOptions DisableTracing(this TracingOptions options, string? sourceName = null, string? operationName = null, string? listenerName = null, ActivitySourceScopes scopes = ActivitySourceScopes.Global | ActivitySourceScopes.Local) => throw null!;
+    }
+    public class TracingOptions
+    {
+        public List<TracingRule> Rules { get; } = null!;
+    }
+}
