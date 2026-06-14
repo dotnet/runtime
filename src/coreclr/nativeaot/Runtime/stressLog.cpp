@@ -17,6 +17,7 @@
 #include "Pal.h"
 #include "daccess.h"
 #include "stressLog.h"
+#include "Crst.h"
 #include "holder.h"
 #include "rhassert.h"
 #include "slist.h"
@@ -79,7 +80,7 @@ uint64_t getTickFrequency()
 
 #endif // DACCESS_COMPILE
 
-StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0 };
+StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, 0xFFFFFFFF, 0 };
 const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
 
 /*********************************************************************************/
@@ -95,8 +96,11 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    bool success = minipal_mutex_init(&theLog.lock);
-    _ASSERTE(success);
+    theLog.lock = new (nothrow) CrstStatic();
+    if (theLog.lock != NULL)
+    {
+        theLog.lock->Init(CrstStressLog);
+    }
 
     g_pStressLog = &theLog;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
@@ -114,6 +118,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;
     theLog.deadCount = 0;
+    theLog.padding = 0xFFFFFFFF;
 
     theLog.tickFrequency = getTickFrequency();
 
@@ -121,6 +126,15 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
+
+    // Initialize module table (single module for NativeAOT)
+    theLog.modules[0].baseAddress = (uint8_t*)hMod;
+    theLog.modules[0].size = 0; // Size will be set if needed
+    for (size_t i = 1; i < MAX_MODULES; i++)
+    {
+        theLog.modules[i].baseAddress = nullptr;
+        theLog.modules[i].size = 0;
+    }
 }
 
 /*********************************************************************************/
@@ -145,7 +159,12 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
         return NULL;
     }
 
-    minipal::MutexHolder holder(theLog.lock);
+    if (theLog.lock == NULL)
+    {
+        return NULL;
+    }
+
+    CrstHolder holder(theLog.lock);
     msgs = CreateThreadStressLogHelper(pThread);
 
     return msgs;
@@ -352,7 +371,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 }
 
 /* static */
-void StressLog::LogMsg (unsigned facility, int cArgs, const char* format, ... )
+void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char* format, ... )
 {
     _ASSERTE ( cArgs >= 0 && (size_t)cArgs <= StressMsg::maxArgCnt );
 
