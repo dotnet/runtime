@@ -41,9 +41,30 @@ namespace System.Reflection.Emit
         // Delegate and method creation
         //
 
+        /// <summary>
+        /// Completes the dynamic method and creates a delegate that can be used to execute it.
+        /// </summary>
+        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
+        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
+        /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
+        /// <exception cref="ArgumentException"><paramref name="delegateType" /> has the wrong number of parameters or the wrong parameter types.</exception>
+        /// <remarks>
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
+        /// </remarks>
         public sealed override Delegate CreateDelegate(Type delegateType) =>
             CreateDelegate(delegateType, target: null);
 
+        /// <summary>
+        /// Completes the dynamic method and creates a delegate that can be used to execute it, specifying the delegate type and an object the delegate is bound to.
+        /// </summary>
+        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
+        /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
+        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
+        /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
+        /// <exception cref="ArgumentException"><paramref name="delegateType" /> has the wrong number of parameters or the wrong parameter types.</exception>
+        /// <remarks>
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
+        /// </remarks>
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
             if (_restrictedSkipVisibility)
@@ -114,6 +135,21 @@ namespace System.Reflection.Emit
             }
         }
 
+        /// <summary>
+        /// Invokes the dynamic method using the specified parameters, under the constraints of the specified binder, with the specified culture information.
+        /// </summary>
+        /// <param name="obj">This parameter is ignored for dynamic methods, because they are static. Specify <see langword="null" />.</param>
+        /// <param name="invokeAttr">A bitwise combination of <see cref="BindingFlags" /> values.</param>
+        /// <param name="binder">A <see cref="Binder" /> object that enables the binding, coercion of argument types, invocation of members, and retrieval of <see cref="System.Reflection.MemberInfo" /> objects through reflection. If <paramref name="binder" /> is <see langword="null" />, the default binder is used.</param>
+        /// <param name="parameters">An argument list. This is an array of arguments with the same number, order, and type as the parameters of the method to be invoked. If there are no parameters this parameter should be <see langword="null" />.</param>
+        /// <param name="culture">An instance of <see cref="CultureInfo" /> used to govern the coercion of types. If this is <see langword="null" />, the <see cref="CultureInfo" /> for the current thread is used.</param>
+        /// <returns>An <see cref="object" /> containing the return value of the invoked method.</returns>
+        /// <exception cref="TargetParameterCountException">The number of elements in <paramref name="parameters" /> does not match the number of parameters in the dynamic method.</exception>
+        /// <exception cref="NotSupportedException">The dynamic method contains unverifiable code.</exception>
+        /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
+        /// <remarks>
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-invoke.md">Supplemental API remarks for DynamicMethod.Invoke</see>.
+        /// </remarks>
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
@@ -143,6 +179,13 @@ namespace System.Reflection.Emit
             return retValue;
         }
 
+        /// <summary>
+        /// Returns a <see cref="DynamicILInfo" /> object that can be used to generate a method body from metadata tokens, scopes, and Microsoft intermediate language (MSIL) streams.
+        /// </summary>
+        /// <returns>A <see cref="DynamicILInfo" /> object that can be used to generate a method body from metadata tokens, scopes, and MSIL streams.</returns>
+        /// <remarks>
+        /// The <see cref="DynamicILInfo" /> class is provided to support unmanaged code generation.
+        /// </remarks>
         public DynamicILInfo GetDynamicILInfo()
         {
             if (_dynamicILInfo == null)
@@ -154,6 +197,14 @@ namespace System.Reflection.Emit
             return _dynamicILInfo;
         }
 
+        /// <summary>
+        /// Returns a Microsoft intermediate language (MSIL) generator for the method with the specified MSIL stream size.
+        /// </summary>
+        /// <param name="streamSize">The size of the MSIL stream, in bytes.</param>
+        /// <returns>An <see cref="ILGenerator" /> object for the method.</returns>
+        /// <remarks>
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
+        /// </remarks>
         public ILGenerator GetILGenerator(int streamSize)
         {
             if (_ilGenerator == null)
