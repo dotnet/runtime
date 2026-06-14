@@ -1362,6 +1362,14 @@ PhaseStatus Compiler::fgWasmControlFlow()
             unsigned            endCursor   = cursor + tryRegion->NumBlocks();
             WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
             fgWasmIntervals->push_back(tryInterval);
+
+            // Pair the TRY with a same-range [exnref]-wrapper Block so
+            // `catch_ref TAG 0` from inside try_table has a valid target.
+            // The sort tiebreaker places the wrapper just outside the TRY.
+            //
+            WasmInterval* const wrapperInterval =
+                WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
+            fgWasmIntervals->push_back(wrapperInterval);
         }
 
         // Now see where block branches to...
@@ -1619,7 +1627,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return i1->IsBlock();
         }
 
-        // Either both are blocks or both are trys.
+        // Order regular blocks before ExnRef-wrapper blocks so the wrapper
+        // sits immediately outside its paired TRY (depth 0 from catch_ref).
+        //
+        if (i1->IsBlock())
+        {
+            if (i1->IsExnRefWrapper() != i2->IsExnRefWrapper())
+            {
+                return i2->IsExnRefWrapper();
+            }
+        }
+
+        // Either both are (regular or wrapper) blocks, or both are trys.
         //
         return false;
     };
