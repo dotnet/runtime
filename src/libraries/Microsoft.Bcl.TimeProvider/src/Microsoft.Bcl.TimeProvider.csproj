@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
+    <DependencyOnlyTargetFrameworks>$(NetFrameworkWithValueTuple)</DependencyOnlyTargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
@@ -22,7 +23,7 @@
         <Compile Include="$(CommonPath)System\TimeProvider.cs" Link="System\TimeProvider.cs" />
         <Compile Include="$(CommonPath)System\Threading\ITimer.cs" Link="System\Threading\ITimer.cs" />
 
-        <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+        <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'" />
         <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
       </ItemGroup>
     </Otherwise>
