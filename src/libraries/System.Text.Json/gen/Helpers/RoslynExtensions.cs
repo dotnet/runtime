@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -525,6 +526,82 @@ namespace System.Text.Json.SourceGeneration
         }
 
         /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="derivedParam"/>'s declared constraints
+        /// match <paramref name="baseParam"/>'s declared constraints exactly, after applying
+        /// <paramref name="substitution"/> to type-constraint references. Used by the
+        /// "uniform derived registration" check to verify that a derived type's parameter
+        /// constraints will be satisfied for every valid specialization of the base.
+        ///
+        /// "Exact match" is used in place of one-sided constraint subsumption because in the
+        /// uniform-applicability regime the two are equivalent (C# already forces a derived
+        /// parameter that's identified with a base parameter to declare at least the base's
+        /// constraints), and an equality check is simpler, easier to reason about, and
+        /// forward-compatible with new C# constraint kinds.
+        ///
+        /// <list type="bullet">
+        ///   <item>Special constraint flags (<c>class</c>, <c>struct</c>, <c>unmanaged</c>,
+        ///         <c>new()</c>) must match exactly.</item>
+        ///   <item>The set of type constraints must match exactly after substitution
+        ///         (order-independent). For F-bounded constraints, the substitution is
+        ///         applied to nested type-parameter positions as well, so a derived
+        ///         <c>where T : IComparable&lt;T&gt;</c> matches a base
+        ///         <c>where U : IComparable&lt;U&gt;</c> only after the substitution
+        ///         <c>{ T -&gt; U }</c> has been applied to both occurrences.</item>
+        ///   <item>The compile-time-only <c>notnull</c> constraint is intentionally ignored
+        ///         (it is not surfaced via reflection and is not runtime-enforced). As a
+        ///         consequence, two registrations whose constraints differ only in the
+        ///         presence of <c>notnull</c> are accepted as equivalent.</item>
+        /// </list>
+        ///
+        /// IMPORTANT: This implementation MIRRORS the reflection-side
+        /// <c>System.Text.Json.Reflection.ReflectionExtensions.AreConstraintsEquivalent</c>.
+        /// Any change to the equivalence rules MUST be applied on both sides.
+        /// </summary>
+        public static bool AreConstraintsEquivalent(
+            this Compilation compilation,
+            ITypeParameterSymbol derivedParam,
+            ITypeParameterSymbol baseParam,
+            IReadOnlyDictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
+        {
+            if (derivedParam.HasReferenceTypeConstraint != baseParam.HasReferenceTypeConstraint ||
+                derivedParam.HasValueTypeConstraint != baseParam.HasValueTypeConstraint ||
+                derivedParam.HasUnmanagedTypeConstraint != baseParam.HasUnmanagedTypeConstraint ||
+                derivedParam.HasConstructorConstraint != baseParam.HasConstructorConstraint)
+            {
+                return false;
+            }
+
+            ImmutableArray<ITypeSymbol> derivedConstraints = derivedParam.ConstraintTypes;
+            ImmutableArray<ITypeSymbol> baseConstraints = baseParam.ConstraintTypes;
+            if (derivedConstraints.Length != baseConstraints.Length)
+            {
+                return false;
+            }
+
+            if (derivedConstraints.Length == 0)
+            {
+                return true;
+            }
+
+            // Compare type-constraint sets order-independently. Substitute each derived
+            // constraint into base-parameter terms via the canonical mapping, then check
+            // that the resulting multiset matches the base's constraint set. Length parity
+            // was already established above, so removing each substituted derived constraint
+            // from a fresh copy of the base set proves equality iff every Remove succeeds.
+            var baseSet = new HashSet<ITypeSymbol>(baseConstraints, SymbolEqualityComparer.Default);
+            foreach (ITypeSymbol derivedConstraint in derivedConstraints)
+            {
+                ITypeSymbol substituted = compilation.SubstituteTypeParameters(derivedConstraint, substitution);
+                if (!baseSet.Remove(substituted))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Constructs <paramref name="typeDef"/> using <paramref name="allArgs"/>, accounting for
         /// nesting: the leading args bind enclosing-type parameters (outermost first) and the
         /// trailing args bind <paramref name="typeDef"/>'s own parameters. Non-generic intermediate
@@ -593,6 +670,215 @@ namespace System.Text.Json.SourceGeneration
 
         public static bool IsGenericTypeDefinition(this ITypeSymbol type)
             => type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(namedType, namedType.ConstructedFrom);
+
+        /// <summary>
+        /// Validates that <paramref name="unboundDerived"/> applies uniformly to every
+        /// specialization of the open generic base type whose definition matches
+        /// <c>constructedBase.OriginalDefinition</c>, and (when it does) produces the closed
+        /// derived type for the closure identified by <paramref name="constructedBase"/>.
+        ///
+        /// "Uniform" means: there is a single canonical substitution mapping each derived
+        /// type parameter to a base type parameter that simultaneously satisfies every
+        /// matching ancestor of the derived type, with every derived constraint exactly
+        /// matching the constraints on the corresponding base parameter. Per-ancestor
+        /// unifications are computed independently and then verified to coincide -- this is
+        /// what catches asymmetric multi-interface implementations like
+        /// <c>D&lt;U1, U2&gt; : IBase&lt;U1, U2&gt;, IBase&lt;U2, U1&gt;</c>, where each
+        /// ancestor admits a unifier on its own but no single canonical answer covers both.
+        /// Registrations that pin a particular specialization
+        /// (e.g. <c>Derived&lt;T&gt; : Base&lt;T, int&gt;</c>) are rejected: such registrations
+        /// would silently work for one base specialization and break for another, which we
+        /// treat as a misregistration regardless of which specialization is currently being
+        /// generated.
+        ///
+        /// Returns <see langword="true"/> with <paramref name="resolvedDerivedType"/> set to
+        /// the closed derived type, or <see langword="false"/> with a localized
+        /// <paramref name="failureReason"/> drawn from <c>SR.Polymorphism_OpenGeneric_*</c>
+        /// (suitable for inclusion in the <c>SYSLIB1229</c> message).
+        ///
+        /// IMPORTANT: This implementation MIRRORS the reflection-side resolver
+        /// <c>DefaultJsonTypeInfoResolver.Helpers.TryResolveOpenGenericDerivedType</c> in
+        /// src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs.
+        /// Both implementations -- the per-ancestor unification, the canonical-substitution
+        /// consistency check, and the constraint-equivalence rules -- must be kept in lockstep
+        /// so source-gen and reflection produce the same closed type for the same registration.
+        /// </summary>
+        public static bool TryResolveOpenGenericDerivedType(
+            this Compilation compilation,
+            INamedTypeSymbol unboundDerived,
+            INamedTypeSymbol constructedBase,
+            out INamedTypeSymbol? resolvedDerivedType,
+            out string? failureReason)
+        {
+            Debug.Assert(unboundDerived.IsUnboundGenericType);
+            Debug.Assert(constructedBase.IsGenericType);
+
+            resolvedDerivedType = null;
+            failureReason = null;
+
+            INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
+            INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
+
+            // Every ancestor of the derived type definition whose original definition matches
+            // the base type definition. For classes there is at most one such ancestor; for
+            // interfaces a derived type can implement the same interface definition multiple
+            // times with different type arguments.
+            List<INamedTypeSymbol> matchingBases = derivedDefinition
+                .GetCompatibleGenericBaseTypes(baseDefinition)
+                .ToList();
+
+            if (matchingBases.Count == 0)
+            {
+                failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                return false;
+            }
+
+            // The complete set of derived parameters that must be bound (enclosing + leaf).
+            List<ITypeParameterSymbol> requiredDerivedParams = derivedDefinition.GetAllTypeParameters();
+            List<ITypeParameterSymbol> baseParams = baseDefinition.GetAllTypeParameters();
+            var baseParamSet = new HashSet<ITypeParameterSymbol>(baseParams, SymbolEqualityComparer.Default);
+
+            // Per-ancestor independent substitutions; the uniform answer must be a single
+            // canonical substitution agreed upon by every ancestor.
+            Dictionary<ITypeParameterSymbol, ITypeSymbol>? canonical = null;
+
+            foreach (INamedTypeSymbol ancestor in matchingBases)
+            {
+                var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(
+                    requiredDerivedParams.Count, SymbolEqualityComparer.Default);
+
+                if (!ancestor.TryUnifyWith(baseDefinition, substitution))
+                {
+                    // No unifier exists. Some position pins a concrete type (e.g. Base<T, int>)
+                    // or a constructed pattern (e.g. Base<List<T>>) that cannot match the base
+                    // type parameter at that position (the rigid target).
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformPinning;
+                    return false;
+                }
+
+                foreach (ITypeParameterSymbol p in requiredDerivedParams)
+                {
+                    if (!substitution.TryGetValue(p, out ITypeSymbol? mapped))
+                    {
+                        // E.g. D<U1, U2> : IBase<U1> -- U2 is not bound by this ancestor.
+                        failureReason = string.Format(
+                            CultureInfo.InvariantCulture,
+                            SR.Polymorphism_OpenGeneric_Reason_UnboundParameter,
+                            p.Name);
+                        return false;
+                    }
+
+                    if (mapped is not ITypeParameterSymbol mappedBaseParam || !baseParamSet.Contains(mappedBaseParam))
+                    {
+                        // Defensive: a unifier exists but it would map a derived parameter to
+                        // something other than one of the base's own type parameters (i.e. the
+                        // result isn't a pure renaming). With the rigid-target unification used
+                        // here this is essentially unreachable -- TryUnifyWith binds derived
+                        // parameters only against the base definition's own type arguments,
+                        // which are all base parameters -- but we report it separately from
+                        // NonUniformPinning so any future relaxation of TryUnifyWith (e.g.
+                        // binding into nested constructed targets) surfaces with a precise
+                        // diagnostic instead of getting silently lumped under pinning.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NonUniformUnification;
+                        return false;
+                    }
+                }
+
+                if (canonical is null)
+                {
+                    canonical = substitution;
+                }
+                else if (!SubstitutionsEqual(canonical, substitution))
+                {
+                    // Two ancestors agree on independent bindings but produce different
+                    // (derived -> base) mappings, e.g. D<U1, U2> : IBase<U1, U2>, IBase<U2, U1>.
+                    // There is no single canonical answer for an arbitrary base closure.
+                    failureReason = SR.Polymorphism_OpenGeneric_Reason_AmbiguousMatch;
+                    return false;
+                }
+            }
+
+            Debug.Assert(canonical is not null);
+
+            // Constraint equivalence: every derived parameter's constraints must exactly
+            // match the constraints on the mapped base parameter (after substitution) so
+            // that any valid closure of the base also yields a valid closure of the
+            // derived. See ReflectionExtensions.AreConstraintsEquivalent for the rationale
+            // behind exact match (vs one-sided subsumption).
+            foreach (ITypeParameterSymbol derivedParam in requiredDerivedParams)
+            {
+                var mappedBaseParam = (ITypeParameterSymbol)canonical[derivedParam];
+                if (!compilation.AreConstraintsEquivalent(derivedParam, mappedBaseParam, canonical))
+                {
+                    failureReason = string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.Polymorphism_OpenGeneric_Reason_ConstraintMismatch,
+                        derivedParam.Name,
+                        mappedBaseParam.Name);
+                    return false;
+                }
+            }
+
+            // Closure construction: substitute the canonical mapping then specialize each
+            // base parameter to the actual closed-base type argument.
+            var baseParamPosition = new Dictionary<ITypeParameterSymbol, int>(SymbolEqualityComparer.Default);
+            for (int i = 0; i < baseParams.Count; i++)
+            {
+                baseParamPosition[baseParams[i]] = i;
+            }
+
+            List<ITypeSymbol> constructedBaseAllArgs = GetAllTypeArguments(constructedBase);
+
+            var closedArgs = new ITypeSymbol[requiredDerivedParams.Count];
+            for (int i = 0; i < requiredDerivedParams.Count; i++)
+            {
+                var mappedBaseParam = (ITypeParameterSymbol)canonical[requiredDerivedParams[i]];
+                closedArgs[i] = constructedBaseAllArgs[baseParamPosition[mappedBaseParam]];
+            }
+
+            resolvedDerivedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
+            return true;
+
+            static bool SubstitutionsEqual(
+                Dictionary<ITypeParameterSymbol, ITypeSymbol> a,
+                Dictionary<ITypeParameterSymbol, ITypeSymbol> b)
+            {
+                if (a.Count != b.Count)
+                {
+                    return false;
+                }
+
+                foreach (KeyValuePair<ITypeParameterSymbol, ITypeSymbol> kvp in a)
+                {
+                    if (!b.TryGetValue(kvp.Key, out ITypeSymbol? otherValue) ||
+                        !SymbolEqualityComparer.Default.Equals(kvp.Value, otherValue))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            static List<ITypeSymbol> GetAllTypeArguments(INamedTypeSymbol type)
+            {
+                var result = new List<ITypeSymbol>();
+                Append(type.ContainingType, result);
+                result.AddRange(type.TypeArguments);
+                return result;
+
+                static void Append(INamedTypeSymbol? enclosing, List<ITypeSymbol> list)
+                {
+                    if (enclosing is null)
+                    {
+                        return;
+                    }
+
+                    Append(enclosing.ContainingType, list);
+                    list.AddRange(enclosing.TypeArguments);
+                }
+            }
+        }
 
         public static bool IsNumberType(this ITypeSymbol type)
         {
@@ -786,6 +1072,42 @@ namespace System.Text.Json.SourceGeneration
             return symbol.GetAttributes().Any(attr =>
                 attr.AttributeClass?.Name == attributeName &&
                 attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEqualityComparer{T}"/> for value tuples of two elements that
+        /// delegates equality and hashing of each tuple component to the corresponding element
+        /// comparer. Useful when neither component has a usable default comparer (e.g. Roslyn
+        /// symbol types, where <see cref="SymbolEqualityComparer.Default"/> must be used).
+        /// </summary>
+        public static IEqualityComparer<(T1, T2)> CreateTupleComparer<T1, T2>(
+            IEqualityComparer<T1> firstComparer,
+            IEqualityComparer<T2> secondComparer)
+        {
+            return new TupleComparer<T1, T2>(firstComparer, secondComparer);
+        }
+
+        private sealed class TupleComparer<T1, T2> : IEqualityComparer<(T1, T2)>
+        {
+            private readonly IEqualityComparer<T1> _firstComparer;
+            private readonly IEqualityComparer<T2> _secondComparer;
+
+            public TupleComparer(IEqualityComparer<T1> firstComparer, IEqualityComparer<T2> secondComparer)
+            {
+                _firstComparer = firstComparer;
+                _secondComparer = secondComparer;
+            }
+
+            public bool Equals((T1, T2) x, (T1, T2) y) =>
+                _firstComparer.Equals(x.Item1, y.Item1) &&
+                _secondComparer.Equals(x.Item2, y.Item2);
+
+            public int GetHashCode((T1, T2) obj)
+            {
+                int h1 = obj.Item1 is null ? 0 : _firstComparer.GetHashCode(obj.Item1);
+                int h2 = obj.Item2 is null ? 0 : _secondComparer.GetHashCode(obj.Item2);
+                return unchecked(h1 * 397 ^ h2);
+            }
         }
     }
 }

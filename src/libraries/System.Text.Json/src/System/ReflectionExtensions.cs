@@ -319,5 +319,143 @@ namespace System.Text.Json.Reflection
 
             return pattern == target;
         }
+
+        /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="derivedParam"/>'s declared constraints
+        /// match <paramref name="baseParam"/>'s declared constraints exactly, after applying
+        /// <paramref name="substitution"/> to type-constraint references. Used by the polymorphism
+        /// resolver to validate that every closure of the base type that respects the base's
+        /// constraints would also be a valid closure of the open derived type.
+        ///
+        /// The substitution is applied to nested type-parameter positions, so for F-bounded
+        /// constraints a derived <c>where T : IComparable&lt;T&gt;</c> matches a base
+        /// <c>where U : IComparable&lt;U&gt;</c> only after the substitution
+        /// <c>{ T -&gt; U }</c> has been applied to both occurrences.
+        ///
+        /// The compile-time-only <c>notnull</c> constraint is not surfaced through the
+        /// standard reflection API, so it is invisible here. As a consequence, two
+        /// registrations whose constraints differ only in the presence of <c>notnull</c>
+        /// are accepted as equivalent.
+        ///
+        /// IMPORTANT: This implementation MIRRORS
+        /// <c>System.Text.Json.SourceGeneration.RoslynExtensions.AreConstraintsEquivalent</c>.
+        /// Any change to the equivalence rules must be applied on both sides.
+        ///
+        /// Known intentional asymmetry with the source-gen mirror: the C# <c>unmanaged</c>
+        /// constraint is encoded as a modreq and is not surfaced through the standard
+        /// reflection API, so this check cannot enforce that a derived <c>unmanaged</c>
+        /// constraint is matched by a base <c>unmanaged</c> constraint. The polymorphism
+        /// resolver falls back on <see cref="Type.MakeGenericType"/> to surface any
+        /// remaining constraint violations at closure time.
+        /// </summary>
+        [RequiresUnreferencedCode("Reflects over derived and base generic parameter constraint types.")]
+        [RequiresDynamicCode("Substitutes type parameters in constraint types.")]
+        public static bool AreConstraintsEquivalent(
+            Type derivedParam,
+            Type baseParam,
+            IReadOnlyDictionary<Type, Type> substitution)
+        {
+            Debug.Assert(derivedParam.IsGenericParameter);
+            Debug.Assert(baseParam.IsGenericParameter);
+
+            const GenericParameterAttributes Mask = GenericParameterAttributes.SpecialConstraintMask;
+            if ((derivedParam.GenericParameterAttributes & Mask) != (baseParam.GenericParameterAttributes & Mask))
+            {
+                return false;
+            }
+
+            Type[] derivedConstraints = derivedParam.GetGenericParameterConstraints();
+            Type[] baseConstraints = baseParam.GetGenericParameterConstraints();
+            if (derivedConstraints.Length != baseConstraints.Length)
+            {
+                return false;
+            }
+
+            if (derivedConstraints.Length == 0)
+            {
+                return true;
+            }
+
+            // Compare type-constraint sets order-independently. Substitute each derived
+            // constraint into base-parameter terms via the canonical mapping, then check
+            // that the resulting multiset matches the base's constraint set. Length parity
+            // was already established above, so removing each substituted derived constraint
+            // from a fresh copy of the base set proves equality iff every Remove succeeds.
+            var baseSet = new HashSet<Type>(baseConstraints);
+            foreach (Type derivedConstraint in derivedConstraints)
+            {
+                Type substituted = SubstituteTypeParameters(derivedConstraint, substitution);
+                if (!baseSet.Remove(substituted))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Walks a <see cref="Type"/> tree and substitutes any occurrence of a type parameter
+        /// (whose key is present in <paramref name="substitution"/>) with its mapped value.
+        /// </summary>
+        [RequiresUnreferencedCode("Reflects over the type tree to build a substituted constraint type.")]
+        [RequiresDynamicCode("Constructs a new substituted generic type via MakeGenericType.")]
+        private static Type SubstituteTypeParameters(Type type, IReadOnlyDictionary<Type, Type> substitution)
+        {
+            if (type.IsGenericParameter)
+            {
+                return substitution.TryGetValue(type, out Type? mapped) ? mapped : type;
+            }
+
+            if (type.IsArray)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                if (substitutedElement == element)
+                {
+                    return type;
+                }
+
+#if NET
+                return type.IsSZArray ? substitutedElement.MakeArrayType() : substitutedElement.MakeArrayType(type.GetArrayRank());
+#else
+                int rank = type.GetArrayRank();
+                return rank == 1 ? substitutedElement.MakeArrayType() : substitutedElement.MakeArrayType(rank);
+#endif
+            }
+
+            if (type.IsPointer)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                return substitutedElement == element ? type : substitutedElement.MakePointerType();
+            }
+
+            if (type.IsByRef)
+            {
+                Type element = type.GetElementType()!;
+                Type substitutedElement = SubstituteTypeParameters(element, substitution);
+                return substitutedElement == element ? type : substitutedElement.MakeByRefType();
+            }
+
+            if (type.IsGenericType)
+            {
+                Type[] args = type.GetGenericArguments();
+                Type[]? newArgs = null;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    Type substitutedArg = SubstituteTypeParameters(args[i], substitution);
+                    if (substitutedArg != args[i])
+                    {
+                        newArgs ??= (Type[])args.Clone();
+                        newArgs[i] = substitutedArg;
+                    }
+                }
+
+                return newArgs is null ? type : type.GetGenericTypeDefinition().MakeGenericType(newArgs);
+            }
+
+            return type;
+        }
     }
 }

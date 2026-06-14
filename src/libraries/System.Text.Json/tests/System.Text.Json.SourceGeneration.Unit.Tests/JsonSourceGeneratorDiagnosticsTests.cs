@@ -1264,11 +1264,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_PartiallyConcrete_Resolves()
+        public void OpenGenericDerivedType_PartiallyConcrete_WarnsWithSYSLIB1229()
         {
             // Derived<T> : Base<T, int> registered on Base<string, int>:
-            // position 0 (T) unifies with string, position 1 (concrete int) matches.
-            // Expected: closed type is MyDerived<string>, no diagnostic.
+            // the derived pins position 1 (T2) to a concrete int, which makes the
+            // registration non-uniform w.r.t. the open Base<T1, T2>. Under the
+            // uniform-applicability rule the source generator emits SYSLIB1229
+            // regardless of which closure was registered.
             string source = """
                 using System.Text.Json.Serialization;
 
@@ -1294,9 +1296,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
-            Assert.Empty(result.Diagnostics.Where(d => d.Id == "SYSLIB1229"));
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
@@ -1330,6 +1333,181 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
             Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void ClosedDerivedType_NotAssignableToNonGenericBase_WarnsWithSYSLIB1229()
+        {
+            // A closed derived type that has no inheritance relationship to a non-generic
+            // base used to flow through the source generator unchanged and only fail at
+            // first serialization, when PolymorphicTypeResolver applies its
+            // IsAssignableFrom check and throws InvalidOperationException. The
+            // post-condition assignability check in TryResolveDerivedType lifts that
+            // failure to a compile-time SYSLIB1229 so misregistrations are surfaced when
+            // the metadata is generated.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Unrelated), "unrelated")]
+                    public class MyBase
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public class Unrelated
+                    {
+                        public string? Name { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            string message = diagnostic.GetMessage();
+            Assert.Contains("Unrelated", message);
+            Assert.Contains("MyBase", message);
+            Assert.Contains("not assignable", message);
+        }
+
+        [Fact]
+        public void ClosedDerivedType_AssignableToNonGenericBase_CompilesSuccessfully()
+        {
+            // The standard happy path for the closed-derived / non-generic-base arm:
+            // confirm the new post-condition assignability check does not regress valid
+            // registrations.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(Animal))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Cat), "cat")]
+                    [JsonDerivedType(typeof(Dog), "dog")]
+                    public class Animal
+                    {
+                        public string? Name { get; set; }
+                    }
+
+                    public class Cat : Animal { public int Lives { get; set; } }
+                    public class Dog : Animal { public bool Bark { get; set; } }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.Empty(result.Diagnostics.Where(d => d.Id == "SYSLIB1229"));
+        }
+
+        [Fact]
+        public void ClosedDerivedType_NonGenericInterfaceBase_AssignableViaInterface_CompilesSuccessfully()
+        {
+            // Variant of the happy path where the non-generic base is an interface and
+            // the derived type satisfies the base via an interface implementation. The
+            // IsAssignableFrom helper walks AllInterfaces in addition to the base-type
+            // chain, so this should compile without diagnostics.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IShape))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(Circle), "circle")]
+                    public interface IShape
+                    {
+                    }
+
+                    public class Circle : IShape
+                    {
+                        public double Radius { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.Empty(result.Diagnostics.Where(d => d.Id == "SYSLIB1229"));
+        }
+
+        [Fact]
+        public void ClosedDerivedType_NotAssignableToInterfaceBase_WarnsWithSYSLIB1229()
+        {
+            // Closed derived that does not implement the declared interface base.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(IShape))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(NotAShape), "no")]
+                    public interface IShape
+                    {
+                    }
+
+                    public class NotAShape
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("not assignable", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void ClosedDerivedType_ValueTypeRegisteredOnReferenceTypeBase_WarnsWithSYSLIB1229()
+        {
+            // Value type with no inheritance relationship to a class base.
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(int), "i")]
+                    public class MyBase
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("not assignable", diagnostic.GetMessage());
         }
 
         [Fact]
@@ -1368,9 +1546,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_WrappedArgWithMatchingBase_CompilesSuccessfully()
+        public void OpenGenericDerivedType_WrappedArgWithMatchingBase_WarnsWithSYSLIB1229()
         {
-            // Derived<T> : Base<List<T>> registered on Base<List<int>> unifies to Derived<int>.
+            // Derived<T> : Base<List<T>> registered on Base<List<int>>:
+            // the derived pins the leaf shape to List<>. The registration does not apply
+            // to closures of Base<T> whose T is not a List<>, so it is rejected under the
+            // uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Collections.Generic;
@@ -1396,8 +1577,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
@@ -1432,9 +1614,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_PartialConcretization_CompilesSuccessfully()
+        public void OpenGenericDerivedType_PartialConcretization_WarnsWithSYSLIB1229()
         {
-            // Derived<T> : Base<T, int> registered on Base<string, int> unifies to Derived<string>.
+            // Derived<T> : Base<T, int> registered on Base<string, int>:
+            // the derived pins T2 to int. The registration is rejected under the
+            // uniform-applicability rule regardless of which closure was registered.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1458,15 +1642,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
-        public void OpenGenericDerivedType_ArrayTypeArg_CompilesSuccessfully()
+        public void OpenGenericDerivedType_ArrayTypeArg_WarnsWithSYSLIB1229()
         {
-            // Derived<T> : Base<T[]> registered on Base<int[]> unifies to Derived<int>.
-            // Exercises the IArrayTypeSymbol branch of structural unification.
+            // Derived<T> : Base<T[]> registered on Base<int[]>: pins the leaf shape to
+            // an array. The registration does not apply to closures of Base<T> whose T
+            // is not an array, so it is rejected under the uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1490,8 +1676,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
@@ -1586,9 +1773,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_ReferenceTypeConstraintSatisfied_CompilesSuccessfully()
+        public void OpenGenericDerivedType_ReferenceTypeConstraintMismatch_WarnsWithSYSLIB1229()
         {
-            // Derived<T> : Base<T> where T : class, registered on Base<string>.
+            // Derived<T> : Base<T> where T : class. Base has no constraint, so the
+            // derived's constraints don't match the base's exactly. Rejected under
+            // the uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1612,14 +1801,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
-        public void OpenGenericDerivedType_InterfaceConstraintSatisfied_CompilesSuccessfully()
+        public void OpenGenericDerivedType_InterfaceConstraintMismatch_WarnsWithSYSLIB1229()
         {
-            // Derived<T> : Base<T> where T : System.IComparable<T>, registered on Base<int>.
+            // Derived<T> : Base<T> where T : IComparable<T>. Base has no constraint, so
+            // the derived's constraints don't match the base's exactly. Rejected under
+            // the uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1643,15 +1835,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
-        public void OpenGenericDerivedType_ArrayInsideGenericConstraint_CompilesSuccessfully()
+        public void OpenGenericDerivedType_ArrayInsideGenericConstraint_WarnsWithSYSLIB1229()
         {
-            // where T : IEnumerable<U[]> with T=List<int[]>, U=int.
-            // Exercises array substitution into a generic constraint type.
+            // Derived<T, U> : Base<T, U> where T : IEnumerable<U[]>. Base has no
+            // constraint on T1, so the derived's constraint is stricter. Rejected under
+            // the uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Collections.Generic;
@@ -1676,16 +1870,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
-        public void OpenGenericDerivedType_NestedInGenericOuter_CompilesSuccessfully()
+        public void OpenGenericDerivedType_NestedInGenericOuter_WarnsWithSYSLIB1229()
         {
-            // Outer<T>.Middle.Leaf<U> : Base<(T, U)> registered on Base<(int, string)>.
-            // Exercises ConstructEnclosing rebinding a non-generic intermediate type
-            // through a constructed generic outer.
+            // Outer<T>.Middle.Leaf<U> : Base<(T, U)>. The derived pins the closed base's
+            // single type argument to a tuple shape, so it does not apply to closures of
+            // Base<T> whose T is not a (_, _) tuple. Rejected under the
+            // uniform-applicability rule.
             string source = """
                 #nullable enable
                 using System.Text.Json.Serialization;
@@ -1715,8 +1911,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
@@ -1786,17 +1983,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_MultipleInterfaceConstructions_NonAmbiguousResolution_CompilesSuccessfully()
+        public void OpenGenericDerivedType_MultipleInterfaceConstructions_DisagreeingSubstitutions_WarnsWithSYSLIB1229()
         {
-            // Impl<T> reaches IBase<> twice: once via its own type-parameterized base (IBase<T>)
-            // and once via inheritance from the non-generic IntBase (IBase<int>). When resolved
-            // against the closed base IBase<string>, only the IBase<T> leg unifies (T=string);
-            // the IBase<int> leg is incompatible. Resolution must succeed and produce
-            // Impl<string>. The both-legs-match scenario (which IS ambiguous) is covered by
-            // OpenGenericDerivedType_AmbiguousMatch. Indirecting the IBase<int> leg through a
-            // non-generic base class avoids C# CS0695 -- a class cannot directly declare two
-            // constructions of the same generic interface that could unify under any
-            // substitution.
+            // Impl<T> reaches IBase<> via two ancestors: directly as IBase<T> and via
+            // IntBase : IBase<int>. The two ancestors produce disagreeing substitutions
+            // for the base's single type parameter (one binds it to T, the other to int).
+            // Rejected under the uniform-applicability rule.
             string source = """
                 using System.Text.Json.Serialization;
 
@@ -1817,8 +2009,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
@@ -1947,15 +2140,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void OpenGenericDerivedType_NestedGenericTypeParameterInEnclosing_CompilesSuccessfully()
+        public void OpenGenericDerivedType_NestedGenericTypeParameterInEnclosing_WarnsWithSYSLIB1229()
         {
-            // Pattern: NestedDerived<T> : NestedBase<NestedOuter<T>.NestedBox<int>>.
-            // Closed base: NestedBase<NestedOuter<string>.NestedBox<int>>.
-            // T appears only in the ENCLOSING type's argument list. Pre-fix source-gen
-            // ignored ContainingType and reported SYSLIB1229 because T was never bound by
-            // the leaf-only TryUnifyWith walk. With the ContainingType walk in place,
-            // unification succeeds with T=string and the resolver closes NestedDerived to
-            // NestedDerived<string>. No diagnostic expected.
+            // Pattern: NestedDerivedParamInEnclosing<T> : NestedBaseB<NestedOuterB<T>.NestedBoxB<int>>.
+            // The derived pins the closed base's single type argument to an
+            // NestedOuterB<>.NestedBoxB<int> shape. It does not apply to closures of
+            // NestedBaseB<T> whose T is not of that shape, so it is rejected under the
+            // uniform-applicability rule.
             string source = """
                 using System.Text.Json.Serialization;
 
@@ -1979,19 +2170,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
 
         [Fact]
-        public void OpenGenericDerivedType_CovariantInterfaceConstraintSatisfied_CompilesSuccessfully()
+        public void OpenGenericDerivedType_CovariantInterfaceConstraintMismatch_WarnsWithSYSLIB1229()
         {
-            // where T : IEnumerable<object>. Closing T to List<string> satisfies the
-            // constraint ONLY via IEnumerable<out T> covariance (IEnumerable<string> is
-            // assignable to IEnumerable<object> only by virtue of 'out T'). Pre-fix
-            // source-gen used identity-based interface containment for the constraint
-            // check and would have reported SYSLIB1229. With Compilation.HasImplicitConversion
-            // in place, source-gen matches reflection's behavior and accepts.
+            // ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object>.
+            // The derived has constraints the base doesn't. Even though specific closures
+            // (e.g. List<string> via variance) would satisfy the constraint, the
+            // registration is rejected under the uniform-applicability rule.
             string source = """
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
@@ -2011,8 +2201,38 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            Assert.Empty(result.Diagnostics);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_DiagnosticEmittedOncePerOpenBase_EvenWithMultipleClosures()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    [JsonSerializable(typeof(MyBase<string>))]
+                    [JsonSerializable(typeof(MyBase<double>))]
+                    internal partial class JsonContext : JsonSerializerContext { }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "d")]
+                    public class MyBase<T> { }
+
+                    // Pins T to a specific specialization (string) of the base — non-uniform,
+                    // so SYSLIB1229 fires. It should fire exactly once for the (MyBase<>, MyDerived<>)
+                    // pair, not once per closure of MyBase<>.
+                    public class MyDerived<T> : MyBase<string> { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1229");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         }
     }
 }

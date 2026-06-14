@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="fr" original="../Strings.resx">
     <body>
@@ -142,9 +142,29 @@
         <target state="translated">le type dérivé correspond au type de base via plusieurs ancêtres</target>
         <note />
       </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase">
+        <source>a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</source>
+        <target state="new">a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintMismatch">
+        <source>the derived type's type parameter '{0}' declares constraints that differ from the constraints on the corresponding base type parameter '{1}'</source>
+        <target state="new">the derived type's type parameter '{0}' declares constraints that differ from the constraints on the corresponding base type parameter '{1}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
         <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
         <target state="translated">la contrainte sur le paramètre de type « {0} » n’est pas satisfaite par « {1} »</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniformUnification">
+        <source>the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</source>
+        <target state="new">the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NonUniformPinning">
+        <source>the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</source>
+        <target state="new">the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</target>
         <note />
       </trans-unit>
       <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">

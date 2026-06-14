@@ -231,13 +231,25 @@
   <data name="Polymorphism_OpenGeneric_Reason_UnificationFailed" xml:space="preserve">
     <value>the base type's arguments do not match the derived type's base specification</value>
   </data>
+  <data name="Polymorphism_OpenGeneric_Reason_NonUniformUnification" xml:space="preserve">
+    <value>the unification of the derived type with the base type binds a derived type parameter to a target other than a base type parameter</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_NonUniformPinning" xml:space="preserve">
+    <value>the derived type does not apply uniformly to every specialization of the base type because it pins one or more base type arguments</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_UnboundParameter" xml:space="preserve">
     <value>the type parameter '{0}' of the derived type is not bound by the base type's arguments</value>
   </data>
   <data name="Polymorphism_OpenGeneric_Reason_ConstraintViolation" xml:space="preserve">
     <value>the constraint on type parameter '{0}' is not satisfied by '{1}'</value>
   </data>
+  <data name="Polymorphism_OpenGeneric_Reason_ConstraintMismatch" xml:space="preserve">
+    <value>the derived type's type parameter '{0}' declares constraints that differ from the constraints on the corresponding base type parameter '{1}'</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_AmbiguousMatch" xml:space="preserve">
     <value>the derived type matches the base type through multiple ancestors</value>
+  </data>
+  <data name="Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase" xml:space="preserve">
+    <value>a closed derived type cannot serve a generic base type uniformly; the registration pins a specific specialization of the base</value>
   </data>
 </root>

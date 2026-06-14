@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -33,6 +32,10 @@ namespace System.Text.Json.SourceGeneration
             private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
                 SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(
                     SymbolDisplayGenericsOptions.IncludeTypeConstraints);
+
+            private static readonly IEqualityComparer<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> s_typePairComparer =
+                RoslynExtensions.CreateTupleComparer<ISymbol, ISymbol>(SymbolEqualityComparer.Default, SymbolEqualityComparer.Default);
+
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -58,6 +61,13 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning disable RS1024 // Compare symbols correctly https://github.com/dotnet/roslyn-analyzers/issues/5804
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
+
+            // SYSLIB1229 dedup set: emit at most once per (open base definition, open derived
+            // definition) pair across the lifetime of this Parser. Whether a derived registration
+            // applies uniformly to a generic base is a property of the open forms alone; without
+            // dedup we'd spam the same diagnostic for every closure of the same base referenced via
+            // JsonSerializableAttribute.
+            private HashSet<(ISymbol BaseDefinition, ISymbol DerivedDefinition)> DiagnosedOpenDerivedRegistrations => field ??= new(s_typePairComparer);
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
@@ -940,18 +950,18 @@ namespace System.Text.Json.SourceGeneration
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                        if (!TryResolveDerivedType(
+                                derivedType, typeToGenerate.Type,
+                                out ITypeSymbol? resolvedDerivedType, out string? failureReason))
                         {
-                            if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, typeToGenerate.Type,
-                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
+                            if (DiagnosedOpenDerivedRegistrations.Add((typeToGenerate.Type.OriginalDefinition, derivedType.OriginalDefinition)))
                             {
                                 ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-                                continue;
                             }
-
-                            derivedType = resolvedType!;
+                            continue;
                         }
+
+                        derivedType = resolvedDerivedType!;
 
                         TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
 
@@ -1037,208 +1047,98 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Source-gen-side resolver: closes <paramref name="unboundDerived"/> against
-            /// <paramref name="baseType"/> via structural unification at compile time.
-            /// Returns <c>true</c> when the registration can be closed to a unique concrete
-            /// type. Returns <c>false</c> with a localized <paramref name="failureReason"/>
-            /// suitable for inclusion in a diagnostic when the derived type cannot be
-            /// resolved against this particular base.
+            /// Source-gen-side resolver for a <c>[JsonDerivedType]</c> registration against
+            /// <paramref name="baseType"/>. Dispatches on the four open/closed × generic/non-generic
+            /// shapes:
+            /// <list type="bullet">
+            ///   <item>Open derived + generic base: delegates to
+            ///   <see cref="RoslynExtensions.TryResolveOpenGenericDerivedType"/> for
+            ///   uniform-applicability validation and closure construction.</item>
+            ///   <item>Open derived + non-generic base: rejected as unassignable.</item>
+            ///   <item>Closed derived + generic base: rejected. The attribute lives on the open
+            ///   base definition and is shared across every closure; a closed derived necessarily
+            ///   pins one specialization and would silently work for that closure and break for
+            ///   the others.</item>
+            ///   <item>Closed derived + non-generic base: the registration is accepted as-is,
+            ///   subject to the post-condition assignability check below.</item>
+            /// </list>
             ///
-            /// IMPORTANT: This implementation MIRRORS the reflection resolver
-            /// <c>DefaultJsonTypeInfoResolver.Helpers.TryResolveOpenGenericDerivedType</c>
-            /// in src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Helpers.cs.
-            /// Both implementations -- the structural unbound pre-check, the per-ancestor
-            /// unification, and the ambiguity detection -- must be kept in lockstep so that
-            /// source-gen and reflection produce the same closed type for the same registration.
-            /// Any algorithmic change here must be applied in the reflection mirror as well.
+            /// Returns <see langword="true"/> with <paramref name="resolvedDerivedType"/> set
+            /// (either the closed derived type from unification, or <paramref name="declaredDerived"/>
+            /// as-is for the pass-through case) only if the resolved type is also a real subtype
+            /// of <paramref name="baseType"/>; otherwise returns <see langword="false"/> with a
+            /// localized <paramref name="failureReason"/> suitable for inclusion in <c>SYSLIB1229</c>.
             /// </summary>
-            private bool TryResolveOpenGenericDerivedType(
-                INamedTypeSymbol unboundDerived,
+            private bool TryResolveDerivedType(
+                ITypeSymbol declaredDerived,
                 ITypeSymbol baseType,
-                out INamedTypeSymbol? resolvedType,
+                out ITypeSymbol? resolvedDerivedType,
                 out string? failureReason)
             {
-                resolvedType = null;
+                resolvedDerivedType = null;
                 failureReason = null;
 
-                if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                if (declaredDerived is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                 {
+                    if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+                    {
+                        // Open derived registered against a non-generic base: no closure of the
+                        // derived can ever be assignable to the base.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
+                        return false;
+                    }
+
+                    if (!_knownSymbols.Compilation.TryResolveOpenGenericDerivedType(
+                            unboundDerived, constructedBase,
+                            out INamedTypeSymbol? closedDerivedType, out failureReason))
+                    {
+                        return false;
+                    }
+
+                    resolvedDerivedType = closedDerivedType;
+                }
+                else
+                {
+                    if (baseType is INamedTypeSymbol { IsGenericType: true })
+                    {
+                        // Closed derived registered against a generic base, e.g.
+                        //   [JsonDerivedType(typeof(Cat))] class Animal<T>; class Cat : Animal<int>;
+                        // The same JsonDerivedType attribute lives on the open base definition and is
+                        // shared across every closure, so a closed derived necessarily pins one
+                        // specialization (here Animal<int>) and would silently apply for that closure
+                        // and break for every other (Animal<string>, Animal<DateTime>, ...). Reject at
+                        // metadata-resolution time.
+                        failureReason = SR.Polymorphism_OpenGeneric_Reason_ClosedDerivedOnGenericBase;
+                        return false;
+                    }
+
+                    // Closed derived registered against a non-generic base. The common sensible
+                    // case (e.g. [JsonDerivedType(typeof(Cat))] class Animal; class Cat : Animal;)
+                    // is accepted unchanged here; outright invalid pairs (e.g.
+                    // [JsonDerivedType(typeof(int))] class Foo;) are caught by the post-condition
+                    // assignability check below.
+                    resolvedDerivedType = declaredDerived;
+                }
+
+                // Post-condition: the resolved derived type must be a real subtype of the
+                // declared base type. For the open-derived / generic-base case this holds by
+                // construction (closure construction substitutes derived parameters with the
+                // matching base type arguments, so the matching ancestor of resolvedDerivedType
+                // is exactly baseType); the check is defensive and never expected to fail. For
+                // the closed-derived / non-generic-base case this is the only compile-time
+                // validation that the registration is well-formed and lifts a runtime-only
+                // failure (PolymorphicTypeResolver -> IsSupportedDerivedType ->
+                // ThrowInvalidOperationException_DerivedTypeNotSupported, surfaced at first
+                // serialization) to a SYSLIB1229 diagnostic at metadata-resolution time.
+                Debug.Assert(resolvedDerivedType is not null);
+                if (!baseType.IsAssignableFrom(resolvedDerivedType))
+                {
+                    resolvedDerivedType = null;
                     failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
                     return false;
                 }
 
-                INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
-                INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
-
-                // Collect every ancestor of the derived type definition whose original
-                // definition matches the base type definition. For classes there is at
-                // most one ancestor; for interfaces a derived type can implement the same
-                // interface definition multiple times with different type arguments.
-                List<INamedTypeSymbol> matchingBases = derivedDefinition
-                    .GetCompatibleGenericBaseTypes(baseDefinition)
-                    .ToList();
-
-                if (matchingBases.Count == 0)
-                {
-                    failureReason = SR.Polymorphism_OpenGeneric_Reason_NotAssignable;
-                    return false;
-                }
-
-                // The full set of generic parameters we must bind includes the parameters
-                // of the derived type definition AS WELL AS those declared by enclosing
-                // generic types (Outer<T>.Derived needs T bound from Outer).
-                List<ITypeParameterSymbol> requiredParams = derivedDefinition.GetAllTypeParameters();
-                ImmutableArray<ITypeSymbol> constructedBaseArgs = constructedBase.TypeArguments;
-
-                // Structural unbound pre-check: every required parameter must appear at least
-                // once somewhere in some matching ancestor's type arguments. If a parameter
-                // never appears at all, no closed base could ever bind it -- the derived
-                // definition is malformed regardless of which closed base it is registered
-                // against.
-                HashSet<ITypeParameterSymbol> referencedParams = new(SymbolEqualityComparer.Default);
-                foreach (INamedTypeSymbol mb in matchingBases)
-                {
-                    foreach (ITypeSymbol arg in mb.TypeArguments)
-                    {
-                        CollectReferencedParameters(arg, referencedParams);
-                    }
-                }
-                foreach (ITypeParameterSymbol required in requiredParams)
-                {
-                    if (!referencedParams.Contains(required))
-                    {
-                        failureReason = string.Format(
-                            CultureInfo.InvariantCulture,
-                            SR.Polymorphism_OpenGeneric_Reason_UnboundParameter,
-                            required.Name);
-                        return false;
-                    }
-                }
-
-                Dictionary<ITypeParameterSymbol, ITypeSymbol>? successfulSubstitution = null;
-                int successCount = 0;
-
-                foreach (INamedTypeSymbol matchingBase in matchingBases)
-                {
-                    ImmutableArray<ITypeSymbol> matchingBaseArgs = matchingBase.TypeArguments;
-                    Debug.Assert(matchingBaseArgs.Length == constructedBaseArgs.Length,
-                        "matchingBase and constructedBase share the same generic definition, so arity must match.");
-
-                    var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(requiredParams.Count, SymbolEqualityComparer.Default);
-                    bool unified = true;
-                    for (int i = 0; i < matchingBaseArgs.Length; i++)
-                    {
-                        if (!matchingBaseArgs[i].TryUnifyWith(constructedBaseArgs[i], substitution))
-                        {
-                            unified = false;
-                            break;
-                        }
-                    }
-
-                    if (!unified)
-                    {
-                        continue;
-                    }
-
-                    // Unification succeeded for every position. Every required parameter must be
-                    // bound; otherwise the resulting closed type would have unbound type arguments
-                    // (an unspeakable type). A sibling ancestor may still bind this parameter, so
-                    // failure here is not fatal -- just move on to the next matching ancestor.
-                    bool allBound = true;
-                    foreach (ITypeParameterSymbol p in requiredParams)
-                    {
-                        if (!substitution.ContainsKey(p))
-                        {
-                            allBound = false;
-                            break;
-                        }
-                    }
-
-                    if (!allBound)
-                    {
-                        continue;
-                    }
-
-                    successCount++;
-                    if (successCount == 1)
-                    {
-                        successfulSubstitution = substitution;
-                    }
-                    else
-                    {
-                        failureReason = SR.Polymorphism_OpenGeneric_Reason_AmbiguousMatch;
-                        return false;
-                    }
-                }
-
-                if (successCount == 0 || successfulSubstitution is null)
-                {
-                    failureReason = SR.Polymorphism_OpenGeneric_Reason_UnificationFailed;
-                    return false;
-                }
-
-                // Validate constraints up front so the generated code will compile.
-                // Note: HasNotNullConstraint is not enforced because `notnull` is not a
-                // runtime-enforced constraint. Reflection MakeGenericType accepts e.g.
-                // string? for `where T : notnull`; source-gen must match that behavior.
-                if (!_knownSymbols.Compilation.TryValidateGenericConstraints(requiredParams, successfulSubstitution, out ITypeParameterSymbol? failedParam, out ITypeSymbol? failedArg))
-                {
-                    failureReason = string.Format(
-                        CultureInfo.InvariantCulture,
-                        SR.Polymorphism_OpenGeneric_Reason_ConstraintViolation,
-                        failedParam.Name,
-                        failedArg?.ToDisplayString() ?? string.Empty);
-                    return false;
-                }
-
-                // Build closedArgs in declaration order using the merged substitution.
-                ITypeSymbol[] closedArgs = new ITypeSymbol[requiredParams.Count];
-                for (int i = 0; i < requiredParams.Count; i++)
-                {
-                    closedArgs[i] = successfulSubstitution[requiredParams[i]];
-                }
-
-                // Note: ConstructWithEnclosingTypeArguments takes the parameters in the order
-                // they appear when listed as TypeParameters on the type and on its enclosing types.
-                // GetAllTypeParameters preserves that order (outer-to-inner, declaration order).
-                resolvedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
                 return true;
-            }
-
-            private static void CollectReferencedParameters(ITypeSymbol pattern, HashSet<ITypeParameterSymbol> set)
-            {
-                switch (pattern)
-                {
-                    case ITypeParameterSymbol tp:
-                        set.Add(tp);
-                        return;
-
-                    case IArrayTypeSymbol array:
-                        CollectReferencedParameters(array.ElementType, set);
-                        return;
-
-                    case IPointerTypeSymbol pointer:
-                        CollectReferencedParameters(pointer.PointedAtType, set);
-                        return;
-
-                    case INamedTypeSymbol { IsGenericType: true } named:
-                        // Walk ContainingType to collect type parameters declared on enclosing
-                        // generic types (e.g. T in Outer<T>.Box<U>). Roslyn's TypeArguments is
-                        // leaf-only, while the reflection mirror uses Type.GetGenericArguments()
-                        // which flattens enclosing + leaf. Without this recursion, the unbound
-                        // pre-check would spuriously reject patterns whose only reference to a
-                        // type parameter lives in the enclosing type.
-                        if (named.ContainingType is { IsGenericType: true } containing)
-                        {
-                            CollectReferencedParameters(containing, set);
-                        }
-
-                        foreach (ITypeSymbol arg in named.TypeArguments)
-                        {
-                            CollectReferencedParameters(arg, set);
-                        }
-                        return;
-                }
             }
 
             /// <summary>
