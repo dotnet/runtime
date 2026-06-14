@@ -63,6 +63,7 @@
       <EmccExportedRuntimeMethod Include="HEAPU32" />
       <EmccExportedRuntimeMethod Include="HEAPF32" />
       <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <!-- HEAP64+HEAPU64 are removed for corerun under NodeJS -->
       <EmccExportedRuntimeMethod Include="HEAP64" />
       <EmccExportedRuntimeMethod Include="HEAPU64" />
       <EmccExportedRuntimeMethod Include="out" />
