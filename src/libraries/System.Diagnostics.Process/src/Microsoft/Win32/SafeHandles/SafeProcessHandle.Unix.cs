@@ -301,7 +301,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // use default program to open file/url
-            filename = Process.GetPathToOpenFile();
+            filename = Process.GetPathToOpenFile() ?? throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
             string[] openFileArgv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
 
             SafeProcessHandle result = ForkAndExecProcess(
