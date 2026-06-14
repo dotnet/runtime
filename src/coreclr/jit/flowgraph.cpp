@@ -5886,15 +5886,19 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     // A TYP_LONG IV often compares against an int-typed limit (e.g.
     // `arr.Length`) widened via a non-overflowing CAST. Peel that cast so
-    // the underlying form-check sees the int operand. Only peel when any
-    // previously peeled LimitOffset still fits in an int32: the peeled
-    // base is int-typed, and downstream materialization (ToGenTree) will
-    // emit an int-sized offset node when added to that base.
+    // the underlying form-check sees the int operand. Only peel when:
+    //   * the offset is non-positive: downstream materialization adds the
+    //     offset to the int base in the int domain, so a positive offset
+    //     could overflow int32 even when the original long-domain add did
+    //     not (e.g. `(long)arr.Length + 1L` vs `(long)(arr.Length + 1)`),
+    //     leading to an unsound limit value.
+    //   * the offset magnitude fits in int32 so it can be materialized as
+    //     an int-sized add against the now-int base.
     if (iterOp->TypeIs(TYP_LONG) && limitOp->OperIs(GT_CAST))
     {
         GenTreeCast* cast = limitOp->AsCast();
         if ((cast->CastToType() == TYP_LONG) && (genActualType(cast->CastOp()) == TYP_INT) && !cast->gtOverflow() &&
-            (info->LimitOffset >= INT32_MIN) && (info->LimitOffset <= INT32_MAX))
+            (info->LimitOffset <= 0) && (info->LimitOffset >= INT32_MIN))
         {
             limitOp = cast->CastOp();
         }
