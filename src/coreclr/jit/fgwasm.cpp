@@ -1741,6 +1741,192 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+PhaseStatus Compiler::fgWasmSpillRefs()
+{
+    bool anyChanges = false;
+
+    size_t                   highWaterMark = 0;
+    jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
+    jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // LIR edges cannot span blocks, so we can safely clear the list of live values per-block
+        defs.clear();
+        if (m_wasmSpillSlots != nullptr)
+        {
+            // Flag all our spill slot vars as no longer in use so they can be reused in the new block
+            for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
+            {
+                m_wasmSpillSlots->at(s).inUse = false;
+            }
+        }
+
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (tree->IsCall())
+            {
+                highWaterMark = std::max(highWaterMark, defs.size());
+
+                // For any ref/byref values live at the point of a call, spill them into pinned slots
+                //  on the stack where the GC can see them so it won't move them.
+                if (defs.size())
+                {
+                    if (m_wasmSpillSlots == nullptr)
+                    {
+                        m_wasmSpillSlots = new (this, CMK_WasmSpillRefs)
+                            jitstd::vector<WasmSpillSlot>(getAllocator(CMK_WasmSpillRefs));
+                    }
+
+                    JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
+                    DISPNODE(tree);
+                    for (GenTree* def : defs)
+                    {
+                        JITDUMP("    ");
+                        DISPNODE(def);
+
+                        int spillSlot = -1;
+                        // Find an existing spill slot of the right type (byref or ref) that isn't in use
+                        for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
+                        {
+                            WasmSpillSlot* slot = &(m_wasmSpillSlots->at(s));
+                            if (slot->inUse)
+                                continue;
+                            if (slot->byRef != def->TypeIs(TYP_BYREF))
+                                continue;
+
+                            spillSlot   = slot->lclNum;
+                            slot->inUse = true;
+                            break;
+                        }
+
+                        // We didn't find an available spill slot so make a new one
+                        if (spillSlot == -1)
+                        {
+                            spillSlot               = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+                            LclVarDsc* const varDsc = lvaGetDesc(spillSlot);
+                            varDsc->lvType          = def->TypeGet();
+                            varDsc->lvPinned        = true;
+                            varDsc->lvMustInit      = true;
+                            lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+                            WasmSpillSlot slotDesc;
+                            slotDesc.lclNum = spillSlot;
+                            slotDesc.byRef  = def->TypeIs(TYP_BYREF);
+                            slotDesc.inUse  = true;
+                            m_wasmSpillSlots->push_back(slotDesc);
+                        }
+
+                        GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
+                        GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
+                        LIR::Use       use;
+                        noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
+                        LIR::AsRange(block).InsertAfter(def, spill);
+                        LIR::AsRange(block).InsertAfter(spill, reload);
+                        use.ReplaceWith(reload);
+
+                        // The user will expect to have child nodes that have the multiply-used flag set, so when
+                        //  we replace the expression with the reload node, we need to transfer the flag
+                        if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
+                        {
+                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n",
+                                    Compiler::dspTreeID(def), Compiler::dspTreeID(reload));
+                            def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                            reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                        }
+
+                        spillSlotsToZeroAtEndOfBlock.push_back(spillSlot);
+
+                        anyChanges = true;
+                    }
+
+                    defs.clear();
+                }
+            }
+
+            // FIXME: Should this happen before the spilling of the live defs list?
+            // I think the answer is no, because live defs being passed as arguments to the current call
+            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
+            //  them. If we can somehow guarantee that all callees will spill their ref parameters
+            //  immediately, we could do this before the block above.
+
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
+            tree->VisitOperands([&defs](GenTree* op) {
+                if (!op->IsValue())
+                    return GenTree::VisitResult::Continue;
+                if (!op->TypeIs(TYP_REF, TYP_BYREF))
+                    return GenTree::VisitResult::Continue;
+
+                for (size_t i = defs.size(); i > 0; i--)
+                {
+                    if (op == defs[i - 1])
+                    {
+                        defs[i - 1] = defs[defs.size() - 1];
+                        defs.pop_back();
+                        break;
+                    }
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
+            //  nodes appropriately
+            if (!tree->IsValue() || tree->IsUnusedValue() || tree->IsInvariant() || !tree->TypeIs(TYP_REF, TYP_BYREF))
+            {
+                continue;
+            }
+
+            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
+            //  and we won't need to spill it.
+            if (tree->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
+                LclVarDsc*           dsc    = lvaGetDesc(lclVar);
+                if (!dsc->IsAddressExposed())
+                {
+                    continue;
+                }
+            }
+
+            // We have a ref sourced from something like a call result or an indirection that hasn't been
+            //  spilled yet, so record it for potential spilling at the next call.
+            defs.push_back(tree);
+        }
+
+        // For the spill slots we used, zero them at the end of the block to avoid keeping objects pinned way longer
+        //  than absolutely necessary.
+        if (spillSlotsToZeroAtEndOfBlock.size())
+        {
+            // There's no point in wasting time zeroing slots immediately before a return at the end of the block
+            //  since the GC will have no opportunity to inspect the slots. We could potentially do this for throws
+            //  too, but it's possible the exception would be caught and the method would continue running
+            if (!block->KindIs(BBJ_RETURN))
+            {
+                for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
+                {
+                    GenTree*   zero  = gtNewZeroConNode(TYP_I_IMPL);
+                    GenTree*   store = gtNewStoreLclVarNode(lclNum, zero);
+                    LIR::Range range = LIR::SeqTree(this, store);
+                    LIR::InsertBeforeTerminator(block, std::move(range));
+                }
+            }
+
+            spillSlotsToZeroAtEndOfBlock.clear();
+        }
+    }
+
+    if (highWaterMark > 0)
+    {
+        JITDUMP("High water mark for refs was %zu\n", highWaterMark);
+    }
+    if (m_wasmSpillSlots != nullptr)
+    {
+        JITDUMP("Total allocated spill slot count was %zu\n", m_wasmSpillSlots->size());
+    }
+    return anyChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
