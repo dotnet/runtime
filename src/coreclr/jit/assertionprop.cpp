@@ -2806,6 +2806,63 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call: Folds given ADD/SUB operation using VN to a simpler MUL tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The ADD/SUB tree to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_AddSub(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    assert(tree->OperIs(GT_ADD, GT_SUB));
+
+    ValueNumPair vnPair = tree->gtVNPair;
+    ValueNum     vnCnv  = vnStore->VNConservativeNormalValue(vnPair);
+    VNFuncApp    vnFuncApp;
+
+    if (!vnStore->GetVNFunc(vnCnv, &vnFuncApp) || !vnFuncApp.FuncIs(VNF_ADD, VNF_SUB) ||
+        vnStore->TypeOfVN(vnCnv) != TYP_INT)
+    {
+        return nullptr;
+    }
+
+    ValueNum  vnOp1 = vnFuncApp.m_args[0];
+    ValueNum  vnOp2 = vnFuncApp.m_args[1];
+    VNFuncApp vnFuncAppOp1;
+    VNFuncApp vnFuncAppOp2;
+    int       cns = 0;
+
+    if (vnStore->IsVNIntegralConstant(vnOp1, &cns) && cns == 0)
+    {
+        return tree->OperIs(GT_ADD) ? tree->gtGetOp2() : tree;
+    }
+    else if (vnStore->IsVNIntegralConstant(vnOp2, &cns) && cns == 0)
+    {
+        return tree->gtGetOp1();
+    }
+    else if (!vnStore->GetVNFunc(vnOp1, &vnFuncAppOp1) ||
+             !vnFuncAppOp1.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB, VNF_LSH, VNF_XOR, VNF_MUL) ||
+             !vnStore->GetVNFunc(vnOp2, &vnFuncAppOp2) ||
+             !vnFuncAppOp2.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB, VNF_LSH, VNF_XOR, VNF_MUL))
+    {
+        return nullptr;
+    }
+
+    GenTree* foldedTree = fgMorphReduceAddOrSubOps(tree);
+
+    if (foldedTree == tree)
+    {
+        return nullptr;
+    }
+
+    return foldedTree;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr: Folds given tree using VN to a constant or a simpler tree.
 //
 // Arguments:
@@ -2829,7 +2886,9 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
     {
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
-
+        case GT_ADD:
+        case GT_SUB:
+            return optVNBasedFoldExpr_AddSub(block, parent, tree);
             // We can add more VN-based foldings here.
 
         default:

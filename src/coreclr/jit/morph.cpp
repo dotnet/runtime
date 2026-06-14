@@ -7547,13 +7547,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             break;
     }
 
-    if (opts.OptimizationEnabled() && fgGlobalMorph)
-    {
-        GenTree* morphed = fgMorphReduceAddOps(tree);
-        if (morphed != tree)
-            return fgMorphTree(morphed);
-    }
-
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
      */
@@ -15643,8 +15636,155 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// fgMorphReduceAddOps: reduce successive variable adds into a single multiply,
-// e.g., i + i + i + i => i * 4.
+// fgMorphOperIsIntScalarMulLclVar: detect if op is a variable or multiple of a variable,
+// e.g., i => true.
+// e.g., -i => true.
+// e.g., -2 * i => true.
+// e.g., 5 * i + 1 => false.
+//
+// Arguments:
+//    op - Operation to analyze
+//    scalar - the scalar to which variable is multiplied
+//    lclNum - lclNum of the variable
+//
+// Return Value:
+//    true if pattern matches and false otherwise
+//
+bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, unsigned int* lclNum)
+{
+    if (op->OperIs(GT_LCL_VAR))
+    {
+        *scalar = 1;
+        *lclNum = op->AsLclVar()->GetLclNum();
+        return true;
+    }
+    else if (op->OperIs(GT_COMMA) && op->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+             op->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+    {
+        *scalar = 1;
+        *lclNum = op->gtGetOp1()->AsLclVar()->GetLclNum();
+        return true;
+    }
+    else if (op->OperIs(GT_SUB) && op->gtGetOp1()->IsIntegralConst(0))
+    {
+        if (op->gtGetOp2()->OperIs(GT_LCL_VAR))
+        {
+            *scalar = 1;
+            *lclNum = op->gtGetOp2()->AsLclVar()->GetLclNum();
+            return true;
+        }
+        else if (op->gtGetOp2()->OperIs(GT_COMMA) && op->gtGetOp2()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op->gtGetOp2()->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+        {
+            *scalar = 1;
+            *lclNum = op->gtGetOp2()->gtGetOp1()->AsLclVar()->GetLclNum();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    if (op->OperIs(GT_LSH) && op->gtGetOp2()->IsIntegralConst())
+    {
+        GenTree* op1         = op->gtGetOp1();
+        ssize_t  temp_scalar = static_cast<ssize_t>(pow(2, op->gtGetOp2()->AsIntConCommon()->IconValue()));
+
+        if (op1->OperIs(GT_LCL_VAR))
+        {
+            *scalar = temp_scalar;
+            *lclNum = op1->AsLclVar()->GetLclNum();
+        }
+        else if (op1->OperIs(GT_NEG) && op1->gtGetOp1()->OperIs(GT_LCL_VAR))
+        {
+            *scalar = -temp_scalar;
+            *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+        {
+            *scalar = temp_scalar;
+            *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else if (op1->OperIs(GT_NEG) && op1->gtGetOp1()->OperIs(GT_COMMA) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+        {
+            *scalar = -temp_scalar;
+            *lclNum = op1->gtGetOp1()->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (op->OperIs(GT_MUL))
+    {
+        GenTree* op1 = op->gtGetOp1();
+        GenTree* op2 = op->gtGetOp2();
+
+        if (op1->IsIntegralConst() && op2->OperIs(GT_LCL_VAR))
+        {
+            *scalar = op1->AsIntConCommon()->IconValue();
+            *lclNum = op2->AsLclVar()->GetLclNum();
+        }
+        else if (op2->IsIntegralConst() && op1->OperIs(GT_LCL_VAR))
+        {
+            *scalar = op2->AsIntConCommon()->IconValue();
+            *lclNum = op1->AsLclVar()->GetLclNum();
+        }
+        else if (op1->IsIntegralConst() && op2->OperIs(GT_COMMA) && op2->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op2->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+        {
+            *scalar = op1->AsIntConCommon()->IconValue();
+            *lclNum = op2->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else if (op2->IsIntegralConst() && op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
+        {
+            *scalar = op2->AsIntConCommon()->IconValue();
+            *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (op->OperIs(GT_XOR))
+    {
+        GenTree* op1 = op->gtGetOp1();
+        GenTree* op2 = op->gtGetOp2();
+
+        if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR) &&
+            op1->AsLclVar()->GetLclNum() == op2->AsLclVar()->GetLclNum())
+        {
+            *scalar = 0;
+            *lclNum = op2->AsLclVar()->GetLclNum();
+        }
+        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND) && op2->OperIs(GT_LCL_VAR) &&
+                 op1->gtGetOp1()->AsLclVar()->GetLclNum() == op2->AsLclVar()->GetLclNum())
+        {
+            *scalar = 0;
+            *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// fgMorphReduceAddOrSubOps: reduce successive variable adds/subs into a single multiply,
+// e.g., i + 3 * i + i - 4 * i  + i => i * 2.
 //
 // Arguments:
 //    tree - tree for reduction
@@ -15652,54 +15792,74 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 // Return Value:
 //    reduced tree if pattern matches, original tree otherwise
 //
-GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
+GenTree* Compiler::fgMorphReduceAddOrSubOps(GenTree* tree)
 {
-    // ADD(_, V0) starts the pattern match.
-    if (!tree->OperIs(GT_ADD) || tree->gtOverflow())
+    // ADD(_, V0) OR SUB(_, V0) starts the pattern match.
+    if (!tree->OperIs(GT_ADD, GT_SUB) || tree->gtOverflow())
     {
         return tree;
     }
 
 #if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-    // Transforming 64-bit ADD to 64-bit MUL on 32-bit system results in replacing
-    // ADD ops with a helper function call. Don't apply optimization in that case.
+    // Transforming 64-bit ADD/SUB to 64-bit MUL on 32-bit system results in replacing
+    // ADD/SUB ops with a helper function call. Don't apply optimization in that case.
     if (tree->TypeIs(TYP_LONG))
     {
         return tree;
     }
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
-    GenTree* lclVarTree = tree->AsOp()->gtOp2;
-    GenTree* consTree   = tree->AsOp()->gtOp1;
+    genTreeOps targetOp   = tree->OperGet();
+    GenTree*   lclVarTree = tree->AsOp()->gtOp2;
+    GenTree*   consTree   = tree->AsOp()->gtOp1;
 
-    GenTree* op1 = consTree;
-    GenTree* op2 = lclVarTree;
+    GenTree*     op1       = consTree;
+    ssize_t      op1Scalar = 0;
+    unsigned int op1lclNum = 0;
+    GenTree*     op2       = lclVarTree;
+    ssize_t      op2Scalar = 0;
+    unsigned int op2lclNum = 0;
 
-    if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegral(op2))
+    if (!fgMorphOperIsIntScalarMulLclVar(op2, &op2Scalar, &op2lclNum) || !varTypeIsIntegral(op2))
     {
         return tree;
     }
 
-    int      foldCount = 0;
-    unsigned lclNum    = op2->AsLclVarCommon()->GetLclNum();
+    ssize_t      foldCount = 0;
+    unsigned int lclNum    = op2lclNum;
 
-    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum).
+    // Search for pattern of shape ADD(SUB(ADD(lclNum, lclNum), lclNum), lclNum).
     while (true)
     {
-        // ADD(lclNum, lclNum), end of tree
-        if (op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_LCL_VAR) &&
-            op2->AsLclVarCommon()->GetLclNum() == lclNum)
+        // ADD(lclNum, lclNum) OR SUB(lclNum, lclNum), end of tree
+        if ((fgMorphOperIsIntScalarMulLclVar(op1, &op1Scalar, &op1lclNum) && op1lclNum == lclNum) &&
+            (fgMorphOperIsIntScalarMulLclVar(op2, &op2Scalar, &op2lclNum) && op2lclNum == lclNum))
         {
-            foldCount += 2;
+            if (targetOp == GT_ADD)
+            {
+                foldCount += op1Scalar + op2Scalar;
+            }
+            else
+            {
+                foldCount += op1Scalar - op2Scalar;
+            }
             break;
         }
-        // ADD(ADD(X, Y), lclNum), keep descending
-        else if (op1->OperIs(GT_ADD) && !op1->gtOverflow() && op2->OperIs(GT_LCL_VAR) &&
-                 op2->AsLclVarCommon()->GetLclNum() == lclNum)
+        // ADD(SUB(X, Y), lclNum), keep descending
+        else if (op1->OperIs(GT_ADD, GT_SUB) && !op1->gtOverflow() &&
+                 (fgMorphOperIsIntScalarMulLclVar(op2, &op2Scalar, &op2lclNum) && op2lclNum == lclNum))
         {
-            foldCount++;
-            op2 = op1->AsOp()->gtOp2;
-            op1 = op1->AsOp()->gtOp1;
+            if (targetOp == GT_ADD)
+            {
+                foldCount += op2Scalar;
+            }
+            else
+            {
+                foldCount -= op2Scalar;
+            }
+            targetOp = op1->OperGet();
+            op2      = op1->AsOp()->gtOp2;
+            op1      = op1->AsOp()->gtOp1;
         }
         // Any other case is a pattern we won't attempt to fold for now.
         else
@@ -15708,14 +15868,22 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
         }
     }
 
-    // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
+    // V0 + V0 ... + V0 becomes V0 * foldCount,
+    // V0 - V0 ... - V0 becomes V0 * (- foldCount + 2), where postorder transform will optimize
     // accordingly
-    consTree->BashToConst(foldCount, tree->TypeGet());
+    if (foldCount == 0)
+    {
+        return gtNewOperNode(GT_XOR, tree->TypeGet(), op1,
+                             gtCloneExpr(op1->OperIs(GT_LCL_VAR) ? op1 : op1->gtEffectiveVal()));
+    }
+    else if (foldCount == -1)
+    {
+        return gtNewOperNode(GT_SUB, tree->TypeGet(), gtNewZeroConNode(tree->TypeGet()),
+                             op1->OperIs(GT_MUL, GT_LSH, GT_XOR) ? op1->gtGetOp1() : op1);
+    }
 
-    GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
-    DEBUG_DESTROY_NODE(tree);
-
-    return morphed;
+    return gtNewOperNode(GT_MUL, tree->TypeGet(), op1->OperIs(GT_MUL, GT_LSH, GT_XOR) ? op1->gtGetOp1() : op1,
+                         gtNewIconNode(foldCount, tree->TypeGet()));
 }
 
 //------------------------------------------------------------------------
