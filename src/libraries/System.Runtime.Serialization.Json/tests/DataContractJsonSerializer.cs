@@ -1718,6 +1718,56 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_SerializationEvents_NoStreamingContext()
+    {
+        var input = new MyType_NoStreamingContext() { Value = "string value" };
+        var output = SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"{""Value"":""string value""}");
+
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+    }
+
+    [Fact]
+    public static void DCJS_SerializationEvents_Invalid()
+    {
+        var obj1 = new MyType_InvalidEventMethods_OnSerializing();
+        var dcs1 = new DataContractJsonSerializer(obj1.GetType());
+        var obj2 = new MyType_InvalidEventMethods_OnSerialized();
+        var dcs2 = new DataContractJsonSerializer(obj2.GetType());
+        var obj3 = new MyType_InvalidEventMethods_OnDeserializing();
+        var dcs3 = new DataContractJsonSerializer(obj3.GetType());
+        var obj4 = new MyType_InvalidEventMethods_OnDeserialized();
+        var dcs4 = new DataContractJsonSerializer(obj4.GetType());
+
+        using var ms = new MemoryStream();
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs1.WriteObject(ms, obj1);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs2.WriteObject(ms, obj2);
+        });
+
+        // I understand the deserialization API is "ReadObject", but an error is thrown at "WriteObject" also.
+        // So, it is unable to create sample JSON data automatically, or we don't need to prepare it manually.
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs3.WriteObject(ms, obj3);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs4.WriteObject(ms, obj4);
+        });
+    }
+
+    [Fact]
     public static void DCJS_DeserializeEmptyString()
     {
         var serializer = new DataContractJsonSerializer(typeof(object));
