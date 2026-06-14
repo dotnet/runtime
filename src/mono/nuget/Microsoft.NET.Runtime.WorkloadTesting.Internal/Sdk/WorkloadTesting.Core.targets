@@ -89,7 +89,8 @@
       <_DotNetInstallScriptContent>$([System.IO.File]::ReadAllText('$(_DotNetInstallScriptPath)'))</_DotNetInstallScriptContent>
       <_DotNetInstallScriptContent>$(_DotNetInstallScriptContent.Replace('ci.dot.net/public', 'ci.dot.net/dev'))</_DotNetInstallScriptContent>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="$(_DotNetInstallScriptContent)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- Escape the content so the WriteLinesToFile 'Lines' item-vector doesn't split the script on ';' (which would corrupt the shell script). -->
+    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="$([MSBuild]::Escape($(_DotNetInstallScriptContent)))" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
