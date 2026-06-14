@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Tests;
 using System.Text;
@@ -35,11 +34,6 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
-
-        [Theory]
-        [MemberData(nameof(ConnectedStreamConformanceTests.ReadWrite_Success_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
-        [DynamicDependency(nameof(ConnectedStreamConformanceTests.ReadWrite_Success_MemberData), typeof(ConnectedStreamConformanceTests))]
-        public override Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success(mode, writeSize, startWithFlush);
 
         [Fact]
         public static void Ctor()

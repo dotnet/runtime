@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Tests;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -44,13 +42,6 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite));
             AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite, false));
         }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [MemberData(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
-        [DynamicDependency(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), typeof(ConnectedStreamConformanceTests))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic | TestPlatforms.iOS | TestPlatforms.tvOS, "Binding listening sockets is restricted by the CI sandbox on these platforms")]
-        public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) =>
-            base.CopyToAsync_AllDataCopied(byteCount, useAsync);
 
         [Fact]
         public void Ctor_NotConnected_Throws()
