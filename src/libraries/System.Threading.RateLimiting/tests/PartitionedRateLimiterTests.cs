@@ -611,7 +611,9 @@ namespace System.Threading.RateLimiting.Tests
             Assert.NotNull(limiterEntryTypeDef);
             var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
             var lazyType = typeof(Lazy<>).MakeGenericType(limiterEntryType);
-            var entry = lazyType.GetProperty("Value").GetValue(lazyEntry);
+            var valueProperty = lazyType.GetProperty("Value");
+            Assert.NotNull(valueProperty);
+            var entry = valueProperty.GetValue(lazyEntry);
             Assert.NotNull(entry);
             return entry;
         }
