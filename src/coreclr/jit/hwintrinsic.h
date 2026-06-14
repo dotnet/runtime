@@ -1216,6 +1216,20 @@ struct HWIntrinsicInfo
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
+    // IsSveConditionalSelect: Is this intrinsic a ConditionalSelect intrinsic?
+    //
+    // Arguments:
+    //     id       -- Intrinsic ID to test
+    //
+    // Return value:
+    //     Returns true if the ID is either of the vector or mask variant of
+    //     ConditionalSelect.
+    //
+    static bool IsSveConditionalSelect(NamedIntrinsic id)
+    {
+        return (id == NI_Sve_ConditionalSelect) || (id == NI_Sve_ConditionalSelect_Predicates);
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)

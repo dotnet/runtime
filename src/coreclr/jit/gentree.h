@@ -1968,6 +1968,7 @@ public:
     inline bool IsMaskZero() const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsSelectZero() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -9914,6 +9915,22 @@ inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 #endif
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsSelectZero: Is the given node a zero value for the purposes of
+//               conditional selection. ConditionalSelect can operate on all
+//               vectors or all masks.
+//
+// Returns true if the node is an all false mask node or a zero vector node.
+//
+// If such a node is used in op3 of ConditionalSelect, it will result in a
+// simple filtering operation on the vector or mask node in op2, using the mask
+// provided in op1.
+//
+inline bool GenTree::IsSelectZero() const
+{
+    return IsVectorZero() || IsMaskZero();
 }
 
 //-------------------------------------------------------------------

@@ -2569,7 +2569,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 //
 GenTreeHWIntrinsic* LinearScan::getEmbeddedMaskOperand(const HWIntrinsic intrin)
 {
-    if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
+    if (HWIntrinsicInfo::IsSveConditionalSelect(intrin.id) && (intrin.op2->IsEmbMaskOp()))
     {
         assert(intrin.op2->OperIsHWIntrinsic());
         return intrin.op2->AsHWIntrinsic();
@@ -2593,7 +2593,8 @@ GenTreeHWIntrinsic* LinearScan::getContainedCselOperand(GenTreeHWIntrinsic* intr
         GenTree* currentOp = intrinsicTree->Op(opNum);
 
         if (currentOp->OperIs(GT_HWINTRINSIC) &&
-            (currentOp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect) && currentOp->isContained())
+            HWIntrinsicInfo::IsSveConditionalSelect(currentOp->AsHWIntrinsic()->GetHWIntrinsicId()) &&
+            currentOp->isContained())
         {
             return currentOp->AsHWIntrinsic();
         }

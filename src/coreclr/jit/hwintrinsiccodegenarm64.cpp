@@ -552,7 +552,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             // Handle case where op2 is operation that needs embedded mask
             GenTree* op2 = intrin.op2;
-            assert(intrin.id == NI_Sve_ConditionalSelect);
+            assert(HWIntrinsicInfo::IsSveConditionalSelect(intrin.id));
             assert(op2->OperIsHWIntrinsic());
             assert(op2->isContained());
 
@@ -597,7 +597,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             // Shared code for setting up embedded mask arg for intrinsics with 3+ operands
 
             auto emitEmbeddedMaskSetupInstrs = [&] {
-                if (intrin.op3->IsVectorZero() || (targetReg != falseReg) || (targetReg != embMaskOp1Reg))
+                if (intrin.op3->IsSelectZero() || (targetReg != falseReg) || (targetReg != embMaskOp1Reg))
                 {
                     return 1;
                 }
@@ -605,7 +605,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             };
 
             auto emitEmbeddedMaskSetup = [&] {
-                if (intrin.op3->IsVectorZero())
+                if (intrin.op3->IsSelectZero())
                 {
                     // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                     // destination using /Z.
@@ -712,7 +712,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (intrin.op3->isContained())
                         {
-                            assert(intrin.op3->IsVectorZero());
+                            assert(intrin.op3->IsSelectZero());
 
                             if (intrin.op1->isContained() || intrin.op1->IsTrueMask(node->GetSimdBaseType()))
                             {
@@ -818,7 +818,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // Predicate functionality is currently not exposed for this API,
                             // but the FADDA instruction only has a predicated variant.
                             // Thus, we expect the JIT to wrap this with CndSel.
-                            assert(intrin.op3->IsVectorZero());
+                            assert(intrin.op3->IsSelectZero());
                             break;
 
                         case NI_Sve2_AddSaturate:
@@ -881,7 +881,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     };
 
-                    if (intrin.op3->IsVectorZero())
+                    if ((intrin.op3->IsSelectZero()))
                     {
                         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                         // destination using /Z.
@@ -1228,7 +1228,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // This handles optimizations for instructions that have
                     // an implicit 'zero' vector of what would be the second operand.
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
-                        intrin.op2->IsVectorZero())
+                        intrin.op2->IsSelectZero())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
@@ -2787,7 +2787,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
-            case NI_Sve_ConditionalSelect_Predicates:
             {
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;
