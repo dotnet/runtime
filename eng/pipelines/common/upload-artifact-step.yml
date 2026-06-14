@@ -26,6 +26,6 @@ steps:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       displayName: 'Publish ${{ parameters.displayName }}'
       inputs:
-        PathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
-        artifactName:  ${{ parameters.artifactName }}
+        targetPath:   $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+        artifactName: ${{ parameters.artifactName }}
       condition: ${{ parameters.condition }}

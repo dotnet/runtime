@@ -11,12 +11,12 @@ steps:
       - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=Mono
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=Mono
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidMonoArm64BuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidMonoArm64BuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
@@ -34,12 +34,12 @@ steps:
       - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=Mono AOT=true
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=Mono AOT=true
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidMonoAOTArm64BuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidMonoAOTArm64BuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
@@ -58,12 +58,12 @@ steps:
       - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidCoreCLRArm64BuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidCoreCLRArm64BuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
@@ -81,12 +81,12 @@ steps:
       - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR STATIC_LINKING=true
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR STATIC_LINKING=true
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidCoreCLRArm64StaticLinkingBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidCoreCLRArm64StaticLinkingBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
@@ -104,12 +104,12 @@ steps:
       - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR R2R=true
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR R2R=true
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidCoreCLRR2RArm64BuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidCoreCLRR2RArm64BuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
@@ -132,12 +132,12 @@ steps:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
         displayName: Build HelloiOS Mono FullAOT sample app LLVM=False STRIP_SYMBOLS=True
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-          artifactName:  iOSMonoFullAOTArm64NoLLVMStripSymbolsBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+          artifactName:  iOSMonoFullAOTArm64NoLLVMStripSymbolsBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -156,12 +156,12 @@ steps:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
         displayName: Build HelloiOS Mono FullAOT sample app LLVM=True STRIP_SYMBOLS=True
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-          artifactName: iOSMonoFullAOTArm64LLVMStripSymbolsBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+          artifactName: iOSMonoFullAOTArm64LLVMStripSymbolsBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -181,12 +181,12 @@ steps:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
         displayName: Build HelloiOS CoreCLR Interpreter sample app STRIP_SYMBOLS=True
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-          artifactName:  iOSCoreCLRInterpreterArm64StripSymbolsBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+          artifactName:  iOSCoreCLRInterpreterArm64StripSymbolsBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -205,12 +205,12 @@ steps:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
         displayName: Build HelloiOS CoreCLR R2R sample app STRIP_SYMBOLS=True
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-          artifactName:  iOSCoreCLRR2RArm64StripSymbolsBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+          artifactName:  iOSCoreCLRR2RArm64StripSymbolsBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -230,12 +230,12 @@ steps:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
         displayName: Build HelloiOS NativeAOT sample app STRIP_SYMBOLS=True
-      - task: PublishBuildArtifacts@1
+      - task: PublishPipelineArtifact@1
         condition: succeededOrFailed()
         displayName: 'Publish binlog'
         inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
-          artifactName: iOSNativeAOTArm64StripSymbolsBuildLog
+          targetPath: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
+          artifactName: iOSNativeAOTArm64StripSymbolsBuildLog_Attempt$(System.JobAttempt)
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
