@@ -10,6 +10,9 @@ namespace System.Threading.RateLimiting.Tests
 {
     public class PartitionedRateLimiterTests
     {
+        private const string DefaultPartitionedRateLimiterTypeName = "System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting";
+        private const string DefaultPartitionedRateLimiterEntryTypeName = "System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2+LimiterEntry, System.Threading.RateLimiting";
+
         [Fact]
         public void ThrowsWhenAcquiringLessThanZero()
         {
@@ -588,7 +591,7 @@ namespace System.Threading.RateLimiting.Tests
         private static void BackdateLastAccessTimestamp<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
         {
             // Use Type.GetType with literal strings so trimming can see what types we're reflecting on.
-            var limiterEntryTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2+LimiterEntry, System.Threading.RateLimiting");
+            var limiterEntryTypeDef = Type.GetType(DefaultPartitionedRateLimiterEntryTypeName);
             Assert.NotNull(limiterEntryTypeDef);
             var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
 
@@ -607,7 +610,7 @@ namespace System.Threading.RateLimiting.Tests
 
             // Force creation of the Lazy<LimiterEntry>.Value. Use Type.GetType with a literal string
             // so trimming can see the LimiterEntry type, then construct the closed Lazy<LimiterEntry>.
-            var limiterEntryTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2+LimiterEntry, System.Threading.RateLimiting");
+            var limiterEntryTypeDef = Type.GetType(DefaultPartitionedRateLimiterEntryTypeName);
             Assert.NotNull(limiterEntryTypeDef);
             var limiterEntryType = limiterEntryTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
             var lazyType = typeof(Lazy<>).MakeGenericType(limiterEntryType);
@@ -621,7 +624,7 @@ namespace System.Threading.RateLimiting.Tests
         private static object GetLazyLimiterEntry<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
         {
             // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
-            var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
+            var limiterTypeDef = Type.GetType(DefaultPartitionedRateLimiterTypeName);
             Assert.NotNull(limiterTypeDef);
             var limiterType = limiterTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
 
