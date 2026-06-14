@@ -84,6 +84,13 @@
                   Retries="3"
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
 
+    <!-- Replace ci.dot.net/public in the script with ci.dot.net/dev using MSBuild -->
+    <Message Text="** Replacing ci.dot.net/public with ci.dot.net/dev in $(_DotNetInstallScriptPath)" Importance="High" />
+    <ReadLinesFromFile File="$(_DotNetInstallScriptPath)">
+      <Output TaskParameter="Lines" ItemName="_DotNetInstallScriptLines" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(_DotNetInstallScriptPath)" Lines="$(_DotNetInstallScriptLines->'%(Identity)'.Replace('ci.dot.net/public', 'ci.dot.net/dev'))" Overwrite="true" />
+
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallCommand)" />
