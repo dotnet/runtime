@@ -4,6 +4,8 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
+.arch_extension pauth
+
 #define PROBE_FRAME_SIZE 0x140  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
                                 // 10 * 8 for callee saved registers +
                                 // 1 * 8  for caller SP +
@@ -103,7 +105,7 @@
 //  x9: thread pointer
 //  x0-x7, q0-q7 preserved, x10 trashed
 //
-.macro FixupHijackedCallstack
+.macro FixupHijackedCallstack clearHijackState
 
     // x9 <- GetThread()
 
@@ -150,22 +152,27 @@
 #endif
 
     //
-    // Fix the stack by restoring the original return address
+    // Fix the stack by restoring and authenticating the original return address.
     //
     ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
+    cbz         x16, \clearHijackState
+    autia       lr, x16
 
+\clearHijackState:
     //
     // Clear hijack state
     //
-    // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
+    // Clear m_ppvHijackedReturnAddressLocation, m_pvHijackedReturnAddress, and m_pSpForPacSign
     stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         xzr, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
 .endm
 
 //
 // GC Probe Hijack target
 //
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
-    FixupHijackedCallstack
+    FixupHijackedCallstack LOCAL_LABEL(RhpGcProbeClearHijackState)
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 10
     tbnz        x10, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)

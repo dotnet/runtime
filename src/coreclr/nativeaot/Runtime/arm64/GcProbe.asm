@@ -112,25 +112,30 @@ PROBE_FRAME_SIZE    field 0
 ;;
 ;; Register state on exit:
 ;;  x9: thread pointer
-;;  x0-x7 preserved, x10 trashed
+;;  x0-x7 preserved, x10 and x16 trashed
 ;;
     MACRO
-        FixupHijackedCallstack
+        FixupHijackedCallstack $ClearHijackStateLabel
 
         ;; x9 <- GetThread(), TRASHES x10
         INLINE_GETTHREAD x9, x10
 
         ;;
-        ;; Fix the stack by restoring the original return address
+        ;; Fix the stack by restoring and authenticating the original return address.
         ;;
         ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
+        cbz         x16, $ClearHijackStateLabel
+        DCD         0xDAC1161E  ;; autib lr, x16 instruction in binary to avoid requiring PAC-enabled assemblers
 
+$ClearHijackStateLabel
         ;;
         ;; Clear hijack state
         ;;
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
-        ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
+        ;; Clear m_ppvHijackedReturnAddressLocation, m_pvHijackedReturnAddress, and m_pSpForPacSign
         stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         xzr, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
     MEND
 
     MACRO
@@ -154,7 +159,7 @@ PROBE_FRAME_SIZE    field 0
         HijackTargetFakeProlog
 
     LABELED_RETURN_ADDRESS RhpGcProbeHijack
-        FixupHijackedCallstack
+        FixupHijackedCallstack RhpGcProbeClearHijackState
 
         ldr         x10, =RhpTrapThreads
         ldr         w10, [x10]
@@ -201,7 +206,7 @@ WaitForGC
 ;;
 ;;
     LEAF_ENTRY RhpGcStressHijack
-        FixupHijackedCallstack
+        FixupHijackedCallstack RhpGcStressClearHijackState
         mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
