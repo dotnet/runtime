@@ -122,6 +122,106 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IsSubsetOfMismatchedComparersLargerCountMissingElement()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+            var other = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b", "c", "d");
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfICollectionLargeCountSmallUniqueSet()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+            var other = new List<string> { "a", "b", "b", "b" };
+
+            Assert.True(origin.IsSubsetOf(other)); 
+        }
+
+        [Fact]
+        public void IsSubsetOfEmptyAgainstAnything()
+        {
+            var empty = ImmutableHashSet<string>.Empty;
+            var other = ImmutableHashSet.Create("any");
+
+            Assert.True(empty.IsSubsetOf(other));
+            Assert.True(empty.IsSubsetOf(new List<string>()));
+        }
+
+        [Fact]
+        public void IsSubsetOfSensitiveOriginInsensitiveOther()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a");
+            var other = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "A", "b");
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfMismatchedLogicallyEqual()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a");
+            var other = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "A");
+
+            Assert.True(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfInsensitiveOriginSensitiveOther()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b");
+            var other = ImmutableHashSet.Create(StringComparer.Ordinal, "A", "B", "c");
+
+            Assert.True(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfAgainstBCLHashSet()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b");
+            var other = new HashSet<string> { "a", "b", "c" };
+
+            Assert.True(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfListWithDuplicates()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b", "c");
+            var other = new List<string> { "a", "b", "a", "b" };
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfListWithDuplicatesAndCountSmaller()
+        {
+            var origin = ImmutableHashSet.Create("a", "b", "c");
+            var other = new List<string> { "a", "b" };
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfOtherImmutableHashSetIsSmaller()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b", "c");
+            var other = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "a", "b");
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
+        public void IsSubsetOfOtherHashSetIsSmaller()
+        {
+            var origin = ImmutableHashSet.Create(StringComparer.Ordinal, "a", "b", "c");
+            var other = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "b" };
+
+            Assert.False(origin.IsSubsetOf(other));
+        }
+
+        [Fact]
         public void ChangeUnorderedEqualityComparer()
         {
             ImmutableHashSet<string> ordinalSet = ImmutableHashSet<string>.Empty
