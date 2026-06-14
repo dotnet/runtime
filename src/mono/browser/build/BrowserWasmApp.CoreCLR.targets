@@ -196,6 +196,40 @@
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
 
+  <!-- ======================== Prefer app-local assemblies over runtime-pack copies ========================
+
+    For a self-contained browser-wasm app, @(ReferenceCopyLocalPaths) can contain two copies of the
+    same assembly: the runtime-pack copy (under $(MicrosoftNetCoreAppRuntimePackDir)) and an app-local
+    copy referenced out-of-band at a different version. ComputeWasmBuildAssets dedupes the webcil bundle
+    candidates by relative path (first-wins, version-blind), so the runtime-pack copy can shadow the
+    app-local one in _framework. The canonical case is System.Runtime.Serialization.Formatters: the
+    shared framework ships a non-functional 8.1.0.0 stub while the app references the functional 11.0.0.0
+    build, so an Assembly.Load for 11.0.0.0 then fails with FileNotFoundException.
+
+    Resolve it the way a self-contained app loads assemblies (copy-local wins): drop runtime-pack copies
+    shadowed by a same-named app-local copy before the candidates are gathered. Apps without an app-local
+    copy of a framework assembly are unaffected.
+  -->
+  <Target Name="_CoreCLRPreferAppLocalAssembliesOverRuntimePack"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(MicrosoftNetCoreAppRuntimePackDir)' != ''">
+    <ItemGroup>
+      <!-- App-local (non-runtime-pack) managed assemblies copied next to the app. -->
+      <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
+                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(MicrosoftNetCoreAppRuntimePackDir)'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- Drop runtime-pack copies shadowed by a same-named app-local assembly. -->
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(Extension)' == '.dll'
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(MicrosoftNetCoreAppRuntimePackDir)'))
+                                          and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
+    </ItemGroup>
+  </Target>
+
   <!-- ======================== Core Orchestrator ======================== -->
 
   <PropertyGroup>
