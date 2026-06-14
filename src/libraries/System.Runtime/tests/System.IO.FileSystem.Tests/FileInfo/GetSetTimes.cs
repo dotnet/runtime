@@ -146,7 +146,7 @@ namespace System.IO.Tests
 
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
-    
+
             Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime), "Expected zero nanoseconds, got: " + output.LastWriteTime.Ticks);
         }
