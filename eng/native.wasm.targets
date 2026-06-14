@@ -63,9 +63,9 @@
       <EmccExportedRuntimeMethod Include="HEAPU32" />
       <EmccExportedRuntimeMethod Include="HEAPF32" />
       <EmccExportedRuntimeMethod Include="HEAPF64" />
-      <!-- HEAP64/HEAPU64 require WASM BigInt; corerun disables BigInt because of nodejs issues -->
-      <EmccExportedRuntimeMethod Condition="'$(_WasmDisableBigInt)' != 'true'" Include="HEAP64" />
-      <EmccExportedRuntimeMethod Condition="'$(_WasmDisableBigInt)' != 'true'" Include="HEAPU64" />
+      <!-- HEAP64+HEAPU64 are removed for corerun under NodeJS -->
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
       <EmccExportedRuntimeMethod Include="out" />
       <EmccExportedRuntimeMethod Include="err" />
       <EmccExportedRuntimeMethod Include="ccall" />
