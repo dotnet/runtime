@@ -1089,12 +1089,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp2()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp1()->gtEffectiveVal();
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp1()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp2()->gtEffectiveVal();
             }
             else
@@ -1228,7 +1228,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
                 AssertionDsc dsc =
                     AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals,
-                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->GetFieldSeq());
                 return optAddAssertion(dsc);
             }
 
@@ -1529,7 +1529,10 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
         case O2K_VN_ADD_CNS:
             assert(!optLocalAssertionProp);
             assert(assertion.GetOp1().KindIs(O1K_VN));
-            assert(assertion.IsRelop());
+            // Most O2K_VN_ADD_CNS assertions are ordered relops ("i <relop> bnd + cns"), but
+            // we also create equality assertions against a checked bound (e.g. "i != arr.Length")
+            // for use by RangeCheck.
+            assert(assertion.IsRelop() || assertion.CanPropEqualOrNotEqual());
             break;
 
         case O2K_ZEROOBJ:
@@ -1682,6 +1685,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     bool isUnsignedRelop;
+    bool isEqualityRelop = false;
     if (relopFuncApp.FuncIs(VNF_LE, VNF_LT, VNF_GE, VNF_GT))
     {
         isUnsignedRelop = false;
@@ -1690,10 +1694,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         isUnsignedRelop = true;
     }
+    else if (relopFuncApp.FuncIs(VNF_EQ, VNF_NE))
+    {
+        // Equality relops against a checked bound (e.g. "i != arr.Length") are
+        // useful for RangeCheck to tighten ranges on loop back-edges. They flow
+        // through the CheckedBound paths below; other equality assertions
+        // (against constants, locals, type handles, etc.) are handled in
+        // optAssertionGenJtrue.
+        isUnsignedRelop = false;
+        isEqualityRelop = true;
+    }
     else
     {
         // Not a relop we're interested in.
-        // Assertions for NE/EQ are handled elsewhere.
+        // Assertions for EQ/NE not against a checked bound are handled elsewhere.
         return NO_ASSERTION_INDEX;
     }
 
@@ -1710,21 +1724,42 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "CheckedBnd <relop> X"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
     {
-        // Move the checked bound to the right side for simplicity
-        relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
+        // For equality relops where the non-bound side is a constant (e.g. "len != 0"), the
+        // LCLVAR-based equality assertion created below by optAssertionGenJtrue is strictly more
+        // useful than a CompareCheckedBound form -- downstream consumers (folding bounds checks,
+        // proving "len > 0" after a "len != 0" test) only recognize the LCLVAR form. Skip the new
+        // assertion in that case and let the LCLVAR path produce it.
+        if (!(isEqualityRelop && vnStore->IsVNConstant(op2VN)))
+        {
+            // Move the checked bound to the right side for simplicity
+            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
     }
 
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
+        // Symmetric guard: leave constant-vs-CheckedBound equality assertions to the LCLVAR path.
+        if (!(isEqualityRelop && vnStore->IsVNConstant(op1VN)))
+        {
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
+        }
+    }
+
+    // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
+    // comparison is ordered (LT/LE/GT/GE). For equality relops we don't produce
+    // CheckedBoundAddConst-shaped assertions; the consumers (RangeCheck) only
+    // tighten ranges from equality assertions whose RHS is the bound itself.
+    if (isEqualityRelop)
+    {
+        return NO_ASSERTION_INDEX;
     }
 
     // "(CheckedBnd + CNS) <relop> X"
@@ -2003,7 +2038,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     // Validate op1 and op2
     if (!op1->OperIs(GT_CALL) || !op1->AsCall()->IsHelperCall() || !op1->TypeIs(TYP_REF) || // op1
-        !op2->OperIs(GT_CNS_INT) || (op2->AsIntCon()->gtIconVal != 0))                      // op2
+        !op2->OperIs(GT_CNS_INT) || (op2->AsIntCon()->IconValue() != 0))                    // op2
     {
         return NO_ASSERTION_INDEX;
     }
@@ -4691,7 +4726,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     optOp1Kind op1Kind = O1K_LCLVAR;
     optOp2Kind op2Kind = O2K_CONST_INT;
-    ssize_t    cnsVal  = op2->AsIntCon()->gtIconVal;
+    ssize_t    cnsVal  = op2->AsIntCon()->IconValue();
     var_types  cmpType = op1->TypeGet();
 
     // Don't try to fold/optimize Floating Compares; there are multiple zero values.
@@ -5465,35 +5500,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         return optAssertionProp_Update(newTree, arrBndsChk, stmt);
     };
 
-    // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
-    ValueNum add0, add1;
-    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &add0, &add1))
-    {
-        if (!vnStore->IsVNInt32Constant(add1))
-        {
-            // Normalize constants to be on the right side
-            std::swap(add0, add1);
-        }
-
-        if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
-        {
-            Range rng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen, assertions);
-
-            if (rng.IsConstantRange())
-            {
-                // Lower known limit of ArrLen:
-                const int lenLowerLimit = rng.LowerLimit().GetConstant();
-
-                // Negative delta in the array access (ArrLen + -CNS)
-                const int delta = vnStore->GetConstantInt32(add1);
-                if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
-                {
-                    return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
-                }
-            }
-        }
-    }
-
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -5574,6 +5580,41 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
+    }
+
+    // Some value number shapes of the index guarantee it stays within [0, len) by construction:
+    //
+    //   arr[arr.Length - cns]  is in bounds when arr.Length is known to be >= cns
+    //   arr[X u% arr.Length]   is always in bounds (unsigned remainder is in [0, arr.Length))
+    //
+    ValueNum idxOp0, idxOp1;
+    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &idxOp0, &idxOp1))
+    {
+        if (!vnStore->IsVNInt32Constant(idxOp1))
+        {
+            // Normalize constants to be on the right side
+            std::swap(idxOp0, idxOp1);
+        }
+
+        if ((idxOp0 == vnCurLen) && vnStore->IsVNInt32Constant(idxOp1))
+        {
+            Range rng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen, assertions);
+            // Lower known limit of ArrLen:
+            const int lenLowerLimit = rng.LowerLimit().GetConstant();
+
+            // Negative delta in the array access (ArrLen + -CNS)
+            const int delta = vnStore->GetConstantInt32(idxOp1);
+            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+            }
+        }
+    }
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
+    {
+        // If arr.Length is 0 we technically should keep the bounds check, but since the expression
+        // has to throw DivideByZeroException anyway - no special handling needed.
+        return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
 
     // Let's see if we can remove the bounds check based on the ranges.
