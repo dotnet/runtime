@@ -4386,6 +4386,11 @@ struct GenTreeConditional : public GenTreeOp
         assert(cond != nullptr);
     }
 
+    static bool Equals(GenTreeConditional* op1, GenTreeConditional* op2)
+    {
+        return Compare(op1->gtCond, op2->gtCond) && Compare(op1->gtOp1, op2->gtOp1) && Compare(op1->gtOp2, op2->gtOp2);
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeConditional()
         : GenTreeOp()
