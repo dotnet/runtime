@@ -425,14 +425,14 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     }
 
     // Normalize switch whenever it's a requirement to fit the table or as an optimization to collapse into range check
-    bool doesntFitTable = maxValue > SWITCH_MAX_DISTANCE;
-    bool continousRange = testsCount == (maxValue - minValue + 1);
-    if (doesntFitTable || continousRange)
+    bool doesntFitTable  = maxValue > SWITCH_MAX_DISTANCE;
+    bool continuousRange = testsCount == (maxValue - minValue + 1);
+    if (doesntFitTable || continuousRange)
     {
         if (minValue != 0)
         {
-            switchValue = gtNewOperNode(GT_SUB, switchValue->TypeGet(), switchValue,
-                                        gtNewIconNode(minValue, switchValue->TypeGet()));
+            switchValue = gtNewOperNode(GT_ADD, switchValue->TypeGet(), switchValue,
+                                        gtNewIconNode(-minValue, switchValue->TypeGet()));
         }
     }
     else
