@@ -40,7 +40,7 @@ private:
 public:
     // nested classes
     class iterator;
-    class const_iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
+    class const_iterator : public jitstd::iterator<std::bidirectional_iterator_tag, T>
     {
     private:
         const_iterator(Node* ptr);
@@ -67,7 +67,7 @@ public:
         Node* m_pNode;
     };
 
-    class iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
+    class iterator : public jitstd::iterator<std::bidirectional_iterator_tag, T>
     {
         iterator(Node* ptr);
     public:
@@ -94,7 +94,7 @@ public:
     };
 
     class reverse_iterator;
-    class const_reverse_iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
+    class const_reverse_iterator : public jitstd::iterator<std::bidirectional_iterator_tag, T>
     {
     private:
         const_reverse_iterator(Node* ptr);
@@ -121,7 +121,7 @@ public:
         Node* m_pNode;
     };
 
-    class reverse_iterator : public jitstd::iterator<bidirectional_iterator_tag, T>
+    class reverse_iterator : public jitstd::iterator<std::bidirectional_iterator_tag, T>
     {
     private:
         reverse_iterator(Node* ptr);
@@ -268,15 +268,15 @@ private:
 
     void construct_helper(size_type n, const T& value, int_not_an_iterator_tag);
     template <typename InputIterator>
-    void construct_helper(InputIterator first, InputIterator last, forward_iterator_tag);
+    void construct_helper(InputIterator first, InputIterator last, std::forward_iterator_tag);
 
     void assign_helper(size_type n, const T& value, int_not_an_iterator_tag);
     template <typename InputIterator>
-    void assign_helper(InputIterator first, InputIterator last, forward_iterator_tag);
+    void assign_helper(InputIterator first, InputIterator last, std::forward_iterator_tag);
 
     void insert_helper(iterator position, size_type n, const T& value, int_not_an_iterator_tag);
     template <typename InputIterator>
-    void insert_helper(iterator position, InputIterator first, InputIterator last, forward_iterator_tag);
+    void insert_helper(iterator position, InputIterator first, InputIterator last, std::forward_iterator_tag);
 
     void insert_new_node_helper(Node* pInsert, Node* pNewNode);
 
@@ -332,7 +332,7 @@ list<T, Allocator>::list(const list<T, Allocator>& other)
     , m_allocator(other.m_allocator)
     , m_nodeAllocator(other.m_nodeAllocator)
 {
-    construct_helper(other.begin(), other.end(), forward_iterator_tag());
+    construct_helper(other.begin(), other.end(), std::forward_iterator_tag());
 }
 
 template <typename T, typename Allocator>
@@ -551,7 +551,7 @@ template <typename T, typename Allocator>
 list<T, Allocator>& list<T, Allocator>::operator=(const list<T, Allocator>& lst)
 {
     destroy_helper();
-    construct_helper(lst.begin(), lst.end(), forward_iterator_tag());
+    construct_helper(lst.begin(), lst.end(), std::forward_iterator_tag());
     return *this;
 }
 
@@ -803,7 +803,7 @@ void list<T, Allocator>::construct_helper(size_type n, const T& value, int_not_a
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void list<T, Allocator>::construct_helper(InputIterator first, InputIterator last, forward_iterator_tag)
+void list<T, Allocator>::construct_helper(InputIterator first, InputIterator last, std::forward_iterator_tag)
 {
     while (first != last)
     {
@@ -824,7 +824,7 @@ void list<T, Allocator>::assign_helper(size_type n, const T& value, int_not_an_i
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void list<T, Allocator>::assign_helper(InputIterator first, InputIterator last, forward_iterator_tag)
+void list<T, Allocator>::assign_helper(InputIterator first, InputIterator last, std::forward_iterator_tag)
 {
     destroy_helper();
     while (first != last)
@@ -845,7 +845,10 @@ void list<T, Allocator>::insert_helper(iterator position, size_type n, const T& 
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void list<T, Allocator>::insert_helper(iterator position, InputIterator first, InputIterator last, forward_iterator_tag)
+void list<T, Allocator>::insert_helper(iterator      position,
+                                       InputIterator first,
+                                       InputIterator last,
+                                       std::forward_iterator_tag)
 {
     while (first != last)
     {

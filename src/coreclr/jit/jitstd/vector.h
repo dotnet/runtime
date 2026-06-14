@@ -33,7 +33,7 @@ public:
     typedef T value_type;
 
     // nested classes
-    class iterator : public jitstd::iterator<random_access_iterator_tag, T>
+    class iterator : public jitstd::iterator<std::random_access_iterator_tag, T>
     {
         iterator(T* ptr);
     public:
@@ -58,7 +58,7 @@ public:
         pointer m_pElem;
     };
 
-    class const_iterator : public jitstd::iterator<random_access_iterator_tag, T>
+    class const_iterator : public jitstd::iterator<std::random_access_iterator_tag, T>
     {
     private:
         const_iterator(T* ptr);
@@ -84,7 +84,7 @@ public:
         pointer m_pElem;
     };
 
-    class reverse_iterator : public jitstd::iterator<random_access_iterator_tag, T>
+    class reverse_iterator : public jitstd::iterator<std::random_access_iterator_tag, T>
     {
     private:
         reverse_iterator(T* ptr);
@@ -110,7 +110,7 @@ public:
         pointer m_pElem;
     };
 
-    class const_reverse_iterator : public jitstd::iterator<random_access_iterator_tag, T>
+    class const_reverse_iterator : public jitstd::iterator<std::random_access_iterator_tag, T>
     {
     private:
         const_reverse_iterator(T* ptr);
@@ -233,19 +233,19 @@ private:
     bool ensure_capacity(size_type capacity);
 
     template <typename InputIterator>
-    void construct_helper(InputIterator first, InputIterator last, forward_iterator_tag);
+    void construct_helper(InputIterator first, InputIterator last, std::forward_iterator_tag);
     template <typename InputIterator>
     void construct_helper(InputIterator first, InputIterator last, int_not_an_iterator_tag);
     void construct_helper(size_type size, const T& value);
 
     template <typename InputIterator>
-    void insert_helper(iterator iter, InputIterator first, InputIterator last, forward_iterator_tag);
+    void insert_helper(iterator iter, InputIterator first, InputIterator last, std::forward_iterator_tag);
     template <typename InputIterator>
     void insert_helper(iterator iter, InputIterator first, InputIterator last, int_not_an_iterator_tag);
     void insert_elements_helper(iterator iter, size_type size, const T& value);
 
     template <typename InputIterator>
-    void assign_helper(InputIterator first, InputIterator last, forward_iterator_tag);
+    void assign_helper(InputIterator first, InputIterator last, std::forward_iterator_tag);
     template <typename InputIterator>
     void assign_helper(InputIterator first, InputIterator last, int_not_an_iterator_tag);
 
@@ -730,7 +730,7 @@ void vector<T, Allocator>::construct_helper(InputIterator first, InputIterator l
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void vector<T, Allocator>::construct_helper(InputIterator first, InputIterator last, forward_iterator_tag)
+void vector<T, Allocator>::construct_helper(InputIterator first, InputIterator last, std::forward_iterator_tag)
 {
     size_type size = iterator_difference(first, last);
 
@@ -781,7 +781,10 @@ void vector<T, Allocator>::insert_helper(iterator iter, InputIterator first, Inp
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void vector<T, Allocator>::insert_helper(iterator iter, InputIterator first, InputIterator last, forward_iterator_tag)
+void vector<T, Allocator>::insert_helper(iterator      iter,
+                                         InputIterator first,
+                                         InputIterator last,
+                                         std::forward_iterator_tag)
 {
     // m_pElem could be NULL then m_pArray would be NULL too.
     size_type pos = iter.m_pElem - m_pArray;
@@ -811,7 +814,7 @@ void vector<T, Allocator>::insert_helper(iterator iter, InputIterator first, Inp
 
 template <typename T, typename Allocator>
 template <typename InputIterator>
-void vector<T, Allocator>::assign_helper(InputIterator first, InputIterator last, forward_iterator_tag)
+void vector<T, Allocator>::assign_helper(InputIterator first, InputIterator last, std::forward_iterator_tag)
 {
     size_type size = iterator_difference(first, last);
 
