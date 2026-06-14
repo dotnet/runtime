@@ -95,6 +95,12 @@
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
 extern Volatile<LONG> g_ShutdownCrstUsageCount;
 
+#ifdef _DEBUG
+// Per-thread count of CRST_UNSAFE_ANYMODE (and equivalent) locks currently held.
+// Used to detect illegal acquisition of GC_TRIGGERS locks under ANYMODE locks.
+extern thread_local int t_unsafeAnyModeHeldCount;
+#endif
+
 // The CRST.
 class CrstBase
 {
