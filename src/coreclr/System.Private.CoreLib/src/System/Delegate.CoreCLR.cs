@@ -535,11 +535,13 @@ namespace System
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
-            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+            IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
+            GC.KeepAlive(target);
+            return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
-        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+        private static partial IntPtr AdjustTarget(MethodTable* targetMT, IntPtr methodPtr);
 
         internal void InitializeVirtualCallStub(IntPtr methodPtr)
         {

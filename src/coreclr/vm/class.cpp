@@ -1709,6 +1709,7 @@ void TypeHandle::NotifyDebuggerUnload() const
 MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 {
     CONTRACT (MethodDesc *) {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1732,6 +1733,7 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 {
     CONTRACT (MethodDesc *) {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););

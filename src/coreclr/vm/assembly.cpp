@@ -1156,7 +1156,11 @@ static void RunMainInternal(Param* pParam)
     StrArgArray = *pParam->stringArgs;
 
     pParam->pFD->EnsureActive();
-    PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+    PCODE entryPoint;
+    {
+        GCX_PREEMP();
+        entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+    }
 
     BOOL hasReturnValue = !pParam->pFD->IsVoid();
     PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;

@@ -51,9 +51,7 @@
 #include <versionhelpers.h>
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "exinfo.h"
 
@@ -1028,13 +1026,13 @@ void InitThreadManagerPerfMapData()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_PERFMAP
+#ifndef FEATURE_PORTABLE_HELPERS
     if (IsWriteBarrierCopyEnabled())
     {
         size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
         PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
     }
-#endif
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------

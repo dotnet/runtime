@@ -37,9 +37,7 @@
 
 #include "stublink.inl"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -565,13 +563,9 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

@@ -33,9 +33,7 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "methoddescbackpatchinfo.h"
 
@@ -371,10 +369,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
             pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
-#ifdef FEATURE_PERFMAP
         if (pCode != (PCODE)NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
-#endif
     }
 
     if (pConfig->IsForMulticoreJit() && pCode == (PCODE)NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
@@ -876,10 +872,8 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
     // Save the JIT'd method information so that perf can resolve JIT'd call frames.
     PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
-#endif
 
     // The notification will only occur if someone has registered for this method.
     DACNotifyCompilationFinished(this, pCode);
@@ -2871,14 +2865,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         if (fVirtual)
         {
-            GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-
             // Get the stub manager for this module
             VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
 
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
-            if (*protectedObj == NULL) {
+            if (!*protectedObj) {
+                // NOTE: This is in a preemptive block, but the ! operator
+                // is safe to use on OBJECTREF even in preemptive mode
+                // (as long as the OBJECTREF is not on a managed object which
+                // in this case it is not)
                 COMPlusThrow(kNullReferenceException);
             }
 
@@ -2917,6 +2913,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
                 }
 
+                GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 DispatchToken token;
                 if (pMT->IsInterface())
@@ -2942,6 +2940,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
 
                     StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
                     pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
                 }
                 else
@@ -3763,6 +3762,8 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
+
+                GCX_PREEMP();
 
                 // Duplicated logic from JIT_VirtualFunctionPointer_Framed
                 if (!pMD->IsVtableMethod())

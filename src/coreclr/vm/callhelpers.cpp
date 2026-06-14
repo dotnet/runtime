@@ -559,11 +559,17 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
+    
+    PCODE methodEntry;
+    {
+        GCX_PREEMP();
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        methodEntry = pMD->GetSingleCallableAddrOfCode();
+    }
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
+    defaultCtorInvoker.InvokeThrowing(&ref, methodEntry);
 
     GCPROTECT_END ();
 }

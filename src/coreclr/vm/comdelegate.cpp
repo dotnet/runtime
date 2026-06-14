@@ -967,7 +967,7 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
     }
     CONTRACTL_END;
@@ -1145,13 +1145,16 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d
     _ASSERTE(pInvokeMeth);
 
     // See the comment in BindToMethodName
-    method =
-        MethodDesc::FindOrCreateAssociatedMethodDesc(method,
-                                                     pMethMT,
-                                                     (!method->IsStatic() && pMethMT->IsValueType()),
-                                                     method->GetMethodInstantiation(),
-                                                     false /* do not allow code with a shared-code calling convention to be returned */,
-                                                     true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
+    {
+        GCX_PREEMP();
+        method =
+            MethodDesc::FindOrCreateAssociatedMethodDesc(method,
+                                                        pMethMT,
+                                                        (!method->IsStatic() && pMethMT->IsValueType()),
+                                                        method->GetMethodInstantiation(),
+                                                        false /* do not allow code with a shared-code calling convention to be returned */,
+                                                        true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
+    }
 
     bool fIsOpenDelegate;
     if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
@@ -1240,33 +1243,41 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             // Since this is an open delegate over a virtual method we cannot virtualize the call target now. So the shuffle thunk
             // needs to jump to another stub (this time provided by the VirtualStubManager) that will virtualize the call at
             // runtime.
-            PCODE pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
+            PCODE pTargetCall;
+            {
+                GCX_PREEMP();
+                pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
+            }
             refRealDelegate->SetMethodPtrAux(pTargetCall);
             refRealDelegate->SetInvocationCount((INT_PTR)(void *)pTargetMethod);
         }
         else
         {
-            // Reflection or the code in BindToMethodName will pass us the unboxing stub for non-static methods on value types. But
-            // for open invocation on value type methods the actual reference will be passed so we need the unboxed method desc
-            // instead.
-            if (pTargetMethod->IsUnboxingStub())
+            PCODE pTargetCode;
             {
-                // We want a MethodDesc which is not an unboxing stub, but is an instantiating stub if needed.
-                pTargetMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                                                        pTargetMethod,
-                                                        pExactMethodType,
-                                                        FALSE /* don't want unboxing entry point */,
-                                                        pTargetMethod->GetMethodInstantiation(),
-                                                        FALSE /* don't want MD that requires inst. arguments */,
-                                                        true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
+                GCX_PREEMP();
+                // Reflection or the code in BindToMethodName will pass us the unboxing stub for non-static methods on value types. But
+                // for open invocation on value type methods the actual reference will be passed so we need the unboxed method desc
+                // instead.
+                if (pTargetMethod->IsUnboxingStub())
+                {
+                    // We want a MethodDesc which is not an unboxing stub, but is an instantiating stub if needed.
+                    pTargetMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                                                            pTargetMethod,
+                                                            pExactMethodType,
+                                                            FALSE /* don't want unboxing entry point */,
+                                                            pTargetMethod->GetMethodInstantiation(),
+                                                            FALSE /* don't want MD that requires inst. arguments */,
+                                                            true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
+                }
+
+                // The method must not require any extra hidden instantiation arguments.
+                _ASSERTE(!pTargetMethod->RequiresInstArg());
+
+                // Note that it is important to cache pTargetCode in local variable to avoid GC hole.
+                // GetMultiCallableAddrOfCode() can trigger GC.
+                pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
             }
-
-            // The method must not require any extra hidden instantiation arguments.
-            _ASSERTE(!pTargetMethod->RequiresInstArg());
-
-            // Note that it is important to cache pTargetCode in local variable to avoid GC hole.
-            // GetMultiCallableAddrOfCode() can trigger GC.
-            PCODE pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
             refRealDelegate->SetMethodPtrAux(pTargetCode);
         }
     }
@@ -1284,16 +1295,19 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             && *pRefFirstArg != NULL
             && pTargetMethod->GetMethodTable() != (*pRefFirstArg)->GetMethodTable())
         {
+            GCX_PREEMP();
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode(pRefFirstArg, pTargetMethod->GetMethodTable());
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         else if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
         {
+            GCX_PREEMP();
             pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
         else
         {
+            GCX_PREEMP();
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
         }
         _ASSERTE(pTargetCode);
@@ -1354,6 +1368,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
 
+        GCX_PREEMP();
         pUMEntryThunk = pInteropInfo->GetUMEntryThunk();
 
         if (!pUMEntryThunk)
@@ -1363,8 +1378,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             if (!pUMThunkMarshInfo)
             {
-                GCX_PREEMP();
-
                 pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DelegateUMThunkMarshInfo)));
                 new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pInvokeMeth);
 
@@ -1381,15 +1394,22 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             _ASSERTE(pUMThunkMarshInfo == pClass->m_pUMThunkMarshInfo);
 
             pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
+
             Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
             umHolder.Assign(pUMEntryThunk);
 
-            // multicast. go thru Invoke
-            OBJECTHANDLE objhnd = GetAppDomain()->CreateLongWeakHandle(pDelegate);
-            _ASSERTE(objhnd != NULL);
+            OBJECTHANDLE objhnd;
+            PCODE pManagedTargetForDiagnostics;
+            {
+                GCX_COOP();
 
-            // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
-            PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != (PCODE)NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
+                // multicast. go thru Invoke
+                objhnd = GetAppDomain()->CreateLongWeakHandle(pDelegate);
+                _ASSERTE(objhnd != NULL);
+
+                // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
+                pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != (PCODE)NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
+            }
 
             // MethodDesc is passed in for profiling to know the method desc of target
             pUMEntryThunk->LoadTimeInit(
@@ -1589,13 +1609,13 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
     MethodDesc *pMeth = NonVirtualEntry2MethodDesc((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
 
+    GCX_COOP();
+    
     DELEGATEREF refThis = (DELEGATEREF)d.Get();
     refThis->SetMethodPtrAux(target);
     refThis->SetInvocationCount((INT_PTR)(void*)pMeth);
@@ -1603,17 +1623,11 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
     END_QCALL;
 }
 
-extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method)
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(method);
-
-    MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
     MethodDesc *pMeth = NonVirtualEntry2MethodDesc(method);
     _ASSERTE(pMeth);
@@ -1745,7 +1759,11 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
         {
-            PCODE pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+            PCODE pTargetCall;
+            {
+                GCX_PREEMP();
+                pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+            }
             refThis->SetMethodPtrAux(pTargetCall);
             refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
         }
@@ -1780,6 +1798,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
                         && (pMTMeth != g_pObjectClass))
                     {
                         pMeth->CheckRestore();
+                        GCX_PREEMP();
                         pMeth = pMTTarg->GetBoxedEntryPointMD(pMeth);
                         _ASSERTE(pMeth != NULL);
                     }
@@ -1789,6 +1808,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
                 // so we don't have to do all this mucking about. </NICE>
                 if (pMeth != pMethOrig)
                 {
+                    GCX_PREEMP();
                     method = pMeth->GetMultiCallableAddrOfCode();
                 }
             }
@@ -2133,7 +2153,10 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
     GCX_COOP();
 
     MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
-    pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
+    {
+        GCX_PREEMP();
+        pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
+    }
     retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
