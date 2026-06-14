@@ -380,3 +380,8 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+Out/
+
+# Bazel convenience symlinks
+/bazel-*
+MODULE.bazel.lock

@@ -1,0 +1,95 @@
+<Project DefaultTargets="SubmitToHelix">
+
+  <!--
+    Helix submission for BXL-compiled CoreCLR tests.
+
+    Usage (local dry-run to see work items):
+      dotnet msbuild helixpublishbxl.proj /t:printItems /v:n \
+        /p:Configuration=Checked /p:TargetArchitecture=x64 /p:TargetOS=linux \
+        /p:BxlStagingDirectory=/path/to/staging /p:UsesHelixSdk=true
+
+    Required properties:
+      BxlStagingDirectory  - output of prepare-helix-payload.sh (contains chunk-NNN dirs)
+      Configuration        - Checked, Debug, or Release
+      TargetArchitecture   - x64, arm64, etc.
+      TargetOS             - linux, windows, osx
+  -->
+
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
+
+  <!--
+    Wrapper target: re-invoke this project with UsesHelixSdk=true so the
+    Helix SDK loads and provides the "Test" target.  This mirrors the
+    pattern used by helixpublishwitharcade.proj.
+  -->
+  <Target Name="SubmitToHelix" Condition=" '$(UsesHelixSdk)' != 'true' ">
+    <PropertyGroup>
+      <_PropertiesToPass>
+        UsesHelixSdk=true;
+        BxlStagingDirectory=$(BxlStagingDirectory);
+        TargetArchitecture=$(TargetArchitecture);
+        TargetOS=$(TargetOS);
+        Configuration=$(Configuration);
+        Creator=$(_Creator);
+        HelixAccessToken=$(_HelixAccessToken);
+        HelixBuild=$(_HelixBuild);
+        HelixSource=$(_HelixSource);
+        HelixTargetQueues=$(_HelixTargetQueues);
+        HelixType=$(_HelixType);
+        PublishTestResults=$(_PublishTestResults)
+      </_PropertiesToPass>
+      <_PropertiesToPass Condition=" '$(_TimeoutPerTestCollectionInMinutes)' != '' ">$(_PropertiesToPass);TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes)</_PropertiesToPass>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test" Properties="$(_PropertiesToPass)" />
+  </Target>
+
+  <PropertyGroup>
+    <TestBinDir Condition="'$(TestBinDir)' == ''">$(MSBuildThisFileDirectory)../../artifacts/tests/coreclr/</TestBinDir>
+    <CoreRootDirectory>$(TestBinDir)Tests/Core_Root/</CoreRootDirectory>
+    <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
+    <TimeoutPerTestCollectionInMinutes Condition="'$(TimeoutPerTestCollectionInMinutes)' == ''">60</TimeoutPerTestCollectionInMinutes>
+  </PropertyGroup>
+
+  <!-- Debug target: print discovered work items without submitting -->
+  <Target Name="printItems">
+    <Message Text="@(HelixWorkItem -> 'name: %(Identity)  dir: %(PayloadDirectory)  command: %(Command)  timeout: %(Timeout)')" />
+  </Target>
+
+  <PropertyGroup>
+    <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
+    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
+    <HelixConfiguration>$(Configuration)</HelixConfiguration>
+  </PropertyGroup>
+
+  <!-- Correlation payload: Core_Root (shared across all work items) -->
+  <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
+    <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
+  </ItemGroup>
+
+  <!-- Discover chunk directories created by prepare-helix-payload.sh -->
+  <ItemGroup>
+    <BxlChunks Include="$([System.IO.Directory]::GetDirectories($(BxlStagingDirectory), 'chunk-*'))" />
+    <BxlChunks Update="@(BxlChunks)">
+      <ChunkName>%(Filename)</ChunkName>
+    </BxlChunks>
+  </ItemGroup>
+
+  <!-- Create one Helix work item per chunk -->
+  <Target Name="PrepareBxlHelixWorkItems" BeforeTargets="CoreTest">
+    <ItemGroup>
+      <HelixWorkItem Include="%(BxlChunks.ChunkName)">
+        <PayloadDirectory>%(BxlChunks.FullPath)</PayloadDirectory>
+        <Command>chmod +x run-tests.sh &amp;&amp; bash run-tests.sh</Command>
+        <Timeout>$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
+
+</Project>
