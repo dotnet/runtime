@@ -561,12 +561,21 @@ bool IntegralRange::Contains(int64_t value) const
     // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
     if (!cast->gtOverflow())
     {
-        if ((fromType == TYP_INT) && fromUnsigned)
+        IntegralRange typeRange = (fromType == TYP_INT) && fromUnsigned
+                                      ? IntegralRange{SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax}
+                                      : IntegralRange{SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+
+        if (!compiler->opts.MinOpts())
         {
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+            // If the operand's range is tighter than the cast's range, use it instead.
+            IntegralRange operandRange = ForNode(cast->CastOp(), compiler);
+            if (typeRange.Contains(operandRange))
+            {
+                return operandRange;
+            }
         }
 
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+        return typeRange;
     }
 
     SymbolicIntegerValue lowerBound;
