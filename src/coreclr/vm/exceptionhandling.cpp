@@ -973,13 +973,21 @@ Function :
 
 Parameters:
     PCONTEXT pContext : context containing the registers
-    UINT index :        index of the register (Rax=0 .. R15=15)
-
+    UINT index :        index of the register; on AMD64, indices 16..31 map to
+                        R16..R31 only when APX state is present
 Return value :
     Pointer to the context member represetting the register
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
+#ifdef TARGET_AMD64
+    if (index >= 16)
+    {
+        _ASSERTE(index < 32);
+        _ASSERTE((pContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+        return (VOID*)(&pContext->R16 + (index - 16));
+    }
+#endif
     return getRegAddr(index, pContext);
 }
 
@@ -991,14 +999,19 @@ Function :
 
 Parameters:
     PCONTEXT pContext : context containing the registers
-    UINT index :        index of the register (Rax=0 .. R15=15)
+    UINT index :        index of the register; on AMD64, indices 16..31 map to
+                        R16..R31 only when APX state is present
 
 Return value :
     Value of the context member represetting the register
 --*/
 DWORD64 GetRegisterValueByIndex(PCONTEXT pContext, UINT index)
 {
+#ifdef TARGET_AMD64
+    _ASSERTE(index < 32);
+#else
     _ASSERTE(index < 16);
+#endif
     return *(DWORD64*)GetRegisterAddressByIndex(pContext, index);
 }
 
@@ -1026,6 +1039,8 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
     BYTE rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
     BYTE rex_r = (rex & 0x4) >> 2;  // high bit to modrm reg field
     BYTE rex_w = (rex & 0x8) >> 3;  // 1 = 64 bit operand size, 0 = operand size determined by hasOpSizePrefix
+    BYTE rex_b4 = (rex & 0x10) >> 4; // APX: 5th bit to modrm r/m field or SIB base field
+    BYTE rex_x4 = (rex & 0x20) >> 5; // APX: 5th bit to sib index field
 
     BYTE modrm = *ip++;
 
@@ -1036,7 +1051,7 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
     BYTE rm = (modrm & 0x07);
 
     reg |= (rex_r << 3);
-    BYTE rmIndex = rm | (rex_b << 3);
+    BYTE rmIndex = rm | (rex_b << 3) | (rex_b4 << 4);
 
     // 8 bit idiv without the REX prefix uses registers AH, CH, DH, BH for rm 4..8
     // which is an exception from the regular register indexes.
@@ -1063,8 +1078,8 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
             BYTE index = (sib & 0x38) >> 3;
             BYTE base = (sib & 0x07);
 
-            index |= (rex_x << 3);
-            base |= (rex_b << 3);
+            index |= (rex_x << 3) | (rex_x4 << 4);
+            base |= (rex_b << 3) | (rex_b4 << 4);
 
             //
             // Get starting value
@@ -1263,6 +1278,79 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
     BYTE code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
+#ifdef TARGET_AMD64
+    // Details on REX2 and promoted EVEX can be found in Intel Advanced Performance Extensions (APX) Architecture specification 3.1.2.
+    // The EVEX prefix (0x62) can encode legacy IDIV/DIV in APX map 4.
+    // EVEX format: 0x62 P0 P1 P2 opcode ModRM ...
+    //   P0[7:5] = ~R3:~X3:~B3 (inverted register extension bits)
+    //   P0[4]   = ~R4 (inverted)
+    //   P0[3]   = B4 (not inverted, extends B to 5 bits for APX)
+    //   P0[2:0] = mmm (map: 100 = map 4 for legacy promoted)
+    //   P1[7]   = W (operand size, not inverted)
+    //   P1[1:0] = pp (00=none, 01=66, 10=F3, 11=F2)
+    if (code == 0x62)
+    {
+        BYTE p0 = *ip++;
+        BYTE p1 = *ip++;
+        BYTE p2 = *ip++; // P2 (contains NF, ND bits - not needed for operand decoding)
+        (void)p2;
+
+        // Only map 4 (APX legacy promoted) can encode IDIV/DIV.
+        // If this is a different EVEX map, we cannot decode it — treat as not an overflow.
+        if ((p0 & 0x07) != 0x04)
+        {
+            _ASSERTE(!"Unexpected EVEX map for legacy DIV/IDIV decoding");
+            return false;
+        }
+
+        // Extract register extension bits from EVEX (inverted in P0, not inverted for W in P1)
+        BYTE evex_b3 = (~p0 >> 5) & 1;
+        BYTE evex_x3 = (~p0 >> 6) & 1;
+        BYTE evex_b4 = (p0 >> 3) & 1;   // P0[3] = B4 (not inverted for APX)
+        BYTE evex_x4 = (~p1 >> 2) & 1;  // P1[2] = ~X4 (inverted for APX legacy promoted)
+        BYTE evex_w = (p1 >> 7) & 1;
+
+        // Construct a REX-equivalent value for GetModRMOperandValue.
+        // Bits [3:0] = W:R:X3:B3, Bits [5:4] = X4:B4
+        // Use 0x40 base to ensure rex != 0 (disables AH/CH/DH/BH interpretation for 8-bit ops).
+        rex = 0x40 | (evex_w << 3) | (evex_x3 << 1) | evex_b3 | (evex_b4 << 4) | (evex_x4 << 5);
+
+        // Check pp field for operand-size prefix equivalent (pp=01 means 0x66 prefix)
+        if ((p1 & 0x03) == 0x01)
+        {
+            hasOpSizePrefix = true;
+        }
+
+        code = *ip++;
+    }
+    // The REX2 prefix (0xD5) is a 2-byte prefix: 0xD5 followed by a payload byte.
+    // Payload format: [M:R4:X4:B4:W:R3:X3:B3]
+    //   M    = map select (0 = map 0, 1 = map 1)
+    //   Bits [3:0] = W:R3:X3:B3 (same layout as REX lower 4 bits)
+    //   Bits [6:4] = R4:X4:B4 (extend register indices to 5 bits)
+    else if (code == 0xD5)
+    {
+        BYTE payload = *ip++;
+
+        // Only map 0 (M=0) can encode IDIV/DIV (opcodes F6/F7).
+        // If M=1 (map 1, i.e. 0F-prefixed), this is not an IDIV/DIV instruction.
+        if ((payload & 0x80) != 0)
+        {
+            _ASSERTE(!"Invalid instruction (expected IDIV or DIV)");
+            return false;
+        }
+
+        // Construct a REX-equivalent value.
+        // Lower 4 bits (W:R3:X3:B3) have the same layout as the REX prefix bits.
+        // Additionally pack B4 into bit 4 and X4 into bit 5 for GetModRMOperandValue.
+        BYTE rex2_b4 = (payload >> 4) & 1;
+        BYTE rex2_x4 = (payload >> 5) & 1;
+        rex = 0x40 | (payload & 0x0F) | (rex2_b4 << 4) | (rex2_x4 << 5);
+
+        code = *ip++;
+    }
+    else
+#endif // TARGET_AMD64
     // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
