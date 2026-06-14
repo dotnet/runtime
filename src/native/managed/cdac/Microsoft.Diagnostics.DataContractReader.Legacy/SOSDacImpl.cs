@@ -33,7 +33,8 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16
+      ISOSDacInterface16,
+      ISOSDacInterface17
 {
     private readonly Target _target;
 
@@ -7121,4 +7122,319 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     #endregion ISOSDacInterface16
+
+    #region ISOSDacInterface17
+
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStressLogThreadEnum : ISOSStressLogThreadEnum
+    {
+        private readonly DacpThreadStressLogData[] _threads;
+        private uint _index;
+
+        public SOSStressLogThreadEnum(DacpThreadStressLogData[] threads)
+        {
+            _threads = threads;
+        }
+
+        int ISOSStressLogThreadEnum.Next(uint count, DacpThreadStressLogData[] values, uint* pFetched)
+        {
+            if (pFetched is null || values is null)
+                return HResults.E_POINTER;
+
+            count = Math.Min(count, (uint)values.Length);
+            uint written = 0;
+            while (written < count && _index < _threads.Length)
+                values[written++] = _threads[(int)_index++];
+
+            *pFetched = written;
+            return _index < _threads.Length ? HResults.S_FALSE : HResults.S_OK;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_threads.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_threads.Length;
+            return HResults.S_OK;
+        }
+    }
+
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStressLogMsgEnum : ISOSStressLogMsgEnum
+    {
+        private readonly Target _target;
+        private readonly IEnumerator<Contracts.StressMsgData> _enumerator;
+        private DacpStressMsgData[]? _lastBatch;
+        private Contracts.StressMsgData[]? _lastBatchRaw;
+        private bool _exhausted;
+
+        public SOSStressLogMsgEnum(Target target, IEnumerable<Contracts.StressMsgData> messages)
+        {
+            _target = target;
+            _enumerator = messages.GetEnumerator();
+        }
+
+        int ISOSStressLogMsgEnum.Next(uint count, DacpStressMsgData[] values, uint* pFetched)
+        {
+            if (pFetched is null || values is null)
+                return HResults.E_POINTER;
+
+            count = Math.Min(count, (uint)values.Length);
+            _lastBatch = new DacpStressMsgData[count];
+            _lastBatchRaw = new Contracts.StressMsgData[count];
+            uint written = 0;
+
+            while (written < count && !_exhausted)
+            {
+                if (!_enumerator.MoveNext())
+                {
+                    _exhausted = true;
+                    break;
+                }
+
+                Contracts.StressMsgData msg = _enumerator.Current;
+                _lastBatchRaw[written] = msg;
+                values[written] = new DacpStressMsgData
+                {
+                    Facility = msg.Facility,
+                    FormatString = msg.FormatString.ToClrDataAddress(_target),
+                    Timestamp = msg.Timestamp,
+                    ArgumentCount = (uint)msg.Args.Count,
+                    MessageAddress = 0,
+                };
+                _lastBatch[written] = values[written];
+                written++;
+            }
+
+            *pFetched = written;
+
+            // Shrink to actual size so GetArguments bounds check is safe
+            if (written < count)
+            {
+                Array.Resize(ref _lastBatchRaw, (int)written);
+                Array.Resize(ref _lastBatch, (int)written);
+            }
+
+            return _exhausted ? HResults.S_OK : HResults.S_FALSE;
+        }
+
+        int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
+        {
+            if (pFetched is null || args is null)
+                return HResults.E_POINTER;
+
+            if (_lastBatchRaw is null || messageIndex >= _lastBatchRaw.Length)
+                return HResults.E_INVALIDARG;
+
+            Contracts.StressMsgData msg = _lastBatchRaw[messageIndex];
+            uint toFetch = Math.Min(argCount, (uint)msg.Args.Count);
+            toFetch = Math.Min(toFetch, (uint)args.Length);
+
+            for (uint i = 0; i < toFetch; i++)
+                args[i] = msg.Args[(int)i].ToClrDataAddress(_target);
+
+            *pFetched = toFetch;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            for (uint i = 0; i < count && !_exhausted; i++)
+            {
+                if (!_enumerator.MoveNext())
+                    _exhausted = true;
+            }
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            return HResults.E_NOTIMPL;
+        }
+    }
+
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStressLogMemoryEnum : ISOSStressLogMemoryEnum
+    {
+        private readonly DacpStressLogMemoryRange[] _ranges;
+        private uint _index;
+
+        public SOSStressLogMemoryEnum(DacpStressLogMemoryRange[] ranges)
+        {
+            _ranges = ranges;
+        }
+
+        int ISOSStressLogMemoryEnum.Next(uint count, DacpStressLogMemoryRange[] values, uint* pFetched)
+        {
+            if (pFetched is null || values is null)
+                return HResults.E_POINTER;
+
+            count = Math.Min(count, (uint)values.Length);
+            uint written = 0;
+            while (written < count && _index < _ranges.Length)
+                values[written++] = _ranges[(int)_index++];
+
+            *pFetched = written;
+            return _index < _ranges.Length ? HResults.S_FALSE : HResults.S_OK;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_ranges.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_ranges.Length;
+            return HResults.S_OK;
+        }
+    }
+
+    int ISOSDacInterface17.IsStressLogAvailable()
+    {
+        try
+        {
+            return _target.Contracts.StressLog.HasStressLog()
+                ? HResults.S_OK
+                : HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface17.GetStressLogData(DacpStressLogData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data is null)
+                throw new ArgumentException();
+
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+            {
+                *data = default;
+                return HResults.S_FALSE;
+            }
+
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+            data->LoggedFacilities = logData.LoggedFacilities;
+            data->Level = logData.Level;
+            data->MaxSizePerThread = logData.MaxSizePerThread;
+            data->MaxSizeTotal = logData.MaxSizeTotal;
+            data->TotalChunks = logData.TotalChunks;
+            data->TickFrequency = logData.TickFrequency;
+            data->StartTimestamp = logData.StartTimestamp;
+            data->StartTime = logData.StartTime;
+            data->Logs = logData.Logs.ToClrDataAddress(_target);
+            data->StressMsgHeaderSize = _target.GetTypeInfo(DataType.StressMsgHeader).Size ?? 0;
+            data->ChunkSize = _target.ReadGlobal<uint>(Constants.Globals.StressLogChunkSize);
+            data->MaxMessageSize = _target.ReadGlobal<uint>(Constants.Globals.StressLogMaxMessageSize);
+            data->PointerSize = (uint)_target.PointerSize;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogThreadEnumerator(DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+
+            var threads = stressLogContract.GetThreadStressLogs(logData.Logs)
+                .Select(t => new DacpThreadStressLogData
+                {
+                    ThreadLogAddress = t.Address.ToClrDataAddress(_target),
+                    ThreadId = t.ThreadId,
+                    WriteHasWrapped = t.WriteHasWrapped ? 1 : 0,
+                    CurrentPointer = t.CurrentPointer.ToClrDataAddress(_target),
+                    ChunkListHead = t.ChunkListHead.ToClrDataAddress(_target),
+                    ChunkListTail = t.ChunkListTail.ToClrDataAddress(_target),
+                    CurrentWriteChunk = t.CurrentWriteChunk.ToClrDataAddress(_target),
+                })
+                .ToArray();
+            ppEnum.Interface = new SOSStressLogThreadEnum(threads);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMessageEnumerator(
+        ClrDataAddress threadStressLogAddress,
+        DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+
+            // Find the matching thread
+            Contracts.ThreadStressLogData? matchedThread = null;
+            foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
+            {
+                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
+                {
+                    matchedThread = thread;
+                    break;
+                }
+            }
+
+            if (matchedThread is null)
+                return HResults.E_INVALIDARG;
+
+            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
+            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSStressLogMemoryEnum> ppEnum)
+    {
+        return HResults.E_NOTIMPL;
+    }
+
+    #endregion ISOSDacInterface17
 }
