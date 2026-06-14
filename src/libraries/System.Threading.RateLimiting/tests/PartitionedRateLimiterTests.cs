@@ -630,6 +630,7 @@ namespace System.Threading.RateLimiting.Tests
 
             var limitersField = limiterType.GetField("_limiters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.NotNull(limitersField);
+            Assert.True(limiterType.IsInstanceOfType(limiter));
             var limitersDict = (System.Collections.IDictionary)limitersField.GetValue(limiter);
             Assert.NotNull(limitersDict);
 
