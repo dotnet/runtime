@@ -321,7 +321,7 @@
 
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationEmccFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationEmccFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">$(CMakeConfigurationEmccFlags) -fexceptions</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
@@ -332,7 +332,7 @@
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationLinkFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationLinkFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">$(CMakeConfigurationLinkFlags) -fexceptions</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
