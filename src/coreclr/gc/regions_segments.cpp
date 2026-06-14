@@ -159,7 +159,7 @@ void gc_heap::seg_mapping_table_remove_segment (heap_segment* seg)
 #endif //!USE_REGIONS
 
 BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size,
-                                      int num_heaps, int large_page_config, bool separated_poh_p, uint16_t* heap_no_to_numa_node)
+                                      int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node)
 {
     BOOL reserve_success = FALSE;
 
@@ -267,7 +267,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
 
             int numa_node = block_index % numa_node_count;
             bool pinned_block = block_index >= numa_node_count;
-            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, pinned_block ? 0 : large_page_config, (uint16_t)numa_node);
+            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p && !pinned_block, (uint16_t)numa_node);
             if (block->memory_base == nullptr)
             {
                 dprintf(2, ("failed to reserve %zd bytes for on NUMA node %u", block->block_size, numa_node));
@@ -361,11 +361,11 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         size_t separate_pinned_size = memory_details.block_count * pinned_size;
         size_t requestedMemory = memory_details.block_count * (normal_size + large_size + temp_pinned_size);
 
-        uint8_t* allatonce_block = (uint8_t*)virtual_alloc(requestedMemory, large_page_config);
+        uint8_t* allatonce_block = (uint8_t*)virtual_alloc(requestedMemory, use_large_pages_p);
         uint8_t* separated_poh_block = nullptr;
         if (allatonce_block && separated_poh_p)
         {
-            separated_poh_block = (uint8_t*)virtual_alloc(separate_pinned_size, 0);
+            separated_poh_block = (uint8_t*)virtual_alloc(separate_pinned_size, false);
             if (!separated_poh_block)
             {
                 virtual_free(allatonce_block, requestedMemory);
@@ -410,9 +410,9 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         else
         {
             // try to allocate 3 blocks
-            uint8_t* b1 = (uint8_t*)virtual_alloc(memory_details.block_count * normal_size, large_page_config);
-            uint8_t* b2 = (uint8_t*)virtual_alloc(memory_details.block_count * large_size, large_page_config);
-            uint8_t* b3 = (uint8_t*)virtual_alloc(memory_details.block_count * pinned_size, separated_poh_p ? 0 : large_page_config);
+            uint8_t* b1 = (uint8_t*)virtual_alloc(memory_details.block_count * normal_size, use_large_pages_p);
+            uint8_t* b2 = (uint8_t*)virtual_alloc(memory_details.block_count * large_size, use_large_pages_p);
+            uint8_t* b3 = (uint8_t*)virtual_alloc(memory_details.block_count * pinned_size, use_large_pages_p && !separated_poh_p);
 
             if (b1 && b2 && b3)
             {
@@ -458,7 +458,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
                         numa_node = heap_no_to_numa_node[heap_no];
                     }
                     current_block->memory_base =
-                        (uint8_t*)virtual_alloc(block_size, large_page_config, numa_node);
+                        (uint8_t*)virtual_alloc(block_size, use_large_pages_p, numa_node);
                     if (current_block->memory_base == 0)
                     {
                         // Free the blocks that we've allocated so far
