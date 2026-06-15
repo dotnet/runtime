@@ -864,17 +864,17 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE((offset & 0x3) == 0);
     _stub._failEntryPoint[n++] = 0x4d00 | (offset >>2);
 
-    // ldr r12, [r5]
+    // ldr r4, [r5]
     _stub._failEntryPoint[n++] = 0xf8d5;
-    _stub._failEntryPoint[n++] = 0xc000;
+    _stub._failEntryPoint[n++] = 0x4000;
 
-    // subs r12, r12, #1
-    _stub._failEntryPoint[n++] = 0xf1bc;
-    _stub._failEntryPoint[n++] = 0x0c01;
+    // subs r4, r4, #1
+    _stub._failEntryPoint[n++] = 0xf1b4;
+    _stub._failEntryPoint[n++] = 0x0401;
 
-    // str r12, [r5]
+    // str r4, [r5]
     _stub._failEntryPoint[n++] = 0xf8c5;
-    _stub._failEntryPoint[n++] = 0xc000;
+    _stub._failEntryPoint[n++] = 0x4000;
 
     // pop {r5}
     _stub._failEntryPoint[n++] = 0xbc20;
