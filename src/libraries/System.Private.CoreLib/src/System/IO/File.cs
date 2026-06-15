@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -168,6 +168,32 @@ namespace System.IO
             Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize: 0, options, preallocationSize);
 
             return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
+        }
+
+        /// <summary>
+        /// Opens a handle to the system's null device.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> to the system's null device.</returns>
+        /// <remarks>
+        /// <para>
+        /// On Windows, this opens a handle to "NUL". On Unix-based systems, this opens a handle to "/dev/null".
+        /// </para>
+        /// <para>
+        /// The null device is a special file that discards all data written to it and provides no data (EOF)
+        /// when read from. This is useful for redirecting unwanted output or providing empty input to processes.
+        /// </para>
+        /// <para>
+        /// The returned handle supports both reading and writing. All read operations return 0 (EOF), and all
+        /// write operations succeed without storing any data.
+        /// </para>
+        /// <para>
+        /// For scenarios that don't require raw file handles or descriptors, consider using <see cref="Stream.Null"/> instead.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="IOException">An I/O error occurred while opening the null device.</exception>
+        public static SafeFileHandle OpenNullHandle()
+        {
+            return SafeFileHandle.Open(NullDevicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
         }
 
         // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
@@ -1411,6 +1437,29 @@ namespace System.IO
             WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
+        /// Creates a hard link located in <paramref name="path"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The path where the hard link should be created.</param>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateHardLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateHardLink(path, pathToTarget);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
+
+        /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
         /// </summary>
         /// <param name="path">The path where the symbolic link should be created.</param>
@@ -1456,7 +1505,7 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(encoding);
         }
 
-        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
+        private static unsafe byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
         {
             byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
@@ -1501,7 +1550,7 @@ namespace System.IO
             }
         }
 
-        private static void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
+        private static unsafe void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
         {
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;

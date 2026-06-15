@@ -14,6 +14,8 @@ namespace System.Threading
         // Event signaling that the thread has stopped
         private ManualResetEvent _stopped;
 
+        private SafeWaitHandle GetJoinHandle() => _stopped.SafeWaitHandle;
+
         private WaitSubsystem.ThreadWaitInfo _waitInfo;
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
@@ -51,39 +53,7 @@ namespace System.Threading
                 // the thread.
                 currentThread._waitInfo.OnThreadExiting();
                 StopThread(currentThread);
-                currentThread._stopped.Set();
-            }
-        }
-
-        private bool JoinInternal(int millisecondsTimeout)
-        {
-            // This method assumes the thread has been started
-            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
-            SafeWaitHandle waitHandle = _stopped.SafeWaitHandle;
-
-            // If an OS thread is terminated and its Thread object is resurrected, waitHandle may be finalized and closed
-            if (waitHandle.IsClosed)
-            {
-                return true;
-            }
-
-            // Prevent race condition with the finalizer
-            try
-            {
-                waitHandle.DangerousAddRef();
-            }
-            catch (ObjectDisposedException)
-            {
-                return true;
-            }
-
-            try
-            {
-                return _stopped.WaitOne(millisecondsTimeout);
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
+                currentThread.SetJoinHandle();
             }
         }
 
@@ -101,7 +71,7 @@ namespace System.Threading
                 stackSize = RuntimeImports.RhGetDefaultStackSize();
             }
 
-            if (!Interop.Sys.CreateThread(stackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
+            if (!Interop.Sys.CreateThread(stackSize, RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }
@@ -115,7 +85,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static IntPtr ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);

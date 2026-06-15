@@ -1,11 +1,13 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Text;
 using ILVerify;
 
 namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 
+[DebuggerDisplay("{GetErrorMessage()}")]
 public class ILVerifierResult
 {
     public readonly VerificationResult Result;

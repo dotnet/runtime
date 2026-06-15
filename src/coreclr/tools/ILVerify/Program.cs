@@ -156,7 +156,7 @@ namespace ILVerify
             Write(fullClassName);
 
             Write("::");
-            var method = (EcmaMethod)module.GetMethod(result.Method);
+            var method = module.GetMethod(result.Method);
             PrintMethod(method);
             Write("]");
 
@@ -194,7 +194,7 @@ namespace ILVerify
 
         private static void PrintMethod(EcmaMethod method)
         {
-            Write(method.Name);
+            Write(method.GetName());
             Write("(");
             try
             {

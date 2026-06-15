@@ -272,10 +272,7 @@ namespace System.Linq.Expressions
                             newArguments[j] = arguments[j];
                         }
                     }
-                    if (newArguments != null)
-                    {
-                        newArguments[i] = arg;
-                    }
+                    newArguments?[i] = arg;
 
                     if (newMembers == null && member != members[i])
                     {
@@ -285,10 +282,7 @@ namespace System.Linq.Expressions
                             newMembers[j] = members[j];
                         }
                     }
-                    if (newMembers != null)
-                    {
-                        newMembers[i] = member;
-                    }
+                    newMembers?[i] = member;
                 }
                 if (newArguments != null)
                 {

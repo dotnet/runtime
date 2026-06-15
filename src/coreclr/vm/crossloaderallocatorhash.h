@@ -200,6 +200,11 @@ private:
         static void* operator new(size_t baseSize, CountWrapper capacity);
 
     public:
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static KeyValueStore *Create(TCount capacity, const TKey &key);
 
         TCount GetCapacity() const { return _capacity; }
@@ -227,7 +232,7 @@ private:
         virtual bool IsLAHashKeyToTrackers() const override { return true; }
     };
 
-    class EMPTY_BASES_DECL KeyToValuesHashTraits : public DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *>
+    class EMPTY_BASES KeyToValuesHashTraits : public DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *>
     {
     private:
         typedef DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *> Base;
@@ -347,7 +352,7 @@ private:
     #endif // !DACCESS_COMPILE
     };
 
-    class EMPTY_BASES_DECL LAHashDependentHashTrackerHashTraits : public DefaultSHashTraits<LAHashDependentHashTracker *>
+    class EMPTY_BASES LAHashDependentHashTrackerHashTraits : public DefaultSHashTraits<LAHashDependentHashTracker *>
     {
     public:
         typedef TCount count_t;

@@ -925,7 +925,7 @@ inline void SBuffer::TweakSize(COUNT_T size)
 #ifdef SBUFFER_CANARY_CHECKS
 
 // The value we place at the start/end of the buffer,
-static const UINT64 SBUFFER_CANARY_VALUE = UI64(0xD00BED00BED00BAA);
+static const UINT64 SBUFFER_CANARY_VALUE = 0xD00BED00BED00BAAULL;
 
 // Expose the quantity of padding needed when providing a prealloced
 // buffer. This is an unrolled version of the actualAllocation calculated

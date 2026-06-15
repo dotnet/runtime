@@ -302,7 +302,7 @@ namespace System.Text.Json
                 : JsonReaderHelper.TranscodeHelper(segment);
         }
 
-        internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
+        internal unsafe bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
 
@@ -409,7 +409,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(segment, out value);
         }
 

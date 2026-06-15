@@ -132,17 +132,10 @@ namespace System.Reflection.Tests
             }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("MyField")]
-        [InlineData("MyProperty")]
-        [InlineData("MyMethod")]
-        [InlineData("MyGenericMethod")]
-        [InlineData("MyStaticMethod")]
-        [InlineData("MyStaticField")]
-        [InlineData("MyStaticGenericMethod")]
-        public void MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad(string memberName)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad()
         {
-            RemoteExecutor.Invoke((marshalledName) =>
+            RemoteExecutor.Invoke(() =>
             {
                 Type t1 = Type.GetType(
                     "TestCollectibleAssembly.MyTestClass, TestCollectibleAssembly, Version=1.0.0.0",
@@ -153,25 +146,18 @@ namespace System.Reflection.Tests
 
                 Assert.NotNull(t1);
 
-                var member = t1.GetMember(marshalledName).FirstOrDefault();
+                foreach (var member in t1.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    Assert.False(member.IsCollectible, member.ToString());
+                }
 
-                Assert.NotNull(member);
-
-                Assert.False(member.IsCollectible);
-            }, memberName).Dispose();
+            }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("MyStaticGenericField")]
-        [InlineData("MyStaticField")]
-        [InlineData("MyStaticGenericMethod")]
-        [InlineData("MyStaticMethod")]
-        [InlineData("MyGenericField")]
-        [InlineData("MyGenericProperty")]
-        [InlineData("MyGenericMethod")]
-        public void MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad(string memberName)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad()
         {
-            RemoteExecutor.Invoke((marshalledName) =>
+            RemoteExecutor.Invoke(() =>
             {
                 Type t1 = Type.GetType(
                     "TestCollectibleAssembly.MyGenericTestClass`1[System.Int32], TestCollectibleAssembly, Version=1.0.0.0",
@@ -182,25 +168,18 @@ namespace System.Reflection.Tests
 
                 Assert.NotNull(t1);
 
-                var member = t1.GetMember(marshalledName).FirstOrDefault();
+                foreach (var member in t1.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    Assert.False(member.IsCollectible, member.ToString());
+                }
 
-                Assert.NotNull(member);
-
-                Assert.False(member.IsCollectible);
-            }, memberName).Dispose();
+            }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("MyField")]
-        [InlineData("MyProperty")]
-        [InlineData("MyMethod")]
-        [InlineData("MyGenericMethod")]
-        [InlineData("MyStaticMethod")]
-        [InlineData("MyStaticField")]
-        [InlineData("MyStaticGenericMethod")]
-        public void MemberInfo_IsCollectibleTrue_WhenUsingAssemblyLoadContext(string memberName)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MemberInfo_IsCollectibleTrue_WhenUsingAssemblyLoadContext()
         {
-            RemoteExecutor.Invoke((marshalledName) =>
+            RemoteExecutor.Invoke(() =>
             {
                 AssemblyLoadContext alc = new TestAssemblyLoadContext();
 
@@ -213,25 +192,18 @@ namespace System.Reflection.Tests
 
                 Assert.NotNull(t1);
 
-                var member = t1.GetMember(marshalledName).FirstOrDefault();
+                foreach (var member in t1.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    Assert.True(member.IsCollectible, member.ToString());
+                }
 
-                Assert.NotNull(member);
-
-                Assert.True(member.IsCollectible);
-            }, memberName).Dispose();
+            }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("MyStaticGenericField")]
-        [InlineData("MyStaticField")]
-        [InlineData("MyStaticGenericMethod")]
-        [InlineData("MyStaticMethod")]
-        [InlineData("MyGenericField")]
-        [InlineData("MyGenericProperty")]
-        [InlineData("MyGenericMethod")]
-        public void MemberInfoGeneric_IsCollectibleTrue_WhenUsingAssemblyLoadContext(string memberName)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MemberInfoGeneric_IsCollectibleTrue_WhenUsingAssemblyLoadContext()
         {
-            RemoteExecutor.Invoke((marshalledName) =>
+            RemoteExecutor.Invoke(() =>
             {
                 AssemblyLoadContext alc = new TestAssemblyLoadContext();
 
@@ -244,12 +216,12 @@ namespace System.Reflection.Tests
 
                 Assert.NotNull(t1);
 
-                var member = t1.GetMember(marshalledName).FirstOrDefault();
+                foreach (var member in t1.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    Assert.True(member.IsCollectible, member.ToString());
+                }
 
-                Assert.NotNull(member);
-
-                Assert.True(member.IsCollectible);
-            }, memberName).Dispose();
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -268,7 +240,16 @@ namespace System.Reflection.Tests
 
                 Assert.NotNull(t1);
 
-                Assert.True(t1.IsCollectible);
+                foreach (var member in t1.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (member is Type)
+                    {
+                        continue;
+                    }
+
+                    Assert.True(member.IsCollectible, member.ToString());
+                }
+
             }).Dispose();
         }
     }

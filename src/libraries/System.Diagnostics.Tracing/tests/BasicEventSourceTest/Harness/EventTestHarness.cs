@@ -112,9 +112,14 @@ namespace BasicEventSourceTests
                 using (TestHarnessEventSource testHarnessEventSource = new TestHarnessEventSource())
                 {
                     // Turn on the test EventSource.
-                    listener.EventSourceSynchronousEnable(source, options);
+                    listener.EventSourceCommand(source.Name, EventCommand.Enable, options);
                     // And the harnesses's EventSource.
-                    listener.EventSourceSynchronousEnable(testHarnessEventSource);
+                    listener.EventSourceCommand(testHarnessEventSource.Name, EventCommand.Enable);
+
+                    // Start the session and wait for the sources to be enabled.
+                    listener.Start();
+                    listener.WaitForEventSourceStateChange(source, true);
+                    listener.WaitForEventSourceStateChange(testHarnessEventSource, true);
 
                     // Generate events for all the tests, surrounded by events that tell us we are starting a test.
                     int testNumber = 0;
@@ -126,12 +131,16 @@ namespace BasicEventSourceTests
                     }
                     testHarnessEventSource.StartTest("", testNumber);        // Empty test marks the end of testing.
 
-                    // Disable the listeners.
-                    listener.EventSourceCommand(source.Name, EventCommand.Disable);
-                    listener.EventSourceCommand(testHarnessEventSource.Name, EventCommand.Disable);
+                    
+                    if (listener.IsDynamicConfigChangeSupported)
+                    {
+                        // Disable the listeners.
+                        listener.EventSourceSynchronousDisable(source);
+                        listener.EventSourceSynchronousDisable(testHarnessEventSource);
 
-                    // Send something that should be ignored.
-                    testHarnessEventSource.IgnoreEvent();
+                        // Send something that should be ignored.
+                        testHarnessEventSource.IgnoreEvent();
+                    }
                 }
             }
             catch (Exception e)
@@ -164,8 +173,8 @@ namespace BasicEventSourceTests
 
             listener.Dispose();         // Indicate we are done listening.  For the ETW file based cases, we do all the processing here
 
-            // expectedTetst number are the number of tests we successfully ran.
-            Assert.Equal(expectedTestNumber, tests.Count);
+            int actualTestsRun = expectedTestNumber;
+            Assert.Equal(tests.Count, actualTestsRun);
         }
 
         public class EventTestHarnessException : Exception

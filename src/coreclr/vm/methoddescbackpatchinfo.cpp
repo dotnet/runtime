@@ -16,7 +16,7 @@
 void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    static_assert_no_msg(SlotType_Count <= sizeof(INT32));
+    static_assert(SlotType_Count <= sizeof(INT32));
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(slot != (TADDR)NULL);
     _ASSERTE(!(slot & SlotType_Mask));

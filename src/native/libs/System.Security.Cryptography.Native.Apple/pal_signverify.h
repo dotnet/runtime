@@ -12,7 +12,6 @@
 enum
 {
     PAL_SignatureAlgorithm_Unknown = 0,
-    PAL_SignatureAlgorithm_DSA = 1,
     PAL_SignatureAlgorithm_RSA_Pkcs1 = 2,
     PAL_SignatureAlgorithm_RSA_Pss = 3,
     PAL_SignatureAlgorithm_RSA_Raw = 4,
@@ -21,9 +20,9 @@ enum
 typedef uint32_t PAL_SignatureAlgorithm;
 
 /*
-Generate a DSA, RSA or ECDsa signature.
+Generate an RSA or ECDsa signature.
 
-For DSA and ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
+For ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
 
 Follows pal_seckey return conventions.
 */
@@ -36,9 +35,9 @@ PALEXPORT int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
                                                           CFErrorRef* pErrorOut);
 
 /*
-Verify a DSA, RSA or ECDsa signature.
+Verify an RSA or ECDsa signature.
 
-For DSA and ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
+For ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
 
 Follows pal_seckey return conventions.
 */

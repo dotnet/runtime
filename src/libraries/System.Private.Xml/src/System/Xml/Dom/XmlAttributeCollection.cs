@@ -152,7 +152,7 @@ namespace System.Xml
         public XmlAttribute Append(XmlAttribute node)
         {
             XmlDocument doc = node.OwnerDocument;
-            if (doc == null || doc.IsLoading == false)
+            if (doc == null || !doc.IsLoading)
             {
                 if (doc != null && doc != parent.OwnerDocument)
                 {

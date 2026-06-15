@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Tests
             return mutable ? options.TypeInfoResolver.GetTypeInfo(type, options) : options.GetTypeInfo(type);
         }
 
-        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null,bool mutable = false)
+        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null, bool mutable = false)
             => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), options, mutable);
 
         public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)

@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 16;
+        public const ushort CurrentMajorVersion = 22;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
@@ -80,6 +80,11 @@ namespace Internal.Runtime
         EnclosingTypeMap = 122, // Added in V9.0
         TypeGenericInfoMap = 123, // Added in V9.0
 
+        // Shared ReadyToRun sections
+        ExternalTypeMaps            = 124, // Added to CoreCLR in V18.3
+        ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
+        TypeMapAssemblyTargets      = 126, // Added in V18.3
+
         //
         // NativeAOT ReadyToRun sections
         //
@@ -92,8 +97,8 @@ namespace Internal.Runtime
         FrozenObjectRegion = 206,
         DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
-        // 209 is unused - it was used by ThreadStaticGCDescRegion
-        // 210 is unused - it was used by ThreadStaticIndex
+        InterfaceDispatchCellInfoRegion = 209,
+        InterfaceDispatchCellRegion = 210,
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
@@ -101,11 +106,5 @@ namespace Internal.Runtime
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,
         ReadonlyBlobRegionEnd = 399,
-    }
-
-    [Flags]
-    internal enum ModuleInfoFlags : int
-    {
-        HasEndPointer = 0x1,
     }
 }

@@ -15,10 +15,9 @@ namespace System.Reflection.Metadata
         internal const int Pointer = -2;
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
-#if NET
-        // Keep this in sync with GetFullTypeNameLength/NeedsEscaping
-        private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
-#endif
+
+        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\");
+
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
         {
@@ -35,9 +34,7 @@ namespace System.Reflection.Metadata
             // the search space. Since we're running this in a loop over untrusted user
             // input, that makes the total loop complexity potentially O(m * n^2), where
             // 'n' is adversary-controlled. To avoid DoS issues here, we'll loop manually.
-
-#if NET
-            int offset = input.IndexOfAny(s_endOfFullTypeNameDelimitersSearchValues);
+            int offset = input.IndexOfAny(s_endOfFullTypeNameDelimiterChars);
             if (offset < 0)
             {
                 return input.Length; // no type name end chars were found, the whole input is the type name
@@ -47,9 +44,7 @@ namespace System.Reflection.Metadata
             {
                 offset = GetUnescapedOffset(input, startOffset: offset); // this is slower, but very rare so acceptable
             }
-#else
-            int offset = GetUnescapedOffset(input, startOffset: 0);
-#endif
+
             isNestedType = offset > 0 && offset < input.Length && input[offset] == '+';
             return offset;
 
@@ -64,21 +59,18 @@ namespace System.Reflection.Metadata
                         offset++; // skip the escaped char
 
                         if (offset == input.Length || // invalid name that ends with escape character
-                            !NeedsEscaping(input[offset])) // invalid name, escapes a char that does not need escaping
+                            !s_endOfFullTypeNameDelimiterChars.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
                         {
                             return -1;
                         }
                     }
-                    else if (NeedsEscaping(c))
+                    else if (s_endOfFullTypeNameDelimiterChars.Contains(c))
                     {
                         break;
                     }
                 }
                 return offset;
             }
-
-            // Keep this in sync with s_endOfFullTypeNameDelimitersSearchValues
-            static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
         internal static int IndexOfNamespaceDelimiter(ReadOnlySpan<char> fullName)

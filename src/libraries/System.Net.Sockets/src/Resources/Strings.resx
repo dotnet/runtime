@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -314,5 +314,8 @@
   </data>
   <data name="net_sockets_address_small" xml:space="preserve">
     <value>Provided SocketAddress is too small for given AddressFamily.</value>
+  </data>
+  <data name="net_sockets_invalid_connect_algorithm" xml:space="preserve">
+    <value>Provided ConnectAlgorithm {0} is not valid.</value>
   </data>
 </root>

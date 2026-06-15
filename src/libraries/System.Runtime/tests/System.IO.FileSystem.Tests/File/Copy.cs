@@ -361,6 +361,7 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83659", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsArm64Process))]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -421,6 +422,43 @@ namespace System.IO.Tests
             Copy(sourcePath, destPath, overwrite: true);
 
             Assert.Equal(content, File.ReadAllBytes(destPath));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void CopyWithProblematicNames(string fileName)
+        {
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
+            
+            // Create source with extended syntax (required for trailing spaces/periods)
+            File.Create(@"\\?\" + sourcePath).Dispose();
+            
+            // Copy to destination with extended syntax (required for trailing spaces/periods)
+            Copy(@"\\?\" + sourcePath, @"\\?\" + destPath);
+            
+            Assert.True(File.Exists(@"\\?\" + sourcePath));
+            Assert.True(File.Exists(@"\\?\" + destPath));
         }
     }
 

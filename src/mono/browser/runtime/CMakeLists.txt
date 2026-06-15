@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono-wasm-runtime C)
 
@@ -15,8 +15,6 @@ set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMC
 
 target_link_libraries(dotnet.native
     PRIVATE
-    ${ICU_LIB_DIR}/libicuuc.a
-    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
@@ -26,10 +24,13 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
-    ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
+    ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libicudata.a
+    ${NATIVE_BIN_DIR}/libicuuc.a
+    ${NATIVE_BIN_DIR}/libicui18n.a
     ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
@@ -43,7 +44,7 @@ set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet.native
-                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
+                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 

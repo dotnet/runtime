@@ -1,9 +1,10 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -409,7 +410,7 @@ namespace System.Globalization
             };
 
         // Cache of regions we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedRegions;
+        private static Dictionary<string, CultureData>? s_cachedRegions;
         private static Dictionary<string, string>? s_regionNames;
 
         /// <summary>
@@ -443,12 +444,13 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedRegions, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -481,14 +483,10 @@ namespace System.Globalization
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 // first add it to the cache
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable[hashName] = retVal;
                 }
-
-                // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-                // new tables simultaneously created by a new thread, but maximizes thread safety.
-                s_cachedRegions = tempHashTable;
             }
             else
             {
@@ -657,8 +655,7 @@ namespace System.Globalization
         internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedCultures;
-        private static readonly object s_lock = new object();
+        private static Dictionary<string, CultureData>? s_cachedCultures;
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
@@ -683,14 +680,15 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedCultures, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
                 bool ret;
                 CultureData? retVal;
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     ret = tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -707,19 +705,15 @@ namespace System.Globalization
             }
 
             // Found one, add it to the cache
-            lock (s_lock)
+            lock (tempHashTable)
             {
                 tempHashTable[hashName] = culture;
             }
 
-            // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-            // new tables simultaneously created by a new thread, but maximizes thread safety.
-            s_cachedCultures = tempHashTable;
-
             return culture;
         }
 
-        private static string NormalizeCultureName(string name, out bool isNeutralName)
+        private static unsafe string NormalizeCultureName(string name, out bool isNeutralName)
         {
             isNeutralName = true;
             int i = 0;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #include <stddef.h>
 #include <sys/mman.h>
@@ -15,6 +14,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <errno.h>
+#include <sys/resource.h>
 #if defined(TARGET_LINUX) && !defined(MFD_CLOEXEC)
 #include <linux/memfd.h>
 #include <sys/syscall.h> // __NR_memfd_create
@@ -57,7 +57,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
@@ -81,14 +81,56 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         return false;
     }
 #endif
+    uint64_t maxDoubleMappedMemorySize = MaxDoubleMappedSize;
+    
+    // Set the maximum double mapped memory size to the size of the physical memory
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages != -1)
+    {
+        long pageSize = sysconf(_SC_PAGE_SIZE);
+        if (pageSize != -1)
+        {
+            uint64_t physicalMemorySize = (uint64_t)pages * pageSize;
+            if (maxDoubleMappedMemorySize > physicalMemorySize)
+            {
+                maxDoubleMappedMemorySize = physicalMemorySize;
+            }
+        }
+    }
 
-    if (ftruncate(fd, MaxDoubleMappedSize) == -1)
+    // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
+    // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
+    // for the rest of the process.
+#ifdef RLIMIT_AS
+    // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
+    struct rlimit virtualAddressSpaceLimit;
+    if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    {
+        virtualAddressSpaceLimit.rlim_cur /= 4;
+        if (maxDoubleMappedMemorySize > virtualAddressSpaceLimit.rlim_cur)
+        {
+            maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
+        }
+    }
+#endif // RLIMIT_AS
+
+    // Clip the maximum double mapped memory size to the file size limit
+    struct rlimit fileSizeLimit;
+    if ((getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0) && (fileSizeLimit.rlim_cur != RLIM_INFINITY))
+    {
+        if (maxDoubleMappedMemorySize > fileSizeLimit.rlim_cur)
+        {
+            maxDoubleMappedMemorySize = fileSizeLimit.rlim_cur;
+        }
+    }
+
+    if (ftruncate(fd, maxDoubleMappedMemorySize) == -1)
     {
         close(fd);
         return false;
     }
 
-    *pMaxExecutableCodeSize = MaxDoubleMappedSize;
+    *pMaxExecutableCodeSize = maxDoubleMappedMemorySize;
     *pHandle = (void*)(size_t)fd;
 #else // !TARGET_APPLE
 
@@ -368,7 +410,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 
 #ifdef TARGET_FREEBSD
         int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
         int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
 #else
         int fd = -1;

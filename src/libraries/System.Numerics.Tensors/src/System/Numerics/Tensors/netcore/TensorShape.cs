@@ -68,10 +68,10 @@ namespace System.Numerics.Tensors
         private TensorShape(nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, TensorFlags flags)
         {
             int rank = lengths.Length;
-
+            ReadOnlySpan<nint> rank0Lengths = [0];
             if (rank == 0)
             {
-                lengths = [0];
+                lengths = rank0Lengths;
                 rank = 1;
             }
             Debug.Assert(rank >= 1);
@@ -494,7 +494,7 @@ namespace System.Numerics.Tensors
                 // which case we still need to keep incrementing the index but without
                 // adjusting the linearOffset
 
-                if (index >= 0)//destinationLengths[destinationRankIndex])
+                if (index >= 0)
                 {
                     if (index >= length)
                     {
@@ -504,7 +504,7 @@ namespace System.Numerics.Tensors
                     return linearOffset;
                 }
 
-                indexes[destinationRankIndex] = lengths[rankIndex];
+                indexes[destinationRankIndex] = destinationLengths[destinationRankIndex] - 1;
                 linearOffset += (stride * length);
             }
 
@@ -853,12 +853,22 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
+                nint stride = 1;
+
+                TensorFlags flags = TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
+
+                if (linearLength <= 1)
+                {
+                    stride = 0;
+                    flags |= TensorFlags.IsBroadcast;
+                }
+
                 return new TensorShape(
                     flattenedLength: linearLength,
                     linearLength: linearLength,
                     lengths: [linearLength],
-                    strides: [1],
-                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
+                    strides: [stride],
+                    flags
                 );
             }
             return default;
@@ -908,14 +918,22 @@ namespace System.Numerics.Tensors
         {
             if (!Unsafe.IsNullRef(in reference))
             {
+                nint stride = 1;
+
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 flags |= TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
+
+                if (linearLength <= 1)
+                {
+                    stride = 0;
+                    flags |= TensorFlags.IsBroadcast;
+                }
 
                 return new TensorShape(
                     flattenedLength: linearLength,
                     linearLength: linearLength,
                     lengths: [linearLength],
-                    strides: [1],
+                    strides: [stride],
                     flags
                 );
             }

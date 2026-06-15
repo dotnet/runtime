@@ -1686,7 +1686,7 @@ namespace System.Net.Http
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
                 await state.RequestMessage.Content.CopyToAsync(requestStream, state.TransportContext).ConfigureAwait(false);
-                await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
+                await requestStream.EndUploadAsync().ConfigureAwait(false);
             }
         }
 

@@ -4,8 +4,8 @@
 import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
-import { mono_wasm_load_icu_data } from "./icu";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { wasm_load_icu_data } from "./icu";
+import { Module, browserVirtualAppBase, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
@@ -44,31 +44,18 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             const lastSlash = virtualName.lastIndexOf("/");
             let parentDirectory = (lastSlash > 0)
                 ? virtualName.substring(0, lastSlash)
-                : null;
+                : browserVirtualAppBase;
             let fileName = (lastSlash > 0)
                 ? virtualName.substring(lastSlash + 1)
                 : virtualName;
             if (fileName.startsWith("/"))
                 fileName = fileName.substring(1);
-            if (parentDirectory) {
-                if (!parentDirectory.startsWith("/"))
-                    parentDirectory = "/" + parentDirectory;
-
-                mono_log_debug(`Creating directory '${parentDirectory}'`);
-
-                Module.FS_createPath(
-                    "/", parentDirectory, true, true // fixme: should canWrite be false?
-                );
-            } else {
-                parentDirectory = "/";
-            }
+            if (!parentDirectory.startsWith("/"))
+                parentDirectory = browserVirtualAppBase + parentDirectory;
 
             mono_log_debug(() => `Creating file '${fileName}' in directory '${parentDirectory}'`);
-
-            Module.FS_createDataFile(
-                parentDirectory, fileName,
-                bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-            );
+            Module.FS_createPath("/", parentDirectory, true, true);
+            Module.FS_createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
             break;
         }
         default:
@@ -87,7 +74,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
     } else if (asset.behavior === "icu") {
-        mono_wasm_load_icu_data(offset!);
+        wasm_load_icu_data(offset!);
     } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }

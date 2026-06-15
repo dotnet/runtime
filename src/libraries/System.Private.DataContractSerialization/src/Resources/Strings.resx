@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -343,7 +343,7 @@
     <value>Type '{0}' is not a valid serializable type.</value>
   </data>
   <data name="InvalidReturnTypeOnGetSchemaMethod" xml:space="preserve">
-    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}'.</value>
+    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}' or '{4}'.</value>
   </data>
   <data name="InvalidSizeDefinition" xml:space="preserve">
     <value>Invalid Size '{0}'. Must be non-negative integer.</value>
@@ -1243,7 +1243,7 @@
     <value>Cannot import null XmlSchema contained in XmlSchemaSet specified via parameter.</value>
   </data>
   <data name="ComplexTypeRestrictionNotSupported" xml:space="preserve">
-    <value>An internal error has occurred. Could not load serialization schema. Consider providing schema with namespace '{0}'.</value>
+    <value>Complex type restriction is not supported.</value>
   </data>
   <data name="DefaultOnElementNotSupported" xml:space="preserve">
     <value>Default value on element '{0}' is not supported.</value>

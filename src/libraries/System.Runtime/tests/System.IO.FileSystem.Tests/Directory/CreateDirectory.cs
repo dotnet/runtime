@@ -3,13 +3,14 @@
 
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class Directory_CreateDirectory : FileSystemTest
     {
-        public static TheoryData<string> ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
+        public static TheoryData<string> ReservedDeviceNames = Xunit.TheoryDataExtensions.ToTheoryData(IOInputs.GetReservedDeviceNames());
         #region Utilities
 
         public virtual DirectoryInfo Create(string path)
@@ -152,7 +153,7 @@ namespace System.IO.Tests
             Assert.True(result.Exists);
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(ValidPathComponentNames))]
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing slash
         public void ValidExtendedPathWithTrailingSlash(string component)
@@ -239,7 +240,7 @@ namespace System.IO.Tests
             Assert.ThrowsAny<IOException>(() => Create(invalidPath));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
@@ -262,7 +263,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsException()
         {
@@ -274,7 +275,7 @@ namespace System.IO.Tests
                 AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException, IOException>(() => Create(path)));
         }
 
-        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path with extended syntax succeeds
         public void ExtendedDirectoryLongerThanLegacyMaxPath_Succeeds()
         {
@@ -285,7 +286,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
@@ -374,7 +375,7 @@ namespace System.IO.Tests
             Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(SimpleWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // extended syntax with whitespace
         public void WindowsExtendedSyntaxWhiteSpace(string path)
@@ -415,7 +416,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
         [MemberData(nameof(PathsWithReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException(string path)
         {
@@ -423,7 +424,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(path));
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked), nameof(UsingNewNormalization))] // device name prefixes
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
         [MemberData(nameof(ReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {
@@ -518,16 +519,14 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
             var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
+            if (drive is null)
             {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             Assert.Throws<DirectoryNotFoundException>(() =>
@@ -536,16 +535,14 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
             var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
+            if (drive is null)
             {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             // 'Device is not ready'

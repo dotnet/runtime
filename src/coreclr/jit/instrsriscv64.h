@@ -308,6 +308,19 @@ INST(sh2add_uw,     "sh2add_uw",      0,   0x2000403b)
 INST(sh3add_uw,     "sh3add_uw",      0,   0x2000603b)
 INST(slli_uw,       "slli_uw",        0,   0x0800101b)
 
+// Zbs (RV32 + RV64)
+//// R_R_R
+INST(bset,          "bset",           0,   0x28001033)
+INST(bclr,          "bclr",           0,   0x48001033)
+INST(bext,          "bext",           0,   0x48005033)
+INST(binv,          "binv",           0,   0x68001033)
+
+//// R_R_I
+INST(bseti,         "bseti",          0,   0x28001013)
+INST(bclri,         "bclri",          0,   0x48001013)
+INST(bexti,         "bexti",          0,   0x48005013)
+INST(binvi,         "binvi",          0,   0x68001013)
+
 // RVC
 INST(c_mv,          "c.mv",          0,   0x00008002)
 INST(c_add,         "c.add",         0,   0x00009002)

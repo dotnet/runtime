@@ -15,6 +15,9 @@
     Any other outcome is a bug.        
 */
 
+
+namespace b33183;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

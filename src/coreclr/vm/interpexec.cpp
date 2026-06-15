@@ -7,18 +7,335 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "frames.h"
+#include "virtualcallstub.h"
+#include "comdelegate.h"
+#include "gchelpers.inl"
+#include "arraynative.inl"
+
+#ifdef TARGET_WASM
+extern "C" void SamplingProfiler_OnSamplepoint();
+#endif
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+#include "wasm/browserprofiler.h"
+#endif
 
 // for numeric_limits
 #include <limits>
+#include <functional>
+
+struct InterpDispatchCacheEntry
+{
+    // MethodTable of the calling object
+    MethodTable* pMT;
+    size_t dispatchToken;
+    // Resolved target MethodDesc
+    MethodDesc* pTargetMD;
+    // Used for linking dead entries for cleanup during GC
+    InterpDispatchCacheEntry* pNextDead;
+
+    InterpDispatchCacheEntry(MethodTable* pMT, size_t dispatchToken, MethodDesc* pTargetMD)
+    {
+        this->pMT = pMT;
+        this->dispatchToken = dispatchToken;
+        this->pTargetMD = pTargetMD;
+        pNextDead = nullptr;
+    }
+};
+
+#define DISPATCH_CACHE_BITS 12
+#define DISPATCH_CACHE_SIZE (1 << DISPATCH_CACHE_BITS)
+#define DISPATCH_CACHE_MASK (DISPATCH_CACHE_SIZE - 1)
+
+// A simple hash table that caches virtual method dispatch results.
+// Maps (DispatchToken, MethodTable*) to MethodDesc*.
+struct InterpDispatchCache
+{
+    InterpDispatchCacheEntry* m_cache[DISPATCH_CACHE_SIZE];
+    // List of dead entries to be freed at GC time
+    InterpDispatchCacheEntry* m_pDeadList;
+
+    MethodDesc* Lookup(size_t dispatchToken, void* pMT, uint16_t dispatchTokenHash)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t idx = Hash(dispatchToken, pMT, dispatchTokenHash);
+
+        InterpDispatchCacheEntry* pEntry = VolatileLoadWithoutBarrier(&m_cache[idx]);
+        // Data dependency ensures field reads are ordered after loading of `pEntry`
+        // The entry struct is immutable once created, so these reads are safe
+        if (pEntry != nullptr && pEntry->pMT == pMT && pEntry->dispatchToken == dispatchToken)
+            return pEntry->pTargetMD;
+
+        return NULL;
+    }
+
+    void Insert(size_t dispatchToken, MethodTable* pMT, MethodDesc* pTargetMD, uint16_t dispatchTokenHash)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t idx = Hash(dispatchToken, pMT, dispatchTokenHash);
+
+        InterpDispatchCacheEntry* pNewEntry = new (nothrow) InterpDispatchCacheEntry(pMT, dispatchToken, pTargetMD);
+        if (pNewEntry == nullptr)
+            return;
+
+        // CAS has release semantics, so the fields of the entry have correct
+        // values once the entry is published. If CAS succeeds, we own the old
+        // entry for freeing
+        InterpDispatchCacheEntry* pOldEntry = InterlockedExchangeT(&m_cache[idx], pNewEntry);
+
+        if (pOldEntry != nullptr)
+            AddToDeadList(pOldEntry);
+    }
+
+    // Called during GC sync point to free dead entries
+    // At this point, no other threads are running, so it is safe to free
+    void ReclaimDeadEntries()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        InterpDispatchCacheEntry* pDeadList = VolatileLoadWithoutBarrier(&m_pDeadList);
+
+        while (pDeadList != nullptr)
+        {
+            InterpDispatchCacheEntry* pNext = pDeadList->pNextDead;
+            delete pDeadList;
+            pDeadList = pNext;
+        }
+
+        VolatileStoreWithoutBarrier(&m_pDeadList, (InterpDispatchCacheEntry*)nullptr);
+    }
+
+    // Add an entry to the dead list for later cleanup
+    void AddToDeadList(InterpDispatchCacheEntry* pEntry)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        InterpDispatchCacheEntry* pOldHead;
+        do
+        {
+            pOldHead = VolatileLoadWithoutBarrier(&m_pDeadList);
+            pEntry->pNextDead = pOldHead;
+        }
+        while (InterlockedCompareExchangeT(&m_pDeadList, pEntry, pOldHead) != pOldHead);
+    }
+
+    // Same as VSD DispatchCache's HashToken + HashMT
+    static uint16_t Hash(size_t dispatchToken, void* pMT, uint16_t dispatchTokenHash)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t mtHash = (size_t)pMT;
+        mtHash = (((mtHash >> DISPATCH_CACHE_BITS) + mtHash) >> LOG2_PTRSIZE) & DISPATCH_CACHE_MASK;
+
+        uint16_t hash = (uint16_t)mtHash;
+        hash ^= (dispatchTokenHash & DISPATCH_CACHE_MASK);
+
+        return hash;
+    }
+
+    void ClearEntriesForLoaderAllocator(LoaderAllocator* pLoaderAllocator)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        for (size_t i = 0; i < DISPATCH_CACHE_SIZE; i++)
+        {
+            InterpDispatchCacheEntry* pEntry = VolatileLoadWithoutBarrier(&m_cache[i]);
+            if (pEntry == nullptr)
+                continue;
+
+            if (pEntry->pMT->GetLoaderAllocator() == pLoaderAllocator ||
+                pEntry->pTargetMD->GetLoaderAllocator() == pLoaderAllocator)
+            {
+                VolatileStoreWithoutBarrier(&m_cache[i], (InterpDispatchCacheEntry*)nullptr);
+                // Given the EE is suspended, we can free the entry without worrying about races
+                delete pEntry;
+            }
+        }
+    }
+};
+
+// Global interpreter dispatch cache instance
+static InterpDispatchCache g_InterpDispatchCache;
+
+// Called during GC, when we are guaranteed no entry is being used by any thread.
+void InterpDispatchCache_ReclaimAll()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        // Should only be called during a GC suspension
+        PRECONDITION(Debug_IsLockedViaThreadSuspension());
+    }
+    CONTRACTL_END;
+
+    g_InterpDispatchCache.ReclaimDeadEntries();
+}
+
+// Clear entries that reference types/methods from the given LoaderAllocator.
+// Called during collectible assembly unload when the EE is suspended.
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator)
+{
+    g_InterpDispatchCache.ClearEntriesForLoaderAllocator(pLoaderAllocator);
+}
+
+static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    uint32_t slotNumber = pMD->GetSlot();
+
+    if (pMD->IsInterface())
+    {
+        // For interface methods, get the interface's TypeID
+        MethodTable* pInterfaceMT = pMD->GetMethodTable();
+        uint32_t typeID = pInterfaceMT->GetTypeID();
+        return DispatchToken::CreateDispatchToken(typeID, slotNumber).To_SIZE_T();
+    }
+    else
+    {
+        // For non-interface virtual methods, use TYPE_ID_THIS_CLASS
+        return DispatchToken::CreateDispatchToken(slotNumber).To_SIZE_T();
+    }
+}
 
 #ifdef TARGET_WASM
-void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
+// Unused on WASM
+#define SAVE_THE_LOWEST_SP do {} while (0)
 #else
+// Save the lowest SP in the current method so that we can identify it by that during stackwalk
+#define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
+#endif // !TARGET_WASM
+
+// Call invoker helpers provided by platform.
+void InvokeManagedMethod(ManagedMethodParam *pParam);
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
+void InvokeCalliStub(CalliStubParam* pParam);
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
+
+// Filter to ignore SEH exceptions representing C++ exceptions.
+LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+        ? EXCEPTION_CONTINUE_SEARCH
+        : EXCEPTION_EXECUTE_HANDLER;
+}
+
+template<typename Function>
+std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
+{
+    struct Local
+    {
+        Function function;
+        std::invoke_result_t<Function> result;
+    } local { function };
+
+    PAL_TRY(Local *, pParam, &local)
+    {
+        pParam->result = pParam->function();
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the called method's call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
+
+    return local.result;
+}
+
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE
+void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    PAL_TRY(UnmanagedMethodWithTransitionParam*, pParam, pParam)
+    {
+        GCX_PREEMP_NO_DTOR();
+        // WASM-TODO: Handle unmanaged calling conventions
+        ManagedMethodParam param = { pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL };
+        InvokeManagedMethod(&param);
+        GCX_PREEMP_NO_DTOR_END();
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the native method (QCALL) call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
+
+    inlinedCallFrame.Pop();
+}
+
+NOINLINE
+void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(cookie));
+    }
+    CONTRACTL_END
+
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+    {
+        GCX_PREEMP();
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
+        {
+            ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
+        InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
+        {
+            ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
+    }
+    inlinedCallFrame.Pop();
+}
+
+#ifndef TARGET_WASM
 #include "callstubgenerator.h"
 
-CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
+static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
 {
     CONTRACTL
     {
@@ -35,7 +352,12 @@ CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
     AllocMemTracker amTracker;
     CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
 
-    if (pMD->SetCallStub(header))
+    if (target != (PCODE)NULL)
+    {
+        header->SetTarget(target);
+    }
+
+    if (pMD->SetCalliCookie(header))
     {
         amTracker.SuppressRelease();
     }
@@ -43,52 +365,120 @@ CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
     {
         // We have lost the race for generating the header, use the one that was generated by another thread
         // and let the amTracker release the memory of the one we generated.
-        header = pMD->GetCallStub();
+        header = pMD->GetCalliCookie();
     }
 
     return header;
 }
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(CheckPointer(pRet));
+        PRECONDITION(CheckPointer((void*)target));
     }
     CONTRACTL_END
 
-    CallStubHeader *pHeader = pMD->GetCallStub();
-    if (pHeader == NULL)
+    GCX_PREEMP();
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(target, ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
     {
-        pHeader = UpdateCallStubForMethod(pMD);
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (((StubPrecode*)target)->GetType() == PRECODE_PINVOKE_IMPORT)
+            {
+                return dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
+            }
+        }
     }
 
-    // Interpreter-FIXME: Potential race condition if a single CallStubHeader is reused for multiple targets.
-    pHeader->SetTarget(target); // The method to call
-
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+    return NULL;
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeManagedMethod(ManagedMethodParam* pParam)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pMDDelegateInvoke));
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(CheckPointer(pRet));
+        PRECONDITION(CheckPointer(pParam->pMD));
+        PRECONDITION(CheckPointer(pParam->pArgs));
+        PRECONDITION(CheckPointer(pParam->pRet));
     }
     CONTRACTL_END
 
-    CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCallStub();
+    MethodDesc *pMD = pParam->pMD;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet = pParam->pRet;
+    PCODE target = pParam->target;
+    Object** pContinuationRet = pParam->pContinuationRet;
+
+    CallStubHeader *pHeader = pParam->pMD->GetCalliCookie();
+    if (pHeader == NULL)
+    {
+        pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+    }
+
+    if (target != (PCODE)NULL)
+    {
+        PCODE headerTarget = pHeader->GetTarget();
+        if (target != headerTarget)
+        {
+#ifdef DEBUG
+            // For pinvokes we may have a PInvokeImportPrecode as a pointer, and need to use passed in target preferentially
+            // Since on multiple threads we may be racing to use this method, it is possible that the current target could be
+            // the PInvokeImportPrecode or the actual target method, so we should allow either of them to match.
+            MethodDesc *pMDTarget = GetTargetPInvokeMethodDesc(target);
+            MethodDesc *pMDHeaderTarget = GetTargetPInvokeMethodDesc(headerTarget);
+
+            _ASSERTE(pMDTarget == NULL || pMDHeaderTarget == NULL);
+            _ASSERTE(pMDTarget == NULL || pMDTarget == pMD);
+            _ASSERTE(pMDHeaderTarget == NULL || pMDHeaderTarget == pMD);
+#endif // DEBUG
+            pHeader->SetTarget(target);
+        }
+    }
+
+    Object* continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+}
+
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    ManagedMethodParam param = { targetMethod, pArgs, pRet, callTarget, NULL };
+    InvokeManagedMethod(&param);
+}
+
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pParam->pMDDelegateInvoke));
+        PRECONDITION(CheckPointer(pParam->pArgs));
+        PRECONDITION(CheckPointer(pParam->pRet));
+    }
+    CONTRACTL_END
+
+    MethodDesc *pMDDelegateInvoke = pParam->pMDDelegateInvoke;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet  = pParam->pRet;
+    PCODE target  = pParam->target;
+    Object** pContinuationRet = pParam->pContinuationRet;
+
+    CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCalliCookie();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke);
+        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -98,28 +488,81 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(target); // The method to call
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+
+    Object* continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(stubHeaderTemplate));
+        PRECONDITION(CheckPointer(cookie));
     }
     CONTRACTL_END
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
+    CallStubHeader* stubHeaderTemplate = (CallStubHeader*)cookie;
     size_t templateSize = stubHeaderTemplate->GetSize();
     uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+    Object* continuationUnused = NULL;
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, &continuationUnused);
+}
+
+void InvokeCalliStub(CalliStubParam* pParam)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer((void*)pParam->ftn));
+        PRECONDITION(CheckPointer(pParam->cookie));
+    }
+    CONTRACTL_END
+
+    PCODE ftn = pParam->ftn;
+    void *cookie = pParam->cookie;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet = pParam->pRet;
+    Object** pContinuationRet = pParam->pContinuationRet;
+
+    // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
+    // copied to a local buffer before we can actually set their target address.
+    CallStubHeader* stubHeaderTemplate = (CallStubHeader*)cookie;
+    size_t templateSize = stubHeaderTemplate->GetSize();
+    uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
+    memcpy(actualCallStub, stubHeaderTemplate, templateSize);
+    CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
+    pHeader->SetTarget(ftn); // The method to call
+
+    Object* continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+}
+
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    CallStubGenerator callStubGenerator;
+    return callStubGenerator.GenerateCallStubForSig(metaSig, pContextMD);
 }
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.
@@ -127,54 +570,175 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 {
     CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
+    if (pHeader != NULL)
+    {
+        return pHeader;
+    }
     GCX_PREEMP();
 
-    if (pHeader == NULL)
+    AllocMemTracker amTracker;
+    pHeader = callStubGenerator.GenerateCallStub(pInterpMethod->methodHnd, &amTracker, false /* interpreterToNative */);
+
+    if (InterlockedCompareExchangeT(&pInterpMethod->pCallStub, pHeader, NULL) == NULL)
     {
-        // Ensure that there is an interpreter thread context instance and thus an interpreter stack
-        // allocated for this thread. This allows us to not to have to check and allocate it from
-        // the interpreter stub right after this call.
-        GetThread()->GetInterpThreadContext();
-
-        GCX_PREEMP();
-
-        AllocMemTracker amTracker;
-        pHeader = callStubGenerator.GenerateCallStub((MethodDesc*)pInterpMethod->methodHnd, &amTracker, false /* interpreterToNative */);
-
-        if (InterlockedCompareExchangeT(&pInterpMethod->pCallStub, pHeader, NULL) == NULL)
-        {
-            amTracker.SuppressRelease();
-        }
-        else
-        {
-            // We have lost the race for generating the header, use the one that was generated by another thread
-            // and let the amTracker release the memory of the one we generated.
-            pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
-        }
+        amTracker.SuppressRelease();
+    }
+    else
+    {
+        // We have lost the race for generating the header, use the one that was generated by another thread
+        // and let the amTracker release the memory of the one we generated.
+        pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     }
 
     return pHeader;
 }
-
 #endif // !TARGET_WASM
 
+#ifdef _DEBUG
+void DBG_PrintInterpreterStack()
+{
+    Thread* pThread = GetThread();
+    if (pThread == NULL)
+        return;
+
+    int32_t frameCount = 0;
+
+    // Get the "capital F" frame and start walking.
+    for (Frame* pFrame = pThread->GetFrame(); pFrame != FRAME_TOP; pFrame = pFrame->PtrNextFrame())
+    {
+        fprintf(stderr, "Frame (%s): %p\n", Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()), pFrame);
+        if (pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame)
+        {
+            fprintf(stderr, "    Skipping %p\n", pFrame);
+            continue;
+        }
+
+        // Walk the current block of managed frames.
+        InterpreterFrame* pInterpFrame = (InterpreterFrame*)pFrame;
+        InterpMethodContextFrame* cxtFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+        while (cxtFrame != NULL)
+        {
+            MethodDesc* currentMD = cxtFrame->startIp->Method->methodHnd;
+
+            size_t irOffset = ((size_t)cxtFrame->ip - (size_t)(&cxtFrame->startIp[1])) / sizeof(size_t);
+            fprintf(stderr, "%4d) %s::%s, IR_%04zx\n",
+                frameCount++,
+                currentMD->GetMethodTable()->GetDebugClassName(),
+                currentMD->GetName(),
+                irOffset);
+            cxtFrame = cxtFrame->pParent;
+        }
+    }
+}
+#endif // _DEBUG
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef TARGET_WASM
+typedef void* (*HELPER_FTN_P_P)(int*, void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(int*, void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(int*, void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(int*, void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(int*, void*, void*, int32_t);
+
+// These helpers are all noinline, so that when the R2R compiler overwrites values relative to framePointer lower
+// down in the stack, no meaningful state from the C++ code here will be overwritten.
+// This scheme won't work if we actually have a helper function which returns a structure.
+// If we need to deal with that, it can be done with inline assembly, but for now we don't have any such helpers
+// and inline assembly helpers will be more difficult to maintain and debug, so we can cross that bridge if/when we come to it.
+__attribute__((noinline)) void* Call_HELPER_FTN_P_P(HELPER_FTN_P_P helper, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_BOX_UNBOX(HELPER_FTN_BOX_UNBOX helper, MethodTable* pMT, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) Object* Call_HELPER_FTN_NEWARR(HELPER_FTN_NEWARR helper, MethodTable* pMT, intptr_t arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PP(HELPER_FTN_P_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PPP(HELPER_FTN_V_PPP helper, void* arg1, void* arg2, void* arg3)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, arg3, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PPIP(HELPER_FTN_P_PPIP helper, void* arg1, void* arg2, int32_t arg3, void* arg4)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, arg3, arg4, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PP(HELPER_FTN_V_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, 0);
+}
+
+#else // TARGET_WASM
+typedef void* (*HELPER_FTN_P_P)(void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(void*, void*, int32_t);
+
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1, 0)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3, 0)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4, 0)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+
+#endif // TARGET_WASM
+#else // FEATURE_PORTABLE_ENTRYPOINTS
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
+typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*);
+typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2)
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 InterpThreadContext::InterpThreadContext()
 {
-    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackStart = pStackPointer = (int8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_SIZE, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
+#ifdef DEBUGGING_SUPPORTED
+    m_bypassAddress = NULL;
+    m_bypassOpcode = 0;
+#endif // DEBUGGING_SUPPORTED
 }
 
 InterpThreadContext::~InterpThreadContext()
 {
-    free(pStackStart);
+    VMToOSInterface::AlignedFree(pStackStart);
 }
 
 DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
@@ -192,44 +756,138 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 }
 
 #ifdef DEBUG
-static void InterpBreakpoint()
+static void InterpHalt()
 {
-
+    // Native debugging aid: INTOP_HALT is injected as the first instruction in methods matching
+    // DOTNET_InterpHalt. Set a native breakpoint here to break when the targeted method executes.
 }
-#endif
+#endif // DEBUG
 
-static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
+#ifdef DEBUGGING_SUPPORTED
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
-    int32_t* dims = (int32_t*)alloca(numArgs * sizeof(int32_t));
-    for (int i = 0; i < numArgs; i++)
+    Thread *pThread = GetThread();
+    if (pThread != NULL && g_pDebugInterface != NULL)
     {
-        dims[i] = *(int32_t*)(stack + dimsOffset + i * 8);
-    }
+        EXCEPTION_RECORD exceptionRecord;
+        memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionAddress = (PVOID)ip;
 
-    return AllocateArrayEx(arrayClass, dims, numArgs);
+        CONTEXT ctx;
+        memset(&ctx, 0, sizeof(CONTEXT));
+
+        ctx.ContextFlags = CONTEXT_FULL;
+        SetSP(&ctx, (DWORD64)pFrame);
+        SetFP(&ctx, (DWORD64)stack);
+        SetIP(&ctx, (DWORD64)ip);
+        SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
+
+        LOG((LF_CORDB, LL_INFO10000, "InterpBreakpoint: Thread %p, Ctx %p, IP %p, SP %p, FP %p\n",
+            pThread,
+            &ctx,
+            (void*)GetIP(&ctx),
+            (void*)GetSP(&ctx),
+            (void*)GetFP(&ctx)));
+
+        // Pass fIsVEH=FALSE: interpreter breakpoints are synthetic software callbacks,
+        // not vectored exception handler callbacks.
+        if (g_pDebugInterface->FirstChanceNativeException(
+            &exceptionRecord,
+            &ctx,
+            STATUS_BREAKPOINT,
+            pThread,
+            FALSE /* fIsVEH */))
+        {
+            InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
+
+            const int32_t *savedBypassAddress = pThreadContext->m_bypassAddress;
+            int32_t savedBypassOpcode = pThreadContext->m_bypassOpcode;
+
+            // Clear the bypass before dispatching pending evals
+            pThreadContext->m_bypassAddress = NULL;
+            pThreadContext->m_bypassOpcode = 0;
+
+            pThread->SetFilterContext(&ctx);
+            EX_TRY
+            {
+                g_pDebugInterface->ProcessAnyPendingEvals(pThread);
+            }
+            EX_CATCH
+            {
+                pThread->SetFilterContext(NULL);
+                pThreadContext->m_bypassAddress = savedBypassAddress;
+                pThreadContext->m_bypassOpcode = savedBypassOpcode;
+                EX_RETHROW;
+            }
+            EX_END_CATCH
+            pThread->SetFilterContext(NULL);
+
+            // The debugger may have moved execution via SetIP. If so, drop the bypass
+            // (it was set up for the original IP) and resume at the new context via
+            // ResumeAfterCatchException.
+            if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
+            {
+                ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
+            }
+
+            // No SetIP change — restore the bypass so the original opcode runs once.
+            pThreadContext->m_bypassAddress = savedBypassAddress;
+            pThreadContext->m_bypassOpcode = savedBypassOpcode;
+        }
+    }
 }
+#endif // DEBUGGING_SUPPORTED
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
-{
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
 
-    void *addr = pMethod->pDataItems[data.addressDataItemIndex];
-    switch (data.accessType) {
+static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
+{
+    int32_t* dims = (int32_t*)alloca(numArgs * sizeof(int32_t));
+    int8_t* dimsBase = LOCAL_VAR_ADDR(dimsOffset, int8_t);
+    for (int i = 0; i < numArgs; i++)
+    {
+        dims[i] = *(int32_t*)(dimsBase + i * 8);
+    }
+
+    return AllocateArrayEx(arrayClass, dims, numArgs);
+}
+
+template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
+{
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
+
+    void* addr = pMethod->pDataItems[data.addressDataItemIndex];
+    switch (data.accessType)
+    {
         case IAT_VALUE:
-            return (THelper)addr;
+            break;
         case IAT_PVALUE:
-            return *(THelper *)addr;
+            addr = *(void**)addr;
+            break;
         case IAT_PPVALUE:
-            return **(THelper **)addr;
+            addr = **(void***)addr;
+            break;
         default:
             COMPlusThrowHR(COR_E_EXECUTIONENGINE);
-            return (THelper)nullptr;
+            break;
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (PortableEntryPoint::PrefersInterpreterEntryPoint((PCODE)addr) || !PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
+    {
+        _ASSERTE(pILTargetMethod != NULL);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((PCODE)addr);
+        return NULL; // Return null to interpret this entrypoint
+    }
+    addr = PortableEntryPoint::GetActualCode((PCODE)addr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return (THelper)addr;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -389,13 +1047,27 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
     }
 }
 
+static float CkfiniteHelper(float value)
+{
+    if (!std::isfinite(value))
+        COMPlusThrow(kOverflowException);
+    return value;
+}
+
+static double CkfiniteHelper(double value)
+{
+    if (!std::isfinite(value))
+        COMPlusThrow(kOverflowException);
+    return value;
+}
+
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
     // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
-    MethodTable *pMT = nullptr;
-    MethodDesc* pMD = nullptr;
+    MethodTable *pMT = NULL;
+    MethodDesc* pMD = NULL;
     uint8_t* lookup;
     if (pLookup->lookupType == InterpGenericLookupType::This)
     {
@@ -411,7 +1083,7 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     }
     else
     {
-        assert(pLookup->lookupType == InterpGenericLookupType::Method);
+        _ASSERTE(pLookup->lookupType == InterpGenericLookupType::Method);
         pMD = (MethodDesc*)genericVarAsPtr;
         lookup = (uint8_t*)pMD;
     }
@@ -458,6 +1130,208 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
+extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(ContinuationObject* cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    Thread *pThread = GetThread();
+    InterpThreadContext *threadContext = pThread->GetOrCreateInterpThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
+
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(pTransitionBlock);
+
+    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont);
+    NULL_CHECK(contRef);
+
+    // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
+    size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeInfo);
+    InterpAsyncSuspendData* pSuspendData = (InterpAsyncSuspendData*)(void*)(((uint8_t*)contRef->GetResumeInfo()) - resumeDataOffset);
+    _ASSERTE(&pSuspendData->resumeInfo.Resume == contRef->GetResumeInfo());
+
+    // All the incoming args and locals should be zeroed out, except for the continuation argument
+    InterpMethod *pMethod = pSuspendData->methodStartIP->Method;
+    memset(sp, 0, pMethod->allocaSize);
+    *(CONTINUATIONREF*)(sp + pSuspendData->continuationArgOffset) = contRef;
+
+    frames.interpMethodContextFrame.startIp = pSuspendData->methodStartIP;
+    frames.interpMethodContextFrame.pStack = sp;
+
+    // Figure out the exact sizes to work with, since we may be copying into a Task<T>
+    // and not only into another interpreter continuation
+    int32_t returnValueSize = pSuspendData->asyncMethodReturnTypePrimitiveSize;
+    if (pSuspendData->asyncMethodReturnType != NULL)
+    {
+        if (pSuspendData->asyncMethodReturnType->IsValueType())
+            returnValueSize = pSuspendData->asyncMethodReturnType->GetNumInstanceFieldBytes();
+        else
+            returnValueSize = sizeof(OBJECTREF);
+    }
+
+    void* returnValueLocation = alloca(returnValueSize < (int32_t)sizeof(StackVal) ? (int32_t)sizeof(StackVal) : returnValueSize);
+    memset(returnValueLocation, 0, returnValueSize);
+
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
+
+    // resultStorage is an interior pointer into a managed continuation object, passed from DispatchContinuations
+    // in AsyncHelpers. We must report it to the GC so it gets updated if the object moves.
+    GCPROTECT_BEGININTERIOR(resultStorage);
+
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+
+    if (frames.interpreterFrame.GetContinuation() == NULL)
+    {
+        // We had a normal return, so copy out the return value
+        if (returnValueSize > 0)
+        {
+            if (pSuspendData->asyncMethodReturnType != NULL && !pSuspendData->asyncMethodReturnType->IsValueType())
+            {
+                // asyncMethodReturnType is set only for CORINFO_TYPE_VALUECLASS/STRING/CLASS
+                // so we can make the assumption that the return is an object reference if not valuetype
+                SetObjectReference((OBJECTREF*)resultStorage, ObjectToOBJECTREF(*(Object**)returnValueLocation));
+            }
+            else if (pSuspendData->asyncMethodReturnType != NULL && pSuspendData->asyncMethodReturnType->ContainsGCPointers())
+            {
+                // ValueType containing gc refs, needs to be written with write barriers
+                memmoveGCRefs(resultStorage, returnValueLocation, returnValueSize);
+            }
+            else
+            {
+                memcpyNoGCRefs(resultStorage, returnValueLocation, returnValueSize);
+            }
+        }
+    }
+
+    GCPROTECT_END();
+
+    contRef = (CONTINUATIONREF)frames.interpreterFrame.GetContinuation();
+    frames.interpreterFrame.Pop();
+
+    return (ContinuationObject*)OBJECTREFToObject(contRef);
+}
+
+#ifdef TARGET_WASM
+FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage)
+{
+    STATIC_CONTRACT_WRAPPER;
+
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = callersStackPointer;
+    transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
+
+    return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
+}
+FCIMPLEND
+#endif // TARGET_WASM
+
+static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    CONTEXT ctx;
+    memset(&ctx, 0, sizeof(CONTEXT));
+    pInterpreterFrame->SetIsFaulting(true);
+    pInterpreterFrame->SetContextToInterpMethodContextFrame(&ctx);
+
+    EXCEPTION_RECORD exceptionRecord;
+    memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+    exceptionRecord.ExceptionCode = STATUS_STACK_OVERFLOW;
+    exceptionRecord.ExceptionAddress = (PVOID)GetIP(&ctx);
+
+    EXCEPTION_POINTERS exceptionInfo = { &exceptionRecord, &ctx };
+    EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
+}
+
+// Shifts delegate call arguments down by one slot to remove the delegate object pointer,
+// preserving 16-byte alignment for V128 arguments.
+static void ShiftDelegateCallArgs(int8_t* stack, int32_t callArgsOffset, int32_t sizeOfArgsUpto16ByteAlignment, int32_t totalArgsSize)
+{
+    int8_t* argsBase = stack + callArgsOffset;
+    if (sizeOfArgsUpto16ByteAlignment != 0)
+    {
+        memmove(argsBase, argsBase + INTERP_STACK_SLOT_SIZE, sizeOfArgsUpto16ByteAlignment);
+    }
+
+    if (sizeOfArgsUpto16ByteAlignment != totalArgsSize)
+    {
+        size_t firstAlignedDstOffset = ALIGN_UP(sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+        size_t firstAlignedSrcOffset = ALIGN_UP(INTERP_STACK_SLOT_SIZE + sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+        memmove(argsBase + firstAlignedDstOffset, argsBase + firstAlignedSrcOffset, totalArgsSize - firstAlignedDstOffset);
+    }
+}
+
+static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
+{
+    InterpMethod *pTargetMethod = targetIp->Method;
+    // Move args from callArgsOffset to start of stack frame.
+    _ASSERTE(pTargetMethod->CheckIntegrity());
+    // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
+    // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
+    //  different signature from the caller.
+    memcpy(pFrame->pStack, callArgsAddress, pTargetMethod->argsSize);
+    // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
+    //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
+    pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+}
+
+// Prepares interpreter code, calling DoPrestub if necessary.
+// Returns the interpreter code pointer, or NULL if the method cannot be interpreted.
+static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
+{
+    _ASSERTE(targetMethod != NULL);
+
+    // This is an optimization to ensure that the stack walk will not have to search
+    // for the topmost frame in the current InterpExecMethod. It is not required
+    // for correctness, as the stack walk will find the topmost frame anyway. But it
+    // would need to seek through the frames to find it.
+    // An alternative approach would be to update the topmost frame during stack walk
+    // to make the probability that the next stack walk will need to search only a
+    // small subset of frames high.
+    pFrame->ip = ip;
+    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+    {
+        GCX_PREEMP();
+        if (targetMethod->ShouldCallPrestub())
+        {
+            CallWithSEHWrapper(
+                [&targetMethod]() {
+                    return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                });
+        }
+    }
+    InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        // The prestub wasn't able to setup an interpreter code, so it will never be able to.
+        targetMethod->PoisonInterpreterCode();
+    }
+
+    return targetIp;
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -475,10 +1349,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int8_t *stack;
 
     InterpMethod *pMethod = pFrame->startIp->Method;
-    assert(pMethod->CheckIntegrity());
-
-    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
-    stack = pFrame->pStack;
+    _ASSERTE(pMethod->CheckIntegrity());
 
     if (pExceptionClauseArgs == NULL)
     {
@@ -487,25 +1358,39 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     else
     {
+        // Start executing at the beginning of the exception clause
+        ip = pExceptionClauseArgs->ip;
+    }
+
+    if (pFrame->pStack + pMethod->allocaSize > pThreadContext->pStackEnd)
+    {
+        pFrame->ip = ip;
+        HandleInterpreterStackOverflow(pInterpreterFrame);
+        UNREACHABLE();
+    }
+
+    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+    stack = pFrame->pStack;
+
+    if ((pExceptionClauseArgs != NULL) && pExceptionClauseArgs->isFilter)
+    {
         // * Filter funclets are executed in the current frame, because they are executed
         //   in the first pass of EH when the frames between the current frame and the
         //   parent frame are still alive. All accesses to the locals and arguments
         //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
         // * Catch and finally funclets are running in the parent frame directly
 
-        if (pExceptionClauseArgs->isFilter)
-        {
-            // Since filters run in their own frame, we need to clear the global variables
-            // so that GC doesn't pick garbage in variables that were not yet written to.
-            memset(pFrame->pStack, 0, pMethod->allocaSize);
-        }
-
-        // Start executing at the beginning of the exception clause
-        ip = pExceptionClauseArgs->ip;
+        // Since filters run in their own frame, we need to clear the global variables
+        // so that GC doesn't pick garbage in variables that were not yet written to.
+        memset(pFrame->pStack, 0, pMethod->allocaSize);
     }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
+    bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
+    uint32_t opcode;
+
+    SAVE_THE_LOWEST_SP;
 
 MAIN_LOOP:
     try
@@ -520,23 +1405,79 @@ MAIN_LOOP:
             // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
-
-            switch (*ip)
+            opcode = ip[0];
+#ifdef DEBUGGING_SUPPORTED
+SWITCH_OPCODE:
+#endif // DEBUGGING_SUPPORTED
+            switch (opcode)
             {
 #ifdef DEBUG
-                case INTOP_BREAKPOINT:
-                    InterpBreakpoint();
+                case INTOP_HALT:
+                    InterpHalt();
                     ip++;
                     break;
-#endif
+#endif // DEBUG
+#ifdef DEBUGGING_SUPPORTED
+                case INTOP_BREAKPOINT:
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
+
+                    int32_t bypassOpcode = 0;
+
+                    // After debugger callback, check if bypass was set on the thread context
+                    if (pThreadContext->HasBypass(ip, &bypassOpcode))
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Post-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
+                        pThreadContext->ClearBypass();
+                        opcode = bypassOpcode;
+                        goto SWITCH_OPCODE;
+                    }
+
+                    // No bypass
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
+                    break;
+                }
+                case INTOP_DEBUG_METHOD_ENTER:
+                {
+                    if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
+                    {
+                        // ip[1] holds the native offset of the first INTOP_DEBUG_SEQ_POINT,
+                        // or -1 if none. This is patched by the compiler during code emission.
+                        const int32_t *callbackIp = ip;
+                        int32_t seqPointOffset = ip[1];
+                        if (seqPointOffset >= 0)
+                        {
+                            callbackIp = pFrame->startIp->GetByteCodes() + seqPointOffset;
+                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT || *callbackIp == INTOP_BREAKPOINT);
+                        }
+                        g_pDebugInterface->OnMethodEnter((void*)callbackIp);
+                    }
+                    ip += 2;
+                    break;
+                }
+                case INTOP_DEBUG_SEQ_POINT:
+                    ip++;
+                    break;
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
-                    memset(stack + ip[1], 0, ip[2]);
+                    memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
                     break;
                 case INTOP_MEMBAR:
                     MemoryBarrier();
                     ip++;
                     break;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+                case INTOP_STORESTUBCONTEXT:
+                {
+                    UMEntryThunkData* thunkData = GetMostRecentUMEntryThunkData();
+                    _ASSERTE(thunkData);
+                    LOCAL_VAR(ip[1], void*) = thunkData;
+                    ip += 2;
+                    break;
+                }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
@@ -577,14 +1518,30 @@ MAIN_LOOP:
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
+                case INTOP_RET_I1:
+                    // Return int8 value
+                    *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U1:
+                    // Return uint8 value
+                    *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_I2:
+                    // Return int16 value
+                    *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U2:
+                    // Return uint16 value
+                    *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
                 case INTOP_RET_VT:
-                    memmove(pFrame->pRetVal, stack + ip[1], ip[2]);
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
                 case INTOP_RET_VOID:
                     goto EXIT_FRAME;
 
                 case INTOP_LDLOCA:
-                    LOCAL_VAR(ip[1], void*) = stack + ip[2];
+                    LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
                     ip += 3;
                     break;
                 case INTOP_LOAD_FRAMEVAR:
@@ -607,18 +1564,36 @@ MAIN_LOOP:
                 // Normal moves between vars
                 case INTOP_MOV_4: MOV(int32_t, int32_t); break;
                 case INTOP_MOV_8: MOV(int64_t, int64_t); break;
+#undef MOV
 
                 case INTOP_MOV_VT:
-                    memmove(stack + ip[1], stack + ip[2], ip[3]);
+                    memmove(LOCAL_VAR_ADDR(ip[1], void), LOCAL_VAR_ADDR(ip[2], void), ip[3]);
                     ip += 4;
                     break;
 
-                case INTOP_CONV_R_UN_I4:
+                case INTOP_CKFINITE_R4:
+                    LOCAL_VAR(ip[1], float) = CkfiniteHelper(LOCAL_VAR(ip[2], float));
+                    ip += 3;
+                    break;
+                case INTOP_CKFINITE_R8:
+                    LOCAL_VAR(ip[1], double) = CkfiniteHelper(LOCAL_VAR(ip[2], double));
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_R8_UN_I4:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
                     break;
-                case INTOP_CONV_R_UN_I8:
+                case INTOP_CONV_R8_UN_I8:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint64_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I4:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint32_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I8:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_I4:
@@ -646,11 +1621,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvFpHelper<uint8_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvFpHelper<uint8_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -678,11 +1653,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
@@ -931,7 +1906,16 @@ MAIN_LOOP:
                     ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
                     ip += 3;
                     break;
-
+                case INTOP_CONV_U4_U8_SAT:
+                {
+                    uint64_t val = LOCAL_VAR(ip[2], uint64_t);
+                    if (val > UINT32_MAX)
+                        LOCAL_VAR(ip[1], uint32_t) = UINT32_MAX;
+                    else
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)val;
+                    ip += 3;
+                    break;
+                }
                 case INTOP_SWITCH:
                 {
                     uint32_t val = LOCAL_VAR(ip[1], uint32_t);
@@ -951,9 +1935,40 @@ MAIN_LOOP:
 
                 case INTOP_SAFEPOINT:
                     if (g_TrapReturningThreads)
-                        JIT_PollGC();
+                    {
+                        Thread *pThread = GetThread();
+                        if (pThread->IsAbortRequested())
+                        {
+                            CallWithSEHWrapper(
+                            [&pThread]() {
+                                pThread->HandleThreadAbort();
+                                return 0;
+                            });
+                        }
+                        // Transition into preemptive mode to allow the GC to suspend us
+                        GCX_PREEMP();
+                    }
                     ip++;
                     break;
+
+#ifdef PERFTRACING_DISABLE_THREADS
+                case INTOP_PROF_SAMPLEPOINT:
+                    SamplingProfiler_OnSamplepoint();
+                    ip++;
+                    break;
+#endif // PERFTRACING_DISABLE_THREADS
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                case INTOP_PROF_ENTER:
+                    BrowserProfiler_OnMethodEnter(pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    break;
+
+                case INTOP_PROF_LEAVE:
+                    BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+                    ip++;
+                    break;
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -977,6 +1992,7 @@ MAIN_LOOP:
                 case INTOP_BRTRUE_I8:
                     BR_UNOP(int64_t, != 0);
                     break;
+#undef BR_UNOP
 
 #define BR_BINOP_COND(cond) \
     if (cond)               \
@@ -1187,6 +2203,8 @@ MAIN_LOOP:
                     BR_BINOP_COND(isunordered(d1, d2) || d1 < d2);
                     break;
                 }
+#undef BR_BINOP_COND
+#undef BR_BINOP
 
                 case INTOP_ADD_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
@@ -1569,6 +2587,10 @@ MAIN_LOOP:
         ip += 4;                                    \
     } while (0)
 
+                case INTOP_CZERO_I:
+                    LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], intptr_t) != 0;
+                    ip += 4;
+                    break;
                 case INTOP_CEQ_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) == LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
@@ -1643,6 +2665,7 @@ MAIN_LOOP:
                 case INTOP_CLT_UN_R8:
                     CMP_BINOP_FP(double, <, 1);
                     break;
+#undef CMP_BINOP_FP
 
 #define LDIND(dtype, ftype)                                 \
     do {                                                    \
@@ -1676,11 +2699,12 @@ MAIN_LOOP:
                 case INTOP_LDIND_R8:
                     LDIND(double, double);
                     break;
+#undef LDIND
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
-                    memcpy(stack + ip[1], (char*)src + ip[3], ip[4]);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], void), (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1718,6 +2742,7 @@ MAIN_LOOP:
                 case INTOP_STIND_R8:
                     STIND(double, double);
                     break;
+#undef STIND
                 case INTOP_STIND_O:
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
@@ -1731,7 +2756,7 @@ MAIN_LOOP:
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    memcpyNoGCRefs(dest + ip[3], stack + ip[2], ip[4]);
+                    memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1740,7 +2765,7 @@ MAIN_LOOP:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    CopyValueClassUnchecked(dest + ip[3], stack + ip[2], pMT);
+                    CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), pMT);
                     ip += 5;
                     break;
                 }
@@ -1752,43 +2777,107 @@ MAIN_LOOP:
                     ip += 4;
                     break;
                 }
-
                 case INTOP_CALL_HELPER_P_P:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_S:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3]);
                     void* helperArg = LOCAL_VAR(ip[2], void*);
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg;
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_PS:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_SP:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    void* helperArg1 = LOCAL_VAR(ip[2], void*);
+                    void* helperArg2 = pMethod->pDataItems[ip[4]];
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(LOCAL_VAR(ip[2], void*), helperArg);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -1798,9 +2887,23 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3]);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 5;
                     break;
                 }
@@ -1808,11 +2911,27 @@ MAIN_LOOP:
                 case INTOP_CALL_HELPER_P_GS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
-                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg2 = LOCAL_VAR(ip[3], void*);
 
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4]);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[3], void*));
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
@@ -1820,19 +2939,53 @@ MAIN_LOOP:
                 case INTOP_CALL_HELPER_P_GA:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
-                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[3], void*);
 
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4]);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[3], void*));
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -1840,25 +2993,146 @@ MAIN_LOOP:
                 case INTOP_CALL_HELPER_V_AGS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
-                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
+                    void* helperArg2 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg3 = LOCAL_VAR(ip[3], void*);
 
-                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4]);
-                    helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[3], void*));
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+                        LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, void*) = helperArg3;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_V_APS:
                 {
-                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
-                    helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[2], void*));
+                    void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
+                    void* helperArg2 = pMethod->pDataItems[ip[4]];
+                    void* helperArg3 = LOCAL_VAR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+                        LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, void*) = helperArg3;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
                 }
 
+                case INTOP_CALL_HELPER_V_SA:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
+                    ip += 4;
+                    break;
+                }
+                case INTOP_CALL_HELPER_V_SS:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = pMethod->allocaSize;
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_V_SSS:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
+                    void* helperArg3 = LOCAL_VAR(ip[3], void*);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = pMethod->allocaSize;
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+                        LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, void*) = helperArg3;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_CALLVIRT_TAIL:
                 case INTOP_CALLVIRT:
                 {
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLVIRT_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -1868,25 +3142,112 @@ MAIN_LOOP:
                     OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
                     NULL_CHECK(*pThisArg);
 
-                    // Interpreter-TODO
-                    // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
-                    // slots containing the interpreter IR pointer
-                    targetMethod = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
-                    ip += 4;
+                    MethodTable *pObjMT = (*pThisArg)->GetMethodTable();
+
+                    // Interpreter-FIXME: It would be nice to have these caches initialized at compile time instead
+                    // Obtain the cached dispatch token or initialize it
+                    size_t dispatchToken = (size_t)VolatileLoadWithoutBarrier(&pMethod->pDataItems[ip[4]]);
+                    if (dispatchToken == 0)
+                    {
+                        dispatchToken = CreateDispatchTokenForMethod(pMD);
+                        VolatileStoreWithoutBarrier(&pMethod->pDataItems[ip[4]], (void*)dispatchToken);
+                    }
+                    // The token hash is cached in the data item immediately following the dispatchToken
+                    size_t dispatchTokenHash = (size_t)VolatileLoadWithoutBarrier(&pMethod->pDataItems[ip[4] + 1]);
+                    if (dispatchTokenHash == 0)
+                    {
+                        dispatchTokenHash = DispatchToken::From_SIZE_T(dispatchToken).GetHash();
+                        VolatileStoreWithoutBarrier(&pMethod->pDataItems[ip[4] + 1], (void*)dispatchTokenHash);
+                    }
+
+                    // Try cache lookup first
+                    targetMethod = g_InterpDispatchCache.Lookup(dispatchToken, pObjMT, (uint16_t)dispatchTokenHash);
+
+                    if (targetMethod == NULL)
+                    {
+                        // miss, resolve the virtual method and cache it
+                        targetMethod = CallWithSEHWrapper(
+                            [&pMD, &pThisArg]() {
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            });
+                        g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
+                    }
+
+                    ip += 5;
                     goto CALL_INTERP_METHOD;
                 }
 
+                case INTOP_CALLI_TAIL:
                 case INTOP_CALLI:
                 {
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     callArgsOffset = ip[2];
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
+                    int32_t flags = ip[5];
 
-                    CallStubHeader *pCallStub = (CallStubHeader*)pMethod->pDataItems[calliCookie];
-                    ip += 5;
+                    InterpreterCalliCookie cookie = (InterpreterCalliCookie)pMethod->pDataItems[calliCookie];
+                    ip += 6;
 
-                    InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
+
+                    PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
+                    _ASSERTE(calliFunctionPointer);
+
+                    if (flags & (int32_t)CalliFlags::PInvoke)
+                    {
+                        frameNeedsTailcallUpdate = false;
+                        if (flags & (int32_t)CalliFlags::SuppressGCTransition)
+                        {
+                            InvokeUnmanagedCalli(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
+                        }
+                        else
+                        {
+                            InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
+                        }
+                    }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+// If we're not using portable entrypoints, we can use NonVirtualEntry2MethodDesc to figure out where tailcalls go. Since this is
+// somewhat expensive, we only do it for tailcalls which are relatively rare.
+// TODO-Interpreter: It is plausible that we might want to do the NonVirtualEntry2MethodDesc check for non-tailcall calli as well
+//                   or possibly a slight variant where we build a path for NonVitualEntry2MethodDesc which is lock-free but might fail
+                    else if (frameNeedsTailcallUpdate && (targetMethod = NonVirtualEntry2MethodDesc(calliFunctionPointer)) != NULL)
+                    {
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+                    else
+                    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                        // On portable entry point platforms, managed calli targets are portable
+                        // entry points and always have a MethodDesc.
+                        targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
+                        // If the method has native code, call it via InvokeCalliStub without going
+                        // through CALL_INTERP_METHOD. It is a small optimization and also necessary
+                        // for correctness for Newobj allocator helpers where the MethodDesc does not
+                        // represent the actual entrypoint.
+                        if (PortableEntryPoint::PrefersInterpreterEntryPoint(calliFunctionPointer) || !PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                            goto CALL_INTERP_METHOD;
+
+                        cookie = targetMethod->GetCalliCookie();
+                        if (cookie == NULL)
+                        {
+                            MetaSig sig(targetMethod);
+                            cookie = GetCookieForCalliSig(sig, NULL);
+                            _ASSERTE(cookie != NULL);
+                            targetMethod->SetCalliCookie(cookie);
+                            cookie = targetMethod->GetCalliCookie();
+                        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+                        frameNeedsTailcallUpdate = false;
+                        CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
+                        InvokeCalliStub(&param);
+                    }
+
                     break;
                 }
 
@@ -1895,8 +3256,11 @@ MAIN_LOOP:
                     // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
                     //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
 
+                    frameNeedsTailcallUpdate = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
                     int32_t flags = ip[5];
@@ -1907,50 +3271,157 @@ MAIN_LOOP:
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
-                    InlinedCallFrame inlinedCallFrame;
-                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = pFrame;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-                    inlinedCallFrame.m_pThread = GetThread();
-                    inlinedCallFrame.m_Datum = NULL;
-                    inlinedCallFrame.Push();
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
 
+                    if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
-                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        InvokeUnmanagedMethod(targetMethod, callArgsAddress, returnValueAddress, callTarget);
                     }
-
-                    inlinedCallFrame.Pop();
+                    else
+                    {
+                        UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
+                        InvokeUnmanagedMethodWithTransition(&param);
+                    }
 
                     break;
                 }
 
+                case INTOP_CALLDELEGATE_TAIL:
                 case INTOP_CALLDELEGATE:
                 {
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
-                    // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
-                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
-                    ip += 4;
+                    // Argument sizes used for open virtual delegate dispatch to remove the delegate object
+                    // from the argument list while preserving 16-byte alignment for V128 arguments.
+                    int32_t sizeOfArgsUpto16ByteAlignment = ip[4];
+                    int32_t targetArgsSize = ip[5];
+                    ip += 6;
 
-                    DELEGATEREF delegateObj = LOCAL_VAR(callArgsOffset, DELEGATEREF);
-                    NULL_CHECK(delegateObj);
-                    PCODE targetAddress = delegateObj->GetMethodPtr();
-                    OBJECTREF targetMethodObj = delegateObj->GetTarget();
+                    DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
+                    NULL_CHECK(*delegateObj);
+                    PCODE targetAddress = (*delegateObj)->GetMethodPtr();
+                    DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
+                    if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
+                        (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
+                    {
+                        // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
+                        // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the
+                        // interpreter by skipping the shuffle thunk and calling the actual target method directly.
+                        PCODE actualTarget = (*delegateObj)->GetMethodPtrAux();
+
+                        // Detect open virtual dispatch scenario
+                        bool isOpenVirtual = false;
+                        INTERFACE_DISPATCH_CACHED_OR_VSD(
+                            if (actualTarget == (PCODE)CID_VirtualOpenDelegateDispatch)
+                            {
+                                isOpenVirtual = true;
+                            },
+                            if (VirtualCallStubManager::isStubStatic(actualTarget))
+                            {
+                                isOpenVirtual = true;
+                            }
+                        );
+
+                        if (isOpenVirtual)
+                        {
+                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
+                            OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                            NULL_CHECK(*pThisArg);
+                            targetMethod = CallWithSEHWrapper(
+                                [&targetMethod, &pThisArg]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
+                                });
+                        }
+                        else
+                        {
+                            targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
+                        }
+
+                        PTR_InterpByteCodeStart targetIp;
+                        if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
+                        {
+                            targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+                        }
+                        if (targetIp != NULL)
+                        {
+                            pFrame->ip = ip;
+                            InterpMethod* pTargetMethod = targetIp->Method;
+                            if (frameNeedsTailcallUpdate)
+                            {
+                                ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, pTargetMethod->argsSize);
+                                UpdateFrameForTailCall(pFrame, targetIp, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
+                                frameNeedsTailcallUpdate = false;
+                            }
+                            else
+                            {
+                                ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, pTargetMethod->argsSize);
+
+                                // Allocate child frame.
+                                InterpMethodContextFrame *pChildFrame = pFrame->pNext;
+                                if (!pChildFrame)
+                                {
+                                    pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                    pChildFrame->pNext = NULL;
+                                    pFrame->pNext = pChildFrame;
+                                    SAVE_THE_LOWEST_SP;
+                                }
+                                pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
+                                pFrame = pChildFrame;
+                            }
+                            // Set execution state for the new frame
+                            pMethod = pFrame->startIp->Method;
+                            _ASSERTE(pMethod->CheckIntegrity());
+                            stack = pFrame->pStack;
+                            ip = pFrame->startIp->GetByteCodes();
+                            pThreadContext->pStackPointer = stack + pMethod->allocaSize;
+                            break;
+                        }
+                        else if (isOpenVirtual)
+                        {
+                            ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, targetArgsSize);
+
+                            goto CALL_INTERP_METHOD;
+                        }
+                    }
+
+                    OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
 
-                    // TODO! Once we are investigating performance here, we may want to optimize this so that
-                    // delegate calls to interpeted methods don't have to go through the native invoke here, but for
-                    // now this should work well.
-                    InvokeDelegateInvokeMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetAddress);
+                    if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
+                    {
+                        // In this case targetMethod holds a pointer to the MethodDesc that will be called by using targetMethodObj as
+                        // the this pointer. This may be the final method (in the case of instance method delegates), or it may be a
+                        // shuffle thunk, or multicast invoke method.
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
+
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
+
+                    frameNeedsTailcallUpdate = false;
+                    DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
+                    InvokeDelegateInvokeMethod(&param);
                     break;
                 }
 
+                case INTOP_CALL_NULLCHECK:
+                    // Check the target this pointer in the call for null
+                    NULL_CHECK(LOCAL_VAR(ip[2], void*));
+                    FALLTHROUGH;
+                case INTOP_CALL_TAIL:
                 case INTOP_CALL:
                 {
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALL_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -1959,56 +3430,69 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 CALL_INTERP_METHOD:
-                    InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
-                    if (targetIp == NULL)
-                    {
-                        {
-                            // This is an optimization to ensure that the stack walk will not have to search
-                            // for the topmost frame in the current InterpExecMethod. It is not required
-                            // for correctness, as the stack walk will find the topmost frame anyway. But it
-                            // would need to seek through the frames to find it.
-                            // An alternative approach would be to update the topmost frame during stack walk
-                            // to make the probability that the next stack walk will need to search only a
-                            // small subset of frames high.
-                            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                            GCX_PREEMP();
-                            // Attempt to setup the interpreter code for the target method.
-                            if ((targetMethod->IsIL() || targetMethod->IsNoMetadata()) && !targetMethod->IsUnboxingStub())
-                            {
-                                targetMethod->PrepareInitialCode(CallerGCMode::Coop);
-                            }
-                            targetIp = targetMethod->GetInterpreterCode();
-                        }
-                        if (targetIp == NULL)
-                        {
-                            // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
-                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
-                            break;
-                        }
-                    }
 
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    // Allocate child frame.
+                    InterpByteCodeStart* targetIp;
+                    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
                     {
-                        InterpMethodContextFrame *pChildFrame = pFrame->pNext;
-                        if (!pChildFrame)
-                        {
-                            pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                            pChildFrame->pNext = NULL;
-                            pFrame->pNext = pChildFrame;
-                        }
-                        pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
-                        pFrame = pChildFrame;
+                        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                     }
-                    assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
+                    if (targetIp == NULL)
+                    {
+                        // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
+                        // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
+                        frameNeedsTailcallUpdate = false;
+                        ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
+                        InvokeManagedMethod(&param);
+                        break;
+                    }
+
+                    if (frameNeedsTailcallUpdate)
+                    {
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                        BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+#endif
+                        InterpMethod* pTargetMethod = targetIp->Method;
+                        UpdateFrameForTailCall(pFrame, targetIp, callArgsAddress);
+                        frameNeedsTailcallUpdate = false;
+                    }
+                    else
+                    {
+                        // Save current execution state for when we return from called method
+                        pFrame->ip = ip;
+
+                        // Allocate child frame.
+                        {
+                            InterpMethodContextFrame *pChildFrame = pFrame->pNext;
+                            if (!pChildFrame)
+                            {
+                                pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                pChildFrame->pNext = NULL;
+                                pFrame->pNext = pChildFrame;
+                                SAVE_THE_LOWEST_SP;
+                            }
+                            pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
+                            pFrame = pChildFrame;
+                        }
+                        assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
+                    }
 
                     // Set execution state for the new frame
                     pMethod = pFrame->startIp->Method;
-                    assert(pMethod->CheckIntegrity());
+                    _ASSERTE(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
+
+                    if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
+                    {
+                        pFrame->ip = ip;
+                        HandleInterpreterStackOverflow(pInterpreterFrame);
+                        UNREACHABLE();
+                    }
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                     break;
                 }
@@ -2068,7 +3552,9 @@ CALL_INTERP_METHOD:
                     methodSlot = ip[3];
 
                     int32_t vtSize = ip[4];
-                    void *vtThis = stack + returnOffset;
+                    void *vtThis = LOCAL_VAR_ADDR(returnOffset, void);
+
+                    memset(vtThis, 0, vtSize);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -2077,9 +3563,13 @@ CALL_INTERP_METHOD:
                     goto CALL_INTERP_SLOT;
                 }
                 case INTOP_ZEROBLK_IMM:
-                    memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    NULL_CHECK(dst);
+                    memset(dst, 0, ip[2]);
                     ip += 3;
                     break;
+                }
                 case INTOP_CPBLK:
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
@@ -2089,6 +3579,18 @@ CALL_INTERP_METHOD:
                         COMPlusThrow(kNullReferenceException);
                     else
                         memcpyNoGCRefs(dst, src, size);
+                    ip += 4;
+                    break;
+                }
+                case INTOP_INITBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    uint8_t value = LOCAL_VAR(ip[2], uint8_t);
+                    uint32_t size = LOCAL_VAR(ip[3], uint32_t);
+                    if (size && !dst)
+                        COMPlusThrow(kNullReferenceException);
+                    else
+                        memset(dst, value, size);
                     ip += 4;
                     break;
                 }
@@ -2116,16 +3618,17 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_THROW:
                 {
-                    OBJECTREF throwable;
-                    if (LOCAL_VAR(ip[1], OBJECTREF) == nullptr)
+                    OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                    if (!throwable)
                     {
                         EEException ex(kNullReferenceException);
                         throwable = ex.CreateThrowable();
                     }
                     else
                     {
-                        throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                        NormalizeThrownObject(&throwable);
                     }
+
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
                     UNREACHABLE();
@@ -2140,55 +3643,103 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_LOAD_EXCEPTION:
                     // This opcode loads the exception object coming from a catch / filter funclet caller to a variable.
-                    assert(pExceptionClauseArgs != NULL);
+                    _ASSERTE(pExceptionClauseArgs != NULL);
                     LOCAL_VAR(ip[1], OBJECTREF) = pExceptionClauseArgs->throwable;
                     ip += 2;
                     break;
                 case INTOP_UNBOX_ANY:
                 {
-                    int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3]);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
+                    Object *src = LOCAL_VAR(sreg, Object*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        callArgsOffset = pMethod->allocaSize;
+                        returnOffset = dreg;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pMT;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = src;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+
+                        goto CALL_INTERP_METHOD;
+                    }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    Object *src = LOCAL_VAR(sreg, Object*);
-                    void *unboxedData = helper(pMT, src);
-                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMT);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
 
                     ip += 5;
                     break;
                 }
+                case INTOP_UNBOX_END:
+                {
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
+                    void *dest = LOCAL_VAR_ADDR(ip[1], void);
+                    void *src = LOCAL_VAR(ip[2], void*);
+                    NULL_CHECK(dest);
+                    CopyValueClassUnchecked(dest, src, pMT);
 
+                    ip += 4;
+                    break;
+                }
                 case INTOP_UNBOX_ANY_GENERIC:
                 {
-                    int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[3];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *pMTBoxedObj = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    Object *src = LOCAL_VAR(sreg, Object*);
 
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[4]);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[4], &pILTargetMethod);
+
+                    if (pILTargetMethod != NULL)
+                    {
+                        callArgsOffset = pMethod->allocaSize;
+                        returnOffset = dreg;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pMTBoxedObj;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = src;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+
+                        goto CALL_INTERP_METHOD;
+                    }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    Object *src = LOCAL_VAR(sreg, Object*);
-                    void *unboxedData = helper(pMTBoxedObj, src);
-                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMTBoxedObj->IsNullable() ? pMTBoxedObj->GetInstantiation()[0].AsMethodTable() : pMTBoxedObj);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
 
                     ip += 6;
+                    break;
+                }
+                case INTOP_UNBOX_END_GENERIC:
+                {
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
+                    MethodTable *pMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void *dest = LOCAL_VAR_ADDR(ip[1], void);
+                    void *src = LOCAL_VAR(ip[3], void*);
+                    NULL_CHECK(dest);
+                    CopyValueClassUnchecked(dest, src, pMT->IsNullable() ? pMT->GetInstantiation()[0].AsMethodTable() : pMT);
+
+                    ip += 5;
                     break;
                 }
                 case INTOP_NEWARR:
                 {
                     int32_t length = LOCAL_VAR(ip[2], int32_t);
-                    if (length < 0)
-                        COMPlusThrow(kArgumentOutOfRangeException);
 
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
@@ -2197,15 +3748,13 @@ CALL_INTERP_METHOD:
                 case INTOP_NEWARR_GENERIC:
                 {
                     int32_t length = LOCAL_VAR(ip[3], int32_t);
-                    if (length < 0)
-                        COMPlusThrow(kArgumentOutOfRangeException);
 
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *arrayClsHnd = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 6;
@@ -2213,11 +3762,11 @@ CALL_INTERP_METHOD:
                 }
 #define LDELEM(dtype,etype)                                                    \
 do {                                                                           \
-    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
-    if (arrayRef == NULL)                                                      \
+    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);                             \
+    if (arr == NULL)                                                           \
         COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
-    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
@@ -2269,31 +3818,33 @@ do {                                                                           \
                     LDELEM(double, double);
                     break;
                 }
+#undef LDELEM
                 case INTOP_LDELEM_REF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    OBJECTREF elemRef = ObjectToOBJECTREF(*(Object**)(pData + idx * sizeof(OBJECTREF)));
-                    LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
+                    Object* elem = *(Object**)(pData + idx * sizeof(OBJECTREF));
+                    VALIDATEOBJECT(elem);
+                    LOCAL_VAR(ip[1], Object*) = elem;
                     ip += 4;
                     break;
                 }
                 case INTOP_LDELEM_VT:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -2303,17 +3854,17 @@ do {                                                                           \
                     size_t componentSize = arr->GetMethodTable()->GetComponentSize();
                     void* elemAddr = pData + idx * componentSize;
                     MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
-                    CopyValueClassUnchecked(stack + ip[1], elemAddr, pElemMT);
+                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void), elemAddr, pElemMT);
                     ip += 5;
                     break;
                 }
 #define STELEM(dtype,etype)                                                    \
 do {                                                                           \
-    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
-    if (arrayRef == NULL)                                                      \
+    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);                             \
+    if (arr == NULL)                                                           \
         COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
-    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
     if (idx >= len)                                                            \
@@ -2345,6 +3896,16 @@ do {                                                                           \
                     STELEM(int64_t, int64_t);
                     break;
                 }
+                case INTOP_STELEM_U1:
+                {
+                    STELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_STELEM_U2:
+                {
+                    STELEM(int32_t, uint16_t);
+                    break;
+                }
                 case INTOP_STELEM_R4:
                 {
                     STELEM(float, float);
@@ -2355,13 +3916,14 @@ do {                                                                           \
                     STELEM(double, double);
                     break;
                 }
+#undef STELEM
                 case INTOP_STELEM_REF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -2376,8 +3938,8 @@ do {                                                                           \
                             COMPlusThrow(kArrayTypeMismatchException);
 
                         // ObjIsInstanceOf can trigger GC, so the object references have to be re-fetched
-                        arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                        arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                        arr = LOCAL_VAR(ip[1], ArrayBase*);
+                        VALIDATEOBJECT(arr);
                         elemRef = LOCAL_VAR(ip[3], OBJECTREF);
                     }
 
@@ -2388,11 +3950,11 @@ do {                                                                           \
                 }
                 case INTOP_STELEM_VT:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -2403,17 +3965,17 @@ do {                                                                           \
                     void* elemAddr = pData + idx * elemSize;
                     MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
 
-                    CopyValueClassUnchecked(elemAddr, stack + ip[3], pMT);
+                    CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void), pMT);
                     ip += 6;
                     break;
                 }
                 case INTOP_STELEM_VT_NOREF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -2423,17 +3985,17 @@ do {                                                                           \
                     size_t elemSize = ip[4];
                     void* elemAddr = pData + idx * elemSize;
 
-                    memcpyNoGCRefs(elemAddr, stack + ip[3], elemSize);
+                    memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void), elemSize);
                     ip += 5;
                     break;
                 }
                 case INTOP_LDELEMA:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -2501,6 +4063,19 @@ do {                                                                           \
                     break;
                 }
 
+                case INTOP_CONV_NI:
+                {
+                    NULL_CHECK(LOCAL_VAR(ip[2], void*));
+                    int64_t index = LOCAL_VAR(ip[3], int64_t);
+                    if ((index < 0) || (index > UINT_MAX))
+                    {
+                        COMPlusThrow(kIndexOutOfRangeException);
+                    }
+                    LOCAL_VAR(ip[1], int64_t) = index;
+                    ip += 4;
+                    break;
+                }
+
                 case INTOP_GENERICLOOKUP:
                 {
                     int dreg = ip[1];
@@ -2510,6 +4085,74 @@ do {                                                                           \
                     ip += 4;
                     break;
                 }
+
+                case INTOP_COMPARE_EXCHANGE_U1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    uint8_t comparand = LOCAL_VAR(ip[4], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(compareExchangeResult >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_U2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    uint16_t comparand = LOCAL_VAR(ip[4], uint16_t);
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 8)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(compareExchangeResult >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
 
 #define COMPARE_EXCHANGE(type)                                          \
 do                                                                      \
@@ -2533,6 +4176,122 @@ do                                                                      \
                     COMPARE_EXCHANGE(int64_t);
                     break;
                 }
+#undef COMPARE_EXCHANGE
+
+#define EXCHANGE(type)                                                  \
+do                                                                      \
+{                                                                       \
+    type* dst = LOCAL_VAR(ip[2], type*);                                \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type old = InterlockedExchangeT(dst, newValue);                     \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 4;                                                            \
+} while (0)
+
+                case INTOP_EXCHANGE_U1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGE_U2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 1)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGE_I4:
+                {
+                    EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_EXCHANGE_I8:
+                {
+                    EXCHANGE(int64_t);
+                    break;
+                }
+#undef EXCHANGE
+
+                case INTOP_EXCHANGEADD_I4:
+                {
+                    LONG* dst = LOCAL_VAR(ip[2], LONG*);
+                    NULL_CHECK(dst);
+                    LONG newValue = LOCAL_VAR(ip[3], LONG);
+                    LONG old = InterlockedExchangeAdd(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGEADD_I8:
+                {
+                    LONG64* dst = LOCAL_VAR(ip[2], LONG64*);
+                    NULL_CHECK(dst);
+                    LONG64 newValue = LOCAL_VAR(ip[3], LONG64);
+                    LONG64 old = InterlockedExchangeAdd64(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG64) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_SQRT_R4:
+                {
+                    float value = LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], float) = sqrtf(value);
+                    ip += 3;
+                    break;
+                }
+
+                case INTOP_SQRT_R8:
+                {
+                    double value = LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], double) = sqrt(value);
+                    ip += 3;
+                    break;
+                }
 
                 case INTOP_CALL_FINALLY:
                 {
@@ -2548,6 +4307,7 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
+                            SAVE_THE_LOWEST_SP;
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
@@ -2568,8 +4328,337 @@ do                                                                      \
                 case INTOP_THROW_PNSE:
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
+
+                case INTOP_HANDLE_CONTINUATION_GENERIC:
+                case INTOP_HANDLE_CONTINUATION:
+                {
+                    int32_t helperOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
+                    int32_t ipAdjust = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
+                    int32_t suspendDataOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[suspendDataOffset]];
+
+                    // Zero out locals that need zeroing
+                    InterpIntervalMapEntry *pZeroLocalsEntry = pAsyncSuspendData->zeroedLocalsIntervals;
+                    while (pZeroLocalsEntry->countBytes != 0)
+                    {
+                        memset(LOCAL_VAR_ADDR(pZeroLocalsEntry->startOffset, uint8_t), 0, pZeroLocalsEntry->countBytes);
+                        pZeroLocalsEntry++;
+                    }
+
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation to handle.
+                        LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
+                        ip += ipAdjust; // (4 or 5 for this opcode)
+                        break;
+                    }
+                    MethodTable *pContinuationType = pAsyncSuspendData->continuationTypeHnd;
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = NULL;
+                    HELPER_FTN_P_PPIP helperFtnGeneric = NULL;
+                    if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    {
+                        helperFtnGeneric = GetPossiblyIndirectHelper<HELPER_FTN_P_PPIP>(pMethod, ip[helperOffset], &pILTargetMethod);
+                    }
+                    else
+                    {
+                        helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[helperOffset], &pILTargetMethod);
+                    }
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, MethodTable*) = pContinuationType;
+                        if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
+                        {
+                            LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, int32_t) = pAsyncSuspendData->keepAliveOffset;
+                            LOCAL_VAR(callArgsOffset + 3 * INTERP_STACK_SLOT_SIZE, uintptr_t) = LOCAL_VAR(ip[2], uintptr_t);
+                        }
+
+                        pInterpreterFrame->SetContinuation(NULL);
+                        targetMethod = pILTargetMethod;
+                        ip += ipAdjust;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    OBJECTREF chainedContinuation = pInterpreterFrame->GetContinuation();
+                    pInterpreterFrame->SetContinuation(NULL);
+                    OBJECTREF* pDest = LOCAL_VAR_ADDR(ip[1], OBJECTREF);
+                    if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    {
+                        uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
+                        ip += ipAdjust;
+                        Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PPIP(helperFtnGeneric, chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
+                    }
+                    else
+                    {
+                        ip += ipAdjust;
+                        Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType));
+                    }
+                    break;
+                }
+
+                case INTOP_CAPTURE_CONTEXT_ON_SUSPEND:
+                {
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+
+                    if (continuation == NULL)
+                    {
+                        LOCAL_VAR(ip[1], CONTINUATIONREF) = continuation;
+                        // No continuation to handle.
+                        ip += 4;
+                        break;
+                    }
+
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
+
+                    OBJECTREF executionContext;
+                    {
+                        THREADBASEREF threadBase = (THREADBASEREF)GetThread()->GetExposedObject();
+                        executionContext = threadBase->GetExecutionContext();
+                    }
+
+                    if (executionContext != NULL && ((EXECUTIONCONTEXTREF)executionContext)->IsFlowSuppressed())
+                    {
+                        executionContext = CallWithSEHWrapper(
+                            [] ()
+                            {
+                                FieldDesc *pFd = CoreLibBinder::GetField(FIELD__EXECUTIONCONTEXT__DEFAULT_FLOW_SUPPRESSED);
+                                pFd->CheckRunClassInitThrowing();
+                                return pFd->GetStaticOBJECTREF();
+                            }
+                        );
+                    }
+                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    continuation->SetFlags(pAsyncSuspendData->flags);
+
+                    PTR_OBJECTREF pExecutionContext = continuation->GetExecutionContextObjectStorageOrNull();
+                    _ASSERTE(pExecutionContext != NULL);
+                    SetObjectReference(pExecutionContext, executionContext);
+
+                    PTR_OBJECTREF pContinuationContext = continuation->GetContinuationContextObjectStorageOrNull();
+                    if (pContinuationContext != NULL)
+                    {
+                        MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
+                        int32_t *flagsAddress = continuation->GetFlagsAddress();
+
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pContinuationContext;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
+                        targetMethod = captureSyncContextMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+                    else
+                    {
+                        ip += 4;
+                        break;
+                    }
+                }
+
+                case INTOP_RESTORE_CONTEXTS_ON_SUSPEND:
+                {
+                    CONTINUATIONREF newContinuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    CONTINUATIONREF continuationArg = LOCAL_VAR(ip[3], CONTINUATIONREF);
+
+                    int32_t resumed = continuationArg != NULL;
+                    if ((newContinuation == NULL) || resumed)
+                    {
+                        LOCAL_VAR(ip[1], CONTINUATIONREF) = newContinuation;
+                        // No continuation to handle.
+                        ip += 6;
+                        break;
+                    }
+
+                    OBJECTREF executionContext = LOCAL_VAR(ip[4], OBJECTREF);
+                    OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
+                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsOnSuspensionMethod;
+
+                    returnOffset = ip[1];
+                    callArgsOffset = pMethod->allocaSize;
+                    // Pass argument to the target method
+                    LOCAL_VAR(callArgsOffset, int32_t) = resumed;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF) = executionContext;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = syncContext;
+                    targetMethod = restoreContextsMethod;
+                    ip += 6;
+                    goto CALL_INTERP_METHOD;
+                }
+
+                case INTOP_GET_CONTINUATION:
+                {
+                    LOCAL_VAR(ip[1], OBJECTREF) = pInterpreterFrame->GetContinuation();
+                    pInterpreterFrame->SetContinuation(NULL);
+                    ip += 2;
+                    break;
+                }
+
+                case INTOP_SET_CONTINUATION:
+                {
+                    pInterpreterFrame->SetContinuation(LOCAL_VAR(ip[1], CONTINUATIONREF));
+                    ip += 2;
+                    break;
+                }
+
+                case INTOP_SET_CONTINUATION_NULL:
+                {
+                    pInterpreterFrame->SetContinuation(NULL);
+                    ip += 1;
+                    break;
+                }
+
+                case INTOP_HANDLE_CONTINUATION_SUSPEND:
+                {
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+
+                    if (continuation == NULL)
+                    {
+                        // No continuation to handle.
+                        ip += 3 + 2; // (3 for this opcode + 2 for the continuation resume which follows)
+                        break;
+                    }
+                    ip += 3;
+
+                    // Copy locals that need to move to the continuation object
+                    // The copied continuation data begins immediately after the
+                    // continuation's result storage.
+                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                    uint8_t *pContinuationDataStart = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
+                    uint8_t *pContinuationData = pContinuationDataStart;
+                    size_t bytesTotal = 0;
+                    InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
+                    if (pCopyEntry->countBytes > 0)
+                    {
+                        GCHeapMemoryBarrier();
+                        while (pCopyEntry->countBytes != 0)
+                        {
+                            InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
+                            bytesTotal += pCopyEntry->countBytes;
+                            pContinuationData += pCopyEntry->countBytes;
+                            pCopyEntry++;
+                        }
+                        InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
+                    }
+
+                    int32_t returnValueSize = pAsyncSuspendData->asyncMethodReturnTypePrimitiveSize;
+                    if (pAsyncSuspendData->asyncMethodReturnType != NULL)
+                    {
+                        if (pAsyncSuspendData->asyncMethodReturnType->IsValueType())
+                            returnValueSize = pAsyncSuspendData->asyncMethodReturnType->GetNumInstanceFieldBytes();
+                        else
+                            returnValueSize = sizeof(OBJECTREF);
+                    }
+
+                    if (returnValueSize > 0)
+                    {
+                        if (returnValueSize > (int32_t)INTERP_STACK_SLOT_SIZE)
+                        {
+                            memset(pFrame->pRetVal, 0, returnValueSize);
+                        }
+                        else
+                        {
+                            *(int64_t*)pFrame->pRetVal = 0;
+                        }
+                    }
+
+                    continuation->SetState(pAsyncSuspendData->suspensionPointIndex);
+                    _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
+                    continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
+                    pInterpreterFrame->SetContinuation(continuation);
+                    goto EXIT_FRAME;
+                }
+
+                case INTOP_RET_EXISTING_CONTINUATION:
+                {
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation returned
+                        ip++;
+                        break;
+                    }
+
+                    // Otherwise exit without modifying current continuation
+                    goto EXIT_FRAME;
+                }
+
+                case INTOP_HANDLE_CONTINUATION_RESUME:
+                {
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
+                    CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
+                    _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
+
+                    // copy locals that need to move from the continuation object
+                    uint8_t *pContinuationData = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
+                    InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
+                    while (pCopyEntry->countBytes != 0)
+                    {
+                        memcpy(LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pContinuationData, pCopyEntry->countBytes);
+                        pContinuationData += pCopyEntry->countBytes;
+                        pCopyEntry++;
+                    }
+
+                    // Explicitly copy the return value from the continuation's result storage
+                    // to the interpreter stack.
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
+                    {
+                        memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
+                               continuation->GetResultStorage(),
+                               pAsyncSuspendData->returnValueContinuationDataSize);
+                    }
+
+                    PTR_OBJECTREF pException = continuation->GetExceptionObjectStorageOrNull();
+                    if (pException != NULL)
+                    {
+                        // Throw exception if needed
+                        OBJECTREF exception = *pException;
+
+                        if (exception != NULL)
+                        {
+                            pInterpreterFrame->SetIsFaulting(true);
+                            DispatchManagedException(exception, ExKind::RethrowFlag);
+                            UNREACHABLE();
+                        }
+                    }
+
+                    ip += 2;
+                    break;
+                }
+
+                case INTOP_CHECK_FOR_CONTINUATION:
+                {
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+                    _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
+                    if (continuation != NULL)
+                    {
+                        // State is the suspension-point index; map it to the resume IP.
+                        int32_t state = continuation->GetState();
+                        _ASSERTE(state >= 0 && state < pMethod->numSuspensionPoints);
+                        _ASSERTE(pMethod->suspensionPointIPOffsets != NULL);
+                        ip = (int32_t*)((uint8_t*)pFrame->startIp + pMethod->suspensionPointIPOffsets[state]);
+
+                        // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
+                        // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
+                        _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
+                        _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
+                        break;
+                    }
+                    ip += 3;
+                    break;
+                }
                 default:
-                    assert(!"Unimplemented or invalid interpreter opcode");
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;
             }
         }
@@ -2587,7 +4676,17 @@ do                                                                      \
         // Unwind the interpreter stack upto the resume frame
         while (pFrame != pResumeFrame)
         {
-            assert(pFrame != NULL);
+            if (pFrame == NULL)
+            {
+                // In scenarios when the interpreted code ends up calling other interpreted code through the precode, there are two separate
+                // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
+                // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
+                // Thus, we need to rethrow it to let it propagate further.
+                throw;
+            }
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+            BrowserProfiler_OnMethodLeave(pFrame->startIp->Method->methodHnd);
+#endif
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
             pFrame = pFrame->pParent;
@@ -2598,14 +4697,27 @@ do                                                                      \
 
         stack = pFrame->pStack;
         pMethod = pFrame->startIp->Method;
-        assert(pMethod->CheckIntegrity());
+        _ASSERTE(pMethod->CheckIntegrity());
+
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
 
         pInterpreterFrame->SetIsFaulting(false);
+
+        void* abortAddress = COMPlusCheckForAbort(resumeIP);
+        if (abortAddress != NULL)
+        {
+            // Record the resume IP in the pFrame so that the exception handling unwinds from there
+            pFrame->ip = ip;
+            DispatchManagedException(kThreadAbortException);
+        }
+
         goto MAIN_LOOP;
     }
 
 EXIT_FRAME:
+
+    // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
+    // async resumption logic depends on not triggering a GC here for correctness.
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
     pThreadContext->frameDataAllocator.PopInfo(pFrame);
@@ -2617,7 +4729,7 @@ EXIT_FRAME:
         ip = pFrame->ip;
         stack = pFrame->pStack;
         pMethod = pFrame->startIp->Method;
-        assert(pMethod->CheckIntegrity());
+        _ASSERTE(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;

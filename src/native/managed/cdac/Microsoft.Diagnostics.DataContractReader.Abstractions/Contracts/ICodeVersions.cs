@@ -27,6 +27,10 @@ public interface ICodeVersions : IContract
     public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
     public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ILCodeVersionHandle

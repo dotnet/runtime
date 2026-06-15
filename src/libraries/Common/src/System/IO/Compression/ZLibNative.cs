@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 namespace System.IO.Compression
@@ -107,6 +109,41 @@ namespace System.IO.Compression
         public const int GZip_DefaultWindowBits = 31;
 
         /// <summary>
+        /// The minimum value for the base-2 logarithm of the history buffer (window) size.
+        /// A value of 8 corresponds to a 256-byte window.
+        /// </summary>
+        public const int MinWindowLog = 8;
+
+        /// <summary>
+        /// The maximum value for the base-2 logarithm of the history buffer (window) size.
+        /// A value of 15 corresponds to a 32KB window, which provides the best compression ratio.
+        /// </summary>
+        public const int MaxWindowLog = 15;
+
+        /// <summary>
+        /// The default value for the base-2 logarithm of the history buffer (window) size.
+        /// Defaults to <see cref="MaxWindowLog"/> (15) for optimal compression.
+        /// </summary>
+        public const int DefaultWindowLog = MaxWindowLog;
+
+        /// <summary>
+        /// The minimum compression quality level. A value of 0 means no compression (store only).
+        /// </summary>
+        public const int MinQuality = 0;
+
+        /// <summary>
+        /// The maximum compression quality level. A value of 9 provides the best compression ratio
+        /// but is the slowest.
+        /// </summary>
+        public const int MaxQuality = 9;
+
+        /// <summary>
+        /// The default compression quality level. A value of 6 provides a good balance between
+        /// compression ratio and speed.
+        /// </summary>
+        public const int DefaultQuality = 6;
+
+        /// <summary>
         /// <para><strong>From the ZLib manual:</strong><br />
         /// The <c>memLevel</c> parameter specifies how much memory should be allocated for the internal compression state.
         /// <c>memLevel</c> = 1 uses minimum memory but is slow and reduces compression ratio; <c>memLevel</c> = 9 uses maximum
@@ -121,36 +158,6 @@ namespace System.IO.Compression
         public const byte GZip_Header_ID1 = 31;
         public const byte GZip_Header_ID2 = 139;
 
-        /**
-         * Do not remove the nested typing of types inside of <see cref="ZLibNative" />.
-         * This was done on purpose to:
-         *
-         * - Achieve the right encapsulation in a situation where <see cref="ZLibNative" /> may be compiled division-wide
-         *   into different assemblies that wish to consume <c>System.IO.Compression.Native</c>. Since <c>internal</c>
-         *   scope is effectively like <c>public</c> scope when compiling <see cref="ZLibNative" /> into a higher
-         *   level assembly, we need a combination of inner types and <c>private</c>-scope members to achieve
-         *   the right encapsulation.
-         *
-         * - Achieve late dynamic loading of <c>System.IO.Compression.Native.dll</c> at the right time.
-         *   The native assembly will not be loaded unless it is actually used since the loading is performed by a static
-         *   constructor of an inner type that is not directly referenced by user code.
-         *
-         *   In Dev12 we would like to create a proper feature for loading native assemblies from user-specified
-         *   directories in order to PInvoke into them. This would preferably happen in the native interop/PInvoke
-         *   layer; if not we can add a Framework level feature.
-         */
-
-        /// <summary>
-        /// The <see cref="ZLibStreamHandle" /> could be a <see cref="System.Runtime.ConstrainedExecution.CriticalFinalizerObject" /> rather than a
-        /// <see cref="SafeHandle" />. This would save an <see cref="IntPtr" /> field since
-        /// <see cref="ZLibStreamHandle" /> does not actually use its <see cref="SafeHandle.handle" /> field.
-        /// Instead it uses a private <see cref="_zStream" /> field which is the actual handle data
-        /// structure requiring critical finalization.
-        /// However, we would like to take advantage if the better debugability offered by the fact that a
-        /// <em>releaseHandleFailed MDA</em> is raised if the <see cref="ReleaseHandle" /> method returns
-        /// <c>false</c>, which can for instance happen if the underlying ZLib <see cref="Interop.ZLib.InflateEnd"/>
-        /// or <see cref="Interop.ZLib.DeflateEnd"/> routines return an failure error code.
-        /// </summary>
         public sealed class ZLibStreamHandle : SafeHandle
         {
             public enum State
@@ -170,6 +177,41 @@ namespace System.IO.Compression
             {
                 _initializationState = State.NotInitialized;
                 SetHandle(IntPtr.Zero);
+            }
+
+            public static ZLibStreamHandle CreateForDeflate(CompressionLevel level, int windowBits,
+                int memLevel, CompressionStrategy strategy)
+            {
+                ZLibStreamHandle zLibStreamHandle = new ZLibStreamHandle();
+
+                try
+                {
+                    zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
+                }
+                catch (Exception)
+                {
+                    zLibStreamHandle.Dispose();
+                    throw;
+                }
+
+                return zLibStreamHandle;
+            }
+
+            public static ZLibStreamHandle CreateForInflate(int windowBits)
+            {
+                ZLibStreamHandle zLibStreamHandle = new ZLibStreamHandle();
+
+                try
+                {
+                    zLibStreamHandle.InflateInit2_(windowBits);
+                }
+                catch (Exception)
+                {
+                    zLibStreamHandle.Dispose();
+                    throw;
+                }
+
+                return zLibStreamHandle;
             }
 
             public override bool IsInvalid
@@ -216,45 +258,83 @@ namespace System.IO.Compression
                 set { _zStream.availOut = value; }
             }
 
-            private void EnsureNotDisposed()
-            {
-                ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
-            }
-
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
             }
 
-            public unsafe ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
+            private void EnsureNativeHandleInitialized(ErrorCode zlibErrorCode, string zlibErrorContext)
             {
-                EnsureNotDisposed();
-                EnsureState(State.NotInitialized);
+                Debug.Assert(zlibErrorContext is "deflateInit2_" or "inflateInit2_");
 
-                fixed (ZStream* stream = &_zStream)
+                if (zlibErrorCode is not ErrorCode.Ok)
                 {
-                    ErrorCode errC = Interop.ZLib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
-                    _initializationState = State.InitializedForDeflate;
+                    string zlibErrorMessage = GetErrorMessage();
+                    string exceptionMessage = zlibErrorCode switch
+                    {
+                        // Not enough memory
+                        ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
 
-                    return errC;
+                        // zlib library is incompatible with the version assumed
+                        ErrorCode.VersionError => SR.ZLibErrorVersionMismatch,
+
+                        // Parameters are invalid
+                        ErrorCode.StreamError => SR.ZLibErrorIncorrectInitParameters,
+
+                        _ => SR.Format(SR.ZLibErrorUnexpected, (int)zlibErrorCode)
+                    };
+
+                    throw new ZLibException(exceptionMessage, zlibErrorContext, (int)zlibErrorCode, zlibErrorMessage);
                 }
+            }
+
+            private unsafe void DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
+            {
+                Debug.Assert(InitializationState == State.NotInitialized);
+
+                ErrorCode errC;
+
+                try
+                {
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        errC = Interop.ZLib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    }
+                }
+                catch (Exception e) // Could not load the ZLib dll
+                {
+                    throw new ZLibException(SR.ZLibErrorDLLLoadError, e);
+                }
+
+                EnsureNativeHandleInitialized(errC, "deflateInit2_");
+                _initializationState = State.InitializedForDeflate;
             }
 
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.Deflate(stream, flush);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForDeflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.Deflate(stream, flush);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
-            public unsafe ErrorCode DeflateEnd()
+            private unsafe ErrorCode DeflateEnd()
             {
-                EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
 
                 fixed (ZStream* stream = &_zStream)
@@ -266,45 +346,74 @@ namespace System.IO.Compression
                 }
             }
 
-            public unsafe ErrorCode InflateInit2_(int windowBits)
+            private unsafe void InflateInit2_(int windowBits)
             {
-                EnsureNotDisposed();
-                EnsureState(State.NotInitialized);
+                Debug.Assert(InitializationState == State.NotInitialized);
 
-                fixed (ZStream* stream = &_zStream)
+                ErrorCode errC;
+
+                try
                 {
-                    ErrorCode errC = Interop.ZLib.InflateInit2_(stream, windowBits);
-                    _initializationState = State.InitializedForInflate;
-
-                    return errC;
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        errC = Interop.ZLib.InflateInit2_(stream, windowBits);
+                    }
                 }
+                catch (Exception e) // Could not load the ZLib dll
+                {
+                    throw new ZLibException(SR.ZLibErrorDLLLoadError, e);
+                }
+
+                EnsureNativeHandleInitialized(errC, "inflateInit2_");
+                _initializationState = State.InitializedForInflate;
             }
 
             public unsafe ErrorCode InflateReset2_(int windowBits)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.InflateReset2_(stream, windowBits);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForInflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.InflateReset2_(stream, windowBits);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.Inflate(stream, flush);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForInflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.Inflate(stream, flush);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
-            public unsafe ErrorCode InflateEnd()
+            private unsafe ErrorCode InflateEnd()
             {
-                EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
 
                 fixed (ZStream* stream = &_zStream)
@@ -316,21 +425,8 @@ namespace System.IO.Compression
                 }
             }
 
-            // This can work even after XxflateEnd().
-            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
-        }
-
-        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,
-            int windowBits, int memLevel, CompressionStrategy strategy)
-        {
-            zLibStreamHandle = new ZLibStreamHandle();
-            return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
-        }
-
-        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
-        {
-            zLibStreamHandle = new ZLibStreamHandle();
-            return zLibStreamHandle.InflateInit2_(windowBits);
+            // This can work even after XxflateEnd(). Gets the error message from the native library.
+            public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? string.Empty;
         }
     }
 }

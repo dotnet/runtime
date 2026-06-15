@@ -50,8 +50,6 @@ export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void 
 export const enum MeasuredBlock {
     emscriptenStartup = "mono.emscriptenStartup",
     instantiateWasm = "mono.instantiateWasm",
-    preInit = "mono.preInit",
-    preInitWorker = "mono.preInitWorker",
     preRun = "mono.preRun",
     preRunWorker = "mono.preRunWorker",
     onRuntimeInitialized = "mono.onRuntimeInitialized",

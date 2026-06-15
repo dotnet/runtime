@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
-
-using CoreclrTestWrapperLib = CoreclrTestLib.CoreclrTestWrapperLib;
 
 public class XUnitLogChecker
 {
@@ -512,8 +513,7 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                CoreclrTestWrapperLib.TryPrintStackTraceFromWindowsDmp(dumpPath,
-                                                                       Console.Out);
+                TryPrintStackTraceFromWindowsDmp(dumpPath, Console.Out);
             }
             else
             {
@@ -529,10 +529,336 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash report '{crashReportPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
-                                                                        Console.Out);
+                TryPrintStackTraceFromCrashReport(crashReportPath, Console.Out);
             }
         }
+    }
+
+    private const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
+    private const string TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR = "__TestArchitecture";
+    private static readonly List<string> s_knownNativeModules = new List<string>() { "libcoreclr.so", "libclrjit.so" };
+    private const string TO_BE_CONTINUE_TAG = "<TO_BE_CONTINUE>";
+    private const string SKIP_LINE_TAG = "# <SKIP_LINE>";
+
+    static bool RunProcess(string fileName, string arguments, TextWriter outputWriter)
+    {
+        Process proc = new Process()
+        {
+            StartInfo = new ProcessStartInfo()
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            }
+        };
+
+        outputWriter.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
+        proc.Start();
+
+        Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
+        Task<string> stdErr = proc.StandardError.ReadToEndAsync();
+        if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+        {
+            proc.Kill(true);
+            outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
+            return false;
+        }
+
+        Task.WaitAll(stdOut, stdErr);
+        string output = stdOut.Result;
+        string error = stdErr.Result;
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            outputWriter.WriteLine($"stdout: {output}");
+        }
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            outputWriter.WriteLine($"stderr: {error}");
+        }
+        return true;
+    }
+
+    /// <summary>
+    ///     Parse crashreport.json file, use llvm-symbolizer to extract symbols
+    ///     and recreate the stacktrace that is printed on the console.
+    /// </summary>
+    /// <param name="crashReportJsonFile">crash dump path</param>
+    /// <param name="outputWriter">Stream for writing logs</param>
+    /// <returns>true, if we can print the stack trace, otherwise false.</returns>
+    static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, TextWriter outputWriter)
+    {
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+        {
+            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+
+            Console.WriteLine("=========================================");
+            string? userName = Environment.GetEnvironmentVariable("USER");
+            if (string.IsNullOrEmpty(userName))
+            {
+                userName = "helixbot";
+            }
+
+            if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+
+            if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+
+            Console.WriteLine("=========================================");
+            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+
+            Console.WriteLine("=========================================");
+            if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+        }
+
+        if (!File.Exists(crashReportJsonFile))
+        {
+            return false;
+        }
+        outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
+
+        string contents;
+        try
+        {
+            contents = File.ReadAllText(crashReportJsonFile);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading {crashReportJsonFile}: {ex.ToString()}");
+            return false;
+        }
+        var crashReport = JsonNode.Parse(contents)!;
+        var threads = (JsonArray)crashReport["payload"]!["threads"]!;
+
+        // The logic happens in 3 steps:
+        // 1. Read the crashReport.json file, locate all the addresses of interest and then build
+        //    a string that will be passed to llvm-symbolizer. It is populated so that each address
+        //    is in its separate line along with the file name, etc. Some TAGS are added in the
+        //    string that is used in step 2.
+        // 2. llvm-symbolizer is ran and above string is passed as input.
+        // 3. After llvm-symbolizer completes, TAGS are used to format its output to print it in
+        //    the way it will be printed by sos.
+
+        StringBuilder addrBuilder = new StringBuilder();
+        string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT") ?? string.Empty;
+        foreach (var thread in threads)
+        {
+
+            if (thread!["native_thread_id"] is null)
+            {
+                continue;
+            }
+
+            addrBuilder.AppendLine();
+            addrBuilder.AppendLine("----------------------------------");
+            addrBuilder.AppendLine($"Thread Id: {thread["native_thread_id"]}");
+            addrBuilder.AppendLine("      Child SP               IP Call Site");
+            var stack_frames = (JsonArray)thread["stack_frames"]!;
+            foreach (var frame in stack_frames)
+            {
+                addrBuilder.Append($"{SKIP_LINE_TAG} {frame!["stack_pointer"]} {frame["native_address"]} ");
+                bool isNative = (string)frame["is_managed"]! == "false";
+
+                if (isNative)
+                {
+                    var nativeModuleName = (string?)frame["native_module"];
+                    var unmanagedName = (string?)frame["unmanaged_name"];
+
+                    if ((nativeModuleName is not null) && (s_knownNativeModules.Contains(nativeModuleName)))
+                    {
+                        // Need to use llvm-symbolizer (only if module_address != 0)
+                        AppendAddress(addrBuilder, coreRoot, nativeModuleName, (string)frame["native_address"]!, (string)frame["module_address"]!);
+                    }
+                    else if ((nativeModuleName is not null) || (unmanagedName is not null))
+                    {
+                        if (nativeModuleName is not null)
+                        {
+                            addrBuilder.Append($"{nativeModuleName}!");
+                        }
+                        if (unmanagedName is not null)
+                        {
+                            addrBuilder.Append($"{unmanagedName}");
+                        }
+                    }
+                }
+                else
+                {
+                    var fileName = (string?)frame["filename"];
+                    var methodName = (string?)frame["method_name"];
+
+                    if ((fileName is not null) || (methodName is not null))
+                    {
+                        // found the managed method name
+                        if (fileName is not null)
+                        {
+                            addrBuilder.Append($"{fileName}!");
+                        }
+                        if (methodName is not null)
+                        {
+                            addrBuilder.Append($"{methodName}");
+                        }
+                    }
+                    else
+                    {
+                        addrBuilder.Append($"{frame["native_address"]}");
+                    }
+                }
+                addrBuilder.AppendLine();
+
+            }
+        }
+
+        string? symbolizerOutput = null;
+
+        Process llvmSymbolizer = new Process()
+        {
+            StartInfo = {
+                FileName = "llvm-symbolizer",
+                Arguments = $"--pretty-print",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+            }
+        };
+
+        outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
+
+        try
+        {
+            if (!llvmSymbolizer.Start())
+            {
+                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
+            }
+
+            using (var symbolizerWriter = llvmSymbolizer.StandardInput)
+            {
+                symbolizerWriter.WriteLine(addrBuilder.ToString());
+            }
+
+            Task<string> stdout = llvmSymbolizer.StandardOutput.ReadToEndAsync();
+            Task<string> stderr = llvmSymbolizer.StandardError.ReadToEndAsync();
+            bool fSuccess = llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+            Task.WaitAll(stdout, stderr);
+
+            if (!fSuccess)
+            {
+                outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
+                string output = stdout.Result;
+                string error = stderr.Result;
+
+                Console.WriteLine("llvm-symbolizer stdout:");
+                Console.WriteLine(output);
+                Console.WriteLine("llvm-symbolizer stderr:");
+                Console.WriteLine(error);
+
+                llvmSymbolizer.Kill(true);
+
+                return false;
+            }
+
+            symbolizerOutput = stdout.Result;
+
+        }
+        catch (Exception e)
+        {
+            outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
+            outputWriter.WriteLine(e.ToString());
+            return false;
+        }
+
+        // Go through the output of llvm-symbolizer and strip all the markers we added initially.
+        string[] contentsToSantize = symbolizerOutput.Split(Environment.NewLine);
+        StringBuilder finalBuilder = new StringBuilder();
+        for (int lineNum = 0; lineNum < contentsToSantize.Length; lineNum++)
+        {
+            string line = contentsToSantize[lineNum].Replace(SKIP_LINE_TAG, string.Empty);
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.EndsWith(TO_BE_CONTINUE_TAG))
+            {
+                finalBuilder.Append(line.Replace(TO_BE_CONTINUE_TAG, string.Empty));
+                continue;
+            }
+            finalBuilder.AppendLine(line);
+        }
+        outputWriter.WriteLine("Stack trace:");
+        outputWriter.WriteLine(finalBuilder.ToString());
+        return true;
+    }
+
+    static void AppendAddress(StringBuilder sb, string coreRoot, string nativeModuleName, string native_address, string module_address)
+    {
+        if (module_address != "0x0")
+        {
+            sb.Append($"{nativeModuleName}!");
+            sb.Append(TO_BE_CONTINUE_TAG);
+            sb.AppendLine();
+            //addrBuilder.AppendLine(frame.native_image_offset);
+            ulong nativeAddress = ulong.Parse(native_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
+            ulong moduleAddress = ulong.Parse(module_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
+            string fullPathToModule = Path.Combine(coreRoot, nativeModuleName);
+            sb.AppendFormat("{0} 0x{1:x}", fullPathToModule, nativeAddress - moduleAddress);
+        }
+    }
+
+    static bool TryPrintStackTraceFromWindowsDmp(string dmpFile, TextWriter outputWriter)
+    {
+        string? targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
+        if (string.IsNullOrEmpty(targetArchitecture))
+        {
+            outputWriter.WriteLine($"Environment variable {TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR} is not set.");
+            return false;
+        }
+
+        string cdbPath = $@"C:\Program Files (x86)\Windows Kits\10\Debuggers\{targetArchitecture}\cdb.exe";
+        if (!File.Exists(cdbPath))
+        {
+            outputWriter.WriteLine($"Unable to find cdb.exe at {cdbPath}");
+            return false;
+        }
+
+        string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+
+        string corDllArg = string.Empty;
+        string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+        if (coreRoot is not null)
+        {
+            corDllArg = $".cordll -lp \"{coreRoot}\"";
+        }
+
+        var cdbScriptPath = Path.GetTempFileName();
+        File.WriteAllText(cdbScriptPath, $$"""
+            {{ corDllArg }}
+            .load {{sosPath}}
+            ~*k
+            !clrstack -f -all
+            q
+            """);
+
+        // cdb outputs the stacks directly, so we don't need to parse the output.
+        if (!RunProcess(cdbPath, $@"-c ""$<{cdbScriptPath}"" -z ""{dmpFile}""", outputWriter))
+        {
+            outputWriter.WriteLine("Unable to run cdb.exe");
+            return false;
+        }
+        return true;
     }
 }
 

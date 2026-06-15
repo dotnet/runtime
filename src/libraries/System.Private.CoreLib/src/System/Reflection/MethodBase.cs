@@ -128,7 +128,7 @@ namespace System.Reflection
             ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
             if (paramInfo.Length == 0)
             {
-                return Type.EmptyTypes;
+                return [];
             }
 
             Type[] parameterTypes = new Type[paramInfo.Length];

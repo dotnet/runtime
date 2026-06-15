@@ -56,6 +56,8 @@ namespace System.Reflection.TypeLoading.Ecma
             return resourceNames;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3001:Avoid accessing Assembly file path",
+            Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
         [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles on Module.GetFile",
             Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
         public sealed override Stream? GetManifestResourceStream(string name)

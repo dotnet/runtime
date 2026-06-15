@@ -578,14 +578,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static partial void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
 
-        internal Type[] GetConstraints()
+        internal Type[]? GetConstraints()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
 
             GetConstraints(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types));
 
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle")]
@@ -744,12 +744,12 @@ namespace System
             return types!;
         }
 
-        internal Type[] GetInstantiationPublic()
+        internal Type[]? GetInstantiationPublic()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate")]
@@ -813,6 +813,29 @@ namespace System
             return type!;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeFunctionPointer")]
+        private static partial void MakeFunctionPointer(nint* retAndParamTypes, int numArgs, [MarshalAs(UnmanagedType.Bool)] bool isUnmanaged, ObjectHandleOnStack type);
+
+        internal RuntimeType MakeFunctionPointer(Type[] parameterTypes, bool isUnmanaged)
+        {
+            int count = 1 + parameterTypes.Length;
+            nint[] retAndParamTypeHandles = new nint[count];
+
+            retAndParamTypeHandles[0] = GetNativeHandle().Value;
+            for (int i = 0; i < parameterTypes.Length; i++)
+                retAndParamTypeHandles[i + 1] = parameterTypes[i].TypeHandle.Value;
+
+            RuntimeType? type = null;
+            fixed (nint* pRetAndParamTypeHandles = retAndParamTypeHandles)
+            {
+                MakeFunctionPointer(pRetAndParamTypeHandles, parameterTypes.Length, isUnmanaged, ObjectHandleOnStack.Create(ref type));
+            }
+
+            GC.KeepAlive(m_type);
+            GC.KeepAlive(parameterTypes);
+            return type!;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakePointer")]
         private static partial void MakePointer(QCallTypeHandle handle, ObjectHandleOnStack type);
 
@@ -823,9 +846,6 @@ namespace System
             MakePointer(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref type));
             return type!;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
-        internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
@@ -922,12 +942,12 @@ namespace System
         public RuntimeMethodInfoStub(RuntimeMethodHandleInternal methodHandleValue, object keepalive)
         {
             m_keepalive = keepalive;
-            m_value = methodHandleValue;
+            m_value = methodHandleValue.Value;
         }
 
         private readonly object m_keepalive;
 
-        // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
+        // These unused variables are used to ensure that m_value has same offset as RuntimeMethodInfo.m_handle
 #pragma warning disable CA1823, 414, 169, IDE0044
         private object? m_a;
         private object? m_b;
@@ -939,9 +959,9 @@ namespace System
         private object? m_h;
 #pragma warning restore CA1823, 414, 169, IDE0044
 
-        public RuntimeMethodHandleInternal m_value;
+        private IntPtr m_value;
 
-        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => m_value;
+        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_value);
 
         // implementation of CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
         [StackTraceHidden]
@@ -1053,8 +1073,8 @@ namespace System
             return ptr;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetIsCollectible")]
-        internal static partial Interop.BOOL GetIsCollectible(RuntimeMethodHandleInternal handle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_IsCAVisibleFromDecoratedType")]
         internal static partial Interop.BOOL IsCAVisibleFromDecoratedType(
@@ -1118,7 +1138,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetMethodDef(RuntimeMethodHandleInternal method);
+        internal static extern int GetMethodDef(RuntimeMethodHandleInternal method);
 
         internal static int GetMethodDef(IRuntimeMethodInfo method)
         {
@@ -1229,12 +1249,12 @@ namespace System
             return types!;
         }
 
-        internal static Type[] GetMethodInstantiationPublic(IRuntimeMethodInfo method)
+        internal static Type[]? GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[]? types = null;
+            Type[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             GC.KeepAlive(method);
-            return types!;
+            return types;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1341,6 +1361,9 @@ namespace System
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsAsyncMethod(RuntimeMethodHandleInternal method);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeMethodHandleInternal method);
 
         internal static LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method)
@@ -1388,28 +1411,28 @@ namespace System
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         public RuntimeFieldInfoStub(RuntimeFieldHandleInternal fieldHandle, object keepalive)
         {
             m_keepalive = keepalive;
-            m_fieldHandle = fieldHandle;
+            m_fieldHandle = fieldHandle.Value;
         }
 
         private readonly object m_keepalive;
 
-        // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 414, 169, IDE0044
+        // These unused variables are used to ensure that m_fieldHandle has same offset as RtFieldInfo.m_fieldHandle
+#pragma warning disable CA1823, 414, 169, IDE0044
+        private IntPtr m_b;
         private object? m_c;
         private object? m_d;
-        private int m_b;
         private object? m_e;
         private object? m_f;
-        private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 414, 169, IDE0044
+#pragma warning restore CA1823, 414, 169, IDE0044
 
-        RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
+        private IntPtr m_fieldHandle;
+
+        RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => new RuntimeFieldHandleInternal(m_fieldHandle);
 
         // implementation of CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
         [StackTraceHidden]
@@ -1553,9 +1576,9 @@ namespace System
         {
             ByteRef fieldDataRef = default;
             GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref fieldDataRef));
-            Debug.Assert(!Unsafe.IsNullRef(ref fieldDataRef.Get()));
+            Debug.Assert(!Unsafe.IsNullRef(ref fieldDataRef.Value));
             GC.KeepAlive(field);
-            return ref fieldDataRef.Get();
+            return ref fieldDataRef.Value;
         }
 
         internal static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
@@ -1569,7 +1592,7 @@ namespace System
         private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack fieldDataRef);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetToken(IntPtr fieldDesc);
+        internal static extern int GetToken(IntPtr fieldDesc);
 
         internal static int GetToken(RtFieldInfo field)
         {
@@ -2207,5 +2230,105 @@ namespace System
         internal abstract byte[]? ResolveSignature(int token, int fromMethod);
         //
         internal abstract MethodInfo GetDynamicMethod();
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetJitContext(Resolver* pResolver, int* pSecurityControlFlags, RuntimeType* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetJitContext(out *pSecurityControlFlags);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCodeInfo(Resolver* pResolver, int* pStackSize, int* pInitLocals, int* pEHCount, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetCodeInfo(out *pStackSize, out *pInitLocals, out *pEHCount);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetLocalsSignature(Resolver* pResolver, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetLocalsSignature();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetStringLiteral(Resolver* pResolver, int token, string* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetStringLiteral(token);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveToken(Resolver* pResolver, int token, IntPtr* pTypeHandle, IntPtr* pMethodHandle, IntPtr* pFieldHandle, Exception* pException)
+        {
+            try
+            {
+                pResolver->ResolveToken(token, out *pTypeHandle, out *pMethodHandle, out *pFieldHandle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveSignature(Resolver* pResolver, int token, int fromMethod, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->ResolveSignature(token, fromMethod);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetEHInfo(Resolver* pResolver, int EHNumber, byte[]* ppRawEHInfo, void* parsedEHInfo, Exception* pException)
+        {
+            try
+            {
+                byte[]? rawEHInfo = pResolver->GetRawEHInfo();
+                if (rawEHInfo != null)
+                {
+                    *ppRawEHInfo = rawEHInfo;
+                }
+                else
+                {
+                    *ppRawEHInfo = null;
+                    pResolver->GetEHInfo(EHNumber, parsedEHInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

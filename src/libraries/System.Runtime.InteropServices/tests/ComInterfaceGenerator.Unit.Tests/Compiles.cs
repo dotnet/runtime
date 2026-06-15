@@ -4,12 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
+using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -345,6 +349,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("out") };
+            yield return new object[] { ID(), codeSnippets.ComInterfaceWithNativeMarshalling };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithUnsafeBaseMethod };
         }
 
         public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
@@ -366,6 +372,243 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task PartialMethodModifierOnComInterfaceMethodCompiles()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                internal partial interface IComInterface
+                {
+                    void Method();
+                    public virtual partial void PartialMethod();
+                }
+                internal partial interface IComInterface
+                {
+                    public virtual partial void PartialMethod() { }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task DocumentedComInterfaceDoesNotProduceCS1591Warnings()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    /// <summary>
+                    /// This is my interface.
+                    /// </summary>
+                    [GeneratedComInterface, Guid("27dd3a3d-4c16-485a-a123-7cd8f39c6ef2")]
+                    public partial interface IMyInterface
+                    {
+                        /// <summary>
+                        /// This does something.
+                        /// </summary>
+                        void DoSomething();
+                    }
+
+                    /// <summary>
+                    /// This is my other interface.
+                    /// </summary>
+                    [GeneratedComInterface, Guid("1b681178-368a-4d13-8893-66b4673d2ff9")]
+                    public partial interface MyOtherInterface : IMyInterface
+                    {
+                        /// <summary>
+                        /// This does something else.
+                        /// </summary>
+                        void DoSomethingElse();
+                    }
+                }
+                """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = compilation =>
+                {
+                    // Verify that no CS1591 warnings are produced in the generated code
+                    var diagnostics = compilation.GetDiagnostics();
+                    var cs1591Diagnostics = diagnostics.Where(d => d.Id == "CS1591").ToList();
+                    
+                    Assert.Empty(cs1591Diagnostics);
+                }
+            };
+            
+            // Enable XML documentation warnings to ensure CS1591 would be raised if not suppressed
+            test.SolutionTransforms.Add((solution, projectId) =>
+            {
+                var project = solution.GetProject(projectId);
+                if (project is null) return solution;
+                
+                // Set parse options to enable documentation mode which is required for CS1591 validation
+                var parseOptions = (CSharpParseOptions?)project.ParseOptions;
+                if (parseOptions is not null)
+                {
+                    parseOptions = parseOptions.WithDocumentationMode(DocumentationMode.Diagnose);
+                    solution = solution.WithProjectParseOptions(projectId, parseOptions);
+                    project = solution.GetProject(projectId)!;
+                }
+                
+                var compilationOptions = project.CompilationOptions!
+                    .WithSpecificDiagnosticOptions(new Dictionary<string, ReportDiagnostic>
+                    {
+                        ["CS1591"] = ReportDiagnostic.Warn
+                    });
+                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
+            });
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexOnOutObjectCompiles()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface IActivationFactory
+                {
+                    void GetActivationFactory(
+                        in Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexMultipleOutObjectsSharingSameIidCompiles()
+        {
+            // Two 'out object' parameters both referencing the same 'in Guid' IID parameter.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        in Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object a,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object b);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexMultipleOutObjectsWithDifferentIidsCompiles()
+        {
+            // Two 'out object' parameters each referencing a different 'in Guid' IID parameter.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        in Guid iidA,
+                        in Guid iidB,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object a,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 1)] out object b);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexInterleavedWithOtherParametersCompiles()
+        {
+            // IID-driven 'out object' parameters interleaved with other input/output parameters and a non-IID
+            // 'out object' to verify that identifier generation in the stub doesn't conflict across parameters.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        int extra,
+                        in Guid iidA,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 1)] out object a,
+                        [MarshalAs(UnmanagedType.Interface)] out object b,
+                        in Guid iidC,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 4)] out object c);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexByValueGuidCompiles()
+        {
+            // By-value 'Guid' IID parameter (RefKind.None) should also be accepted.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexRefGuidCompiles()
+        {
+            // 'ref Guid' IID parameter is also accepted; the QueryInterface call reads the value as an 'in Guid'.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        ref Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }

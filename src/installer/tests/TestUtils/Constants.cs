@@ -35,6 +35,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string Disable = "Disable";
         }
 
+        public static class DisableRuntimeVersions
+        {
+            public const string EnvironmentVariable = "DOTNET_DISABLE_RUNTIME_VERSIONS";
+        }
+
         public static class FxVersion
         {
             public const string CommandLineArgument = "--fx-version";

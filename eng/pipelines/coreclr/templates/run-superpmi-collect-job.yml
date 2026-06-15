@@ -17,6 +17,8 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   collectionType: ''
   collectionName: ''
+  targetOS: ''
+  targetArch: ''
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -60,6 +62,20 @@ jobs:
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
     - CollectionType: ${{ parameters.collectionType }}
     - CollectionName: ${{ parameters.collectionName }}
+    # Default the cross-target variables to the host osGroup/archType so existing
+    # collections are unaffected. Override for cross-target collections (e.g. wasm).
+    - ${{ if ne(parameters.targetOS, '') }}:
+      - name: TargetOSForCollection
+        value: ${{ parameters.targetOS }}
+    - ${{ if eq(parameters.targetOS, '') }}:
+      - name: TargetOSForCollection
+        value: ${{ parameters.osGroup }}
+    - ${{ if ne(parameters.targetArch, '') }}:
+      - name: TargetArchForCollection
+        value: ${{ parameters.targetArch }}
+    - ${{ if eq(parameters.targetArch, '') }}:
+      - name: TargetArchForCollection
+        value: ${{ parameters.archType }}
 
     - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
       parameters:
@@ -68,6 +84,8 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+      - name: Release_Core_Root_Dir
+        value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: MergedMchFileLocation
@@ -79,6 +97,8 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
+      - name: Release_Core_Root_Dir
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: MergedMchFileLocation
@@ -91,10 +111,30 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'corelib') }}:
+      # For the corelib crossgen2 collection, InputDirectory holds the directory
+      # containing the single System.Private.CoreLib.dll that crossgen2 will compile.
+      # For wasm cross-target collections, source the wasm-built corelib (which has
+      # the correct TARGET_BROWSER / 32-bit conditional IL) instead of the host
+      # release Core_Root corelib. The wasm corelib build emits the managed assembly
+      # under an 'IL' subdirectory of the configuration output.
+      - ${{ if eq(parameters.targetArch, 'wasm') }}:
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - name: InputDirectory
+            value: '$(Build.SourcesDirectory)\artifacts\bin\coreclr\browser.wasm.Release\IL'
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - name: InputDirectory
+            value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/browser.wasm.Release/IL'
+      - ${{ if ne(parameters.targetArch, 'wasm') }}:
+        - name: InputDirectory
+          value: '$(Release_Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'realworld') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'aspnet2') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
@@ -124,7 +164,7 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) -max_size 25 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -release_core_root_directory $(Release_Core_Root_Dir) -arch $(archType) -platform $(osGroup) -target_os $(TargetOSForCollection) -target_arch $(TargetArchForCollection) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs
@@ -158,6 +198,8 @@ jobs:
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
+        targetOS: ${{ parameters.targetOS }}
+        targetArch: ${{ parameters.targetArch }}
         InputArtifacts: '$(InputArtifacts)'
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
@@ -166,7 +208,7 @@ jobs:
     # Always run merge step even if collection of some partition fails so we can store collection
     # of the partitions that succeeded. If all the partitions fail, merge-mch would fail and we won't
     # run future steps like uploading superpmi collection.
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch --ci -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch --ci -log_level DEBUG -build_type ${{ parameters.buildConfig }} -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
       condition: always()
 
@@ -190,7 +232,7 @@ jobs:
           onlyAddExtraIndex: false
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
-      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
       - task: AzureCLI@2
@@ -200,7 +242,7 @@ jobs:
           scriptType: 'pscore'
           scriptLocation: 'inlineScript'
           inlineScript: |
-            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -target_os $(TargetOSForCollection) -target_arch $(TargetArchForCollection) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
 
     # Always upload the available logs for diagnostics
     - task: CopyFiles@2

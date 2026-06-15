@@ -288,9 +288,9 @@ namespace System.Data.OleDb
                 _parentTransaction._nestedTransaction = null;
                 //_parentTransaction = null;
             }
-            else if (null != _parentConnection)
+            else
             {
-                _parentConnection.LocalTransaction = null;
+                _parentConnection?.LocalTransaction = null;
             }
             _parentConnection = null!;
         }

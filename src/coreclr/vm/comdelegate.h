@@ -34,8 +34,8 @@ public:
     static void Init();
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
+    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
     static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
@@ -170,6 +170,7 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
@@ -204,5 +205,6 @@ private:
         return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
     }
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif  // _COMDELEGATE_H_

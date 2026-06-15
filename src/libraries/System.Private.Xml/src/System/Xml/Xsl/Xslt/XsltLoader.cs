@@ -918,7 +918,7 @@ namespace System.Xml.Xsl.Xslt
             new XsltAttribute("pattern-separator",  V1Opt | V2Opt),
             new XsltAttribute("minus-sign",         V1Opt | V2Opt)
         };
-        private void LoadDecimalFormat(NsDecl? stylesheetNsList)
+        private unsafe void LoadDecimalFormat(NsDecl? stylesheetNsList)
         {
             const int NumCharAttrs = 8, NumSignAttrs = 7;
             ContextInfo ctxInfo = _input.GetAttributes(_decimalFormatAttributes);
@@ -1121,7 +1121,7 @@ namespace System.Xml.Xsl.Xslt
         private void LoadGlobalVariableOrParameter(NsDecl? stylesheetNsList)
         {
             Debug.Assert(_curTemplate == null);
-            Debug.Assert(_input.CanHaveApplyImports == false);
+            Debug.Assert(!_input.CanHaveApplyImports);
             VarPar var = XslVarPar();
             // Preserving namespaces to parse content later
             var.Namespaces = MergeNamespaces(var.Namespaces, stylesheetNsList);
@@ -1259,7 +1259,7 @@ namespace System.Xml.Xsl.Xslt
 
             ReportNYI("xsl:function");
 
-            Debug.Assert(input.CanHaveApplyImports == false);
+            Debug.Assert(!input.CanHaveApplyImports);
 
             curFunction = new Object();
             LoadInstructions(InstructionFlags.AllowParam);

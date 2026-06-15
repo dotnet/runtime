@@ -39,15 +39,15 @@ namespace TypeSystemTests
         [Fact]
         public void TestSimpleHfa()
         {
-            var simpleHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStruct");
+            var simpleHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "SimpleHfaFloatStruct"u8);
             Assert.True(simpleHfaFloatStruct.IsHomogeneousAggregate);
             Assert.Equal(Float32Aggregate, simpleHfaFloatStruct.ValueTypeShapeCharacteristics);
 
-            var simpleHfaFloatStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStructWithManyFields");
+            var simpleHfaFloatStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "SimpleHfaFloatStructWithManyFields"u8);
             Assert.True(simpleHfaFloatStructWithManyFields.IsHomogeneousAggregate);
             Assert.Equal(Float32Aggregate, simpleHfaFloatStructWithManyFields.ValueTypeShapeCharacteristics);
 
-            var simpleHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaDoubleStruct");
+            var simpleHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "SimpleHfaDoubleStruct"u8);
             Assert.True(simpleHfaDoubleStruct.IsHomogeneousAggregate);
             Assert.Equal(Float64Aggregate, simpleHfaDoubleStruct.ValueTypeShapeCharacteristics);
         }
@@ -55,11 +55,11 @@ namespace TypeSystemTests
         [Fact]
         public void TestCompositeHfa()
         {
-            var compositeHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaFloatStruct");
+            var compositeHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "CompositeHfaFloatStruct"u8);
             Assert.True(compositeHfaFloatStruct.IsHomogeneousAggregate);
             Assert.Equal(Float32Aggregate, compositeHfaFloatStruct.ValueTypeShapeCharacteristics);
 
-            var compositeHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaDoubleStruct");
+            var compositeHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "CompositeHfaDoubleStruct"u8);
             Assert.True(compositeHfaDoubleStruct.IsHomogeneousAggregate);
             Assert.Equal(Float64Aggregate, compositeHfaDoubleStruct.ValueTypeShapeCharacteristics);
         }
@@ -67,19 +67,19 @@ namespace TypeSystemTests
         [Fact]
         public void TestHfaNegative()
         {
-            var nonHAEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAEmptyStruct");
+            var nonHAEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "NonHAEmptyStruct"u8);
             Assert.False(nonHAEmptyStruct.IsHomogeneousAggregate);
 
-            var nonHAStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStruct");
+            var nonHAStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "NonHAStruct"u8);
             Assert.False(nonHAStruct.IsHomogeneousAggregate);
 
-            var nonHAMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAMixedStruct");
+            var nonHAMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "NonHAMixedStruct"u8);
             Assert.False(nonHAMixedStruct.IsHomogeneousAggregate);
 
-            var nonHACompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHACompositeStruct");
+            var nonHACompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "NonHACompositeStruct"u8);
             Assert.False(nonHACompositeStruct.IsHomogeneousAggregate);
 
-            var nonHAStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStructWithManyFields");
+            var nonHAStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics"u8, "NonHAStructWithManyFields"u8);
             Assert.False(nonHAStructWithManyFields.IsHomogeneousAggregate);
 
             var objectType = _context.GetWellKnownType(WellKnownType.Object);

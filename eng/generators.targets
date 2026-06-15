@@ -40,12 +40,12 @@
                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
                                      '@(ProjectReference->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))' == 'true'
                                  )" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'@(EnabledGenerators)' != '' and
-                        @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DownlevelLibraryImportGenerator'))">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
+    <EnabledGenerators Include="EventSourceGenerator"
+                       Condition="'$(IsSourceProject)' == 'true' and
+                                 '$(MSBuildProjectExtension)' == '.csproj' and
+                                 '$(DisableImplicitFrameworkReferences)' == 'true'
+                                 " />
   </ItemGroup>
 
   <!-- Use this complex item list based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore.
@@ -70,6 +70,11 @@
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'ComInterfaceGenerator'))" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.CoreLib\gen\EventSourceGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'EventSourceGenerator'))" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"

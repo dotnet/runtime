@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
@@ -18,22 +20,22 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         List<TypeRefTypeSystemField> _fields = new List<TypeRefTypeSystemField>();
         bool? _isValueType;
         Instantiation? _instantiation;
-        string _name;
-        string _namespace;
+        byte[] _name;
+        byte[] _namespace;
         Dictionary<string, TypeRefTypeSystemType> _nestedType;
         TypeRefTypeSystemType _containingType;
 
-        public TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemModule module)
+        public TypeRefTypeSystemType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, TypeRefTypeSystemModule module)
         {
-            _namespace = nameSpace;
-            _name = name;
+            _namespace = nameSpace.ToArray();
+            _name = name.ToArray();
             _module = module;
         }
 
-        private TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemType containingType, TypeRefTypeSystemModule module)
+        private TypeRefTypeSystemType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, TypeRefTypeSystemType containingType, TypeRefTypeSystemModule module)
         {
-            _namespace = nameSpace;
-            _name = name;
+            _namespace = nameSpace.ToArray();
+            _name = name.ToArray();
             _module = module;
             _containingType = containingType;
         }
@@ -99,14 +101,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
             if (!_nestedType.TryGetValue(name, out TypeRefTypeSystemType type))
             {
-                type = new TypeRefTypeSystemType(null, name, this, _module);
+                type = new TypeRefTypeSystemType(null, System.Text.Encoding.UTF8.GetBytes(name), this, _module);
                 _nestedType.Add(name, type);
             }
 
             return type;
         }
 
-        public MethodDesc GetOrAddMethod(string name, MethodSignature signature)
+        public MethodDesc GetOrAddMethod(ReadOnlySpan<byte> name, MethodSignature signature)
         {
             MethodDesc method = GetMethod(name, signature);
 
@@ -120,7 +122,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return method;
         }
 
-        public FieldDesc GetOrAddField(string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
+        public FieldDesc GetOrAddField(ReadOnlySpan<byte> name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             FieldDesc fld = GetField(name);
             if (fld == null)
@@ -140,21 +142,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override PInvokeStringFormat PInvokeStringFormat => throw new NotImplementedException();
 
-        public override string Name => _name;
+        public override Utf8Span Name => _name;
 
-        public override string Namespace => _namespace;
+        public override Utf8Span Namespace => _namespace;
 
         public override bool IsExplicitLayout => throw new NotImplementedException();
 
         public override bool IsSequentialLayout => throw new NotImplementedException();
 
+        public override bool IsExtendedLayout => throw new NotImplementedException();
+
+        public override bool IsAutoLayout => throw new NotImplementedException();
+
         public override bool IsBeforeFieldInit => throw new NotImplementedException();
 
         public override ModuleDesc Module => _module;
 
-        public override DefType BaseType => MetadataBaseType;
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -170,27 +174,35 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override bool IsAbstract => throw new NotImplementedException();
 
-        public override DefType ContainingType => _containingType;
+        public override TypeRefTypeSystemType ContainingType => _containingType;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
-        public override string DiagnosticName => Name;
+        public override string DiagnosticName => GetName();
 
-        public override string DiagnosticNamespace => Namespace;
+        public override string DiagnosticNamespace => GetNamespace();
 
         public override TypeSystemContext Context => Module.Context;
 
         protected override int ClassCode => throw new NotImplementedException();
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => throw new NotImplementedException();
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name) => throw new NotImplementedException();
         public override ClassLayoutMetadata GetClassLayout() => throw new NotImplementedException();
-        public override int GetHashCode() => (Namespace != null) ? HashCode.Combine(Namespace, Name, Module) : HashCode.Combine(Name, Module);
-        public override MetadataType GetNestedType(string name)
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.AddBytes(Namespace.AsSpan());
+            hash.AddBytes(Name.AsSpan());
+            hash.Add(Module);
+            return hash.ToHashCode();
+        }
+
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             TypeRefTypeSystemType type = null;
             if (_nestedType != null)
             {
-                _nestedType.TryGetValue(name, out type);
+                _nestedType.TryGetValue(Encoding.UTF8.GetString(name.AsSpan()), out type);
             }
             return type;
         }
@@ -251,11 +263,5 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         }
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => throw new NotImplementedException();
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
-        }
     }
 }

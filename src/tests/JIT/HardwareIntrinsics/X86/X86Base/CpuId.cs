@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 namespace XarchHardwareIntrinsicTest._CpuId
 {
@@ -22,6 +23,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         const int Pass = 100;
         const int Fail = 0;
 
+        [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
         [Fact]
         [SkipOnMono("Mono does not currently have full support for intrinsics on xarch", TestPlatforms.Any)]
         public unsafe static void CpuId()
@@ -70,7 +72,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             for (int i = 0; i < 2; i++)
             {
-                // SSE, SSE2 are paired
+                // SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT are paired
 
                 if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
                 {
@@ -78,6 +80,31 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 }
 
                 if (IsBitIncorrect(edx, 26, typeof(Sse2), Sse2.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 9, typeof(Ssse3), Ssse3.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 19, typeof(Sse41), Sse41.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 23, typeof(Popcnt), Popcnt.IsSupported, "HWIntrinsic", ref isHierarchyDisabled))
                 {
                     testResult = Fail;
                 }
@@ -99,40 +126,6 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     testResult = Fail;
                 }
             }
-
-            isHierarchyDisabled = isBaselineHierarchyDisabled;
-
-            for (int i = 0; i < 2; i++)
-            {
-                // SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT are paired
-
-                if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE42", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ecx, 9, typeof(Ssse3), Ssse3.IsSupported, "SSE42", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ecx, 19, typeof(Sse41), Sse41.IsSupported, "SSE42", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "SSE42", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-
-                if (IsBitIncorrect(ecx, 23, typeof(Popcnt), Popcnt.IsSupported, "SSE42", ref isHierarchyDisabled))
-                {
-                    testResult = Fail;
-                }
-            }
-
-            bool isSse42HierarchyDisabled = isHierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 28, typeof(Avx), Avx.IsSupported, "AVX", ref isHierarchyDisabled))
             {
@@ -280,7 +273,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse42HierarchyDisabled;
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 8, typeof(Gfni), Gfni.IsSupported, "GFNI", ref isHierarchyDisabled))
             {

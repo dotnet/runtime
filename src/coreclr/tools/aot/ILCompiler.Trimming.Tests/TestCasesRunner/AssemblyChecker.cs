@@ -294,7 +294,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             return false;
                     }
 
-                    if (metadataType.Namespace.StartsWith("Internal"))
+                    if (metadataType.Namespace.StartsWith("Internal"u8))
                         return false;
 
                     if (metadataType.Module.Assembly is EcmaAssembly asm && asm.Assembly.GetName().Name == "System.Private.CoreLib")
@@ -780,7 +780,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield break;
             }
 
-            foreach (var err in VerifyFieldKept(srcField, linkedType?.GetFields()?.FirstOrDefault(l => srcField.Name == l.Name), skipKeptItemsValidation: true))
+            foreach (var err in VerifyFieldKept(srcField, linkedType?.GetFields()?.FirstOrDefault(l => srcField.Name == l.GetName()), skipKeptItemsValidation: true))
                 yield return err;
             verifiedGeneratedFields.Add(srcField.FullName);
             linkedMembers.Remove(new AssemblyQualifiedToken(srcField));
@@ -1574,7 +1574,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         }
 
                         var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString()!;
-                        if (!originalsTypeNameResolver.TryResolveTypeName(originalTargetAssembly, expectedTypeName, out TypeReference? expectedTypeRef, out _))
+                        if (!originalsTypeNameResolver.TryResolveTypeName(originalTargetAssembly, expectedTypeName, fallbackToCoreLib: true, out TypeReference? expectedTypeRef, out _))
                             Assert.Fail($"Could not resolve original type `{expectedTypeName}' in assembly {assemblyName}");
                         TypeDefinition expectedType = expectedTypeRef.Resolve();
                         linkedMembersInAssembly.TryGetValue(new AssemblyQualifiedToken(expectedType), out LinkedEntity? linkedTypeEntity);

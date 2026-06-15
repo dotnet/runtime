@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
-using Internal.IL.Stubs;
-using Internal.IL;
 using System.Threading;
+
+using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.Text;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -27,11 +30,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override Utf8Span Name
         {
             get
             {
-                return "_InlineArray__" + ElementType.Name + "__"+ Length;
+                return new Utf8Span("_InlineArray__"u8).Append(ElementType.Name, "__"u8, Length);
             }
         }
 
@@ -43,11 +46,11 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override string Namespace
+        public override Utf8Span Namespace
         {
             get
             {
-                return "Internal.CompilerGenerated";
+                return "Internal.CompilerGenerated"u8;
             }
         }
 
@@ -55,7 +58,7 @@ namespace Internal.TypeSystem.Interop
         {
             get
             {
-                return Namespace;
+                return "Internal.CompilerGenerated";
             }
         }
 
@@ -91,6 +94,22 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -99,15 +118,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                return (DefType)Context.GetWellKnownType(WellKnownType.ValueType);
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -131,7 +142,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {
@@ -173,10 +184,12 @@ namespace Internal.TypeSystem.Interop
 
         public override ClassLayoutMetadata GetClassLayout()
         {
-            ClassLayoutMetadata result = default(ClassLayoutMetadata);
-            result.PackingSize = 0;
-            result.Size = checked((int)Length * ElementType.GetElementSize().AsInt);
-            return result;
+            return new ClassLayoutMetadata()
+            {
+                Kind = MetadataLayoutKind.Sequential,
+                PackingSize = 0,
+                Size = checked((int)Length * ElementType.GetElementSize().AsInt),
+            };
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
@@ -189,7 +202,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }
@@ -199,33 +212,25 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return Array.Empty<MethodImplRecord>();
         }
 
         private int _hashCode;
 
-        private void InitializeHashCode()
+        private int InitializeHashCode()
         {
-            var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(Namespace);
-
-            if (Namespace.Length > 0)
-            {
-                hashCodeBuilder.Append(".");
-            }
-
-            hashCodeBuilder.Append(Name);
-            _hashCode = hashCodeBuilder.ToHashCode();
+            return _hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
         }
 
         public override int GetHashCode()
         {
-            if (_hashCode == 0)
+            if (_hashCode != 0)
             {
-                InitializeHashCode();
+                return _hashCode;
             }
-            return _hashCode;
+            return InitializeHashCode();
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -246,12 +251,6 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
 
         private void InitializeMethods()
@@ -327,17 +326,17 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override string Name
+            public override Utf8Span Name
             {
                 get
                 {
                     if (_kind == InlineArrayMethodKind.Getter)
                     {
-                        return "get_Item";
+                        return "get_Item"u8;
                     }
                     else
                     {
-                        return "set_Item";
+                        return "set_Item"u8;
                     }
                 }
             }
@@ -346,7 +345,7 @@ namespace Internal.TypeSystem.Interop
             {
                 get
                 {
-                    return Name;
+                    return GetName();
                 }
             }
 
@@ -484,7 +483,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override DefType OwningType
+            public override MetadataType OwningType
             {
                 get
                 {
@@ -497,11 +496,11 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override string Name
+            public override Utf8Span Name
             {
                 get
                 {
-                    return "InlineArrayField";
+                    return "InlineArrayField"u8;
                 }
             }
 

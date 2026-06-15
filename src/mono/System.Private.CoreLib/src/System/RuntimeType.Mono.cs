@@ -1396,6 +1396,18 @@ namespace System
 
         #region Generics
 
+        public override Type? GetNullableUnderlyingType()
+        {
+            if (IsGenericType)
+            {
+                Type genericType = GetGenericTypeDefinition();
+                if (ReferenceEquals(genericType, typeof(Nullable<>)))
+                    return GetGenericArguments()[0];
+            }
+
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             RuntimeType[]? res = null;
@@ -2466,7 +2478,7 @@ namespace System
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
-        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
+        internal bool IsNullableOfT => GetNullableUnderlyingType() is not null;
 
         public override bool IsSZArray
         {
@@ -2582,6 +2594,7 @@ namespace System
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: break;
             }
 

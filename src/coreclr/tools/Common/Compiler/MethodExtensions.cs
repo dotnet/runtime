@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using ILCompiler.DependencyAnalysis;
-
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -77,6 +78,23 @@ namespace ILCompiler
             return null;
         }
 
+        public static TypeDesc GetUnmanagedCallersOnlyAssociatedSourceType(this EcmaMethod This)
+        {
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute");
+            if (decoded == null)
+                return null;
+
+            var decodedValue = decoded.Value;
+
+            foreach (var argument in decodedValue.NamedArguments)
+            {
+                if (argument.Name == "AssociatedSourceType")
+                    return (TypeDesc)argument.Value;
+            }
+
+            return null;
+        }
+
 #if !READYTORUN
         /// <summary>
         /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
@@ -135,5 +153,53 @@ namespace ILCompiler
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
         }
+
+        public static bool ReturnsTaskOrValueTask(this MethodSignature method)
+        {
+            TypeDesc ret = method.ReturnType;
+
+            if (ret is MetadataType md
+                && md.Module == method.Context.SystemModule
+                && md.Namespace == "System.Threading.Tasks"u8)
+            {
+                Utf8Span name = md.Name;
+                if (name == "Task"u8 || name == "Task`1"u8
+                    || name == "ValueTask"u8 || name == "ValueTask`1"u8)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool IsCallEffectivelyDirect(this MethodDesc method)
+        {
+            if (!method.IsVirtual)
+            {
+                return true;
+            }
+
+            // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
+            if (method.OwningType.IsInterface)
+            {
+                return false;
+            }
+
+            // Check if we can devirt per metadata
+            if (method.IsFinal || method.OwningType.IsSealed())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether a method uses the async calling convention.
+        /// Returns true for async variants (compiler-generated wrappers around Task-returning methods),
+        /// return dropping async thunks, and for special async intrinsics that don't return Task/ValueTask
+        /// but use async calling convention.
+        /// </summary>
+        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || method.IsReturnDroppingAsyncThunk() || (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask());
     }
 }

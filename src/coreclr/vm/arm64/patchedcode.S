@@ -5,6 +5,12 @@
 #include "unixasmmacros.inc"
 #include "patchedcodeconstants.h"
 
+// On Apple platforms we emit the whole patched region as single function
+// with .alt_entry labels for individual write barrier helpers. This ensures
+// the linker doesn't relocate or split the code and treats it as single
+// atom. We also need to be careful to produce the correct unwinding
+// information.
+
 //-----------------------------------------------------------------------------
 // The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
@@ -13,7 +19,17 @@
 // to declare a write barrier function.
 //
 .macro WRITE_BARRIER_ENTRY name
+#if defined(__APPLE__)
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
+    .p2align        2
+    .alt_entry C_FUNC(\name)
+    .private_extern C_FUNC(\name)
+C_FUNC(\name):
+    .cfi_startproc
+#else
     LEAF_ENTRY \name, _TEXT
+#endif
 .endm
 
 // WRITE_BARRIER_END
@@ -21,38 +37,33 @@
 // The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
 //
 .macro WRITE_BARRIER_END name
+#if defined(__APPLE__)
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
+    .alt_entry C_FUNC(\name\()_End)
+    .private_extern C_FUNC(\name\()_End)
+C_FUNC(\name\()_End):
+    .cfi_startproc
+    // make sure this symbol gets its own address
+    nop
+#else
     LEAF_END_MARKED \name, _TEXT
+#endif
 .endm
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 //------------------------------------------
 // Start of the writeable code region
+#if defined(__APPLE__)
+    .global C_FUNC(JIT_PatchedCodeStart)
+C_FUNC(JIT_PatchedCodeStart):
+    .cfi_startproc
+    ret  lr
+#else
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeStart, _TEXT
-
-//-----------------------------------------------------------------------------
-// void JIT_ByRefWriteBarrier
-// On entry:
-//   x13  : the source address (points to object reference to write)
-//   x14  : the destination address (object reference written here)
-//
-// On exit:
-//   x12  : trashed
-//   x13  : incremented by 8
-//   x14  : incremented by 8
-//   x15  : trashed
-//   x17  : trashed (ip1)
-//
-//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
-//         if you add more trashed registers.
-//
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-
-    ldr  x15, [x13], 8
-    b C_FUNC(JIT_CheckedWriteBarrier)
-
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
+#endif
 
 //-----------------------------------------------------------------------------
 // Simple WriteBarriers
@@ -63,12 +74,9 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 // On exit:
 //   x12  : trashed
-//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   x14  : preserved (the destination address is not modified)
 //   x15  : trashed
 //   x17  : trashed (ip1)
-//
-//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
-//         if you add more trashed registers.
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     ldr  x12,  LOCAL_LABEL(wbs_lowest_address)
@@ -80,7 +88,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     b C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
-    str  x15, [x14], 8
+    str  x15, [x14]
     ret  lr
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -96,12 +104,9 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //
 // On exit:
 //   x12  : trashed
-//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   x14  : preserved (the destination address is not modified)
 //   x15  : trashed
 //   x17  : trashed (ip1)
-//
-//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
-//         if you add more trashed registers.
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // This must be greater than the largest JIT_WriteBarrier_ function.
@@ -145,10 +150,17 @@ WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 // ------------------------------------------------------------------
 // End of the writeable code region
+#if defined(__APPLE__)
+    .private_extern C_FUNC(JIT_PatchedCodeLast)
+    .alt_entry C_FUNC(JIT_PatchedCodeLast)
+C_FUNC(JIT_PatchedCodeLast):
+    .cfi_endproc
+    ret  lr
+#else
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
-
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -304,10 +316,6 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 .macro WRITE_BARRIER_RETURN_STUB exit
 LOCAL_LABEL(\exit):
-    // Increment by 8 to implement JIT_ByRefWriteBarrier contract.
-    // TODO: Consider duplicating the logic to get rid of this redundant 'add'
-    // for JIT_WriteBarrier/JIT_CheckedWriteBarrier
-    add  x14, x14, 8
     ret  lr
 .endm
 

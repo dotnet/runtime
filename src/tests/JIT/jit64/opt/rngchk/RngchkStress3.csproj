@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="RngchkStress3.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

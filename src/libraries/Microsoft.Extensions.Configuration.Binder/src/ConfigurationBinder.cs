@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (options.ErrorOnUnknownConfiguration)
             {
-                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                HashSet<string> propertyNames = new(modelProperties.Select(GetPropertyName),
                     StringComparer.OrdinalIgnoreCase);
 
                 List<string>? missingPropertyNames = null;
@@ -245,6 +245,11 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (PropertyInfo property in modelProperties)
             {
+                if (IsIgnoredProperty(property))
+                {
+                    continue;
+                }
+
                 if (constructorParameters is null || !constructorParameters.Any(p => p.Name == property.Name))
                 {
                     BindProperty(property, instance, configuration, options);
@@ -503,20 +508,19 @@ namespace Microsoft.Extensions.Configuration
                         throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, configValue, section.Path, type));
                     }
                 }
-                else
+                else if (!bindingPoint.IsReadOnly && bindingPoint.Value is null)
                 {
-                    if (isParentCollection && bindingPoint.Value is null)
+                    if (isParentCollection)
                     {
                         // Try to create the default instance of the type
                         bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                     }
-                    else if (isConfigurationExist && bindingPoint.Value is null)
+                    else if (isConfigurationExist)
                     {
-                        // Don't override the existing array in bindingPoint.Value if it is already set.
-                        if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
+                        if (type.IsArray || IsIEnumerableInterface(type))
                         {
                             // When having configuration value set to empty string, we create an empty array
-                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.GetElementType()!, 0));
+                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.IsArray ? type.GetElementType()! : type.GetGenericArguments()[0], 0));
                         }
                         else
                         {
@@ -623,6 +627,11 @@ namespace Microsoft.Extensions.Configuration
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
             {
+                if (IsIgnoredProperty(prop))
+                {
+                    continue;
+                }
+
                 propertyNames.Add(prop.Name);
             }
 
@@ -1056,6 +1065,9 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
+        private static bool IsIEnumerableInterface(Type type)
+            => type.IsInterface && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+
         private static bool TypeIsASetInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -1092,7 +1104,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static List<PropertyInfo> GetAllProperties(
-#if NET10_0_OR_GREATER
+#if NET
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)]
 #else
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -1136,7 +1148,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToIsUnnamed, type));
             }
 
-            var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
+            var propertyBindingPoint = new BindingPoint(isReadOnly: false);
 
             BindInstance(
                 parameter.ParameterType,
@@ -1159,6 +1171,8 @@ namespace Microsoft.Extensions.Configuration
 
             return propertyBindingPoint.Value;
         }
+
+        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
 
         private static string GetPropertyName(PropertyInfo property)
         {

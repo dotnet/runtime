@@ -477,6 +477,11 @@
         <target state="translated">Dieser Typ wird als Struktur in der nativen Signatur und nicht als natives HRESULT behandelt</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="translated">{0} (wird nur für Out-Objektparameter von [MarshalAs(UnmanagedType.Interface)] unterstützt)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">Das [In]-Attribut wird nur für Arrayparameter unterstützt. Wertbezogene Parameter werden standardmäßig als schreibgeschützt betrachtet.</target>
@@ -505,11 +510,6 @@
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
         <target state="translated">Die [In]- und [Out]-Attribute werden nur für Arrayparameter unterstützt. Erwägen Sie die Verwendung des Schlüsselworts "ref", damit der Parameter geändert werden kann.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In]- und [Out]-Attribute</target>
         <note />
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">

@@ -69,6 +69,13 @@ public:
 #endif
 };
 
+enum class MarshalOperation
+{
+    ConvertToUnmanaged,
+    ConvertToManaged,
+    Free
+};
+
 //=======================================================================
 // Collects code and data pertaining to the PInvoke interface.
 //=======================================================================
@@ -106,6 +113,10 @@ public:
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
+#ifdef TARGET_X86
+    static void CalculateStackArgumentSize(PInvokeMethodDesc* pMD);
+#endif
+
     static void PopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD);
     static void InitializeSigInfoAndPopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
@@ -115,6 +126,10 @@ public:
                     CorNativeLinkFlags       nlFlags,
                     CorInfoCallConvExtension unmgdCallConv,
                     DWORD                    dwStubFlags); // PInvokeStubFlags
+
+    static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
+                    PInvokeMethodDesc* pMD,
+                    DynamicResolver** ppResolver);
 
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
@@ -126,8 +141,7 @@ public:
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
-    static MethodDesc* CreateStructMarshalILStub(MethodTable* pMT);
-    static PCODE GetEntryPointForStructMarshalStub(MethodTable* pMT);
+    static MethodDesc* CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation);
 
     static MethodDesc* CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                              DWORD dwStubFlags,
@@ -135,6 +149,8 @@ public:
 
     static PCODE            GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
+
+    static void ResolvePInvokeTarget(PInvokeMethodDesc* pNMD);
 
 private:
     PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
@@ -168,14 +184,12 @@ enum PInvokeStubFlags
     PINVOKESTUB_FL_STUB_HAS_THIS            = 0x00010000,
     PINVOKESTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
-    // unused                               = 0x00080000,
+    PINVOKESTUB_FL_SHARED_STUB              = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
-
-    // internal flags -- these won't ever show up in an PInvokeStubHashBlob
-    PINVOKESTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
+    // unused                               = 0x10000000,
 
 #ifdef FEATURE_COMINTEROP
     PINVOKESTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
@@ -194,10 +208,8 @@ enum ILStubTypes
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
     ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
-#endif
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
@@ -206,12 +218,6 @@ enum ILStubTypes
     ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000C,
     ILSTUB_ASYNC_RESUME                  = 0x8000000D,
 };
-
-#ifdef FEATURE_COMINTEROP
-#define COM_ONLY(x) (x)
-#else // FEATURE_COMINTEROP
-#define COM_ONLY(x) false
-#endif // FEATURE_COMINTEROP
 
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CONVSIGASVARARG)); }
 inline bool SF_IsBestFit               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_BESTFIT)); }
@@ -222,9 +228,9 @@ inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_REVERSE_INTEROP)); }
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_UNMANAGED_CALLI)); }
-inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION)); }
+inline bool SF_IsSharedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_SHARED_STUB)); }
 
 inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 
@@ -236,45 +242,30 @@ inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CON
 inline bool SF_IsDelegateInvokeMethod  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_INVOKE_METHOD); }
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }
-#endif
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
 inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }
 inline bool SF_IsAsyncResumeStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_ASYNC_RESUME); }
 
-inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COM)); }
-inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COMLATEBOUND)); }
-inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COMEVENTCALL)); }
-inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FIELDGETTER)); }
-inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FIELDSETTER)); }
-
-inline bool SF_IsSharedStub(DWORD dwStubFlags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsAsyncResumeStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    return true;
-}
+#ifdef FEATURE_COMINTEROP
+inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COM)); }
+inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COMLATEBOUND)); }
+inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COMEVENTCALL)); }
+inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FIELDGETTER)); }
+inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FIELDSETTER)); }
+#else // FEATURE_COMINTEROP
+inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+#endif // FEATURE_COMINTEROP
 
 inline bool SF_IsForwardStub             (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return !SF_IsReverseStub(dwStubFlags); }
 
+// Forward PInvoke stub check will include CALLI.
 inline bool SF_IsForwardPInvokeStub      (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (!SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags)); }
 inline bool SF_IsReversePInvokeStub      (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (!SF_IsCOMStub(dwStubFlags) && SF_IsReverseStub(dwStubFlags)); }
 
@@ -283,8 +274,6 @@ inline bool SF_IsReverseCOMStub          (DWORD dwStubFlags) { WRAPPER_NO_CONTRA
 
 inline bool SF_IsForwardDelegateStub     (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (SF_IsDelegateStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags)); }
 inline bool SF_IsReverseDelegateStub     (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (SF_IsDelegateStub(dwStubFlags) && SF_IsReverseStub(dwStubFlags)); }
-
-#undef COM_ONLY
 
 inline void SF_ConsistencyCheck(DWORD dwStubFlags)
 {
@@ -501,7 +490,6 @@ public:
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
-    void    GetCleanupFinallyOffsets(ILStubEHClause * pClause);
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
@@ -509,8 +497,6 @@ public:
     {
         return m_targetHasThis == TRUE;
     }
-
-    void ClearCode();
 
     enum
     {
@@ -542,7 +528,6 @@ public:
 protected:
     BOOL            IsCleanupNeeded();
     BOOL            IsExceptionCleanupNeeded();
-    void            InitCleanupCode();
     void            InitExceptionCleanupCode();
 
 
@@ -556,10 +541,6 @@ protected:
     ILCodeStream*   m_pcsCleanup;
 
 
-    ILCodeLabel*        m_pCleanupTryBeginLabel;
-    ILCodeLabel*        m_pCleanupTryEndLabel;
-    ILCodeLabel*        m_pCleanupFinallyBeginLabel;
-    ILCodeLabel*        m_pCleanupFinallyEndLabel;
     ILCodeLabel*        m_pSkipExceptionCleanupLabel;
 
 #ifdef FEATURE_COMINTEROP
@@ -588,8 +569,6 @@ protected:
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
 DWORD STDMETHODCALLTYPE FalseGetLastError();
 
-PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
-
 PCODE JitILStub(MethodDesc* pStubMD);
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0);
 
@@ -599,8 +578,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
-void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 

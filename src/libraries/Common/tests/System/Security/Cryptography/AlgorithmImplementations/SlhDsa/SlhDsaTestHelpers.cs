@@ -76,16 +76,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SubjectPublicKey = publicKey,
             };
 
-            AssertImportSubjectKeyPublicInfo(import => testEmbeddedCall(() => import(spki.Encode())));
+            AssertImportSubjectPublicKeyInfo(import => testEmbeddedCall(() => import(spki.Encode())));
         }
 
-        internal delegate SlhDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
-            AssertImportSubjectKeyPublicInfo(test, test);
+        internal delegate SlhDsa ImportSubjectPublicKeyInfoCallback(byte[] spki);
+        internal static void AssertImportSubjectPublicKeyInfo(Action<ImportSubjectPublicKeyInfoCallback> test) =>
+            AssertImportSubjectPublicKeyInfo(test, test);
 
-        internal static void AssertImportSubjectKeyPublicInfo(
-            Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
-            Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
+        internal static void AssertImportSubjectPublicKeyInfo(
+            Action<ImportSubjectPublicKeyInfoCallback> testDirectCall,
+            Action<ImportSubjectPublicKeyInfoCallback> testEmbeddedCall)
         {
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki));
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki.AsSpan()));

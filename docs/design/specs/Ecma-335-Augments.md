@@ -24,6 +24,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Creating arrays using newobj](#creating-arrays-using-newobj)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
+- [Extended layout](#extended-layout)
+- [Implicit argument coercion rules](#implicit-argument-coercion-rules)
 
 ## Signatures
 
@@ -976,7 +978,9 @@ Note that integer values of less than 4 bytes are extended to int32 (not native 
 evaluation stack.
 
 ## Ref Fields
-To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. Currently their functionality can be approximated by Span<T> fields, but not all types can be converted into Span<T> types simply. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. See [ref fields](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-11.0/low-level-struct-improvements.md#provide-ref-fields-and-scoped) for C# language counterpart. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+
+ByRef fields can enable converting TypedReference, ArgIterator, and RuntimeArgumentHandle to follow the normal rules of C# ref structs in the future. See [sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types) and [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811).
 
 Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
 
@@ -1009,7 +1013,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 ### II.14.4.2
 - Replace the sentence "Managed pointers (&) can point to an instance of a value type, a field of an object, a field of a value type, an element of an array, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with  "Managed pointers (&) can point to a local variable, a method argument, a field of an object or a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
-- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. A null managed pointer must not be dereferenced."
+- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. `NullReferenceException` is thrown if a null managed pointer is dereferenced."
 
 Changes to signatures:
 ### II.23.2.10
@@ -1024,12 +1028,13 @@ Changes to signatures:
 ### III.1.1.5.2
 - Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
 - Remove the sentence "Managed pointers cannot be null."
-- Add a bullet point
-  - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+- Add two bullet points
+  - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+  - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
-ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required. See [ref struct Generic Parameters](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#ref-struct-generic-parameters) for C# language counterpart.
 
 ### II.10.1.7
 An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
@@ -1147,3 +1152,48 @@ The incorrect description of `System.Array.Initialize` API in section "II.13.2 I
 ## Debug Interchange Format
 
 The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).
+
+## Extended Layout
+
+In section I.9.5, the following layout rule is added:
+
+- **extendedlayout**: A class marked `extendedlayout` guides the loader to use a set of rules indicated by the first parameter to a custom attribute of type `System.Runtime.InteropServices.ExtendedLayoutAttribute` on the type. Each of these layouts may have restrictions on valid layouts.
+
+In section II.10.1, `extended` is added as a possible value for `ClassAttr`.
+
+In section II.10.1.2, `extended` is added as a type layout attribute, and the following entry is added in the list of layout attributes:
+
+- **extended**: The CLI shal lay out the files based on the rules indicated by the first parameter to a custom attribute of type `System.Runtime.InteropServices.ExtendedLayoutAttribute` on the type.
+
+In section II.10.7, the following clause is appended:
+
+The **.pack** and **.size** directives are not valid on a type marked with `extended`.
+
+In section II.22.8, the following diffs are applied:
+
+```diff
+- The information held in the ClassLayout table depends upon the Flags value for {AutoLayout, SequentialLayout, ExplicitLayout} in the owner class or value type.
+- A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout, then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type’s hierarchy); otherwise, from System.Object.
++ The information held in the ClassLayout table depends upon the Flags value for {AutoLayout, SequentialLayout, ExplicitLayout, ExtendedLayout} in the owner class or value type.
++ A type has layout if it is marked SequentialLayout or ExplicitLayout or ExtendedLayout.
++ A type with ExtendedLayout must immediately inherit from System.ValueType.
++ If any type within an inheritance chain has layout, then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type’s hierarchy); otherwise, from System.Object.
+```
+
+```diff
+- 3. The Class or ValueType indexed by Parent shall be SequentialLayout or ExplicitLayout (§II.23.1.15). (That is, AutoLayout types shall not own any rows in the ClassLayout table.) [ERROR]
++ 3. The Class or ValueType indexed by Parent shall be SequentialLayout or ExplicitLayout (§II.23.1.15). (That is, AutoLayout and ExtendedLayout types shall not own any rows in the ClassLayout table.) [ERROR]
+```
+
+In section II.22.37, the following clause is removed:
+
+b. can set 0 or 1 of `SequentialLayout` and `ExplicitLayout` (if none set, then defaults to `AutoLayout`) [ERROR]
+
+In section II.23.1.15, the following row is added to the table:
+
+|-----|------|------|
+| `ExtendedLayout` | 0x00000018 | Layout is supplied by a `System.Runtime.InteropServices.ExtendedLayoutAttribute` custom attribute |
+
+## Implict argument coercion rules
+
+Implicit argument coercion as defined in section III.1.6 does not match with existing practice in CLR runtimes. Notably, implicit argument coercion of an `int32` on the IL evaluation stack to a `native unsigned int` is a sign extending operation, not a zero-extending operation.

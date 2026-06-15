@@ -125,7 +125,7 @@ namespace System.Data.OleDb
                         for (int k = 0; k < infoCount; ++k)
                         {
                             IntPtr valuePtr = ADP.IntPtrOffset(infoPtr, (k * ODB.SizeOf_tagDBPROPINFO) + ODB.OffsetOf_tagDBPROPINFO_Value);
-                            Interop.OleAut32.VariantClear(valuePtr);
+                            Interop.Ole32.PropVariantClear(valuePtr);
                         }
                         Interop.Ole32.CoTaskMemFree(infoPtr); // was allocated by provider
                     }

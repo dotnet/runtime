@@ -55,7 +55,6 @@ set __BuildTypeRelease=0
 set __PgoInstrument=0
 set __PgoOptimize=0
 set __EnforcePgo=0
-set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -267,18 +266,6 @@ echo %__MsgPrefix%Using CMake from !CMakePath!
 
 :SkipLocateCMake
 
-REM NumberOfCores is an WMI property providing number of physical cores on machine
-REM processor(s). It is used to set optimal level of CL parallelism during native build step
-if not defined NumberOfCores (
-    REM Determine number of physical processor cores available on machine
-    set TotalNumberOfCores=0
-    for /f "tokens=*" %%I in (
-        'wmic cpu get NumberOfCores /value ^| find "=" 2^>NUL'
-    ) do set %%I & set /a TotalNumberOfCores=TotalNumberOfCores+NumberOfCores
-    set NumberOfCores=!TotalNumberOfCores!
-)
-echo %__MsgPrefix%Number of processor cores %NumberOfCores%
-
 REM =========================================================================================
 REM ===
 REM === Start the build steps
@@ -329,6 +316,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     )
     if not "!string:-jit-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! jit
+    )
+    if not "!string:-wasmjit-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! wasmjit
     )
     if not "!string:-alljits-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! alljits
@@ -440,7 +430,7 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (

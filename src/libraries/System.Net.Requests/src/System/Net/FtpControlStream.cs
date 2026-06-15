@@ -914,7 +914,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for last modified time</para>
         /// </summary>
-        private DateTime GetLastModifiedFrom213Response(string str)
+        private unsafe DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
             Span<Range> parts = stackalloc Range[4];

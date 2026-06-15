@@ -24,7 +24,7 @@
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#elif defined(__sun)
+#elif defined(__sun) || defined(TARGET_OPENBSD)
 #include <sys/utsname.h>
 #elif defined(TARGET_FREEBSD)
 #include <sys/types.h>
@@ -706,6 +706,31 @@ pal::string_t pal::get_current_os_rid_platform()
 
     return ridOS;
 }
+#elif defined(TARGET_OPENBSD)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n",
+    //              u.sysname, u.release, u.version, u.machine);
+    //
+    // Example output on OpenBSD:
+    //       sysname: OpenBSD, release: 7.4, version: GENERIC#123, machine: amd64
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    ridOS.append(_X("openbsd."))
+        .append(utsname_obj.release); // e.g. openbsd.7.4
+
+    return ridOS;
+}
 #elif defined(TARGET_ILLUMOS)
 pal::string_t pal::get_current_os_rid_platform()
 {
@@ -902,11 +927,9 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = minipal_getexepath();
-    if (!path)
-    {
+    pal_char_t* path = ::pal_get_own_executable_path();
+    if (path == nullptr)
         return false;
-    }
 
     recv->assign(path);
     free(path);
@@ -947,14 +970,13 @@ bool pal::get_current_module(dll_t* mod)
 bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 {
     recv->clear();
+    pal_char_t* value = ::pal_getenv(name);
+    if (value == nullptr)
+        return false;
 
-    auto result = ::getenv(name);
-    if (result != nullptr)
-    {
-        recv->assign(result);
-    }
-
-    return (recv->length() > 0);
+    recv->assign(value);
+    free(value);
+    return true;
 }
 
 extern char **environ;
@@ -1010,11 +1032,7 @@ bool pal::file_exists(const pal::string_t& path)
 
 bool pal::is_directory(const pal::string_t& path)
 {
-    struct stat sb;
-    if (::stat(path.c_str(), &sb) != 0)
-        return false;
-
-    return S_ISDIR(sb.st_mode);
+    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

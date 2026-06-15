@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
@@ -29,6 +30,8 @@ namespace ILCompiler
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.MibcFiles };
         public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
+        public Option<ReadyToRunContainerFormat> OutputFormat { get; } =
+            new("--obj-format", "-f") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
         public Option<bool> Optimize { get; } =
@@ -39,7 +42,7 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
@@ -51,6 +54,8 @@ namespace ILCompiler
             new("--composite") { Description = SR.CompositeBuildMode };
         public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
+        public Option<string> ReadyToRunHeaderSymbolName { get; } =
+            new("--rtr-header-symbol-name") { Description = SR.ReadyToRunHeaderSymbolName };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
         public Option<bool> OutNearInput { get; } =
@@ -81,16 +86,14 @@ namespace ILCompiler
             new("--resilient") { Description = SR.ResilientOption };
         public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
-        public Option<bool> EnableGenericCycleDetection { get; } =
-            new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
+        public Option<string> TargetArchitecture { get; } =
+            new("--targetarch") { Description = SR.TargetArchOption };
         public Option<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
-        public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
+        public Option<string> TargetOS { get; } =
+            new("--targetos") { Description = SR.TargetOSOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
@@ -139,6 +142,12 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> StripInliningInfo { get; } =
+            new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
+        public Option<bool> StripDebugInfo { get; } =
+            new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
+        public Option<bool> StripILBodies { get; } =
+            new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -149,8 +158,6 @@ namespace ILCompiler
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
 
-        public static bool IsArmel { get; private set; }
-
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
             Arguments.Add(InputFilePaths);
@@ -160,6 +167,7 @@ namespace ILCompiler
             Options.Add(MaxVectorTBitWidth);
             Options.Add(MibcFilePaths);
             Options.Add(OutputFilePath);
+            Options.Add(OutputFormat);
             Options.Add(CompositeRootPath);
             Options.Add(Optimize);
             Options.Add(OptimizeDisabled);
@@ -171,6 +179,7 @@ namespace ILCompiler
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
+            Options.Add(ReadyToRunHeaderSymbolName);
             Options.Add(CompileNoMethods);
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);
@@ -186,7 +195,6 @@ namespace ILCompiler
             Options.Add(SupportIbc);
             Options.Add(Resilient);
             Options.Add(ImageBase);
-            Options.Add(EnableGenericCycleDetection);
             Options.Add(GenericCycleDepthCutoff);
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
@@ -215,6 +223,9 @@ namespace ILCompiler
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
+            Options.Add(StripInliningInfo);
+            Options.Add(StripDebugInfo);
+            Options.Add(StripILBodies);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 
@@ -292,13 +303,15 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", Helpers.ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", Helpers.ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
 
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            string[] ValidObjFormats = ["pe", "macho", "wasm"];
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--obj-format", String.Join("', '", ValidObjFormats), "pe"));
             Console.WriteLine();
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-            Console.WriteLine();
+
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
             Console.WriteLine();
 
@@ -310,11 +323,11 @@ namespace ILCompiler
             Console.WriteLine();
 
             Console.WriteLine(SR.InstructionSetHelp);
-            foreach (string arch in ValidArchitectures)
+            foreach (string arch in Helpers.ValidArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
-                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
                     // Only instruction sets with are specifiable should be printed to the help text
                     if (instructionSet.Specifiable)
@@ -341,18 +354,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine(SR.CpuFamilies);
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
-        {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
-            {
-                IsArmel = true;
-                return Internal.TypeSystem.TargetArchitecture.ARM;
-            }
-
-            return Helpers.GetTargetArchitecture(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)
@@ -400,6 +401,20 @@ namespace ILCompiler
                 "defaultsort" => FileLayoutAlgorithm.DefaultSort,
                 "methodorder" => FileLayoutAlgorithm.MethodOrder,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
+            };
+        }
+
+        private static ReadyToRunContainerFormat MakeOutputFormat(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return ReadyToRunContainerFormat.PE;
+
+            return result.Tokens[0].Value.ToLowerInvariant() switch
+            {
+                "pe" => ReadyToRunContainerFormat.PE,
+                "macho" => ReadyToRunContainerFormat.MachO,
+                "wasm" => ReadyToRunContainerFormat.Wasm,
+                _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
         }
 

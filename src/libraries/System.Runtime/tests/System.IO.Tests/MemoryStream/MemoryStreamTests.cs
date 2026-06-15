@@ -146,6 +146,26 @@ namespace System.IO.Tests
             Assert.True(s.ReadArrayInvoked);
         }
 
+        [Fact]
+        [SkipOnCI("Skipping on CI due to large memory allocation")]
+        public void MemoryStream_CapacityBoundaryChecks()
+        {
+            int MaxSupportedLength = Array.MaxLength;
+
+            using (var ms = new MemoryStream())
+            {
+                ms.Capacity = MaxSupportedLength - 1;
+                Assert.Equal(MaxSupportedLength - 1, ms.Capacity);
+
+                ms.Capacity = MaxSupportedLength;
+                Assert.Equal(MaxSupportedLength, ms.Capacity);
+
+                Assert.Throws<OutOfMemoryException>(() => ms.Capacity = MaxSupportedLength + 1);
+
+                Assert.Throws<OutOfMemoryException>(() => ms.Capacity = int.MaxValue);
+            }
+        }
+
         private class ReadWriteOverridingMemoryStream : MemoryStream
         {
             public bool ReadArrayInvoked, WriteArrayInvoked;

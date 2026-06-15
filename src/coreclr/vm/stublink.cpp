@@ -571,10 +571,10 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
 
     _ASSERTE(!pHeap || pHeap->IsExecutable());
 
-    StubHolder<Stub> pStub = Stub::NewStub(
+    StubHolder<Stub> pStub{ Stub::NewStub(
                 pHeap,
                 size,
-                flags);
+                flags) };
     ASSERT(pStub != NULL);
 
     EmitStub(pStub, globalsize, size, pHeap);
@@ -583,7 +583,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
 #endif
 
-    return pStub.Extract();
+    return pStub.Detach();
 }
 
 int StubLinker::CalculateSize(int* pGlobalSize)
@@ -819,7 +819,7 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
 // is defined - it is not included in all places where stublink.h
 // is consumed.
 class Stub;
-static_assert_no_msg((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
+static_assert((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
 
 //-------------------------------------------------------------------
 // Inc the refcount.

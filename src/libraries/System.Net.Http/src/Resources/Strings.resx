@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -173,6 +173,9 @@
   </data>
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
+  </data>
+  <data name="net_http_content_buffer_stream_disposed" xml:space="preserve">
+    <value>The stream passed to SerializeToStream(Async) is owned by HttpContent and must not be disposed by user code.</value>
   </data>
   <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
     <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
@@ -367,10 +370,13 @@
     <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http', 'https', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
+    <value>Only the 'http', 'https', 'socks4', 'socks4a', 'socks5', and 'socks5h' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
+  </data>
+  <data name="net_http_request_invalid_host_punycode" xml:space="preserve">
+    <value>Request Uri's host could not be Punycode encoded.</value>
   </data>
   <data name="net_http_ssl_connection_failed" xml:space="preserve">
     <value>The SSL connection could not be established, see inner exception.</value>

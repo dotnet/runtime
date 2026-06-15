@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*.ilproj" />
+    <MergedWrapperProjectReference Include="system/buffer/Asurt_99893.csproj" />
+    <Compile Include="**/*.cs" Exclude="system/buffer/Asurt_99893.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

@@ -337,6 +337,64 @@ namespace System.Text.Json.Schema
                         AdditionalProperties = valueSchema.IsTrue ? null : valueSchema,
                     });
 
+                case JsonTypeInfoKind.Union:
+                    if (typeInfo.UnionCases is { Count: > 0 } unionCases)
+                    {
+                        JsonSchemaType unionSchemaType = JsonSchemaType.Any;
+                        List<JsonSchema>? unionAnyOf = new(unionCases.Count);
+
+                        state.PushSchemaNode(JsonSchema.AnyOfPropertyName);
+
+                        foreach (JsonUnionCaseInfo caseInfo in unionCases)
+                        {
+                            JsonTypeInfo caseTypeInfo = typeInfo.Options.GetTypeInfoInternal(caseInfo.CaseType);
+
+                            state.PushSchemaNode(unionAnyOf.Count.ToString(CultureInfo.InvariantCulture));
+                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, cacheResult: false);
+                            state.PopSchemaNode();
+
+                            if (caseInfo.IsNullable)
+                            {
+                                caseSchema.Type |= JsonSchemaType.Null;
+                            }
+
+                            if (unionAnyOf.Count == 0)
+                            {
+                                unionSchemaType = caseSchema.Type;
+                            }
+                            else if (unionSchemaType != caseSchema.Type)
+                            {
+                                unionSchemaType = JsonSchemaType.Any;
+                            }
+
+                            unionAnyOf.Add(caseSchema);
+                        }
+
+                        state.PopSchemaNode();
+
+                        if (unionSchemaType is not JsonSchemaType.Any)
+                        {
+                            foreach (JsonSchema caseSchema in unionAnyOf)
+                            {
+                                caseSchema.Type = JsonSchemaType.Any;
+
+                                if (caseSchema.KeywordCount == 0)
+                                {
+                                    unionAnyOf = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return CompleteSchema(ref state, new()
+                        {
+                            Type = unionSchemaType,
+                            AnyOf = unionAnyOf,
+                        });
+                    }
+
+                    return CompleteSchema(ref state, JsonSchema.CreateTrueSchema());
+
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
                     // Return a `true` schema for types with user-defined converters.

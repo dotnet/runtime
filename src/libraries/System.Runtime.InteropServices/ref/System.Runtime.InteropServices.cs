@@ -819,7 +819,6 @@ namespace System.Runtime.InteropServices
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class CurrencyWrapper
     {
         public CurrencyWrapper(decimal obj) { }
@@ -1583,6 +1582,8 @@ namespace System.Runtime.InteropServices
     public enum PosixSignal
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTTOU = -9,
@@ -1715,6 +1716,7 @@ namespace System.Runtime.InteropServices
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
+        public System.Type? AssociatedSourceType;
         public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
@@ -2447,6 +2449,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public static System.Span<System.IntPtr> GetOrCreateReferenceTrackingMemory(object obj) => throw null;
         public enum MessageSendFunction
         {
             MsgSend,

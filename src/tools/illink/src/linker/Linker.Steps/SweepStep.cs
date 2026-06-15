@@ -261,7 +261,7 @@ namespace Mono.Linker.Steps
 
         bool IsMarkedAssembly(AssemblyDefinition assembly)
         {
-            return Annotations.IsMarked(assembly.MainModule);
+            return Annotations.IsMarked(assembly) || Annotations.IsMarked(assembly.MainModule);
         }
 
         bool CanSweepNamesForMember(IMemberDefinition member, MetadataTrimming metadataTrimming)

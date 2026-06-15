@@ -3,10 +3,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+
+using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
-using Debug = System.Diagnostics.Debug;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -64,7 +67,7 @@ namespace Internal.IL.Stubs
         {
             _owningType = owningType;
             _delegateType = delegateType;
-            _invokeMethod = delegateType.GetMethod("Invoke", null);
+            _invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             _interopStateManager = interopStateManager;
             Kind = kind;
         }
@@ -218,30 +221,30 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private string NamePrefix
+        private Utf8Span NamePrefix
         {
             get
             {
                 switch (Kind)
                 {
                     case DelegateMarshallingMethodThunkKind.ReverseOpenStatic:
-                        return "ReverseOpenStaticDelegateStub";
+                        return "ReverseOpenStaticDelegateStub"u8;
                     case DelegateMarshallingMethodThunkKind.ReverseClosed:
-                        return "ReverseDelegateStub";
+                        return "ReverseDelegateStub"u8;
                     case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
-                        return "ForwardNativeFunctionWrapper";
+                        return "ForwardNativeFunctionWrapper"u8;
                     default:
                         Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
-                        return string.Empty;
+                        return Array.Empty<byte>();
                 }
             }
         }
 
-        public override string Name
+        public override Utf8Span Name
         {
             get
             {
-                return NamePrefix + "__" + DelegateType.Name;
+                return NamePrefix.Append("__"u8, DelegateType.Name);
             }
         }
 
@@ -249,7 +252,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix + "__" + DelegateType.DiagnosticName;
+                return GetName();
             }
         }
 

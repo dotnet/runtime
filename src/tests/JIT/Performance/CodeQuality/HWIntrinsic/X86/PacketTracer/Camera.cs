@@ -18,7 +18,7 @@ internal class Camera
     public static Camera Create(VectorPacket256 pos, VectorPacket256 lookAt)
     {
         VectorPacket256 forward = (lookAt - pos).Normalize();
-        VectorPacket256 down = new VectorPacket256(Vector256<float>.Zero, Vector256.Create(-1.0f), Vector256<float>.Zero);
+        VectorPacket256 down = new VectorPacket256(Vector256<float>.Zero, Vector256<float>.NegativeOne, Vector256<float>.Zero);
         Vector256<float> OnePointFive = Vector256.Create(1.5f);
         VectorPacket256 right = OnePointFive * VectorPacket256.CrossProduct(forward, down).Normalize();
         VectorPacket256 up = OnePointFive * VectorPacket256.CrossProduct(forward, right).Normalize();

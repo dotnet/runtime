@@ -107,6 +107,8 @@ namespace System.Xml.Serialization
         private string _guidID = null!;
         private string _timeSpanID = null!;
         private string _dateTimeOffsetID = null!;
+        private string _dateOnlyID = null!;
+        private string _timeOnlyID = null!;
 
         protected abstract void InitIDs();
 
@@ -216,6 +218,8 @@ namespace System.Xml.Serialization
             _guidID = _r.NameTable.Add("guid");
             _timeSpanID = _r.NameTable.Add("TimeSpan");
             _dateTimeOffsetID = _r.NameTable.Add("dateTimeOffset");
+            _dateOnlyID = _r.NameTable.Add("dateOnly");
+            _timeOnlyID = _r.NameTable.Add("timeOnly");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -671,6 +675,10 @@ namespace System.Xml.Serialization
                     value = XmlConvert.ToTimeSpan(ReadStringValue());
                 else if ((object)type.Name == (object)_dateTimeOffsetID)
                     value = XmlConvert.ToDateTimeOffset(ReadStringValue());
+                else if ((object)type.Name == (object)_dateOnlyID)
+                    value = ToDateOnly(ReadStringValue());
+                else if ((object)type.Name == (object)_timeOnlyID)
+                    value = ToTimeOnly(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -770,6 +778,10 @@ namespace System.Xml.Serialization
                     value = default(Nullable<TimeSpan>);
                 else if ((object)type.Name == (object)_dateTimeOffsetID)
                     value = default(Nullable<DateTimeOffset>);
+                else if ((object)type.Name == (object)_dateOnlyID)
+                    value = default(Nullable<DateOnly>);
+                else if ((object)type.Name == (object)_timeOnlyID)
+                    value = default(Nullable<TimeOnly>);
                 else
                     value = null;
             }
@@ -893,6 +905,11 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
+                if (!LocalAppContextSwitches.UseLegacyEmptyXmlElementDeserialization && _r.IsEmptyElement)
+                {
+                    _r.Skip();
+                    return null;
+                }
                 _r.ReadStartElement();
                 _r.MoveToContent();
                 if (_r.NodeType != XmlNodeType.EndElement)
@@ -1092,9 +1109,24 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToDate(value);
         }
 
+        protected static DateOnly ToDateOnly(string value)
+        {
+            return XmlCustomFormatter.ToDateOnly(value);
+        }
+
         protected static DateTime ToTime(string value)
         {
             return XmlCustomFormatter.ToTime(value);
+        }
+
+        protected static TimeOnly ToTimeOnly(string value)
+        {
+            return XmlCustomFormatter.ToTimeOnly(value);
+        }
+
+        protected static TimeOnly ToTimeOnlyIgnoreOffset(string value)
+        {
+            return XmlCustomFormatter.ToTimeOnlyIgnoreOffset(value);
         }
 
         protected static char ToChar(string value)
@@ -1865,8 +1897,24 @@ namespace System.Xml.Serialization
         protected void ReadEndElement()
         {
             while (_r.NodeType == XmlNodeType.Whitespace) _r.Skip();
-            if (_r.NodeType == XmlNodeType.None) _r.Skip();
-            else _r.ReadEndElement();
+
+            if (LocalAppContextSwitches.UseXmlSerializerReadEndElementWorkaround)
+            {
+                if (_r.NodeType == XmlNodeType.None)
+                    return;
+
+                // Avoid forcing the reader to pull one more token after completing a top-level element.
+                // In fragment scenarios over streaming transports, additional data may not be immediately
+                // available even though deserialization of the current element is already complete.
+                if (_r.NodeType == XmlNodeType.EndElement && _r.Depth == 0)
+                    return;
+            }
+            else if (_r.NodeType == XmlNodeType.None)
+            {
+                _r.Skip();
+            }
+
+            _r.ReadEndElement();
         }
 
         private object ReadXmlNodes(bool elementCanBeType)
@@ -4675,7 +4723,8 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent++;
 
-                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset)
+                    || element.Mapping.TypeDesc!.Type == typeof(DateOnly) || element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
                 {
                     Writer.WriteLine("if (Reader.IsEmptyElement) {");
                     Writer.Indent++;
@@ -4688,6 +4737,14 @@ namespace System.Xml.Serialization
                     else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
                     {
                         Writer.Write("default(System.DateTimeOffset)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly))
+                    {
+                        Writer.Write("default(System.DateOnly)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
+                    {
+                        Writer.Write("default(System.TimeOnly)");
                     }
                     WriteSourceEnd(source);
                     Writer.WriteLine(";");

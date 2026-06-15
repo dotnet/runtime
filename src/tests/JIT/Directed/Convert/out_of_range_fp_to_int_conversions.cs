@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 namespace FPBehaviorApp
 {
@@ -318,6 +319,7 @@ namespace FPBehaviorApp
             }
         }
 
+        [ActiveIssue("Mono does not define out of range fp to int conversions", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

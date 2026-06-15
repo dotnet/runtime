@@ -31,6 +31,7 @@
 #include "castcache.h"
 #include "encee.h"
 #include "finalizerthread.h"
+#include "pregeneratedstringthunks.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -90,7 +91,6 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         pCAMT->GetAssembly(),
         dwAttr,
         pCACtor,
-        NULL,
         *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
@@ -467,7 +467,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t
 
     BEGIN_QCALL;
 
-    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -612,7 +612,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
         TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
 
     DWORD dwCount;
-    constraints = pGenericVariable->GetConstraints(&dwCount);
+    constraints = pGenericVariable->GetConstraints(&dwCount, CLASS_LOADED, WhichConstraintsToLoad::All);
 
     GCX_COOP();
     retTypeArray.Set(CopyRuntimeTypeHandles(constraints, dwCount, CLASS__TYPE));
@@ -786,7 +786,8 @@ extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTyp
     GCX_COOP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
-    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_DEPENDENT);
+    _ASSERTE(!th.IsNull());
+    _ASSERTE(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_DEPENDENT);
     objHandle = AppDomain::GetCurrentDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
@@ -1091,17 +1092,20 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     return;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsCollectible(QCall::TypeHandle pTypeHandle)
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
 
-    BOOL retVal = FALSE;
+    TypeHandle fnPtrHandle;
 
     BEGIN_QCALL;
-    retVal = pTypeHandle.AsTypeHandle().GetLoaderAllocator()->IsCollectible();
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
     END_QCALL;
 
-    return retVal;
+    return;
 }
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType)
@@ -1246,6 +1250,32 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     return allocatedMemory;
 }
 
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    _ASSERTE(alignment != 0);
+    _ASSERTE(0 == (alignment & (alignment - 1))); // require power of 2
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
 {
     QCALL_CONTRACT;
@@ -1284,26 +1314,11 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
     pMethod->PrepareForUseAsAFunctionPointer();
-    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     END_QCALL;
 
     return funcPtr;
-}
-
-extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMethod)
-{
-    QCALL_CONTRACT;
-
-    BOOL isCollectible = FALSE;
-
-    BEGIN_QCALL;
-
-    isCollectible = pMethod->GetLoaderAllocator()->IsCollectible();
-
-    END_QCALL;
-
-    return isCollectible;
 }
 
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
@@ -1316,6 +1331,14 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
     CONTRACTL_END;
 
     return pMethod->GetName();
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsCollectible, MethodDesc *pMethod)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
+    FC_RETURN_BOOL(pMethod->IsCollectible());
 }
 FCIMPLEND
 
@@ -1776,6 +1799,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
     {
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        ClearPendingThunkResolutionUnderLock(pDynamicMethodDesc);
+#endif
+
         GCX_COOP();
 
         // Destroy should be called only if the managed part is gone.
@@ -1784,9 +1811,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
         // Fire Unload Dynamic Method Event here
         ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
+#ifdef PROFILING_SUPPORTED
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
         (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
         END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
     }
 
     if (!pDynamicMethodDesc->TryDestroy())
@@ -1857,8 +1886,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //          async variants for task-returning methods
 //
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
-//  the async varinat is an implementation detail that conceptually does not exist.
-//  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
+//  the async variant is an implementation detail that conceptually does not exist.
 //
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following
@@ -1924,7 +1952,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
-        pMethod = pMethod->GetAsyncOtherVariant(/*allowInstParam*/ false);
+        pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
 
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();
@@ -2140,8 +2168,19 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    BOOL ret = (BOOL)pMethod->IsClassConstructorOrCtor();
-    FC_RETURN_BOOL(ret);
+    FC_RETURN_BOOL(pMethod->IsClassConstructorOrCtor());
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
+    }
+    CONTRACTL_END;
+
+    FC_RETURN_BOOL(pMethod->IsAsyncMethod());
 }
 FCIMPLEND
 

@@ -168,7 +168,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetNewObjectHelper(type.ToMethodTable());
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -474,14 +474,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(typeHandle.ToMethodTable()->InterfaceMap[index]);
         }
 
-        public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
-        {
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToMethodTable(), slotNumber);
-            if (cell == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return cell;
-        }
-
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType()
         {
@@ -697,19 +689,6 @@ namespace Internal.Runtime.Augments
             {
                 return s_stackTraceMetadataCallbacks;
             }
-        }
-
-        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
-        {
-            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
-            if (callbacks == null)
-                return null;
-
-            ip = RuntimeImports.RhFindMethodStartAddress(ip);
-            if (ip == IntPtr.Zero)
-                return null;
-
-            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;

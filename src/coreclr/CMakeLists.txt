@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 # Set the project name
 project(CoreCLR)
@@ -15,6 +15,7 @@ endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
@@ -34,14 +35,6 @@ if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CL
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-
-if (DEFINED CLR_CMAKE_ICU_DIR)
-  include_directories(${CLR_CMAKE_ICU_DIR}/include)
-endif(DEFINED CLR_CMAKE_ICU_DIR)
-
-if (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_options(-fwasm-exceptions)
-endif()
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -67,11 +60,12 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
 endif()
+
 #-------------------------
 # Enable C++ EH with SEH
 #-------------------------
@@ -84,6 +78,12 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
+  if(CLR_CMAKE_TARGET_BROWSER)
+    set(GEN_PINVOKE 1)
+    set(BUILD_LIBS_NATIVE_BROWSER 1)
+    set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
+    set(CORERUN_LIBS_ONLY 1)
+  endif()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
 
@@ -110,12 +110,8 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-      add_subdirectory(hosts)
-    endif()
 else()
-    if(CLR_CMAKE_TARGET_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
     endif()
 endif()
@@ -123,7 +119,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
@@ -153,9 +149,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_BROWSER OR CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(tools/aot/jitinterface)
-endif (NOT CLR_CMAKE_TARGET_BROWSER)
+endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
@@ -188,6 +184,60 @@ if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
 endif(FEATURE_STANDALONE_GC)
 
+# For wasm cross-component builds, only the JIT and jitinterface are needed.
+# Skip subsystems (GC, VM, debug, etc.) that don't support wasm as a target.
+if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
+  include_directories("inc")
+  include_directories("minipal")
+  if (CLR_CMAKE_HOST_UNIX)
+    include_directories("pal/inc")
+    include_directories("pal/inc/rt")
+    include_directories("pal/src/safecrt")
+    set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
+    include_directories(${NATIVE_RESOURCE_DIR})
+
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.ps1)
+    else()
+      set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+    endif()
+    set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
+
+    function(build_resources SOURCE TARGET_NAME TARGET_FILE)
+      set_property(SOURCE ${SOURCE} APPEND PROPERTY COMPILE_DEFINITIONS "RC_INVOKED")
+      set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
+
+      preprocess_file(${SOURCE} ${PREPROCESSED_SOURCE})
+
+      set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
+
+      if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        add_custom_command(
+          OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+          COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${PROCESS_RC_SCRIPT}\" ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+          DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+        )
+      else()
+        add_custom_command(
+          OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+          COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+          DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+        )
+      endif()
+
+      include_directories(${RESOURCE_STRING_HEADER_DIR})
+      set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
+    endfunction()
+
+    add_subdirectory(nativeresources)
+    add_subdirectory(dlls/mscorrc)
+  endif (CLR_CMAKE_HOST_UNIX)
+  add_subdirectory(utilcode)
+  add_subdirectory(gcinfo)
+  add_subdirectory(jit)
+  return()
+endif()
+
 add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
@@ -204,18 +254,17 @@ include_directories("debug/inc")
 include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
 include_directories("md/inc")
-include_directories("classlibnative/bcltype")
-include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
+include_directories("interpreter/inc")
 include_directories("minipal")
 
 if(FEATURE_INTERPRETER)
-add_subdirectory(interpreter)
+  add_subdirectory(interpreter)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
-    include_directories("${GENERATED_INCLUDE_DIR}/etw")
+  include_directories("${GENERATED_INCLUDE_DIR}/etw")
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 
 add_subdirectory(debug/dbgutil)
@@ -301,7 +350,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 add_subdirectory(binder)
-add_subdirectory(classlibnative)
 add_subdirectory(dlls)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -311,8 +359,5 @@ endif()
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)
-endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-
-if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(hosts)
-endif(CLR_CMAKE_HOST_WIN32)
+endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)

@@ -23,19 +23,19 @@
 #if 0
 #define EMITVERBOSE 1
 #else
-#define EMITVERBOSE (emitComp->verbose)
+#define EMITVERBOSE (m_compiler->verbose)
 #endif
 
 #if 0
 #define EMIT_GC_VERBOSE 0
 #else
-#define EMIT_GC_VERBOSE (emitComp->verbose)
+#define EMIT_GC_VERBOSE (m_compiler->verbose)
 #endif
 
 #if 1
 #define EMIT_INSTLIST_VERBOSE 0
 #else
-#define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
+#define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
 #ifdef TARGET_XARCH
@@ -213,8 +213,6 @@ public:
         return true;
     }
 
-    UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
-
     bool IsPreviousInsNum(emitter* emit) const;
 
 #ifdef DEBUG
@@ -280,7 +278,10 @@ struct insGroup
     size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
-    UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
+private:
+    unsigned igNum; // for ordering (and display) purposes
+
+public:
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
@@ -290,36 +291,35 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS        0x0001 // new set of live GC ref variables
-#define IGF_BYREF_REGS     0x0002 // new set of live by-ref registers
-#define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
-#define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
-#define IGF_EPILOG         0x0010 // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT  0x0020 // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ        0x0040 // some instruction sizes updated
-#define IGF_PLACEHOLDER    0x0080 // this is a placeholder group, to be filled in later
-#define IGF_EXTEND                                                                                                     \
-    0x0100 // this block is conceptually an extension of the previous block
-           // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN                                                                                                  \
-    0x0200 // this group contains an alignment instruction(s) at the end to align either the next
-           // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN                                                                                              \
-    0x0400                           // IG was marked as having an alignment instruction(s), but was later unmarked
-                                     // without updating the IG's size/offsets.
-#define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_GC_VARS        (1 << 0) // new set of live GC ref variables
+#define IGF_BYREF_REGS     (1 << 1) // new set of live by-ref registers
+#define IGF_PROLOG         (1 << 2) // this group belongs to a main function prolog
+#define IGF_EPILOG         (1 << 3) // this group belongs to a main function epilog
+#define IGF_FUNCLET_PROLOG (1 << 4) // this group belongs to a funclet prolog
+#define IGF_FUNCLET_EPILOG (1 << 5) // this group belongs to a funclet epilog.
+#define IGF_NOGCINTERRUPT  (1 << 6) // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ        (1 << 7) // some instruction sizes updated
+#define IGF_PLACEHOLDER    (1 << 8) // this is a placeholder group, to be filled in later
+// This block is conceptually an extension of the previous block
+// and the emitter should continue to track GC info as if there was no new block.
+#define IGF_EXTEND (1 << 9)
+// This group contains an alignment instruction(s) at the end to align either the next
+// IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_HAS_ALIGN (1 << 10)
+// IG was marked as having an alignment instruction(s), but was later unmarked
+// without updating the IG's size/offsets.
+#define IGF_REMOVED_ALIGN     (1 << 11)
+#define IGF_HAS_REMOVABLE_JMP (1 << 12) // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
-#define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
+#define IGF_HAS_REMOVED_INSTR (1 << 13) // this group has an instruction that was removed.
 #endif
+#define IGF_OUT_OF_ORDER_HEAD (1 << 14) // first group (generated in-order) of a region generated out-of-order
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
 // automatically marked properly.
-#ifdef DEBUG
-#define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
-#else // DEBUG
-#define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
-#endif // DEBUG
+#define IGF_PROPAGATE_MASK    (IGF_PROLOG | IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
+#define IGF_OUT_OF_ORDER_MASK (IGF_PROLOG | IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
 
@@ -390,6 +390,11 @@ struct insGroup
         return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
+    void     InitializeNum(unsigned num);
+    unsigned GetDisplayId() const;
+    bool     IsBefore(const insGroup* ig) const;
+    bool     IsBeforeOrEqual(const insGroup* ig) const;
+    bool     IsAfter(const insGroup* ig) const;
 }; // end of struct insGroup
 
 //  For AMD64 the maximum prolog/epilog size supported on the OS is 256 bytes
@@ -477,13 +482,18 @@ struct EmitCallParams
     BitVec    ptrVars       = BitVecOps::UninitVal();
     regMaskTP gcrefRegs     = RBM_NONE;
     regMaskTP byrefRegs     = RBM_NONE;
-    DebugInfo debugInfo;
-    regNumber ireg        = REG_NA;
-    regNumber xreg        = REG_NA;
-    unsigned  xmul        = 0;
-    ssize_t   disp        = 0;
-    bool      isJump      = false;
-    bool      noSafePoint = false;
+    regNumber ireg          = REG_NA;
+    regNumber xreg          = REG_NA;
+    unsigned  xmul          = 0;
+    ssize_t   disp          = 0;
+    bool      isJump        = false;
+    bool      noSafePoint   = false;
+    // If this call should have managed return value debug info associated with it, this is the call to associate it
+    // with.
+    GenTreeCall* returnValueCall = nullptr;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter
@@ -524,7 +534,7 @@ protected:
     /*                        Miscellaneous stuff                           */
     /************************************************************************/
 
-    Compiler* emitComp;
+    Compiler* m_compiler;
     GCInfo*   gcInfo;
     CodeGen*  codeGen;
 
@@ -570,22 +580,22 @@ protected:
     static emitAttr        emitDecodeSize(emitter::opSize ensz);
 
     // Currently, we only allow one IG for the prolog
-    bool emitIGisInProlog(const insGroup* ig)
+    bool emitIGisInProlog(const insGroup* ig) const
     {
-        return ig == emitPrologIG;
+        return (ig != nullptr) && ((ig->igFlags & IGF_PROLOG) != 0);
     }
 
-    bool emitIGisInEpilog(const insGroup* ig)
+    bool emitIGisInEpilog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_EPILOG) != 0);
     }
 
-    bool emitIGisInFuncletProlog(const insGroup* ig)
+    bool emitIGisInFuncletProlog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
     }
 
-    bool emitIGisInFuncletEpilog(const insGroup* ig)
+    bool emitIGisInFuncletEpilog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_EPILOG) != 0);
     }
@@ -628,15 +638,22 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned          idNum;
-        size_t            idSize;        // size of the instruction descriptor
-        unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t            idMemCookie;   // compile time handle (check idFlags)
-        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
-        bool              idFinallyCall; // Branch instruction is a call to finally
-        bool              idCatchRet;    // Instruction is for a catch 'return'
-        CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
+
+#ifdef TARGET_WASM
+        int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
+        unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
+        unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -663,35 +680,38 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
-        static_assert_no_msg(INS_count <= 512);
+        static_assert(INS_count <= 512);
+        instruction _idIns : 9;
+#elif defined(TARGET_WASM)
+        static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
-        static_assert_no_msg(INS_count <= 256);
+        static_assert(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
 // The format for the instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(IF_COUNT <= 128);
+        static_assert(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
-        static_assert_no_msg(IF_COUNT <= 1024);
+        static_assert(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
 #else
-        static_assert_no_msg(IF_COUNT <= 256);
+        static_assert(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
 #endif
 
@@ -758,6 +778,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
+        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -806,6 +827,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
+        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -898,6 +920,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
+        // wasm:        28 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -914,6 +937,8 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
+#elif defined(TARGET_WASM)
+#define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -953,12 +978,17 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
+        // wasm:        35/30 bits
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
         /* Use whatever bits are left over for small constants */
 
+#if ID_EXTRA_BITS <= 0
+#define ID_BIT_SMALL_CNS 30 // Not 32 or 31 here to avoid breaking the math below.
+#else
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
@@ -968,6 +998,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
+        // wasm:        32 bits
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1032,8 +1063,9 @@ protected:
             int  iiaGetJitDataOffset() const;
 
             // iiaEncodedInstrCount and its accessor functions are used to specify an instruction
-            // count for jumps, instead of using a label and multiple blocks. This is used in the
-            // prolog as well as for IF_LARGEJMP pseudo-branch instructions.
+            // count for jumps, instead of using a label and multiple blocks. This is only used
+            // for IF_LARGEJMP pseudo-branch instructions printing.
+            // TODO-Cleanup: remove this.
             int iiaEncodedInstrCount;
 
             bool iiaHasInstrCount() const
@@ -1252,6 +1284,8 @@ protected:
             assert(sz <= 32);
             _idCodeSize = sz;
         }
+#elif defined(TARGET_WASM)
+        unsigned idCodeSize() const;
 #endif
 
         emitAttr idOpSize() const
@@ -1281,6 +1315,29 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return _idInsFmt == IF_LOCAL_DECL;
+        }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
+        }
+
+        bool idIsV128Imm() const
+        {
+            return _idInsFmt == IF_V128;
+        }
+
+        bool idIsMemargLaneImm() const
+        {
+            return _idInsFmt == IF_MEMARG_LANE;
+        }
+
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -1991,11 +2048,19 @@ protected:
         }
     }; // End of  struct instrDesc
 
+    enum class PerfScoreMemoryAccessKind : unsigned
+    {
+        None      = 0,
+        Read      = 1,
+        Write     = 2,
+        ReadWrite = 3,
+    };
+
 #if defined(TARGET_XARCH)
     insFormat getMemoryOperation(instrDesc* id) const;
     insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
-    void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+    void getMemoryOperation(instrDesc* id, PerfScoreMemoryAccessKind* pMemAccessKind, bool* pIsLocalAccess);
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -2022,13 +2087,17 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C   8.0f   // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C   9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C  10.0f  // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_11C  10.0f  // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C  11.0f  // slower - 11 cycles
+#define PERFSCORE_THROUGHPUT_12C  12.0f  // slower - 12 cycles
 #define PERFSCORE_THROUGHPUT_13C  13.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 14 cycles
+#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 16 cycles
+#define PERFSCORE_THROUGHPUT_18C  18.0f  // slower - 18 cycles
 #define PERFSCORE_THROUGHPUT_19C  19.0f  // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C  25.0f  // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_32C  32.0f  // slower - 32 cycles
 #define PERFSCORE_THROUGHPUT_33C  33.0f  // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_36C  36.0f  // slower - 36 cycles
 #define PERFSCORE_THROUGHPUT_50C  50.0f  // slower - 50 cycles
 #define PERFSCORE_THROUGHPUT_52C  52.0f  // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C  57.0f  // slower - 57 cycles
@@ -2053,11 +2122,18 @@ protected:
 #define PERFSCORE_LATENCY_14C  14.0f
 #define PERFSCORE_LATENCY_15C  15.0f
 #define PERFSCORE_LATENCY_16C  16.0f
+#define PERFSCORE_LATENCY_17C  17.0f
 #define PERFSCORE_LATENCY_18C  18.0f
 #define PERFSCORE_LATENCY_20C  20.0f
 #define PERFSCORE_LATENCY_22C  22.0f
 #define PERFSCORE_LATENCY_23C  23.0f
 #define PERFSCORE_LATENCY_26C  26.0f
+#define PERFSCORE_LATENCY_28C  28.0f
+#define PERFSCORE_LATENCY_31C  31.0f
+#define PERFSCORE_LATENCY_32C  32.0f
+#define PERFSCORE_LATENCY_33C  33.0f
+#define PERFSCORE_LATENCY_41C  41.0f
+#define PERFSCORE_LATENCY_45C  45.0f
 #define PERFSCORE_LATENCY_62C  62.0f
 #define PERFSCORE_LATENCY_69C  69.0f
 #define PERFSCORE_LATENCY_105C 105.0f
@@ -2069,6 +2145,11 @@ protected:
 #define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
 
 #if defined(TARGET_XARCH)
+
+// a read has 2x (0.5) throughput, while a write has 1C (1.0) throughput
+#define PERFSCORE_THROUGHPUT_RD PERFSCORE_THROUGHPUT_2X
+#define PERFSCORE_THROUGHPUT_WR PERFSCORE_THROUGHPUT_1C
+#define PERFSCORE_THROUGHPUT_RW PERFSCORE_THROUGHPUT_1C
 
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK    PERFSCORE_LATENCY_2C
@@ -2138,20 +2219,34 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#endif // TARGET_XXX
-
-// Make this an enum:
+#elif defined(TARGET_WASM)
+// Latencies for an "average" physical target.
 //
-#define PERFSCORE_MEMORY_NONE       0
-#define PERFSCORE_MEMORY_READ       1
-#define PERFSCORE_MEMORY_WRITE      2
-#define PERFSCORE_MEMORY_READ_WRITE 3
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
+
+#else
+#error Unknown TARGET
+#endif
 
     struct insExecutionCharacteristics
     {
-        float    insThroughput;
-        float    insLatency;
-        unsigned insMemoryAccessKind;
+        float                     insThroughput       = 0;
+        float                     insLatency          = 0;
+        PerfScoreMemoryAccessKind insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
     };
 
     float insEvaluateExecutionCost(instrDesc* id);
@@ -2300,6 +2395,78 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
+
+        void idLclType(WasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(unsigned int cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
+        }
+    };
+
+    struct instrDescV128Imm : instrDesc
+    {
+        instrDescV128Imm() = delete;
+
+        uint8_t v128Bytes[16];
+
+        void idV128Const(const uint8_t bytes[16])
+        {
+            assert(bytes != nullptr);
+            memcpy(v128Bytes, bytes, 16);
+        }
+
+        const uint8_t* idV128Const() const
+        {
+            return v128Bytes;
+        }
+    };
+
+    struct instrDescMemargLane : instrDescCns
+    {
+        instrDescMemargLane() = delete;
+
+        uint8_t lane;
+
+        void idLaneIdx(uint8_t idx)
+        {
+            lane = idx;
+        }
+
+        uint8_t idLaneIdx() const
+        {
+            return lane;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -2370,8 +2537,8 @@ protected:
             : idDebugInfo(nullptr)
             , idStorage()
         {
-            static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
-                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
+            static_assert((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
+                          offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()
@@ -2421,8 +2588,8 @@ protected:
     static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned       emitInsCount;
+    NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+    unsigned emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -2484,7 +2651,7 @@ protected:
     /*                      Method prolog and epilog                        */
     /************************************************************************/
 
-    unsigned emitPrologEndPos;
+    emitLocation emitPrologEndPos;
 
     unsigned       emitEpilogCnt;
     UNATIVE_OFFSET emitEpilogSize;
@@ -2529,6 +2696,8 @@ public:
 
 #endif // JIT32_GCENCODER
 
+    insGroup* emitGetFirstPrologIG() const;
+
     void emitBegPrologEpilog(insGroup* igPh);
     void emitEndPrologEpilog();
 
@@ -2557,10 +2726,12 @@ public:
     bool emitIssuing;
 #endif
 
-    BYTE*  emitCodeBlock;     // Hot code block
-    BYTE*  emitColdCodeBlock; // Cold code block
-    BYTE*  emitConsBlock;     // Read-only (constant) data block
-    size_t writeableOffset;   // Offset applied to a code address to get memory location that can be written
+    BYTE*          emitCodeBlock;     // Hot code block
+    BYTE*          emitColdCodeBlock; // Cold code block
+    AllocMemChunk* emitDataChunks;
+    unsigned*      emitDataChunkOffsets;
+    unsigned       emitNumDataChunks;
+    size_t         writeableOffset; // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
@@ -2598,11 +2769,7 @@ public:
         }
     }
 
-    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset)
-    {
-        assert(offset < emitDataSize());
-        return emitConsBlock + offset;
-    }
+    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset);
 
     bool emitJumpCrossHotColdBoundary(size_t srcOffset, size_t dstOffset)
     {
@@ -2636,9 +2803,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_LOONGARCH64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
     void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
@@ -2646,10 +2813,6 @@ public:
     size_t     emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
     bool emitHasFramePtr;
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    bool emitInInstrumentation;
-#endif // PSEUDORANDOM_NOP_INSERTION
 
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
@@ -2722,6 +2885,7 @@ private:
     insFormat emitMapFmtAtoM(insFormat fmt);
     void      emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void      spillIntArgRegsToShadowSlots();
+    void      emitIns_ShortJ(instruction ins, BasicBlock* dst);
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
@@ -2746,17 +2910,7 @@ private:
     // can hold at least one of the largest instruction descriptor forms), since we can always overflow
     // to subsequent instruction groups.
     //
-    // The only place where this fixed instruction group size is a problem is in the main function prolog,
-    // where we only support a single instruction group, and no extension groups. We should really fix that.
-    // Thus, the buffer size needs to be large enough to hold the maximum number of instructions that
-    // can possibly be generated into the prolog instruction group. That is difficult to statically determine.
-    //
-    // If we do generate an overflow prolog group, we will hit a NOWAY assert and fall back to MinOpts.
-    // This should reduce the number of instructions generated into the prolog.
-    //
-    // Note that OSR prologs require additional code not seen in normal prologs.
-    //
-    // Also, note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
+    // Note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
     // sizes of instruction descriptors, so the number of instructions that will fit in the largest
     // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
     // EMITTER_STATS output for various statistics related to this.
@@ -2787,39 +2941,38 @@ private:
 
     insGroup* emitIGlist; // first  instruction group
     insGroup* emitIGlast; // last   instruction group
-    insGroup* emitIGthis; // issued instruction group
 
-    insGroup* emitPrologIG; // prolog instruction group
-
-    instrDescJmp* emitJumpList;       // list of local jumps in method
-    instrDescJmp* emitJumpLast;       // last of local jumps in method
-    void          emitJumpDistBind(); // Bind all the local jumps in method
+    instrDescJmp* emitJumpList;          // list of local jumps in method
+    instrDescJmp* emitJumpLast;          // last of local jumps in method
+    instrDescJmp* emitFixedSizeJumpList; // list of local jumps not eligible for shortening
+    void          emitJumpDistBind();    // Bind all the local jumps in method
+    insGroup*     emitBindJump(instrDescJmp* jmp);
     bool          emitContainsRemovableJmpCandidates;
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
-    unsigned        emitLastLoopStart;    // Start IG of last inner loop
-    unsigned        emitLastLoopEnd;      // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;        // list of all align instructions in method
-    instrDescAlign* emitAlignLast;        // last align instruction in method
+    instrDescAlign* emitCurIGAlignList; // list of align instructions in current IG
+    insGroup*       emitLastLoopStart;  // Start IG of last inner loop
+    insGroup*       emitLastLoopEnd;    // End IG of last inner loop
+    insGroup*       emitLastAlignedIG;  // last IG that has align instruction
+    instrDescAlign* emitAlignList;      // list of all align instructions in method
+    instrDescAlign* emitAlignLast;      // last align instruction in method
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup*            igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUGARG(bool isAlignAdjusted) DEBUGARG(insGroup* containingIG)
+                             DEBUGARG(insGroup* loopHeadPredIG)); // Get the smallest loop size
     void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool     emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     bool     emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup*     ig,
-                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
-                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
+                                                  size_t offset DEBUGARG(bool isAlignAdjusted)
+                                                      DEBUGARG(insGroup* containingIG)
+                                                          DEBUGARG(insGroup* loopHeadPredIG));
 
     void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
@@ -2909,23 +3062,6 @@ private:
     static unsigned emitDecodeCallGCregs(instrDesc* id);
 
     unsigned emitNxtIGnum;
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-
-    // random nop insertion to break up nop sleds
-    unsigned emitNextNop;
-    bool     emitRandomNops;
-
-    void emitEnableRandomNops()
-    {
-        emitRandomNops = true;
-    }
-    void emitDisableRandomNops()
-    {
-        emitRandomNops = false;
-    }
-
-#endif // PSEUDORANDOM_NOP_INSERTION
 
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
@@ -3119,8 +3255,6 @@ private:
     void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
 
-    int emitNextRandomNop();
-
     //
     // Functions for allocating instrDescs.
     //
@@ -3252,12 +3386,18 @@ private:
     instrDescAlign* emitNewInstrAlign();
 #endif
 
+#if defined(TARGET_ARM64)
+    void emitPacInProlog();
+    void emitPacInEpilog();
+#endif
+
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
     instrDesc* emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -3303,6 +3443,9 @@ private:
     int emitLclFrameOffsMax;
 
     int emitSyncThisObjOffs; // what is the offset of "this" for synchronized methods?
+
+    CORINFO_METHOD_HANDLE emitAsyncResumeStub           = NO_METHOD_HANDLE;
+    void*                 emitAsyncResumeStubEntryPoint = nullptr;
 
 public:
     void emitSetFrameRangeGCRs(int offsLo, int offsHi);
@@ -3418,15 +3561,14 @@ public:
 
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
-    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
-
-    bool emitLastInsIsCallWithGC();
-
     // Helpers for the above
 
     void emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count = 1);
     void emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count = 1);
 #endif // EMIT_TRACK_STACK_DEPTH
+
+    bool emitLastInsIsCallWithGC();
+    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
 
     /* Liveness of stack variables, and registers */
 
@@ -3479,17 +3621,42 @@ public:
         {
             data,
             blockAbsoluteAddr,
-            blockRelative32
+            blockRelative32,
+            asyncResumeInfo,
         };
 
         dataSection*   dsNext;
+        UNATIVE_OFFSET dsAlignment;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data
-        // or BasicBlock* array in the block cases.
-        BYTE dsCont[0];
+    private:
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */
@@ -3499,13 +3666,11 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
         dataSecDsc()
             : dsdList(nullptr)
             , dsdLast(nullptr)
             , dsdOffs(0)
-            , alignment(4)
         {
         }
     };
@@ -3514,8 +3679,9 @@ public:
 
     dataSection* emitDataSecCur;
 
-    void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
-    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* dataChunks);
+    void emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks);
+    void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
     /*              Handles to the current class and method.                */
@@ -3535,26 +3701,26 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,      /* IN */
-                                  void*       target,        /* IN */
-                                  uint16_t    fRelocType,    /* IN */
-                                  const char* relocTypeName, /* IN */
-                                  int32_t     addlDelta = 0);    /* IN */
+    void emitRecordRelocationHelp(void*        location,      /* IN */
+                                  void*        target,        /* IN */
+                                  CorInfoReloc fRelocType,    /* IN */
+                                  const char*  relocTypeName, /* IN */
+                                  int32_t      addlDelta = 0);     /* IN */
 
 #else // !DEBUG
 
-    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
-                                           void*    target,     /* IN */
-                                           uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)   /* IN */
+    void emitRecordRelocationWithAddlDelta(void*        location,   /* IN */
+                                           void*        target,     /* IN */
+                                           CorInfoReloc fRelocType, /* IN */
+                                           int32_t      addlDelta)       /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,      /* IN */
-                              void*    target,        /* IN */
-                              uint16_t fRelocType,    /* IN */
-                              int32_t  addlDelta = 0); /* IN */
+    void emitRecordRelocation(void*        location,   /* IN */
+                              void*        target,     /* IN */
+                              CorInfoReloc fRelocType, /* IN */
+                              int32_t      addlDelta = 0);  /* IN */
 
 #endif // !DEBUG
 
@@ -3566,12 +3732,6 @@ public:
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
-
-#ifdef DEBUG
-    // This is a scratch buffer used to minimize the number of sig info structs
-    // we have to allocate for recordCallSite.
-    CORINFO_SIG_INFO* emitScratchSigInfo;
-#endif // DEBUG
 
     /************************************************************************/
     /*               Logic to collect and display statistics                */
@@ -3723,12 +3883,12 @@ public:
     // infrastructure of the entire JIT...
     void Init()
     {
-        VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, emitPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitInitGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
 #if defined(DEBUG)
-        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, debugPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, debugThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
         debugPrevRegPtrDsc = nullptr;
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
@@ -3745,7 +3905,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+    static_assert(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************
@@ -3791,17 +3951,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************
@@ -4309,6 +4458,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
 
 #endif // TARGET_XARCH
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Returns true if the given register contains a live GC ref.
@@ -4331,6 +4481,7 @@ inline GCtype emitter::emitRegGCtype(regNumber reg)
         return GCT_NONE;
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef DEBUG
 

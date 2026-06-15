@@ -698,10 +698,9 @@ void Compiler::unwindReserve()
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        unwindReserveFunc(func);
     }
 }
 
@@ -810,10 +809,9 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        unwindEmitFunc(func, pHotCode, pColdCode);
     }
 }
 
@@ -968,9 +966,9 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
-    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
 #ifdef DEBUG
     // If fake-splitting, treat all unwind info as hot.

@@ -72,7 +72,7 @@ enum HWIntrinsicCategory : uint8_t
 #else
 #error Unsupported platform
 #endif
-enum HWIntrinsicFlag : unsigned int
+enum HWIntrinsicFlag : uint64_t
 {
     HW_Flag_NoFlag = 0,
 
@@ -258,6 +258,12 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_FmaIntrinsic = 0x40000000,
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
+
+    // The intrinsic returns a boolean (TYP_INT range [0, 1]).
+    HW_Flag_ReturnsBoolean = 0x100000000,
+
+    // The intrinsic extracts and returns a scalar value of the SIMD base type.
+    HW_Flag_ReturnsScalarT = 0x200000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -511,16 +517,18 @@ struct TernaryLogicInfo
 
 struct HWIntrinsicInfo
 {
-    // 32-bit: 36-bytes (34+2 trailing padding)
-    // 64-bit: 40-bytes (38+2 trailing padding)
+    // 32-bit: 40-bytes (40 + 0 trailing padding)
+    // 64-bit: 48-bytes (48 + 0 trailing padding)
 
     const char*         name;     // 4 or 8-bytes
-    HWIntrinsicFlag     flags;    // 4-bytes
+    HWIntrinsicFlag     flags;    // 8-bytes
     NamedIntrinsic      id;       // 2-bytes
     uint16_t            ins[10];  // 10 * 2-bytes
     uint8_t             isa;      // 1-byte
     int8_t              simdSize; // 1-byte
     int8_t              numArgs;  // 1-byte
+    int8_t              intCost;  // 1-byte
+    int8_t              fltCost;  // 1-byte
     HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
@@ -530,7 +538,8 @@ struct HWIntrinsicInfo
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName);
+                                   const char*       outerEnclosingClassName,
+                                   bool              isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -611,6 +620,16 @@ struct HWIntrinsicInfo
     static int lookupNumArgs(NamedIntrinsic id)
     {
         return lookup(id).numArgs;
+    }
+
+    static int lookupIntCost(NamedIntrinsic id)
+    {
+        return lookup(id).intCost;
+    }
+
+    static int lookupFltCost(NamedIntrinsic id)
+    {
+        return lookup(id).fltCost;
     }
 
     static instruction lookupIns(NamedIntrinsic id, var_types type, Compiler* comp);
@@ -704,6 +723,18 @@ struct HWIntrinsicInfo
 #else
 #error Unsupported platform
 #endif
+    }
+
+    static bool ReturnsBoolean(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ReturnsBoolean) != 0;
+    }
+
+    static bool ReturnsScalarT(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ReturnsScalarT) != 0;
     }
 
 #if defined(TARGET_XARCH)
@@ -885,6 +916,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
             case NI_X86Base_DivRem:
+            case NI_X86Base_X64_BigMul:
             case NI_X86Base_X64_DivRem:
                 return 2;
 #endif // TARGET_XARCH

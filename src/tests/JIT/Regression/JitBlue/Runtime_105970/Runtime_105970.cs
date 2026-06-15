@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105970;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -22,21 +25,18 @@ public class Runtime_105970
 {
     public static Vector256<double> s_1;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.VL.IsSupported)
-        {
-            var vr9 = Vector256.CreateScalar(1.7976931348623157E+308d);
-            var vr10 = Vector256.CreateScalar(1.7976931348623157E+308d);
-            Vector256<long> vr18 = default(Vector256<long>);
-            var vr12 = Avx512F.VL.Fixup(vr9, vr10, vr18, 0);
-            var vr13 = Vector256.CreateScalar(-1627.749979702826d);
-            var vr15 = Vector256.Create<long>(-1);
-            var vr16 = Avx512F.VL.Fixup(vr12, vr13, vr15, 0);
-            Vector256<double> vr17 = Avx512F.VL.Shuffle2x128(vr16, s_1, 0);
-            Vector256<ulong> expected = Vector256.Create(18442240474082181119, 18442240474082181119, 0, 0);
-            Assert.Equal(expected, vr17.AsUInt64());
-        }
+        var vr9 = Vector256.CreateScalar(1.7976931348623157E+308d);
+        var vr10 = Vector256.CreateScalar(1.7976931348623157E+308d);
+        Vector256<long> vr18 = default(Vector256<long>);
+        var vr12 = Avx512F.VL.Fixup(vr9, vr10, vr18, 0);
+        var vr13 = Vector256.CreateScalar(-1627.749979702826d);
+        var vr15 = Vector256.Create<long>(-1);
+        var vr16 = Avx512F.VL.Fixup(vr12, vr13, vr15, 0);
+        Vector256<double> vr17 = Avx512F.VL.Shuffle2x128(vr16, s_1, 0);
+        Vector256<ulong> expected = Vector256.Create(18442240474082181119, 18442240474082181119, 0, 0);
+        Assert.Equal(expected, vr17.AsUInt64());
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -12,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     //   - so the main validation is done by the ExpectedWarning attributes.
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
+    [SandboxDependency("Dependencies/TestSystemTypeBase.cs")]
     public class MethodReturnParameterDataFlow
     {
         public static void Main()
@@ -37,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             UnsupportedReturnTypeAndParameter(null);
             AnnotationOnUnsupportedReturnType.Test();
+            OperatorReturn.Test();
         }
 
         static Type NoRequirements()
@@ -258,6 +261,56 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         class TestType
         {
             public TestType() { }
+        }
+
+        class OperatorReturn
+        {
+            public static void Test()
+            {
+                TestMatch();
+                TestMismatch();
+            }
+
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+            static void TestMatch()
+            {
+                var result = new OperatorType() + new OperatorType();
+                result.RequiresPublicFields();
+            }
+
+            [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+            static void TestMismatch()
+            {
+                var result = new OperatorType() - new OperatorType();
+                result.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+            static OperatorType GetWithFields() => new OperatorType();
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static OperatorType GetWithMethods() => new OperatorType();
+
+            private sealed class OperatorType : TestSystemTypeBase
+            {
+                // Matching implementation
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                public static OperatorType operator +(OperatorType left, OperatorType right)
+                {
+                    return GetWithFields();
+                }
+
+                // Mismatch in implementation
+                [ExpectedWarning("IL2073", nameof(GetWithMethods))]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                public static Type operator -(OperatorType left, OperatorType right)
+                {
+                    return GetWithMethods();
+                }
+            }
         }
     }
 }

@@ -54,6 +54,11 @@ namespace Mono.Linker
                 (md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
         }
 
+        public static bool IsRuntimeAsync(this MethodDefinition md)
+        {
+            return (md.ImplAttributes & (MethodImplAttributes)0x2000) == (MethodImplAttributes)0x2000;
+        }
+
         public static bool TryGetProperty(this MethodDefinition md, [NotNullWhen(true)] out PropertyDefinition? property)
         {
             property = null;
@@ -145,6 +150,21 @@ namespace Mono.Linker
         {
             int implicitThisOffset = method.HasImplicitThis() ? 1 : 0;
             return new ParameterProxyEnumerable(implicitThisOffset, method.Parameters.Count + implicitThisOffset, method);
+        }
+
+        public static bool IsCompilerGenerated(this MethodDefinition field)
+        {
+            if (!field.HasCustomAttributes)
+                return false;
+
+            foreach (var ca in field.CustomAttributes)
+            {
+                var caType = ca.AttributeType;
+                if (caType.Name == "CompilerGeneratedAttribute" && caType.Namespace == "System.Runtime.CompilerServices")
+                    return true;
+            }
+
+            return false;
         }
     }
 }

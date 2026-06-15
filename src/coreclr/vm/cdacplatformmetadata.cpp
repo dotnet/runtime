@@ -20,7 +20,9 @@ void CDacPlatformMetadata::Init()
 
 void CDacPlatformMetadata::InitPrecodes()
 {
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeMachineDescriptor::Init(&(&g_cdacPlatformMetadata)->precode);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 #endif // !DACCESS_COMPILE

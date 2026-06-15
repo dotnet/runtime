@@ -52,6 +52,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? ISetOfTType => GetOrResolveType(typeof(ISet<>), ref _ISetOfTType);
         private Option<INamedTypeSymbol?> _ISetOfTType;
 
+        public INamedTypeSymbol? IReadOnlySetOfTType => GetOrResolveType("System.Collections.Generic.IReadOnlySet`1", ref _IReadOnlySetOfTType);
+        private Option<INamedTypeSymbol?> _IReadOnlySetOfTType;
+
         public INamedTypeSymbol? StackOfTType => GetOrResolveType(typeof(Stack<>), ref _StackOfTType);
         private Option<INamedTypeSymbol?> _StackOfTType;
 
@@ -179,6 +182,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonConverter", ref _JsonConverterType);
         private Option<INamedTypeSymbol?> _JsonConverterType;
 
+        public INamedTypeSymbol? JsonTypeClassifierFactoryType => GetOrResolveType("System.Text.Json.Serialization.JsonTypeClassifierFactory", ref _JsonTypeClassifierFactoryType);
+        private Option<INamedTypeSymbol?> _JsonTypeClassifierFactoryType;
+
         public INamedTypeSymbol? JsonSerializerContextType => GetOrResolveType("System.Text.Json.Serialization.JsonSerializerContext", ref _JsonSerializerContextType);
         private Option<INamedTypeSymbol?> _JsonSerializerContextType;
 
@@ -190,6 +196,18 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? JsonElementType => GetOrResolveType("System.Text.Json.JsonElement", ref _JsonElementType);
         private Option<INamedTypeSymbol?> _JsonElementType;
+
+        public INamedTypeSymbol? StringObjectDictionaryType => _StringObjectDictionaryType.HasValue
+            ? _StringObjectDictionaryType.Value
+            : (_StringObjectDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, ObjectType))).Value;
+        private Option<INamedTypeSymbol?> _StringObjectDictionaryType;
+
+        public INamedTypeSymbol? StringJsonElementDictionaryType => _StringJsonElementDictionaryType.HasValue
+            ? _StringJsonElementDictionaryType.Value
+            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType is { } dictType && JsonElementType is { } jsonElemType
+                ? dictType.Construct(StringType, jsonElemType)
+                : null)).Value;
+        private Option<INamedTypeSymbol?> _StringJsonElementDictionaryType;
 
         public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
         private Option<INamedTypeSymbol?> _JsonNodeType;
@@ -210,8 +228,20 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonDerivedTypeAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonDerivedTypeAttribute", ref _JsonDerivedTypeAttributeType);
         private Option<INamedTypeSymbol?> _JsonDerivedTypeAttributeType;
 
+        public INamedTypeSymbol? JsonIgnoreAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonIgnoreAttribute", ref _JsonIgnoreAttributeType);
+        private Option<INamedTypeSymbol?> _JsonIgnoreAttributeType;
+
+        public INamedTypeSymbol? JsonPolymorphicAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonPolymorphicAttribute", ref _JsonPolymorphicAttributeType);
+        private Option<INamedTypeSymbol?> _JsonPolymorphicAttributeType;
+
+        public INamedTypeSymbol? JsonUnionAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonUnionAttribute", ref _JsonUnionAttributeType);
+        private Option<INamedTypeSymbol?> _JsonUnionAttributeType;
+
         public INamedTypeSymbol? JsonNumberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNumberHandlingAttribute", ref _JsonNumberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonNumberHandlingAttributeType;
+
+        public INamedTypeSymbol? JsonNamingPolicyAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNamingPolicyAttribute", ref _JsonNamingPolicyAttributeType);
+        private Option<INamedTypeSymbol?> _JsonNamingPolicyAttributeType;
 
         public INamedTypeSymbol? JsonObjectCreationHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute", ref _JsonObjectCreationHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonObjectCreationHandlingAttributeType;
@@ -227,6 +257,15 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
         private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
+
+        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
+        private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
+
+        // OverloadResolutionPriorityAttribute was added in .NET 9; its presence indicates
+        // the runtime also supports generic type parameters in UnsafeAccessor.
+        public bool SupportsGenericUnsafeAccessors => UnsafeAccessorAttributeType is not null
+            && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType) is not null;
+        private Option<INamedTypeSymbol?> _OverloadResolutionPriorityAttributeType;
 
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;

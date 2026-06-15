@@ -30,7 +30,7 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
 } // RegValueHome::CopyToIPCEType
 
@@ -256,10 +256,10 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REGREG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->u.reg2 = m_reg2Info.m_kRegNumber;
-    pRegAddr->u.reg2Addr = CORDB_ADDRESS_TO_PTR(m_reg2Info.m_regAddr);
+    pRegAddr->u.reg2Addr = m_reg2Info.m_regAddr;
     pRegAddr->u.reg2Value = m_reg2Info.m_regValue;
 } // RegRegValueHome::CopyToIPCEType
 
@@ -317,7 +317,7 @@ void RegMemValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REGMEM;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->addr = m_memAddr;
 } // RegMemValueHome::CopyToIPCEType
@@ -379,7 +379,7 @@ void MemRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_MEMREG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->addr = m_memAddr;
 } // MemRegValueHome::CopyToIPCEType
@@ -440,7 +440,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_FLOAT;
-    pRegAddr->reg1Addr = NULL;
+    pRegAddr->reg1Addr = (CORDB_ADDRESS)0;
     pRegAddr->floatIndex = m_floatIndex;
 } // FloatRegValueHome::CopyToIPCEType
 
@@ -451,11 +451,6 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
                                              DT_CONTEXT * pContext,
                                              bool        fIsSigned)
 {
-    // TODO: : implement CordbValue::SetEnregisteredValue for RAK_FLOAT
-    #if defined(TARGET_AMD64)
-    PORTABILITY_ASSERT("NYI: SetEnregisteredValue (divalue.cpp): RAK_FLOAT for AMD64");
-    #endif // TARGET_AMD64
-
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
 
     // Convert the input to a double.
@@ -463,14 +458,7 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     memcpy(&newVal, newValue.StartAddress(), newValue.Size());
 
-    #if defined(TARGET_X86)
-
-    // This is unfortunately non-portable. Luckily we can live with this for now since we only support
-    // Win/X86 debugging a Mac/X86 platform.
-
-    #if !defined(TARGET_X86)
-    #error Unsupported target platform
-    #endif // !TARGET_X86
+#if defined(TARGET_X86)
 
     // What a pain, on X86 take the floating
     // point state in the context and make it our current FP
@@ -576,7 +564,7 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
         : "m"(currentFPUState)
     );
     #endif
-    #endif // TARGET_X86
+#endif // TARGET_X86
 
     // update the thread's floating point stack
     void * valueAddress = (void *) &(m_pFrame->m_pThread->m_floatValues[m_floatIndex]);
@@ -596,19 +584,19 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 // RemoteValueHome implementation
 // ============================================================================
 
-    // constructor
-    // Arguments:
-    //     input: pProcess    - the process to which the value belongs
-    //            remoteValue - a buffer with the target address of the value and its size
-    // Note: It's possible a particular instance of CordbGenericValue may have neither a remote address nor a
-    // register address--FuncEval makes empty GenericValues for literals but for those, we will make a
-    // RegisterValueHome,so we can assert that we have a non-null remote address here
-    RemoteValueHome::RemoteValueHome(CordbProcess * pProcess, TargetBuffer remoteValue):
-      ValueHome(pProcess),
-      m_remoteValue(remoteValue)
-    {
-        _ASSERTE(remoteValue.pAddress != 0);
-    } // RemoteValueHome::RemoteValueHome
+// constructor
+// Arguments:
+//     input: pProcess    - the process to which the value belongs
+//            remoteValue - a buffer with the target address of the value and its size
+// Note: It's possible a particular instance of CordbGenericValue may have neither a remote address nor a
+// register address--FuncEval makes empty GenericValues for literals but for those, we will make a
+// RegisterValueHome,so we can assert that we have a non-null remote address here
+RemoteValueHome::RemoteValueHome(CordbProcess * pProcess, TargetBuffer remoteValue):
+    ValueHome(pProcess),
+    m_remoteValue(remoteValue)
+{
+    _ASSERTE(remoteValue.pAddress != 0);
+} // RemoteValueHome::RemoteValueHome
 
 // Gets a value and returns it in dest
 // virtual
@@ -632,7 +620,7 @@ void RemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void RemoteValueHome::CreateInternalValue(CordbType *       pType,
-                                          SIZE_T            offset,
+                                          CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
                                           ICorDebugValue ** ppValue)
@@ -731,7 +719,7 @@ void RegisterValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void RegisterValueHome::CreateInternalValue(CordbType *       pType,
-                                            SIZE_T            offset,
+                                            CORDB_ADDRESS     offset,
                                             void *            localAddress,
                                             ULONG32           size,
                                             ICorDebugValue ** ppValue)
@@ -894,7 +882,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     CORDB_ADDRESS handle = PTR_TO_CORDB_ADDRESS((void *)NULL);
     EX_TRY
     {
-        handle = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
+        IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &handle));
     }
     EX_CATCH
     {
@@ -909,7 +897,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 {
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
     CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL);
-    objPtr = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
+    IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &objPtr));
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
@@ -927,9 +915,9 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
-    event.SetReference.objectRefAddress = NULL;
+    event.SetReference.objectRefAddress = (CORDB_ADDRESS)0;
     event.SetReference.vmObjectHandle = m_vmObjectHandle;
-    event.SetReference.newReference = *((void **)src.StartAddress());
+    event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
 
     // Note: two-way event here...
     IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -942,7 +930,7 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 // creates an ICDValue for a field or array element or for the value type of a boxed object
 // virtual
 void HandleValueHome::CreateInternalValue(CordbType *       pType,
-                                          SIZE_T            offset,
+                                          CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
                                           ICorDebugValue ** ppValue)
@@ -997,8 +985,8 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
     // Finally, send over the Set Value Class message.
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_VALUE_CLASS, true, VMPTR_AppDomain::NullPtr());
-    event.SetValueClass.oldData = CORDB_ADDRESS_TO_PTR(m_remoteValue.pAddress);
-    event.SetValueClass.newData = buffer;
+    event.SetValueClass.oldData = m_remoteValue.pAddress;
+    event.SetValueClass.newData = PTR_TO_CORDB_ADDRESS(buffer);
     IfFailThrow(pType->TypeToBasicTypeData(&event.SetValueClass.type));
 
     // Note: two-way event here...
@@ -1056,9 +1044,9 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
         m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
-        event.SetReference.objectRefAddress = CORDB_ADDRESS_TO_PTR(m_remoteValue.pAddress);
+        event.SetReference.objectRefAddress = m_remoteValue.pAddress;
         event.SetReference.vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
-        event.SetReference.newReference = *((void **)src.StartAddress());
+        event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
 
         // Note: two-way event here...
         IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));

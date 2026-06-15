@@ -73,6 +73,8 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
+            EnsureMaxDepthNotExceeded();
+
             if (ConvertIndefiniteLengthEncodings)
             {
                 // Writer does not allow indefinite-length encodings.
@@ -125,7 +127,7 @@ namespace System.Formats.Cbor
             int length;
             try
             {
-                length = CborHelpers.GetByteCount(utf8Encoding, value);
+                length = utf8Encoding.GetByteCount(value);
             }
             catch (EncoderFallbackException e)
             {
@@ -144,7 +146,7 @@ namespace System.Formats.Cbor
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
 
-            CborHelpers.GetBytes(utf8Encoding, value, _buffer.AsSpan(_offset, length));
+            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }
@@ -166,6 +168,8 @@ namespace System.Formats.Cbor
             {
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
+
+            EnsureMaxDepthNotExceeded();
 
             if (ConvertIndefiniteLengthEncodings)
             {

@@ -122,7 +122,7 @@ namespace System.Reflection
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_handle, m_declaringType.GetUnderlyingNativeHandle());
         #endregion
 
         #region ICustomAttributeProvider
@@ -159,7 +159,6 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override string Name => RuntimeMethodHandle.GetName(this);
-        public override MemberTypes MemberType => MemberTypes.Constructor;
 
         public override Type? DeclaringType => m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
 
@@ -173,7 +172,7 @@ namespace System.Reflection
         internal RuntimeType GetRuntimeType() { return m_declaringType; }
         internal RuntimeModule GetRuntimeModule() { return RuntimeTypeHandle.GetModule(m_declaringType); }
         internal RuntimeAssembly GetRuntimeAssembly() { return GetRuntimeModule().GetRuntimeAssembly(); }
-        public override bool IsCollectible => m_declaringType.IsCollectible;
+        public override bool IsCollectible => ReflectedTypeInternal.IsCollectible;
         #endregion
 
         #region MethodBase Overrides
@@ -221,8 +220,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
-                mb._methodBase = this;
+            mb?._methodBase = this;
             return mb;
         }
 

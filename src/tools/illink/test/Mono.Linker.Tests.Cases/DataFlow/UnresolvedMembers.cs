@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     // it would fail to JIT/run anyway.
 
     [SkipILVerify]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupCompileBefore("UnresolvedLibrary.dll", new[] { "Dependencies/UnresolvedLibrary.cs" }, removeFromLinkerInput: true)]
     [ExpectedNoWarnings]
     class UnresolvedMembers
@@ -45,7 +45,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         { }
 
         [Kept]
-        [ExpectedWarning("IL2066", "TypeWithUnresolvedGenericArgument", Tool.Trimmer | Tool.Analyzer, "")] // Local variable type
         [ExpectedWarning("IL2066", "TypeWithUnresolvedGenericArgument", Tool.Trimmer | Tool.Analyzer, "")] // Called method declaring type
         [ExpectedWarning("IL2066", nameof(MethodWithUnresolvedGenericArgument), Tool.Trimmer | Tool.Analyzer, "")]
         static void UnresolvedGenericArgument()

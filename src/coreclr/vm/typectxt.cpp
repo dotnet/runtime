@@ -91,36 +91,36 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
 #ifndef DACCESS_COMPILE
 TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
 
-    // This currently should only happen in cases where we've already loaded the constraints.
-    // Currently, the only known case where use this code is reflection over methods exposed on a TypeVariable.
-    _ASSERTE(pTypeVar->ConstraintsLoaded());
+    // This can only happen for reflection over type variables. Notably the logic which is used to enumerate the locals
+    // of a MethodBody which was found by reflection over a type variable. This only needs to be non-null
+    // in the case where the the type variable is constrained to implement a generic class or struct.
 
-    if (pTypeVar->ConstraintsLoaded())
+    DWORD cConstraints;
+    TypeHandle *pTypeHandles = pTypeVar->GetConstraints(&cConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::All);
+    for (DWORD iConstraint = 0; iConstraint < cConstraints; iConstraint++)
     {
-        DWORD cConstraints;
-        TypeHandle *pTypeHandles = pTypeVar->GetCachedConstraints(&cConstraints);
-        for (DWORD iConstraint = 0; iConstraint < cConstraints; iConstraint++)
+        if (pTypeHandles[iConstraint].IsGenericVariable())
         {
-            if (pTypeHandles[iConstraint].IsGenericVariable())
+            TypeHandle th = GetDeclaringMethodTableFromTypeVarTypeDesc(pTypeHandles[iConstraint].AsGenericVariable(), pMD);
+            if (!th.IsNull())
+                return th;
+        }
+        else
+        {
+            MethodTable *pMT = pTypeHandles[iConstraint].GetMethodTable();
+            while (pMT != NULL)
             {
-                TypeHandle th = GetDeclaringMethodTableFromTypeVarTypeDesc(pTypeHandles[iConstraint].AsGenericVariable(), pMD);
-                if (!th.IsNull())
-                    return th;
-            }
-            else
-            {
-                MethodTable *pMT = pTypeHandles[iConstraint].GetMethodTable();
-                while (pMT != NULL)
+                if (pMT == pMD->GetMethodTable())
                 {
-                    if (pMT == pMD->GetMethodTable())
-                    {
-                        return TypeHandle(pMT);
-                    }
-
-                    pMT = pMT->GetParentMethodTable();
+                    return TypeHandle(pMT);
                 }
+
+                pMT = pMT->GetParentMethodTable();
             }
         }
     }
@@ -129,10 +129,10 @@ TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar,
 
 void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, Instantiation exactMethodInst, SigTypeContext *pRes)
 {
+    // This method has an unusual contract for SigTypeContext so that it can be used to load type with a declaringType which is a generic variable.
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        THROWS;
+        GC_TRIGGERS;
 
         PRECONDITION(CheckPointer(md));
     } CONTRACTL_END;
@@ -143,7 +143,6 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, I
     }
     else
     {
-        // <TODO> factor this with the work above </TODO>
         if (declaringType.IsGenericVariable())
         {
             declaringType = GetDeclaringMethodTableFromTypeVarTypeDesc(declaringType.AsGenericVariable(), md);

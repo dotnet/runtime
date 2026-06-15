@@ -52,6 +52,10 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if defined(TARGET_SUNOS) && HAVE_GETDOMAINNAME
+// SunOS has getdomainname in libnsl but no header declaration
+extern int getdomainname(char *name, int namelen);
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -74,6 +78,10 @@
 #include <linux/icmp.h>
 #endif
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
+#endif
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -204,6 +212,11 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
             *palAddressFamily = AddressFamily_AF_PACKET;
             return true;
 #endif
+#ifdef AF_LINK
+        case AF_LINK:
+            *palAddressFamily = AddressFamily_AF_LINK;
+            return true;
+#endif
 #ifdef AF_CAN
         case AF_CAN:
             *palAddressFamily = AddressFamily_AF_CAN;
@@ -239,6 +252,11 @@ static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_fa
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformAddressFamily = AF_LINK;
             return true;
 #endif
 #ifdef AF_CAN
@@ -407,8 +425,10 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     char name[_POSIX_HOST_NAME_MAX];
     result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-    bool includeIPv4Loopback = true;
-    bool includeIPv6Loopback = true;
+    bool includeIPv4Loopback;
+    bool includeIPv6Loopback;
+    includeIPv4Loopback = true;
+    includeIPv6Loopback = true;
 
     if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
@@ -432,7 +452,13 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
-                if (ifa->ifa_addr->sa_family == AF_INET)
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
+                if (interfaceFamily == AF_INET)
                 {
                     // Remember if there's at least one non-loopback address for IPv4, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -442,7 +468,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
 
                     entry->IPAddressCount++;
                 }
-                else if (ifa->ifa_addr->sa_family == AF_INET6)
+                else if (interfaceFamily == AF_INET6)
                 {
                     // Remember if there's at least one non-loopback address for IPv6, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -492,15 +518,21 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
-                    (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
+                if ((!includeIPv4Loopback && interfaceFamily == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
+                    (!includeIPv6Loopback && interfaceFamily == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
                     continue;
                 }
 
-                if (CopySockAddrToIPAddress(ifa->ifa_addr, ifa->ifa_addr->sa_family, ipAddressList) == 0)
+                if (CopySockAddrToIPAddress(ifa->ifa_addr, interfaceFamily, ipAddressList) == 0)
                 {
                     ++ipAddressList;
                 }
@@ -1186,6 +1218,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
+
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
@@ -1200,6 +1233,16 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     {
         return Error_EINVAL;
     }
+
+#if HAVE_IP_MULTICAST_IFINDEX
+    // Use IP_MULTICAST_IFINDEX when available for interface index specification
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    {
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+#endif
 
 #if HAVE_IP_MREQN
     struct ip_mreqn opt;
@@ -1515,7 +1558,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
 #if HAVE_LINUX_ERRQUEUE_H
     char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
     messageHeader->ControlBufferLen = sizeof(buffer);
-    messageHeader->ControlBuffer = (void*)buffer;
+    messageHeader->ControlBuffer = (uint8_t*)buffer;
 
     struct msghdr header;
     struct icmphdr icmph;
@@ -2533,6 +2576,11 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
             *platformProtocolType = palProtocolType;
             return true;
 #endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformProtocolType = palProtocolType;
+            return true;
+#endif
 #if HAVE_LINUX_CAN_H
         case AddressFamily_AF_CAN:
             switch (palProtocolType)
@@ -2669,6 +2717,11 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
             *palProtocolType = platformProtocolType;
             return true;
 #endif
@@ -2996,11 +3049,27 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-    }
+        // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
+        // the allocation needs to cover maxFd + 1 bits.
+        if (maxFd > INT_MAX - 1)
+            return Error_EINVAL;
 
+        size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
+        size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
+        readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+
+        if ((readFdsCount != 0 && readSetPtr == NULL)
+            || (writeFdsCount != 0 && writeSetPtr == NULL)
+            || (errorFdsCount != 0 && errorSetPtr == NULL))
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+            return Error_ENOMEM;
+        }
+    }
 
     struct timeval timeout;
     timeout.tv_sec = microseconds / 1000000;
@@ -3027,6 +3096,12 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     if (*triggered < 0)
     {
+        if (maxFd >= FD_SETSIZE)
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+        }
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
@@ -3386,32 +3461,111 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 #endif  // !HAVE_KQUEUE !HAVE_EPOLL
 
 #if defined(TARGET_WASI)
-// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
-bool descriptor_table_get_ref(int fd, void **entry);
+// from https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/descriptor_table.h
+// The descriptor table entry is a "fat pointer":
+//   typedef struct { void* data; descriptor_vtable_t* vtable; } descriptor_table_entry_t;
+// where `data` points to the descriptor-specific state (a tcp_socket_t* or udp_socket_t*).
+void* descriptor_table_get_ref(int fd);
 
 // this method is invading private implementation details of wasi-libc
 // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
 // or after WASIp3 promises are implemented, whatever comes first
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+//
+// Returns the descriptor-specific `data` pointer in *entry and the kind of socket in
+// *socketType (1 = TCP/stream, 2 = UDP/datagram, 0 = unknown). The vtable that identifies
+// the socket kind is a private static symbol in wasi-libc, so we discriminate via SO_TYPE.
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
-    if (entry == NULL)
+    if (entry == NULL || socketType == NULL)
     {
         return Error_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
-    if(!descriptor_table_get_ref(fd, entry))
+    // The returned pointer is a descriptor_table_entry_t*; its first word is the `data` pointer.
+    void** ref = (void**)descriptor_table_get_ref(fd);
+    if (ref == NULL)
     {
-        return Error_EFAULT;
+        // The fd is not present in the descriptor table (e.g. closed or not a socket).
+        return Error_EBADF;
     }
+    *entry = ref[0];
+
+    int type = 0;
+    socklen_t length = sizeof(type);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    if (type == SOCK_STREAM)
+    {
+        *socketType = 1;
+    }
+    else if (type == SOCK_DGRAM)
+    {
+        *socketType = 2;
+    }
+    else
+    {
+        *socketType = 0;
+    }
+
     return Error_SUCCESS;
 }
+
+// In the new wasi-libc descriptor-table design, the pollables embedded in the socket state
+// (socket_pollable / input_pollable / output_pollable / incoming_pollable / outgoing_pollable)
+// are created lazily: their handle is 0 until the corresponding `subscribe` import is called.
+// The managed event loop needs the actual pollable handle to merge it into wasi:io/poll.poll,
+// so it asks us to lazily subscribe when it observes a 0 handle.
+//
+// All of the wasi component-model handle types are ABI-identical: a struct wrapping a single
+// int32_t handle, passed and returned directly. We mirror that with WasiPollHandle_t so we can
+// call the (private) wasi-libc subscribe imports without pulling in the generated headers.
+typedef struct { int32_t __handle; } WasiPollHandle_t;
+extern WasiPollHandle_t streams_method_input_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t streams_method_output_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t tcp_method_tcp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_udp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_incoming_datagram_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_outgoing_datagram_stream_subscribe(WasiPollHandle_t self);
+
+// kind: 0 = input-stream, 1 = output-stream, 2 = tcp-socket, 3 = udp-socket,
+//       4 = incoming-datagram-stream, 5 = outgoing-datagram-stream
+// `handle` is the borrowed stream/socket handle read from the socket state. Returns the newly
+// created pollable handle (the caller stores it back into the socket state so wasi-libc owns
+// and eventually drops it), or 0 for an unknown kind.
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    WasiPollHandle_t self = { handle };
+    WasiPollHandle_t pollable;
+    switch (kind)
+    {
+        case 0: pollable = streams_method_input_stream_subscribe(self); break;
+        case 1: pollable = streams_method_output_stream_subscribe(self); break;
+        case 2: pollable = tcp_method_tcp_socket_subscribe(self); break;
+        case 3: pollable = udp_method_udp_socket_subscribe(self); break;
+        case 4: pollable = udp_method_incoming_datagram_stream_subscribe(self); break;
+        case 5: pollable = udp_method_outgoing_datagram_stream_subscribe(self); break;
+        default: return 0;
+    }
+    return pollable.__handle;
+}
 #else
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
     (void)socket;
     (void)entry;
+    (void)socketType;
     return Error_ENOSYS;
+}
+
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    (void)kind;
+    (void)handle;
+    return 0;
 }
 #endif  // TARGET_WASI
 
@@ -3622,6 +3776,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Emulate sendfile using a simple read/send loop.
     *sent = 0;
     char* buffer = NULL;
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
 
     // Save the original input file position and seek to the offset position
     off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
@@ -3631,7 +3786,6 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Allocate a buffer
-    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
     buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {

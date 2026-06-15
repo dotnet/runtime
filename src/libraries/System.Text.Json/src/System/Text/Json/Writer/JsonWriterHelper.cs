@@ -78,7 +78,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateDouble(double value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!double.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }
@@ -87,7 +87,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateSingle(float value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!float.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }
@@ -265,20 +265,7 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(bytes);
-#else
-                if (!bytes.IsEmpty)
-                {
-                    unsafe
-                    {
-                        fixed (byte* ptr = bytes)
-                        {
-                            s_utf8Encoding.GetCharCount(ptr, bytes.Length);
-                        }
-                    }
-                }
-#endif
+                _ = s_utf8Encoding.GetCharCount(bytes);
                 return true;
             }
             catch (DecoderFallbackException)
@@ -299,18 +286,7 @@ namespace System.Text.Json
             written = 0;
             try
             {
-                if (!source.IsEmpty)
-                {
-                    unsafe
-                    {
-                        fixed (char* charPtr = source)
-                        fixed (byte* destPtr = destination)
-                        {
-                            written = s_utf8Encoding.GetBytes(charPtr, source.Length, destPtr, destination.Length);
-                        }
-                    }
-                }
-
+                written = s_utf8Encoding.GetBytes(source, destination);
                 return OperationStatus.Done;
             }
             catch (EncoderFallbackException)
@@ -326,7 +302,7 @@ namespace System.Text.Json
 
         internal delegate T WriteCallback<T>(ReadOnlySpan<byte> serializedValue);
 
-        internal static T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
+        internal static unsafe T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
         {
             int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, JavaScriptEncoder.Default);
 

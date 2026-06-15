@@ -78,7 +78,7 @@ namespace System.Net.Http
         private const int MaxStreamId = int.MaxValue;
 
         // Temporary workaround for request burst handling on connection start.
-        private const int InitialMaxConcurrentStreams = 100;
+        internal const int InitialMaxConcurrentStreams = 100;
 
         private static ReadOnlySpan<byte> Http2ConnectionPreface => "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
 
@@ -152,7 +152,7 @@ namespace System.Net.Http
             _nextStream = 1;
             _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
-            _maxConcurrentStreams = InitialMaxConcurrentStreams;
+            _maxConcurrentStreams = pool._lastSeenHttp2MaxConcurrentStreams;
             _streamsInUse = 0;
 
             _pendingWindowUpdate = 0;
@@ -255,8 +255,10 @@ namespace System.Net.Http
                     throw;
                 }
 
-                // TODO: Review this case!
-                throw new IOException(SR.net_http_http2_connection_not_established, e);
+                // Use _abortException if available, as it contains the real reason for the connection failure.
+                // For example, when ProcessIncomingFramesAsync detects a server-initiated disconnect and calls Abort(),
+                // _abortException will have the original IOException, while 'e' here may be an uninformative ObjectDisposedException.
+                throw new IOException(SR.net_http_http2_connection_not_established, _abortException ?? e);
             }
 
             // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
@@ -855,6 +857,7 @@ namespace System.Net.Http
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
+                            _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
                             ChangeMaxConcurrentStreams(settingValue);
                             maxConcurrentStreamsReceived = true;
                             break;
@@ -1376,7 +1379,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1389,7 +1392,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -2029,7 +2032,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    duplex == false ||
+                    !duplex ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted ||
                     http2Stream.SendRequestFinished)
@@ -2061,7 +2064,35 @@ namespace System.Net.Http
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
 
-                return http2Stream.GetAndClearResponse();
+                HttpResponseMessage response = http2Stream.GetAndClearResponse();
+
+                // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
+                {
+                    // Mark the pool so future requests that can use HTTP/1.1 go directly to HTTP/1.1.
+                    // This is set regardless of whether we can retry this particular request,
+                    // so that subsequent requests benefit from the downgrade.
+                    _pool.OnSessionAuthenticationChallengeSeen();
+
+                    // We can only safely retry if there's no request content, as we cannot guarantee
+                    // that we can rewind arbitrary content streams.
+                    // Additionally, we only retry if the version negotiation allows the request to fall back to HTTP/1.1.
+                    if (request.Content is null &&
+                        HttpConnectionPool.CanFallBackToHttp11(request) &&
+                        !request.IsAuthDisabled())
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
+                        }
+
+                        response.Dispose();
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    }
+                }
+
+                return response;
             }
             catch (HttpIOException e)
             {

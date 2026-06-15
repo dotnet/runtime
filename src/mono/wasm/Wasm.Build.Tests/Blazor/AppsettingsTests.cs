@@ -14,7 +14,7 @@ namespace Wasm.Build.Tests.Blazor;
 public class AppsettingsTests : BlazorWasmTestBase
 {
     public AppsettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, DefaultTargetFrameworkForBlazorTemplate)
     {
         _enablePerTestCleanup = true;
     }

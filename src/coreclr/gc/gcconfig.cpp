@@ -47,18 +47,18 @@ GC_CONFIGURATION_KEYS
 void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
 #define INT_CONFIG(name, unused_private_key, public_key, unused_default, unused_doc) \
-    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
+    configurationValueFunc(context, #name, public_key, GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
     
 #define STRING_CONFIG(name, private_key, public_key, unused_doc)                     \
     {                                                                                \
         const char* resultStr = nullptr;                                             \
         GCToEEInterface::GetStringConfigValue(private_key, public_key, &resultStr);  \
         GCConfigStringHolder holder(resultStr);                                      \
-        configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr)); \
+        configurationValueFunc(context, #name, public_key, GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr)); \
     }
 
 #define BOOL_CONFIG(name, unused_private_key, public_key, unused_default, unused_doc) \
-    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
+    configurationValueFunc(context, #name, public_key, GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
 
 GC_CONFIGURATION_KEYS
 
@@ -175,7 +175,8 @@ bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* conf
                     break;
                 }
 
-                if ((start_index >= MAX_SUPPORTED_CPUS) || (end_index >= MAX_SUPPORTED_CPUS) || (end_index < start_index))
+                size_t maxCpuCount = GCToOSInterface::GetMaxProcessorCount();
+                if ((start_index >= maxCpuCount) || (end_index >= maxCpuCount) || (end_index < start_index))
                 {
                     // Invalid CPU index values or range
                     break;

@@ -3,6 +3,7 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 #if NET
@@ -757,8 +758,8 @@ namespace System.Text.Unicode
                 throw new PlatformNotSupportedException();
             }
 
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitMask128);
+            Vector128<byte> mostSignificantBitIsSet = (value.AsSByte() >> 7).AsByte();
+            Vector128<byte> extractedBits = mostSignificantBitIsSet & bitMask128;
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             return extractedBits.AsUInt64().ToScalar();
         }

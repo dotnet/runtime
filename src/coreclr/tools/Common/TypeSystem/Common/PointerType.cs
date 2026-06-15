@@ -15,7 +15,7 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputePointerTypeHashCode(this.ParameterType.GetHashCode());
+            return VersionResilientHashCode.PointerTypeHashCode(this.ParameterType.GetHashCode());
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)

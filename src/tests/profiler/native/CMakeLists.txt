@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.20)
-
 project(Profiler)
 
 set(SOURCES
@@ -11,11 +9,13 @@ set(SOURCES
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
+    exceptionprofiler/exceptionprofiler.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
     gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
     gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
+    gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
     inlining/inlining.cpp

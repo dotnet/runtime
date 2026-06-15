@@ -6,39 +6,49 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public readonly struct ModuleHandle
-{
-    public ModuleHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-}
+public readonly record struct ModuleHandle(TargetPointer Address);
 
 [Flags]
 public enum ModuleFlags
 {
-    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    ClassFreed = 0x4,
-    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
+}
 
-    ProfilerNotified = 0x10,
-    EtwNotified = 0x20,
+[Flags]
+public enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
+}
 
-    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
-    ProfilerDisableOptimizations = 0x80,
-    ProfilerDisableInlining = 0x100,
+public enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
+}
 
-    DebuggerUserOverridePriv = 0x400,
-    DebuggerAllowJitOptsPriv = 0x800,
-    DebuggerTrackJitInfoPriv = 0x1000,
-    DebuggerEnCEnabledPriv = 0x2000,
-    DebuggerPDBsCopied = 0x4000,
-    DebuggerIgnorePDbs = 0x8000,
-
-    IJWFixedUp = 0x80000,
-    BeingUnloaded = 0x100000,
+public enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 
 [Flags]
@@ -71,6 +81,13 @@ public record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
+public readonly struct LoaderHeapBlockData
+{
+    public TargetPointer Address { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetPointer NextBlock { get; init; }
+}
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
@@ -84,12 +101,16 @@ public interface ILoader : IContract
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
+    TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
+    TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
 
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
+    string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
@@ -97,13 +118,29 @@ public interface ILoader : IContract
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsModuleMapped(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
+    TargetPointer GetSystemAssembly() => throw new NotImplementedException();
     TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+
+    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
+    // Returns the data for the given loader heap block (address, size, and next block pointer).
+    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
+    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
+    void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

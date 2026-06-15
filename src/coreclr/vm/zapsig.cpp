@@ -270,6 +270,8 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         elemType = ELEMENT_TYPE_OBJECT;
     else if (pMT == g_pStringClass)
         elemType = ELEMENT_TYPE_STRING;
+    else if (pMT == g_TypedReferenceMT)
+        elemType = ELEMENT_TYPE_TYPEDBYREF;
     else if (pMT == g_pCanonMethodTableClass)
         elemType = (CorElementType) ELEMENT_TYPE_CANON_ZAPSIG;
     else if (pMT->IsArray())
@@ -349,8 +351,10 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         case ELEMENT_TYPE_R8:
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_TYPEDBYREF:
             RETURN(sigType == handleType);
+
+        case ELEMENT_TYPE_TYPEDBYREF:
+            RETURN(handle == TypeHandle(g_TypedReferenceMT));
 
         case ELEMENT_TYPE_STRING:
             RETURN(handle == TypeHandle(g_pStringClass));
@@ -917,7 +921,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
 
 
     // This must be called even if nargs == 0, in order to create an instantiating
-    // stub for static methods in generic classees if needed, also for BoxedEntryPointStubs
+    // stub for static methods in generic classes if needed, also for BoxedEntryPointStubs
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
@@ -927,9 +931,9 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
                                                             isUnboxingStub,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
+                                                            isAsyncVariant ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary,
                                                             actualOwnerRequired,
-                                                            TRUE,
-                                                            isAsyncVariant == pMethod->IsAsyncVariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
+                                                            TRUE);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {

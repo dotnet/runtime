@@ -22,13 +22,15 @@
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
-
-#include "slist.inl"
+#include <minipal/thread.h>
+#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
+
+SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 
 ThreadStore * GetThreadStore()
 {
@@ -142,7 +144,15 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
-    pTS->m_ThreadList.PushHead(pAttachingThread);
+    pTS->m_ThreadList.InsertHead(pAttachingThread);
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
+    {
+        PalPrintFatalError("\nFailed to insert thread into signal-safe map due to out of memory.\n");
+        RhFailFast();
+    }
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 // static
@@ -183,11 +193,14 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
-        pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        bool removed = pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        RemoveThreadFromSignalSafeMap(pDetachingThread->m_threadId, pDetachingThread);
+#endif
     }
 
     // post-mortem clean up.
@@ -341,81 +354,7 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
 } // ResumeAllThreads
 
-void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
-{
-    SuspendAllThreads(/* waitForGCEvent = */ false);
-    // TODO: consider enabling multiple thread aborts running in parallel on different threads
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) == 0);
-    RhpTrapThreads |= (uint32_t)TrapThreadsFlags::AbortInProgress;
-
-    targetThread->SetThreadAbortException(threadAbortException);
-
-    // TODO: Stage 2: Queue APC to the target thread to break out of possible wait
-
-    bool initiateAbort = false;
-
-    if (!doRudeAbort)
-    {
-        // TODO: Stage 3: protected regions (finally, catch) handling
-        //  If it was in a protected region, set the "throw at protected region end" flag on the native Thread object
-        // TODO: Stage 4: reverse PInvoke handling
-        //  If there was a reverse Pinvoke frame between the current frame and the funceval frame of the target thread,
-        //  find the outermost reverse Pinvoke frame below the funceval frame and set the thread abort flag in its transition frame.
-        //  If both of these cases happened at once, find out which one of the outermost frame of the protected region
-        //  and the outermost reverse Pinvoke frame is closer to the funceval frame and perform one of the two actions
-        //  described above based on the one that's closer.
-        initiateAbort = true;
-    }
-    else
-    {
-        initiateAbort = true;
-    }
-
-    if (initiateAbort)
-    {
-        PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-        transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
-    }
-
-    ResumeAllThreads(/* waitForGCEvent = */ false);
-}
-
-void ThreadStore::CancelThreadAbort(Thread* targetThread)
-{
-    SuspendAllThreads(/* waitForGCEvent = */ false);
-
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) != 0);
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::AbortInProgress;
-
-    PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
-    if (transitionFrame != nullptr)
-    {
-        transitionFrame->m_Flags &= ~PTFF_THREAD_ABORT;
-    }
-
-    targetThread->SetThreadAbortException(nullptr);
-
-    ResumeAllThreads(/* waitForGCEvent = */ false);
-}
-
-EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
-{
-    return ThreadStore::GetCurrentThread();
-}
-
-FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
-{
-    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, FC_ACCESS_BOOL(doRudeAbort));
-}
-FCIMPLEND
-
-FCIMPL1(void, RhpCancelThreadAbort, void* thread)
-{
-    GetThreadStore()->CancelThreadAbort((Thread*)thread);
-}
-FCIMPLEND
-
-C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
+static_assert(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
 PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
@@ -425,6 +364,13 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
+{
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
+}
+#endif // TARGET_UNIX && !TARGET_WASM
 
 #endif // !DACCESS_COMPILE
 

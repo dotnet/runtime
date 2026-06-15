@@ -18,7 +18,7 @@ dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
 #endif
 }
 
-void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle)
+void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle, InterpAllocator allocator)
 {
     unsigned size = jitInfo->getClassSize(classHandle);
     // getClassGClayout assumes it's given a buffer of exactly this size
@@ -27,13 +27,17 @@ void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_H
         return;
 
     uint8_t *gcPtrs = (uint8_t *)alloca(maxGcPtrs);
-    unsigned numGcPtrs = jitInfo->getClassGClayout(classHandle, gcPtrs),
-        newCapacity = m_slotCount + numGcPtrs;
+    unsigned numGcPtrs = jitInfo->getClassGClayout(classHandle, gcPtrs);
+
+    if (numGcPtrs == 0)
+        return;
+
+    unsigned newCapacity = numGcPtrs;
 
     // Allocate enough space in case all the offsets in the buffer are GC pointers
-    m_slots = (InterpreterStackMapSlot *)malloc(sizeof(InterpreterStackMapSlot) * newCapacity);
+    m_slots = new (allocator) InterpreterStackMapSlot[newCapacity];
 
-    for (unsigned i = 0; i < numGcPtrs; i++) {
+    for (unsigned i = 0; m_slotCount < numGcPtrs; i++) {
         GcSlotFlags flags;
 
         switch (gcPtrs[i]) {
@@ -54,10 +58,4 @@ void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_H
         unsigned slotOffset = (sizeof(void *) * i);
         m_slots[m_slotCount++] = { slotOffset, (unsigned)flags };
     }
-
-    // Shrink our allocation based on the number of slots we actually recorded
-    unsigned finalSize = sizeof(InterpreterStackMapSlot) * m_slotCount;
-    if (finalSize == 0)
-        finalSize = sizeof(InterpreterStackMapSlot);
-    m_slots = (InterpreterStackMapSlot *)realloc(m_slots, finalSize);
 }

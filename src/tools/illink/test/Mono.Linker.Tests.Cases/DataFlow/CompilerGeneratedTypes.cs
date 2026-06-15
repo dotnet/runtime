@@ -16,7 +16,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
     [ExpectedNoWarnings]
     [SkipKeptItemsValidation]
-    [Define("INCLUDE_UNEXPECTED_LOWERING_WARNINGS")] // https://github.com/dotnet/roslyn/issues/79333
     [Define("DEBUG")]
     [SetupLinkerArgument("--disable-generated-code-heuristics")]
     public class CompilerGeneratedTypes
@@ -73,9 +72,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = Local<string>();
 
             [ExpectedWarning("IL2090", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             static IEnumerable<object> Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
             {
                 foreach (var m in typeof(T).GetMethods())
@@ -93,10 +89,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             foreach (var m in Local<string, string>()) { }
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             static IEnumerable<object> Local<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
@@ -119,10 +111,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 _ = Local2<string>();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     foreach (var m in typeof(T1).GetMethods())
@@ -141,17 +129,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             Local1<string>();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             IEnumerable<object> Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 foreach (var o in Local2<string>()) { yield return o; }
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     foreach (var m in typeof(T1).GetMethods())
@@ -170,20 +151,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             Outer<string>();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 int x = 0;
                 foreach (var o in Inner<string>()) yield return o;
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 IEnumerable<object> Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     x++;
@@ -197,12 +169,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             Outer<string>();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T1>()
             {
                 int x = 0;
@@ -223,9 +189,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static void Async()
         {
             Local<string>().Wait();
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             async Task Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
             {
                 await Task.Delay(0);
@@ -240,10 +203,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 Local2<string>().Wait();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 async Task Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     await Task.Delay(0);
@@ -259,9 +218,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = Local<string>();
 
             [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
             static async Task Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
             {
                 await Task.Delay(0);
@@ -279,9 +235,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 int x = 0;
                 Inner<string>().Wait();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 async Task Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     await Task.Delay(0);
@@ -452,9 +405,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 Local1();
 
-#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
-                [UnexpectedWarning("IL2091", "T", nameof(DynamicallyAccessedMemberTypes.PublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-#endif
                 static async Task Local1()
                 {
                     Local2();

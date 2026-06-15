@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ---------------------------------------------------------------------------
 // Check.h
-//
-
 //
 // Assertion checking infrastructure
 // ---------------------------------------------------------------------------
@@ -11,9 +10,7 @@
 #ifndef CHECK_H_
 #define CHECK_H_
 
-#include "static_assert.h"
 #include "daccess.h"
-#include "unreachable.h"
 
 // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand)
 template <class... > struct make_void { using type = void; };
@@ -544,9 +541,6 @@ CHECK CheckValue(TYPENAME &val)
 // to make sure it is always true.
 //--------------------------------------------------------------------------------
 
-#define UNREACHABLE() \
-    UNREACHABLE_MSG("")
-
 #define UNREACHABLE_RET() \
   do {                    \
     UNREACHABLE();        \
@@ -558,23 +552,6 @@ CHECK CheckValue(TYPENAME &val)
     UNREACHABLE_MSG(_message);        \
     return 0;                         \
   } while (0)
-
-#ifdef _DEBUG_IMPL
-
-// Note that the "do { } while (0)" syntax trick here doesn't work, as the compiler
-// gives an error that the while(0) is unreachable code
-#define UNREACHABLE_MSG(_message)                                               \
-{                                                                               \
-    CHECK _check;                                                               \
-    _check.Setup(_message, "<unreachable>", __FILE__, __LINE__);                \
-    _check.Trigger("Reached the \"unreachable\"");                              \
-} __UNREACHABLE()
-
-#else
-
-#define UNREACHABLE_MSG(_message) __UNREACHABLE()
-
-#endif
 
 //--------------------------------------------------------------------------------
 // STRESS_CHECK represents a check which is included in a free build
@@ -685,7 +662,7 @@ CHECK CheckAligned(UINT value, UINT alignment);
 CHECK CheckAligned(ULONG value, UINT alignment);
 #endif
 CHECK CheckAligned(UINT64 value, UINT alignment);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 CHECK CheckAligned(SIZE_T value, UINT alignment);
 #endif
 CHECK CheckAligned(const void *address, UINT alignment);
@@ -695,7 +672,7 @@ CHECK CheckOverflow(UINT value1, UINT value2);
 CHECK CheckOverflow(ULONG value1, ULONG value2);
 #endif
 CHECK CheckOverflow(UINT64 value1, UINT64 value2);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 CHECK CheckOverflow(SIZE_T value1, SIZE_T value2);
 #endif
 #ifndef __wasm__
@@ -711,7 +688,7 @@ CHECK CheckUnderflow(UINT value1, UINT value2);
 CHECK CheckUnderflow(ULONG value1, ULONG value2);
 #endif
 CHECK CheckUnderflow(UINT64 value1, UINT64 value2);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 CHECK CheckUnderflow(SIZE_T value1, SIZE_T value2);
 #endif
 CHECK CheckUnderflow(const void *address, UINT offset);
@@ -719,7 +696,7 @@ CHECK CheckUnderflow(const void *address, UINT offset);
 CHECK CheckUnderflow(const void *address, ULONG offset);
 #endif
 CHECK CheckUnderflow(const void *address, UINT64 offset);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 CHECK CheckUnderflow(const void *address, SIZE_T offset);
 #endif
 CHECK CheckUnderflow(const void *address, void *address2);

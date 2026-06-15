@@ -80,6 +80,11 @@
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
     <MakeDir Directories="$(AndroidBundleDir)" />
+
+    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)libcoreclr_static.a"
+          DestinationFiles="$(AndroidBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(StaticLinkedRuntime)' == 'true' and Exists('$(CoreCLRArtifactsPath)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -132,7 +137,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
+      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">24</AndroidLibraryMinApiLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -249,6 +254,7 @@
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+        ExtraNativeSources="@(ExtraAppNativeSources)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"

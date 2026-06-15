@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
             return TryFindCore<byte, Utf8PemEncoder>(pemData, out fields);
         }
 
-        private static bool TryFindCore<TChar, T>(ReadOnlySpan<TChar> pemData, out PemFields fields)
+        private static unsafe bool TryFindCore<TChar, T>(ReadOnlySpan<TChar> pemData, out PemFields fields)
             where T : IPemEncoder<TChar>
             where TChar : unmanaged, IEquatable<TChar>, INumber<TChar>
         {

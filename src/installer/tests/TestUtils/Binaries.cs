@@ -15,6 +15,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class Binaries
     {
+        public static OSPlatform CurrentOSPlatform { get; } =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
+            RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatform.FreeBSD :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS")) ? OSPlatform.Create("ILLUMOS") : OSPlatform.Windows;
+
         public static string GetExeName(string exeName) =>
             exeName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty);
 
@@ -44,7 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CoreClr
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-            public static string FilePath = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, FileName);
+            public static string FilePath = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, FileName);
 
             public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
@@ -76,10 +82,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
         }
 
+        public static class DotNetAot
+        {
+            public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("dotnet-aot");
+
+            public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockaotsdk");
+            public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
+        }
+
         public static class NetHost
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("nethost");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+        }
+
+        public static class NativeHostStatic
+        {
+            public static string FileName = GetExeName("nativehost_static");
+            public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, FileName);
         }
 
         public static class SingleFileHost
@@ -90,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
         {
-            var runtimePackDir = TestContext.BuiltDotNet.GreatestVersionSharedFxPath;
+            var runtimePackDir = HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath;
             var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
 
             (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();
@@ -114,7 +134,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CetCompat
         {
             // We only support CET shadow stack compatibility for Windows x64 currently
-            public static bool IsSupported => OperatingSystem.IsWindows() && TestContext.BuildArchitecture == "x64";
+            public static bool IsSupported => OperatingSystem.IsWindows() && HostTestContext.BuildArchitecture == "x64";
 
             // https://learn.microsoft.com/windows/win32/debug/pe-format#debug-type
             private const int IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS = 20;

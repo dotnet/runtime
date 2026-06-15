@@ -1,7 +1,10 @@
+set(CMAKE_INCLUDE_CURRENT_DIR OFF)
+
 include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    descriptorlimit.c
     memorybarrierprocesswide.c
     mutex.c
     guid.c
@@ -14,6 +17,20 @@ set(SOURCES
     xoshiro128pp.c
     log.c
 )
+
+# ospagesize is provided inline in the header on Windows and WASM; the .c file
+# only contains the POSIX implementation. Including it on those platforms would
+# produce a redefinition error (mono builds for wasi/browser set HOST_WASM but
+# not CLR_CMAKE_TARGET_ARCH_WASM, so check both). In cross-component builds
+# (e.g. host=x64, target=wasm) the code runs on the host, so we still need the
+# POSIX implementation; only skip when the HOST is actually wasm.
+if(NOT WIN32 AND NOT HOST_WASM AND NOT (CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CROSS_COMPONENTS_BUILD))
+    list(APPEND SOURCES ospagesize.c)
+endif()
+
+if(CLR_CMAKE_HOST_UNIX)
+    list(APPEND SOURCES cpucount.c)
+endif()
 
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -48,3 +65,7 @@ add_library(minipal_sanitizer_support OBJECT
 # Exclude this target from the default build as we may not have sanitzer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
+endif(CLR_CMAKE_TARGET_ARCH_WASM)

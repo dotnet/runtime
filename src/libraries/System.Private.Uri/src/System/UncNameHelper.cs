@@ -36,33 +36,27 @@ namespace System
         //
         // Assumption is the caller will check on the resulting name length
         // Remarks:  MUST NOT be used unless all input indexes are verified and trusted.
-        public static unsafe bool IsValid(char* name, int start, ref int returnedEnd, bool notImplicitFile)
+        public static bool IsValid(ReadOnlySpan<char> name, bool notImplicitFile, out int nameLength)
         {
-            int end = returnedEnd;
+            nameLength = 0;
 
-            if (start == end)
-                return false;
-            //
             // First segment could consist of only '_' or '-' but it cannot be all digits or empty
-            //
             bool validShortName = false;
-            int i = start;
-            for (; i < end; ++i)
+            int i = 0;
+            for (; i < name.Length; i++)
             {
-                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
                 {
-                    end = i;
+                    validShortName = true;
+                }
+                else if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                {
                     break;
                 }
                 else if (name[i] == '.')
                 {
-                    ++i;
+                    i++;
                     break;
-                }
-
-                if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
-                {
-                    validShortName = true;
                 }
                 else if (!char.IsAsciiDigit(name[i]))
                 {
@@ -73,20 +67,17 @@ namespace System
             if (!validShortName)
                 return false;
 
-            //
             // Subsequent segments must start with a letter or a digit
-            //
 
-            for (; i < end; ++i)
+            for (; (uint)i < (uint)name.Length; i++)
             {
                 if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
                 {
-                    end = i;
                     break;
                 }
                 else if (name[i] == '.')
                 {
-                    if (!validShortName || ((i - 1) >= start && name[i - 1] == '.'))
+                    if (!validShortName || name[i - 1] == '.')
                         return false;
 
                     validShortName = false;
@@ -98,23 +89,25 @@ namespace System
                 }
                 else if (char.IsLetter(name[i]) || char.IsAsciiDigit(name[i]))
                 {
-                    if (!validShortName)
-                        validShortName = true;
+                    validShortName = true;
                 }
                 else
+                {
                     return false;
+                }
             }
 
-            // last segment can end with the dot
-            if (((i - 1) >= start && name[i - 1] == '.'))
-                validShortName = true;
-
             if (!validShortName)
-                return false;
+            {
+                // last segment can end with the dot
+                if ((uint)(i - 1) >= (uint)name.Length || name[i - 1] != '.')
+                {
+                    return false;
+                }
+            }
 
-            //  caller must check for (end - start <= MaximumInternetNameLength)
-
-            returnedEnd = end;
+            // Caller must check that (nameLength <= MaximumInternetNameLength)
+            nameLength = i;
             return true;
         }
     }

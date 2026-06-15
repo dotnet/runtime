@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -222,7 +222,7 @@ namespace System.Text
         public int Value => (int)_value;
 
 #if SYSTEM_PRIVATE_CORELIB
-        private static Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
+        private static unsafe Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(textInfo != null, "This should've been checked by the caller.");
@@ -257,7 +257,7 @@ namespace System.Text
             }
         }
 #else
-        private static Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
+        private static unsafe Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
         {
             Debug.Assert(culture != null, "This should've been checked by the caller.");
 
@@ -293,6 +293,13 @@ namespace System.Text
 #endif
 
         public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
+
+        internal ReadOnlySpan<char> AsSpan(Span<char> buffer)
+        {
+            Debug.Assert(buffer.Length >= MaxUtf16CharsPerRune);
+            int charsWritten = EncodeToUtf16(buffer);
+            return buffer.Slice(0, charsWritten);
+        }
 
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
@@ -780,6 +787,29 @@ namespace System.Text
 
         public bool Equals(Rune other) => this == other;
 
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.
+        /// </summary>
+        /// <param name="other">The rune to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public unsafe bool Equals(Rune other, StringComparison comparisonType)
+        {
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                return this == other;
+            }
+
+            // Convert this to span
+            ReadOnlySpan<char> thisChars = AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Convert other to span
+            ReadOnlySpan<char> otherChars = other.AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Compare span equality
+            return thisChars.Equals(otherChars, comparisonType);
+        }
+
         public override int GetHashCode() => Value;
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -906,7 +936,7 @@ namespace System.Text
         /// <summary>
         /// Returns a <see cref="string"/> representation of this <see cref="Rune"/> instance.
         /// </summary>
-        public override string ToString()
+        public override unsafe string ToString()
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (IsBmp)
@@ -1524,7 +1554,7 @@ namespace System.Text
                 return this.CompareTo(other);
             }
 
-#if SYSTEM_PRIVATE_CORLIB
+#if SYSTEM_PRIVATE_CORELIB
             throw new ArgumentException(SR.Arg_MustBeRune);
 #else
             throw new ArgumentException();

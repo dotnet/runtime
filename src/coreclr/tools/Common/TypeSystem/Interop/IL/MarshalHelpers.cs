@@ -202,8 +202,8 @@ namespace Internal.TypeSystem.Interop
                 if (customModifierType == null)
                     continue;
 
-                if ((customModifierType.Namespace == "System.Runtime.CompilerServices" && customModifierType.Name == "IsCopyConstructed") ||
-                    (customModifierType.Namespace == "Microsoft.VisualC" && customModifierType.Name == "NeedsCopyConstructorModifier"))
+                if ((customModifierType.Namespace == "System.Runtime.CompilerServices"u8 && customModifierType.Name == "IsCopyConstructed"u8) ||
+                    (customModifierType.Namespace == "Microsoft.VisualC"u8 && customModifierType.Name == "NeedsCopyConstructorModifier"u8))
                 {
                     return true;
                 }
@@ -436,7 +436,7 @@ namespace Internal.TypeSystem.Interop
 
                     return MarshallerKind.BlittableStruct;
                 }
-                else if (((MetadataType)type).HasLayout())
+                else if (!((MetadataType)type).IsAutoLayout)
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
                         return MarshallerKind.Invalid;
@@ -642,7 +642,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type is MetadataType mdType && mdType.HasLayout())
+            else if (type is MetadataType mdType && !mdType.IsAutoLayout)
             {
                 if (type.HasInstantiation)
                 {
@@ -946,7 +946,7 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
-                && metadata.Name.StartsWith(ObjectiveCMsgSend);
+                && metadata.Name.AsSpan().StartsWith(ObjectiveCMsgSend);
         }
 
         internal static uint? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)

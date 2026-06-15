@@ -8,6 +8,9 @@
 
     // File: D:\a\_work\1\s\src\coreclr\jit\lowerxarch.cpp Line: 11752
 
+
+namespace Runtime_107587;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -25,13 +28,10 @@ public class Runtime_107587
         byte byte_152 = 3;
         return Avx512F.TernaryLogic(s_v512_sbyte_42, s_v512_sbyte_42, s_v512_sbyte_42, byte_152);
     }
-    
-    [Fact]   
+
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.IsSupported)
-        {
-            new Runtime_107587().Method0();
-        }
+        new Runtime_107587().Method0();
     }
 }

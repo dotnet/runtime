@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>
-    <NoWarn>$(NoWarn);IL3000</NoWarn>
+    <NoWarn>$(NoWarn);IL3000;SYSLIB5003</NoWarn>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
   </PropertyGroup>
 </Project>

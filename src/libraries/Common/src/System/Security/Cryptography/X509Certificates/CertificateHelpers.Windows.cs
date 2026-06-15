@@ -25,6 +25,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static partial int GuessKeySpec(CngProvider provider, string keyName, bool machineKey, CngAlgorithmGroup? algorithmGroup);
 
+        private static partial SafeCertContextHandle DuplicateCertificateHandle(TCertificate certificate);
+
 #if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
 #endif
@@ -75,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal static T? GetPrivateKey<T>(TCertificate certificate, Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng)
             where T : class, IDisposable
         {
-            using (SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle))
+            using (SafeCertContextHandle certContext = DuplicateCertificateHandle(certificate))
             {
                 SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out CngKeyHandleOpenOptions cngHandleOptions);
                 if (ncryptKey != null)

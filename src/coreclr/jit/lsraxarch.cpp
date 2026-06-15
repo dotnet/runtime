@@ -116,7 +116,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
@@ -243,6 +243,22 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr (RDI/RCX) and IL offset (RSI/RDX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset (RDI/RCX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_SETCC:
             srcCount = 0;
             assert(dstCount == 1);
@@ -310,7 +326,7 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
         }
         break;
@@ -561,12 +577,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM after Lowering.");
-            srcCount = 0;
-            break;
-
         case GT_LEA:
             // The LEA usually passes its operands through to the GT_IND, in which case it will
             // be contained, but we may be instantiating an address, in which case we set them here.
@@ -586,7 +596,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STOREIND:
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -628,13 +638,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-#endif
 
         case GT_INDEX_ADDR:
         {
@@ -691,7 +694,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 
@@ -779,7 +782,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_SUB:
         case GT_DIV:
         {
-            return !varTypeIsFloating(tree->TypeGet()) || !compiler->canUseVexEncoding();
+            return !varTypeIsFloating(tree->TypeGet()) || !m_compiler->canUseVexEncoding();
         }
 
         // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
@@ -791,7 +794,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         {
             if (varTypeIsFloating(tree->TypeGet()))
             {
-                return !compiler->canUseVexEncoding();
+                return !m_compiler->canUseVexEncoding();
             }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
         }
@@ -801,12 +804,12 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_MULHI:
         {
             // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
-            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
+            return !(tree->IsUnsigned() && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
         }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            return tree->isRMWHWIntrinsic(compiler);
+            return tree->isRMWHWIntrinsic(m_compiler);
 #endif // FEATURE_HW_INTRINSICS
 
         default:
@@ -1091,8 +1094,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
-        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
-            tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
+        if ((genActualType(targetType) == TYP_LONG) &&
+            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && tree->OperIs(GT_ROL, GT_ROR) &&
+            (shiftByValue > 0) && (shiftByValue < 64))
         {
             srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
             dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
@@ -1101,7 +1105,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
+             m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
@@ -1221,18 +1225,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree* ctrlExpr = call->gtControlExpr;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        ctrlExpr = call->gtCallAddr;
-    }
-
     RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_X86
-    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -1282,7 +1280,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
                     regNumber argReg           = seg.GetRegister();
-                    regNumber correspondingReg = compiler->getCallArgIntRegister(argReg);
+                    regNumber correspondingReg = m_compiler->getCallArgIntRegister(argReg);
                     buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(correspondingReg));
                     callHasFloatRegArgs = true;
                 }
@@ -1294,6 +1292,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     srcCount += BuildCallArgUses(call);
 
     // set reg requirements on call target represented as control sequence.
+    GenTree* ctrlExpr = call->gtControlExpr;
     if (ctrlExpr != nullptr)
     {
         SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
@@ -1305,10 +1304,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (m_compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+            }
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
-                 !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                 !m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
@@ -1334,20 +1337,20 @@ int LinearScan::BuildCall(GenTreeCall* call)
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
-    if (call->NeedsVzeroupper(compiler))
+    if (call->NeedsVzeroupper(m_compiler))
     {
         // Much like for Contains256bitOrMoreAVX, we want to track if any
         // call needs a vzeroupper inserted. This allows us to reduce
         // the total number of vzeroupper being inserted for cases where
         // no 256+ AVX is used directly by the method.
 
-        compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
+        m_compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
     }
 
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    if (call->IsAsync() && m_compiler->compIsAsync() && !call->IsFastTailCall())
     {
         MarkAsyncContinuationBusyForCall(call);
     }
@@ -1403,9 +1406,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
-    SingleTypeRegSet srcRegMask     = RBM_NONE;
-    SingleTypeRegSet sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet srcRegMask = RBM_NONE;
 
     RefPosition* internalIntDef = nullptr;
 #ifdef TARGET_X86
@@ -1467,12 +1468,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RAX;
-                sizeRegMask    = SRBM_RCX;
-                break;
-
             case GenTreeBlk::BlkOpKindLoop:
                 // Needed for offsetReg
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
@@ -1492,20 +1487,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjRepInstr:
-                // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
-                sizeRegMask = SRBM_RCX;
-                FALLTHROUGH;
-
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-                // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                unsigned regSize   = compiler->roundDownSIMDSize(size);
+                unsigned regSize   = m_compiler->roundDownSIMDSize(size);
                 unsigned remainder = size;
 
                 if ((size >= regSize) && (regSize > 0))
@@ -1560,7 +1544,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // Lowering was expected to get rid of memmove in case of zero
                 assert(size > 0);
 
-                const unsigned simdSize = compiler->roundDownSIMDSize(size);
+                const unsigned simdSize = m_compiler->roundDownSIMDSize(size);
                 if ((size >= simdSize) && (simdSize > 0))
                 {
                     unsigned simdRegs = size / simdSize;
@@ -1592,28 +1576,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                sizeRegMask    = SRBM_RCX;
-                break;
-
             default:
                 unreached();
         }
-
-        if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE))
-        {
-            // This is a local source; we'll use a temp register for its address.
-            assert(src->isContained() && src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-            buildInternalIntRegisterDefForNode(blkNode, srcRegMask);
-        }
-    }
-
-    if (sizeRegMask != RBM_NONE)
-    {
-        // Reserve a temp register for the block size argument.
-        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
     }
 
     int useCount = 0;
@@ -1621,7 +1586,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (!dstAddr->isContained())
     {
         useCount++;
-        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, dstAddrRegMask, getEvexIsSupported()));
+        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
     }
     else if (dstAddr->OperIsAddrMode())
     {
@@ -1709,13 +1674,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                 if (simdTemp == nullptr)
                 {
                     simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
-                }
-
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                {
-                    // To store SIMD12 without extractps we will need
-                    // a temp xmm reg to do the shuffle.
-                    buildInternalFloatRegisterDefForNode(use.GetNode());
                 }
             }
 #endif // defined(FEATURE_SIMD)
@@ -1860,17 +1818,17 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI() && size->isContained())
     {
         srcCount       = 0;
-        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
+        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->IconValue(), STACK_ALIGN);
 
         // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
-        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))
+        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= m_compiler->eeGetPageSize()))
         {
             buildInternalIntRegisterDefForNode(tree);
         }
     }
     else
     {
-        if (!compiler->info.compInitMem)
+        if (!m_compiler->info.compInitMem)
         {
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
@@ -1948,7 +1906,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, lowGprRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 
@@ -2042,14 +2000,14 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     }
     else
     {
-        tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
+        tgtPrefUse = BuildUse(op1);
         srcCount   = 1;
     }
     if (internalFloatDef != nullptr)
     {
         buildInternalRegisterUses();
     }
-    BuildDef(tree, BuildEvexIncompatibleMask(tree));
+    BuildDef(tree);
     return srcCount;
 }
 
@@ -2206,9 +2164,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
-        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+        bool isRMW = intrinsicTree->isRMWHWIntrinsic(m_compiler);
 
-        const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
+        const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(m_compiler);
 #ifdef TARGET_AMD64
         const bool canHWIntrinsicUseApxRegs = isEvexCompatible && getEvexIsSupported();
 #else
@@ -2270,16 +2228,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         RefPosition* op1Use = BuildUse(op1);
                         srcCount += 1;
-
-                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
-                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                        {
-                            setDelayFree(op1Use);
-                        }
-                        else
-                        {
-                            tgtPrefUse = op1Use;
-                        }
+                        tgtPrefUse = op1Use;
                     }
 
                     buildUses = false;
@@ -2288,12 +2237,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
                 {
                     dstCandidates = allByteRegs();
-                }
-                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                {
-                    // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
-                    buildInternalFloatRegisterDefForNode(intrinsicTree);
-                    setInternalRegsDelayFree = true;
                 }
 #endif // TARGET_X86
                 break;
@@ -2311,7 +2254,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     // we will use the SIMD temp location to store the vector.
 
                     var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
-                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                    m_compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 else if (op1->IsCnsVec())
                 {
@@ -2334,7 +2277,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // we will use the SIMD temp location to store the vector.
 
                 var_types requiredSimdTempType = intrinsicTree->TypeGet();
-                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                m_compiler->getSIMDInitTempVarNum(requiredSimdTempType);
 
                 // We then customize the uses as we will effectively be spilling
                 // op1, storing op3 to that spill location based on op2. Then
@@ -2396,11 +2339,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE42_BlendVariable:
+            case NI_X86Base_BlendVariable:
             {
                 assert(numArgs == 3);
 
-                if (!compiler->canUseVexEncoding())
+                if (!m_compiler->canUseVexEncoding())
                 {
                     assert(isRMW);
 
@@ -2424,7 +2367,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE42_Extract:
+            case NI_X86Base_Extract:
             {
                 assert(!varTypeIsFloating(baseType));
 
@@ -2438,8 +2381,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
 #ifdef TARGET_X86
-            case NI_SSE42_Crc32:
-            case NI_SSE42_X64_Crc32:
+            case NI_X86Base_Crc32:
+            case NI_X86Base_X64_Crc32:
             {
                 // TODO-XArch-Cleanup: Currently we use the BaseType to bring the type of the second argument
                 // to the code generator. We may want to encode the overload info in another way.
@@ -2497,13 +2440,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_X86Base_X64_BigMul:
+            {
+                assert(numArgs == 2);
+                assert(dstCount == 2);
+                assert(isRMW);
+                assert(!op1->isContained());
+
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
+                // Otherwise don't force any register: the second parameter may already happen to be in EAX,
+                // in which case codegen will use it as the implicit operand.
+                srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
+                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, SRBM_EAX, 0);
+                BuildDef(intrinsicTree, SRBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_AVX2_MultiplyNoFlags:
             case NI_AVX2_X64_MultiplyNoFlags:
             {
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
                 SingleTypeRegSet apxAwareRegCandidates =
-                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    ForceLowGprForApxIfNeeded(op2, availableIntRegs & ~SRBM_EDX, canHWIntrinsicUseApxRegs);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
                 if (numArgs == 3)
                 {
@@ -2539,98 +2506,35 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512_FusedMultiplySubtractNegated:
             case NI_AVX512_FusedMultiplySubtractNegatedScalar:
             {
+                // While this operation is RMW, it is also almost freely reorderable
+                // and so we do not need to set the operands as delay free unless
+                // we are copying the upper bits and therefore op1 must be the target
+
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
                 assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                LIR::Use use;
-                GenTree* user = nullptr;
-
-                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
-                {
-                    user = use.User();
-                }
-                unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
-
-                unsigned containedOpNum = 0;
-
-                // containedOpNum remains 0 when no operand is contained or regOptional
-                if (op1->isContained() || op1->IsRegOptional())
-                {
-                    containedOpNum = 1;
-                }
-                else if (op2->isContained() || op2->IsRegOptional())
-                {
-                    containedOpNum = 2;
-                }
-                else if (op3->isContained() || op3->IsRegOptional())
-                {
-                    containedOpNum = 3;
-                }
-
                 GenTree* emitOp1 = op1;
                 GenTree* emitOp2 = op2;
                 GenTree* emitOp3 = op3;
 
-                // Intrinsics with CopyUpperBits semantics must have op1 as target
-                assert(containedOpNum != 1 || !copiesUpperBits);
-
-                // We need to keep this in sync with hwintrinsiccodegenxarch.cpp
-                // Ideally we'd actually swap the operands here and simplify codegen
-                // but its a bit more complicated to do so for many operands as well
-                // as being complicated to tell codegen how to pick the right instruction
-
-                if (containedOpNum == 1)
+                if (op1->isContained() || op1->IsRegOptional())
                 {
-                    // https://github.com/dotnet/runtime/issues/62215
-                    // resultOpNum might change between lowering and lsra, comment out assertion for now.
-                    // assert(containedOpNum != resultOpNum);
-                    // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
+                    assert(!copiesUpperBits);
                     std::swap(emitOp1, emitOp3);
-
-                    if (resultOpNum == 2)
-                    {
-                        // op2 = ([op1] * op2) + op3
-                        std::swap(emitOp1, emitOp2);
-                    }
                 }
-                else if (containedOpNum == 3)
+                else if (op2->isContained() || op2->IsRegOptional())
                 {
-                    // assert(containedOpNum != resultOpNum);
-                    if (resultOpNum == 2 && !copiesUpperBits)
-                    {
-                        // op2 = (op1 * op2) + [op3]
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    // else: op1/? = (op1 * op2) + [op3]
-                }
-                else if (containedOpNum == 2)
-                {
-                    // assert(containedOpNum != resultOpNum);
-
-                    // op1/? = (op1 * [op2]) + op3
                     std::swap(emitOp2, emitOp3);
-                    if (resultOpNum == 3 && !copiesUpperBits)
-                    {
-                        // op3 = (op1 * [op2]) + op3
-                        std::swap(emitOp1, emitOp2);
-                    }
                 }
-                else
-                {
-                    // containedOpNum == 0
-                    // no extra work when resultOpNum is 0 or 1
-                    if (resultOpNum == 2)
-                    {
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    else if (resultOpNum == 3)
-                    {
-                        std::swap(emitOp1, emitOp3);
-                    }
-                }
+
+                // We don't have different intrinsic IDs for the 3 instruction forms and so,
+                // unlike other intrinsics, the operand order and the emit order are not
+                // consistent and have not been adjusted by lowering. Because of this, we
+                // need to track what the expected emit order is to know how to build the use
+                // but still need build the users in the order they exist in LIR.
 
                 GenTree* ops[] = {op1, op2, op3};
                 for (GenTree* op : ops)
@@ -2642,14 +2546,33 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else if (op == emitOp2)
                     {
-                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                        if (copiesUpperBits)
+                        {
+                            srcCount += BuildDelayFreeUses(op, emitOp1);
+                        }
+                        else
+                        {
+                            tgtPrefUse2 = BuildUse(op);
+                            srcCount++;
+                        }
                     }
                     else if (op == emitOp3)
                     {
-                        SingleTypeRegSet apxAwareRegCandidates =
-                            ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
-                        srcCount += op->isContained() ? BuildOperandUses(op, apxAwareRegCandidates)
-                                                      : BuildDelayFreeUses(op, emitOp1);
+                        if (op->isContained())
+                        {
+                            SingleTypeRegSet apxAwareRegCandidates =
+                                ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
+                            srcCount += BuildOperandUses(op, apxAwareRegCandidates);
+                        }
+                        else if (copiesUpperBits)
+                        {
+                            srcCount += BuildDelayFreeUses(op, emitOp1);
+                        }
+                        else
+                        {
+                            tgtPrefUse3 = BuildUse(op);
+                            srcCount++;
+                        }
                     }
                 }
 
@@ -2669,7 +2592,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (op2->IsEmbMaskOp())
                 {
                     // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
-                    assert(!op2->isRMWHWIntrinsic(compiler));
+                    assert(!op2->isRMWHWIntrinsic(m_compiler));
 
                     if (isRMW)
                     {
@@ -2762,6 +2685,62 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                       : BuildDelayFreeUses(op, emitOp1);
                     }
                 }
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX512_TernaryLogic:
+            {
+                // While this operation can be RMW when all operands are used, it
+                // is also almost freely reorderable and so we do not need to set
+                // the operands as delay free unless the control byte is unknown.
+
+                assert(numArgs == 4);
+
+                if (!op4->isContainedIntOrIImmed())
+                {
+                    break;
+                }
+
+                // We have a bit of a special consideration where not all operands may be "used"
+                // and where the leading operands can be contained vector constants that will be
+                // ignored in codegen. Only op3 can be the "true" contained operand from memory.
+
+                if (op1->isContained())
+                {
+                    srcCount += BuildOperandUses(op1);
+                }
+                else
+                {
+                    tgtPrefUse = BuildUse(op1);
+                    srcCount++;
+                }
+
+                if (op2->isContained())
+                {
+                    srcCount += BuildOperandUses(op2);
+                }
+                else
+                {
+                    tgtPrefUse2 = BuildUse(op2);
+                    srcCount++;
+                }
+
+                if (op3->isContained())
+                {
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
+                }
+                else
+                {
+                    tgtPrefUse3 = BuildUse(op3);
+                    srcCount++;
+                }
+
+                assert(op4->isContained());
+                srcCount += BuildOperandUses(op4);
 
                 buildUses = false;
                 break;
@@ -2860,6 +2839,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
+                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    buildInternalFloatRegisterDefForNode(intrinsicTree,
+                                                         m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                             ? lowSIMDRegs()
+                                                             : SRBM_XMM0);
+                }
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
@@ -3001,7 +2990,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
 #if defined(TARGET_AMD64)
         // TODO-xarch-apx: there might be some problem if we allow EGPR as the dst of some instructions.
-        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(m_compiler);
 
         if (!isEvexCompatible)
         {
@@ -3019,9 +3008,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and BigMul, which have special constraints and are handled
+        // above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                    (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;
@@ -3106,15 +3097,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
     SingleTypeRegSet useCandidates = RBM_NONE;
-
-#ifdef FEATURE_SIMD
-    if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42) && !indirTree->Data()->IsVectorZero())
-    {
-        // GT_STOREIND needs an internal register so the upper 4 bytes can be extracted
-        buildInternalFloatRegisterDefForNode(indirTree);
-    }
-#endif // FEATURE_SIMD
 
 #ifdef TARGET_AMD64
     if (varTypeUsesIntReg(indirTree->Addr()))
@@ -3246,7 +3228,7 @@ int LinearScan::BuildMul(GenTree* tree)
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
     bool useMulx =
-        !tree->OperIs(GT_MUL) && isUnsignedMultiply && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
+        !tree->OperIs(GT_MUL) && isUnsignedMultiply && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
     int              srcCount      = 0;
@@ -3340,17 +3322,17 @@ int LinearScan::BuildMul(GenTree* tree)
 //
 void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 {
-    if (!compiler->canUseVexEncoding())
+    if (!m_compiler->canUseVexEncoding())
     {
         return;
     }
 
-    compiler->GetEmitter()->SetContainsAVX(true);
+    m_compiler->GetEmitter()->SetContainsAVX(true);
 
     if (sizeOfSIMDVector >= 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncodingDebugOnly()));
-        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && m_compiler->canUseEvexEncodingDebugOnly()));
+        m_compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
 

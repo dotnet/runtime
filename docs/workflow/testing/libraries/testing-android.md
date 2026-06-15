@@ -1,4 +1,26 @@
-# Testing Libraries on Android
+# Testing Libraries on Android using Mono runtime
+
+> [!NOTE]
+> This document covers testing with the Mono runtime on Android. For testing with CoreCLR on Android, see [CoreCLR Android Documentation](../../building/coreclr/android.md).
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+  - [Using a terminal](#using-a-terminal)
+  - [Using Android Studio](#using-android-studio)
+- [Building Libs and Tests for Android](#building-libs-and-tests-for-android)
+  - [Running individual test suites](#running-individual-test-suites)
+  - [Running the functional tests](#running-the-functional-tests)
+  - [Testing various configurations](#testing-various-configurations)
+  - [Test App Design](#test-app-design)
+  - [Obtaining the logs](#obtaining-the-logs)
+  - [AVD Manager](#avd-manager)
+  - [Existing Limitations](#existing-limitations)
+  - [Debugging the native runtime code using Android Studio](#debugging-the-native-runtime-code-using-android-studio)
+- [Upgrading the Android NDK Version in CI Pipelines](#upgrading-the-android-ndk-version-in-ci-pipelines)
+  - [1. Verify the New NDK Version Locally](#1-verify-the-new-ndk-version-locally)
+  - [2. Test the New NDK in CI and Fix Issues](#2-test-the-new-ndk-in-ci-and-fix-issues)
+  - [3. Update the NDK Version in the Prerequisites Repository](#3-update-the-ndk-version-in-the-prerequisites-repository)
 
 ## Prerequisites
 
@@ -80,7 +102,7 @@ Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device 
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64
+./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64 /p:RuntimeFlavor=mono
 ```
 
 ### Running the functional tests
@@ -89,7 +111,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 /p:RuntimeFlavor=mono src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.

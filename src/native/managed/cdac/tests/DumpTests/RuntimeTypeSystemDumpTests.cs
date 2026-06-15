@@ -1,0 +1,387 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Xunit;
+
+namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
+
+/// <summary>
+/// Dump-based integration tests for the RuntimeTypeSystem contract.
+/// Uses the TypeHierarchy debuggee dump, which loads types with inheritance,
+/// generics, and arrays.
+/// </summary>
+public class RuntimeTypeSystemDumpTests : DumpTestBase
+{
+    protected override string DebuggeeName => "TypeHierarchy";
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void RuntimeTypeSystem_CanGetMethodTableFromModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        ILoader loader = Target.Contracts.Loader;
+        Assert.NotNull(loader);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        Assert.NotNull(rts);
+
+        TargetPointer rootAssembly = loader.GetRootAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
+        TargetPointer modulePtr = loader.GetModule(moduleHandle);
+        Assert.NotEqual(TargetPointer.Null, modulePtr);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableIsValid(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        Assert.NotNull(rts);
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        Assert.NotEqual(TargetPointer.Null, objectMT);
+
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+        Assert.False(rts.IsFreeObjectMethodTable(handle));
+        Assert.True(rts.IsObject(handle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_FreeObjectMethodTableIsValid(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        Assert.NotNull(rts);
+
+        TargetPointer freeObjMTGlobal = Target.ReadGlobalPointer("FreeObjectMethodTable");
+        TargetPointer freeObjMT = Target.ReadPointer(freeObjMTGlobal);
+        Assert.NotEqual(TargetPointer.Null, freeObjMT);
+
+        TypeHandle handle = rts.GetTypeHandle(freeObjMT);
+        Assert.True(rts.IsFreeObjectMethodTable(handle));
+        Assert.False(rts.IsObject(handle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringMethodTableIsString(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        Assert.NotNull(rts);
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        Assert.NotEqual(TargetPointer.Null, stringMT);
+
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+        Assert.True(rts.IsString(handle));
+        Assert.False(rts.IsObject(handle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasParent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+
+        // System.Object has no parent
+        TargetPointer parent = rts.GetParentMethodTable(objectHandle);
+        Assert.Equal(TargetPointer.Null, parent);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringHasObjectParent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+
+        // System.String's parent should be System.Object
+        TargetPointer parent = rts.GetParentMethodTable(stringHandle);
+        Assert.Equal(objectMT, parent);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        uint baseSize = rts.GetBaseSize(handle);
+        Assert.True(baseSize > 0 && baseSize < 1024,
+            $"Expected System.Object base size between 1 and 1024, got {baseSize}");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringHasNonZeroComponentSize(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        // String has a component size (char size = 2)
+        uint componentSize = rts.GetComponentSize(handle);
+        Assert.Equal(2u, componentSize);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        // System.Object has no GC-tracked fields
+        Assert.False(rts.ContainsGCPointers(handle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasValidToken(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        uint token = rts.GetTypeDefToken(handle);
+        // TypeDef tokens have the form 0x02xxxxxx
+        Assert.Equal(0x02000000u, token & 0xFF000000u);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasMethods(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        ushort numMethods = rts.GetNumMethods(handle);
+        // System.Object has ToString, Equals, GetHashCode, Finalize, etc.
+        Assert.True(numMethods >= 4, $"Expected System.Object to have at least 4 methods, got {numMethods}");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        Assert.False(rts.IsGenericTypeDefinition(handle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringCorElementTypeIsClass(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        // GetSignatureCorElementType returns the MethodTable's stored CorElementType,
+        // which is Class for System.String (not CorElementType.String)
+        CorElementType corType = rts.GetSignatureCorElementType(handle);
+        Assert.Equal(CorElementType.Class, corType);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsObjRef_AreConsistent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
+        TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
+        TargetPointer objectArrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
+
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        TypeHandle objectArrayHandle = rts.GetTypeHandle(objectArrayMT);
+
+        TypeHandle intPtrHandle = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
+
+        Assert.True(rts.IsObjRef(objectHandle));
+        Assert.True(rts.IsObjRef(stringHandle));
+        Assert.True(rts.IsObjRef(objectArrayHandle));
+        Assert.False(rts.IsObjRef(intPtrHandle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        IEnumerable<TargetPointer> methodDescs = rts.GetIntroducedMethodDescs(handle);
+        List<TargetPointer> methods = methodDescs.ToList();
+
+        Assert.True(methods.Count >= 4, $"Expected System.Object to have at least 4 introduced methods, got {methods.Count}");
+
+        // Each method desc should have a valid token
+        foreach (TargetPointer mdPtr in methods)
+        {
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(mdPtr);
+            uint token = rts.GetMethodToken(mdHandle);
+            // MethodDef tokens have the form 0x06xxxxxx
+            Assert.Equal(0x06000000u, token & 0xFF000000u);
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasLoadedModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        TargetPointer modulePointer = rts.GetModule(handle);
+        Assert.NotEqual(TargetPointer.Null, modulePointer);
+
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+        bool isLoaded = loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _);
+        Assert.True(isLoaded, "System.Object's module should have loaded image contents");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringMethodTableHasLoadedModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        TargetPointer modulePointer = rts.GetModule(handle);
+        Assert.NotEqual(TargetPointer.Null, modulePointer);
+
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+        bool isLoaded = loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _);
+        Assert.True(isLoaded, "System.String's module should have loaded image contents");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ConcreteTypesDoNotContainGenericVariables(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        string[] globalNames = ["ObjectMethodTable", "StringMethodTable", "FreeObjectMethodTable"];
+        foreach (string globalName in globalNames)
+        {
+            TargetPointer mtGlobal = Target.ReadGlobalPointer(globalName);
+            TargetPointer mt = Target.ReadPointer(mtGlobal);
+            TypeHandle handle = rts.GetTypeHandle(mt);
+            Assert.False(rts.ContainsGenericVariables(handle),
+                $"{globalName} should not contain generic variables");
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        // Object and String are not value types
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(objectMT)));
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(stringMT)));
+
+        // Int32 is a value type (TruePrimitive category)
+        TypeHandle int32Type = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Int32");
+        Assert.True(int32Type.Address != 0, "Could not find Int32 type in CoreLib");
+        Assert.True(rts.IsValueType(int32Type));
+
+        // Nullable<> is a value type (Category_Nullable) — loaded because Container<int>.Value is int?
+        TypeHandle nullableType = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Nullable`1");
+        Assert.True(nullableType.Address != 0, "Could not find Nullable<> type in CoreLib");
+        Assert.True(rts.IsValueType(nullableType));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        // Look up the generic type definition List<> in System.Private.CoreLib.
+        // The debuggee instantiates List<int>, so the runtime has loaded
+        // both the closed List<int> MT and the open List<T> type definition MT.
+        TypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+            "System.Collections.Generic.List`1");
+        Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
+
+        Assert.True(rts.IsGenericTypeDefinition(listTypeDef));
+        Assert.True(rts.ContainsGenericVariables(listTypeDef),
+            "List<> generic type definition should contain generic variables");
+    }
+}

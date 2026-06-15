@@ -141,6 +141,17 @@ namespace System.Net.Http
                 return null;
             }
 
+            // Disallow automatic redirection to unsupported schemes
+            if (!HttpUtilities.IsSupportedScheme(location.Scheme))
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    TraceError($"Redirect from '{requestUri}' to '{location}' blocked due to unsupported scheme '{location.Scheme}'.", response.RequestMessage!.GetHashCode());
+                }
+
+                return null;
+            }
+
             return location;
         }
 

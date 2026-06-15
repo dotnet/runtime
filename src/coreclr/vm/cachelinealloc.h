@@ -46,7 +46,8 @@ public:
     };
 
     // store next pointer and the entries - total of 16 pointers
-    SLink   m_Link;
+    // Next pointer for SList linkage.
+    DPTR(CacheLine)  m_pNext;
     union
     {
         void*   m_pAddr[numEntries];
@@ -64,7 +65,7 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        m_Link = {};
+        m_pNext = NULL;
         memset(m_xxx,0,numValidBytes);
     }
 };
@@ -80,9 +81,9 @@ typedef CacheLine* LPCacheLine;
 ///////////////////////////////////////////////////////
 class CCacheLineAllocator
 {
-    typedef SList<CacheLine, true> REGISTRYLIST;
-    typedef SList<CacheLine, true> FREELIST32;
-    typedef SList<CacheLine, true> FREELIST64;
+    typedef SList<CacheLine> REGISTRYLIST;
+    typedef SList<CacheLine> FREELIST32;
+    typedef SList<CacheLine> FREELIST64;
 
 public:
 

@@ -308,21 +308,26 @@ inline DWORD MethodTable::GetRank()
     if (GetFlag(enum_flag_Category_IfArrayThenSzArray))
         return 1;  // ELEMENT_TYPE_SZARRAY
     else
-        return dac_cast<PTR_ArrayClass>(GetClass())->GetRank();
+    {
+        // Multidim array: BaseSize = ARRAYBASE_BASESIZE + Rank * sizeof(DWORD) * 2
+        DWORD boundsSize = GetBaseSize() - ARRAYBASE_BASESIZE;
+        return boundsSize / (sizeof(DWORD) * 2);
+    }
 }
 
 //==========================================================================================
-inline BOOL MethodTable::IsTruePrimitive()
+inline bool MethodTable::IsTruePrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive;
 }
 
 //==========================================================================================
-inline void MethodTable::SetIsTruePrimitive()
+inline bool MethodTable::IsPrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    SetFlag(enum_flag_Category_TruePrimitive);
+    // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Primitive here.
+    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
 }
 
 //==========================================================================================
@@ -412,10 +417,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 #endif // DACCESS_COMPILE
 
@@ -456,10 +461,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1101,7 +1106,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
     if (id == OptionalMember_##NAME) { \
         return offset; \
     } \
-    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
+    static_assert(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
     if (Has##NAME()) { \
         offset += sizeof(TYPE); \
     }
@@ -1339,7 +1344,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this->GetSpecialInstantiationType()))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

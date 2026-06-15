@@ -28,6 +28,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -50,6 +51,10 @@
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
+#include <pthread_np.h>
+#endif
+
+#if defined(__OpenBSD__)
 #include <pthread_np.h>
 #endif
 
@@ -439,7 +444,7 @@ void ConfigureSignals()
 
 void InitializeCurrentProcessCpuCount()
 {
-    uint32_t count;
+    uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
     // process affinity and CPU quota limit.
@@ -456,14 +461,41 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
+        if (configuredCpuCount == -1)
         {
-            _ASSERTE(!"sched_getaffinity failed");
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        count = CPU_COUNT(&cpuSet);
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
+        }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
@@ -477,25 +509,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-static uint32_t g_RhPageSize;
-
-void InitializeOsPageSize()
-{
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
-
-#if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
-#elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
-#endif
-}
-
-uint32_t PalGetOsPageSize()
-{
-    return g_RhPageSize;
-}
-
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 static pthread_key_t key;
 #endif
 
@@ -507,12 +521,12 @@ bool InitializeSignalHandling();
 // initialization and false on failure.
 bool PalInit()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
     ConfigureSignals();
 
@@ -532,8 +546,6 @@ bool PalInit()
 
     InitializeCurrentProcessCpuCount();
 
-    InitializeOsPageSize();
-
 #ifdef FEATURE_HIJACK
     if (!InitializeSignalHandling())
     {
@@ -541,7 +553,7 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -551,7 +563,7 @@ bool PalInit()
     return true;
 }
 
-#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -597,7 +609,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
@@ -610,7 +622,7 @@ void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
@@ -671,7 +683,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -766,7 +778,7 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
-    
+
     size_t stacksize = GetDefaultStackSizeSetting();
     if (stacksize != 0)
     {
@@ -860,6 +872,11 @@ void PalPrintFatalError(const char* message)
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    if (copy.IsNull())
+    {
+        return nullptr;
+    }
+
     strcpy(copy, toCopy);
     return copy.Extract();
 }
@@ -1017,24 +1034,24 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 
@@ -1088,6 +1105,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
@@ -1175,6 +1197,15 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
 #else // __APPLE__
     pthread_attr_t attr;
     size_t stackSize;
@@ -1232,21 +1263,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
-
-void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
-{
-    struct timeval time = { 0 };
-    gettimeofday(&time, NULL);
-
-    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
-        (time.tv_usec * 10);
-
-    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
-    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 uint64_t PalGetCurrentOSThreadId()

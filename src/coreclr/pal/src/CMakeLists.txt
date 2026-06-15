@@ -1,16 +1,16 @@
-if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_FREEBSD)
+elseif (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
@@ -21,7 +21,7 @@ elseif(NOT CLR_CMAKE_TARGET_APPLE)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 include(configure.cmake)
 
@@ -86,6 +86,9 @@ endif(CLR_CMAKE_TARGET_APPLE)
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
+if(NOT CLR_CMAKE_HOST_ARCH_WASM OR FEATURE_MULTITHREADING)
+  add_definitions(-DFEATURE_MULTITHREADING)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM OR FEATURE_MULTITHREADING)
 add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
@@ -101,8 +104,6 @@ if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
 endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
@@ -115,7 +116,7 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_HOST_ARCH_WASM)
   set(ARCH_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/context2.S
     arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
@@ -123,18 +124,18 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   )
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_WASM)
+if (CLR_CMAKE_HOST_ARCH_WASM)
   set(PLATFORM_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/stubs.cpp
   )
 endif()
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_HOST_ARCH_WASM)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+endif(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -154,7 +155,6 @@ set(SOURCES
   exception/signal.cpp
   file/directory.cpp
   file/file.cpp
-  file/filetime.cpp
   file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
@@ -179,13 +179,11 @@ set(SOURCES
   objmgr/palobjbase.cpp
   objmgr/listedobject.cpp
   objmgr/listedobjectmanager.cpp
-  safecrt/makepath_s.cpp
   safecrt/memcpy_s.cpp
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp
   safecrt/safecrt_input_s.cpp
   safecrt/safecrt_winput_s.cpp
-  safecrt/splitpath_s.cpp
   safecrt/sprintf_s.cpp
   safecrt/sscanf_s.cpp
   safecrt/strcat_s.cpp
@@ -200,10 +198,8 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  sharedmemory/sharedmemory.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp
-  synchobj/mutex.cpp
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
@@ -219,9 +215,9 @@ set_source_files_properties(
     INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 add_library(coreclrpal_objects
   OBJECT
@@ -292,6 +288,14 @@ if(CLR_CMAKE_TARGET_FREEBSD)
     ${UNWIND_LIBS}
   )
 endif(CLR_CMAKE_TARGET_FREEBSD)
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    ${UNWIND_LIBS}
+  )
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 if(CLR_CMAKE_TARGET_HAIKU)
   target_link_libraries(coreclrpal
@@ -364,3 +368,7 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  install_clr(TARGETS coreclrpal DESTINATIONS sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)

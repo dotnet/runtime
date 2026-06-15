@@ -48,6 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
         private static readonly KeyFactory[] s_variantKeyFactories = KeyFactory.BuildVariantFactories();
+        private static readonly KeyFactory[] s_tlsVariantKeyFactories = KeyFactory.BuildTlsVariantFactories();
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -804,6 +805,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
@@ -842,9 +844,10 @@ SingleResponse ::= SEQUENCE {
                     int written = hasher.GetCurrentHash(hash);
                     Debug.Assert(written == hash.Length);
 
-                    // Using mod here will create an imbalance any time s_variantKeyFactories isn't a power of 2,
+                    // Using mod here will create an imbalance any time the key factories array isn't a power of 2,
                     // but that's OK.
-                    keyFactory = s_variantKeyFactories[hash[0] % s_variantKeyFactories.Length];
+                    KeyFactory[] keyFactories = forTls ? s_tlsVariantKeyFactories : s_variantKeyFactories;
+                    keyFactory = keyFactories[hash[0] % keyFactories.Length];
                 }
             }
 
@@ -946,6 +949,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             BuildPrivatePki(
@@ -960,6 +964,7 @@ SingleResponse ::= SEQUENCE {
                 pkiOptionsInSubject: pkiOptionsInSubject,
                 subjectName: subjectName,
                 keyFactory: keyFactory,
+                forTls: forTls,
                 extensions: extensions);
 
             intermediateAuthority = intermediateAuthorities.Single();
@@ -1048,6 +1053,29 @@ SingleResponse ::= SEQUENCE {
                 if (Cryptography.SlhDsa.IsSupported)
                 {
                     factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
+            }
+
+            internal static KeyFactory[] BuildTlsVariantFactories()
+            {
+                List<KeyFactory> factories = [RSASize(2048), ECDsa];
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if (Cryptography.MLDsa.IsSupported)
+                    {
+                        factories.Add(MLDsa);
+                    }
+
+                    // OpenSSL default provider does not advertise SLH-DSA in TLS-SIGALG capability,
+                    // causing it to not recognize SLH-DSA certificates for use in TLS connections
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119573")]
+                    if (!PlatformDetection.IsOpenSslSupported && Cryptography.SlhDsa.IsSupported)
+                    {
+                        factories.Add(SlhDsa);
+                    }
                 }
 
                 return factories.ToArray();

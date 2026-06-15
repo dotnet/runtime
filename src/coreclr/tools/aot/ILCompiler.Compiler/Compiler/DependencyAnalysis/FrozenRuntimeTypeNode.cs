@@ -52,6 +52,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsKnownImmutable => false;
 
-        public override DefType ObjectType => _type.Context.SystemModule.GetKnownType("System", "RuntimeType");
+        public override DefType ObjectType => _type.Context.SystemModule.GetKnownType("System"u8, "RuntimeType"u8);
     }
 }

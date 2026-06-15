@@ -162,7 +162,7 @@ MONO_JIT_ICALL (mono_break) \
 MONO_JIT_ICALL (mono_byvalarray_to_byte_array) \
 MONO_JIT_ICALL (mono_chkstk_win64) \
 MONO_JIT_ICALL (mono_ckfinite) \
-MONO_JIT_ICALL (mono_class_interface_match) \
+MONO_JIT_ICALL (mono_class_interface_match_compressed) \
 MONO_JIT_ICALL (mono_class_static_field_address) \
 MONO_JIT_ICALL (mono_compile_method_icall) \
 MONO_JIT_ICALL (mono_context_get_icall) \

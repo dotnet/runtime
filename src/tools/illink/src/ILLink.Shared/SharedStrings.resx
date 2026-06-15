@@ -301,7 +301,7 @@
     <value>Root assembly could not be found.</value>
   </data>
   <data name="RootAssemblyCouldNotBeFoundMessage" xml:space="preserve">
-    <value>Root assembly '{0}' could not be found.</value>
+    <value>Root assembly with name '{0}' could not be found.</value>
   </data>
   <data name="XmlDescriptorCouldNotBeFoundTitle" xml:space="preserve">
     <value>XML descriptor file could not be found'.</value>
@@ -650,6 +650,12 @@
   </data>
   <data name="DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessorMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMembersAttribute' on property '{0}' conflicts with the same attribute on its accessor '{1}'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property is ignored</value>
+  </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property '{0}' is not supported and has no effect. Apply the attribute to the accessor return value or value parameter instead.</value>
   </data>
   <data name="XmlCouldNotFindAnyTypeInNamespaceTitle" xml:space="preserve">
     <value>The XML descriptor specifies a namespace but there are no types found in such namespace.</value>
@@ -1177,13 +1183,13 @@
     <value>'RequiresDynamicCodeAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresDynamicCodeOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresDynamicCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresDynamicCodeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresAssemblyFilesAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresUnreferencedCodeOnEntryPointMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
@@ -1214,6 +1220,12 @@
   </data>
   <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
     <value>Unrecognized dependencies file type.</value>
+  </data>
+  <data name="MultipleEntryPointRootsMessage" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode. Assembly '{0}' conflicts with '{1}'.</value>
+  </data>
+  <data name="MultipleEntryPointRootsTitle" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode.</value>
   </data>
   <data name="RedundantSuppressionMessage" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>

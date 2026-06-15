@@ -65,7 +65,7 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
     dmb ishld
     ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
-    br  x11        
+    br  x11
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -77,6 +77,7 @@ LEAF_ENTRY FixupPrecodeCodeTemplate
     THUNKS_BLOCK_FIXUP_PRECODE
 LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 
+#ifdef FEATURE_TIERED_COMPILATION
 // ----------
 // CallCountingStub
 // ----------
@@ -110,6 +111,7 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 LEAF_ENTRY CallCountingStubCodeTemplate
     THUNKS_BLOCK_CALLCOUNTING
 LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
+#endif // FEATURE_TIERED_COMPILATION
 #endif
 
 #ifdef DATA_SLOT
@@ -134,9 +136,10 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
         dmb ishld
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
-        br  x11        
+        br  x11
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
+#ifdef FEATURE_TIERED_COMPILATION
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
 LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
@@ -151,5 +154,6 @@ LOCAL_LABEL(CountReachedZero\STUB_PAGE_SIZE):
         br   x10
         brk     0xf000      // Stubs need to be aligned in total size
     LEAF_END_MARKED CallCountingStubCode\STUB_PAGE_SIZE
+#endif // FEATURE_TIERED_COMPILATION
 
     .endr

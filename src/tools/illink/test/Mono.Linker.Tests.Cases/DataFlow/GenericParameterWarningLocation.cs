@@ -9,7 +9,6 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-    // NativeAOT/analyzer differences in behavior compared to ILLink:
     //
     // Validation of generic parameters only matters if the instantiation can be used to run code with the substituted type.
     // So for generic methods the validation has to happen basically always (since any access to the method can lead to the code
@@ -17,16 +16,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     // For generic types though the situation is different. Code on the type can only run if the type is instantiated (new)
     // or if static members are accessed on it (method calls, or fields accesses both can lead to static .cctor execution).
     // Others usages of the type cannot themselves lead to code execution in the type, and thus don't need to be validated.
-    // Currently linker validates every time there's a type occurrence in the code.
-    // NativeAOT and the analyzer on the other hand only validate the cases which can lead to code execution (this is partially
+    // The tools only validate the cases which can lead to code execution (this is partially
     // because the compiler doesn't care about the type in other situations really).
     // So for example local variables of a given type, or method parameters of that type alone will not cause code execution
-    // inside that type and thus won't be validated by NativeAOT compiler or the analyzer.
+    // inside that type and thus won't be validated.
     //
-    // Below this explanation/fact is referred to as "NativeAOT_StorageSpaceType"
-    //   Storage space - declaring a storage space as having a specific type doesn't in itself do anything with that type as per
-    //                   the above description.
-
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
     public class GenericParameterWarningLocation
@@ -68,7 +62,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 : BaseWithPublicMethods<TAllMethods>
             { }
 
-            [ExpectedWarning("IL2091")]
             class DerivedWithNoAnnotations<TUnknown>
                 : BaseWithPublicMethods<TUnknown>
             {
@@ -76,12 +69,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 public DerivedWithNoAnnotations() { }
             }
 
-            [ExpectedWarning("IL2091")]
+            [ExpectedWarning("IL2091", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithMismatchAnnotation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
                 : BaseWithPublicMethods<TPublicFields>
             { }
 
-            [ExpectedWarning("IL2091", nameof(DynamicallyAccessedMemberTypes.PublicMethods))]
+            [ExpectedWarning("IL2091", nameof(DynamicallyAccessedMemberTypes.PublicMethods), Tool.Analyzer, "")]
+            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithOneMismatch<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
                 : BaseWithTwo<TPublicFields, TPublicFields>
             { }
@@ -92,7 +87,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 : BaseWithTwo<TPublicMethods, TPublicFields>
             { }
 
-            [ExpectedWarning("IL2091")]
+            [ExpectedWarning("IL2091", Tool.Analyzer, "Analyzer warns on declaration for implicit constructor")]
             class DerivedWithOnlyStaticMethodReference<TUnknown> : BaseWithPublicMethods<TUnknown>
             {
                 // The method body in this case looks like:
@@ -119,7 +114,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 t = typeof(DerivedWithMatchingAnnotation<>);
                 t = typeof(DerivedWithNoAnnotations<>);
                 t = typeof(DerivedWithMismatchAnnotation<>);
+                new DerivedWithMismatchAnnotation<int>();
                 t = typeof(DerivedWithOneMismatch<>);
+                new DerivedWithOneMismatch<int>();
                 t = typeof(DerivedWithTwoMatching<,>);
 
                 // Also try exact instantiations
@@ -176,7 +173,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        //.NativeAOT: Method parameter types are not interesting until something creates an instance of them
+        // Method parameter types are not interesting until something creates an instance of them
         // so there's no need to validate generic arguments. See comment at the top of the file for more details.
         class MethodParametersAndReturn
         {
@@ -190,11 +187,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static void MethodWithSpecificType(TypeWithPublicMethods<TestType> one, IWithTwo<TestType, TestType> two) { }
 
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
             static void MethodWithOneMismatch<TUnknown>(TypeWithPublicMethods<TUnknown> one) { }
 
-            [ExpectedWarning("IL2091", nameof(IWithTwo<TestType, TestType>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-            [ExpectedWarning("IL2091", nameof(TypeWithPublicMethods<TestType>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
             static void MethodWithTwoMismatches<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -205,11 +199,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static TypeWithPublicMethods<TPublicMethods> MethodWithMatchingReturn<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>() => null;
 
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
             static TypeWithPublicMethods<TUnknown> MethodWithOneMismatchReturn<TUnknown>() => null;
 
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
             static IWithTwo<TPublicFields, TPublicMethods> MethodWithTwoMismatchesInReturn<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -217,7 +208,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ConstructorWithOneMatchAndOneMismatch<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TMethods>
             {
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 public ConstructorWithOneMatchAndOneMismatch(IWithTwo<TMethods, TMethods> two) { }
             }
 
@@ -238,8 +228,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // NativeAot warns for members accessed by reflection as a workaround for an incorrect suppression
         // in DI: https://github.com/dotnet/runtime/issues/81358
-        // ILLink doesn't differentiate between reflection and non-reflection access, so it warns in both cases.
-        // Analyzer doesn't implement the workaround, so it warns in neither case.
         class MethodParametersAndReturnAccessedViaReflection
         {
             class TypeWithPublicMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -291,7 +279,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        //.NativeAOT: Field types are not interesting until something creates an instance of them
+        // Field types are not interesting until something creates an instance of them
         // so there's no need to validate generic arguments. See comment at the top of the file for more details.
         class FieldDefinition
         {
@@ -325,10 +313,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
             {
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static TypeWithPublicMethods<TUnknown> _field1;
                 static TypeWithPublicMethods<TPublicMethods> _field2;
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static TypeWithPublicMethods<TUnknown> _field3;
 
                 public static void Test()
@@ -343,8 +329,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
             {
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static IWithTwo<TPublicFields, TPublicMethods> _field;
 
                 public static void Test()
@@ -364,8 +348,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // NativeAot warns for members accessed by reflection as a workaround for an incorrect suppression
         // in DI: https://github.com/dotnet/runtime/issues/81358
-        // ILLink doesn't differentiate between reflection and non-reflection access, so it warns in both cases.
-        // Analyzer doesn't implement the workaround, so it warns in neither case.
         class FieldDefinitionViaReflection
         {
             class TypeWithPublicMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -388,10 +370,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
             {
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static TypeWithPublicMethods<TUnknown> _field1;
                 static TypeWithPublicMethods<TPublicMethods> _field2;
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static TypeWithPublicMethods<TUnknown> _field3;
             }
 
@@ -399,8 +381,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
             {
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static IWithTwo<TPublicFields, TPublicMethods> _field;
             }
 
@@ -413,7 +395,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        //.NativeAOT: Property types are not interesting until something creates an instance of them
+        // Property types are not interesting until something creates an instance of them
         // so there's no need to validate generic arguments. See comment at the top of the file for more details.
         // In case of trimmer/aot it's even less important because properties don't exist in IL really
         // and thus no code can manipulate them directly - only through reflection.
@@ -449,14 +431,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
             {
-                // The warning is generated on the backing field
-                [ExpectedWarning("IL2091", Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
                 static TypeWithPublicMethods<TUnknown> Property1
                 {
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                     get;
 
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                     set;
                 }
 
@@ -466,14 +444,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     set;
                 }
 
-                // The warning is generated on the backing field
-                [ExpectedWarning("IL2091", Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
                 static TypeWithPublicMethods<TUnknown> Property3
                 {
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                     get;
-
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                     set;
                 }
 
@@ -489,16 +462,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
             {
-                // The warnings are generated on the backing field
-                [ExpectedWarning("IL2091", Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
                 static IWithTwo<TPublicFields, TPublicMethods> Property
                 {
                     // Getter is trimmed and doesn't produce any warning
                     get;
-
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                    [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                     set;
                 }
 
@@ -558,7 +525,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static MethodBody GetInstance() => null;
 
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")] // return type // NativeAOT_StorageSpaceType
             static TypeWithPublicMethods<T> GetInstanceForTypeWithPublicMethods<T>() => null;
 
             class TypeOf
@@ -698,8 +664,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     IWithTwo<TPublicFields, TPublicMethods>.Method();
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // local variable // NativeAOT_StorageSpaceType
                 static void InstanceMethodMismatch<TUnknown>()
                 {
                     TypeWithPublicMethods<TUnknown> instance = GetInstanceForTypeWithPublicMethods<TUnknown>();
@@ -750,8 +714,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     _ = IWithTwo<TPublicFields, TPublicMethods>.Field;
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // access to the field // NativeAOT_StorageSpaceType
                 static void InstanceFieldMismatch<TUnknown>()
                 {
                     TypeWithPublicMethods<TUnknown> instance = GetInstanceForTypeWithPublicMethods<TUnknown>();
@@ -768,7 +730,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
-            //.NativeAOT: Local variable types are not interesting until something creates an instance of them
+            // Local variable types are not interesting until something creates an instance of them
             // so there's no need to validate generic arguments. See comment at the top of the file for more details.
             class LocalVariable
             {
@@ -783,8 +745,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     TypeWithPublicMethods<TPublicMethods> t = null;
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void MultipleReferencesToTheSameType<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -794,8 +754,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     TypeWithPublicMethods<TUnknown> t3 = null; // Warn
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1143,7 +1101,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
-            //.NativeAOT: Checking an instance for its type is not interesting until something creates an instance of that type
+            // Checking an instance for its type is not interesting until something creates an instance of that type
             // so there's no need to validate generic arguments. See comment at the top of the file for more details.
             class IsInstance
             {
@@ -1159,8 +1117,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     bool a = _value is TypeWithPublicMethods<TPublicMethods>;
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void MultipleReferencesToTheSameMethod<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -1170,8 +1126,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     bool a3 = _value is TypeWithPublicMethods<TUnknown>; // Warn
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1204,8 +1158,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     object a = _value as TypeWithPublicMethods<TPublicMethods>;
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void MultipleReferencesToTheSameMethod<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -1215,8 +1167,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     object a3 = _value as TypeWithPublicMethods<TUnknown>; // Warn
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1234,7 +1184,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
-            //.NativeAOT: Exception types are effectively very similar to local variable or method parameters.
+            // Exception types are effectively very similar to local variable or method parameters.
             // and are not interesting until something creates an instance of them
             // so there's no need to validate generic arguments. See comment at the top of the file for more details.
             class ExceptionCatch
@@ -1261,8 +1211,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void MultipleReferencesToTheSameType<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -1292,8 +1240,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1342,8 +1288,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void MultipleReferencesToTheSameType<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -1373,8 +1317,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
-                [ExpectedWarning("IL2091", Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1611,7 +1553,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : Base<RequiresMethods<RequiresNothing<TUnknown>>>
                 { }
 
-                [ExpectedWarning("IL2091", "TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields))]
+                [ExpectedWarning("IL2091", ["TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields)], Tool.Analyzer, "")]
+                [ExpectedWarning("IL2091", ["TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields)], Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
                 class DerivedWithFields<TUnknown>
                     : Base<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>
                 {
@@ -1620,17 +1563,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2026", "--RUCMethod--")]
+                [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
                 class DerivedWithRUC
                     : Base<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>
                 { }
 
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithNothing<TestType>);
-                    a = typeof(DerivedWithFields<TestType>);
-                    a = typeof(DerivedWithRUC);
+                    new DerivedWithNothing<TestType>();
+                    new DerivedWithFields<TestType>();
+                    new DerivedWithRUC();
                 }
             }
 

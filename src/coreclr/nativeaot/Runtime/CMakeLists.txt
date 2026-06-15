@@ -1,11 +1,8 @@
 set(GC_DIR ../../gc)
-set(RUNTIME_DIR ../../runtime)
 
 set(COMMON_RUNTIME_SOURCES
-    allocheap.cpp
     rhassert.cpp
-    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -55,6 +52,12 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/softwarewritewatch.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
+    )
+endif()
 
 set(SERVER_GC_SOURCES
     ${GC_DIR}/gceesvr.cpp
@@ -176,8 +179,26 @@ else()
 
   include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 
-  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS OFF)
+  if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS ON)
+  endif()
+
+  if(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS)
+    # Build the bundled libunwind implementation and the runtime unwinder code
+    # that references it into one relocatable object. The runtime sources are
+    # part of the partial link so their references to libunwind's implementation
+    # symbols are resolved before those symbols are localized.
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES
+      unix/UnwindHelpers.cpp
+      unix/UnixNativeCodeManager.cpp
+      ${LLVM_LIBUNWIND_SOURCES}
+      ${LLVM_LIBUNWIND_ASM_SOURCES})
+    list(REMOVE_ITEM FULL_RUNTIME_SOURCES unix/UnwindHelpers.cpp unix/UnixNativeCodeManager.cpp)
+  else()
+    list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
+    set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  endif()
 
   set(ASM_SUFFIX S)
 endif()
@@ -200,14 +221,27 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64)
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/avx2_load_mask_tables.cpp
   )
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 
+if (CLR_CMAKE_TARGET_ARCH_ARM64)
+set (VXSORT_SOURCES
+    ${GC_DIR}/vxsort/isa_detection.cpp
+    ${GC_DIR}/vxsort/do_vxsort_neon.cpp
+    ${GC_DIR}/vxsort/machine_traits.neon.cpp
+    ${GC_DIR}/vxsort/smallsort/bitonic_sort.NEON.uint32_t.generated.cpp
+    ${GC_DIR}/vxsort/smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
+)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64)
+
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   set(DUMMY_VXSORT_SOURCES
     ${GC_DIR}/vxsort/dummy.cpp
   )
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
@@ -217,12 +251,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
-
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
-  )
-endif ()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -255,17 +283,14 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_definitions(-DFEATURE_CUSTOM_IMPORTS)
-add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
-if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
-  add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
-endif()
 add_definitions(-D_LIB)
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_definitions(-DGC_DESCRIPTOR)
+endif()
 
 # there is a problem with undefined symbols when this is set
 # add_definitions(-DSTRESS_HEAP)
@@ -281,7 +306,10 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>)
   endif()
 else()
-  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # OpenBSD marks the main executable's read-only segments immutable (mimmutable) at load,
+  # so the runtime cannot mprotect the read-only GS cookie page to writable to initialize it.
+  # Keep the cookie in writable memory there, like Apple.
+  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
@@ -309,6 +337,7 @@ convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
 convert_to_absolute_path(STANDALONEGC_DISABLED_SOURCES ${STANDALONEGC_DISABLED_SOURCES})
 convert_to_absolute_path(STANDALONEGC_ENABLED_SOURCES ${STANDALONEGC_ENABLED_SOURCES})
+convert_to_absolute_path(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
@@ -321,4 +350,14 @@ endif()
 
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
+endif()
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # Create an interface library that captures the Runtime's include directories
+  # for use by the datadescriptor intermediary compilation.
+  add_library(nativeaot_runtime_includes INTERFACE)
+  get_property(_runtime_includes DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  target_include_directories(nativeaot_runtime_includes INTERFACE ${_runtime_includes})
+
+  add_subdirectory(datadescriptor)
 endif()

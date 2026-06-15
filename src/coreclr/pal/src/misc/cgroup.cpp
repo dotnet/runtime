@@ -20,12 +20,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/virtual.h"
 #include "pal/cgroup.h"
 #include <algorithm>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif !defined(__HAIKU__)
+
+#if defined(TARGET_LINUX)
+
 #include <sys/vfs.h>
-#endif
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
@@ -49,7 +47,10 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
+        if (s_cgroup_version != 0)
+        {
+            FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
+        }
     }
 
     static void Cleanup()
@@ -84,9 +85,6 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS
-        return 0;
-#else
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
 
@@ -104,7 +102,6 @@ private:
             // been seen in the wild.
             return 1;
         }
-#endif
     }
 
     static bool IsCGroup1CpuSubsystem(const char *strTok){
@@ -522,3 +519,22 @@ PAL_GetCpuLimit(UINT* val)
 
     return CGroup::GetCpuLimit(val);
 }
+
+#else // !TARGET_LINUX
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val)
+{
+    return FALSE;
+}
+
+#endif // TARGET_LINUX

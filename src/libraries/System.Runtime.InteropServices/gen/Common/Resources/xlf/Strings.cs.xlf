@@ -477,6 +477,11 @@
         <target state="translated">Tento typ bude v nativním podpisu považován za strukturu, nikoli za nativní HRESULT.</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="translated">{0} (podporováno pouze u parametrů odchozího objektu [MarshalAs(UnmanagedType.Interface)])</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">Atribut „[In]“ se podporuje pouze u parametrů pole. Parametry podle hodnoty jsou ve výchozím nastavení považovány za parametry jen pro čtení.</target>
@@ -505,11 +510,6 @@
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
         <target state="translated">Atributy „[In]“ a „[Out]“ jsou podporovány pouze u parametrů pole. Zvažte použití klíčového slova „ref“ k nastavení měnitelného parametru.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">atributy [In] a [Out]</target>
         <note />
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">

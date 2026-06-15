@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -24,17 +25,21 @@ namespace ILLink.RoslynAnalyzer
         public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
         public const string FullyQualifiedFeatureGuardAttribute = "System.Diagnostics.CodeAnalysis.FeatureGuardAttribute";
         public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>>(GetRequiresAnalyzers);
-        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers() =>
-            ImmutableArray.Create<RequiresAnalyzerBase>(
-                new RequiresAssemblyFilesAnalyzer(),
-                new RequiresUnreferencedCodeAnalyzer(),
-                new RequiresDynamicCodeAnalyzer());
+        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers()
+        {
+            var builder = ImmutableArray.CreateBuilder<RequiresAnalyzerBase>();
+            builder.Add(new RequiresAssemblyFilesAnalyzer());
+            builder.Add(new RequiresUnreferencedCodeAnalyzer());
+            builder.Add(new RequiresDynamicCodeAnalyzer());
+            return builder.ToImmutable();
+        }
 
         public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics()
         {
-            var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor>(26);
+            var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor>(27);
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCode));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties));
             AddRange(DiagnosticId.MethodParameterCannotBeStaticallyDetermined, DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter);
             AddRange(DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings);
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings));
@@ -126,7 +131,7 @@ namespace ILLink.RoslynAnalyzer
                 });
 
                 // Remaining actions are only for DynamicallyAccessedMembers analysis.
-                if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+                if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
                 // Examine generic instantiations in base types and interface list
@@ -142,11 +147,10 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    if (type.BaseType is INamedTypeSymbol baseType)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, baseType, context.ReportDiagnostic);
+                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext.TrimAnalyzer, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
 
                     foreach (var interfaceType in type.Interfaces)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, interfaceType, context.ReportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);
@@ -188,9 +192,12 @@ namespace ILLink.RoslynAnalyzer
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), location, parameter.GetDisplayName(), member.GetDisplayName()));
                 }
             }
-            else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow(isByRef: property.ReturnsByRef))
+            else if (member is IPropertySymbol property)
             {
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow(isByRef: property.ReturnsByRef))
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && property.ContainingType.ExtensionParameter != null)
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties), location, member.GetDisplayName()));
             }
         }
 
@@ -320,6 +327,11 @@ namespace ILLink.RoslynAnalyzer
                 || methodSymbol.AssociatedSymbol is not IPropertySymbol propertySymbol
                 || !propertySymbol.Type.IsTypeInterestingForDataflow(isByRef: propertySymbol.RefKind is not RefKind.None)
                 || propertySymbol.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None)
+                return;
+
+            // For C# 14 extension properties, property-level DAM does not propagate to accessors
+            // and we do not consider property vs accessor conflicts meaningful. Skip conflict checks.
+            if (methodSymbol.HasExtensionParameterOnType())
                 return;
 
             // None on the return type of 'get' matches unannotated

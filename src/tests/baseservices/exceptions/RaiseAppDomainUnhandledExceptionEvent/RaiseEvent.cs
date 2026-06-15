@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using TestLibrary;
 using Xunit;
@@ -20,14 +19,7 @@ public class RaiseEvent
         public void Dispose()
         {
             AppDomain.CurrentDomain.UnhandledException -= _handler;
-
-            // See usage of s_crashingThreadId in the ExceptionHandling class.
-            // This is to ensure that the static field is reset after the test.
-            GetCrashingThreadId(null) = 0;
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_crashingThreadId")]
-        private static extern ref ulong GetCrashingThreadId([UnsafeAccessorType("System.AppContext")]object? obj);
     }
 
     [ThreadStatic]

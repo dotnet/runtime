@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Xunit;
+using TestLibrary;
 
 // Regression test for https://github.com/dotnet/runtime/issues/93778
 namespace CircularCctorTwoThreadsThreeCC;
@@ -55,7 +56,7 @@ public class Z
     }
 
     public void Ping() { }
-        
+
 }
 
 public class Coordinator
@@ -84,6 +85,8 @@ public class Coordinator
 
     public readonly Thread Thread;
     private static readonly Barrier s_barrier = new (3);
+
+    public Coordinator() { }
 
     private Coordinator(bool xThenY, SlotConstants threadTag)
     {
@@ -129,7 +132,7 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void RunTestCase()
     {
         var c1 = CreateThread(xThenY: true, threadTag: SlotConstants.Thread1);
@@ -178,5 +181,5 @@ public class Coordinator
         }
         return found;
     }
-    
+
 }

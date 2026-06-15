@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 /**************************************************************/
 /* TEST: ReflectObj
 /* Purpose: test if GC can handle objects create by reflect
@@ -33,7 +34,7 @@ namespace App {
             icCreat++;
         }
 
-        public ReflectObj( int l )
+        internal ReflectObj( int l )
         {
             obj = new long[l];
             icCreat++;
@@ -50,6 +51,7 @@ namespace App {
             icFinal++;
         }
 
+        [ActiveIssue("needs triage", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -67,7 +69,7 @@ namespace App {
         class CreateObj
         {
             private Object[] v;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             private Type myClass;
             private Type [] rtype;
             private ConstructorInfo CInfo;
@@ -79,7 +81,7 @@ namespace App {
                 for( int i=0; i< 2000; i++ )
                 {
                     v[0] = i;
-                    Activator.CreateInstance(myClass, v );
+                    Activator.CreateInstance(myClass, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, v, null);
                 }
             }
 

@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectKeyPublicInfo_NullSource()
+        public static void ImportSubjectPublicKeyInfo_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => MLDsa.ImportSubjectPublicKeyInfo(null));
         }
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests
 
             static void AssertThrows(byte[] encodedBytes)
             {
-                MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
 
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Tests
         {
             // Valid BER but invalid DER - uses indefinite length encoding
             byte[] indefiniteLengthOctet = [0x04, 0x80, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00];
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
         }
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Tests
             algorithmIdentifier.Encode(writer);
             byte[] wrongAsnType = writer.Encode();
 
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
 
             MLDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -217,7 +217,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
+        public static void ImportSubjectPublicKeyInfo_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA SPKI
             if (!OperatingSystem.IsBrowser())
@@ -225,7 +225,7 @@ namespace System.Security.Cryptography.Tests
                 // RSA key
                 using RSA rsa = RSA.Create();
                 byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
-                MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
             }
 #endif
@@ -241,17 +241,17 @@ namespace System.Security.Cryptography.Tests
                 SubjectPublicKey = new byte[MLDsaAlgorithm.MLDsa44.PublicKeySizeInBytes]
             };
 
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             spki.Algorithm.Parameters = AsnUtils.DerNull;
 
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             // Sanity check
             spki.Algorithm.Parameters = null;
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
         [Fact]
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography.Tests
 
             // Create an invalid ML-DSA PKCS8 with parameters
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            MLDsaPrivateKeyAsn seed = new MLDsaPrivateKeyAsn
+            ValueMLDsaPrivateKeyAsn seed = new ValueMLDsaPrivateKeyAsn
             {
                 Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
             };
@@ -302,56 +302,56 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void ImportPkcs8PrivateKey_KeyErrorsInAsn()
         {
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn()
+                Both = new ValueMLDsaPrivateKeyBothAsn(),
             });
 
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn
+                Both = new ValueMLDsaPrivateKeyBothAsn
                 {
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
-                }
+                },
             });
 
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn
+                Both = new ValueMLDsaPrivateKeyBothAsn
                 {
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
-                }
+                },
             });
 
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn
+                Both = new ValueMLDsaPrivateKeyBothAsn
                 {
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes - 1],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
-                }
+                },
             });
 
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn
+                Both = new ValueMLDsaPrivateKeyBothAsn
                 {
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes - 1],
-                }
+                },
             });
 
-            AssertInvalidAsn(new MLDsaPrivateKeyAsn
+            AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
-                Both = new MLDsaPrivateKeyBothAsn
+                Both = new ValueMLDsaPrivateKeyBothAsn
                 {
                     // This will also fail because the seed and expanded key mismatch
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
-                }
+                },
             });
 
-            static void AssertInvalidAsn(MLDsaPrivateKeyAsn privateKeyAsn)
+            static void AssertInvalidAsn(ValueMLDsaPrivateKeyAsn privateKeyAsn)
             {
                 PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
                 {
@@ -433,12 +433,12 @@ namespace System.Security.Cryptography.Tests
 
             MLDsaTestHelpers.AssertImportPublicKey(import =>
                 AssertThrowIfNotSupported(() =>
-                    WithDispose(import(), mldsa => 
+                    WithDispose(import(), mldsa =>
                         Assert.Equal(algorithm, mldsa.Algorithm))), algorithm, publicKey);
 
             MLDsaTestHelpers.AssertImportPrivateKey(import =>
                 AssertThrowIfNotSupported(() =>
-                    WithDispose(import(), mldsa => 
+                    WithDispose(import(), mldsa =>
                         Assert.Equal(algorithm, mldsa.Algorithm))), algorithm, privateKey);
 
             MLDsaTestHelpers.AssertImportPrivateSeed(import =>
@@ -486,7 +486,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void RoundTrip_Import_Export_SPKI(MLDsaKeyInfo info)
         {
-            MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            MLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 MLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
                     WithDispose(import(info.Pkcs8PublicKey), mldsa =>
                         AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(mldsa)))));

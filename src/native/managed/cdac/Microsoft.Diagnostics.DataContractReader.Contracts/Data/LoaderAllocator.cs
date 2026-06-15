@@ -3,26 +3,21 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderAllocator : IData<LoaderAllocator>
+[CdacType(nameof(DataType.LoaderAllocator))]
+internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(Target target, TargetPointer address)
-        => new LoaderAllocator(target, address);
-
-    public LoaderAllocator(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
-
-        ReferenceCount = target.Read<uint>(address + (ulong)type.Fields[nameof(ReferenceCount)].Offset);
-        HighFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(HighFrequencyHeap)].Offset);
-        LowFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(LowFrequencyHeap)].Offset);
-        StubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StubHeap)].Offset);
-
-    }
-
-    public uint ReferenceCount { get; init; }
-    public TargetPointer HighFrequencyHeap { get; init; }
-    public TargetPointer LowFrequencyHeap { get; init; }
-    public TargetPointer StubHeap { get; init; }
-
+    [Field] public uint ReferenceCount { get; }
+    [Field] public TargetPointer HighFrequencyHeap { get; }
+    [Field] public TargetPointer LowFrequencyHeap { get; }
+    [Field] public TargetPointer StaticsHeap { get; }
+    [Field] public TargetPointer StubHeap { get; }
+    [Field] public TargetPointer ExecutableHeap { get; }
+    [Field] public TargetPointer? FixupPrecodeHeap { get; }
+    [Field] public TargetPointer? NewStubPrecodeHeap { get; }
+    [Field] public TargetPointer? DynamicHelpersStubHeap { get; }
+    [Field] public TargetPointer VirtualCallStubManager { get; }
+    [Field] public ObjectHandle ObjectHandle { get; }
+    [Field] public bool IsCollectible { get; }
+    [Field] public ulong CreationNumber { get; }
     public bool IsAlive => ReferenceCount != 0;
 }

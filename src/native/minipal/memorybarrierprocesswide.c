@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef HOST_WINDOWS
-#include <assert.h>
-#include <pthread.h>
+
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
+#include <minipal/memorybarrierprocesswide.h>
+
+#ifndef HOST_WASM
+#include <pthread.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __APPLE__
 #include <stdlib.h>
@@ -41,7 +44,7 @@
 static bool CanFlushUsingMembarrier(void)
 {
 #ifdef TARGET_ANDROID
-    // Avoid calling membarrier on older Android versions where membarrier
+    // Avoid calling membarrier on older Android versions (older than API 29) where membarrier
     // may be barred by seccomp causing the process to be killed.
     int apiLevel = android_get_device_api_level();
     if (apiLevel < __ANDROID_API_Q__)
@@ -72,7 +75,7 @@ static bool CanFlushUsingMembarrier(void)
 static bool s_flushUsingMemBarrier = false;
 #endif // HAVE_SYS_MEMBARRIER_H
 
-#if !defined(HOST_APPLE) && !defined(HOST_WASM)
+#ifndef HOST_APPLE
 // Helper memory page used by the fallback path
 static uint8_t* g_helperPage = NULL;
 
@@ -80,7 +83,8 @@ static uint8_t* g_helperPage = NULL;
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 static size_t s_pageSize = 0;
-#endif // !TARGET_APPLE && !HOST_WASM
+#endif // !HOST_APPLE
+#endif // !HOST_WASM
 
 static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
 
@@ -162,27 +166,9 @@ void minipal_memory_barrier_process_wide(void)
     // Iterate through each of the threads in the list.
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
-        if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
-        {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-        }
-        else
-        {
-            // fallback implementation for older OS versions
-#if defined(HOST_AMD64)
-            x86_thread_state64_t threadState;
-            mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
-            machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#elif defined(HOST_ARM64)
-            arm_thread_state64_t threadState;
-            mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
-            machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#else
-            #error Unexpected architecture
-#endif
-        }
+        // Request the threads pointer values to force the thread to emit a memory barrier
+        size_t registers = 128;
+        machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
 
         if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
         {

@@ -409,7 +409,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	*tracepoint_sets = NULL;
 
 	if (tracepoint_sets_len == 0)
-		return false;
+		return true;
 
 	*tracepoint_sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, tracepoint_sets_len);
 	ep_raise_error_if_nok (*tracepoint_sets != NULL);

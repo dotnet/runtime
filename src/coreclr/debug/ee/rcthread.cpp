@@ -134,34 +134,6 @@ HANDLE CreateWin32EventOrThrow(
     RETURN h;
 }
 
-//-----------------------------------------------------------------------------
-// Open an event. Another helper for DebuggerRCThread::Init
-//-----------------------------------------------------------------------------
-HANDLE OpenWin32EventOrThrow(
-    DWORD dwDesiredAccess,
-    BOOL bInheritHandle,
-    LPCWSTR lpName
-)
-{
-    CONTRACT(HANDLE)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    HANDLE h = OpenEvent(
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName
-    );
-    if (h == NULL)
-        ThrowLastError();
-
-    RETURN h;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Init
@@ -219,15 +191,6 @@ HRESULT DebuggerIPCControlBlock::Init(
 #else
     m_checkedBuild = false;
 #endif
-    m_bHostingInFiber = false;
-
-    // Are we in fiber mode? In Whidbey, we do not support launch a fiber mode process
-    // nor do we support attach to a fiber mode process.
-    //
-    if (g_CORDebuggerControlFlags & DBCF_FIBERMODE)
-    {
-        m_bHostingInFiber = true;
-    }
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Copy RSEA and RSER into the control block.
@@ -1417,11 +1380,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         NOTHROW;
         GC_NOTRIGGER;
 
-#ifdef TARGET_X86
         PRECONDITION(!ThisIsHelperThreadWorker());
-#else
-        PRECONDITION(!ThisIsHelperThreadWorker());
-#endif
     }
     CONTRACTL_END;
 

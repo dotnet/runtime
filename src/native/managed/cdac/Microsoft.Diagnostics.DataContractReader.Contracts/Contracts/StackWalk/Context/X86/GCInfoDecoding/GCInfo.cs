@@ -30,7 +30,7 @@ public enum RegMask
 public record GCInfo
 {
     private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
-    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 4;
+    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 5;
 
     private readonly Target _target;
 
@@ -90,7 +90,7 @@ public record GCInfo
         Debug.Assert(relativeOffset >= 0);
         Debug.Assert(relativeOffset <= MethodSize);
 
-        Header = InfoHdr.DecodeHeader(target, ref offset, MethodSize);
+        Header = InfoHdr.DecodeHeader(target, ref offset, MethodSize, (int)gcInfoVersion);
         _infoHdrSize = (uint)(offset.Value - gcInfoAddress.Value);
 
         // Check if we are in the prolog
@@ -223,7 +223,6 @@ public record GCInfo
                     case GcTransitionPointer gcTransitionPointer:
                         if (gcTransitionPointer.Act == Action.PUSH)
                         {
-                            // FEATURE_EH_FUNCLETS implies fullArgInfo
                             // when there is fullArgInfo, the current depth is incremented by the number of pushed arguments
                             depth++;
                         }

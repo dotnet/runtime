@@ -5,6 +5,10 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Java
 {
+    /// <summary>
+    /// Represents a strongly connected component of managed objects
+    /// referenced for cross-reference processing.
+    /// </summary>
     [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
     [StructLayout(LayoutKind.Sequential)]

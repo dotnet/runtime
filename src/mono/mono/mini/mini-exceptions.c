@@ -598,7 +598,7 @@ mono_find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev
 	if (ji == (gpointer)-1)
 		return ji;
 
-	if (ji && !ji->is_trampoline)
+	if (ji && !ji->is_trampoline && !ji->async)
 		method = jinfo_get_method (ji);
 
 	if (managed2 || (method && method->wrapper_type)) {
@@ -2909,7 +2909,7 @@ print_stack_frame_signal_safe (StackFrameInfo *frame, MonoContext *ctx, gpointer
 {
 	MonoMethod *method = NULL;
 
-	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE && !frame->ji->async)
 		method = jinfo_get_method (frame->ji);
 
 	if (method) {
@@ -2955,24 +2955,18 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 
 #ifdef MONO_ARCH_USE_SIGACTION
-	struct sigaction sa;
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
 	/* Remove our SIGABRT handler */
-	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGABRT);
 
 	/* On some systems we get a SIGILL when calling abort (), because it might
 	 * fail to raise SIGABRT */
-	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGILL);
 
 	/* Remove SIGCHLD, it uses the finalizer thread */
-	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGCHLD);
 
 	/* Remove SIGQUIT, we are already dumping threads */
-	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
-
+	mono_runtime_posix_restore_handler (SIGQUIT);
 #endif
 
 	if (mini_debug_options.suspend_on_native_crash) {

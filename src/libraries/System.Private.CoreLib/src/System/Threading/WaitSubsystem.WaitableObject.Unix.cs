@@ -13,7 +13,7 @@ namespace System.Threading
         ///
         /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
         /// </summary>
-        public sealed class WaitableObject
+        public sealed class WaitableObject : IWaitableObject
         {
             /// <summary>
             /// Dictionary to look up named waitable objects.  This implementation only supports in-process
@@ -301,35 +301,11 @@ namespace System.Threading
                 }
             }
 
-            public int Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
-            {
-                Debug.Assert(waitInfo != null);
-                Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
-
-                Debug.Assert(timeoutMilliseconds >= -1);
-
-                var lockHolder = new LockHolder(s_lock);
-                try
-                {
-                    if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
-                    {
-                        lockHolder.Dispose();
-                        throw new ThreadInterruptedException();
-                    }
-
-                    return Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
-                }
-                finally
-                {
-                    lockHolder.Dispose();
-                }
-            }
-
             /// <summary>
             /// This function does not check for a pending thread interrupt. Callers are expected to do that soon after
             /// acquiring <see cref="s_lock"/>.
             /// </summary>
-            public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder)
+            public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
@@ -363,7 +339,7 @@ namespace System.Threading
 
                 WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
                 waitableObjects[0] = this;
-                waitInfo.RegisterWait(1, prioritize, isWaitForAll: false);
+                waitInfo.RegisterWait(1, isWaitForAll: false);
 
                 return
                     waitInfo.Wait(
@@ -379,8 +355,7 @@ namespace System.Threading
                 bool waitForAll,
                 ThreadWaitInfo waitInfo,
                 int timeoutMilliseconds,
-                bool interruptible,
-                bool prioritize)
+                bool interruptible)
             {
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(waitInfo != null);
@@ -505,7 +480,7 @@ namespace System.Threading
 
                     waitableObjects = null; // no need to clear this anymore, RegisterWait / Wait will take over from here
 
-                    waitInfo.RegisterWait(count, prioritize, waitForAll);
+                    waitInfo.RegisterWait(count, waitForAll);
                     return waitInfo.Wait(timeoutMilliseconds, interruptible, isSleep: false, ref lockHolder);
                 }
                 finally

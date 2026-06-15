@@ -824,10 +824,7 @@ namespace System.Data
             {
                 _columnFromName.Add(name, column);
 
-                if (null != column)
-                {
-                    column._hashCode = _table.GetSpecialHashCode(name);
-                }
+                column?._hashCode = _table.GetSpecialHashCode(name);
             }
             catch (ArgumentException)
             {
