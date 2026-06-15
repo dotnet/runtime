@@ -2062,6 +2062,17 @@ MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, 
     TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
     TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous, bNativeDataValid));
 
+    // When the managed element type is IntPtr/UIntPtr, the blittable array marshaler copies
+    // sizeof(IntPtr) bytes per element with a bulk memmove. The native SAFEARRAY element size
+    // (e.g. 4 bytes for VT_I4/VT_INT/VT_UI4/VT_UINT) can differ from the pointer size (e.g. 8 bytes
+    // on a 64-bit process), in which case the copy length would not match the native element size.
+    // Reject the mismatch as a type mismatch instead of performing a mismatched copy.
+    if ((thElementType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR)) || thElementType == TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR)))
+        && sizeof(void*) != OleVariant::GetElementSizeForVarType(vt, pElementMT))
+    {
+        COMPlusThrow(kSafeArrayTypeMismatchException);
+    }
+
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 
     return MethodDesc::FindOrCreateAssociatedMethodDesc(
