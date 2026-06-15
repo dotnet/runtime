@@ -24,6 +24,12 @@
 
     <RunHighAOTResourceRequiringTestsOnly Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == ''">false</RunHighAOTResourceRequiringTestsOnly>
 
+    <!-- Long-running browser/CoreCLR suites are skipped by default because they exceed the
+         default Helix work-item timeouts, but are included for outerloop (and 'all'), where
+         the timeouts are extended. Can be overridden explicitly for local runs. -->
+    <RunLongRunningWasmTests Condition="'$(RunLongRunningWasmTests)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">true</RunLongRunningWasmTests>
+    <RunLongRunningWasmTests Condition="'$(RunLongRunningWasmTests)' == ''">false</RunLongRunningWasmTests>
+
     <!-- Don't build samples, and functional tests on EAT, AOT, WBT, and Debugger lanes -->
     <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' != 'true' and  '$(TestWasmBuildTests)' != 'true'">true</RunWasmSamples>
 
@@ -187,6 +193,10 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- test failures -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Nrbf\tests\System.Formats.Nrbf.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- https://github.com/dotnet/runtime/issues/125495 - Long-running suites disabled on browser/CoreCLR because they exceed the default Helix work-item timeouts. Enabled for outerloop (RunLongRunningWasmTests), where the timeouts are extended. -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasmTests)' != 'true' and '$(RunLongRunningWasmTests)' != 'true'">
     <!-- long running suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
