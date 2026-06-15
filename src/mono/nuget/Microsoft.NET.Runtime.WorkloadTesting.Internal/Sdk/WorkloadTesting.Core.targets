@@ -96,7 +96,7 @@
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -Command "(Get-Content -Raw -LiteralPath ''$(_DotNetInstallScriptPath)'').Replace(''ci.dot.net/public'', ''ci.dot.net/dev'') | Set-Content -NoNewline -LiteralPath ''$(_DotNetInstallScriptPath)''"' />
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -Command "(Get-Content -Raw -LiteralPath &apos;$(_DotNetInstallScriptPath)&apos;).Replace(&apos;ci.dot.net/public&apos;, &apos;ci.dot.net/dev&apos;) | Set-Content -NoNewline -LiteralPath &apos;$(_DotNetInstallScriptPath)&apos;"' />
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
