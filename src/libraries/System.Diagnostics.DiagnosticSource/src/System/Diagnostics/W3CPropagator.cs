@@ -13,9 +13,9 @@ namespace System.Diagnostics
     {
         internal static DistributedContextPropagator Instance { get; } = new W3CPropagator();
 
-        private const int MaxBaggageEntriesToEmit = 64;     // Suggested by W3C specs
-        private const int MaxBaggageEncodedLength = 8192;   // Suggested by W3C specs
-        private const int MaxTraceStateEncodedLength = 512; // Suggested by W3C specs
+        private const int MaxBaggageEntriesToEmit = 64;
+        private const int MaxBaggageEncodedLength = 8192;
+        private const int MaxTraceStateEncodedLength = 512;
         private const int MaxTraceStateKeyLength = 256;
         private const int MaxTraceStateValueLength = 256;
         private const int MaxTraceStateEntries = 32;
