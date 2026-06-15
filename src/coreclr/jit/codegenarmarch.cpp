@@ -333,6 +333,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
+
+        case GT_BFX:
+            genCodeForBfx(treeNode->AsBfm());
+            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -1384,7 +1388,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
-        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
+        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue() & (immWidth - 1);
         GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
@@ -3363,7 +3367,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             emitter*       emitter  = GetEmitter();
             emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | params.retSize);
             GenTreeIntCon* iconNode = target->AsIntCon();
-            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->IconValue();
             params.retSize          = EA_SET_FLG(params.retSize, EA_CNS_TLSGD_RELOC);
             params.noSafePoint      = true;
 
@@ -3395,7 +3399,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // ldr
             // add
             emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
-                                          (ssize_t)params.methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                          (ssize_t)params.methHnd DEBUGARG(iconNode->GetTargetHandle())
                                               DEBUGARG(iconNode->gtFlags));
         }
 #endif
