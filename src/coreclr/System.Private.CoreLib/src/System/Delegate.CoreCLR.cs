@@ -16,7 +16,7 @@ namespace System
     {
         // MethodBase, either cached after first request or assigned from a DynamicMethod
         // For open delegates to collectible types, this may be a LoaderAllocator object
-        internal object? _methodBase; // Initialized by VM as needed
+        internal object? _methodBase;
 
         // _target is the object we will invoke on
         internal object? _target; // Initialized by VM as needed; null if static delegate
