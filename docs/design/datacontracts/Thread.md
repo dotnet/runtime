@@ -239,7 +239,7 @@ ThreadData GetThreadData(TargetPointer address)
         LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
-        GCFrame: /* Thread::GCFrame offset present? */ target.ReadPointer(address + /* Thread::GCFrame offset */) : null,
+        GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */),
     );
 }
 
