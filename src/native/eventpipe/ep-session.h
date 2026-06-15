@@ -31,6 +31,8 @@ struct _EventPipeSession_Internal {
 	EventPipeSessionProviderList *providers;
 	// Session buffer manager.
 	EventPipeBufferManager *buffer_manager;
+	// The provider-enable callbacks.
+	EventPipeProviderCallbackDataQueue *provider_callbacks;
 	// Object used to flush event data (File, IPC stream, etc.).
 	EventPipeFile *file;
 	// For synchoronous sessions.
@@ -85,6 +87,8 @@ struct _EventPipeSession {
 EP_DEFINE_GETTER(EventPipeSession *, session, uint32_t, index)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, providers)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
+EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeProviderCallbackDataQueue *, provider_callbacks)
+EP_DEFINE_SETTER(EventPipeSession *, session, EventPipeProviderCallbackDataQueue *, provider_callbacks)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionType, session_type)
 EP_DEFINE_GETTER(EventPipeSession *, session, uint64_t, rundown_keyword)

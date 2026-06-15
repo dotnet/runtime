@@ -58,9 +58,7 @@ is_session_id_in_collection (EventPipeSessionID id);
 // _Requires_lock_held (ep)
 static
 EventPipeSessionID
-enable (
-	const EventPipeSessionOptions *options,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
+enable (const EventPipeSessionOptions *options);
 
 static
 void
@@ -127,6 +125,10 @@ ipc_stream_factory_any_suspended_ports (void);
 static
 bool
 check_options_valid (const EventPipeSessionOptions *options);
+
+static
+void
+dispatch_session_provider_callbacks (EventPipeSession *session);
 
 /*
  * Global volatile variables, only to be accessed through inlined volatile access functions.
@@ -533,9 +535,7 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 
 static
 EventPipeSessionID
-enable (
-	const EventPipeSessionOptions *options,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
+enable (const EventPipeSessionOptions *options)
 {
 	ep_requires_lock_held ();
 
@@ -547,6 +547,7 @@ enable (
 	EventPipeSession *session = NULL;
 	EventPipeSessionID session_id = 0;
 	uint32_t session_index = 0;
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = NULL;
 
 	ep_raise_error_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
 
@@ -583,6 +584,15 @@ enable (
 		EP_ASSERT (!"max number of sessions reached.");
 		ep_raise_error ();
 	}
+
+	provider_callback_data_queue = ep_rt_object_alloc (EventPipeProviderCallbackDataQueue);
+	ep_raise_error_if_nok (provider_callback_data_queue != NULL);
+	if (ep_provider_callback_data_queue_init (provider_callback_data_queue) == NULL) {
+		ep_rt_object_free (provider_callback_data_queue);
+		provider_callback_data_queue = NULL;
+		ep_raise_error ();
+	}
+	ep_session_set_provider_callbacks (session, provider_callback_data_queue);
 
 	// Register the SampleProfiler the very first time (if supported).
 	ep_sample_profiler_init (provider_callback_data_queue);
@@ -1054,6 +1064,31 @@ ipc_stream_factory_any_suspended_ports (void)
 	return _ep_ipc_stream_factory_suspended_ports_callback ? _ep_ipc_stream_factory_suspended_ports_callback () : false;
 }
 
+// Invoke and free the provider-enable callbacks enable() collected onto the session.
+static
+void
+dispatch_session_provider_callbacks (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	ep_requires_lock_not_held ();
+
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_session_get_provider_callbacks (session);
+	if (provider_callback_data_queue == NULL)
+		return;
+
+	ep_session_set_provider_callbacks (session, NULL);
+
+	EventPipeProviderCallbackData provider_callback_data;
+	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
+		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+		provider_invoke_callback (&provider_callback_data);
+		ep_provider_callback_data_fini (&provider_callback_data);
+	}
+
+	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
+	ep_rt_object_free (provider_callback_data_queue);
+}
+
 #ifdef EP_CHECKED_BUILD
 void
 ep_requires_lock_held (void)
@@ -1258,22 +1293,14 @@ ep_enable_3 (const EventPipeSessionOptions *options)
 	ep_requires_lock_not_held ();
 
 	EventPipeSessionID session_id = 0;
-	EventPipeProviderCallbackDataQueue callback_data_queue;
-	EventPipeProviderCallbackData provider_callback_data;
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
 	EP_LOCK_ENTER (section1)
-		session_id = enable (options, provider_callback_data_queue);
+		session_id = enable (options);
 	EP_LOCK_EXIT (section1)
 
-	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
-		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
-		provider_invoke_callback (&provider_callback_data);
-		ep_provider_callback_data_fini (&provider_callback_data);
-	}
+	// enable() only collects this session's provider-enable callbacks; ep_start_streaming invokes them.
 
 ep_on_exit:
-	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 	ep_requires_lock_not_held ();
 	return session_id;
 
@@ -1349,13 +1376,29 @@ ep_start_streaming (EventPipeSessionID session_id)
 {
 	ep_requires_lock_not_held ();
 
+	bool streaming_started = false;
+	EventPipeSession *const session = (EventPipeSession *)(uintptr_t)session_id;
+
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
-		if (_ep_can_start_threads)
-			ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
+		if (_ep_can_start_threads) {
+			ep_session_start_streaming (session);
+			streaming_started = true;
+		}
 		else
 			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
+
+	// The single site where every session's provider-enable callbacks are invoked (ep_enable_3 only sets
+	// the session up). If we started the drain thread, wait until it is running first: a blocking
+	// GCHeapSnapshot session's GC heap walk parks producers on a full buffer and needs the drain thread
+	// live to consume. If streaming was parked for early startup, invoke inline - the heap walk no-ops
+	// until the GC is fully initialized, so it can't deadlock.
+	if (ep_session_get_provider_callbacks (session) != NULL) {
+		if (streaming_started)
+			EP_YIELD_WHILE (!ep_session_has_started (session));
+		dispatch_session_provider_callbacks (session);
+	}
 
 ep_on_exit:
 	ep_requires_lock_not_held ();

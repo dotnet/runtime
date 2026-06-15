@@ -363,6 +363,7 @@ ep_session_alloc (
 	instance->paused = false;
 	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk () && stackwalk_requested;
 	instance->started = 0;
+	instance->provider_callbacks = NULL;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -399,6 +400,15 @@ ep_session_dec_ref (EventPipeSession *session)
 
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
+
+	if (session->provider_callbacks != NULL) {
+		EventPipeProviderCallbackData provider_callback_data;
+		while (ep_provider_callback_data_queue_try_dequeue (session->provider_callbacks, &provider_callback_data))
+			ep_provider_callback_data_fini (&provider_callback_data);
+		ep_provider_callback_data_queue_fini (session->provider_callbacks);
+		ep_rt_object_free (session->provider_callbacks);
+		session->provider_callbacks = NULL;
+	}
 
 	ep_rt_object_free (session);
 }
