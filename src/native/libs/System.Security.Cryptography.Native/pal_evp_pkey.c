@@ -950,6 +950,7 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
         if (type == OSSL_STORE_INFO_PKEY)
         {
             ret = OSSL_STORE_INFO_get1_PKEY(info);
+            OSSL_STORE_INFO_free(info);
             break;
         }
         else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
