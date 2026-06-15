@@ -32,6 +32,7 @@ namespace System.Reflection.Context.Examples
             {
                 yield return attr;
             }
+        }
     }
     #endregion Snippet1
 
