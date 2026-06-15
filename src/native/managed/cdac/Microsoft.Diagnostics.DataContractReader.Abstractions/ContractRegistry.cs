@@ -130,6 +130,11 @@ public abstract class ContractRegistry
     public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     /// <summary>
+    /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
+    /// </summary>
+    public virtual IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => GetContract<IRuntimeMutableTypeSystem>();
+
+    /// <summary>
     /// Attempts to get an instance of the requested contract for the target.
     /// </summary>
     /// <typeparam name="TContract">The contract type to retrieve.</typeparam>

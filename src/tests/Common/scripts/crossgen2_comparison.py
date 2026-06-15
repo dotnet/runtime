@@ -247,9 +247,7 @@ class AsyncSubprocessHelper:
 
         reset_env = os.environ.copy()
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
-        loop.close()
+        asyncio.run(self.__run_to_completion__(async_callback, *extra_args))
 
         os.environ.update(reset_env)
 

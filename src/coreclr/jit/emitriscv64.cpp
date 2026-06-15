@@ -1944,12 +1944,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
     }
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to

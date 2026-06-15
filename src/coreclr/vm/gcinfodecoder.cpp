@@ -2166,6 +2166,9 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
 }
 #endif
 
+#ifdef TARGET_WASM
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+#endif
 
 template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetStackSlot(
                         INT32           spOffset,
@@ -2188,6 +2191,17 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         _ASSERTE( NO_STACK_BASE_REGISTER != m_StackBaseRegister );
 
+#ifdef TARGET_WASM
+        // Wasm is a bit strange and when we do SetStackBaseRegister(REG_FPBASE)
+        //  what that actually does is set it to REG_NA, which currently has the value 2.
+        _ASSERTE( 2 == m_StackBaseRegister );
+        // We have the stack pointer, use it to recover the frame pointer.
+        TADDR pFrameReg = GetWasmFramePointerFromStackPointer((TADDR)pRD->SP);
+
+        pObjRef = (OBJECTREF*)(pFrameReg + spOffset);
+
+#else // TARGET_WASM
+
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
 #if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
@@ -2201,6 +2215,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 #endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
+#endif // !TARGET_WASM
     }
 
     return pObjRef;

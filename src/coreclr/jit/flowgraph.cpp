@@ -928,7 +928,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 GenTree* cns1Tree = addr->AsOp()->gtOp1;
                 if (!cns1Tree->IsIconHandle())
                 {
-                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->IconValue()))
                     {
                         // Op1 was an ordinary small constant
                         return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -943,7 +943,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                         // Is this an addition of a handle and constant
                         if (!cns2Tree->IsIconHandle())
                         {
-                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                             {
                                 // Op2 was an ordinary small constant
                                 return false; // we can't have a null address
@@ -961,7 +961,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                     // Is this an addition of a small constant
                     if (!cns2Tree->IsIconHandle())
                     {
-                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                         {
                             // Op2 was an ordinary small constant
                             return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
@@ -989,11 +989,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    GenTree* op = addr;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    GenTree* op = gtPeelFieldAddrs(addr);
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
@@ -1058,7 +1054,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         if (handleNode->OperIs(GT_CNS_INT))
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
-            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
+            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->GetCompileTimeHandle());
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
@@ -1094,7 +1090,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
         noway_assert(tokenNode->OperIs(GT_CNS_INT));
-        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
+        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->GetCompileTimeHandle());
     }
 
     // Verify using the ldftnToken gives us all of what we used to get
@@ -5769,6 +5765,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
             printf("invariant local limit ");
         if (info->HasArrayLengthLimit)
             printf("array length limit ");
+        if (info->LimitOffset != 0)
+            printf("offset %d ", info->LimitOffset);
         printf(")\n");
     }
 #endif
@@ -5798,6 +5796,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasSimdLimit           = false;
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
+    info->LimitOffset            = 0;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5840,6 +5839,46 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     if (!iterOp->TypeIs(TYP_INT))
     {
         return false;
+    }
+
+    // Recognize `base ± const` limits (e.g. `arr.Length - 4`, `lcl + 8`) by
+    // peeling the constant into LimitOffset and form-checking the base.
+    // Morph canonicalizes commutative ops so that any constant operand sits on
+    // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    int      peeledOffset = 0;
+    GenTree* peeledBase   = nullptr;
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    {
+        GenTree* lop1 = limitOp->gtGetOp1();
+        GenTree* lop2 = limitOp->gtGetOp2();
+        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT) && !lop1->IsCnsIntOrI())
+        {
+            ssize_t cns = lop2->AsIntCon()->IconValue();
+            if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
+            {
+                int signedCns = (int)cns;
+                if (limitOp->OperIs(GT_SUB))
+                {
+                    // Guard against the -INT32_MIN overflow.
+                    if (signedCns != INT32_MIN)
+                    {
+                        peeledOffset = -signedCns;
+                        peeledBase   = lop1;
+                    }
+                }
+                else
+                {
+                    peeledOffset = signedCns;
+                    peeledBase   = lop1;
+                }
+            }
+        }
+    }
+
+    if ((peeledBase != nullptr) && (peeledOffset != 0))
+    {
+        limitOp           = peeledBase;
+        info->LimitOffset = peeledOffset;
     }
 
     // Check what type of limit we have - constant, variable or arr-len.
@@ -6848,9 +6887,20 @@ genTreeOps NaturalLoopIterInfo::TestOper()
 bool NaturalLoopIterInfo::IsIncreasingLoop()
 {
     // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0))));
+    // We also recognize "!=" against a limit when the IV step is exactly +1 (or -1 with GT_SUB):
+    // such loops visit indices [init, limit) provided that "init <= limit" holds on entry.
+    // Stride must be ±1 to avoid parity/overflow issues where the IV could skip past the limit
+    // (e.g. "for (i = 0; i != 5; i += 2)" never terminates and wraps around).
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_LT, GT_LE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == 1)) || ((IterOper() == GT_SUB) && (IterConst() == -1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6864,9 +6914,18 @@ bool NaturalLoopIterInfo::IsDecreasingLoop()
 {
     // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
     // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0))));
+    // As with IsIncreasingLoop, we also recognize "!=" against a limit when the IV step is exactly -1
+    // (or +1 with GT_SUB); the stride must be exactly +/-1 to avoid parity/overflow issues.
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_GT, GT_GE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == -1)) || ((IterOper() == GT_SUB) && (IterConst() == 1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6892,6 +6951,33 @@ GenTree* NaturalLoopIterInfo::Limit()
 }
 
 //------------------------------------------------------------------------
+// LimitBase: Get the base subtree of the loop limit, with the LimitOffset
+// peeled off.
+//
+// Returns:
+//   The form-checked base tree (CNS_INT / LCL_VAR / ARR_LENGTH); identical
+//   to Limit() when LimitOffset == 0.
+//
+GenTree* NaturalLoopIterInfo::LimitBase()
+{
+    GenTree* lim = Limit();
+    if (LimitOffset == 0)
+    {
+        return lim;
+    }
+
+    assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT));
+    GenTree* op1 = lim->gtGetOp1();
+    GenTree* op2 = lim->gtGetOp2();
+    if (op2->IsCnsIntOrI())
+    {
+        return op1;
+    }
+    assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
+    return op2;
+}
+
+//------------------------------------------------------------------------
 // ConstLimit: Get the constant value of the iterator limit, i.e. when the loop
 // condition is "i RELOP const".
 //
@@ -6904,9 +6990,10 @@ GenTree* NaturalLoopIterInfo::Limit()
 int NaturalLoopIterInfo::ConstLimit()
 {
     assert(HasConstLimit);
-    GenTree* limit = Limit();
+    assert(LimitOffset == 0);
+    GenTree* limit = LimitBase();
     assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
+    return (int)limit->AsIntCon()->IconValue();
 }
 
 //------------------------------------------------------------------------
@@ -6923,7 +7010,7 @@ unsigned NaturalLoopIterInfo::VarLimit()
 {
     assert(HasInvariantLocalLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
 }
@@ -6946,14 +7033,15 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 {
     assert(HasArrayLengthLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_ARR_LENGTH));
 
     // Check if we have a.length or a[i][j].length
     if (limit->AsArrLen()->ArrRef()->OperIs(GT_LCL_VAR))
     {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
+        index->arrLcl  = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
+        index->arrType = limit->AsArrLen()->ArrRef()->TypeGet();
+        index->rank    = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
@@ -7743,6 +7831,19 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
     for (BasicBlock* block : comp->Blocks())
     {
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+
         if (!block->hasTryIndex())
         {
             continue;
@@ -7815,6 +7916,16 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                 if (region != nullptr)
                 {
+                    // If this block lives in a different handler region than the
+                    // parent try's begin block, the block is inside a funclet
+                    // that is nested inside the parent try's IL range but is
+                    // not part of the parent try's code body. Don't add it to
+                    // the parent region.
+                    //
+                    if (!includeHandlerBlocks && !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    {
+                        break;
+                    }
                     tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
@@ -7823,19 +7934,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             // This is a handler block inside a try.
             // For flow purposes we may consider it to be outside the try.
-        }
-
-        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
-        // as requiring runtime resumption.
-        //
-        if (block->KindIs(BBJ_EHCATCHRET))
-        {
-            assert(block->hasHndIndex());
-            unsigned const            ehRegionIndex        = block->getHndIndex();
-            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
-            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
-
-            dispatchingTryRegion->SetRequiresRuntimeResumption();
         }
     }
 

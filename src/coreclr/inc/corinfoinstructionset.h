@@ -62,6 +62,11 @@ enum CORINFO_InstructionSet
     InstructionSet_Zbs=4,
     InstructionSet_Zicond=5,
 #endif // TARGET_RISCV64
+#ifdef TARGET_WASM
+    InstructionSet_WasmBase=1,
+    InstructionSet_PackedSimd=2,
+    InstructionSet_Vector128=3,
+#endif // TARGET_WASM
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
     InstructionSet_AVX=2,
@@ -285,6 +290,8 @@ public:
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
 #endif // TARGET_RISCV64
+#ifdef TARGET_WASM
+#endif // TARGET_WASM
 #ifdef TARGET_AMD64
         if (HasInstructionSet(InstructionSet_X86Base))
             AddInstructionSet(InstructionSet_X86Base_X64);
@@ -451,6 +458,12 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
         if (resultflags.HasInstructionSet(InstructionSet_Zicond) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zicond);
 #endif // TARGET_RISCV64
+#ifdef TARGET_WASM
+        if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
+            resultflags.RemoveInstructionSet(InstructionSet_Vector128);
+        if (resultflags.HasInstructionSet(InstructionSet_PackedSimd) && !resultflags.HasInstructionSet(InstructionSet_WasmBase))
+            resultflags.RemoveInstructionSet(InstructionSet_PackedSimd);
+#endif // TARGET_WASM
 #ifdef TARGET_AMD64
         if (resultflags.HasInstructionSet(InstructionSet_X86Base) && !resultflags.HasInstructionSet(InstructionSet_X86Base_X64))
             resultflags.RemoveInstructionSet(InstructionSet_X86Base);
@@ -747,6 +760,14 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
         case InstructionSet_Zicond :
             return "Zicond";
 #endif // TARGET_RISCV64
+#ifdef TARGET_WASM
+        case InstructionSet_WasmBase :
+            return "WasmBase";
+        case InstructionSet_PackedSimd :
+            return "PackedSimd";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+#endif // TARGET_WASM
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
             return "X86Base";
@@ -949,6 +970,10 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
         case READYTORUN_INSTRUCTION_Zicond: return InstructionSet_Zicond;
 #endif // TARGET_RISCV64
+#ifdef TARGET_WASM
+        case READYTORUN_INSTRUCTION_WasmBase: return InstructionSet_WasmBase;
+        case READYTORUN_INSTRUCTION_PackedSimd: return InstructionSet_PackedSimd;
+#endif // TARGET_WASM
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse: return InstructionSet_X86Base;

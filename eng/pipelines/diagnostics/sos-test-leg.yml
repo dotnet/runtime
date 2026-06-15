@@ -1,0 +1,75 @@
+# sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
+# standard postBuildSteps pattern used by the SOS-style test legs (cDAC,
+# cDAC_no_fallback, DAC) that run on windows_x64. Each of those legs only
+# differs in its `name`, `useCdac`, and `noFallback` value.
+#
+# AzDO tasks workaround:
+#   PublishTestResults v2.270.0 garbles parameterized xUnit test names
+#   containing dots. Unsetting AllowPtrToDetectTestRunRetryFiles restores
+#   v2.262.0 behavior. Tracked at microsoft/azure-pipelines-tasks#21871.
+
+parameters:
+- name: name
+  type: string
+- name: useCdac
+  type: boolean
+  default: false
+- name: noFallback
+  type: boolean
+  default: false
+
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    variables:
+      - name: AllowPtrToDetectTestRunRetryFiles
+        value: false
+    jobParameters:
+      name: ${{ parameters.name }}
+      useCdac: ${{ parameters.useCdac }}
+      noFallback: ${{ parameters.noFallback }}
+      testInterpreter: true
+      methodFilter: SOS*
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+      timeoutInMinutes: 360
+      dependsOn:
+      - build_windows_x64_release_AllSubsets_CoreCLR
+      preBuildSteps:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+          artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+          displayName: 'Runtime Build Artifacts'
+      postBuildSteps:
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: xUnit
+          testResultsFiles: '**/*.xml'
+          searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+          testRunTitle: 'Tests $(_PhaseName)'
+          failTaskOnFailedTests: true
+          publishRunAttachments: true
+          mergeTestResults: true
+          buildConfiguration: $(_BuildConfig)
+        continueOnError: true
+        condition: always()
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+          artifactName: 'Dumps_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+        displayName: 'Publish Crash Dumps'
+        continueOnError: true
+        condition: failed()
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+          artifactName: 'TestResults_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+        displayName: 'Publish Test Results and SOS Logs'
+        continueOnError: true
+        condition: failed()
