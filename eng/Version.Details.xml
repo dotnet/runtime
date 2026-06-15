@@ -55,28 +55,28 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.26281.4">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.26307.3">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>ad6296f3666c469ea14ed17889561c6f7463bba8</Sha>
+      <Sha>5eaa92e08ad36a380888b6e99b4f6c09a5e24815</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.26281.4">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.26307.3">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>ad6296f3666c469ea14ed17889561c6f7463bba8</Sha>
+      <Sha>5eaa92e08ad36a380888b6e99b4f6c09a5e24815</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.17-servicing.26258.3">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.18-servicing.26310.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>b634e009d59f72e9254f984a6b89e685955e0eb8</Sha>
+      <Sha>8e475db5d45016c77714cce29077ae8c66d12d53</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100" Version="9.0.17">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100" Version="9.0.18">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>b634e009d59f72e9254f984a6b89e685955e0eb8</Sha>
+      <Sha>8e475db5d45016c77714cce29077ae8c66d12d53</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.17-servicing.26258.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.18-servicing.26310.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>b634e009d59f72e9254f984a6b89e685955e0eb8</Sha>
+      <Sha>8e475db5d45016c77714cce29077ae8c66d12d53</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
@@ -321,17 +321,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b030c4dfdfa1bf287f10f96006619a06bc2000ae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="11.0.0-prerelease.26279.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="11.0.0-prerelease.26301.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2cee83bf4841d72c9734a343f3003aeabdd46edf</Sha>
+      <Sha>fa7fbebf9168e8858971f9d0c71b2b08f2f7b106</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="11.0.0-prerelease.26279.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="11.0.0-prerelease.26301.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2cee83bf4841d72c9734a343f3003aeabdd46edf</Sha>
+      <Sha>fa7fbebf9168e8858971f9d0c71b2b08f2f7b106</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="11.0.0-prerelease.26279.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="11.0.0-prerelease.26301.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2cee83bf4841d72c9734a343f3003aeabdd46edf</Sha>
+      <Sha>fa7fbebf9168e8858971f9d0c71b2b08f2f7b106</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.26301.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
