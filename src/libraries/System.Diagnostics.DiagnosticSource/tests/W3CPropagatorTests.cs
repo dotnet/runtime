@@ -30,6 +30,9 @@ namespace System.Diagnostics.Tests
             // Simple case
             yield return new object[] { "state=1", "state=1", new[] { new KeyValuePair<string, string>("b1", "v1") }, "b1 = v1", new[] { new KeyValuePair<string, string>("b1", "v1") } };
 
+            // Trace state value can contain spaces.
+            yield return new object[] { "state=a b", "state=a b", null, null, null };
+
             // Invalid trace state
             yield return new object[] { "PassThroughW3CState=1", null, null, null, null }; // trace state key has to be lowercase or digit
 

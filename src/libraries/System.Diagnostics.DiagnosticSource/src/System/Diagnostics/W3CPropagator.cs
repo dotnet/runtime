@@ -16,6 +16,7 @@ namespace System.Diagnostics
         private const int MaxBaggageEntriesToEmit = 64;     // Suggested by W3C specs
         private const int MaxBaggageEncodedLength = 8192;   // Suggested by W3C specs
         private const int MaxTraceStateEncodedLength = 256; // Suggested by W3C specs
+        private const int MaxTraceStateValueLength = 256;
         private const int TraceParentCoreLength = 55;
 
         private const char Equal = '=';
@@ -431,12 +432,15 @@ namespace System.Diagnostics
             ((uint)('z' - key[0]) > (uint)('z' - 'a') && (uint)('9' - key[0]) > (uint)('9' - '0')) ||
             key.ContainsAnyExcept(s_validTraceStateKeyChars);
 
-        // value    = 0 * 255(chr) nblk-chr
-        // nblk-chr = % x21 - 2B / % x2D - 3C / % x3E - 7E
-        // chr      = % x20 / nblk-chr
-        private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create("!\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        // https://www.w3.org/TR/trace-context-2/#value
+        // value    = 0*255(chr) nblk-chr
+        // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
+        // chr      = %x20 / nblk-chr
+        private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create(" !\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
-        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) => value.IsEmpty || value.ContainsAnyExcept(s_validTraceStateValueChars);
+        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) =>
+            value.IsEmpty || value.Length > MaxTraceStateValueLength || value[value.Length - 1] == Space ||
+            value.ContainsAnyExcept(s_validTraceStateValueChars);
 
         // baggage-string =  list-member 0*179( OWS "," OWS list-member )
         // list-member    =  key OWS "=" OWS value *( OWS ";" OWS property )
