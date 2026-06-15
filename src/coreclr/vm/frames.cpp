@@ -1189,8 +1189,6 @@ GCFrame::~GCFrame()
     CONTRACTL_END;
 
     // m_pCurThread is NULL once the frame has been popped/removed from the chain.
-    // We cannot infer this from m_Next: the chain is NULL-terminated, so a frame at
-    // the bottom of the chain has m_Next == NULL while it is still linked.
     if (m_pCurThread != NULL)
     {
         // This is a GCFrame that was not popped.  This is a problem.
