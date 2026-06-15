@@ -403,9 +403,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int IsManagedCode(ulong address, Interop.BOOL* pIsManaged)
     {
         int hr = HResults.S_OK;
-        *pIsManaged = Interop.BOOL.FALSE;
         try
         {
+            if (pIsManaged == null)
+                throw new ArgumentNullException(nameof(pIsManaged));
+            *pIsManaged = Interop.BOOL.FALSE;
             IExecutionManager eman = _target.Contracts.ExecutionManager;
             if (_target.TryRead(address, out byte _) && eman.GetCodeBlockHandle(address) is not null)
             {
