@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.IO;
 using Test.Cryptography;
 using Xunit;
@@ -494,6 +495,251 @@ Wry5FNNo
         public static void ComplexGetNameInfo_UrlName_Issuer()
         {
             TestComplexGetNameInfo("http://uri1.issuer.example.org/", X509NameType.UrlName, true);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(true)]
+        [InlineData(false)]
+        [InlineData(5)]
+        [InlineData(new byte[] { 0x30 })]
+        [InlineData("user@domain")]
+        public static void GetNameInfo_InvalidUpnValue(object? value)
+        {
+            string workingUpn = value as string;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=GetNameInfo_InvalidUpnValue",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.CertificateExtensions.Add(BuildSanExtension(value));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    string upn = cert.GetNameInfo(X509NameType.UpnName, forIssuer: false);
+
+                    if (workingUpn is not null)
+                    {
+                        Assert.Equal(workingUpn, upn);
+                    }
+                    else
+                    {
+                        Assert.Empty(upn);
+                    }
+                }
+            }
+
+            static X509Extension BuildSanExtension(object? value)
+            {
+                AsnWriter sanWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                using (sanWriter.PushSequence())
+                {
+                    using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                    {
+                        sanWriter.WriteObjectIdentifier("1.3.6.1.4.1.311.20.2.3");
+
+                        using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                        {
+                            if (value is null)
+                            {
+                                sanWriter.WriteNull();
+                            }
+                            else if (value is bool b)
+                            {
+                                sanWriter.WriteBoolean(b);
+                            }
+                            else if (value is int i)
+                            {
+                                sanWriter.WriteInteger(i);
+                            }
+                            else if (value is byte[] bytes)
+                            {
+                                sanWriter.WriteOctetString(bytes);
+                            }
+                            else if (value is string s)
+                            {
+                                sanWriter.WriteCharacterString(UniversalTagNumber.UTF8String, s);
+                            }
+                        }
+                    }
+                }
+
+                return new X509Extension("2.5.29.17", sanWriter.Encode(), critical: false);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public static void GetNameInfo_InvalidUpnEncoding(int mode)
+        {
+            string expectedValue = mode == 0 ? "user@domain" : string.Empty;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=GetNameInfo_UpnName_Test",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.CertificateExtensions.Add(BuildSanExtension(mode));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    string upn = cert.GetNameInfo(X509NameType.UpnName, forIssuer: false);
+                    Assert.Equal(expectedValue, upn);
+                }
+            }
+
+            static X509Extension BuildSanExtension(int mode)
+            {
+                AsnWriter sanWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                using (sanWriter.PushSequence())
+                {
+                    using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                    {
+                        sanWriter.WriteObjectIdentifier("1.3.6.1.4.1.311.20.2.3");
+
+                        using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                        {
+                            switch (mode)
+                            {
+                                case 0:
+                                    // Valid (verifies this method is otherwise encoding correctly)
+                                    sanWriter.WriteCharacterString(
+                                        UniversalTagNumber.UTF8String,
+                                        "user@domain");
+                                    break;
+                                case 1:
+                                    // No value
+                                    break;
+                                case 2:
+                                    // Two strings
+                                    sanWriter.WriteCharacterString(
+                                        UniversalTagNumber.UTF8String,
+                                        "user@domain1");
+
+                                    sanWriter.WriteCharacterString(
+                                        UniversalTagNumber.UTF8String,
+                                        "user@domain2");
+
+                                    break;
+                                case 3:
+                                    // NULL, then a string
+                                    sanWriter.WriteNull();
+
+                                    sanWriter.WriteCharacterString(
+                                        UniversalTagNumber.UTF8String,
+                                        "user@domain");
+
+                                    break;
+                                case 4:
+                                    // A string, then NULL
+                                    sanWriter.WriteCharacterString(
+                                        UniversalTagNumber.UTF8String,
+                                        "user@domain");
+
+                                    sanWriter.WriteNull();
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                return new X509Extension("2.5.29.17", sanWriter.Encode(), critical: false);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetNameInfo_EmailName_MaybeInvalidSAN(bool invalidOtherName)
+        {
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=Test, E=fallback@subject.example",
+                    key,
+                    HashAlgorithmName.SHA384);
+
+                req.CertificateExtensions.Add(BuildSanExtension(invalidOtherName));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                byte[] serial = new byte[20];
+                RandomNumberGenerator.Fill(serial);
+                serial[0] &= 0x7F;
+
+                using (X509Certificate2 cert = req.Create(req.SubjectName, gen, now, now.AddDays(1), serial))
+                {
+                    string email = cert.GetNameInfo(X509NameType.EmailName, forIssuer: false);
+
+                    if (invalidOtherName)
+                    {
+                        Assert.Equal("fallback@subject.example", email);
+                    }
+                    else
+                    {
+                        Assert.Equal("san@domain.example", email);
+                    }
+                }
+            }
+
+            static X509Extension BuildSanExtension(bool invalidOtherName)
+            {
+                AsnWriter sanWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                using (sanWriter.PushSequence())
+                {
+                    if (invalidOtherName)
+                    {
+                        // Invalid otherName: context-tagged [0] wrapping just a bare
+                        // UTF8String (no OID, no explicit [0] wrapper). This makes
+                        // the overall SAN extension fail to decode.
+                        using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                        {
+                            sanWriter.WriteCharacterString(
+                                UniversalTagNumber.UTF8String,
+                                "bogus");
+                        }
+                    }
+                    else
+                    {
+                        // Valid otherName (UPN) so the SAN is well-formed.
+                        using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                        {
+                            sanWriter.WriteObjectIdentifier("1.3.6.1.4.1.311.20.2.3");
+
+                            using (sanWriter.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
+                            {
+                                sanWriter.WriteCharacterString(
+                                    UniversalTagNumber.UTF8String,
+                                    "upn@domain.example");
+                            }
+                        }
+                    }
+
+                    // rfc822Name [1] IA5String
+                    sanWriter.WriteCharacterString(
+                        UniversalTagNumber.IA5String,
+                        "san@domain.example",
+                        new Asn1Tag(TagClass.ContextSpecific, 1));
+                }
+
+                return new X509Extension("2.5.29.17", sanWriter.Encode(), critical: false);
+            }
         }
 
         private static void TestComplexGetNameInfo(string expected, X509NameType nameType, bool forIssuer)

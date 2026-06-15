@@ -330,9 +330,11 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
             }
-            catch (AsnContentException e)
+            catch (AsnContentException)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            catch (CryptographicException)
+            {
             }
 
             return null;
