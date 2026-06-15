@@ -151,7 +151,6 @@ namespace System.Net.Sockets
             // can return WouldBlock (Windows) or InProgress (Unix) while the OS connect attempt remains
             // pending after this method decrements that counter; its eventual outcome is not observable
             // here. Don't report these pending results as failures.
-            // See https://github.com/dotnet/runtime/issues/129252
             bool connectPending = error is SocketError.WouldBlock or SocketError.InProgress;
 
             if (activity is not null)
