@@ -22,7 +22,7 @@ class UnmanagedCallersOnlyAssociatedSourceType
     {
         // ActiveIssue: https://github.com/dotnet/runtime/issues/129366
         if (OperatingSystem.IsAndroid())
-            return;
+            return 100;
 
         GC.KeepAlive(new UsedSource());
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSource))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
