@@ -5,7 +5,6 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -31,13 +30,14 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Disambiguator for externally-defined accessors/methods where <see cref="Syntax"/> is
-        /// <see langword="null"/> and the IL name alone (for example, <c>get_Item</c>) cannot
-        /// distinguish overloads coming from a cross-assembly base interface. Set to a stable
-        /// fingerprint of the underlying method's parameter types at construction; always
-        /// <see cref="string.Empty"/> for user-declared records, whose <see cref="Syntax"/>
-        /// field already provides per-declaration uniqueness.
+        /// <see langword="null"/>. The IL name alone (for example, <c>get_Item</c>, or simply
+        /// <c>MyMethod</c>) cannot distinguish either overloads inside a single cross-assembly base
+        /// (e.g. four <c>get_Item</c> accessors of different indexer signatures) or same-named
+        /// methods coming from two disjoint cross-assembly bases. Always <see cref="string.Empty"/>
+        /// for user-declared records, whose <see cref="Syntax"/> field already provides
+        /// per-declaration uniqueness.
         /// </summary>
-        public string ExternalSignatureKey { get; init; } = string.Empty;
+        public string ExternalSymbolId { get; init; } = string.Empty;
 
         private ComMethodInfo(
             MemberDeclarationSyntax? syntax,
@@ -159,7 +159,8 @@ namespace Microsoft.Interop
                 methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
                     new ComMethodInfo(null, method.Name, CreateAttributeInfoArray(method.GetAttributes()), false)
                     {
-                        ExternalSignatureKey = BuildExternalSignatureKey(method),
+                        // Stable per-symbol identity is required here because Syntax is null.
+                        ExternalSymbolId = BuildExternalSymbolId(method),
                     },
                     method)));
                 return;
@@ -335,7 +336,8 @@ namespace Microsoft.Interop
                     isUserDefinedShadowingMethod: false,
                     GetAssociatedAttributesForPropertyAccessor(accessor))
                 {
-                    ExternalSignatureKey = BuildExternalSignatureKey(accessor),
+                    // Stable per-symbol identity is required here because Syntax is null.
+                    ExternalSymbolId = BuildExternalSymbolId(accessor),
                 },
                 accessor)));
         }
@@ -387,30 +389,15 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Builds a stable, cache-friendly parameter-types fingerprint used as a tie-breaker in
-        /// <see cref="ComMethodInfo.ExternalSignatureKey"/> for externally-defined accessors and
-        /// methods whose <see cref="Syntax"/> field is <see langword="null"/>. Returns
-        /// <see cref="string.Empty"/> for nullary signatures so the field stays normalized.
+        /// Builds a stable per-symbol identifier used as the value of
+        /// <see cref="ComMethodInfo.ExternalSymbolId"/>. Returns the symbol's ECMA-334
+        /// documentation-comment ID; falls back to a fully-qualified display string for the rare
+        /// symbol shapes that have no doc-id form so the field is always non-null.
+        /// These strings are for convenience only, any unique identifier would work.
         /// </summary>
-        private static string BuildExternalSignatureKey(IMethodSymbol method)
-        {
-            ImmutableArray<IParameterSymbol> parameters = method.Parameters;
-            if (parameters.IsDefaultOrEmpty)
-            {
-                return string.Empty;
-            }
-
-            var builder = new StringBuilder();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (i > 0)
-                {
-                    builder.Append('|');
-                }
-                builder.Append(parameters[i].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
-            }
-            return builder.ToString();
-        }
+        private static string BuildExternalSymbolId(IMethodSymbol method)
+            => method.GetDocumentationCommentId()
+                ?? method.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
         private static MemberShapeOutcome AnalyzePropertyShape(
             BasePropertyDeclarationSyntax propertyDeclaringSyntax,
