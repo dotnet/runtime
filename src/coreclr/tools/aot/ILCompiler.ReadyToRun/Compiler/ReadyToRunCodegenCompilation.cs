@@ -1039,13 +1039,18 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
             ];
-            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
-            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
-
             // The await helpers the JIT synthesizes calls to in CorInfoImpl.getAwaitReturnCall have no IL
-            // token in the caller, so their manifest tokens must be pre-seeded as well.
-            _tokenManager.EnsureAsyncAwaitHelperTokensAreAvailable(asyncHelpers, moduleForNewReferences);
+            // token in the caller, so their manifest tokens must be pre-seeded as well. There are several
+            // TransparentAwaitWithResult overloads (Task/ValueTask and their generic forms); collect them by name.
+            List<MethodDesc> awaitReturnHelpers = new();
+            foreach (MethodDesc asyncHelperMethod in asyncHelpers.GetMethods())
+            {
+                if (asyncHelperMethod.Name == "TransparentAwaitWithResult"u8)
+                    awaitReturnHelpers.Add(asyncHelperMethod);
+            }
 
+            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..awaitReturnHelpers, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
         }
 
