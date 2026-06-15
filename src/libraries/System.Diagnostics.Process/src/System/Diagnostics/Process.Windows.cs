@@ -855,6 +855,10 @@ namespace System.Diagnostics
             // On Windows, the pseudo console handles the mapping internally via PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE.
             // We leave the child handles untouched - they will be populated by the console handles path
             // and won't actually be used by the child process since the pseudo console takes precedence.
+            _ = pty;
+            _ = childInputHandle;
+            _ = childOutputHandle;
+            _ = childErrorHandle;
         }
 
         private void OpenPseudoTerminalStreams(ProcessStartInfo startInfo)

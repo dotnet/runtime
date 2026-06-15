@@ -44,7 +44,7 @@ namespace System.Diagnostics
 
             try
             {
-                Interop.Kernel32.COORD size = new Interop.Kernel32.COORD
+                Interop.Kernel32.PseudoConsoleCoord size = new Interop.Kernel32.PseudoConsoleCoord
                 {
                     X = (short)columns,
                     Y = (short)rows
@@ -76,7 +76,7 @@ namespace System.Diagnostics
 
         private void ResizeCore(int columns, int rows)
         {
-            Interop.Kernel32.COORD size = new Interop.Kernel32.COORD
+            Interop.Kernel32.PseudoConsoleCoord size = new Interop.Kernel32.PseudoConsoleCoord
             {
                 X = (short)columns,
                 Y = (short)rows

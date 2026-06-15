@@ -8,11 +8,18 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int CreatePseudoConsole(COORD size, SafeHandle hInput, SafeHandle hOutput, uint dwFlags, out IntPtr phPC);
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct PseudoConsoleCoord
+        {
+            internal short X;
+            internal short Y;
+        }
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int ResizePseudoConsole(SafeHandle hPC, COORD size);
+        internal static partial int CreatePseudoConsole(PseudoConsoleCoord size, SafeHandle hInput, SafeHandle hOutput, uint dwFlags, out IntPtr phPC);
+
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial int ResizePseudoConsole(SafeHandle hPC, PseudoConsoleCoord size);
 
         [LibraryImport(Libraries.Kernel32)]
         internal static partial void ClosePseudoConsole(IntPtr hPC);
