@@ -11707,7 +11707,7 @@ bool Compiler::impWrapTopOfStackInAwait()
             return false;
         }
 
-        instArg              = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+        instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
