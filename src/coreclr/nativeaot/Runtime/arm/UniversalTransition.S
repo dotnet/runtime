@@ -43,13 +43,8 @@
 //
 // At input to this function, r0-3, d0-7 and the stack may contain any number of arguments.
 //
-// In addition, there are 2 extra arguments passed in the RED ZONE (8 byte negative space
-// off of sp).
-// sp-4 will contain the managed function that is to be called by this transition function
-// sp-8 will contain the pointer sized extra argument to the managed function
-//
-// The caller pushes the 2 extra arguments onto the stack (sp adjusted by -8 before
-// branching here):
+// In addition, there are 2 extra arguments passed on the stack. The caller pushes them
+// (sp adjusted by -8 before branching here):
 // [sp+4] = managed function to be called
 // [sp+0] = pointer sized extra argument
 //
@@ -85,16 +80,12 @@
 NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
         // Caller pushed 8 bytes: [sp]=extra arg, [sp+4]=target fn
-        ldr          r12, [sp, #4]          // Capture target function into r12
-        PROLOG_PUSH  "{r3}"                 // Save original r3 (sp -= 4; caller data now at sp+4 and sp+8)
-        ldr          r3, [sp, #4]           // Capture extra arg (was at caller's [sp], now at sp+4 after push)
-        PROLOG_PUSH  "{r0-r2}"              // Push the rest of the argument registers
+        PROLOG_PUSH  "{r0-r3}"              // Push the argument registers
+        ldr          r12, [sp, #20]         // Capture target function (caller's [sp+4], now at sp+16+4)
+        ldr          r1, [sp, #16]          // Capture extra arg (caller's [sp], now at sp+16)
         PROLOG_STACK_ALLOC RETURN_BLOCK_SIZE // Save space a buffer to be used to hold return buffer data.
         PROLOG_VPUSH {d0-d7}                 // Capture the floating point argument registers
         PROLOG_PUSH  "{r11,lr}"              // Save caller's frame chain pointer and PC
-
-        // Setup the arguments to the transition thunk.
-        mov         r1, r3
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
 

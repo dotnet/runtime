@@ -14,9 +14,7 @@
 NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         // r12 currently contains the indirection cell address. But we need more scratch registers and
         // we may A/V on a null this. Save r1 and r2 on the stack.
-        PROLOG_STACK_ALLOC 8
-        str         r1, [sp]
-        str         r2, [sp, #4]
+        PROLOG_PUSH "{r1,r2}"
 
         // r12 currently holds the indirection cell address. We need to get the cache structure instead.
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
@@ -49,21 +47,15 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         // Point r12 to the indirection cell using the back pointer in the cache block
         ldr         r12, [r2, #OFFSETOF__InterfaceDispatchCache__m_pCell]
 
-        ldr         r1, [sp]
-        ldr         r2, [sp, #4]
-        EPILOG_STACK_FREE 8
+        EPILOG_POP "{r1,r2}"
         b           C_FUNC(RhpInterfaceDispatchSlow)
 
 LOCAL_LABEL(RaceRetry_\entries):
-        ldr         r1, [sp]
-        ldr         r2, [sp, #4]
-        EPILOG_STACK_FREE 8
+        EPILOG_POP "{r1,r2}"
         ldr         pc, [r12]
 
 LOCAL_LABEL(99_\entries):
-        ldr         r1, [sp]
-        ldr         r2, [sp, #4]
-        EPILOG_STACK_FREE 8
+        EPILOG_POP "{r1,r2}"
         EPILOG_BRANCH_REG r12
 
 NESTED_END RhpInterfaceDispatch\entries, _TEXT
