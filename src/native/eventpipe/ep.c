@@ -565,7 +565,8 @@ enable (
 		options->providers_len,
 		options->sync_callback,
 		options->callback_additional_data,
-		options->user_events_data_fd);
+		options->user_events_data_fd,
+		options->buffering_mode);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -1201,6 +1202,7 @@ ep_session_options_init (
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
 	options->user_events_data_fd = user_events_data_fd;
+	options->buffering_mode = EP_BUFFERING_MODE_DROP;
 }
 
 void

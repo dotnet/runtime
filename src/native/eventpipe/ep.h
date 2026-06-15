@@ -128,6 +128,8 @@ typedef struct EventPipeSessionOptions {
 	uint64_t rundown_keyword;
 	bool stackwalk_requested;
 	int user_events_data_fd;
+	// Buffering mode opt-in; defaults to DROP (set by ep_session_options_init).
+	EventPipeBufferingMode buffering_mode;
 } EventPipeSessionOptions;
 
 void

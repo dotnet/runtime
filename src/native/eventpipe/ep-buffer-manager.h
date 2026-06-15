@@ -122,6 +122,8 @@ struct _EventPipeBufferManager_Internal {
 	// large to fit in the 64KB size limit
 	volatile int64_t num_oversized_events_dropped;
 
+	EventPipeBufferingMode buffering_mode;
+
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;
 	volatile int64_t num_events_dropped;
@@ -144,7 +146,8 @@ EventPipeBufferManager *
 ep_buffer_manager_alloc (
 	EventPipeSession *session,
 	size_t max_size_of_all_buffers,
-	size_t sequence_point_allocation_budget);
+	size_t sequence_point_allocation_budget,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_buffer_manager_free (EventPipeBufferManager *buffer_manager);

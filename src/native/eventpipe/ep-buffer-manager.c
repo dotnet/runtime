@@ -839,7 +839,8 @@ EventPipeBufferManager *
 ep_buffer_manager_alloc (
 	EventPipeSession *session,
 	size_t max_size_of_all_buffers,
-	size_t sequence_point_allocation_budget)
+	size_t sequence_point_allocation_budget,
+	EventPipeBufferingMode buffering_mode)
 {
 	EventPipeBufferManager *instance = ep_rt_object_alloc (EventPipeBufferManager);
 	ep_raise_error_if_nok (instance != NULL);
@@ -855,6 +856,8 @@ ep_buffer_manager_alloc (
 
 	ep_rt_wait_event_alloc (&instance->rt_wait_event, false, true);
 	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
+
+	instance->buffering_mode = buffering_mode;
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);

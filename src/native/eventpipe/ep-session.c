@@ -281,7 +281,8 @@ ep_session_alloc (
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd)
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
@@ -320,7 +321,7 @@ ep_session_alloc (
 	}
 
 	if (ep_session_type_uses_buffer_manager (session_type)) {
-		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
+		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget, buffering_mode);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
 	}
 

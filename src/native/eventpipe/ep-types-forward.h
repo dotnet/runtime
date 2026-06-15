@@ -158,6 +158,13 @@ typedef enum {
 } EventPipeSessionType ;
 
 typedef enum {
+	// Producers drop events when the circular buffer is full (default, lossy).
+	EP_BUFFERING_MODE_DROP,
+	// Producers block until the reader frees buffer capacity (non-lossy).
+	EP_BUFFERING_MODE_BLOCK
+} EventPipeBufferingMode;
+
+typedef enum {
 	EP_STATE_NOT_INITIALIZED,
 	EP_STATE_INITIALIZED,
 	EP_STATE_SHUTTING_DOWN

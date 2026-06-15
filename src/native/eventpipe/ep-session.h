@@ -107,7 +107,8 @@ ep_session_alloc (
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_inc_ref (EventPipeSession *session);
