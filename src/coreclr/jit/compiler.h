@@ -5637,7 +5637,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
-    void impWrapTopOfStackInAwait();
+    bool impWrapTopOfStackInAwait();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.

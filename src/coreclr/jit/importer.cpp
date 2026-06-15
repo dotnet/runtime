@@ -11292,7 +11292,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0) && compIsAsyncVersion())
     {
         JITDUMP("\nWrapping return value in await\n");
-        impWrapTopOfStackInAwait();
+        if (!impWrapTopOfStackInAwait())
+        {
+            return false;
+        }
 
         if (info.compRetType == TYP_VOID)
         {
@@ -11650,6 +11653,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // impWrapTopOfStackInAwait:
 //   Wrap the value on the top of the stack in AsyncHelpers.TransparentAwait.
 //
+// Returns:
+//   True if successful. False if he EE could not create the call (only during
+//   inlining), in which case inlining should be aborted.
+//
 // Remarks:
 //   Async versions of non-async task-returning methods are compiled with the
 //   exact same IL as the original method. This means the return value is
@@ -11658,7 +11665,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //   accomplishes the unwrapping by inserting an async call to
 //   AsyncHelpers.TransparentAwait around the value on the top of the stack.
 //
-void Compiler::impWrapTopOfStackInAwait()
+bool Compiler::impWrapTopOfStackInAwait()
 {
     CORINFO_LOOKUP        instArgLookup;
     CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
@@ -11694,6 +11701,12 @@ void Compiler::impWrapTopOfStackInAwait()
     if (awaitSig.hasTypeArg())
     {
         GenTree* instArgTree = impLookupToTree(&instArgLookup, GTF_ICON_METHOD_HDL, awaitMethod);
+        if (instArgTree == nullptr)
+        {
+            // Can fail if runtime lookup cannot be represented properly during inlining
+            return false;
+        }
+
         instArg              = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
     }
 
@@ -11744,6 +11757,7 @@ void Compiler::impWrapTopOfStackInAwait()
     awaitCall->SetIsAsync(asyncInfo);
 
     impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    return true;
 }
 
 #ifdef DEBUG
