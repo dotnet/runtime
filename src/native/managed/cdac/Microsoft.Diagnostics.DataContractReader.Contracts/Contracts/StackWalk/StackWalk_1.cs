@@ -286,9 +286,9 @@ internal partial class StackWalk_1 : IStackWalk
             Flags = (uint)r.Flags,
             SourceType = r.SourceType switch
             {
+                StackRefData.SourceTypes.StackSourceIP => StackSourceType.InstructionPointer,
                 StackRefData.SourceTypes.StackSourceFrame => StackSourceType.Frame,
-                StackRefData.SourceTypes.StackSourceOther => StackSourceType.Other,
-                _ => StackSourceType.InstructionPointer,
+                _ => StackSourceType.Other,
             },
             Source = r.Source,
             StackPointer = r.StackPointer,
