@@ -108,7 +108,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         try
         {
-            TargetPointer appDomainAddr = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer appDomainAddr = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomainAddr != TargetPointer.Null)
             {
@@ -357,7 +357,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 throw new InvalidCastException(); // E_NOINTERFACE
 
             MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
-            TargetPointer appDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
         }

@@ -82,13 +82,6 @@ public record struct ModuleLookupTables(
     TargetPointer MethodDefToILCodeVersioningState,
     uint TableDataOffset);
 
-public readonly struct RuntimeDomainInfo
-{
-    public TargetPointer SystemDomain { get; init; }
-    public TargetPointer DefaultAppDomain { get; init; }
-    public uint DefaultAppDomainId { get; init; }
-}
-
 public readonly struct LoaderHeapBlockData
 {
     public TargetPointer Address { get; init; }
@@ -105,7 +98,7 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
-    RuntimeDomainInfo GetDomainInfo() => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();

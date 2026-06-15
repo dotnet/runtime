@@ -604,6 +604,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetPointer.Null;
         return value;
     }
+
     public bool IsObjRef(TypeHandle typeHandle)
     {
         CorElementType elementType = GetSignatureCorElementType(typeHandle);

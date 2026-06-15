@@ -141,39 +141,25 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetRootAssembly()
     {
-        TargetPointer defaultAppDomain = ((ILoader)this).GetDomainInfo().DefaultAppDomain;
+        TargetPointer defaultAppDomain = ((ILoader)this).GetAppDomain();
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(defaultAppDomain);
         return appDomain.RootAssembly;
     }
 
     string ILoader.GetAppDomainFriendlyName()
     {
-        TargetPointer defaultAppDomain = ((ILoader)this).GetDomainInfo().DefaultAppDomain;
+        TargetPointer defaultAppDomain = ((ILoader)this).GetAppDomain();
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(defaultAppDomain);
         return appDomain.FriendlyName != TargetPointer.Null
             ? _target.ReadUtf16String(appDomain.FriendlyName)
             : DefaultDomainFriendlyName;
     }
 
-    RuntimeDomainInfo ILoader.GetDomainInfo()
+    TargetPointer ILoader.GetAppDomain()
     {
-        return new RuntimeDomainInfo
-        {
-            SystemDomain = TryReadGlobalIndirectPointer(_target, Constants.Globals.SystemDomain),
-            DefaultAppDomain = TryReadGlobalIndirectPointer(_target, Constants.Globals.AppDomain),
-            DefaultAppDomainId = _target.TryReadGlobal(Constants.Globals.DefaultADID, out uint? id) && id is not null ? id.Value : 0u,
-        };
-
-        // Tolerate missing-or-uninitialized globals: callers that only need one of
-        // the values shouldn't fail because an unrelated global is unavailable.
-        static TargetPointer TryReadGlobalIndirectPointer(Target target, string name)
-        {
-            if (!target.TryReadGlobalPointer(name, out TargetPointer? ptrPtr) || ptrPtr is null)
-                return TargetPointer.Null;
-            if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
-                return TargetPointer.Null;
-            return value;
-        }
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+        return appDomain;
     }
 
     TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -609,15 +595,15 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetGlobalLoaderAllocator()
     {
-        TargetPointer systemDomainAddr = ((ILoader)this).GetDomainInfo().SystemDomain;
-        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(systemDomainAddr);
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
         return systemDomain.GlobalLoaderAllocator;
     }
 
     TargetPointer ILoader.GetSystemAssembly()
     {
-        TargetPointer systemDomainAddr = ((ILoader)this).GetDomainInfo().SystemDomain;
-        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(systemDomainAddr);
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
         return systemDomain.SystemAssembly;
     }
 

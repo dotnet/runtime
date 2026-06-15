@@ -23,6 +23,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
@@ -108,7 +110,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pRetVal = vmAppDomain == 0 ? 0u : _target.Contracts.Loader.GetDomainInfo().DefaultAppDomainId;
+            *pRetVal = vmAppDomain == 0 ? 0u : DefaultAppDomainId;
         }
         catch (System.Exception ex)
         {
@@ -1140,7 +1142,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
             *pRetVal = defaultAppDomain;
         }
         catch (System.Exception ex)
@@ -1342,7 +1344,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             TargetPointer threadPtr = new TargetPointer(vmThread);
-            TargetPointer currentAppDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain;
+            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
             IStackWalk stackwalk = _target.Contracts.StackWalk;
 
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
@@ -2858,7 +2860,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (fpCallback is null)
                 throw new ArgumentNullException(nameof(fpCallback));
 
-            ulong vmAppDomain = _target.Contracts.Loader.GetDomainInfo().DefaultAppDomain.Value;
+            ulong vmAppDomain = _target.Contracts.Loader.GetAppDomain().Value;
 
             IException exceptionContract = _target.Contracts.Exception;
             foreach (ExceptionStackFrameInfo frame in exceptionContract.GetExceptionStackFrames(new TargetPointer(vmObject)))
