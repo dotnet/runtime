@@ -63,6 +63,15 @@ namespace System.Diagnostics.Tests
             yield return new object[] { $"{new string(' ', 252)}state=1{new string(' ', 253)}", "state=1", null, null, null };
             yield return new object[] { $"{new string(' ', 253)}state=1{new string(' ', 253)}", null, null, null, null };
 
+            // Trace state raw length is limited to 512 characters.
+            yield return new object[] { $"{new string('a', 256)}={new string('b', 255)}", $"{new string('a', 256)}={new string('b', 255)}", null, null, null };
+            yield return new object[] { $"{new string('a', 256)}={new string('b', 256)}", null, null, null, null };
+
+            string traceStateWith32Members = string.Join(",", Enumerable.Range(0, 32).Select(i => $"k{i}=v"));
+            string traceStateWith33Members = string.Join(",", Enumerable.Range(0, 33).Select(i => $"k{i}=v"));
+            yield return new object[] { traceStateWith32Members, traceStateWith32Members, null, null, null };
+            yield return new object[] { traceStateWith33Members, null, null, null, null };
+
             // Empty and whitespace-only trace state list members are allowed, but they count toward the list-member limit.
             yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 31))},state=1", "state=1", null, null, null };
             yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 32))},state=1", null, null, null, null };
