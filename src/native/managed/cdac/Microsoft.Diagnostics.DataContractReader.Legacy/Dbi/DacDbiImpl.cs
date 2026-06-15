@@ -400,8 +400,36 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetAddressType(ulong address, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
+    public int IsManagedCode(ulong address, Interop.BOOL* pIsManaged)
+    {
+        int hr = HResults.S_OK;
+        *pIsManaged = Interop.BOOL.FALSE;
+        try
+        {
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (_target.TryRead(address, out byte _) && eman.GetCodeBlockHandle(address) is not null)
+            {
+                *pIsManaged = Interop.BOOL.TRUE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL isManagedLocal;
+            int hrLocal = _legacy.IsManagedCode(address, &isManagedLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pIsManaged == isManagedLocal, $"cDAC: {*pIsManaged}, DAC: {isManagedLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
     {
