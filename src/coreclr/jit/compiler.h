@@ -9453,7 +9453,7 @@ public:
     class VirtualStubParamInfo
     {
     public:
-        VirtualStubParamInfo(bool /* isNativeAOT */)
+        VirtualStubParamInfo()
         {
 #if defined(TARGET_X86)
             reg     = REG_EAX;

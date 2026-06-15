@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
