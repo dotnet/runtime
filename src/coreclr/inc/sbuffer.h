@@ -59,6 +59,9 @@
 
 typedef DPTR(class SBuffer) PTR_SBuffer;
 
+class SString;
+template<typename T> struct cdac_data;
+
 class SBuffer
 {
   public:
@@ -86,6 +89,8 @@ class SBuffer
 
     class Iterator;
     friend class Iterator;
+
+    friend struct ::cdac_data<SString>;
 
     //--------------------------------------------------------------------
     // Initializers and constructors

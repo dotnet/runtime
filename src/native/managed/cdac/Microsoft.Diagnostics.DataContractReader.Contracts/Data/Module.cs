@@ -16,7 +16,6 @@ internal sealed partial class Module : IData<Module>
     [Field] public TargetPointer LoaderAllocator { get; }
     [Field] public TargetPointer DynamicMetadata { get; }
     [Field] public TargetPointer SimpleName { get; }
-    [Field] public TargetPointer Path { get; }
     [Field] public TargetPointer FileName { get; }
     [Field] public TargetPointer ReadyToRunInfo { get; }
     [Field] public TargetPointer GrowableSymbolStream { get; }

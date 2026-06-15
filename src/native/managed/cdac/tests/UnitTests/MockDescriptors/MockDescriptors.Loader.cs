@@ -65,7 +65,6 @@ internal sealed class MockLoaderModule : TypedView
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
     private const string SimpleNameFieldName = "SimpleName";
-    private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
     private const string ReadyToRunInfoFieldName = "ReadyToRunInfo";
     private const string GrowableSymbolStreamFieldName = "GrowableSymbolStream";
@@ -89,7 +88,6 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
             .AddPointerField(SimpleNameFieldName)
-            .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
             .AddPointerField(ReadyToRunInfoFieldName)
             .AddPointerField(GrowableSymbolStreamFieldName)
@@ -121,12 +119,6 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(SimpleNameFieldName);
         set => WritePointerField(SimpleNameFieldName, value);
-    }
-
-    public ulong Path
-    {
-        get => ReadPointerField(PathFieldName);
-        set => WritePointerField(PathFieldName, value);
     }
 
     public ulong FileName
@@ -272,7 +264,6 @@ internal sealed class MockLoaderBuilder
     }
 
     internal MockLoaderModule AddModule(
-        string? path = null,
         string? fileName = null,
         string? simpleName = null,
         byte[]? simpleNameBytes = null,
@@ -289,11 +280,6 @@ internal sealed class MockLoaderBuilder
         if (rawSimpleName is not null)
         {
             module.SimpleName = AddNullTerminatedUtf8(rawSimpleName, "Module simple name");
-        }
-
-        if (path is not null)
-        {
-            module.Path = AddUtf16String(path, $"Module path = {path}");
         }
 
         if (fileName is not null)
