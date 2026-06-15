@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly DSACryptoServiceProviderProvider Instance = new DSACryptoServiceProviderProvider();
 
+        private DSACryptoServiceProviderProvider() { }
+
         public override DSA Create()
         {
             return new DSACryptoServiceProvider();

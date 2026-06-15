@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly DSACngProvider Instance = new DSACngProvider();
 
+        private DSACngProvider() { }
+
         public override DSA Create()
         {
             return new DSACng();

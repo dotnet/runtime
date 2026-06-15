@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly DSAOpenSslProvider Instance = new DSAOpenSslProvider();
 
+        private DSAOpenSslProvider() { }
+
         public override DSA Create()
         {
             return new DSAOpenSsl();

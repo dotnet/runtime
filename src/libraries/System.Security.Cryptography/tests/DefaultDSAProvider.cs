@@ -9,6 +9,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly DefaultDSAProvider Instance = new DefaultDSAProvider();
 
+        private DefaultDSAProvider() { }
+
         public override DSA Create()
         {
             return DSA.Create();

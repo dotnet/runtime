@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
-
 namespace System.Security.Cryptography.Dsa.Tests
 {
     public sealed class DSAImportExport_Cng : DSAImportExport
@@ -57,25 +55,16 @@ namespace System.Security.Cryptography.Dsa.Tests
 
     public sealed class DsaArraySignatureFormatTests_Cng : DsaArraySignatureFormatTests
     {
-        private static KeyDescription[] s_keys;
-
         protected override DSAProvider DSAFactory { get; } = DSACngProvider.Instance;
-        protected override KeyDescription[] GenerateTestKeys() => s_keys ??= LocalGenerateTestKeys().ToArray();
     }
 
     public sealed class DsaArrayOffsetSignatureFormatTests_Cng : DsaArrayOffsetSignatureFormatTests
     {
-        private static KeyDescription[] s_keys;
-
         protected override DSAProvider DSAFactory { get; } = DSACngProvider.Instance;
-        protected override KeyDescription[] GenerateTestKeys() => s_keys ??= LocalGenerateTestKeys().ToArray();
     }
 
     public sealed class DsaSpanSignatureFormatTests_Cng : DsaSpanSignatureFormatTests
     {
-        private static KeyDescription[] s_keys;
-
         protected override DSAProvider DSAFactory { get; } = DSACngProvider.Instance;
-        protected override KeyDescription[] GenerateTestKeys() => s_keys ??= LocalGenerateTestKeys().ToArray();
     }
 }
