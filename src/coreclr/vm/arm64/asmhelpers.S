@@ -83,7 +83,7 @@ LEAF_END ThePreStubPatch, _TEXT
 //
 // x12 = UMEntryThunkData*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224

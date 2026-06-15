@@ -198,6 +198,7 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
@@ -343,6 +344,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
+
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    flags |= O_NOCTTY;
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
