@@ -61,9 +61,9 @@ namespace System.Reflection.Context.Examples
             Console.WriteLine();
 
             // The "ToString" member as represented in the default reflection context.
-            MemberInfo mi1 = ti.GetDeclaredMethods("ToString").FirstOrDefault();
+            MemberInfo mi1 = ti.GetDeclaredMethod(nameof(object.ToString));
 
-            Attribute[] defaultAttributes = mi1.GetCustomAttributes().Cast<Attribute>().ToArray();
+            Attribute[] defaultAttributes = mi1.GetCustomAttributes().ToArray();
 
             // All the attributes of "ToString" in the default reflection context.
             Console.WriteLine("'ToString' Attributes in Default Reflection Context:");
@@ -75,9 +75,9 @@ namespace System.Reflection.Context.Examples
             Console.WriteLine();
 
             // The same member in the custom reflection context.
-            mi1 = myTI.GetDeclaredMethods("ToString").FirstOrDefault();
+            mi1 = myTI.GetDeclaredMethod(nameof(object.ToString));
 
-            Attribute[] customAttributes = mi1.GetCustomAttributes().Cast<Attribute>().ToArray();
+            Attribute[] customAttributes = mi1.GetCustomAttributes().ToArray();
 
             // All its attributes, for comparison. MyAttribute is now included.
             Console.WriteLine("'ToString' Attributes in Custom Reflection Context:");

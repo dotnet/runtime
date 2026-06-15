@@ -39,9 +39,8 @@ namespace System.Reflection.Context
     /// the custom reflection context.
     ///
     /// > [!WARNING]
-     /// > <xref:System.Reflection.Context.CustomReflectionContext> overrides should not query attributes on the provided <xref:System.Reflection.MemberInfo> or <xref:System.Reflection.ParameterInfo> by calling
-     /// > <xref:System.Reflection.CustomAttributeExtensions.GetCustomAttributes*>; use the `declaredAttributes` sequence passed to the <xref:System.Reflection.Context.CustomReflectionContext.GetCustomAttributes*> overloads instead.
-    /// should instead use the `declaredAttributes` list, which is passed as a parameter to the <xref:System.Reflection.Context.CustomReflectionContext.GetCustomAttributes*> method overloads.
+    /// > <xref:System.Reflection.Context.CustomReflectionContext> overrides should not query attributes on the provided <xref:System.Reflection.MemberInfo> or <xref:System.Reflection.ParameterInfo>
+    /// > by calling <xref:System.Reflection.CustomAttributeExtensions.GetCustomAttributes*>; use the `declaredAttributes` sequence passed to the <xref:System.Reflection.Context.CustomReflectionContext.GetCustomAttributes*> overloads instead.
     ///
     /// To add properties to a reflected type, override the <xref:System.Reflection.Context.CustomReflectionContext.AddProperties*> method. The method accepts a parameter that
     /// specifies the reflected type, and returns a list of additional properties. You should use the <xref:System.Reflection.Context.CustomReflectionContext.CreateProperty*>
