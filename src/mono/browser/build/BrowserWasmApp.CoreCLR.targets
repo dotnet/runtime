@@ -191,9 +191,13 @@
     Resolve it the way a self-contained app loads assemblies (copy-local wins): drop runtime-pack copies
     shadowed by a same-named app-local copy before the candidates are gathered. Apps without an app-local
     copy of a framework assembly are unaffected.
+
+    DependsOnTargets=ResolveReferences guarantees @(ReferenceCopyLocalPaths) is populated before we prune;
+    _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
   -->
   <Target Name="_CoreCLRPreferAppLocalAssembliesOverRuntimePack"
           BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          DependsOnTargets="ResolveReferences"
           Condition="'$(IsBrowserWasmProject)' == 'true'">
     <PropertyGroup>
       <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
