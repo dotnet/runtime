@@ -59,6 +59,14 @@ namespace System.Diagnostics.Tests
             // Optional whitespace around trace state list members
             yield return new object[] { " start=1 \t, \tend=1 ", "start=1,end=1", null, null, null };
 
+            // Trace state raw length includes optional whitespace, even when the propagated value is normalized.
+            yield return new object[] { $"{new string(' ', 252)}state=1{new string(' ', 253)}", "state=1", null, null, null };
+            yield return new object[] { $"{new string(' ', 253)}state=1{new string(' ', 253)}", null, null, null, null };
+
+            // Empty and whitespace-only trace state list members are allowed, but they count toward the list-member limit.
+            yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 31))},state=1", "state=1", null, null, null };
+            yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 32))},state=1", null, null, null, null };
+
             // trace state key longer than the max limit
             yield return new object[] { $"{new string('a', 257)}=1", null, null, null, null }; // trace state key length max is 256
 
