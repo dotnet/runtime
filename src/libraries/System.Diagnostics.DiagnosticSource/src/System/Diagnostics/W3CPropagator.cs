@@ -15,6 +15,8 @@ namespace System.Diagnostics
 
         private const int MaxBaggageEntriesToEmit = 64;
         private const int MaxBaggageEncodedLength = 8192;
+
+        // W3C Trace Context tracestate limits: https://www.w3.org/TR/trace-context-2/#tracestate-limits
         private const int MaxTraceStateEncodedLength = 512;
         private const int MaxTraceStateKeyLength = 256;
         private const int MaxTraceStateValueLength = 256;
