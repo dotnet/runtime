@@ -194,25 +194,29 @@
   -->
   <Target Name="_CoreCLRPreferAppLocalAssembliesOverRuntimePack"
           BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
-          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(MicrosoftNetCoreAppRuntimePackDir)' != ''">
+          Condition="'$(IsBrowserWasmProject)' == 'true'">
     <PropertyGroup>
-      <!-- Normalize once (canonical separators + trailing slash) so the StartsWith checks below
-           reliably match %(FullPath), which uses native separators. -->
-      <_CoreCLRRuntimePackDirNormalized>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)'))</_CoreCLRRuntimePackDirNormalized>
+      <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
+           the property, fall back to the ResolvedRuntimePack metadata (WBT/Helix-created projects leave
+           the property empty). Normalize once (full path + trailing slash) so the StartsWith checks
+           below reliably match %(FullPath), which uses native separators. -->
+      <_CoreCLRRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_CoreCLRRuntimePackDir)'))</_CoreCLRRuntimePackDir>
     </PropertyGroup>
-    <ItemGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- App-local (non-runtime-pack) managed assemblies copied next to the app. -->
       <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
-                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDirNormalized)'))" />
+                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)'))" />
     </ItemGroup>
     <PropertyGroup>
       <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
     </PropertyGroup>
-    <ItemGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- Drop runtime-pack copies shadowed by a same-named app-local assembly. -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="'%(Extension)' == '.dll'
-                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDirNormalized)'))
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)'))
                                           and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
     </ItemGroup>
   </Target>
