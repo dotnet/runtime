@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
         /// <summary>
-        /// In some cases like when a key is loaded from a provider, the key may have an associated data
-        /// we need to keep alive for the lifetime of the key. This field is used to track that data.
+        /// In some cases like when a key is loaded from a provider, the key may have an associated
+        /// process-lifetime context that is needed for operations using the key.
         /// </summary>
         internal IntPtr ExtraHandle { get; private set; }
 
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
 
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.EvpPkeyDestroy(handle, ExtraHandle);
+            Interop.Crypto.EvpPkeyDestroy(handle);
             ExtraHandle = IntPtr.Zero;
 
             SetHandle(IntPtr.Zero);
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
                 // to the new SafeHandle. DangerousAddRef prevents ReleaseHandle
                 // from being called, so handle and ExtraHandle are stable here.
                 safeHandle.SetHandle(handle);
-                // ExtraHandle is upref'd by UpRefEvpPkey
+                // ExtraHandle points to process-lifetime state.
                 safeHandle.ExtraHandle = ExtraHandle;
                 return safeHandle;
             }

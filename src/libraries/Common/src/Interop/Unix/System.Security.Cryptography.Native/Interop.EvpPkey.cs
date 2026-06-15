@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
-        internal static partial void EvpPkeyDestroy(IntPtr pkey, IntPtr extraHandle);
+        internal static partial void EvpPkeyDestroy(IntPtr pkey);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
@@ -37,12 +37,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
-        private static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle, IntPtr extraHandle);
-
-        internal static int UpRefEvpPkey(SafeEvpPKeyHandle handle)
-        {
-            return UpRefEvpPkey(handle, handle.ExtraHandle);
-        }
+        internal static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyType")]
         internal static partial EvpAlgorithmId EvpPKeyType(SafeEvpPKeyHandle handle);
@@ -314,9 +309,9 @@ internal static partial class Interop
             }
             catch
             {
-                if (evpPKeyHandle != IntPtr.Zero || extraHandle != IntPtr.Zero)
+                if (evpPKeyHandle != IntPtr.Zero)
                 {
-                    EvpPkeyDestroy(evpPKeyHandle, extraHandle);
+                    EvpPkeyDestroy(evpPKeyHandle);
                 }
 
                 throw;

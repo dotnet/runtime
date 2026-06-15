@@ -4,14 +4,6 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 #include "opensslshim.h"
-#include "pal_atomic.h"
-
-struct EvpPKeyExtraHandle_st
-{
-    atomic_int refCount;
-    OSSL_LIB_CTX* libCtx;
-    OSSL_PROVIDER* prov;
-};
 
 typedef enum
 {
@@ -23,8 +15,6 @@ typedef enum
     PalPKeyFamilyId_SlhDsa = 5,
     PalPKeyFamilyId_MLDsa = 6,
 } PalPKeyFamilyId;
-
-typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
 Shims the EVP_PKEY_new method.
@@ -42,7 +32,7 @@ No-op if pkey is null.
 The given EVP_PKEY pointer is invalid after this call.
 Always succeeds.
 */
-PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
 Returns the cryptographic length of the cryptosystem to which the key belongs, in bits.
@@ -56,7 +46,7 @@ duplicating a private key context as part of duplicating the Pal object.
 Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
-PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 
 /*
 Returns one of the following 4 values for the given EVP_PKEY:

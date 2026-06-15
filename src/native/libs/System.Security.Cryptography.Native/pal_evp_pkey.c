@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <pthread.h>
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -10,25 +11,135 @@
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
 
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
+typedef struct
 {
-    int count = --handle->refCount;
-    assert(count >= 0);
+    char* providerName;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+} ProviderLibCtxCacheEntry;
 
-    if (count == 0)
+static pthread_mutex_t g_providerLibCtxCacheLock = PTHREAD_MUTEX_INITIALIZER;
+// These contexts are intentionally retained for the process lifetime because OpenSSL requires
+// per-thread cleanup before freeing a non-default OSSL_LIB_CTX used across multiple threads.
+static ProviderLibCtxCacheEntry* g_providerLibCtxCache = NULL;
+static size_t g_providerLibCtxCacheCount = 0;
+
+static char* DuplicateProviderName(const char* providerName)
+{
+    size_t providerNameLength = strlen(providerName) + 1;
+    char* providerNameCopy = (char*)malloc(providerNameLength);
+
+    if (providerNameCopy == NULL)
     {
-        assert(handle->prov != NULL);
-        assert(handle->libCtx != NULL);
-
-        OSSL_PROVIDER_unload(handle->prov);
-        OSSL_LIB_CTX_free(handle->libCtx);
-        free(handle);
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        return NULL;
     }
+
+    memcpy(providerNameCopy, providerName, providerNameLength);
+    return providerNameCopy;
 }
-#pragma clang diagnostic pop
+
+static OSSL_LIB_CTX* GetOrCreateProviderLibCtx(const char* providerName)
+{
+    int result = pthread_mutex_lock(&g_providerLibCtxCacheLock);
+    assert(!result && "Acquiring the provider cache mutex failed.");
+
+    if (result != 0)
+    {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < g_providerLibCtxCacheCount; i++)
+    {
+        if (strcmp(g_providerLibCtxCache[i].providerName, providerName) == 0)
+        {
+            OSSL_LIB_CTX* libCtx = g_providerLibCtxCache[i].libCtx;
+            result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
+            assert(!result && "Releasing the provider cache mutex failed.");
+            return libCtx;
+        }
+    }
+
+    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
+    OSSL_PROVIDER* prov = NULL;
+    char* providerNameCopy = NULL;
+    ProviderLibCtxCacheEntry* newCache = NULL;
+
+    if (libCtx == NULL)
+    {
+        goto error;
+    }
+
+    prov = OSSL_PROVIDER_load(libCtx, providerName);
+
+    if (prov == NULL)
+    {
+        goto error;
+    }
+
+    providerNameCopy = DuplicateProviderName(providerName);
+
+    if (providerNameCopy == NULL)
+    {
+        goto error;
+    }
+
+    if (g_providerLibCtxCacheCount >= SIZE_MAX / sizeof(ProviderLibCtxCacheEntry))
+    {
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        goto error;
+    }
+
+    newCache = (ProviderLibCtxCacheEntry*)malloc(sizeof(ProviderLibCtxCacheEntry) * (g_providerLibCtxCacheCount + 1));
+
+    if (newCache == NULL)
+    {
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        goto error;
+    }
+
+    if (g_providerLibCtxCacheCount > 0)
+    {
+        memcpy(newCache, g_providerLibCtxCache, sizeof(ProviderLibCtxCacheEntry) * g_providerLibCtxCacheCount);
+    }
+
+    newCache[g_providerLibCtxCacheCount].providerName = providerNameCopy;
+    newCache[g_providerLibCtxCacheCount].libCtx = libCtx;
+    newCache[g_providerLibCtxCacheCount].prov = prov;
+
+    free(g_providerLibCtxCache);
+    g_providerLibCtxCache = newCache;
+    g_providerLibCtxCacheCount++;
+
+    result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
+    assert(!result && "Releasing the provider cache mutex failed.");
+    return libCtx;
+
+error:
+    if (newCache != NULL)
+    {
+        free(newCache);
+    }
+
+    if (providerNameCopy != NULL)
+    {
+        free(providerNameCopy);
+    }
+
+    if (prov != NULL)
+    {
+        OSSL_PROVIDER_unload(prov);
+    }
+
+    if (libCtx != NULL)
+    {
+        OSSL_LIB_CTX_free(libCtx);
+    }
+
+    result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
+    assert(!result && "Releasing the provider cache mutex failed.");
+    return NULL;
+}
 
 #endif
 
@@ -38,23 +149,12 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
     return EVP_PKEY_new();
 }
 
-void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
     if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
-
-#ifdef NEED_OPENSSL_3_0
-    if (extraHandle != NULL)
-    {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-        CryptoNative_EvpPkeyExtraHandleDestroy(extra);
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
 }
 
 int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
@@ -67,32 +167,16 @@ int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
     return EVP_PKEY_get_bits(pkey);
 }
 
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 {
     if (!pkey)
     {
         return 0;
     }
 
-#ifdef NEED_OPENSSL_3_0
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-
-    if (extra != NULL)
-    {
-        extra->refCount++;
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
-
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
 }
-#pragma clang diagnostic pop
 
 int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
 {
@@ -910,19 +994,11 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
 #ifdef NEED_OPENSSL_3_0
     *haveProvider = 1;
     EVP_PKEY* ret = NULL;
-    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
-    OSSL_PROVIDER* prov = NULL;
+    OSSL_LIB_CTX* libCtx = GetOrCreateProviderLibCtx(providerName);
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
 
     if (libCtx == NULL)
-    {
-        goto end;
-    }
-
-    prov = OSSL_PROVIDER_load(libCtx, providerName);
-
-    if (prov == NULL)
     {
         goto end;
     }
@@ -986,31 +1062,11 @@ end:
 
     if (ret == NULL)
     {
-        if (prov != NULL)
-        {
-            assert(libCtx != NULL);
-            // we still want a separate check for libCtx as only prov could be NULL
-            OSSL_PROVIDER_unload(prov);
-        }
-
-        if (libCtx != NULL)
-        {
-            OSSL_LIB_CTX_free(libCtx);
-        }
-
         *extraHandle = NULL;
     }
     else
     {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
-        extra->prov = prov;
-        extra->libCtx = libCtx;
-#if defined(TARGET_HAIKU) && defined(__clang__)
-        __c11_atomic_init(&extra->refCount, 1);
-#else
-        atomic_init(&extra->refCount, 1);
-#endif
-        *extraHandle = extra;
+        *extraHandle = libCtx;
     }
 
     return ret;
@@ -1031,8 +1087,7 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
     {
-        EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
-        OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+        OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)extraHandle;
         return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
     }
     else
