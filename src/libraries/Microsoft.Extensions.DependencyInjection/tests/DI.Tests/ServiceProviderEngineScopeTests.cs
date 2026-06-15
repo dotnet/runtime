@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService1>());
             Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService2>());
 
-            await ((IAsyncDisposable)serviceProvider).DisposeAsync();
+            await serviceProvider.DisposeAsync();
 
             Assert.Equal(1, service.DisposeCount);
         }
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _ = serviceProvider.GetRequiredService<IMultipleService2>();
             var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
 
-            await ((IAsyncDisposable)serviceProvider).DisposeAsync();
+            await serviceProvider.DisposeAsync();
 
             Assert.Equal(1, service.DisposeCount);
         }

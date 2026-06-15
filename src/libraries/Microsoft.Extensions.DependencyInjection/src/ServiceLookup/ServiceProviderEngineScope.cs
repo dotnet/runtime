@@ -165,15 +165,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             object? exceptionsCache = null;
             for (var i = toDispose.Count - 1; i >= 0; i--)
             {
-                object? disposableEntry = toDispose[i];
-                if (disposableEntry is null)
+                object? disposable = toDispose[i];
+                if (disposable is null)
                 {
                     continue;
                 }
 
                 try
                 {
-                    object disposable = disposableEntry;
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
                         ValueTask vt = asyncDisposable.DisposeAsync();
@@ -220,13 +219,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     try
                     {
-                        object? disposableEntry = toDispose[i];
-                        if (disposableEntry is null)
+                        object? disposable = toDispose[i];
+                        if (disposable is null)
                         {
                             continue;
                         }
 
-                        object disposable = disposableEntry;
                         if (disposable is IAsyncDisposable asyncDisposable)
                         {
                             await asyncDisposable.DisposeAsync().ConfigureAwait(false);
@@ -307,14 +305,40 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // ResolvedServices is never cleared for singletons because there might be a compilation running in background
             // trying to get a cached singleton service. If it doesn't find it
             // it will try to create a new one which will result in an ObjectDisposedException.
-            if (_disposables is { Count: > 0 } disposables)
+            var count = _disposables?.Count ?? 0;
+
+            if (count == 0)
+            {
+                return null;
+            }
+
+            if (count > 16)
             {
                 var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
-                for (int i = 0; i < disposables.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
-                    if (!seen.Add(disposables[i]))
+                    if (!seen.Add(_disposables[i]))
                     {
-                        disposables[i] = null!;
+                        _disposables[i] = null!;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    object? disposable = _disposables[i];
+                    if (disposable is null)
+                    {
+                        continue;
+                    }
+
+                    for (int j = i + 1; j < count; j++)
+                    {
+                        if (ReferenceEquals(disposable, _disposables[j]))
+                        {
+                            _disposables[j] = null!;
+                        }
                     }
                 }
             }
