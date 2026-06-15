@@ -42,6 +42,7 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
+        private readonly Dictionary<AllocationSite, ForeignTypeInstance> _foreignInstances = new Dictionary<AllocationSite, ForeignTypeInstance>();
         private readonly Dictionary<MetadataType, NestedPreinitResult> _nestedPreinitResults = new Dictionary<MetadataType, NestedPreinitResult>();
         private readonly Dictionary<EcmaField, byte[]> _rvaFieldDatas = new Dictionary<EcmaField, byte[]>();
 
@@ -150,6 +151,16 @@ namespace ILCompiler
         {
             if (!_rvaFieldDatas.TryGetValue(field, out byte[] result))
                 _rvaFieldDatas.Add(field, result = field.GetFieldRvaData());
+            return result;
+        }
+
+        private ForeignTypeInstance GetOrCreateForeignInstance(TypeDesc type, AllocationSite allocationSite, ReferenceTypeValue data)
+        {
+            if (!_foreignInstances.TryGetValue(allocationSite, out ForeignTypeInstance result))
+            {
+                _foreignInstances.Add(allocationSite, result = new ForeignTypeInstance(type, allocationSite, data));
+            }
+
             return result;
         }
 
@@ -2791,7 +2802,7 @@ namespace ILCompiler
                     if (_index + numSlots > _parent._methods.Length)
                         return false;
 
-                    for (int i = _index; i < numSlots; i++)
+                    for (int i = _index; i < _index + numSlots; i++)
                         _parent._methods[i] = null;
 
                     return true;
@@ -3176,7 +3187,7 @@ namespace ILCompiler
             public abstract ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext);
         }
 
-        private struct AllocationSite
+        private readonly struct AllocationSite : IEquatable<AllocationSite>
         {
             public MetadataType OwningType { get; }
             public int InstructionCounter { get; }
@@ -3186,6 +3197,14 @@ namespace ILCompiler
                 OwningType = type;
                 InstructionCounter = instructionCounter;
             }
+
+            public bool Equals(AllocationSite other) =>
+                OwningType == other.OwningType
+                && InstructionCounter == other.InstructionCounter;
+
+            public override bool Equals(object obj) => obj is AllocationSite other && Equals(other);
+
+            public override int GetHashCode() => HashCode.Combine(OwningType, InstructionCounter);
         }
 
         /// <summary>
@@ -3201,11 +3220,13 @@ namespace ILCompiler
                 AllocationSite = allocationSite;
             }
 
-            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext) =>
-                new ForeignTypeInstance(
-                    Type,
-                    new AllocationSite(AllocationSite.OwningType, AllocationSite.InstructionCounter - baseInstructionCounter),
-                    this);
+            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext)
+            {
+                AllocationSite foreignAllocationSite = new AllocationSite(
+                    AllocationSite.OwningType,
+                    AllocationSite.InstructionCounter - baseInstructionCounter);
+                return preinitContext.GetOrCreateForeignInstance(Type, foreignAllocationSite, this);
+            }
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
@@ -3274,34 +3295,34 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
-                    // _firstParameter
-                    builder.EmitPointerReloc(thisNode);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+                    // _firstParameter
+                    builder.EmitPointerReloc(thisNode);
 
                     // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
                 else
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
 
-                    // _firstParameter
-                    _firstParameter.WriteFieldData(ref builder, factory);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitZeroPointer();
+                    // _firstParameter
+                    _firstParameter.WriteFieldData(ref builder, factory);
 
                     // _functionPointer
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitZeroPointer();
                 }
             }
 
@@ -3432,7 +3453,10 @@ namespace ILCompiler
                 }
             }
 
-            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext) => this;
+            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext)
+            {
+                return preinitContext.GetOrCreateForeignInstance(Type, AllocationSite, Data);
+            }
         }
 
         private sealed class StringInstance : ReferenceTypeValue, IHasInstanceFields
@@ -3572,7 +3596,26 @@ namespace ILCompiler
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
 
-            public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
+            public bool IsKnownImmutable
+            {
+                get
+                {
+                    // Are there any instance fields?
+                    if (Type.IsValueType)
+                    {
+                        // For value types, look at the actual fields.
+                        foreach (FieldDesc f in Type.GetFields())
+                            if (!f.IsStatic)
+                                return false;
+
+                        return true;
+                    }
+
+                    // For reference types, check if the unaligned size == MethodTable pointer
+                    // since we always have at least that field in the hierarchy.
+                    return ((DefType)Type).InstanceByteCountUnaligned == Type.Context.Target.LayoutPointerSize;
+                }
+            }
 
             public int ArrayLength => throw new NotSupportedException();
         }
