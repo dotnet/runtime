@@ -49,12 +49,11 @@ namespace System.Reflection.Context
     /// the accessors to create a read-only or write-only property. Note that such dummy properties have no metadata or Common Intermediate Language (CIL) backing.
     ///
     /// > [!WARNING]
-    ///
     /// > - Be cautious about equality among reflected objects when you work with reflection contexts, because objects might represent the same reflected object in multiple
-    /// contexts. You can use the <xref:System.Reflection.Context.CustomReflectionContext.MapType*> method to obtain a particular reflection context's version of a reflected object.
+    /// >   contexts. You can use the <xref:System.Reflection.Context.CustomReflectionContext.MapType*> method to obtain a particular reflection context's version of a reflected object.
     /// > - A <xref:System.Reflection.Context.CustomReflectionContext> object alters the attributes returned by a particular reflection object, such as those obtained by the
-    /// <xref:System.Reflection.MemberInfo.GetCustomAttributes*> method. It doesn't alter the custom attribute data returned by the <xref:System.Reflection.MemberInfo.GetCustomAttributesData*>
-    /// method, and these two lists won't match when you use a custom reflection context.
+    /// >   <xref:System.Reflection.MemberInfo.GetCustomAttributes*> method. It doesn't alter the custom attribute data returned by the <xref:System.Reflection.MemberInfo.GetCustomAttributesData*>
+    /// >   method, and these two lists won't match when you use a custom reflection context.
     /// ]]></format></remarks>
     /// <example>
     /// The following example demonstrates how to subclass <xref:System.Reflection.Context.CustomReflectionContext>
