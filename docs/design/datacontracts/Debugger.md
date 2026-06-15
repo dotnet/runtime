@@ -28,6 +28,7 @@ void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
 HijackKind GetHijackKind(TargetCodePointer controlPC);
+TargetPointer GetHijackAddress();
 ```
 
 ## Version 1
@@ -187,5 +188,26 @@ HijackKind GetHijackKind(TargetCodePointer controlPC)
         }
     }
     return HijackKind.None;
+}
+
+TargetPointer GetHijackAddress()
+{
+    // Returns the start address of the unhandled-exception hijack function
+    // (index UnhandledExceptionHijackIndex == 0 in the RgHijackFunction array).
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return TargetPointer.Null;
+
+    TargetPointer rgHijack = target.ReadPointer(
+        debuggerAddress + /* Debugger::RgHijackFunction offset */);
+    if (rgHijack == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
+    if (UnhandledExceptionHijackIndex >= maxHijackFunctions)
+        return TargetPointer.Null;
+
+    uint stride = // Size of one MemoryRange entry
+    TargetPointer entryAddress = rgHijack + (ulong)(UnhandledExceptionHijackIndex * stride);
+    return target.ReadPointer(entryAddress + /* MemoryRange::StartAddress offset */);
 }
 ```

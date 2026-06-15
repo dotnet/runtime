@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Debugger_1 : IDebugger
@@ -148,5 +150,32 @@ internal readonly struct Debugger_1 : IDebugger
             }
         }
         return HijackKind.None;
+    }
+
+    TargetPointer IDebugger.GetHijackAddress()
+    {
+        return TryGetHijackFunctionRange(UnhandledExceptionHijackIndex, out Data.MemoryRange? range)
+            ? range.StartAddress
+            : TargetPointer.Null;
+    }
+
+    private bool TryGetHijackFunctionRange(uint index, [NotNullWhen(true)] out Data.MemoryRange? range)
+    {
+        range = null;
+        if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+            return false;
+
+        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
+        if (debugger.RgHijackFunction == TargetPointer.Null)
+            return false;
+
+        uint maxHijackFunctions = _target.ReadGlobal<uint>(Constants.Globals.MaxHijackFunctions);
+        if (index >= maxHijackFunctions)
+            return false;
+
+        uint stride = _target.GetTypeInfo(DataType.MemoryRange).Size!.Value;
+        TargetPointer entryAddress = debugger.RgHijackFunction + (ulong)(index * stride);
+        range = _target.ProcessedData.GetOrAdd<Data.MemoryRange>(entryAddress);
+        return true;
     }
 }

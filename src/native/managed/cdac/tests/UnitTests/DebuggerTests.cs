@@ -518,4 +518,31 @@ public class DebuggerTests
 
         Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackAddress_ReturnsUnhandledExceptionStart(MockTarget.Architecture arch)
+    {
+        // Index 0 is the unhandled-exception hijack; GetHijackAddress returns its start address.
+        (ulong Start, ulong Size)[] ranges =
+        [
+            (0x10_0000, 0x100),
+            (0x20_0000, 0x100),
+        ];
+        Target target = BuildTargetWithHijackTable(arch, ranges);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(0x10_0000ul, debugger.GetHijackAddress().Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackAddress_ReturnsNullWhenTableEmpty(MockTarget.Architecture arch)
+    {
+        // FEATURE_HIJACK off / uninitialized: MaxHijackFunctions == 0, no array.
+        Target target = BuildTargetWithHijackTable(arch, []);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(TargetPointer.Null, debugger.GetHijackAddress());
+    }
 }

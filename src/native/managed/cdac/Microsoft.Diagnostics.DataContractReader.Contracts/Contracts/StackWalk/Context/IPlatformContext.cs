@@ -20,6 +20,13 @@ public interface IPlatformContext
 
     void Unwind(Target target);
 
+    /// <summary>
+    /// Clears the hardware single-step (trace) flag in the context, if the architecture
+    /// supports a hardware single-step flag. Architectures that emulate single-stepping
+    /// throw <see cref="System.NotSupportedException"/>.
+    /// </summary>
+    void UnsetSingleStepFlag();
+
     bool TrySetRegister(string name, TargetNUInt value);
     bool TryReadRegister(string name, out TargetNUInt value);
 
