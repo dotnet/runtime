@@ -201,6 +201,12 @@ CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::Me
 CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
 CDAC_TYPE_END(Delegate)
 
+CDAC_TYPE_BEGIN(TypedByRef)
+CDAC_TYPE_INDETERMINATE(TypedByRef)
+CDAC_TYPE_FIELD(TypedByRef, T_POINTER, Data, offsetof(TypedByRef, data))
+CDAC_TYPE_FIELD(TypedByRef, EXTERN_TYPE(TypeHandle), Type, offsetof(TypedByRef, type))
+CDAC_TYPE_END(TypedByRef)
+
 CDAC_TYPE_BEGIN(StackTraceArrayHeader)
 CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
 CDAC_TYPE_FIELD(StackTraceArrayHeader, T_UINT32, Size, cdac_data<StackTraceArray>::Size)
@@ -220,9 +226,6 @@ CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCW, cdac_data<InteropSyncBlock
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_OBJCMARSHAL
-CDAC_TYPE_FIELD(InteropSyncBlockInfo, T_POINTER, TaggedMemory, cdac_data<InteropSyncBlockInfo>::TaggedMemory)
-#endif // FEATURE_OBJCMARSHAL
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
