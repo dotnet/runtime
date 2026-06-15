@@ -58,6 +58,23 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
 
+  <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
+       Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
+       Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
+               DOTNET_EventPipeThreadSamplingRate=<ms> (if interval= specified) -->
+  <PropertyGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval></_WasmPerfInstInterval>
+    <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
+    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
+  </ItemGroup>
+
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
 
@@ -92,6 +109,7 @@
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
     </PropertyGroup>
 
     <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
@@ -405,7 +423,8 @@
       <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasmIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
       <_WasmPInvokeModules Include="libSystem.Native.Browser" />
       <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
     </ItemGroup>
@@ -433,6 +452,7 @@
     <ManagedToNativeGenerator
       Assemblies="@(_WasmManagedAssemblies)"
       PInvokeModules="@(_WasmPInvokeModules)"
+      IgnoredPInvokeModules="@(_WasmIgnoredPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
@@ -532,11 +552,10 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
-      <!-- Use Condition="'$(InvariantGlobalization)' != 'true'" after fix for https://github.com/dotnet/runtime/issues/129242 -->
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" Condition="'$(InvariantGlobalization)' != 'true'" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 
@@ -610,8 +629,9 @@
 
       <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLinkStepArgs Include="-lexports.js" />
-      <!-- Ensure the __stack_pointer global is exported -->
+      <!-- Ensure the CoreCLR WASM globals/tags are exported -->
       <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
+      <_EmccLinkStepArgs Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />

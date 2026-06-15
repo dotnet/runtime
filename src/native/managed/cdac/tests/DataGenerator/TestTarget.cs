@@ -199,6 +199,9 @@ internal sealed class TestTarget : Target
     public override TargetNUInt ReadNUInt(ulong address)
         => new TargetNUInt(PointerSize == 8 ? Read<ulong>(address) : Read<uint>(address));
 
+    public override TargetNInt ReadNInt(ulong address)
+        => new TargetNInt(PointerSize == 8 ? Read<long>(address) : Read<int>(address));
+
     public override void Write<T>(ulong address, T value)
     {
         Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
