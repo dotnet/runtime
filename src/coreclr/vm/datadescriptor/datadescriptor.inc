@@ -1041,8 +1041,15 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, VersionId, cdac_data<ILCodeVersionNo
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
+CDAC_TYPE_FIELD(ILCodeVersionNode, TYPE(InstrumentedILOffsetMapping), InstrumentedILMap, cdac_data<ILCodeVersionNode>::InstrumentedILMap)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
 CDAC_TYPE_END(ILCodeVersionNode)
+
+CDAC_TYPE_BEGIN(InstrumentedILOffsetMapping)
+CDAC_TYPE_INDETERMINATE(InstrumentedILOffsetMapping)
+CDAC_TYPE_FIELD(InstrumentedILOffsetMapping, T_UINT32, Count, cdac_data<InstrumentedILOffsetMapping>::Count)
+CDAC_TYPE_FIELD(InstrumentedILOffsetMapping, T_POINTER, Map, cdac_data<InstrumentedILOffsetMapping>::Map)
+CDAC_TYPE_END(InstrumentedILOffsetMapping)
 #endif // FEATURE_CODE_VERSIONING
 
 #ifdef PROFILING_SUPPORTED

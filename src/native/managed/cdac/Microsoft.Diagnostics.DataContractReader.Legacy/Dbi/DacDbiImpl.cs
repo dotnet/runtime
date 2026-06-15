@@ -4357,7 +4357,52 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetILCodeVersionNodeData(ulong ilCodeVersionNode, DacDbiSharedReJitInfo* pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pData is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pData));
+            if (_target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit))
+            {
+                ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+                ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(ilCodeVersionNode);
+
+                pData->pbIL = codeVersions.GetIL(ilCodeVersion).Value;
+                if (codeVersions.TryGetInstrumentedILMap(ilCodeVersion, out uint mapEntryCount, out TargetPointer mapEntries))
+                {
+                    pData->cInstrumentedMapEntries = mapEntryCount;
+                    pData->rgInstrumentedMapEntries = mapEntries.Value;
+                }
+                else
+                {
+                    pData->cInstrumentedMapEntries = 0;
+                    pData->rgInstrumentedMapEntries = 0;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiSharedReJitInfo dataLocal = default;
+            int hrLocal = _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pData->pbIL == dataLocal.pbIL, $"cDAC: {pData->pbIL:x}, DAC: {dataLocal.pbIL:x}");
+                Debug.Assert(pData->cInstrumentedMapEntries == dataLocal.cInstrumentedMapEntries, $"cDAC: {pData->cInstrumentedMapEntries:x}, DAC: {dataLocal.cInstrumentedMapEntries:x}");
+                Debug.Assert(pData->rgInstrumentedMapEntries == dataLocal.rgInstrumentedMapEntries, $"cDAC: {pData->rgInstrumentedMapEntries:x}, DAC: {dataLocal.rgInstrumentedMapEntries:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     public int EnableGCNotificationEvents(Interop.BOOL fEnable)
     {

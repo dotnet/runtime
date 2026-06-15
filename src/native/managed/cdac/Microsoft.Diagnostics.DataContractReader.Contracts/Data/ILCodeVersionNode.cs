@@ -11,4 +11,5 @@ internal sealed partial class ILCodeVersionNode : IData<ILCodeVersionNode>
     [Field] public uint RejitState { get; }
     [Field] public TargetPointer ILAddress { get; }
     [Field] public uint Deoptimized { get; }
+    [FieldAddress] public TargetPointer InstrumentedILMap { get; }
 }
