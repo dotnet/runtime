@@ -13759,8 +13759,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             default:
                 unreached();
         }
-        intrinsic->gtVNPair =
-            vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), vnf, arg0VNP), arg0VNPx);
+        intrinsic->gtVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), vnf, arg0VNP), arg0VNPx);
     }
     else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
     {

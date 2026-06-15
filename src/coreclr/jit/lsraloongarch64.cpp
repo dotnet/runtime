@@ -311,14 +311,10 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_INTRINSIC:
         {
             NamedIntrinsic intrinsicName = tree->AsIntrinsic()->gtIntrinsicName;
-            noway_assert((intrinsicName == NI_System_Math_Abs) ||
-                         (intrinsicName == NI_System_Math_Ceiling) ||
-                         (intrinsicName == NI_System_Math_Floor) ||
-                         (intrinsicName == NI_System_Math_MaxNative) ||
-                         (intrinsicName == NI_System_Math_MinNative) ||
-                         (intrinsicName == NI_System_Math_Round) ||
-                         (intrinsicName == NI_System_Math_Sqrt) ||
-                         (intrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
+            noway_assert((intrinsicName == NI_System_Math_Abs) || (intrinsicName == NI_System_Math_Ceiling) ||
+                         (intrinsicName == NI_System_Math_Floor) || (intrinsicName == NI_System_Math_MaxNative) ||
+                         (intrinsicName == NI_System_Math_MinNative) || (intrinsicName == NI_System_Math_Round) ||
+                         (intrinsicName == NI_System_Math_Sqrt) || (intrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
                          (intrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
                          (intrinsicName == NI_PRIMITIVE_SaturateToUInt8) ||
                          (intrinsicName == NI_PRIMITIVE_SaturateToUInt16));

@@ -347,8 +347,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ false);
 #else  // TARGET_WASM
-                // WASM f32.min/f64.min propagate NaN; use GT_INTRINSIC nodes which
-                // lower to native WebAssembly min/max instructions.
+       // WASM f32.min/f64.min propagate NaN; use GT_INTRINSIC nodes which
+       // lower to native WebAssembly min/max instructions.
                 const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
                 oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMin, srcType), oper,
                                                                  NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
