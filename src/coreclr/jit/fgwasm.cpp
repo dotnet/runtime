@@ -1726,7 +1726,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                             if (slot.byRef != def->TypeIs(TYP_BYREF))
                                 continue;
 
-                            spillSlot   = slot.lclNum;
+                            spillSlot  = slot.lclNum;
                             slot.inUse = true;
                             break;
                         }
