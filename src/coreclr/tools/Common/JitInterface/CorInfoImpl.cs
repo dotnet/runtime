@@ -738,10 +738,6 @@ namespace Internal.JitInterface
         private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
-#if DEBUG
-        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
-#endif
-
         private IntPtr ObjectToHandle(object obj)
         {
             // MethodILScopes need to go through ObjectToHandle(MethodILScope methodIL).
@@ -757,9 +753,6 @@ namespace Internal.JitInterface
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
-#if DEBUG
-                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
-#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -769,9 +762,6 @@ namespace Internal.JitInterface
         private object HandleToObject(void* handle)
         {
             Debug.Assert(handle != null);
-#if DEBUG
-            handle = (void*)(~s_handleHighBitSet & (nint)handle);
-#endif
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
