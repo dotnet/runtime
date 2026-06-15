@@ -129,6 +129,10 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
     // compact unwind has no PAC state to parse.
     if ((pNativeMethodInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF)
     {
+        pPacFrameInfo->hasPac = false;
+        pPacFrameInfo->cfaOffset = 0;
+        pPacFrameInfo->lrOffset = INT_MIN;
+        pPacFrameInfo->pacCfaOffset = 0;
         return true;
     }
 #endif // TARGET_APPLE
@@ -1413,7 +1417,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
 
 #if defined(TARGET_ARM64)
-    PacFrameInfo pacFrameInfo = { false, 0, INT_MIN, 0 };
+    PacFrameInfo pacFrameInfo;
     bool hasPacFrameInfo = TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo);
     bool pacPresent = hasPacFrameInfo && pacFrameInfo.hasPac;
     if (pacPresent)
