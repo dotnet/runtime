@@ -2216,6 +2216,12 @@ class SuperPMIReplayAsmDiffs:
                 "-jitoption", "force", "AltJitNgen=*"
             ]
 
+        if self.coreclr_args.target_arch == "wasm":
+            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+            altjit_replay_flags += [
+                "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+            ]
+
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []
         files_with_replay_failures = []
@@ -2297,10 +2303,16 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.target_arch == "wasm":
                         flags += [
                             "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
+                        ]
+
+                # TODO: Remove this (and add under the above ignoreStoredConfig option)
+                # once we have collections which include JitWasmSimdNyiToR2RUnsupported
+                if self.coreclr_args.target_arch == "wasm":
+                    flags += [
                             "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
                             "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
-                        ]
+                    ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
