@@ -1004,7 +1004,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 
     // Go get this particular field.
     IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData));
-    _ASSERTE(fStatic == fieldData.m_fFldIsStatic);
+    _ASSERTE((fStatic != 0) == fieldData.m_fFldIsStatic);
 
     // Save the field results in our cache and get a stable pointer to the data
     if (fStatic)
