@@ -156,7 +156,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       Command="&quot;$(_FindVCVarsallVSWherePath)&quot; -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix) -property installationVersion"
       ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallVSInstallationVersion" />
-      <Output TaskParameter="ExitCode" PropertyName="_FindVCVarsallVSInstallationVersionExitCode" />
     </Exec>
 
     <ReadLinesFromFile Condition="'$(IlcUseEnvironmentalTools)' != 'true' and Exists('$(_FindVCVarsallCacheFile)')"
