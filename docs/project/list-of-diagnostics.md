@@ -274,7 +274,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1226`__ | 'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations. |
 |  __`SYSLIB1227`__ | Union case types cannot be unambiguously classified by JSON value type. |
 |  __`SYSLIB1228`__ | Union type shape is not a valid C# union. |
-|  __`SYSLIB1229`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1229`__ | Open generic derived type could not be resolved for the polymorphic base type. |
 |  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
 |  __`SYSLIB1231`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1232`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |

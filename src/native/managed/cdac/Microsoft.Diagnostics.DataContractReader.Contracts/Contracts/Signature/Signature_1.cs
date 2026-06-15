@@ -25,7 +25,7 @@ internal sealed class Signature_1 : ISignature
         _target = target;
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _thProviders.Clear();
     }

@@ -19,8 +19,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly TargetPointer _objectMethodTablePointer;
-    private readonly TargetPointer _continuationMethodTablePointer;
-    private readonly TargetPointer _continuationSingletonEEClassPointer;
+    private TargetPointer _continuationMethodTablePointer;
+    private TargetPointer _continuationSingletonEEClassPointer;
+    private readonly TargetPointer _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -31,7 +32,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _methodTables.Clear();
         _methodDescs.Clear();
@@ -71,21 +72,23 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private readonly struct TypeKey : IEquatable<TypeKey>
     {
-        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs)
+        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs, SignatureCallingConvention callConv = SignatureCallingConvention.Default)
         {
             TypeHandle = typeHandle;
             ElementType = elementType;
             Rank = rank;
             TypeArgs = typeArgs;
+            CallConv = callConv;
         }
         public TypeHandle TypeHandle { get; }
         public CorElementType ElementType { get; }
         public int Rank { get; }
         public ImmutableArray<TypeHandle> TypeArgs { get; }
+        public SignatureCallingConvention CallConv { get; }
 
         public bool Equals(TypeKey other)
         {
-            if (ElementType != other.ElementType || Rank != other.Rank || TypeArgs.Length != other.TypeArgs.Length)
+            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length || !TypeHandle.Equals(other.TypeHandle))
                 return false;
             for (int i = 0; i < TypeArgs.Length; i++)
             {
@@ -99,7 +102,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public override int GetHashCode()
         {
-            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank);
+            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank, (int)CallConv);
             foreach (TypeHandle th in TypeArgs)
             {
                 hash = HashCode.Combine(hash, th.GetHashCode());
@@ -423,6 +426,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
         _continuationSingletonEEClassPointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
+        _multicastDelegateMethodTablePointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -431,7 +436,29 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
     internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
-    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+    internal TargetPointer ContinuationMethodTablePointer
+    {
+        get
+        {
+            if (_continuationMethodTablePointer != TargetPointer.Null)
+                return _continuationMethodTablePointer;
+            _continuationMethodTablePointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
+            return _continuationMethodTablePointer;
+        }
+    }
+
+    internal TargetPointer ContinuationSingletonEEClassPointer
+    {
+        get
+        {
+            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
+                return _continuationSingletonEEClassPointer;
+            _continuationSingletonEEClassPointer = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
+            return _continuationSingletonEEClassPointer;
+        }
+    }
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -521,6 +548,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
 
+    public uint GetNumInstanceFieldBytes(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize - GetClassData(typeHandle).BaseSizePadding;
+
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
     public TargetPointer GetClassPointer(TypeHandle typeHandle)
@@ -564,10 +593,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
-        && _continuationMethodTablePointer != TargetPointer.Null
-        && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer
-        && _continuationSingletonEEClassPointer != TargetPointer.Null
-        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
+        && ContinuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
+        && ContinuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == ContinuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
     {
@@ -928,6 +957,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask) == MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
     }
 
+    public bool IsDelegate(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        TargetPointer parentMT = GetParentMethodTable(typeHandle);
+        return parentMT == _multicastDelegateMethodTablePointer;
+    }
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public bool IsArray(TypeHandle typeHandle, out uint rank)
     {
@@ -1020,6 +1058,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
+    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
+    {
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
+            return false;
+        if (candidateCallConv != callConv)
+            return false;
+        if (candidateRetAndArgs.Length != retAndArgTypes.Length)
+            return false;
+        for (int i = 0; i < candidateRetAndArgs.Length; i++)
+        {
+            if (candidateRetAndArgs[i].Address != retAndArgTypes[i].Address)
+                return false;
+        }
+        return true;
+    }
+
     private bool IsLoaded(TypeHandle typeHandle)
     {
         if (typeHandle.Address == TargetPointer.Null)
@@ -1035,14 +1089,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
-    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        if (typeHandle.Address == TargetPointer.Null && corElementType != CorElementType.FnPtr)
             return new TypeHandle(TargetPointer.Null);
-        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments), out TypeHandle existing))
+        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), out TypeHandle existing))
             return existing;
         ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer loaderModule = GetLoaderModule(typeHandle);
+        TargetPointer loaderModule;
+        if (corElementType == CorElementType.FnPtr)
+            loaderModule = FindFnPtrLoaderModule(typeArguments);
+        else
+            loaderModule = GetLoaderModule(typeHandle);
+
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         TypeHandle potentialMatch;
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
@@ -1056,6 +1115,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return potentialMatch;
                 }
             }
+            else if (corElementType == CorElementType.FnPtr)
+            {
+                if (FnPtrMatch(potentialMatch, typeArguments, callConv) && IsLoaded(potentialMatch))
+                {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), potentialMatch);
+                    return potentialMatch;
+                }
+            }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
             {
                 _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
@@ -1063,6 +1130,54 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
         }
         return new TypeHandle(TargetPointer.Null);
+    }
+
+    // Mirrors the native algorithm
+    // ClassLoader::ComputeLoaderModuleForFunctionPointer: the loader module is the collectible
+    // ret/arg type's loader module with the largest LoaderAllocator creation number, or CoreLib's
+    // loader module if none of the ret/arg types are collectible.
+    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
+    {
+        ILoader loaderContract = _target.Contracts.Loader;
+
+        TargetPointer loaderModulePtr = TargetPointer.Null;
+        ulong latestFoundNumber = 0;
+        bool anyCollectible = false;
+
+        foreach (TypeHandle arg in retAndArgTypes)
+        {
+            if (arg.Address == TargetPointer.Null)
+                continue;
+
+            TargetPointer argModulePtr = GetLoaderModule(arg);
+            if (argModulePtr == TargetPointer.Null)
+                continue;
+
+            ModuleHandle argModuleHandle = loaderContract.GetModuleHandleFromModulePtr(argModulePtr);
+            TargetPointer argLoaderAllocator = loaderContract.GetLoaderAllocator(argModuleHandle);
+            if (argLoaderAllocator == TargetPointer.Null)
+                continue;
+
+            Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(argLoaderAllocator);
+            if (!loaderAllocator.IsCollectible)
+                continue;
+
+            if (!anyCollectible || loaderAllocator.CreationNumber > latestFoundNumber)
+            {
+                anyCollectible = true;
+                latestFoundNumber = loaderAllocator.CreationNumber;
+                loaderModulePtr = argModulePtr;
+            }
+        }
+
+        if (!anyCollectible)
+        {
+            TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
+            ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
+            loaderModulePtr = loaderContract.GetModule(coreLibModuleHandle);
+        }
+
+        return loaderModulePtr;
     }
 
     TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)
@@ -1095,7 +1210,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
-    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
     {
         retAndArgTypes = default;
         callConv = default;
@@ -1110,7 +1225,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
         retAndArgTypes = _target.ProcessedData.GetOrAdd<FunctionPointerRetAndArgs>(typeHandle.TypeDescAddress()).TypeHandles;
-        callConv = (byte)fnPtrTypeDesc.CallConv;
+        callConv = (SignatureCallingConvention)fnPtrTypeDesc.CallConv;
         return true;
     }
 
@@ -1125,6 +1240,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public bool IsTypeDesc(TypeHandle typeHandle) => typeHandle.IsTypeDesc();
+
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        Data.TypedByRef typedByRefData = _target.ProcessedData.GetOrAdd<Data.TypedByRef>(typedByRef);
+        return new TypedByRefInfo(typedByRefData.Data, typedByRefData.Type);
+    }
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
@@ -1252,7 +1373,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (methodDesc.IsStatic)
             return true;
 
-        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        MethodTable mt = GetOrCreateMethodTable(methodDesc);
         if (mt.Flags.IsValueType)
             return true;
 
@@ -1292,7 +1413,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // Check class-level sharing: canonical MethodTable with generic instantiation
-        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        MethodTable mt = GetOrCreateMethodTable(methodDesc);
         return mt.IsCanonMT && mt.Flags.HasInstantiation;
     }
 
@@ -1304,7 +1425,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (EcmaMetadataUtils.GetRowId(token) == 0)
             return false;
 
-        TargetPointer modulePtr = _methodTables[methodDesc.MethodTable].Module;
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
         MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
         if (mdReader is null)
@@ -1898,7 +2019,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
     }
 
-    private bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+    bool IRuntimeTypeSystem.IsFieldDescRVA(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
@@ -1917,12 +2038,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (CorElementType)((fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> TYPE_MASK_OFFSET);
     }
 
-    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef)
+    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
         if (fieldDesc.DWord2 == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
         {
-            return (uint)fieldDef.GetRelativeVirtualAddress();
+            if (fieldDef is null)
+                throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
+            return (uint)fieldDef.Value.GetRelativeVirtualAddress();
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
     }
@@ -2023,7 +2146,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
-        bool isRVA = IsFieldDescRVA(fieldDescPointer);
+        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {

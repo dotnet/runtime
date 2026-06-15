@@ -59,7 +59,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             return false;
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
 
         switch (parentNode->OperGet())
         {
@@ -477,70 +477,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
     return node->gtNext;
-}
-
-//------------------------------------------------------------------------
-// LowerBlockStore: Set block store type
-//
-// Arguments:
-//    blkNode       - The block store node of interest
-//
-// Return Value:
-//    None.
-//
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    assert(blkNode->OperIsInitBlkOp());
-    GenTree* dstAddr = blkNode->Addr();
-    GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
-
-    if (src->OperIs(GT_INIT_VAL))
-    {
-        src->SetContained();
-        src = src->AsUnOp()->gtGetOp1();
-    }
-
-    if ((size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-        // The fill value of an initblk is interpreted to hold a
-        // value of (unsigned int8) however a constant of any size
-        // may practically reside on the evaluation stack. So extract
-        // the lower byte out of the initVal constant and replicate
-        // it to a larger constant whose size is sufficient to support
-        // the largest width store of the desired inline expansion.
-
-        ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
-        if (fill == 0)
-        {
-            src->SetContained();
-        }
-        else if (size >= REGSIZE_BYTES)
-        {
-            fill *= 0x0101010101010101LL;
-            src->gtType = TYP_LONG;
-        }
-        else
-        {
-            fill *= 0x01010101;
-        }
-        src->AsIntCon()->SetIconValue(fill);
-
-        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-    }
-    else if (blkNode->IsZeroingGcPointersOnHeap())
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-        // We're going to use REG_R0 for zero
-        src->SetContained();
-    }
-    else
-    {
-        LowerBlockStoreAsHelperCall(blkNode);
-        return;
-    }
 }
 
 //------------------------------------------------------------------------

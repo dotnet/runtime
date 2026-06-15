@@ -38,19 +38,15 @@ struct FloatTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0f / 0.0f on x86/x64 has
     //    different binary representation (0xffc00000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7fc00000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7fc00000).
 
     static float NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // WASM uses the canonical NaN payload, matching ARM.
         unsigned bits = 0x7FC00000u;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("FloatTraits::NaN");
-        unsigned bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -69,19 +65,15 @@ struct DoubleTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0 / 0.0 on x86/x64 has
     //    different binary representation (0xfff8000000000000) than NaN on
-    //    ARM32/ARM64/LoongArch64 (0x7ff8000000000000).
+    //    ARM32/ARM64/LoongArch64/RISC-V 64/WASM (0x7ff8000000000000).
 
     static double NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+        // WASM uses the canonical NaN payload, matching ARM.
         unsigned long long bits = 0x7FF8000000000000ull;
-#elif defined(TARGET_WASM)
-        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
-        // NaN values. We may need to introduce a new "unknown" value to be returned here.
-        NYI_WASM("DoubleTraits::NaN");
-        unsigned long long bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -96,7 +88,7 @@ struct DoubleTraits
 // FpAdd: Computes value1 + value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 + value2  - Otherwise
 //
 // Notes:
@@ -105,7 +97,7 @@ struct DoubleTraits
 template <typename TFp, typename TFpTraits>
 TFp FpAdd(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // If [value1] is negative infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is positive infinity and [value2] is negative infinity
@@ -123,7 +115,7 @@ TFp FpAdd(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 + value2;
 }
@@ -132,7 +124,7 @@ TFp FpAdd(TFp value1, TFp value2)
 // FpSub: Computes value1 - value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 - value2  - Otherwise
 //
 // Notes:
@@ -141,7 +133,7 @@ TFp FpAdd(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpSub(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // If [value1] is positive infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is negative infinity and [value2] is negative infinity
@@ -159,7 +151,7 @@ TFp FpSub(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 - value2;
 }
@@ -168,7 +160,7 @@ TFp FpSub(TFp value1, TFp value2)
 // FpMul: Computes value1 * value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 * value2  - Otherwise
 //
 // Notes:
@@ -177,7 +169,7 @@ TFp FpSub(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpMul(TFp value1, TFp value2)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // From the ECMA standard:
     //
     // If [value1] is zero and [value2] is infinity
@@ -193,7 +185,7 @@ TFp FpMul(TFp value1, TFp value2)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return value1 * value2;
 }
@@ -202,7 +194,7 @@ TFp FpMul(TFp value1, TFp value2)
 // FpDiv: Computes value1 / value2
 //
 // Return Value:
-//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    TFpTraits::NaN() - If target is ARM32/ARM64/LoongArch64/RISC-V 64/WASM and result value is NaN
 //    value1 / value2  - Otherwise
 //
 // Notes:
@@ -211,7 +203,7 @@ TFp FpMul(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpDiv(TFp dividend, TFp divisor)
 {
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // From the ECMA standard:
     //
     // If [dividend] is zero and [divisor] is zero
@@ -228,7 +220,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
 
     return dividend / divisor;
 }
@@ -2052,9 +2044,13 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             var_types castToType;
             bool      srcIsUnsigned;
             GetCastOperFromVN(castInfoVN, &castToType, &srcIsUnsigned);
-            if ((castToType == TYP_LONG) && !srcIsUnsigned && TypeOfVN(srcVN) == TYP_INT)
+            if ((genActualType(castToType) == TYP_LONG) && (TypeOfVN(srcVN) == TYP_INT))
             {
-                return srcVN;
+                // A zero-extending cast preserves the sign-extended value only when the source is non-negative.
+                if (!srcIsUnsigned || IsVNNeverNegative(srcVN))
+                {
+                    return srcVN;
+                }
             }
         }
 
@@ -2574,12 +2570,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 if (funcApp.FuncIs(VNF_NOT))
                 {
                     *resultVN = funcApp.GetArg(0);
-                }
-                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
-                //
-                else if (VNFuncIsComparison(funcApp.GetFunc()))
-                {
-                    *resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
                 }
             }
         }
@@ -5279,6 +5269,18 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         return resultVN; // return the unsuccessful value
     }
 
+    // Narrow "(long)x <cmp> (long)y" to an int comparison when both operands are just
+    // sign-extended ints; only TYP_INT comparisons feed assertion prop / bounds checks.
+    if (VNFuncIsComparison(func) && (TypeOfVN(arg0VN) == TYP_LONG) && (TypeOfVN(arg1VN) == TYP_LONG))
+    {
+        ValueNum newArg0VN = VNIgnoreIntToLongCast(arg0VN);
+        ValueNum newArg1VN = VNIgnoreIntToLongCast(arg1VN);
+        if ((TypeOfVN(newArg0VN) == TYP_INT) && (TypeOfVN(newArg1VN) == TYP_INT))
+        {
+            return VNForFunc(TYP_INT, func, newArg0VN, newArg1VN);
+        }
+    }
+
     ValueNum cnsVN = NoVN;
     ValueNum opVN  = NoVN;
 
@@ -6458,7 +6460,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
     if (opB->OperIs(GT_CNS_INT))
     {
-        return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
+        return ExtendPtrVN(opA, opB->AsIntCon()->GetFieldSeq(), opB->AsIntCon()->IconValue());
     }
 
     return NoVN;
@@ -7075,6 +7077,30 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
+            // Some HWIntrinsic functions have known result ranges that can be queried via flags.
+#if defined(FEATURE_HW_INTRINSICS)
+            NamedIntrinsic id;
+            unsigned       simdSize;
+            var_types      simdBaseType;
+            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
+            {
+                if (HWIntrinsicInfo::ReturnsBoolean(id))
+                {
+                    // A boolean [0, 1]
+                    return VNVisit::Continue;
+                }
+
+                if (HWIntrinsicInfo::ReturnsScalarT(id))
+                {
+                    // We are extracting a value of the base types width and sign
+                    if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
+                    {
+                        return VNVisit::Continue;
+                    }
+                }
+            }
+#endif // FEATURE_HW_INTRINSICS
+
             switch (funcApp.GetFunc())
             {
                 case VNF_GT:
@@ -7088,35 +7114,81 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_LE_UN:
                 case VNF_LT_UN:
                 case VNF_MDArrLowerBound:
-#ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_XARCH
+                {
+                    return VNVisit::Continue;
+                }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+                case VNF_HWI_Vector256_ExtractMostSignificantBits:
+                case VNF_HWI_Vector512_ExtractMostSignificantBits:
+                case VNF_HWI_X86Base_MoveMask:
+                case VNF_HWI_AVX_MoveMask:
+                case VNF_HWI_AVX2_MoveMask:
+                case VNF_HWI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+                case VNF_HWI_Vector64_ExtractMostSignificantBits:
+#endif
+                case VNF_HWI_Vector128_ExtractMostSignificantBits:
+                {
+                    // We have 1 bit per element, remaining upper bits are 0
+
+                    var_types simdBaseType;
+                    uint32_t  simdSize = GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                    size_t elementSize  = genTypeSize(simdBaseType);
+                    size_t elementCount = simdSize / elementSize;
+
+                    if (elementCount <= 16)
+                    {
+                        return VNVisit::Continue;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
                 case VNF_HWI_AVX2_LeadingZeroCount:
                 case VNF_HWI_AVX2_TrailingZeroCount:
                 case VNF_HWI_AVX2_X64_LeadingZeroCount:
                 case VNF_HWI_AVX2_X64_TrailingZeroCount:
-                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
-                case VNF_HWI_AdvSimd_PopCount:
-                case VNF_HWI_AdvSimd_LeadingZeroCount:
-                case VNF_HWI_AdvSimd_LeadingSignCount:
                 case VNF_HWI_ArmBase_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                    return VNVisit::Continue;
+#else
+#error Unsupported platform
 #endif
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
+                    // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
                 case VNF_XOR:
+                {
                     if (IsVNLog2(vn))
                     {
                         return VNVisit::Continue;
                     }
                     break;
-
+                }
 #endif // FEATURE_HW_INTRINSICS
 
+                case VNF_LeadingZeroCount:
+                case VNF_PopCount:
+                case VNF_TrailingZeroCount:
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
                 default:
+                {
                     break;
+                }
             }
         }
         return VNVisit::Abort;
@@ -10548,28 +10620,47 @@ bool ValueNumStore::IsVNHWIntrinsicFunc(
         return false;
     }
 
-    assert(funcApp->GetArity() != 0);
-    VNFuncApp simdType;
-
-    if (!GetVNFunc(funcApp->GetArg(funcApp->GetArity() - 1), &simdType))
-    {
-        return false;
-    }
-
-    assert(simdType.FuncIs(VNF_SimdType));
-    assert(simdType.GetArity() == 2);
-    assert(IsVNConstant(simdType.GetArg(0)));
-    assert(IsVNConstant(simdType.GetArg(1)));
-
-    *intrinsicId  = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
-    *simdSize     = static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    *intrinsicId = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
+    *simdSize    = GetVNHWIntrinsicSizeAndBaseType(*funcApp, simdBaseType);
 
     return true;
 #else
     return false;
 #endif // FEATURE_HW_INTRINSICS
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------
+// GetVNHWIntrinsicSizeAndBaseType: Gets the simdSize and simdBaseType of a HWIntrinsic funcApp
+//
+// Arguments:
+//    funcApp         - The function application
+//    simdBaseType    - The simd base type for the intrinsic.
+//
+// Return Value:
+//    The simd size of the intrinsic.
+//
+uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType)
+{
+    assert((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST));
+    assert(simdBaseType != nullptr);
+
+    assert(funcApp.GetArity() != 0);
+    VNFuncApp simdType;
+
+    // All HWIntrinsic funcApps must encode the simdSize and baseType
+    bool succeeded = GetVNFunc(funcApp.GetArg(funcApp.GetArity() - 1), &simdType);
+    assert(succeeded);
+
+    assert(simdType.FuncIs(VNF_SimdType));
+    assert(simdType.GetArity() == 2);
+    assert(IsVNConstant(simdType.GetArg(0)));
+    assert(IsVNConstant(simdType.GetArg(1)));
+
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    return static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
+}
+#endif // FEATURE_HW_INTRINSICS
 
 bool ValueNumStore::VNIsValid(ValueNum vn)
 {
@@ -12266,13 +12357,13 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 const GenTreeIntCon* cns         = tree->AsIntCon();
                 const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->gtCompileTimeHandle != 0))
+                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->GetCompileTimeHandle() != 0))
                 {
                     // Skip registration when gtCompileTimeHandle is unknown (e.g., the node was created by
                     // BashToConst+gtFlags|=GTF_ICON_CLASS_HDL in optConstantAssertionProp). Overwriting an
                     // existing valid mapping with 0 would poison the map for any constant assertion-based
                     // re-flagging that happens to share the same iconValue as a real embedded handle node.
-                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
+                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->GetCompileTimeHandle());
                 }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
@@ -12415,18 +12506,18 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 //
 void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 {
-    if (tree->gtFieldSeq == nullptr)
+    if (tree->GetFieldSeq() == nullptr)
     {
         return;
     }
 
-    if (tree->gtFieldSeq->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
+    if (tree->GetFieldSeq()->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
     {
         return;
     }
 
     // For now we're interested only in SimpleStaticKnownAddress
-    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->GetFieldSeq());
 }
 
 //------------------------------------------------------------------------
@@ -12645,10 +12736,10 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
     if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if ((cns2->gtFieldSeq != nullptr) && (cns2->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
+        if ((cns2->GetFieldSeq() != nullptr) && (cns2->GetFieldSeq()->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
-            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
-            *pFseq      = cns2->gtFieldSeq;
+            *byteOffset = cns2->IconValue() - cns2->GetFieldSeq()->GetOffset();
+            *pFseq      = cns2->GetFieldSeq();
             return true;
         }
     }
@@ -13139,10 +13230,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // Special case: for initialized non-null 'static readonly' fields we want to keep field
                         // sequence to be able to fold their value
                         if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
-                            (addr->AsIntCon()->gtFieldSeq != nullptr) &&
-                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue()))
+                            (addr->AsIntCon()->GetFieldSeq() != nullptr) &&
+                            (addr->AsIntCon()->GetFieldSeq()->GetOffset() == addr->AsIntCon()->IconValue()))
                         {
-                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
+                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->GetFieldSeq()));
                         }
 
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
@@ -13603,6 +13694,10 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
+    }
+    else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
+    {
+        intrinsic->gtVNPair = vnStore->VNPUniqueWithExc(intrinsic->TypeGet(), arg0VNPx);
     }
     else
     {

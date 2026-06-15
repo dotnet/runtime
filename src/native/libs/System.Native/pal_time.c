@@ -91,7 +91,7 @@ int64_t SystemNative_GetLowResolutionTimestamp(void)
 
 int64_t SystemNative_GetBootTimeTicks(void)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     struct timespec ts;
 
     int result = clock_gettime(CLOCK_BOOTTIME, &ts);

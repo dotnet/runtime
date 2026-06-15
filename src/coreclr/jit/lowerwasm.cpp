@@ -288,14 +288,14 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStore: Lower a block init node (memset / loop zeroing).
+// LowerInitBlockStore: Lower a block init node (memset / loop zeroing) for WASM.
 //   The copy variant (non-InitBlkOp) is handled by the shared
 //   Lowering::LowerCopyBlockStore.
 //
 // Arguments:
 //    blkNode - The block store node to lower
 //
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsInitBlkOp());
 
@@ -315,14 +315,13 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        // memory.fill
+        // Use the wasm `memory.fill` instruction.
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
     }
 
-    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
+    if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
     {
-        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerInitBlockStore destination address"));
     }
 }
 
@@ -369,6 +368,21 @@ void Lowering::LowerCast(GenTree* tree)
 void Lowering::LowerRotate(GenTree* tree)
 {
     ContainCheckShiftRotate(tree->AsOp());
+}
+
+//------------------------------------------------------------------------
+// LowerCkfinite: Lowers a GT_CKFINITE node.
+//
+// Mark the operand as multiply-used since codegen needs to read it twice:
+// once for the finiteness check and once for the produced value.
+//
+// Arguments:
+//    node - the GT_CKFINITE node to be lowered
+//
+void Lowering::LowerCkfinite(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_CKFINITE));
+    SetMultiplyUsed(node->gtGetOp1() DEBUGARG("LowerCkfinite op1 (finiteness check)"));
 }
 
 //------------------------------------------------------------------------
