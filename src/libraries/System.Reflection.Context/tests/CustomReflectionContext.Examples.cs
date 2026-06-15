@@ -23,7 +23,7 @@ namespace System.Reflection.Context.Examples
         protected override IEnumerable<object> GetCustomAttributes(MemberInfo member, IEnumerable<object> declaredAttributes)
         {
             // Add example attribute to "To*" members.
-            if (member.Name.StartsWith("To"))
+            if (member.Name.StartsWith("To", StringComparison.Ordinal))
             {
                 yield return new MyAttribute();
             }
@@ -31,14 +31,16 @@ namespace System.Reflection.Context.Examples
             foreach (var attr in declaredAttributes) yield return attr;
         }
     }
+    #endregion Snippet1
 
     public class Program
     {
         [Fact]
         public static void Main()
         {
+            #region Snippet2
             MyCustomReflectionContext mc = new();
-            Type t = typeof(String);
+            Type t = typeof(string);
 
             // A representation of the type in the default reflection context.
             TypeInfo ti = t.GetTypeInfo();
@@ -62,7 +64,6 @@ namespace System.Reflection.Context.Examples
             MemberInfo mi1 = ti.GetDeclaredMethods("ToString").FirstOrDefault();
 
             Attribute[] defaultAttributes = mi1.GetCustomAttributes().Cast<Attribute>().ToArray();
-            Assert.DoesNotContain(defaultAttributes, attribute => attribute is MyAttribute);
 
             // All the attributes of "ToString" in the default reflection context.
             Console.WriteLine("'ToString' Attributes in Default Reflection Context:");
@@ -77,7 +78,6 @@ namespace System.Reflection.Context.Examples
             mi1 = myTI.GetDeclaredMethods("ToString").FirstOrDefault();
 
             Attribute[] customAttributes = mi1.GetCustomAttributes().Cast<Attribute>().ToArray();
-            Assert.Contains(customAttributes, attribute => attribute is MyAttribute);
 
             // All its attributes, for comparison. MyAttribute is now included.
             Console.WriteLine("'ToString' Attributes in Custom Reflection Context:");
@@ -85,7 +85,10 @@ namespace System.Reflection.Context.Examples
             {
                 Console.WriteLine(cd.GetType());
             }
+            #endregion Snippet2
+
+            Assert.DoesNotContain(defaultAttributes, attribute => attribute is MyAttribute);
+            Assert.Contains(customAttributes, attribute => attribute is MyAttribute);
         }
     }
-    #endregion Snippet1
 }

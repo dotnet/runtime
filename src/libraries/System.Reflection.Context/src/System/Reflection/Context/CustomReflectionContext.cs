@@ -39,8 +39,8 @@ namespace System.Reflection.Context
     /// the custom reflection context.
     ///
     /// > [!WARNING]
-    /// > <xref:System.Reflection.Context.CustomReflectionContext> methods should not access the list of attributes of a reflected object or method directly by calling the
-    /// <xref:System.Reflection.MemberInfo.GetCustomAttributes*> method on the provided <xref:System.Reflection.MemberInfo> or <xref:System.Reflection.ParameterInfo> instance, but
+     /// > <xref:System.Reflection.Context.CustomReflectionContext> overrides should not query attributes on the provided <xref:System.Reflection.MemberInfo> or <xref:System.Reflection.ParameterInfo> by calling
+     /// > <xref:System.Reflection.CustomAttributeExtensions.GetCustomAttributes*>; use the `declaredAttributes` sequence passed to the <xref:System.Reflection.Context.CustomReflectionContext.GetCustomAttributes*> overloads instead.
     /// should instead use the `declaredAttributes` list, which is passed as a parameter to the <xref:System.Reflection.Context.CustomReflectionContext.GetCustomAttributes*> method overloads.
     ///
     /// To add properties to a reflected type, override the <xref:System.Reflection.Context.CustomReflectionContext.AddProperties*> method. The method accepts a parameter that
@@ -59,6 +59,7 @@ namespace System.Reflection.Context
     /// The following example demonstrates how to subclass <xref:System.Reflection.Context.CustomReflectionContext>
     /// to add a custom attribute to all the members of a given type whose names begin with "To".
     /// <code lang="cs" source="../../../../tests/CustomReflectionContext.Examples.cs" region="Snippet1" />
+    /// <code lang="cs" source="../../../../tests/CustomReflectionContext.Examples.cs" region="Snippet2" />
     /// </example>
     public abstract partial class CustomReflectionContext : ReflectionContext
     {
