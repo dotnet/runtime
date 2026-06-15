@@ -7,7 +7,7 @@
 -->
 <Project>
   <PropertyGroup>
-    <_WasiSdkVersion>25.0</_WasiSdkVersion>
+    <_WasiSdkVersion>33.0</_WasiSdkVersion>
     <_RuntimeLocalWasiSdkPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'wasi-sdk'))</_RuntimeLocalWasiSdkPath>    
   </PropertyGroup>
 

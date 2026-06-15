@@ -520,6 +520,7 @@ namespace Internal.JitInterface
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     }
 
     public enum CorInfoGCType
@@ -1176,21 +1177,17 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
         // - detail describes the computation done by the jit host
-        // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
-        //     (in which case the method handle and context will be a generic method)
+        // - instParamLookup contains all the information necessary to pass the instantiation parameter for
+        //   the devirtualized method.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public CORINFO_CONTEXT_STRUCT* exactContext;
+        public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-        public byte _isInstantiatingStub;
-        public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _needsMethodContext;
-        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     //----------------------------------------------------------------------------
@@ -1365,14 +1362,16 @@ namespace Internal.JitInterface
 
     public enum ILNum
     {
-        VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
-        RETBUF_ILNUM        = -2, // Pointer to the return-buffer
-        TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        VARARGS_HND_ILNUM        = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
+        RETBUF_ILNUM             = -2, // Pointer to the return-buffer
+        TYPECTXT_ILNUM           = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        ASYNC_CONTINUATION_ILNUM = -4, // Async continuation argument
+        CALL_RETURN_ILNUM        = -5, // The return value of a call
 
-        UNKNOWN_ILNUM       = -4, // Unknown variable
+        UNKNOWN_ILNUM            = -6, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in the enum
-                                  // so that the compression routines know the enum's range.
+        MAX_ILNUM                = -6  // Sentinel value. This should be set to the largest magnitude value in the enum
+                                       // so that the compression routines know the enum's range.
     };
 
     public struct ILVarInfo

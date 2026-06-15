@@ -487,8 +487,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    Task task = other(arg);
     //    if (!task.IsCompleted)
     //    {
-    //        // Magic function which will suspend the current run of async methods
-    //        AsyncHelpers.TransparentAwait(task);
+    //        TailAwait();
+    //        return AsyncHelpers.TransparentAwait(task);
     //    }
     //    return AsyncHelpers.CompletedTaskResult(task);
     // }
@@ -500,7 +500,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    if (!vt.IsCompleted)
     //    {
     //        TailAwait();
-    //        AsyncHelpers.TransparentAwaitValueTask(vt);
+    //        return AsyncHelpers.TransparentAwaitValueTask(vt);
     //    }
 
     //    return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
@@ -582,7 +582,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         // No, tail await to TransparentAwaitValueTask
         pCode->EmitLDLOC(valueTaskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
-        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, 0);
+        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
 
         // Yes, just get the result
         pCode->EmitLabel(valueTaskCompletedLabel);
@@ -595,12 +596,17 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         MethodTable* pMTTask;
 
         int completedTaskResultToken;
+        int transparentAwaitToken;
+
         if (msig.IsReturnTypeVoid())
         {
             pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
 
             MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
+            MethodDesc* pMDTransparentAwait = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT);
+
             completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
+            transparentAwaitToken = pCode->GetToken(pMDTransparentAwait);
         }
         else
         {
@@ -608,24 +614,34 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
             pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
 
             MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
+            MethodDesc* pMDTransparentAwait = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_OF_T);
+
             pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+            pMDTransparentAwait = FindOrCreateAssociatedMethodDesc(pMDTransparentAwait, pMDTransparentAwait->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+
             completedTaskResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDCompletedTaskResult);
+            transparentAwaitToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDTransparentAwait);
         }
 
         LocalDesc taskLocalDesc(pMTTask);
         DWORD taskLocal = pCode->NewLocal(taskLocalDesc);
         ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
 
-        // Store task returned by actual user func or by ValueTask.AsTask
+        // Store task returned by actual user func
         pCode->EmitSTLOC(taskLocal);
 
+        // Did it already complete?
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
         pCode->EmitBRTRUE(pGetResultLabel);
 
+        // No, so tail await to TransparentAwait
         pCode->EmitLDLOC(taskLocal);
-        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT, 1, 0);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+        pCode->EmitCALL(transparentAwaitToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
 
+        // Yes, so just get the result
         pCode->EmitLabel(pGetResultLabel);
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(completedTaskResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);

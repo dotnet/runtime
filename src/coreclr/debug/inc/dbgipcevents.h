@@ -592,11 +592,7 @@ DEFINE_LSPTR_TYPE(class DebuggerEval,       LSPTR_DEBUGGEREVAL);
 DEFINE_LSPTR_TYPE(class DebuggerStepper,    LSPTR_STEPPER);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
-#if defined(RIGHT_SIDE_COMPILE)
 typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
-#else  // RIGHT_SIDE_COMPILE
-typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
-#endif // RIGHT_SIDE_COMPILE
 
 DEFINE_LSPTR_TYPE(struct OBJECTHANDLE__,    LSPTR_OBJECTHANDLE);
 DEFINE_LSPTR_TYPE(class TypeHandleDummyPtr, LSPTR_TYPEHANDLE); // TypeHandle in the LS is not a direct pointer.
@@ -1359,50 +1355,6 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
 {
     DebuggerIPCE_ExpandedTypeData data;
     Portable<UINT> numTypeArgs; // number of immediate children on the type tree
-};
-
-
-//
-// DebuggerIPCE_ObjectData holds the results of a
-// GetAndSendObjectInfo, i.e., all the info about an object that the
-// Right Side would need to access it. (This include array, string,
-// and nstruct info.)
-//
-struct MSLAYOUT DebuggerIPCE_ObjectData
-{
-    void           *objRef;
-    bool            objRefBad;
-    SIZE_T          objSize;
-
-    // Offset from the beginning of the object to the beginning of the first field
-    SIZE_T          objOffsetToVars;
-
-    // The type of the object....
-    struct DebuggerIPCE_ExpandedTypeData objTypeData;
-
-    union MSLAYOUT
-    {
-        struct MSLAYOUT
-        {
-            SIZE_T          length;
-            SIZE_T          offsetToStringBase;
-        } stringInfo;
-
-        struct MSLAYOUT
-        {
-            SIZE_T          rank;
-            SIZE_T          offsetToArrayBase;
-            SIZE_T          offsetToLowerBounds; // 0 if not present
-            SIZE_T          offsetToUpperBounds; // 0 if not present
-            SIZE_T          componentCount;
-            SIZE_T          elementSize;
-        } arrayInfo;
-
-        struct MSLAYOUT
-        {
-            struct DebuggerIPCE_BasicTypeData typedByrefType; // the type of the thing contained in a typedByref...
-        } typedByrefInfo;
-    };
 };
 
 //

@@ -21,7 +21,7 @@
 #include "sigbuilder.h"
 #include "configuration.h"
 #include "conditionalweaktable.h"
-#include "interoplibinterface_comwrappers.h"
+#include "interoplibinterface.h"
 #include "assemblynative.hpp"
 
 //

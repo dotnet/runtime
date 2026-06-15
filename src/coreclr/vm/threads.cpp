@@ -1104,16 +1104,12 @@ void InitThreadManager()
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
-        // to the patched barrier, but are not part of the patched set of helpers.
+        // On AMD64 the Checked variant of the helper jumps through an indirection
+        // to the patched barrier, but is not part of the patched set of helpers.
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
 #endif // TARGET_AMD64
 
     }

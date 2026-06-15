@@ -70,7 +70,7 @@ struct ArgumentRegisters {
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes, so that v128 can be returned without retbuff
 
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 2
 
 class StubLinkerCPU : public StubLinker
 {

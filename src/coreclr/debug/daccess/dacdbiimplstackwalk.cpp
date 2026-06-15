@@ -339,9 +339,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
     return hr;
 }
 
-bool g_fSkipStackCheck     = false;
-bool g_fSkipStackCheckInit = false;
-
 // Check whether the specified CONTEXT is valid.  The only check we perform right now is whether the
 // SP in the specified CONTEXT is in the stack range of the thread.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
@@ -355,27 +352,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       v
         return S_OK;
     }
 
-    if (!g_fSkipStackCheckInit)
-    {
-        g_fSkipStackCheck = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgSkipStackCheck) != 0);
-        g_fSkipStackCheckInit = true;
-    }
+    // We don't have the backing store boundaries stored on the thread, but this is just
+    // a sanity check anyway.
+    Thread * pThread = vmThread.GetDacPtr();
+    PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
 
-    // Skip this check if the customer has set the reg key/env var.  This is necessary for AutoCad.  They
-    // enable fiber mode by calling the Win32 API ConvertThreadToFiber(), but when a managed debugger is
-    // attached, they don't actually call into our hosting APIs such as SwitchInLogicalThreadState().  This
-    // leads to the cached stack range on the Thread object being stale.
-    if (!g_fSkipStackCheck)
+    if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
     {
-        // We don't have the backing store boundaries stored on the thread, but this is just
-        // a sanity check anyway.
-        Thread * pThread = vmThread.GetDacPtr();
-        PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
-
-        if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
-        {
-            return CORDBG_E_NON_MATCHING_CONTEXT;
-        }
+        return CORDBG_E_NON_MATCHING_CONTEXT;
     }
 
     return S_OK;

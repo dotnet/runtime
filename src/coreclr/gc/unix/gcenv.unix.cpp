@@ -463,7 +463,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
     }
 #endif
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
         if ((int)node <= g_highestNumaNode)
@@ -481,7 +481,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }
     }
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
 
     return success;
 }
@@ -1013,11 +1013,13 @@ static size_t GetCurrentVirtualMemorySize()
 //  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
+#ifdef RLIMIT_AS
     rlimit addressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         return addressSpaceLimit.rlim_cur;
     }
+#endif // RLIMIT_AS
 
     // No virtual memory limit
     return GetVirtualMemoryMaxAddress();
@@ -1344,14 +1346,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
                     int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

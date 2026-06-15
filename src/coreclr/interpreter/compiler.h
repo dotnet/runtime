@@ -627,6 +627,12 @@ private:
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
     CORJIT_FLAGS m_corJitFlags;
+#ifdef PERFTRACING_DISABLE_THREADS
+    bool m_emitSamplingProfiler;
+#ifdef TARGET_BROWSER
+    bool m_emitBrowserProfiler;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -893,6 +899,7 @@ private:
     int32_t m_synchronizedOrAsyncRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
     int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
 
+    int32_t m_threadObjVarIndex = -1; // If the method is async, this is the var index of the Thread local
     int32_t m_execContextVarIndex = -1; // If the method is async, this is the var index of the ExecutionContext local
     int32_t m_syncContextVarIndex = -1; // If the method is async, this is the var index of the SynchronizationContext local
 
@@ -1110,6 +1117,13 @@ public:
     InterpMethodDataBuilder& GetMethodDataBuilder() { return m_methodDataBuilder; }
 
     int32_t* GetCode(int32_t *pCodeSize);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+    static bool s_samplingProfilerEnabled;
+#ifdef TARGET_BROWSER
+    static bool s_browserProfilerEnabled;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

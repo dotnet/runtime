@@ -22,7 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lower.h"
 
-static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
+void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
     JITDUMP("Setting [%06u] as multiply-used: %s\n", Compiler::dspTreeID(node), reason);
     assert(varTypeIsEnregisterable(node));
@@ -288,90 +288,40 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStore: Lower a block store node
+// LowerInitBlockStore: Lower a block init node (memset / loop zeroing) for WASM.
+//   The copy variant (non-InitBlkOp) is handled by the shared
+//   Lowering::LowerCopyBlockStore.
 //
 // Arguments:
 //    blkNode - The block store node to lower
 //
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
 {
+    assert(blkNode->OperIsInitBlkOp());
+
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
 
-    if (blkNode->OperIsInitBlkOp())
+    if (src->OperIs(GT_INIT_VAL))
     {
-        if (src->OperIs(GT_INIT_VAL))
-        {
-            src->SetContained();
-            src = src->AsUnOp()->gtGetOp1();
-        }
+        src->SetContained();
+        src = src->AsUnOp()->gtGetOp1();
+    }
 
-        if (blkNode->IsZeroingGcPointersOnHeap())
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-            src->SetContained();
-        }
-        else
-        {
-            // memory.fill
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-        }
+    if (blkNode->IsZeroingGcPointersOnHeap())
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+        src->SetContained();
     }
     else
     {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
-        }
-
-        ClassLayout* layout  = blkNode->GetLayout();
-        bool         doCpObj = layout->HasGCPtr();
-
-        // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
-        //  smaller generated code and potentially better performance.
-        if (blkNode->IsAddressNotOnHeap(m_compiler))
-        {
-            doCpObj = false;
-        }
-
-        // CopyObj or CopyBlk
-        if (doCpObj)
-        {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-            // memory.copy
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-        }
-
-        if (src->OperIs(GT_IND))
-        {
-            GenTree* srcAddr = src->gtGetOp1();
-            if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-                ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
-            {
-                SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
-            }
-        }
+        // Use the wasm `memory.fill` instruction.
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
     }
 
-    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
+    if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
     {
-        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerInitBlockStore destination address"));
     }
 }
 
@@ -418,6 +368,21 @@ void Lowering::LowerCast(GenTree* tree)
 void Lowering::LowerRotate(GenTree* tree)
 {
     ContainCheckShiftRotate(tree->AsOp());
+}
+
+//------------------------------------------------------------------------
+// LowerCkfinite: Lowers a GT_CKFINITE node.
+//
+// Mark the operand as multiply-used since codegen needs to read it twice:
+// once for the finiteness check and once for the produced value.
+//
+// Arguments:
+//    node - the GT_CKFINITE node to be lowered
+//
+void Lowering::LowerCkfinite(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_CKFINITE));
+    SetMultiplyUsed(node->gtGetOp1() DEBUGARG("LowerCkfinite op1 (finiteness check)"));
 }
 
 //------------------------------------------------------------------------

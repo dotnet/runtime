@@ -13,6 +13,7 @@ namespace System.Net.Security.Tests
     // See System.Security.Cryptography/tests/osslplugins/README.md for instructions on how to setup for TPM tests.
     public class SslStreamOpenSslNamedKeys
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129339")]
         [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderEcDsaTests))]
         public static async Task Provider_TPM2SslStream_ServerCertIsTpmEcDsa()
         {
@@ -21,6 +22,7 @@ namespace System.Net.Security.Tests
             await TestTls(serverOptions, clientOptions);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129339")]
         [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderRsaTests))]
         [MemberData(nameof(OpenSslNamedKeysHelpers.RSASignaturePaddingValues), MemberType = typeof(OpenSslNamedKeysHelpers))]
         public static async Task Provider_TPM2SslStream_ServerCertIsTpmRsa(RSASignaturePadding padding)
