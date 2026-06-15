@@ -1448,6 +1448,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #if defined(TARGET_ARM64)
     if (pacPresent && epilogueInstructions != 0)
     {
+        // In an epilog, LR/SP may already be partially restored. Avoid hijacking
+        // until the saved LR slot and signing SP can be identified unambiguously.
         return false;
     }
 #endif
@@ -1456,10 +1458,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     {
         *pSpForArm64PacSign = 0;
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
-#if defined(TARGET_ARM64)
-        if (!TryGetSpForPacSigning(pacFrameInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
-            return false;
-#endif
         return true;
     }
 
@@ -1518,17 +1516,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-#if defined(TARGET_ARM64)
-    if (pacPresent)
-    {
-        // We hijack the caller frame later. To retrieve signing SP for correct PAC
-        // processing, we need to pacFrameInfo for the caller frame. Currently bail
-        // out of hijacking in this case.
-        // ToDo-PAC: Enable hijacking caller frame
-        return false;
-    }
-#endif
-
     PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
@@ -1546,6 +1533,11 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
+
+#if defined(TARGET_ARM64)
+    if (!TryGetSpForPacSigning(pacFrameInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
+        return false;
+#endif
 
     return true;
 #else
