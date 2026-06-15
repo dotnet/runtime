@@ -276,16 +276,13 @@ public struct DebuggerIPCE_BasicTypeData
     [FieldOffset(16)] public ulong vmTypeHandle;   // VMPTR_TypeHandle (Portable<CORDB_ADDRESS>)
 }
 
-// Matches native EnCHangingFieldInfo layout (48 bytes on 64-bit).
-// Contains the type data for the object, a pointer to the object, the offset to variable storage,
-// and the field metadata token.
-[StructLayout(LayoutKind.Explicit, Size = 48)]
+[StructLayout(LayoutKind.Sequential)]
 public struct EnCHangingFieldInfo
 {
-    [FieldOffset(0)] public DebuggerIPCE_BasicTypeData objectTypeData;
-    [FieldOffset(24)] public ulong vmObject;       // VMPTR_Object
-    [FieldOffset(32)] public ulong offsetToVars;   // SIZE_T
-    [FieldOffset(40)] public uint fldToken;        // mdFieldDef
+    public DebuggerIPCE_BasicTypeData objectTypeData;
+    public ulong vmObject;
+    public uint offsetToVars;
+    public uint fldToken;
 }
 
 // Matches native DebuggerIPCE_ExpandedTypeData layout (40 bytes).
@@ -610,7 +607,7 @@ public unsafe partial interface IDacDbiInterface
     int GetCollectibleTypeStaticAddress(ulong vmField, ulong* pRetVal);
 
     [PreserveSig]
-    int GetEnCHangingFieldInfo(EnCHangingFieldInfo* pEnCFieldInfo, FieldData* pFieldData, Interop.BOOL* pfStatic);
+    int GetEnCHangingFieldInfo(EnCHangingFieldInfo* pEnCFieldInfo, FieldData* pFieldData);
 
     [PreserveSig]
     int EnumerateTypeHandleParams(ulong vmTypeHandle,

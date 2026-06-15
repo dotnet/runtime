@@ -328,7 +328,7 @@ interface IDacDbiInterface : IUnknown
     // Field
     HRESULT GetThreadStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_Thread vmRuntimeThread, [out] CORDB_ADDRESS * pRetVal);
     HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [out] CORDB_ADDRESS * pRetVal);
-    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData, [out] BOOL * pfStatic);
+    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData);
     HRESULT GetTypeHandleParams([in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
     HRESULT GetSimpleType(
         [in] CorElementType simpleType,

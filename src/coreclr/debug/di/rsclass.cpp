@@ -1004,8 +1004,8 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
     InitEnCFieldInfo(&encField, fStatic, pObject, fieldToken, metadataToken);
 
     // Go get this particular field.
-    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData, &fDacStatic));
-    _ASSERTE(fStatic == fDacStatic);
+    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData));
+    _ASSERTE(fStatic == fieldData.m_fFldIsStatic);
 
     // Save the field results in our cache and get a stable pointer to the data
     if (fStatic)
@@ -1057,8 +1057,8 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
 
     if (HasTypeParams())
     {
-        // _ASSERTE(!"EnC hanging field not yet implemented on constructed types!");
-        // return E_FAIL;
+        _ASSERTE(!"EnC hanging field not yet implemented on constructed types!");
+        return E_FAIL;
     }
 
     // This must be a static field if no object was supplied

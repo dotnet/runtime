@@ -1673,8 +1673,7 @@ public:
     //                              the assembly
     //                              an indication of the type: whether it's a class or value type
     //     output:  pFieldData    - information about the EnC added field
-    //              pfStatic      - flag to indicate whether the field is static
-    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData) = 0;
 
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
