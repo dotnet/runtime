@@ -516,7 +516,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                                  pExactMT,
                                                                  pGenericMDescInRepMT,
                                                                  mcInstantiated,
-                                                                 !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
+                                                                 !pWrappedMD, // This is pessimistic estimate for fNativeCodeSlot
                                                                  &amt));
 
             // Initialize the MD the way it needs to be
@@ -539,8 +539,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
 
             pNewMD->SetTemporaryEntryPoint(&amt);
-
-            amt.SuppressRelease();
 
 #ifdef _DEBUG
             SString name;
@@ -572,6 +570,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
             // Verify that we are not creating redundant MethodDescs
             _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
+
+            amt.SuppressRelease();
 
             // The method desc is fully set up; now add to the table
             InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
