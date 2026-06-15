@@ -188,7 +188,7 @@ namespace System.IO.Compression
         //
         public static Zip64ExtraField GetJustZip64Block(ReadOnlySpan<byte> extraFieldData,
             bool readUncompressedSize, bool readCompressedSize,
-            bool readLocalHeaderOffset, bool readStartDiskNumber)
+            bool readLocalHeaderOffset, bool readStartDiskNumber, bool isInLocalHeader)
         {
             Zip64ExtraField zip64Field;
             int totalBytesConsumed = 0;
@@ -198,7 +198,7 @@ namespace System.IO.Compression
                 totalBytesConsumed += currBytesConsumed;
 
                 if (TryGetZip64BlockFromGenericExtraField(currentExtraField, readUncompressedSize,
-                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
+                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field, isInLocalHeader))
                 {
                     return zip64Field;
                 }
@@ -218,7 +218,7 @@ namespace System.IO.Compression
         private static bool TryGetZip64BlockFromGenericExtraField(ZipGenericExtraField extraField,
             bool readUncompressedSize, bool readCompressedSize,
             bool readLocalHeaderOffset, bool readStartDiskNumber,
-            out Zip64ExtraField zip64Block)
+            out Zip64ExtraField zip64Block, bool isInLocalHeader)
         {
             const int MaximumExtraFieldLength = FieldLengths.UncompressedSize + FieldLengths.CompressedSize + FieldLengths.LocalHeaderOffset + FieldLengths.StartDiskNumber;
             zip64Block = new()
@@ -247,6 +247,13 @@ namespace System.IO.Compression
             // is to respect the size, but only actually use the values if their 32 bit
             // values were all 0xFF.
 
+            // The spec section 4.5.3 later:
+            //      This entry in the Local header MUST include BOTH original
+            //      and compressed file size fields. If encrypting the
+            //      central directory and bit 13 of the general purpose bit
+            //      flag is set indicating masking, the value stored in the
+            //      Local Header for the original file size will be zero.
+
             if (data.Length < FieldLengths.UncompressedSize)
             {
                 return true;
@@ -254,7 +261,8 @@ namespace System.IO.Compression
 
             // Advancing the stream (by reading from it) is possible only when:
             // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
-            // 2. When the size indicates that all the information is available ("slightly invalid files").
+            // 2. Field is mandated to be present by spec (see "section 4.5.3 later" comment above)
+            // 3. When the size indicates that all the information is available ("slightly invalid files").
             bool readAllFields = extraField.Size >= MaximumExtraFieldLength;
 
             // The original values are unsigned 64-bit, so a negative signed value means the
@@ -271,7 +279,7 @@ namespace System.IO.Compression
                 }
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
-            else if (readAllFields)
+            else if (readAllFields || isInLocalHeader)
             {
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
@@ -290,7 +298,7 @@ namespace System.IO.Compression
                 }
                 data = data.Slice(FieldLengths.CompressedSize);
             }
-            else if (readAllFields)
+            else if (readAllFields || isInLocalHeader)
             {
                 data = data.Slice(FieldLengths.CompressedSize);
             }
@@ -329,7 +337,7 @@ namespace System.IO.Compression
 
         public static Zip64ExtraField GetAndRemoveZip64Block(List<ZipGenericExtraField> extraFields,
             bool readUncompressedSize, bool readCompressedSize,
-            bool readLocalHeaderOffset, bool readStartDiskNumber)
+            bool readLocalHeaderOffset, bool readStartDiskNumber, bool isInLocalHeader)
         {
             Zip64ExtraField zip64Field = new()
             {
@@ -348,7 +356,7 @@ namespace System.IO.Compression
                     if (!zip64FieldFound)
                     {
                         if (TryGetZip64BlockFromGenericExtraField(ef, readUncompressedSize, readCompressedSize,
-                                    readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
+                                    readLocalHeaderOffset, readStartDiskNumber, out zip64Field, isInLocalHeader))
                         {
                             zip64FieldFound = true;
                         }
@@ -764,7 +772,7 @@ namespace System.IO.Compression
                 header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields, out ReadOnlySpan<byte> trailingDataSpan);
                 zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
+                            relativeOffsetInZip64, diskNumberStartInZip64, false);
                 header.TrailingExtraFieldData = trailingDataSpan.ToArray();
             }
             else
@@ -773,7 +781,7 @@ namespace System.IO.Compression
                 header.TrailingExtraFieldData = null;
                 zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
+                            relativeOffsetInZip64, diskNumberStartInZip64, false);
             }
 
             header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
