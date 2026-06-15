@@ -1188,11 +1188,12 @@ GCFrame::~GCFrame()
     }
     CONTRACTL_END;
 
-    // m_pCurThread is NULL once the frame has been popped/removed from the chain.
+    // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
+    // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
+    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // NULL and there is nothing left to do.
     if (m_pCurThread != NULL)
     {
-        // This is a GCFrame that was not popped.  This is a problem.
-        // We should have popped it before we destruct
         // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
         // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
         Thread *pThread = m_pCurThread;
@@ -1258,7 +1259,6 @@ void GCFrame::Pop()
     _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
 
     m_pCurThread->SetGCFrame(m_Next);
-    m_Next = NULL;
 
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
@@ -1295,8 +1295,6 @@ void GCFrame::Remove()
             {
                 m_pCurThread->SetGCFrame(m_Next);
             }
-
-            m_Next = NULL;
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
