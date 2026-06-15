@@ -1228,7 +1228,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
 
     // For arrays the per-access cloning condition only bounds `limit` by
     // Array.MaxLength (0x7FFFFFC7), which leaves room for the post-step IV
-    // up to `limit + s - 1` to fit in INT_MAX as long as `s <= 58`. Larger
+    // up to `limit + s - 1` to fit in INT_MAX as long as `s <= 57`. Larger
     // strides need an explicit overflow guard, same shape as the one used
     // for spans (where Span<>.Length can reach INT_MAX even at small s).
     static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
@@ -1324,8 +1324,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
             else
             {
-                const int    maxLimit      = (int)maxLimitBase64;
-                LC_Ident     arrLenIdent   =
+                const int maxLimit = (int)maxLimitBase64;
+                LC_Ident  arrLenIdent =
                     LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
                 LC_Ident     maxConstIdent = LC_Ident::CreateConst(static_cast<unsigned>(maxLimit));
                 LC_Condition overflowGuard(GT_LE, LC_Expr(arrLenIdent), LC_Expr(maxConstIdent));
