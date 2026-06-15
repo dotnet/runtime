@@ -284,9 +284,9 @@ internal static partial class Interop
 
         internal static SafeEvpPKeyHandle LoadKeyFromProvider(
             string providerName,
-            string keyUri)
+            string keyUri,
+            ref IntPtr extraHandle)
         {
-            IntPtr extraHandle = IntPtr.Zero;
             IntPtr evpPKeyHandle = IntPtr.Zero;
 
             try
@@ -299,12 +299,12 @@ internal static partial class Interop
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
                 }
 
-                if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
+                if (evpPKeyHandle == IntPtr.Zero)
                 {
-                    Debug.Assert(evpPKeyHandle == IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
                     throw CreateOpenSslCryptographicException();
                 }
 
+                Debug.Assert(extraHandle != IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
                 return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
             }
             catch

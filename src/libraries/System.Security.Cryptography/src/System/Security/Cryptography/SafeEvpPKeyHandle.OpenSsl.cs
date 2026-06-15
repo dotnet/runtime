@@ -1,15 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class SafeEvpPKeyHandle : SafeHandle
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
+        private static readonly Lock s_contextCacheLock = new();
+        // We don't use a ConcurrentDictionary here because ConcurrentDictionary documents that its valueFactory
+        // can execute multiple times for the same key, but only one will win. That would result in a leak in this case,
+        // so use an ordinary dictionary that we will take a full lock on.
+        private static readonly Dictionary<string, IntPtr> s_contextCache = new(StringComparer.Ordinal);
 
         /// <summary>
         /// In some cases like when a key is loaded from a provider, the key may have an associated
@@ -260,7 +267,33 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
             }
 
-            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
+            IntPtr extraHandle;
+
+            lock (s_contextCacheLock)
+            {
+                if (!s_contextCache.TryGetValue(providerName, out extraHandle))
+                {
+                    // Allocate capacity before native code creates the process-lifetime context.
+                    s_contextCache.EnsureCapacity(s_contextCache.Count + 1);
+
+                    try
+                    {
+                        extraHandle = IntPtr.Zero;
+                        return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
+                    }
+                    finally
+                    {
+                        // LoadKeyFromProvider may still have given an extraHandle even if it threw an exception because
+                        // the key couldn't be found. We still want to cache the extra handle in that circumstance.
+                        if (extraHandle != IntPtr.Zero)
+                        {
+                            s_contextCache.Add(providerName, extraHandle);
+                        }
+                    }
+                }
+            }
+
+            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
         }
     }
 }

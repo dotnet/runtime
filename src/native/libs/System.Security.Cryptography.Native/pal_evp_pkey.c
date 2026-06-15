@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
-#include <pthread.h>
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -10,137 +9,6 @@
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-
-typedef struct
-{
-    char* providerName;
-    OSSL_LIB_CTX* libCtx;
-    OSSL_PROVIDER* prov;
-} ProviderLibCtxCacheEntry;
-
-static pthread_mutex_t g_providerLibCtxCacheLock = PTHREAD_MUTEX_INITIALIZER;
-// These contexts are intentionally retained for the process lifetime because OpenSSL requires
-// per-thread cleanup before freeing a non-default OSSL_LIB_CTX used across multiple threads.
-static ProviderLibCtxCacheEntry* g_providerLibCtxCache = NULL;
-static size_t g_providerLibCtxCacheCount = 0;
-
-static char* DuplicateProviderName(const char* providerName)
-{
-    size_t providerNameLength = strlen(providerName) + 1;
-    char* providerNameCopy = (char*)malloc(providerNameLength);
-
-    if (providerNameCopy == NULL)
-    {
-        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
-        return NULL;
-    }
-
-    memcpy(providerNameCopy, providerName, providerNameLength);
-    return providerNameCopy;
-}
-
-static OSSL_LIB_CTX* GetOrCreateProviderLibCtx(const char* providerName)
-{
-    int result = pthread_mutex_lock(&g_providerLibCtxCacheLock);
-    assert(!result && "Acquiring the provider cache mutex failed.");
-
-    if (result != 0)
-    {
-        return NULL;
-    }
-
-    for (size_t i = 0; i < g_providerLibCtxCacheCount; i++)
-    {
-        if (strcmp(g_providerLibCtxCache[i].providerName, providerName) == 0)
-        {
-            OSSL_LIB_CTX* libCtx = g_providerLibCtxCache[i].libCtx;
-            result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
-            assert(!result && "Releasing the provider cache mutex failed.");
-            return libCtx;
-        }
-    }
-
-    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
-    OSSL_PROVIDER* prov = NULL;
-    char* providerNameCopy = NULL;
-    ProviderLibCtxCacheEntry* newCache = NULL;
-
-    if (libCtx == NULL)
-    {
-        goto error;
-    }
-
-    prov = OSSL_PROVIDER_load(libCtx, providerName);
-
-    if (prov == NULL)
-    {
-        goto error;
-    }
-
-    providerNameCopy = DuplicateProviderName(providerName);
-
-    if (providerNameCopy == NULL)
-    {
-        goto error;
-    }
-
-    if (g_providerLibCtxCacheCount >= SIZE_MAX / sizeof(ProviderLibCtxCacheEntry))
-    {
-        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
-        goto error;
-    }
-
-    newCache = (ProviderLibCtxCacheEntry*)malloc(sizeof(ProviderLibCtxCacheEntry) * (g_providerLibCtxCacheCount + 1));
-
-    if (newCache == NULL)
-    {
-        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
-        goto error;
-    }
-
-    if (g_providerLibCtxCacheCount > 0)
-    {
-        memcpy(newCache, g_providerLibCtxCache, sizeof(ProviderLibCtxCacheEntry) * g_providerLibCtxCacheCount);
-    }
-
-    newCache[g_providerLibCtxCacheCount].providerName = providerNameCopy;
-    newCache[g_providerLibCtxCacheCount].libCtx = libCtx;
-    newCache[g_providerLibCtxCacheCount].prov = prov;
-
-    free(g_providerLibCtxCache);
-    g_providerLibCtxCache = newCache;
-    g_providerLibCtxCacheCount++;
-
-    result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
-    assert(!result && "Releasing the provider cache mutex failed.");
-    return libCtx;
-
-error:
-    if (newCache != NULL)
-    {
-        free(newCache);
-    }
-
-    if (providerNameCopy != NULL)
-    {
-        free(providerNameCopy);
-    }
-
-    if (prov != NULL)
-    {
-        OSSL_PROVIDER_unload(prov);
-    }
-
-    if (libCtx != NULL)
-    {
-        OSSL_LIB_CTX_free(libCtx);
-    }
-
-    result = pthread_mutex_unlock(&g_providerLibCtxCacheLock);
-    assert(!result && "Releasing the provider cache mutex failed.");
-    return NULL;
-}
-
 #endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
@@ -984,8 +852,9 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(OSSL_PROVIDER_load))
+    if (!API_EXISTS(OSSL_LIB_CTX_new) || !API_EXISTS(OSSL_PROVIDER_load) || !API_EXISTS(OSSL_STORE_open_ex))
     {
+        *extraHandle = NULL;
         *haveProvider = 0;
         return NULL;
     }
@@ -993,14 +862,31 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
 
 #ifdef NEED_OPENSSL_3_0
     *haveProvider = 1;
+    OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)*extraHandle;
     EVP_PKEY* ret = NULL;
-    OSSL_LIB_CTX* libCtx = GetOrCreateProviderLibCtx(providerName);
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
 
     if (libCtx == NULL)
     {
-        goto end;
+        libCtx = OSSL_LIB_CTX_new();
+
+        if (libCtx == NULL)
+        {
+            goto end;
+        }
+
+        // This provider gets loaded into the OSSL_LIB_CTX and never unloaded.
+        OSSL_PROVIDER* loadedProvider = OSSL_PROVIDER_load(libCtx, providerName);
+
+        if (loadedProvider == NULL)
+        {
+            OSSL_LIB_CTX_free(libCtx);
+            libCtx = NULL;
+            goto end;
+        }
+
+        *extraHandle = libCtx;
     }
 
     store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1060,21 +946,13 @@ end:
         OSSL_STORE_close(store);
     }
 
-    if (ret == NULL)
-    {
-        *extraHandle = NULL;
-    }
-    else
-    {
-        *extraHandle = libCtx;
-    }
-
     return ret;
 #else
     (void)providerName;
     (void)keyUri;
-    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *extraHandle = NULL;
+    (void)extraHandle;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *haveProvider = 0;
     return NULL;
 #endif
