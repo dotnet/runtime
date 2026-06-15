@@ -186,6 +186,9 @@
   <data name="Cryptography_Xml_MaxDepthExceeded" xml:space="preserve">
     <value>The XML element has exceeded the maximum nesting depth allowed for decryption.</value>
   </data>
+  <data name="Cryptography_Xml_MaxEncryptedDataElementsExceeded" xml:space="preserve">
+    <value>The number of EncryptedData elements processed during decryption has exceeded the maximum allowed for a single operation.</value>
+  </data>
   <data name="Cryptography_Xml_MissingAlgorithm" xml:space="preserve">
     <value>Symmetric algorithm is not specified. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>
