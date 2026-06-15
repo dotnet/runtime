@@ -938,7 +938,31 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     }
 
     Range phiRange = Range(Limit(Limit::keUndef));
-    auto  visitor  = [comp, vnType, &phiRange, &budget, visited](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+    auto  visitor  = [comp, vnType, &phiRange, &budget, visited, assertions](ValueNum  reachingVN,
+                                                                           ASSERT_TP reachingAssertions) {
+        // If this phi-predecessor edge asserts the negation of something known at the use site
+        // (i.e. its edge assertions contain the complementary of a use-site assertion), control
+        // cannot reach the use from this edge, so its value can't be the phi's value here. Skip it
+        // instead of widening the merged range. This narrows a phi whose definitions are correlated
+        // with a condition that is re-tested at the use site, e.g. "if (c) a = X; else a = Y; ...
+        // if (c) use(a);".
+        if (!BitVecOps::MayBeUninit(assertions) && !BitVecOps::MayBeUninit(reachingAssertions) &&
+            !BitVecOps::IsEmpty(comp->apTraits, reachingAssertions))
+        {
+            BitVecOps::Iter useIter(comp->apTraits, assertions);
+            unsigned        useIndex = 0;
+            while (useIter.NextElem(&useIndex))
+            {
+                const AssertionIndex complementary = comp->optFindComplementary(GetAssertionIndex(useIndex),
+                                                                                  /* allowScan */ false);
+                if ((complementary != NO_ASSERTION_INDEX) &&
+                    BitVecOps::IsMember(comp->apTraits, reachingAssertions, complementary - 1))
+                {
+                    return Compiler::AssertVisit::Continue;
+                }
+            }
+        }
+
         // call GetRangeFromAssertionsWorker for each reaching VN using reachingAssertions
         Range edgeRange = GetRangeFromType(vnType);
 

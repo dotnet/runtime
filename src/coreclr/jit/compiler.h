@@ -9098,7 +9098,7 @@ public:
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bool equals);
-    AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
+    AssertionIndex optFindComplementary(AssertionIndex assertionIndex, bool allowScan = true);
     void           optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
     ValueNum optConservativeNormalVN(const GenTree* tree);

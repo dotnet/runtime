@@ -2314,12 +2314,24 @@ void Compiler::optMapComplementary(AssertionIndex assertionIndex, AssertionIndex
     optComplementaryAssertionMap[index]          = assertionIndex;
 }
 
-/*****************************************************************************
- *
- *  Given an assertion index, return the assertion index of the complementary
- *  assertion or 0 if one does not exist.
- */
-AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
+//------------------------------------------------------------------------
+// optFindComplementary: Find the assertion that is the logical negation of the given assertion.
+//
+// Arguments:
+//    assertIndex - the assertion to find the complementary of
+//    allowScan   - when false, only the cached complementary map is consulted (an O(1) lookup) and
+//                  the O(n) fallback scan over the assertion table is skipped
+//
+// Return Value:
+//    The index of the complementary assertion (e.g. "X != c" for "X == c"), or NO_ASSERTION_INDEX
+//    if none exists (or none is cached, when allowScan is false).
+//
+// Notes:
+//    Passing allowScan = false suits throughput-sensitive callers that only care about complements
+//    registered up front (e.g. the two assertions created for the two edges of a JTRUE). Returning
+//    NO_ASSERTION_INDEX early is always safe for such callers.
+//
+AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex, bool allowScan)
 {
     if (assertIndex == NO_ASSERTION_INDEX)
     {
@@ -2337,6 +2349,11 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
     if (index != NO_ASSERTION_INDEX && index <= optAssertionCount)
     {
         return index;
+    }
+
+    if (!allowScan)
+    {
+        return NO_ASSERTION_INDEX;
     }
 
     for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
