@@ -1642,13 +1642,11 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -1684,7 +1682,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
     pSDFrame->Push(CURRENT_THREAD);
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1724,8 +1721,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
-
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1773,7 +1768,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     pSDFrame->Push(CURRENT_THREAD);
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1812,8 +1806,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
-
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
