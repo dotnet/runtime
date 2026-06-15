@@ -209,11 +209,6 @@ namespace System.Diagnostics
                 vsb.Append(Equal);
                 vsb.Append(value);
 
-                if (vsb.Length > MaxTraceStateEncodedLength)
-                {
-                    return null;
-                }
-
                 if (commaIndex < 0)
                 {
                     break;
