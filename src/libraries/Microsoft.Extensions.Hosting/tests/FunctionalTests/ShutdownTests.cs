@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -132,10 +131,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void SendSIGINT(int processId)
         {
-            if (kill(processId, ProcessExtensions.SigIntSignalNumber) != 0)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
+            ProcessExtensions.SendSignal(processId, ProcessExtensions.SigIntSignalNumber);
         }
 
         private static void WaitForExitOrKill(Process process)
@@ -178,8 +174,5 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 public override void Dispose() { }
             }
         }
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
     }
 }

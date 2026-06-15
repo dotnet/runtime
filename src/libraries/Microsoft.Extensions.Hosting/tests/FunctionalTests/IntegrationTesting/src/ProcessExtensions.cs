@@ -192,6 +192,14 @@ namespace Microsoft.Extensions.Internal
             }
         }
 
+        internal static void SendSignal(int pid, int signal)
+        {
+            if (kill(pid, signal) != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
+
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
 
