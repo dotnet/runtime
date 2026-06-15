@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -34,6 +35,7 @@ namespace System.Diagnostics.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingProcess();
@@ -380,6 +382,23 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1447,23 +1466,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestGetProcessById()
-        {
-            CreateDefaultProcess();
-
-            Process p = Process.GetProcessById(_process.Id);
-            Assert.Equal(_process.Id, p.Id);
-            Assert.Equal(_process.ProcessName, p.ProcessName);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetProcessById_KilledProcess_ThrowsArgumentException()
         {
             Process process = CreateDefaultProcess();
-            var handle = process.SafeHandle;
+            SafeProcessHandle handle = process.SafeHandle;
             int processId = process.Id;
+
             process.Kill();
             process.WaitForExit(WaitInMS);
+
             Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
             GC.KeepAlive(handle);
         }

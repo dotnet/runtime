@@ -109,8 +109,9 @@ NESTED_END TheUMEntryPrestub, _TEXT
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
+.arch_extension pauth
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -192
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -208
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
     PROLOG_SAVE_REG_PAIR   x21, x22, 32
@@ -146,11 +147,51 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   x23, x24, 48
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
+    ldr x16, [sp, #192]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   208
+    cbz x16, LOCAL_LABEL(HijackReturn)
+    autia lr, x16
+LOCAL_LABEL(HijackReturn):
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
+
+// void* PacStripPtr(void *);
+// This function strips the pointer of PAC info that is passed as an argument.
+// We prefer to strip a pointer where it's not going to be used to branch execution to.
+// It is a no-op on non-PAC enabled machines.
+.arch_extension pauth
+    NESTED_ENTRY PacStripPtr, _TEXT, NoHandler
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+        mov lr, x0
+        xpaclri
+        mov x0, lr
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+        EPILOG_RETURN
+    NESTED_END PacStripPtr, _TEXT
+
+// void* PacSignPtr(void *, void *);
+// This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
+.arch_extension pauth
+    LEAF_ENTRY PacSignPtr, _TEXT
+        mov x17, x0
+        mov x16, x1
+        pacia1716
+        mov x0, x17
+        ret
+    LEAF_END PacSignPtr, _TEXT
+
+// void* PacAuthPtr(void *, void *);
+// This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
+.arch_extension pauth
+    LEAF_ENTRY PacAuthPtr, _TEXT
+        mov x17, x0
+        mov x16, x1
+        autia1716
+        mov x0, x17
+        ret
+    LEAF_END PacAuthPtr, _TEXT
 
 // ------------------------------------------------------------------
 // Redirection Stub for GC in fully interruptible method
@@ -3512,4 +3553,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     // Should never return
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
-

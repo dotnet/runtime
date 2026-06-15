@@ -1512,8 +1512,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(isRMW);
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
-                const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
-                const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
+                const int resultIndex = (int)intrin.op2->AsIntCon()->IconValue();
+                const int valueIndex  = (int)intrin.op4->AsIntCon()->IconValue();
                 GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
             }
             break;
@@ -1724,7 +1724,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if (intrin.op1->isContainedIntOrIImmed())
                     {
                         // movi/movni reg, #imm8
-                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                         GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                     }
                     else
@@ -1783,7 +1783,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (intrin.op1->isContainedIntOrIImmed())
                 {
-                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                     GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                 }
                 else if (GetEmitter()->IsMovInstruction(ins))
@@ -2689,8 +2689,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Both immediates are constant, emit the intruction.
 
                     assert(intrin.op2->isContainedIntOrIImmed() && intrin.op3->isContainedIntOrIImmed());
-                    int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
+                    int           scale   = (int)intrin.op2->AsIntCon()->IconValue();
+                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->IconValue();
                     GetEmitter()->emitIns_R_R_PATTERN_I(ins, emitSize, targetReg, op1Reg, pattern, scale, opt);
                 }
                 else
@@ -2961,8 +2961,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
                     GetEmitter()->emitInsSve_R_R_R_R_I_I(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
-                                                         intrin.op4->AsIntCon()->gtIconVal,
-                                                         intrin.op5->AsIntCon()->gtIconVal, opt);
+                                                         intrin.op4->AsIntCon()->IconValue(),
+                                                         intrin.op5->AsIntCon()->IconValue(), opt);
                 }
                 else
                 {
@@ -3065,8 +3065,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
                     GetEmitter()->emitInsSve_R_R_R_R_I_I(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
-                                                         intrin.op4->AsIntCon()->gtIconVal,
-                                                         intrin.op5->AsIntCon()->gtIconVal, opt);
+                                                         intrin.op4->AsIntCon()->IconValue(),
+                                                         intrin.op5->AsIntCon()->IconValue(), opt);
                 }
                 else
                 {

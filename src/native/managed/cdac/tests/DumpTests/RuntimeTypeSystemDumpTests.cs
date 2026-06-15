@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -237,7 +238,6 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
 
         TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
         TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
@@ -247,9 +247,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
         TypeHandle objectArrayHandle = rts.GetTypeHandle(objectArrayMT);
 
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle intPtrHandle = rts.GetTypeByNameAndModule("IntPtr", "System", coreLibModule);
+        TypeHandle intPtrHandle = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
 
         Assert.True(rts.IsObjRef(objectHandle));
         Assert.True(rts.IsObjRef(stringHandle));
@@ -347,7 +345,6 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
 
         // Object and String are not value types
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -359,20 +356,12 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.False(rts.IsValueType(rts.GetTypeHandle(stringMT)));
 
         // Int32 is a value type (TruePrimitive category)
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle int32Type = rts.GetTypeByNameAndModule(
-            "Int32",
-            "System",
-            coreLibModule);
+        TypeHandle int32Type = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Int32");
         Assert.True(int32Type.Address != 0, "Could not find Int32 type in CoreLib");
         Assert.True(rts.IsValueType(int32Type));
 
         // Nullable<> is a value type (Category_Nullable) — loaded because Container<int>.Value is int?
-        TypeHandle nullableType = rts.GetTypeByNameAndModule(
-            "Nullable`1",
-            "System",
-            coreLibModule);
+        TypeHandle nullableType = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Nullable`1");
         Assert.True(nullableType.Address != 0, "Could not find Nullable<> type in CoreLib");
         Assert.True(rts.IsValueType(nullableType));
     }
@@ -383,17 +372,12 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
 
         // Look up the generic type definition List<> in System.Private.CoreLib.
         // The debuggee instantiates List<int>, so the runtime has loaded
         // both the closed List<int> MT and the open List<T> type definition MT.
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle listTypeDef = rts.GetTypeByNameAndModule(
-            "List`1",
-            "System.Collections.Generic",
-            coreLibModule);
+        TypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+            "System.Collections.Generic.List`1");
         Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
 
         Assert.True(rts.IsGenericTypeDefinition(listTypeDef));
