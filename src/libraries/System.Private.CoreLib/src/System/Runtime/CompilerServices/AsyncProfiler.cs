@@ -1292,7 +1292,7 @@ namespace System.Runtime.CompilerServices
                 if (info != null)
                 {
                     ResumeAsyncTaskCallstacks(info->Next, context);
-                    ResumeAsyncContext.Resume(ref *info, context, TaskAsyncIds.GetDispatcherId(ref *info), Config.ActiveEventKeywords);
+                    ResumeAsyncContext.Resume(ref *info, context, DispatcherIds.GetDispatcherId(ref *info), Config.ActiveEventKeywords);
                 }
             }
 #endif
