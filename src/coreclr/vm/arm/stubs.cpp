@@ -574,16 +574,19 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
     // Called directly by JITTED code
     // See ResolveWorkerAsmStub
 
+    // push {r12}
+    _stub._entryPoint[0] = 0xf84d;
+    _stub._entryPoint[1] = 0xcd04;
     // ldr r12, [pc + 8]    ; #_token
-    _stub._entryPoint[0] = 0xf8df;
-    _stub._entryPoint[1] = 0xc008;
-    // ldr pc, [pc]         ; #_resolveWorkerTarget
     _stub._entryPoint[2] = 0xf8df;
-    _stub._entryPoint[3] = 0xf000;
+    _stub._entryPoint[3] = 0xc008;
+    // ldr pc, [pc]         ; #_resolveWorkerTarget
+    _stub._entryPoint[4] = 0xf8df;
+    _stub._entryPoint[5] = 0xf000;
 
     _stub._resolveWorkerTarget = resolveWorkerTarget;
     _stub._token               = dispatchToken;
-    _ASSERTE(4 == LookupStub::entryPointLen);
+    _ASSERTE(6 == LookupStub::entryPointLen);
 }
 
 void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
@@ -814,8 +817,9 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
-    //     r4 = this._tokenSlow;
-    //     this._resolveWorkerTarget(r0, r1, r2, r3, r12, r4);
+    //     push(r12);
+    //     r12 = this._tokenSlow;
+    //     this._resolveWorkerTarget(r0, r1, r2, r3, r12);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
@@ -828,15 +832,22 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     n = 0;
 
-    // ldr r4, [pc + #_tokenSlow]
+    // push {r12}
+    _stub._slowEntryPoint[n++] = 0xf84d;
+    _stub._slowEntryPoint[n++] = 0xcd04;
+
+    // ldr r12, [pc + #_tokenSlow]
     offset = PC_REL_OFFSET(_tokenSlow);
     _stub._slowEntryPoint[n++] = 0xf8df;
-    _stub._slowEntryPoint[n++] = 0x4000 | offset;
+    _stub._slowEntryPoint[n++] = 0xc000 | offset;
 
     // ldr pc, [pc + #_resolveWorkerTarget]
     offset = PC_REL_OFFSET(_resolveWorkerTarget);
     _stub._slowEntryPoint[n++] = 0xf8df;
     _stub._slowEntryPoint[n++] = 0xf000 | offset;
+
+    // nop for alignment
+    _stub._slowEntryPoint[n++] = 0xbf00;
 
     _ASSERTE(n == ResolveStub::slowEntryPointLen);
 

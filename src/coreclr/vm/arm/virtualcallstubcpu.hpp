@@ -55,7 +55,7 @@ struct LookupStub
 
 private:
     friend struct LookupHolder;
-    const static int entryPointLen = 4;
+    const static int entryPointLen = 6;
 
     WORD    _entryPoint[entryPointLen];
     PCODE   _resolveWorkerTarget;   // xx xx xx xx               target address
@@ -232,7 +232,7 @@ struct ResolveStub
 private:
     friend struct ResolveHolder;
     const static int resolveEntryPointLen = 32;
-    const static int slowEntryPointLen = 4;
+    const static int slowEntryPointLen = 6;
     const static int failEntryPointLen = 14;
 
     WORD _resolveEntryPoint[resolveEntryPointLen];
