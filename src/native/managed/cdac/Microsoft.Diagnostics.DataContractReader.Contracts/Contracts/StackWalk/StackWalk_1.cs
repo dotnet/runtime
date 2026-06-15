@@ -324,14 +324,11 @@ internal partial class StackWalk_1 : IStackWalk
     // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
     private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
     {
-        if (threadData.GCFrame is not TargetPointer head)
-            return;
-
         // The chain is terminated by GCFRAME_TOP (FRAME_TOP_VALUE == ~0), sized to the pointer width.
         TargetPointer terminator = TargetPointer.PlatformMaxValue(_target);
         ulong pointerSize = (ulong)_target.PointerSize;
         HashSet<TargetPointer> seen = new();
-        TargetPointer pGCFrame = head;
+        TargetPointer pGCFrame = threadData.GCFrame;
         while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
         {
             Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);

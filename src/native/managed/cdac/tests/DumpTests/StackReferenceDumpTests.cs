@@ -181,7 +181,7 @@ public class StackReferenceDumpTests : DumpTestBase
         TargetPointer terminator = TargetPointer.PlatformMaxValue(Target);
 
         HashSet<ulong> gcFrameNodes = new();
-        TargetPointer node = crashingThread.GCFrame ?? TargetPointer.Null;
+        TargetPointer node = crashingThread.GCFrame;
         while (node != TargetPointer.Null && node != terminator && gcFrameNodes.Add(node))
             node = Target.ReadPointerField(node, gcFrameType, "Next");
 
