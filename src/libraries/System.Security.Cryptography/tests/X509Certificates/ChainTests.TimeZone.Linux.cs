@@ -7,7 +7,6 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     // Chain time validity must not depend on the process time zone.
-    // https://github.com/dotnet/runtime/issues/109039
     // OpenSSL/Linux only (Windows/macOS convert the verify time correctly).
     // RemoteExecutor + TZ isolates the time-zone change to a child process.
     [PlatformSpecific(TestPlatforms.Linux)]

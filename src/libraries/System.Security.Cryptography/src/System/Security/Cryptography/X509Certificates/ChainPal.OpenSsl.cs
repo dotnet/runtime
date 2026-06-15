@@ -98,9 +98,7 @@ namespace System.Security.Cryptography.X509Certificates
                 timeout = s_maxUrlRetrievalTimeout;
             }
 
-            // Convert to an absolute instant for OpenSSL.
-            // (https://github.com/dotnet/runtime/issues/109039).
-            var verificationInstant = new DateTimeOffset(verificationTime);
+            DateTimeOffset verificationInstant = new DateTimeOffset(verificationTime);
 
             // Until we support the Disallowed store, ensure it's empty (which is done by the ctor)
             using (new X509Store(StoreName.Disallowed, StoreLocation.CurrentUser, OpenFlags.ReadOnly))
