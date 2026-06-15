@@ -1041,6 +1041,11 @@ namespace ILCompiler
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
+
+            // The await helpers the JIT synthesizes calls to in CorInfoImpl.getAwaitReturnCall have no IL
+            // token in the caller, so their manifest tokens must be pre-seeded as well.
+            _tokenManager.EnsureAsyncAwaitHelperTokensAreAvailable(asyncHelpers, moduleForNewReferences);
+
             _hasAddedAsyncReferences = true;
         }
 

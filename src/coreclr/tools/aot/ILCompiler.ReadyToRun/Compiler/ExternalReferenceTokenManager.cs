@@ -72,6 +72,26 @@ namespace ILCompiler.ReadyToRun
             }
         }
 
+        /// <summary>
+        /// Ensures manifest tokens are available for every overload of the async await helper
+        /// <c>AsyncHelpers.TransparentAwaitWithResult</c>. The JIT synthesizes calls to these helpers in
+        /// <c>CorInfoImpl.getAwaitReturnCall</c>, but no IL token for them exists in the caller, so their
+        /// tokens must be pre-seeded for the resulting METHOD_ENTRY/MethodDictionary R2R fixups to be encodable.
+        /// The overloads are discovered by name so this stays in sync with getAwaitReturnCall automatically.
+        /// </summary>
+        public void EnsureAsyncAwaitHelperTokensAreAvailable(TypeDesc asyncHelpers, ModuleDesc moduleForNewReferences)
+        {
+            List<TypeSystemEntity> awaitHelpers = new();
+            foreach (MethodDesc method in asyncHelpers.GetMethods())
+            {
+                if (method.Name == "TransparentAwaitWithResult"u8)
+                {
+                    awaitHelpers.Add(method);
+                }
+            }
+            EnsureDefTokensAreAvailable(awaitHelpers, moduleForNewReferences, referencesAreForAsyncMethod: true);
+        }
+
         private void EnsureDefTokensAreAvailableInternal(TypeSystemEntity entity)
         {
             Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null);
