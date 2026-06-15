@@ -156,6 +156,11 @@ namespace System.Diagnostics
                 return null;
             }
 
+            if (traceState.Length > MaxTraceStateEncodedLength)
+            {
+                return null;
+            }
+
             int entries = 0;
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[256]);
 
@@ -166,15 +171,15 @@ namespace System.Diagnostics
                 ReadOnlySpan<char> entry = commaIndex >= 0 ? traceStateSpan.Slice(0, commaIndex) : traceStateSpan;
                 traceStateSpan = commaIndex >= 0 ? traceStateSpan.Slice(commaIndex + 1) : ReadOnlySpan<char>.Empty;
 
+                if (++entries > MaxTraceStateEntries)
+                {
+                    return null;
+                }
+
                 entry = Trim(entry);
                 if (entry.IsEmpty)
                 {
                     continue;
-                }
-
-                if (++entries > MaxTraceStateEntries)
-                {
-                    return null;
                 }
 
                 int equalIndex = entry.IndexOf(Equal);
