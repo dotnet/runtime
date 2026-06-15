@@ -687,7 +687,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     if (IsInInterpreter())
     {
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
-        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, 0 /* unused for interpreter frame*/);
+        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
         pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
         return;
     }
@@ -713,7 +713,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
 BOOL InlinedCallFrame::IsInInterpreter()
 {
     PTR_InterpreterFrame pInterpreterFrame = NULL;
-    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_Next;
         // The interpreter frame is in the interpreter when its top method context frame matches the m_pCallSiteSP

@@ -13112,11 +13112,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    const GenTree* op = gtPeelFieldAddrs(tree);
 
     if (op->OperIs(GT_LCL_ADDR))
     {

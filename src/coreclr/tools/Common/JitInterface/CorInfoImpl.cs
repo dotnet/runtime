@@ -3460,8 +3460,13 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
-            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
+#if READYTORUN
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize; // Delegate._target
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._methodPtr
+#else            
+            pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize; // Delegate._firstParameter
+            pEEInfoOut.offsetOfDelegateFirstTarget = 3 * (uint)pointerSize; // Delegate._functionPointer
+#endif
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
@@ -4331,6 +4336,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
+                CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
