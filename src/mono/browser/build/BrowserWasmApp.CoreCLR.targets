@@ -195,10 +195,15 @@
   <Target Name="_CoreCLRPreferAppLocalAssembliesOverRuntimePack"
           BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
           Condition="'$(IsBrowserWasmProject)' == 'true' and '$(MicrosoftNetCoreAppRuntimePackDir)' != ''">
+    <PropertyGroup>
+      <!-- Normalize once (canonical separators + trailing slash) so the StartsWith checks below
+           reliably match %(FullPath), which uses native separators. -->
+      <_CoreCLRRuntimePackDirNormalized>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)'))</_CoreCLRRuntimePackDirNormalized>
+    </PropertyGroup>
     <ItemGroup>
       <!-- App-local (non-runtime-pack) managed assemblies copied next to the app. -->
       <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
-                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(MicrosoftNetCoreAppRuntimePackDir)'))" />
+                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDirNormalized)'))" />
     </ItemGroup>
     <PropertyGroup>
       <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
@@ -207,7 +212,7 @@
       <!-- Drop runtime-pack copies shadowed by a same-named app-local assembly. -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="'%(Extension)' == '.dll'
-                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(MicrosoftNetCoreAppRuntimePackDir)'))
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDirNormalized)'))
                                           and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
     </ItemGroup>
   </Target>
