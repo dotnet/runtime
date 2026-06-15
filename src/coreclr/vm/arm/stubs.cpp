@@ -542,9 +542,9 @@ void FlushWriteBarrierInstructionCache()
 /*
 Rough pseudo-code of interface dispatching:
 
-  // jitted code sets r0, r4:
+  // jitted code sets r0, r12:
   r0 = object;
-  r4 = indirectionCell;
+  r12 = indirectionCell;
   // jitted code calls *indirectionCell
   switch (*indirectionCell)
   {
@@ -589,10 +589,10 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     // Called directly by JITTED code
-    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r4:IndirectionCell)
+    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
     //     if (r0.methodTable == this._expectedMT) (this._implTarget)(r0, r1, r2, r3);
-    //     else (this._failTarget)(r0, r1, r2, r3, r4);
+    //     else (this._failTarget)(r0, r1, r2, r3, r12);
     // }
 
     int n = 0;
@@ -664,7 +664,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 void * cacheAddr, INT32 * counterAddr)
 {
     // Called directly by JITTED code
-    // ResolveStub._resolveEntryPoint(r0:Object*, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // ResolveStub._resolveEntryPoint(r0:Object*, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
     //    MethodTable mt = r0.m_pMethTab;
     //    int i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
@@ -674,7 +674,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     //        if (mt == e.pMT && this._token == e.token) (e.target)(r0, r1, r2, r3);
     //        e = e.pNext;
     //    } while (e != null)
-    //    (this._slowEntryPoint)(r0, r1, r2, r3, r4);
+    //    (this._slowEntryPoint)(r0, r1, r2, r3, r12);
     // }
     //
 
@@ -812,10 +812,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
     _ASSERTE(n == ResolveStub::resolveEntryPointLen);
 
-    // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
-    //     r12 = this._tokenSlow;
-    //     this._resolveWorkerTarget(r0, r1, r2, r3, r4, r12);
+    //     r4 = this._tokenSlow;
+    //     this._resolveWorkerTarget(r0, r1, r2, r3, r12, r4);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
@@ -828,10 +828,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     n = 0;
 
-    // ldr r12, [pc + #_tokenSlow]
+    // ldr r4, [pc + #_tokenSlow]
     offset = PC_REL_OFFSET(_tokenSlow);
     _stub._slowEntryPoint[n++] = 0xf8df;
-    _stub._slowEntryPoint[n++] = 0xc000 | offset;
+    _stub._slowEntryPoint[n++] = 0x4000 | offset;
 
     // ldr pc, [pc + #_resolveWorkerTarget]
     offset = PC_REL_OFFSET(_resolveWorkerTarget);
@@ -840,10 +840,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     _ASSERTE(n == ResolveStub::slowEntryPointLen);
 
-    // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r4:IndirectionCellAndFlags)
+    // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
-    //     if(--*(this._pCounter) < 0) r4 = r4 | SDF_ResolveBackPatch;
-    //     this._resolveEntryPoint(r0, r1, r2, r3, r4);
+    //     if(--*(this._pCounter) < 0) r12 = r12 | SDF_ResolveBackPatch;
+    //     this._resolveEntryPoint(r0, r1, r2, r3, r12);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
@@ -882,10 +882,10 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // bge resolveEntryPoint
     _stub._failEntryPoint[n++] = 0xda01;
 
-    // or r4, r4, SDF_ResolveBackPatch
+    // or r12, r12, SDF_ResolveBackPatch
     _ASSERTE(SDF_ResolveBackPatch < 256);
-    _stub._failEntryPoint[n++] = 0xf044;
-    _stub._failEntryPoint[n++] = 0x0400 | SDF_ResolveBackPatch;
+    _stub._failEntryPoint[n++] = 0xf04c;
+    _stub._failEntryPoint[n++] = 0x0c00 | SDF_ResolveBackPatch;
 
     // resolveEntryPoint:
     // b _resolveEntryPoint

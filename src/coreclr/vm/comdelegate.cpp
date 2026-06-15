@@ -1200,16 +1200,8 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     CONTRACTL_END;
 
-    // The delegate may be put into a wrapper delegate if our target method requires it. This local
-    // will always hold the real (un-wrapped) delegate.
-    DELEGATEREF refRealDelegate = NULL;
+    DELEGATEREF refRealDelegate = *pRefThis;
     GCPROTECT_BEGIN(refRealDelegate);
-
-    // If needed, convert the delegate into a wrapper and get the real delegate within that.
-    if (NeedsWrapperDelegate(pTargetMethod))
-        refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
-    else
-        refRealDelegate = *pRefThis;
 
     pTargetMethod->EnsureActive();
 
@@ -1726,9 +1718,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (!isStatic)
         methodArgCount++; // count 'this'
 
-    if (COMDelegate::NeedsWrapperDelegate(pMeth))
-        refThis = COMDelegate::CreateWrapperDelegate(refThis, pMeth);
-
     if (pMeth->GetLoaderAllocator()->IsCollectible())
         refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
 
@@ -2055,74 +2044,6 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 
-BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_ARM
-    // For arm VSD expects r4 to contain the indirection cell. However r4 is a non-volatile register
-    // and its value must be preserved. So we need to erect a frame and store indirection cell in r4 before calling
-    // virtual stub dispatch. Erecting frame is already done by wrapper delegates so the Wrapper Delegate infrastructure
-    //  can easliy be used for our purpose.
-    // set needsWrapperDelegate flag in order to erect a frame. (Wrapper Delegate stub also loads the right value in r4)
-    if (!pTargetMD->IsStatic() && pTargetMD->IsVirtual() && !pTargetMD->GetMethodTable()->IsValueType())
-        return TRUE;
-#endif
-
-     return FALSE;
-}
-
-
-
-// to create a wrapper delegate wrapper we need:
-// - the delegate to forward to         -> _invocationList
-// - the delegate invoke MethodDesc     -> _count
-// the 2 fields used for invocation will contain:
-// - the delegate itself                -> _pORField
-// - the wrapper stub                    -> _pFPField
-DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pDelegateType = delegate->GetMethodTable();
-    MethodDesc *pMD = ((DelegateEEClass*)(pDelegateType->GetClass()))->GetInvokeMethod();
-    // allocate the object
-    struct _gc {
-        DELEGATEREF refWrapperDel;
-        DELEGATEREF innerDel;
-    } gc;
-    gc.refWrapperDel = delegate;
-    gc.innerDel = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    // set the proper fields
-    //
-
-    // Object reference field...
-    gc.refWrapperDel->SetTarget(gc.refWrapperDel);
-
-    // save the secure invoke stub.  GetWrapperInvoke() can trigger GC.
-    PCODE tmp = GetWrapperInvoke(pMD);
-    gc.refWrapperDel->SetMethodPtr(tmp);
-    // save the delegate MethodDesc for the frame
-    gc.refWrapperDel->SetInvocationCount((INT_PTR)pMD);
-
-    // save the delegate to forward to
-    gc.innerDel = (DELEGATEREF) pDelegateType->Allocate();
-    gc.refWrapperDel->SetInvocationList(gc.innerDel);
-
-    GCPROTECT_END();
-
-    return gc.innerDel;
-}
-
 // This method will get the MethodInfo for a delegate
 extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
 {
@@ -2302,72 +2223,6 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
     return pStub;
 }
-
-PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable *       pDelegateMT = pMD->GetMethodTable();
-    DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
-    PCODE pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
-
-    if (pStub == (PCODE)NULL)
-    {
-        GCX_PREEMP();
-
-        MetaSig sig(pMD);
-
-        BOOL fReturnVal = !sig.IsReturnTypeVoid();
-
-        SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
-
-        ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-        // Load the "real" delegate
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
-
-        // Load the arguments
-        UINT paramCount = 0;
-        while(paramCount < sig.NumFixedArgs())
-            pCode->EmitLDARG(paramCount++);
-
-        // Call the delegate
-        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
-
-        // Return
-        pCode->EmitRET();
-
-        PCCOR_SIGNATURE pSig;
-        DWORD cbSig;
-
-        pMD->GetSig(&pSig,&cbSig);
-
-        MethodDesc* pStubMD =
-            ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
-                                                          pMD->GetMethodTable(),
-                                                          ILSTUB_WRAPPERDELEGATE_INVOKE,
-                                                          pMD->GetModule(),
-                                                          pSig, cbSig,
-                                                          NULL,
-                                                          &sl);
-
-        pStub = JitILStub(pStubMD);
-
-        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, (PCODE)NULL);
-        pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
-    }
-    return pStub;
-}
-
-
 
 static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, bool relaxedMatch, bool fromHandleIsBoxed)
 {
@@ -2833,12 +2688,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         methodArgCount++; // count 'this'
     MethodDesc *pCallerMethod = (MethodDesc*)pCtorData->pMethod;
 
-    if (NeedsWrapperDelegate(pTargetMethod))
-    {
-        // If we need a wrapper, go through slow path
-        return NULL;
-    }
-
     // Force the slow path for nullable so that we can give the user an error in case were the verifier is not run.
     MethodTable* pMT = pTargetMethod->GetMethodTable();
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pMT))
@@ -2862,7 +2711,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 4- Static closed                 first arg       target method           null                null                0
     // 5- Static closed (special sig)   delegate        specialSig thunk        target method       first arg           0
     // 6- Static opened                 delegate        shuffle thunk           target method       null                0
-    // 7- Wrapper                       delegate        call thunk              MethodDesc (frame)  target delegate     (arm only, VSD indirection cell address)
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
@@ -2871,8 +2719,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 5        - MulticastDelegate.ctor2 (see table, takes 3 args)
     // 2, 6     - MulticastDelegate.ctor3 (take shuffle thunk)
     // 3        - MulticastDelegate.ctor4 (take shuffle thunk, retrieve MethodDesc) ???
-    //
-    // 7 - Needs special handling
     //
     // With collectible types, we need to fill the _methodBase field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
@@ -2960,28 +2806,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     return pRealCtor;
 }
 
-
-BOOL COMDelegate::IsWrapperDelegate(DELEGATEREF dRef)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    DELEGATEREF innerDel = NULL;
-    if (dRef->GetInvocationCount() != 0)
-    {
-        innerDel = (DELEGATEREF) dRef->GetInvocationList();
-        if (innerDel != NULL && innerDel->GetMethodTable()->IsDelegate())
-        {
-            // We have a wrapper delegate
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
 
 #endif // !DACCESS_COMPILE
 

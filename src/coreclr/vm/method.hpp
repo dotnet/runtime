@@ -2928,7 +2928,7 @@ public:
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
         StubMulticastDelegate = 10,
-        StubWrapperDelegate = 11,
+        // 11 was StubWrapperDelegate
         StubUnboxingIL = 12,
         StubInstantiating = 13,
         StubTailCallStoreArgs = 14,
@@ -3126,12 +3126,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
-    }
-    bool IsWrapperDelegateStub() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(IsILStub());
-        return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
     bool IsUnboxingILStub() const
     {

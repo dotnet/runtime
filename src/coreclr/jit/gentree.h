@@ -4428,7 +4428,6 @@ enum GenTreeCallFlags : unsigned int
                                                      // know when these flags are set.
 
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00002000, // call does not return
-    GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00004000, // call is in wrapper delegate
     GTF_CALL_M_FAT_POINTER_CHECK       = 0x00008000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
@@ -4802,7 +4801,6 @@ enum class WellKnownArg : unsigned
     AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
-    WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,
     VirtualStubCell,

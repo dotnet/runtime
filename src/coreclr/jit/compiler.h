@@ -9453,7 +9453,7 @@ public:
     class VirtualStubParamInfo
     {
     public:
-        VirtualStubParamInfo(bool isNativeAOT)
+        VirtualStubParamInfo(bool /* isNativeAOT */)
         {
 #if defined(TARGET_X86)
             reg     = REG_EAX;
@@ -9462,16 +9462,8 @@ public:
             reg     = REG_R11;
             regMask = RBM_R11;
 #elif defined(TARGET_ARM)
-            if (isNativeAOT)
-            {
-                reg     = REG_R12;
-                regMask = RBM_R12;
-            }
-            else
-            {
-                reg     = REG_R4;
-                regMask = RBM_R4;
-            }
+            reg     = REG_R12;
+            regMask = RBM_R12;
 #elif defined(TARGET_ARM64)
             reg     = REG_R11;
             regMask = RBM_R11;
