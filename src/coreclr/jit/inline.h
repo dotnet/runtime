@@ -629,7 +629,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 
 // ExactContextInfo
 //
-// Used to fill in missing contexts during late devirtualization.
+// Used to fill in missing contexts during late devirtualization and
+// for getting the return type with shared generics.
 //
 struct ExactContextInfo
 {

@@ -625,11 +625,13 @@ private:
                     assert(context != nullptr);
                     assert(inlinersContext != nullptr);
 
-                    ExactContextInfo* const exactContextInfo = new (m_compiler, CMK_Inlining) ExactContextInfo;
-                    exactContextInfo->methodHnd              = method;
-                    exactContextInfo->exactContextHnd        = context;
-                    exactContextInfo->ilLocation             = call->gtExactContextInfo->ilLocation;
-                    call->gtExactContextInfo                 = exactContextInfo;
+                    ExactContextInfo* const contextInfo = call->gtExactContextInfo != nullptr
+                                                              ? call->gtExactContextInfo
+                                                              : new (m_compiler, CMK_Inlining) ExactContextInfo;
+                    contextInfo->methodHnd              = method;
+                    contextInfo->exactContextHnd        = context;
+                    contextInfo->ilLocation             = call->gtExactContextInfo->ilLocation;
+                    call->gtExactContextInfo            = contextInfo;
 
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;

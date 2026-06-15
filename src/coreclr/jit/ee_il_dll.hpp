@@ -150,14 +150,28 @@ inline CORINFO_CLASS_HANDLE Compiler::eeGetClassFromContext(CORINFO_CONTEXT_HAND
         return impInlineRoot()->info.compClassHnd;
     }
 
+    assert(context != nullptr);
     if (((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
     {
         return CORINFO_CLASS_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK);
     }
     else
     {
-        return info.compCompHnd->getMethodClass(CORINFO_METHOD_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK));
+        return info.compCompHnd->getMethodClass(eeGetMethodFromContext(context));
     }
+}
+
+/*****************************************************************************/
+inline CORINFO_METHOD_HANDLE Compiler::eeGetMethodFromContext(CORINFO_CONTEXT_HANDLE context)
+{
+    if (context == METHOD_BEING_COMPILED_CONTEXT())
+    {
+        return impInlineRoot()->info.compMethodHnd;
+    }
+
+    assert(context != nullptr);
+    assert(((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+    return CORINFO_METHOD_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK);
 }
 
 /*****************************************************************************

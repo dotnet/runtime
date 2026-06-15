@@ -20850,21 +20850,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 CORINFO_CLASS_HANDLE  exactClass = NO_CLASS_HANDLE;
 
                 ExactContextInfo* contextInfo = call->gtExactContextInfo;
-                if (contextInfo != nullptr)
+                if (contextInfo != nullptr && contextInfo->exactContextHnd != nullptr)
                 {
-                    SIZE_T contextType  = (SIZE_T)contextInfo->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK;
-                    SIZE_T contextValue = (SIZE_T)contextInfo->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK;
-                    if (contextValue == 0)
+                    exactClass = eeGetClassFromContext(contextInfo->exactContextHnd);
+                    if (((SIZE_T)contextInfo->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) ==
+                        CORINFO_CONTEXTFLAGS_METHOD)
                     {
-                        // we don't have a valid context saved, ignore
-                    }
-                    else if (contextType == CORINFO_CONTEXTFLAGS_CLASS)
-                    {
-                        exactClass = CORINFO_CLASS_HANDLE(contextValue);
-                    }
-                    else
-                    {
-                        method = CORINFO_METHOD_HANDLE(contextValue);
+                        method = eeGetMethodFromContext(contextInfo->exactContextHnd);
                     }
                 }
 

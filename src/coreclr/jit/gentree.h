@@ -5897,7 +5897,7 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
-    ExactContextInfo* gtExactContextInfo; // Always available for user virtual/shared generic calls
+    ExactContextInfo* gtExactContextInfo; // Always available for user virtual/shared generic return calls
 
     // expression evaluated after args are placed which determines the control target
     GenTree*              gtControlExpr; // Applicable to any call type
