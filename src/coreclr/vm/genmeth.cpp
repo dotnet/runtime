@@ -373,7 +373,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   pGenericMDescInRepMT->GetMemberDef(),
                                                   methodInst,
                                                   getWrappedCode,
-                                                  pGenericMDescInRepMT->IsAsyncVariantMethod());
+                                                  pGenericMDescInRepMT->GetAsyncVariantLookup());
 
         // Crst goes out of scope here
         // We don't need to hold the crst while we build the MethodDesc, but we reacquire it later
@@ -494,7 +494,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                       pGenericMDescInRepMT->GetMemberDef(),
                                                       methodInst,
                                                       getWrappedCode,
-                                                      pGenericMDescInRepMT->IsAsyncVariantMethod());
+                                                      pGenericMDescInRepMT->GetAsyncVariantLookup());
 
             if (pOldMD == NULL)
             {
@@ -569,7 +569,7 @@ InstantiatedMethodDesc::FindOrCreateExactClassMethod(MethodTable *pExactMT,
                                                                        pCanonicalMD->GetMemberDef(),
                                                                        Instantiation(),
                                                                        FALSE,
-                                                                       pCanonicalMD->IsAsyncVariantMethod());
+                                                                       pCanonicalMD->GetAsyncVariantLookup());
 
     if (pInstMD == NULL)
     {
@@ -594,7 +594,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                          mdMethodDef methodDef,
                                                          Instantiation methodInst,
                                                          BOOL getWrappedCode,
-                                                         BOOL asyncThunk)
+                                                         AsyncVariantLookup variantLookup)
 {
     CONTRACT(InstantiatedMethodDesc *)
     {
@@ -630,7 +630,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                   FALSE /* not forceBoxedEntryPoint */,
                                                   methodInst,
                                                   getWrappedCode,
-                                                  asyncThunk);
+                                                  variantLookup);
 
     if (resultMD != NULL)
        RETURN((InstantiatedMethodDesc*) resultMD);
@@ -908,7 +908,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                TRUE /* forceBoxedEntryPoint */,
                                                Instantiation(),
                                                FALSE /* no inst param */,
-                                               pMDescInCanonMT->IsAsyncVariantMethod());
+                                               pMDescInCanonMT->GetAsyncVariantLookup());
 
             // If we didn't find it then create it...
             if (!pResultMD)
@@ -928,7 +928,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE,
                                                    Instantiation(),
                                                    FALSE,
-                                                   pMDescInCanonMT->IsAsyncVariantMethod());
+                                                   pMDescInCanonMT->GetAsyncVariantLookup());
                 if (pResultMD == NULL)
                 {
                     AllocMemTracker amt;
@@ -976,7 +976,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                TRUE, /* forceBoxedEntryPoint */
                                                methodInst,
                                                FALSE /* no inst param */,
-                                               pMDescInCanonMT->IsAsyncVariantMethod());
+                                               pMDescInCanonMT->GetAsyncVariantLookup());
 
             if (!pResultMD)
             {
@@ -1015,7 +1015,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE, /* forceBoxedEntryPoint */
                                                    methodInst,
                                                    FALSE /* no inst param */,
-                                                   pNonUnboxingStub->IsAsyncVariantMethod());
+                                                   pNonUnboxingStub->GetAsyncVariantLookup());
 
                 if (pResultMD == NULL)
                 {
@@ -1160,7 +1160,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          Instantiation(repInst, methodInst.GetNumArgs()),
                                                                          TRUE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.
             if (pInstMD == NULL)
@@ -1187,7 +1187,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          methodInst,
                                                                          FALSE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.  Go fetch the shared one first
             if (pInstMD == NULL)
@@ -1230,7 +1230,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          methodInst,
                                                                          FALSE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.
             if (pInstMD == NULL)
