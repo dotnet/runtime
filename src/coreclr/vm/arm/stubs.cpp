@@ -856,8 +856,8 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     n = 0;
 
-    // push {r5}
-    _stub._failEntryPoint[n++] = 0xb420;
+    // push {r4, r5}
+    _stub._failEntryPoint[n++] = 0xb430;
 
     // ldr r5, [pc + #_pCounter]
     offset = PC_REL_OFFSET(_pCounter);
@@ -876,8 +876,8 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._failEntryPoint[n++] = 0xf8c5;
     _stub._failEntryPoint[n++] = 0x4000;
 
-    // pop {r5}
-    _stub._failEntryPoint[n++] = 0xbc20;
+    // pop {r4, r5}
+    _stub._failEntryPoint[n++] = 0xbc30;
 
     // bge resolveEntryPoint
     _stub._failEntryPoint[n++] = 0xda01;

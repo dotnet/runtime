@@ -17,9 +17,10 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
-        // This is set under 2 circumstances
+        // This is set under 3 circumstances
         // 1. Multicast delegate
-        // 2. Wrapper delegate
+        // 2. Unmanaged function pointer
+        // 3. Open virtual delegate
         private object? _invocationList; // Initialized by VM as needed
         private nint _invocationCount;
 
@@ -59,11 +60,10 @@ namespace System
 
             if (_invocationCount != 0)
             {
-                // there are 4 kind of delegate kinds that fall into this bucket
+                // there are 3 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
-                // 2- Wrapper (_invocationList is Delegate)
-                // 3- Unmanaged FntPtr (_invocationList == null)
-                // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                // 2- Unmanaged FntPtr (_invocationList == null)
+                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
 
                 if (InvocationListLogicallyNull())
                 {
@@ -76,25 +76,12 @@ namespace System
                             && _methodPtrAux == d._methodPtrAux;
                     }
 
-                    // now we know 'this' is not a special one, so we can work out what the other is
-                    if (d._invocationList is Delegate)
-                        // this is a wrapper delegate so we need to unwrap and check the inner one
-                        return Equals(d._invocationList);
-
                     return base.Equals(obj);
                 }
                 else
                 {
-                    if (_invocationList is Delegate invocationListDelegate)
-                    {
-                        // this is a wrapper delegate so we need to unwrap and check the inner one
-                        return invocationListDelegate.Equals(obj);
-                    }
-                    else
-                    {
-                        Debug.Assert(_invocationList is object[], "empty invocation list on multicast delegate");
-                        return InvocationListEquals(d);
-                    }
+                    Debug.Assert(_invocationList is object[], "empty invocation list on multicast delegate");
+                    return InvocationListEquals(d);
                 }
             }
             else
@@ -109,11 +96,6 @@ namespace System
                         return false;
                     return base.Equals(d);
                 }
-
-                // now we know 'this' is not a special one, so we can work out what the other is
-                if (d._invocationList is Delegate)
-                    // this is a wrapper delegate so we need to unwrap and check the inner one
-                    return Equals(d._invocationList);
 
                 // now we can call on the base
                 return base.Equals(d);
@@ -196,15 +178,8 @@ namespace System
 
         internal void StoreDynamicMethod(MethodInfo dynamicMethod)
         {
-            if (_invocationCount != 0)
-            {
-                Debug.Assert(!IsUnmanagedFunctionPtr(), "dynamic method and unmanaged fntptr delegate combined");
-                // must be a secure/wrapper one, unwrap and save
-                MulticastDelegate d = ((MulticastDelegate?)_invocationList)!;
-                d._methodBase = dynamicMethod;
-            }
-            else
-                _methodBase = dynamicMethod;
+            Debug.Assert(_invocationCount == 0);
+            _methodBase = dynamicMethod;
         }
 
         // This method will combine this delegate with the passed delegate
@@ -439,15 +414,6 @@ namespace System
             if (IsUnmanagedFunctionPtr())
                 return HashCode.Combine(_methodPtr, _methodPtrAux);
 
-            if (_invocationCount != 0)
-            {
-                if (_invocationList is Delegate t)
-                {
-                    // this is a wrapper delegate so we need to unwrap and check the inner one
-                    return t.GetHashCode();
-                }
-            }
-
             if (_invocationList is not object[] invocationList)
             {
                 return base.GetHashCode();
@@ -470,7 +436,6 @@ namespace System
             {
                 // _invocationCount != 0 we are in one of these cases:
                 // - Multicast -> return the target of the last delegate in the list
-                // - Wrapper delegate -> return the target of the inner delegate
                 // - unmanaged function pointer - return null
                 // - virtual open delegate - return null
                 if (InvocationListLogicallyNull())
@@ -484,11 +449,6 @@ namespace System
                     {
                         int invocationCount = (int)_invocationCount;
                         return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
-                    }
-                    else
-                    {
-                        if (_invocationList is Delegate receiver)
-                            return receiver.GetTarget();
                     }
                 }
             }
@@ -504,12 +464,6 @@ namespace System
                 {
                     int index = (int)_invocationCount - 1;
                     return ((Delegate)invocationList[index]).Method;
-                }
-
-                if (_invocationList is MulticastDelegate innerDelegate)
-                {
-                    // must be a wrapper delegate
-                    return innerDelegate.GetMethodImpl();
                 }
             }
             else if (IsUnmanagedFunctionPtr())
@@ -536,7 +490,6 @@ namespace System
                 return (MethodInfo)_methodBase;
             }
 
-            // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
             return base.GetMethodImpl();
         }
 

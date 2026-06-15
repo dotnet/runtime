@@ -2928,21 +2928,20 @@ public:
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
         StubMulticastDelegate = 10,
-        // 11 was StubWrapperDelegate
-        StubUnboxingIL = 12,
-        StubInstantiating = 13,
-        StubTailCallStoreArgs = 14,
-        StubTailCallCallTarget = 15,
+        StubUnboxingIL = 11,
+        StubInstantiating = 12,
+        StubTailCallStoreArgs = 13,
+        StubTailCallCallTarget = 14,
 
-        StubVirtualStaticMethodDispatch = 16,
-        StubDelegateShuffleThunk = 17,
+        StubVirtualStaticMethodDispatch = 15,
+        StubDelegateShuffleThunk = 16,
 
-        StubDelegateInvokeMethod = 18,
+        StubDelegateInvokeMethod = 17,
 
-        StubAsyncResume = 19,
+        StubAsyncResume = 18,
 
-        StubCLRToCOMEvent = 20,
-        StubLast = 21
+        StubCLRToCOMEvent = 19,
+        StubLast = 20
     };
 
     enum Flag : DWORD
