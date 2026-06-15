@@ -307,8 +307,11 @@ internal partial class StackWalk_1 : IStackWalk
 
         IException exceptionContract = _target.Contracts.Exception;
         HashSet<TargetPointer> seen = new();
-        while (pExInfo != TargetPointer.Null && seen.Add(pExInfo))
+        while (pExInfo != TargetPointer.Null)
         {
+            if (!seen.Add(pExInfo))
+                throw new InvalidOperationException($"Found a cycle when processing ExInfo.");
+
             // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
             // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
             // ExInfo lives on the stack but is not a Frame, so it is treated specially here.
@@ -329,8 +332,11 @@ internal partial class StackWalk_1 : IStackWalk
         ulong pointerSize = (ulong)_target.PointerSize;
         HashSet<TargetPointer> seen = new();
         TargetPointer pGCFrame = threadData.GCFrame;
-        while (pGCFrame != TargetPointer.Null && pGCFrame != terminator && seen.Add(pGCFrame))
+        while (pGCFrame != TargetPointer.Null && pGCFrame != terminator)
         {
+            if (!seen.Add(pGCFrame))
+                throw new InvalidOperationException($"Found a cycle when processing ThreadData.GCFrame list.");
+
             Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
 
             // A GCFrame node lives on the stack but is a separate chain from the explicit Frame chain.

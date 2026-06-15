@@ -182,8 +182,13 @@ public class StackReferenceDumpTests : DumpTestBase
 
         HashSet<ulong> gcFrameNodes = new();
         TargetPointer node = crashingThread.GCFrame;
-        while (node != TargetPointer.Null && node != terminator && gcFrameNodes.Add(node))
+        while (node != TargetPointer.Null && node != terminator)
+        {
+            if (!gcFrameNodes.Add(node))
+                throw new InvalidOperationException($"Found a cycle when processing ThreadData.GCFrame list.");
+
             node = Target.ReadPointerField(node, gcFrameType, "Next");
+        }
 
         Assert.True(gcFrameNodes.Count > 0, "GCProtect debuggee should have at least one live GCFrame");
 
