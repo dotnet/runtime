@@ -370,9 +370,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
+    // BBF_HAS_JMP on wasm comes only from fast tail calls. The return_call already
+    // left the function, but the body still needs an INS_end if this is the last block.
     if (jmpEpilog)
     {
-        NYI_WASM("genFnEpilog: jmpEpilog");
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            instGen(INS_end);
+        }
+        return;
     }
 
     // TODO-WASM: shadow stack maintenance
@@ -804,6 +810,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_PHYSREG:
             genCodeForPhysReg(treeNode->AsPhysReg());
+            break;
+
+        case GT_FRAME_SIZE:
+            genCodeForFrameSize(treeNode);
             break;
 
         case GT_JTRUE:
@@ -1811,13 +1821,12 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
-    // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
-    // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
-    // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
-
+    // The shift operand width in IR is always int or small int, so the operand's actual type should be TYP_INT.
+    // However, the WASM operations have the same widths for both the shift and shiftee so
+    // the shift width may need to be zero-extended if the shift result type is TYP_LONG.
     if (treeNode->TypeIs(TYP_LONG))
     {
-        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        assert(genActualType(treeNode->gtGetOp2()->TypeGet()) == TYP_INT);
         // Zero-extend the shift amount to 64 bits for long shifts/rotates.
         // Wasteful if the amount was a constant, perhaps we should contain it if so.
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
@@ -2522,6 +2531,22 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForFrameSize: Produce code for a GT_FRAME_SIZE node.
+//
+// Emits an i32/i64 const for compLclFrameSize, which is only known after the
+// final frame layout (well after the IR is built).
+//
+// Arguments:
+//    tree - the GT_FRAME_SIZE node
+//
+void CodeGen::genCodeForFrameSize(GenTree* tree)
+{
+    assert(tree->OperIs(GT_FRAME_SIZE));
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2671,17 +2696,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    if (call->TypeIs(TYP_STRUCT))
-    {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
-    }
-    else if (call->TypeIs(TYP_VOID))
+    // Compute the wasm-level result type for the call. Use call->gtReturnType
+    // (the call's "exact" return type) rather than call->gtType, since the latter is
+    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
+    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
+    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
+    const var_types callRetType = (var_types)call->gtReturnType;
+    if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
     }
+    else if (callRetType == TYP_STRUCT)
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
     else
     {
-        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+        // Normalize small ints (bool/byte/short/...).
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(ActualTypeToWasmValueType(callRetType)));
     }
 
     for (const CallArg& arg : call->gtArgs.Args())

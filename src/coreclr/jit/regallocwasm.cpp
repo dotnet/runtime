@@ -575,6 +575,29 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
     {
         ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
     }
+
+    // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
+    // undoes the prolog's SP adjustment and the callee sees the incoming SP.
+    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
+    if (callNode->IsFastTailCall())
+    {
+        CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
+        if (spArg != nullptr)
+        {
+            GenTree* const physReg = spArg->GetNode();
+            assert(physReg != nullptr);
+            assert(physReg->OperIs(GT_PHYSREG));
+            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
+            // Fast tail calls from funclets are not supported.
+            assert(m_currentFunclet == ROOT_FUNC_IDX);
+
+            GenTree* const frameSize = new (m_compiler, GT_FRAME_SIZE) GenTree(GT_FRAME_SIZE, TYP_I_IMPL);
+            GenTree* const spAdjust  = m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, physReg, frameSize);
+
+            CurrentRange().InsertAfter(physReg, frameSize, spAdjust);
+            spArg->NodeRef() = spAdjust;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
