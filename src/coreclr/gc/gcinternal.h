@@ -4466,6 +4466,88 @@ extern initial_memory_details memory_details;
 
 #endif //SERVER_GC
 
+#ifdef USE_REGIONS
+extern GCSpinLock write_barrier_spin_lock;
+
+inline
+void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
+{
+    assert (gen_num < (1 << (sizeof (uint8_t) * 8)));
+    assert (gen_num >= 0);
+    heap_segment_gen_num (region) = (uint8_t)gen_num;
+
+    uint8_t* region_start = get_region_start (region);
+    uint8_t* region_end = heap_segment_reserved (region);
+
+    size_t region_index_start = get_basic_region_index_for_address (region_start);
+    size_t region_index_end = get_basic_region_index_for_address (region_end);
+    region_info entry = (region_info)((gen_num << RI_PLAN_GEN_SHR) | gen_num);
+    for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
+    {
+        assert (gen_num <= max_generation);
+        map_region_to_generation[region_index] = entry;
+    }
+    if (gen_num <= soh_gen1)
+    {
+        if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
+        {
+            while (true)
+            {
+                if (Interlocked::CompareExchange(&write_barrier_spin_lock.lock, 0, -1) < 0)
+                    break;
+
+                if ((ephemeral_low <= region_start) && (region_end <= ephemeral_high))
+                    return;
+
+                while (write_barrier_spin_lock.lock >= 0)
+                {
+                    YieldProcessor();           // indicate to the processor that we are spinning
+                }
+            }
+#ifdef _DEBUG
+            write_barrier_spin_lock.holding_thread = GCToEEInterface::GetThread();
+#endif //_DEBUG
+
+            if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
+            {
+                uint8_t* new_ephemeral_low = min (region_start, (uint8_t*)ephemeral_low);
+                uint8_t* new_ephemeral_high = max (region_end, (uint8_t*)ephemeral_high);
+
+                dprintf (REGIONS_LOG, ("about to set ephemeral_low = %p ephemeral_high = %p", new_ephemeral_low, new_ephemeral_high));
+
+                stomp_write_barrier_ephemeral (new_ephemeral_low, new_ephemeral_high,
+                                               map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
+
+                // we should only *decrease* ephemeral_low and only *increase* ephemeral_high
+                if (ephemeral_low < new_ephemeral_low)
+                    GCToOSInterface::DebugBreak ();
+                if (new_ephemeral_high < ephemeral_high)
+                    GCToOSInterface::DebugBreak ();
+
+                // only set the globals *after* we have updated the write barrier
+                ephemeral_low = new_ephemeral_low;
+                ephemeral_high = new_ephemeral_high;
+
+                dprintf (REGIONS_LOG, ("set ephemeral_low = %p ephemeral_high = %p", new_ephemeral_low, new_ephemeral_high));
+            }
+            else
+            {
+                dprintf (REGIONS_LOG, ("leaving lock - no need to update ephemeral range [%p,%p[ for region [%p,%p]", (uint8_t*)ephemeral_low, (uint8_t*)ephemeral_high, region_start, region_end));
+            }
+#ifdef _DEBUG
+            write_barrier_spin_lock.holding_thread = (Thread*)-1;
+#endif //_DEBUG
+            write_barrier_spin_lock.lock = -1;
+        }
+        else
+        {
+            dprintf (REGIONS_LOG, ("no need to update ephemeral range [%p,%p[ for region [%p,%p]", (uint8_t*)ephemeral_low, (uint8_t*)ephemeral_high, region_start, region_end));
+        }
+    }
+}
+
+#endif //USE_REGIONS
+
 } // namespace WKS/SVR
 
 #endif // GC_INTERNAL_H

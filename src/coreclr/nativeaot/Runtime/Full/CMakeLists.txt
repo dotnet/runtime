@@ -24,10 +24,12 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
 add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
 add_dependencies(Runtime.GC.Server aot_eventing_headers)
 target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
+set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 add_library(Runtime.WorkstationGC STATIC
     ${COMMON_RUNTIME_SOURCES}
