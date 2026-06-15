@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -65,10 +66,10 @@ namespace System.Net.WebSockets.Tests
 
         private static async Task<WebSocketException> ReceiveSyntheticFrameAsync(byte[] frame)
         {
-            using var stream = new WebSocketTestStream();
+            using var stream = new MemoryStream();
+            stream.Write(frame, 0, frame.Length);
+            stream.Position = 0;
             using WebSocket webSocket = WebSocket.CreateFromStream(stream, isServer: false, subProtocol: null, Timeout.InfiniteTimeSpan);
-
-            stream.Remote.Enqueue(frame);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             return await Assert.ThrowsAsync<WebSocketException>(() =>
