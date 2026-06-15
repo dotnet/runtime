@@ -1,6 +1,4 @@
----
-excludeAgent: code-review
----
+When reviewing pull requests, use the `code-review` skill unless the user has stated they will review the changes themselves.
 
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
@@ -84,7 +82,7 @@ Based on file paths you will modify:
 
 ### Step 2: Run the Baseline Build (from repo root)
 
-**First, checkout the `main` branch** to establish a known-good baseline, then run the appropriate build command:
+From the repo root, on the branch you intend to modify, ensure you have a clean working tree (no uncommitted changes) at the current HEAD, then run the appropriate build command **before making any code changes**:
 
 | Component | Command |
 |-----------|---------|
@@ -108,7 +106,7 @@ export PATH="$(pwd)/.dotnet:$PATH"
 dotnet --version  # Should match sdk.version in global.json
 ```
 
-**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop. After the baseline build, switch back to your working branch before making changes.
+**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop.
 
 ---
 

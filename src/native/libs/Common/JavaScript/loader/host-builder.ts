@@ -102,10 +102,10 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
 
-    async download(): Promise<void> {
+    async download(httpCacheOnly?: boolean): Promise<void> {
         try {
             validateLoaderConfig();
-            return createRuntime(true);
+            return createRuntime(true, httpCacheOnly ?? false);
         } catch (err) {
             exit(1, err);
             throw err;

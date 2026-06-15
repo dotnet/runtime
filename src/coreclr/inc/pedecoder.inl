@@ -109,7 +109,7 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     CONTRACTL_END;
 
     // Temporarily set the size to 2 pages, so we can get the headers.
-    m_size = GetOsPageSize()*2;
+    m_size = minipal_getpagesize()*2;
 
     m_pNTHeaders = PTR_IMAGE_NT_HEADERS(FindNTHeaders());
     if (!m_pNTHeaders)
@@ -182,7 +182,7 @@ inline HRESULT PEDecoder::Init(void *mappedBase, bool fixedUp /*= FALSE*/)
         m_flags |= FLAG_RELOCATED;
 
     // Temporarily set the size to 2 pages, so we can get the headers.
-    m_size = GetOsPageSize()*2;
+    m_size = minipal_getpagesize()*2;
 
     m_pNTHeaders = FindNTHeaders();
     if (!m_pNTHeaders)
@@ -825,7 +825,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
     CONTRACT_END;
 
     if (m_pCorHeader == NULL)
-        const_cast<PEDecoder *>(this)->m_pCorHeader =
+        m_pCorHeader =
             dac_cast<PTR_IMAGE_COR20_HEADER>(FindCorHeader());
 
     RETURN m_pCorHeader;

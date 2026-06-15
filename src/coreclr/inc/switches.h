@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif
@@ -85,6 +82,10 @@
 
 #if defined(STRESS_HEAP) && defined(_DEBUG) && defined(FEATURE_HIJACK)
 #define HAVE_GCCOVER
+#endif
+
+#if defined(_DEBUG)
+#define CDAC_STRESS
 #endif
 
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.

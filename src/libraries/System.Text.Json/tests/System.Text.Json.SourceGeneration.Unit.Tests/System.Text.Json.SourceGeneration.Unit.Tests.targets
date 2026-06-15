@@ -31,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />

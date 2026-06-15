@@ -13,6 +13,19 @@ namespace System.Diagnostics.Tests
         private const string NonExistentPath = "/nonexistent_path_for_testing_1234567890";
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void Process_Start_KillOnParentExit_ExitsSuccessfully()
+        {
+            using (Process process = Process.Start(new ProcessStartInfo("ls", Path.GetTempPath()) { KillOnParentExit = true }))
+            {
+                Assert.NotNull(process);
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(0, process.ExitCode);
+                Assert.True(process.HasExited);
+            }
+        }
+
+        [Fact]
         public void Process_Start_InheritedIO_ExitsSuccessfully()
         {
             using (Process process = Process.Start("ls", Path.GetTempPath()))
@@ -91,8 +104,10 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        public void Process_Start_WithStandardHandles_CanRedirectIO()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Process_Start_WithStandardHandles_CanRedirectIO(bool restrictHandles)
         {
             string errorFile = Path.GetTempFileName();
             try
@@ -106,7 +121,8 @@ namespace System.Diagnostics.Tests
                 {
                     StandardInputHandle = inputHandle,
                     StandardOutputHandle = outputWrite,
-                    StandardErrorHandle = errorHandle
+                    StandardErrorHandle = errorHandle,
+                    InheritedHandles = restrictHandles ? [] : null
                 };
 
                 using (outputRead)

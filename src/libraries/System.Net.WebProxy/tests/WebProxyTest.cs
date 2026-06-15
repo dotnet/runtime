@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Xunit;
@@ -44,7 +45,7 @@ namespace System.Net.Tests
             Assert.Equal(useDefaultCredentials, p.UseDefaultCredentials);
             Assert.Equal(bypassLocal, p.BypassProxyOnLocal);
             Assert.Equal(bypassedAddresses, p.BypassList);
-            Assert.Equal(bypassedAddresses, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(bypassedAddresses, p.BypassArrayList.Cast<string>().ToArray());
             Assert.Equal(creds, p.Credentials);
         }
 
@@ -60,12 +61,12 @@ namespace System.Net.Tests
             strings = new string[] { "hello", "world" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
-            Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(strings, p.BypassArrayList.Cast<string>().ToArray());
 
             strings = new string[] { "hello" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
-            Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+            Assert.Equal(strings, p.BypassArrayList.Cast<string>().ToArray());
 
             strings = null;
             p.BypassList = strings;

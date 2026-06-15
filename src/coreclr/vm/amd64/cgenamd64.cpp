@@ -92,7 +92,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -120,7 +119,6 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -194,7 +192,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
@@ -264,7 +261,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifdef FEATURE_HIJACK
@@ -310,7 +306,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     RETURN;
 }
@@ -326,7 +321,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     CONTRACTL_END;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
 #ifdef TARGET_WINDOWS

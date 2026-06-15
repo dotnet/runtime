@@ -198,6 +198,7 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
@@ -343,6 +344,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
+
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    flags |= O_NOCTTY;
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
@@ -1731,7 +1735,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
     if (fsStatDevRes == -1) return 0;
 
     return FileSystemNameSupportsLocking(info.fsh_name);
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1741,7 +1745,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
 
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     unsigned int f_type = (unsigned int)statfsArgs.f_type;
     if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
         f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC

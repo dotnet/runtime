@@ -220,8 +220,15 @@ UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t 
     success = ((*newThunksOut) != NULL);
 
 cleanup:
-    CloseHandle(hMap);
-    CloseHandle(hFile);
+    if (hMap != NULL)
+    {
+        CloseHandle(hMap);
+    }
+
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hFile);
+    }
 
     return success;
 #endif
@@ -947,8 +954,12 @@ char* PalCopyTCharAsChar(const TCHAR* toCopy)
         return nullptr;
 
     char* converted = new (nothrow) char[len];
-    int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
-    assert(len == written);
+
+    if (converted != nullptr)
+    {
+        int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+        assert(len == written);
+    }
     return converted;
 }
 

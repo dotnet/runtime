@@ -423,9 +423,6 @@
   <data name="TypeValidation" xml:space="preserve">
     <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
   </data>
-  <data name="EnableGenericCycleDetection" xml:space="preserve">
-    <value>Perform generic cycle detection during compilation (incurs longer compilation time)</value>
-  </data>
   <data name="GenericCycleBreadthCutoff" xml:space="preserve">
     <value>Total number of occurrences of potentially cyclic generic types within a generic type to cut off</value>
   </data>
@@ -449,5 +446,8 @@
   </data>
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>
+  </data>
+  <data name="StripILBodiesOption" xml:space="preserve">
+    <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
 </root>

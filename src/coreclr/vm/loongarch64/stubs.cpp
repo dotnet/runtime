@@ -273,7 +273,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -307,10 +306,10 @@ void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 128);
 
     // LoongArch CONTEXT::F has 4 slots per register for LASX support.
-    // Each scalar double value is stored in the first slot.
+    // Scalar double value is stored in the first 8 * 32.
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&pRD->pCurrentContext->F[(24 + i) * 4], &pCalleeSavedFloats[i], sizeof(double));
+        memcpy(&pRD->pCurrentContext->F[24 + i], &pCalleeSavedFloats[i], sizeof(double));
     }
 }
 #endif // DACCESS_COMPILE
@@ -352,7 +351,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -385,7 +383,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
@@ -474,7 +471,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->volatileCurrContextPointers.X0 = &m_Regs->X0;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -486,7 +482,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LIMITED_METHOD_CONTRACT;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = m_ReturnAddress;
     size_t s = sizeof(struct HijackArgs);

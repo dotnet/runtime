@@ -303,7 +303,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void GetHexStringCore(Span<char> destination, bool lowercase)
+        private static unsafe void GetHexStringCore(Span<char> destination, bool lowercase)
         {
             Debug.Assert(!destination.IsEmpty);
 
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void GetItemsCore<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        private static unsafe void GetItemsCore<T>(ReadOnlySpan<T> choices, Span<T> destination)
         {
             Debug.Assert(choices.Length > 0);
 

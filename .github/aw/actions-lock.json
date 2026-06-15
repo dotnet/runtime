@@ -1,34 +1,44 @@
 {
   "entries": {
-    "actions/github-script@v8": {
+    "actions/checkout@v6.0.2": {
+      "repo": "actions/checkout",
+      "version": "v6.0.2",
+      "sha": "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+    },
+    "actions/download-artifact@v8.0.1": {
+      "repo": "actions/download-artifact",
+      "version": "v8.0.1",
+      "sha": "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
+    },
+    "actions/github-script@v9": {
       "repo": "actions/github-script",
-      "version": "v8",
-      "sha": "ed597411d8f924073f98dfc5c65a23a2325f34cd"
+      "version": "v9",
+      "sha": "373c709c69115d41ff229c7e5df9f8788daa9553"
+    },
+    "actions/github-script@v9.0.0": {
+      "repo": "actions/github-script",
+      "version": "v9.0.0",
+      "sha": "3a2844b7e9c422d3c10d287c895573f7108da1b3"
+    },
+    "actions/setup-node@v6.4.0": {
+      "repo": "actions/setup-node",
+      "version": "v6.4.0",
+      "sha": "48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e"
     },
     "actions/upload-artifact@v4": {
       "repo": "actions/upload-artifact",
       "version": "v4",
       "sha": "ea165f8d65b6e75b540449e92b4886f43607fa02"
     },
-    "github/gh-aw-actions/setup@v0.63.0": {
-      "repo": "github/gh-aw-actions/setup",
-      "version": "v0.63.0",
-      "sha": "9128d2542bbf1bdfec94dabeaf3e1d3c0d402577"
+    "actions/upload-artifact@v7.0.1": {
+      "repo": "actions/upload-artifact",
+      "version": "v7.0.1",
+      "sha": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
     },
-    "github/gh-aw-actions/setup@v0.63.1": {
+    "github/gh-aw-actions/setup@v0.71.5": {
       "repo": "github/gh-aw-actions/setup",
-      "version": "v0.63.1",
-      "sha": "53e09ec0be6271e81a69f51ef93f37212c8834b0"
-    },
-    "github/gh-aw-actions/setup@v0.64.5": {
-      "repo": "github/gh-aw-actions/setup",
-      "version": "v0.64.5",
-      "sha": "5d2ebfd87a1a45a8a8323c1a12c01b055730dac5"
-    },
-    "github/gh-aw-actions/setup@v0.65.6": {
-      "repo": "github/gh-aw-actions/setup",
-      "version": "v0.65.6",
-      "sha": "31130b20a8fd3ef263acbe2091267c0aace07e09"
+      "version": "v0.71.5",
+      "sha": "b8068426813005612b960b5ab0b8bd2c27142323"
     }
   }
 }

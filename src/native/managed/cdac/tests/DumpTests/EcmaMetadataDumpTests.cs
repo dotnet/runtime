@@ -3,6 +3,7 @@
 
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,7 +15,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class EcmaMetadataDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

@@ -20,6 +20,10 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -1849,7 +1853,7 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     CONTRACTL_END;
 
     // if don't have a throwable the aren't processing an exception
-    if (IsHandleNullUnchecked(pThread->GetThrowableAsHandle()))
+    if (pThread->IsThrowableNull())
         return FALSE;
 
     EH_CLAUSE_ENUMERATOR pEnumState;
@@ -2546,42 +2550,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace - handle version.
-//
-void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    Thread *pThread = GetThread();
-    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
-    _ASSERTE(IsException(pMT));
-
-    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
-    // Check if the flag indicating foreign exception raise has been setup or not,
-    // and then reset it so that subsequent processing of managed frames proceeds
-    // normally.
-    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
-    pCurTES->ResetRaisingForeignException();
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-
-    // Do not save stacktrace to preallocated exception.  These are shared.
-    if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
-    {
-        return;
-    }
-
-    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
-}
-
-//
-// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+// Append stack frame to an exception stack trace
 //
 void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2597,25 +2566,25 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     MethodTable* pMT = pThrowable->GetMethodTable();
     _ASSERTE(IsException(pMT));
 
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
+    // Check if the flag indicating foreign exception raise has been setup or not,
+    // and then reset it so that subsequent processing of managed frames proceeds
+    // normally.
+    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
+    pCurTES->ResetRaisingForeignException();
+
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
-}
 
-//
-// Append stack frame to an exception stack trace.
-//
-void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException)
-{
-    CONTRACTL
+    // Do not save stacktrace to preallocated exception.  These are shared.
+    if (CLRException::IsPreallocatedExceptionObject(pThrowable))
     {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
         return;
+    }
+
+    if (pFunc != NULL && (pFunc->IsDiagnosticsHidden() || pFunc == g_pEnvironmentCallEntryPointMethodDesc))
+    {
+        return;
+    }
 
     struct
     {
@@ -2651,8 +2620,13 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -3516,6 +3490,13 @@ bool GenerateDump(
 
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (exitCode == COR_E_STACKOVERFLOW)
+    {
+        InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
+    }
+#endif
+
 #ifdef HOST_WINDOWS
     CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
@@ -5299,7 +5280,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifndef TARGET_X86
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_End();
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
@@ -5365,11 +5345,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
@@ -5390,10 +5365,6 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-    (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-    (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
 
@@ -5423,7 +5394,6 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #ifndef TARGET_X86
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -5645,20 +5615,18 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
+    UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
     pThread->IncPreventAbort();
 
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
+    throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 
-    GCPROTECT_END();
     UNREACHABLE();
 }
 
@@ -10387,7 +10355,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = ::GetSP(&m_Context);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifndef DACCESS_COMPILE
@@ -10660,12 +10627,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Copy floating point argument registers (fa0-fa7)
     // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
-    // Each FP register takes 4 slots (for 256-bit LASX vectors).
     // For 64-bit doubles, we only use the first slot of each register.
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+        memcpy(&m_Context.F[i], &pFloatArgs->f[i], sizeof(double));
     }
 
     // Read FP callee-saved registers (f24-f31) from the stack
@@ -10675,17 +10641,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
     for (int i = 0; i < 8; i++)
     {
-        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
-        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+        // f24-f31 map to indices 24-31 in the F array
+        memcpy(&m_Context.F[24 + i], &pFpCalleeSaved[i], sizeof(double));
     }
 
     // Initialize remaining F registers (f8-f23) to zero
     for (int i = 8; i < 24; i++)
     {
-        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+        memset(&m_Context.F[i], 0, sizeof(double));
     }
-    // Initialize FP control/status register
+    // Initialize FP control/status and condition flag registers
     m_Context.Fcsr = 0;
+    m_Context.Fcc  = 0;
 
     // Set up context pointers for callee-saved registers
     m_ContextPointers.S0 = &m_Context.S0;
@@ -10798,6 +10765,14 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     memset(&m_Context, 0, sizeof(m_Context));
     memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
     m_ReturnAddress = 0;
+    if (pTransitionBlock != nullptr)
+    {
+        m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
+        m_Context.InterpreterFP = 0;
+        m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        m_ReturnAddress = m_Context.InterpreterIP;
+        m_Context.InterpreterWalkFramePointer = 0;
+    }
 }
 
 #endif // TARGET_X86

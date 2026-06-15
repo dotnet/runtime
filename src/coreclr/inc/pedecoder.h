@@ -102,6 +102,8 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x4644
 #elif defined(__FreeBSD__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0xADC4
+#elif defined(__OpenBSD__)
+#define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0xADC5
 #elif defined(__linux__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x7B79
 #elif defined(__NetBSD__)
@@ -383,11 +385,11 @@ class PEDecoder
 
     TADDR               m_base;
     COUNT_T             m_size;     // size of file on disk, as opposed to OptionalHeaders.SizeOfImage
-    ULONG               m_flags;
+    mutable ULONG               m_flags;
 
-    PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
-    PTR_IMAGE_COR20_HEADER m_pCorHeader;
-    PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
+    mutable PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
+    mutable PTR_IMAGE_COR20_HEADER m_pCorHeader;
+    mutable PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
 
     // to allow inherited classes to access, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;

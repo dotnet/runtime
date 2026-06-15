@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=TZ=Europe/Berlin</WasmXHarnessMonoArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>

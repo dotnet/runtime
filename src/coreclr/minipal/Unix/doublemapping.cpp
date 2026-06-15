@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #include <stddef.h>
 #include <sys/mman.h>
@@ -58,7 +57,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
@@ -102,6 +101,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
     // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
     // for the rest of the process.
+#ifdef RLIMIT_AS
+    // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
     struct rlimit virtualAddressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -111,6 +112,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_AS
 
     // Clip the maximum double mapped memory size to the file size limit
     struct rlimit fileSizeLimit;
@@ -408,7 +410,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 
 #ifdef TARGET_FREEBSD
         int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
         int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
 #else
         int fd = -1;

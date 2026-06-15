@@ -84,7 +84,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         }
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
@@ -270,7 +270,11 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         }
 
         const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
-        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE) - 1;
+        // The contained shift's width is determined by its own type, which matches the parent's
+        // operand width. We cannot use genTypeSize(parentNode) here because for compare-like
+        // parents (e.g. GT_EQ/GT_NE/GT_TEST_EQ/GT_TEST_NE) the parent's type is TYP_INT even
+        // when the comparison's operands - and thus the contained shift - are TYP_LONG.
+        const ssize_t maxShift = (static_cast<ssize_t>(genTypeSize(childNode)) * BITS_PER_BYTE) - 1;
 
         if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
@@ -659,6 +663,14 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 return next;
             }
+
+            if (binOp->OperIs(GT_AND))
+            {
+                if (TryLowerAndRshToBFX(binOp, &next))
+                {
+                    return next;
+                }
+            }
         }
 
         if (binOp->OperIs(GT_SUB))
@@ -707,154 +719,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
-}
-
-//------------------------------------------------------------------------
-// LowerBlockStore: Lower a block store node
-//
-// Arguments:
-//    blkNode - The block store node to lower
-//
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    GenTree* dstAddr = blkNode->Addr();
-    GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
-
-    if (blkNode->OperIsInitBlkOp())
-    {
-#ifdef DEBUG
-        // Use BlkOpKindLoop for more cases under stress mode
-        if (m_compiler->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) &&
-            blkNode->OperIs(GT_STORE_BLK) && ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) &&
-            src->IsIntegralConst(0))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-#ifdef TARGET_ARM64
-            // On ARM64 we can just use REG_ZR instead of having to load
-            // the constant into a real register like on ARM32.
-            src->SetContained();
-#endif
-            return;
-        }
-#endif
-
-        if (src->OperIs(GT_INIT_VAL))
-        {
-            src->SetContained();
-            src = src->AsUnOp()->gtGetOp1();
-        }
-
-        if ((size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            // The fill value of an initblk is interpreted to hold a
-            // value of (unsigned int8) however a constant of any size
-            // may practically reside on the evaluation stack. So extract
-            // the lower byte out of the initVal constant and replicate
-            // it to a larger constant whose size is sufficient to support
-            // the largest width store of the desired inline expansion.
-
-            ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
-
-            if (fill == 0)
-            {
-#ifdef TARGET_ARM64
-                // On ARM64 we can just use REG_ZR instead of having to load
-                // the constant into a real register like on ARM32.
-                src->SetContained();
-#endif
-            }
-#ifdef TARGET_ARM64
-            else if (size >= REGSIZE_BYTES)
-            {
-                fill *= 0x0101010101010101LL;
-                src->gtType = TYP_LONG;
-            }
-#endif
-            else
-            {
-                fill *= 0x01010101;
-            }
-
-            src->AsIntCon()->SetIconValue(fill);
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else if (blkNode->IsZeroingGcPointersOnHeap())
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-#ifdef TARGET_ARM64
-            // On ARM64 we can just use REG_ZR instead of having to load
-            // the constant into a real register like on ARM32.
-            src->SetContained();
-#endif
-        }
-        else
-        {
-            LowerBlockStoreAsHelperCall(blkNode);
-            return;
-        }
-    }
-    else
-    {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-
-        ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-
-        if (doCpObj && (size <= copyBlockUnrollLimit))
-        {
-            // No write barriers are needed on the stack.
-            // If the layout contains a byref, then we know it must live on the stack.
-            if (blkNode->IsAddressNotOnHeap(m_compiler))
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                doCpObj                  = false;
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
-        }
-
-        if (doCpObj)
-        {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-        }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            if (src->OperIs(GT_IND))
-            {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
-            }
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-            LowerBlockStoreAsHelperCall(blkNode);
-        }
-    }
 }
 
 //------------------------------------------------------------------------
@@ -993,9 +857,9 @@ void Lowering::LowerRotate(GenTree* tree)
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+            ssize_t rotateLeftIndex  = rotateLeftIndexNode->AsIntCon()->IconValue();
+            ssize_t rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->AsIntCon()->SetIconValue(rotateRightIndex);
         }
         else
         {
@@ -2078,7 +1942,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 
     if (op1->IsCnsIntOrI())
     {
-        const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
+        const ssize_t dataValue = op1->AsIntCon()->IconValue();
         return m_compiler->GetEmitter()->emitIns_valid_imm_for_movi(dataValue,
                                                                     emitActualTypeSize(node->GetSimdBaseType()));
     }
@@ -2897,6 +2761,17 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
 
     // ARM doesn't have a div instruction with an immediate operand
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for arm.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
 }
 
 //------------------------------------------------------------------------
