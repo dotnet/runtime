@@ -55,7 +55,7 @@ namespace System.Reflection.Context
     /// > - A <xref:System.Reflection.Context.CustomReflectionContext> object alters the attributes returned by a particular reflection object, such as those obtained by the
     /// <xref:System.Reflection.MemberInfo.GetCustomAttributes*> method. It doesn't alter the custom attribute data returned by the <xref:System.Reflection.MemberInfo.GetCustomAttributesData*>
     /// method, and these two lists won't match when you use a custom reflection context.
-    /// ]]></format></remarks
+    /// ]]></format></remarks>
     /// <example>
     /// The following example demonstrates how to subclass <xref:System.Reflection.Context.CustomReflectionContext>
     /// to add a custom attribute to all the members of a given type whose names begin with "To".
