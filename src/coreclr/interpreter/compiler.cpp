@@ -45,6 +45,13 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
+#ifdef PERFTRACING_DISABLE_THREADS
+bool InterpCompiler::s_samplingProfilerEnabled = false;
+#ifdef TARGET_BROWSER
+bool InterpCompiler::s_browserProfilerEnabled = false;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
+
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -883,7 +890,12 @@ int32_t InterpCompiler::GetLiveStartOffset(int32_t var)
     else
     {
         assert(m_pVars[var].liveStart != NULL);
-        return m_pVars[var].liveStart->nativeOffset;
+        // The value of the var is not valid at the start of the instruction that sets it.
+        // We don't set it as the start of the next instruction because a live range needs
+        // to have start != end, which wouldn't be the case if the var is always dead. Ignoring
+        // the live range for such a var could be problematic if this var is the return of a call,
+        // with its address being passed directly to the a jit-ed method.
+        return m_pVars[var].liveStart->nativeOffset + GetInsLength(m_pVars[var].liveStart) - 1;
     }
 }
 
@@ -1399,16 +1411,16 @@ class InterpGcSlotAllocator
                     if (existingRange.OverlapsOrAdjacentTo(start, end))
                     {
                         ConservativeRange updatedRange = existingRange;
-                        INTERP_DUMP("Merging with existing range [%u - %u]\n", existingRange.startOffset, existingRange.endOffset);
+                        INTERP_DUMP("Merging with existing range [%04x - %04x]\n", existingRange.startOffset, existingRange.endOffset);
                         updatedRange.MergeWith(start, end);
                         while ((i + 1 < m_liveRanges.GetSize()) && m_liveRanges.Get(i + 1).OverlapsOrAdjacentTo(start, end))
                         {
                             ConservativeRange otherExistingRange = m_liveRanges.Get(i + 1);
-                            INTERP_DUMP("Merging with existing range [%u - %u]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
+                            INTERP_DUMP("Merging with existing range [%04x - %04x]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
                             updatedRange.MergeWith(otherExistingRange.startOffset, otherExistingRange.endOffset);
                             m_liveRanges.RemoveAt(i + 1);
                         }
-                        INTERP_DUMP("Final merged range [%u - %u]\n", updatedRange.startOffset, updatedRange.endOffset);
+                        INTERP_DUMP("Final merged range [%04x - %04x]\n", updatedRange.startOffset, updatedRange.endOffset);
                         m_liveRanges.Set(i, updatedRange);
                         return;
                     }
@@ -1497,7 +1509,7 @@ public:
         uint32_t startOffset = ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
             endOffset = ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
         INTERP_DUMP(
-            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
+            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%04x - %04x]\n",
             slot, pVar->global ? "global" : "local",
             varIndex, pVar->offset,
             m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
@@ -1532,7 +1544,7 @@ public:
                 ConservativeRange range = ranges->m_liveRanges.Get(iRange);
 
                 INTERP_DUMP(
-                    "Conservative range for slot %u at %u [%u - %u]\n",
+                    "Conservative range for slot %u at %u [%04x - %04x]\n",
                     *pSlot,
                     (unsigned)(iSlot * sizeof(void *)),
                     range.startOffset,
@@ -2202,6 +2214,16 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
     DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
     assert(jitFlagsSize == sizeof(m_corJitFlags));
+
+#ifdef PERFTRACING_DISABLE_THREADS
+    m_emitSamplingProfiler = s_samplingProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+
+#ifdef TARGET_BROWSER
+    m_emitBrowserProfiler = s_browserProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -2912,7 +2934,13 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 
     // Backwards branch, emit safepoint
     if (ilOffset < 0)
+    {
         AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+        if (m_emitSamplingProfiler)
+            AddIns(INTOP_PROF_SAMPLEPOINT);
+#endif // PERFTRACING_DISABLE_THREADS
+    }
 
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     if (pTargetBB == NULL)
@@ -5734,6 +5762,13 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
         return;
     }
 
+#ifdef PERFTRACING_DISABLE_THREADS
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+        AddIns(INTOP_PROF_LEAVE);
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
+
     if (m_methodInfo->args.isAsyncCall())
     {
         // We're doing a standard return. Set the continuation return to NULL.
@@ -8257,6 +8292,17 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+    if (m_emitSamplingProfiler)
+        AddIns(INTOP_PROF_SAMPLEPOINT);
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+    {
+        AddIns(INTOP_PROF_ENTER);
+        m_pLastNewIns->data[0] = GetMethodDataItemIndex(m_methodHnd);
+    }
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
 
     if (m_continuationArgIndex != -1)
     {

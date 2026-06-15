@@ -15811,7 +15811,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
@@ -15819,7 +15818,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(CONTEXT));
 
@@ -15845,7 +15843,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15869,7 +15866,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15908,7 +15904,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_RISCV64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15948,7 +15943,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_LOONGARCH64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 

@@ -251,7 +251,7 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
         }
         else if (readComment)
         {
-            stream.ReadExactly(eocdBlock._archiveComment);
+            await stream.ReadExactlyAsync(eocdBlock._archiveComment, cancellationToken).ConfigureAwait(false);
         }
         return eocdBlock;
     }

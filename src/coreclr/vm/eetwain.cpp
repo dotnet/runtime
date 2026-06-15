@@ -788,6 +788,9 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             // Skip updating context registers for light unwind
             Thread::VirtualUnwindCallFrame(pRD->pCallerContext, NULL, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
 #endif
         }
         else
@@ -795,7 +798,13 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
-            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext,
+                                           pRD->pCallerContextPointers,
+                                           pCodeInfo
+                                           ARM64_ARG(&pRD->CallerContextSpForPacSign));
         }
 
         pRD->IsCallerContextValid = TRUE;
@@ -812,9 +821,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // Don't add usage of this field.  This is only temporary.
-    // See ExInfo::InitializeCrawlFrame() for more information.
-    if (!pRD->IsCallerSPValid)
+    if (!pRD->IsCallerContextValid)
     {
         ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
@@ -882,7 +889,6 @@ void EECodeManager::LightUnwindStackFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo
     {
         SyncRegDisplayToCurrentContext(pRD);
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
 #else
     PORTABILITY_ASSERT("EECodeManager::LightUnwindStackFrame is not implemented on this platform.");
@@ -1638,7 +1644,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
     CONTRACTL{
         NOTHROW;
@@ -1658,6 +1664,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(R
     }
 
     *returnKind = info.returnKind;
+    *hasAsyncRet = info.isAsync;
     return true;
 #else // !USE_GC_INFO_DECODER
 
@@ -1709,17 +1716,25 @@ EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletTo
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+#else
+typedef TADDR HandlerFn;
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+
+DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
+DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
+#endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#elif defined(TARGET_WASM)
+    return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
 #endif
 }
 
-#endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
 // Return value:
@@ -1729,15 +1744,24 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
-#ifdef TARGET_WASM
-    _ASSERTE(!"CallFunclet for WASM not implemented yet");
-#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
+#ifdef TARGET_WASM
+    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
+    if (throwable != NULL)
+    {
+        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
+    }
+#else
     if (isFilterFunclet)
     {
         // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
@@ -2149,7 +2173,6 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
 
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;
 
     return true;
 }

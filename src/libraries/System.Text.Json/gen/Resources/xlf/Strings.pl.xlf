@@ -132,6 +132,41 @@
         <target state="translated">Typ ma wiele składowych opatrzonych adnotacjami za pomocą atrybutu JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">Nie można rozpoznać otwartego ogólnego typu pochodnego „{0}” dla polimorficznego typu podstawowego „{1}”: {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">typ pochodny pasuje do typu podstawowego za pośrednictwem wielu elementów nadrzędnych</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">ograniczenie parametru typu „{0}” nie jest spełnione przez element „{1}”</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">typu pochodnego nie można przypisać do typu podstawowego</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">parametr typu „{0}” typu pochodnego nie jest powiązany argumentami typu podstawowego</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">argumenty typu podstawowego nie są zgodne ze specyfikacją podstawową typu pochodnego</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">Nie można rozpoznać otwartego ogólnego typu pochodnego dla polimorficznego typu podstawowego.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">Typ „{0}” zawiera parametr ref, taki jak właściwość, pole lub konstruktor „{1}”. Nie zostanie wygenerowany kod źródłowy dla właściwości, pola lub konstruktora.</target>

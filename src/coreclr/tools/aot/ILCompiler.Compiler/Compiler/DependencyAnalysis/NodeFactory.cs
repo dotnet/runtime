@@ -1562,7 +1562,7 @@ namespace ILCompiler.DependencyAnalysis
             byte[] stringBytes = new byte[stringBytesCount + 1];
             Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
 
-            Utf8String symbolName = new Utf8String("__utf8str_" + NameMangler.GetMangledStringName(str));
+            Utf8String symbolName = Utf8String.Concat("__utf8str_"u8, NameMangler.GetMangledStringName(str).AsSpan());
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
