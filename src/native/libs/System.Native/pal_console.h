@@ -140,7 +140,7 @@ typedef void (*CtrlCallback)(CtrlCode signalCode);
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd, int32_t columns, int32_t rows);
+PALEXPORT int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondaryFd, int32_t columns, int32_t rows);
 
 /**
  * Resizes the pseudo-terminal to the specified dimensions.

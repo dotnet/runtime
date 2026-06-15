@@ -449,10 +449,11 @@ namespace System.Diagnostics
         {
             PseudoTerminal pty = startInfo.PseudoTerminal!;
             // On Unix, the primary fd is bidirectional (read + write).
-            // Create separate streams for input and output, with only one owning the handle.
-            SafeFileHandle nonOwningPrimary = new SafeFileHandle(pty.Primary.DangerousGetHandle(), ownsHandle: false);
-            FileStream writeStream = new FileStream(nonOwningPrimary, FileAccess.Write, bufferSize: 1, isAsync: false);
-            FileStream readStream = new FileStream(nonOwningPrimary, FileAccess.Read, bufferSize: 1, isAsync: false);
+            // Create non-owning pipe handles since the PseudoTerminal owns the primary fd lifetime.
+            SafePipeHandle writePipeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
+            SafePipeHandle readPipeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
+            AnonymousPipeClientStream writeStream = new(PipeDirection.Out, writePipeHandle);
+            AnonymousPipeClientStream readStream = new(PipeDirection.In, readPipeHandle);
             _standardInput = new StreamWriter(writeStream, startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
             {
                 AutoFlush = true

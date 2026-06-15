@@ -33,8 +33,10 @@ namespace System.Diagnostics
 
         private static PseudoTerminal CreateCore(PseudoTerminalOptions? options)
         {
-            int columns = options?.Columns ?? 80;
-            int rows = options?.Rows ?? 24;
+            // Windows CreatePseudoConsole requires a non-zero size.
+            // Default to 120x30 if no size is specified, matching the default conhost window.
+            short columns = (short)(options?.Columns ?? 120);
+            short rows = (short)(options?.Rows ?? 30);
 
             // Create pipes for communication with the pseudo console.
             // The "input" pipe: we write to inputWritePipe, the console reads from inputReadPipe.
@@ -44,10 +46,10 @@ namespace System.Diagnostics
 
             try
             {
-                Interop.Kernel32.PseudoConsoleCoord size = new Interop.Kernel32.PseudoConsoleCoord
+                Interop.Kernel32.PseudoConsoleCoord size = new()
                 {
-                    X = (short)columns,
-                    Y = (short)rows
+                    X = columns,
+                    Y = rows
                 };
 
                 int hr = Interop.Kernel32.CreatePseudoConsole(size, inputReadPipe, outputWritePipe, 0, out IntPtr hPC);
@@ -56,7 +58,7 @@ namespace System.Diagnostics
                     throw new Win32Exception(hr);
                 }
 
-                SafePseudoConsoleHandle pseudoConsole = new SafePseudoConsoleHandle(hPC);
+                SafePseudoConsoleHandle pseudoConsole = new(hPC);
 
                 // Close the pipe ends that are now owned by the pseudo console.
                 inputReadPipe.Dispose();
@@ -76,7 +78,7 @@ namespace System.Diagnostics
 
         private void ResizeCore(int columns, int rows)
         {
-            Interop.Kernel32.PseudoConsoleCoord size = new Interop.Kernel32.PseudoConsoleCoord
+            Interop.Kernel32.PseudoConsoleCoord size = new()
             {
                 X = (short)columns,
                 Y = (short)rows
@@ -91,9 +93,9 @@ namespace System.Diagnostics
 
         private void DisposeCore()
         {
-            PseudoConsole.Dispose();
             Input.Dispose();
             Output.Dispose();
+            PseudoConsole.Dispose();
         }
     }
 }

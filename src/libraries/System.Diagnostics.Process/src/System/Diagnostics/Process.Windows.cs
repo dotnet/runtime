@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
@@ -866,14 +867,14 @@ namespace System.Diagnostics
             PseudoTerminal pty = startInfo.PseudoTerminal!;
             // On Windows, Input is a write pipe (to send data to the console) and Output is a read pipe (to receive from the console).
             // Use non-owning handles since the PseudoTerminal owns the pipe lifetime.
-            SafeFileHandle nonOwningInput = new SafeFileHandle(pty.Input.DangerousGetHandle(), ownsHandle: false);
-            SafeFileHandle nonOwningOutput = new SafeFileHandle(pty.Output.DangerousGetHandle(), ownsHandle: false);
-            _standardInput = new StreamWriter(new FileStream(nonOwningInput, FileAccess.Write, bufferSize: 1, isAsync: false),
+            SafePipeHandle inputPipeHandle = new(pty.Input.DangerousGetHandle(), ownsHandle: false);
+            SafePipeHandle outputPipeHandle = new(pty.Output.DangerousGetHandle(), ownsHandle: false);
+            _standardInput = new StreamWriter(new AnonymousPipeClientStream(PipeDirection.Out, inputPipeHandle),
                 startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
             {
                 AutoFlush = true
             };
-            _standardOutput = new StreamReader(new FileStream(nonOwningOutput, FileAccess.Read, bufferSize: 1, isAsync: false),
+            _standardOutput = new StreamReader(new AnonymousPipeClientStream(PipeDirection.In, outputPipeHandle),
                 startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
         }
     }

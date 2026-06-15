@@ -570,7 +570,7 @@ namespace Microsoft.Win32.SafeHandles
                 attributeCount++; // PROC_THREAD_ATTRIBUTE_JOB_LIST
             }
 
-            if (pseudoConsoleHandle is not null && !pseudoConsoleHandle.IsInvalid)
+            if (pseudoConsoleHandle is not null)
             {
                 attributeCount++; // PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
             }
@@ -613,19 +613,29 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            if (pseudoConsoleHandle is not null && !pseudoConsoleHandle.IsInvalid)
+            if (pseudoConsoleHandle is not null)
             {
-                nint pcHandle = pseudoConsoleHandle.DangerousGetHandle();
-                if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                    attributeListBuffer,
-                    0,
-                    (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-                    (nint*)&pcHandle,
-                    (nuint)sizeof(IntPtr),
-                    null,
-                    null))
+                bool pseudoConsoleRefAdded = false;
+                pseudoConsoleHandle.DangerousAddRef(ref pseudoConsoleRefAdded);
+                try
                 {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    nint pcHandle = pseudoConsoleHandle.DangerousGetHandle();
+                    if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                        attributeListBuffer,
+                        0,
+                        (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                        (nint*)&pcHandle,
+                        (nuint)sizeof(IntPtr),
+                        null,
+                        null))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+                finally
+                {
+                    if (pseudoConsoleRefAdded)
+                        pseudoConsoleHandle.DangerousRelease();
                 }
             }
 

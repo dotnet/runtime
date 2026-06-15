@@ -32,13 +32,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Create_NullOptions_Succeeds()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create(null);
-            Assert.NotNull(pty);
-        }
-
-        [Fact]
         public void Resize_ValidDimensions_Succeeds()
         {
             using PseudoTerminal pty = PseudoTerminal.Create();
@@ -46,17 +39,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Resize_InvalidColumns_Throws()
+        public void Resize_InvalidValues_Throws()
         {
             using PseudoTerminal pty = PseudoTerminal.Create();
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(0, 24));
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(-1, 24));
-        }
-
-        [Fact]
-        public void Resize_InvalidRows_Throws()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create();
             Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, 0));
             Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, -1));
         }
@@ -91,50 +78,33 @@ namespace System.Diagnostics.Tests
             Assert.Null(startInfo.PseudoTerminal);
         }
 
-        [Fact]
-        public void ProcessStartInfo_PseudoTerminal_CannotCombineWithUseShellExecute()
+        [Theory]
+        [InlineData(nameof(ProcessStartInfo.UseShellExecute))]
+        [InlineData(nameof(ProcessStartInfo.RedirectStandardInput))]
+        [InlineData(nameof(ProcessStartInfo.RedirectStandardOutput))]
+        [InlineData(nameof(ProcessStartInfo.RedirectStandardError))]
+        public void ProcessStartInfo_PseudoTerminal_CannotCombine(string name)
         {
             using PseudoTerminal pty = PseudoTerminal.Create();
             Process process = new Process();
             process.StartInfo.FileName = "test";
-            process.StartInfo.UseShellExecute = true;
             process.StartInfo.PseudoTerminal = pty;
 
-            Assert.Throws<InvalidOperationException>(() => process.Start());
-        }
-
-        [Fact]
-        public void ProcessStartInfo_PseudoTerminal_CannotCombineWithRedirectStandardInput()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create();
-            Process process = new Process();
-            process.StartInfo.FileName = "test";
-            process.StartInfo.RedirectStandardInput = true;
-            process.StartInfo.PseudoTerminal = pty;
-
-            Assert.Throws<InvalidOperationException>(() => process.Start());
-        }
-
-        [Fact]
-        public void ProcessStartInfo_PseudoTerminal_CannotCombineWithRedirectStandardOutput()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create();
-            Process process = new Process();
-            process.StartInfo.FileName = "test";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.PseudoTerminal = pty;
-
-            Assert.Throws<InvalidOperationException>(() => process.Start());
-        }
-
-        [Fact]
-        public void ProcessStartInfo_PseudoTerminal_CannotCombineWithRedirectStandardError()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create();
-            Process process = new Process();
-            process.StartInfo.FileName = "test";
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.PseudoTerminal = pty;
+            switch (name)
+            {
+                case nameof(ProcessStartInfo.UseShellExecute):
+                    process.StartInfo.UseShellExecute = true;
+                    break;
+                case nameof(ProcessStartInfo.RedirectStandardInput):
+                    process.StartInfo.RedirectStandardInput = true;
+                    break;
+                case nameof(ProcessStartInfo.RedirectStandardOutput):
+                    process.StartInfo.RedirectStandardOutput = true;
+                    break;
+                case nameof(ProcessStartInfo.RedirectStandardError):
+                    process.StartInfo.RedirectStandardError = true;
+                    break;
+            }
 
             Assert.Throws<InvalidOperationException>(() => process.Start());
         }
@@ -146,7 +116,6 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static () =>
             {
-                // When attached to a PTY, the console should not report as redirected.
                 Assert.False(Console.IsOutputRedirected);
                 Assert.False(Console.IsInputRedirected);
                 Assert.False(Console.IsErrorRedirected);
@@ -173,7 +142,6 @@ namespace System.Diagnostics.Tests
             process.StartInfo.PseudoTerminal = pty;
             Assert.True(process.Start());
 
-            // Read from the PTY to get the child's output.
             Assert.NotNull(process.StandardOutput);
             string output = process.StandardOutput.ReadToEnd();
             Assert.Contains("hello from child", output);
@@ -200,7 +168,6 @@ namespace System.Diagnostics.Tests
             process.StartInfo.PseudoTerminal = pty;
             Assert.True(process.Start());
 
-            // Write to the PTY to send input to the child.
             Assert.NotNull(process.StandardInput);
             process.StandardInput.WriteLine("test input");
 
@@ -221,7 +188,6 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static () =>
             {
-                // The child process should see the PTY window size.
                 Assert.Equal(132, Console.WindowWidth);
                 Assert.Equal(50, Console.WindowHeight);
                 return RemoteExecutor.SuccessExitCode;
@@ -241,10 +207,12 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static () =>
             {
-                // On Unix, when attached to a PTY, isatty should return true for stdout.
-                bool isTty = IsAtty(1);
+                bool isTty = NativeIsAtty(1) == 1;
                 Assert.True(isTty);
                 return RemoteExecutor.SuccessExitCode;
+
+                [DllImport("libc", EntryPoint = "isatty")]
+                static extern int NativeIsAtty(int fd);
             });
 
             process.StartInfo.PseudoTerminal = pty;
@@ -252,10 +220,5 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
         }
-
-        [DllImport("libc", EntryPoint = "isatty")]
-        private static extern int NativeIsAtty(int fd);
-
-        private static bool IsAtty(int fd) => NativeIsAtty(fd) == 1;
     }
 }

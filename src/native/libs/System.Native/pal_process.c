@@ -609,7 +609,8 @@ static int32_t ForkAndExecProcessInternal(
 #endif
     // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
     // since posix_spawn does not support setuid/setgid.
-    if (!setCredentials)
+    // Also skip posix_spawn when a PTY is specified, as we need fork to call setsid/TIOCSCTTY.
+    if (!setCredentials && pseudoTerminalSecondaryFd < 0)
     {
         pid_t spawnedPid;
         posix_spawn_file_actions_t file_actions;

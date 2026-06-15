@@ -17,12 +17,12 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, int pseudoTerminalSecondaryFd = -1, SafeHandle[]? inheritedHandles = null)
+            bool startDetached, bool killOnParentExit, SafeFileHandle? pseudoTerminalSecondaryFd = null, SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
 
-            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false, ptyRefAdded = false;
             int inheritedRefsAdded = 0;
             try
             {
@@ -44,6 +44,13 @@ internal static partial class Interop
                 {
                     stderrFd.DangerousAddRef(ref stderrRefAdded);
                     stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
+                }
+
+                int ptyRawFd = -1;
+                if (pseudoTerminalSecondaryFd is not null)
+                {
+                    pseudoTerminalSecondaryFd.DangerousAddRef(ref ptyRefAdded);
+                    ptyRawFd = pseudoTerminalSecondaryFd.DangerousGetHandle().ToInt32();
                 }
 
                 // inheritedFdCount == -1 means no restriction; >= 0 means restrict to stdio + list
@@ -77,7 +84,7 @@ internal static partial class Interop
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
                         pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0,
-                        pseudoTerminalSecondaryFd);
+                        ptyRawFd);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -92,6 +99,8 @@ internal static partial class Interop
                     stdoutFd!.DangerousRelease();
                 if (stderrRefAdded)
                     stderrFd!.DangerousRelease();
+                if (ptyRefAdded)
+                    pseudoTerminalSecondaryFd!.DangerousRelease();
 
                 // Only release the handles that were successfully AddRef'd
                 for (int i = 0; i < inheritedRefsAdded; i++)

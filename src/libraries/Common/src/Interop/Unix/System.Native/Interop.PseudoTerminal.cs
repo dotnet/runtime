@@ -13,7 +13,7 @@ internal static partial class Interop
         /// </summary>
         /// <returns>0 on success, -1 on failure with errno set.</returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenPseudoTerminal", SetLastError = true)]
-        internal static partial int OpenPseudoTerminal(out int primaryFd, out int secondaryFd, int columns, int rows);
+        internal static partial int OpenPseudoTerminal(out SafeFileHandle primaryFd, out SafeFileHandle secondaryFd, int columns, int rows);
 
         /// <summary>
         /// Resizes the pseudo-terminal to the specified dimensions.

@@ -486,7 +486,7 @@ void SystemNative_UninitializeTerminal(void)
     UninitializeTerminal();
 }
 
-int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd, int32_t columns, int32_t rows)
+int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondaryFd, int32_t columns, int32_t rows)
 {
     assert(primaryFd != NULL);
     assert(secondaryFd != NULL);
@@ -494,12 +494,17 @@ int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd
 #if HAVE_OPENPTY
     int primary = -1, secondary = -1;
 
+    struct winsize* wsPtr = NULL;
     struct winsize ws;
-    memset(&ws, 0, sizeof(ws));
-    ws.ws_col = (unsigned short)columns;
-    ws.ws_row = (unsigned short)rows;
+    if (columns > 0 && rows > 0)
+    {
+        memset(&ws, 0, sizeof(ws));
+        ws.ws_col = (unsigned short)columns;
+        ws.ws_row = (unsigned short)rows;
+        wsPtr = &ws;
+    }
 
-    if (openpty(&primary, &secondary, NULL, NULL, &ws) == -1)
+    if (openpty(&primary, &secondary, NULL, NULL, wsPtr) == -1)
     {
         *primaryFd = -1;
         *secondaryFd = -1;

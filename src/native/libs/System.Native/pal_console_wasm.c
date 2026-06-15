@@ -130,7 +130,7 @@ void SystemNative_UninitializeTerminal(void)
 {
 }
 
-int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd, int32_t columns, int32_t rows)
+int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondaryFd, int32_t columns, int32_t rows)
 {
     (void)columns;
     (void)rows;

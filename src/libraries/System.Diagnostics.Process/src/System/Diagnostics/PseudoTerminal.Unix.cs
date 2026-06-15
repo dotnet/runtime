@@ -27,17 +27,16 @@ namespace System.Diagnostics
 
         private static PseudoTerminal CreateCore(PseudoTerminalOptions? options)
         {
-            int columns = options?.Columns ?? 80;
-            int rows = options?.Rows ?? 24;
+            int columns = options?.Columns ?? 0;
+            int rows = options?.Rows ?? 0;
 
-            int result = Interop.Sys.OpenPseudoTerminal(out int primaryFd, out int secondaryFd, columns, rows);
+            int result = Interop.Sys.OpenPseudoTerminal(out SafeFileHandle primary, out SafeFileHandle secondary, columns, rows);
             if (result != 0)
             {
+                primary.Dispose();
+                secondary.Dispose();
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
-
-            SafeFileHandle primary = new SafeFileHandle((IntPtr)primaryFd, ownsHandle: true);
-            SafeFileHandle secondary = new SafeFileHandle((IntPtr)secondaryFd, ownsHandle: true);
 
             return new PseudoTerminal(primary, secondary);
         }

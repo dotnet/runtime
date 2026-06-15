@@ -14,11 +14,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="options">Optional configuration for the pseudo-terminal, such as window size.</param>
         /// <returns>A new <see cref="PseudoTerminal"/> instance.</returns>
-        /// <exception cref="InvalidOperationException">The pseudo-terminal could not be created.</exception>
-        public static PseudoTerminal Create(PseudoTerminalOptions? options = null)
-        {
-            return CreateCore(options);
-        }
+        /// <exception cref="System.ComponentModel.Win32Exception">The pseudo-terminal could not be created.</exception>
+        public static PseudoTerminal Create(PseudoTerminalOptions? options = null) => CreateCore(options);
 
         /// <summary>
         /// Resizes the pseudo-terminal window to the specified dimensions.
@@ -39,6 +36,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Releases all resources used by the <see cref="PseudoTerminal"/>.
         /// </summary>
+        /// <remarks>
+        /// On Windows, closing the pseudo-terminal sends a CTRL_CLOSE_EVENT to each client application
+        /// that is still connected to the pseudo console.
+        /// On Unix, closing the primary file descriptor causes the secondary side to receive an EOF,
+        /// which typically results in a SIGHUP being sent to the foreground process group.
+        /// </remarks>
         public void Dispose()
         {
             if (!_disposed)
