@@ -201,7 +201,6 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
 #elif TARGET_ARM
 
-#ifdef FEATURE_AVOID_RED_ZONE
             // mov r12,<thunk data address>
             // ldr pc,[r12, <delta to get to last dword in data page>]
             // r12 retains data address; RhCommonStub reads it directly without stack
@@ -218,28 +217,6 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *((uint16_t*)pCurrentThunkAddress) = 0xbf00; pCurrentThunkAddress += 2;
             *((uint16_t*)pCurrentThunkAddress) = 0xbf00; pCurrentThunkAddress += 2;
             *((uint16_t*)pCurrentThunkAddress) = 0xbf00; pCurrentThunkAddress += 2;
-#else
-            // mov r12,<thunk data address>
-            // str r12,[sp,#-4]
-            // ldr r12,[r12, <delta to get to last dword in data page>]
-            // bx r12
-
-            EncodeThumb2Mov32((uint16_t*)pCurrentThunkAddress, (uint32_t)pCurrentDataAddress, 12);
-            pCurrentThunkAddress += 8;
-
-            *((uint32_t*)pCurrentThunkAddress) = 0xcc04f84d; // str r12,[sp,#-4] (no writeback)
-            pCurrentThunkAddress += 4;
-
-            *((uint32_t*)pCurrentThunkAddress) = 0xc000f8dc | ((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) << 16);
-            pCurrentThunkAddress += 4;
-
-            *((uint16_t*)pCurrentThunkAddress) = 0x4760; // bx r12
-            pCurrentThunkAddress += 2;
-
-            // nops for alignment
-            *((uint16_t*)pCurrentThunkAddress) = 0xbf00;
-            pCurrentThunkAddress += 2;
-#endif
 
 #elif TARGET_ARM64
 

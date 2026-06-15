@@ -326,10 +326,10 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
-#if defined(HOST_ARM) && defined(FEATURE_AVOID_RED_ZONE)
-    // When FEATURE_AVOID_RED_ZONE is active, interface dispatch stubs allocate stack space
-    // (PROLOG_STACK_ALLOC 8) before the AV location. We must restore SP to the caller's
-    // original value so the exception handler sees the correct frame.
+#if defined(HOST_ARM)
+    // Interface dispatch stubs allocate stack space (PROLOG_STACK_ALLOC 8) before the AV
+    // location. We must restore SP to the caller's original value so the exception handler
+    // sees the correct frame.
     if (InInterfaceDispatchHelper(pContext->GetIp()))
         pContext->SetSp(pContext->GetSp() + 8);
 #endif

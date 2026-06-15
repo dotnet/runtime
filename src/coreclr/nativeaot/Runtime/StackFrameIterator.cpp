@@ -1429,12 +1429,8 @@ private:
     uint64_t m_fpArgRegs[8];                  // ChildSP+008 CallerSP-070 (0x40 bytes)    (d0-d7)
     uint64_t m_returnBlock[4];                // ChildSP+048 CallerSP-030 (0x20 bytes)
     uintptr_t m_intArgRegs[4];             // ChildSP+068 CallerSP-010 (0x10 bytes)    (r0-r3)
-#ifdef FEATURE_AVOID_RED_ZONE
     uintptr_t m_callerPushedArgs[2];       // ChildSP+078 CallerSP-008 (0x8 bytes)     (extra arg + target fn)
     uintptr_t m_stackPassedArgs[1];        // ChildSP+080 CallerSP+000 (unknown size)
-#else
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+078 CallerSP+000 (unknown size)
-#endif
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }

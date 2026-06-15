@@ -23,10 +23,6 @@ if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_EMULATED_TLS)
 endif()
 
-if(CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_LINUX)
-    add_definitions(-DFEATURE_AVOID_RED_ZONE)
-endif()
-
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
 endforeach (Config)

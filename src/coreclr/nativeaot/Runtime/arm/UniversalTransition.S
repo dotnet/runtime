@@ -48,29 +48,17 @@
 // sp-4 will contain the managed function that is to be called by this transition function
 // sp-8 will contain the pointer sized extra argument to the managed function
 //
-// When FEATURE_AVOID_RED_ZONE is defined, the caller pushes the 2 extra arguments onto the
-// stack instead (sp adjusted by -8 before branching here):
+// The caller pushes the 2 extra arguments onto the stack (sp adjusted by -8 before
+// branching here):
 // [sp+4] = managed function to be called
 // [sp+0] = pointer sized extra argument
 //
 // When invoking the callee:
 //
 //  r0 shall contain a pointer to the TransitionBlock
-//  r1 shall contain the value that was in sp-8 (or [sp+0] with FEATURE_AVOID_RED_ZONE)
+//  r1 shall contain the value that was in [sp+0] at entry to this function
 //
 // Frame layout is:
-//
-//  {StackPassedArgs}                           ChildSP+078     CallerSP+000
-//  {IntArgRegs (r0-r3) (0x10 bytes)}           ChildSP+068     CallerSP-010
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+048     CallerSP-030
-//   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
-//      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
-//      layout of all pieces of the frame that lie at or above the pushed floating point registers.
-//  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+008     CallerSP-070
-//  {PushedLR}                                  ChildSP+004     CallerSP-074
-//  {PushedR11}                                 ChildSP+000     CallerSP-078
-//
-// When FEATURE_AVOID_RED_ZONE is defined, the frame includes the caller's 8-byte push:
 //
 //  {StackPassedArgs}                           ChildSP+080     CallerSP+000
 //  {CallerPushedArgs (extra+target) (8 bytes)} ChildSP+078     CallerSP-008
@@ -96,19 +84,11 @@
 
 NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
-#ifdef FEATURE_AVOID_RED_ZONE
         // Caller pushed 8 bytes: [sp]=extra arg, [sp+4]=target fn
         ldr          r12, [sp, #4]          // Capture target function into r12
         PROLOG_PUSH  "{r3}"                 // Save original r3 (sp -= 4; caller data now at sp+4 and sp+8)
         ldr          r3, [sp, #4]           // Capture extra arg (was at caller's [sp], now at sp+4 after push)
         PROLOG_PUSH  "{r0-r2}"              // Push the rest of the argument registers
-#else
-        // NOTE: While we do that, capture the two arguments in the red zone into r12 and r3.
-        ldr          r12, [sp, #-4]          // Capture first argument from red zone into r12
-        PROLOG_PUSH  "{r3}"                  // Push r3
-        ldr          r3, [sp, #-4]           // Capture second argument from red zone into r3
-        PROLOG_PUSH  "{r0-r2}"               // Push the rest of the registers
-#endif
         PROLOG_STACK_ALLOC RETURN_BLOCK_SIZE // Save space a buffer to be used to hold return buffer data.
         PROLOG_VPUSH {d0-d7}                 // Capture the floating point argument registers
         PROLOG_PUSH  "{r11,lr}"              // Save caller's frame chain pointer and PC
@@ -157,9 +137,7 @@ GLOBAL_LABEL ReturnFrom\FunctionName
         EPILOG_VPOP  {d0-d7}
         EPILOG_STACK_FREE RETURN_BLOCK_SIZE        // pop return block conservatively reported area
         EPILOG_POP   "{r0-r3}"
-#ifdef FEATURE_AVOID_RED_ZONE
         EPILOG_STACK_FREE 8                        // free the 8 bytes pushed by the caller
-#endif
 
         // Tailcall to the target address.
         EPILOG_BRANCH_REG r12
