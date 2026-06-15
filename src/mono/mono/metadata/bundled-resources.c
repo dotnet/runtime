@@ -208,7 +208,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 static MonoBundledResource *
 bundled_resources_get (const char *id)
 {
-	if (!bundled_resources)
+	if (!bundled_resources || !id)
 		return NULL;
 
 	char key_buffer[1024];
