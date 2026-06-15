@@ -178,11 +178,10 @@ public class StackReferenceDumpTests : DumpTestBase
         // Enumerate the thread's GCFrame chain node addresses; each reported GCFrame root carries the
         // GCFrame node address as its Source (UpdateScanContext(frame: pGCFrame)).
         Target.TypeInfo gcFrameType = Target.GetTypeInfo("GCFrame");
-        TargetPointer terminator = TargetPointer.PlatformMaxValue(Target);
 
-        HashSet<ulong> gcFrameNodes = new();
+        HashSet<ulong> gcFrameNodes = [];
         TargetPointer node = crashingThread.GCFrame;
-        while (node != TargetPointer.Null && node != terminator)
+        while (node != TargetPointer.Null)
         {
             if (!gcFrameNodes.Add(node))
                 throw new InvalidOperationException($"Found a cycle when processing ThreadData.GCFrame list.");

@@ -817,7 +817,7 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
     // both, so mirror them here to keep the runtime-side collection in parity. See
     // ScanStackRoots in gcenv.ee.cpp.
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != nullptr)
     {
         // A GCFrame node is a separate chain from the explicit Frame chain, so it is not a
         // capital-F Frame. Report it with the Other source type and the GCFrame node address as

@@ -1185,28 +1185,30 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
-    // m_pNext is NULL when the frame was already popped from the stack.
-    if (m_Next != NULL)
+    // m_pCurThread is NULL once the frame has been popped/removed from the chain.
+    // We cannot infer this from m_Next: the chain is NULL-terminated, so a frame at
+    // the bottom of the chain has m_Next == NULL while it is still linked.
+    if (m_pCurThread != NULL)
     {
         // This is a GCFrame that was not popped.  This is a problem.
         // We should have popped it before we destruct
         // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
         // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        Thread *pThread = m_pCurThread;
+        BOOL wasCoop = pThread->PreemptiveGCDisabled();
         if (!wasCoop)
         {
-            m_pCurThread->DisablePreemptiveGC();
+            pThread->DisablePreemptiveGC();
         }
 
         Pop();
 
         if (!wasCoop)
         {
-            m_pCurThread->EnablePreemptiveGC();
+            pThread->EnablePreemptiveGC();
         }
     }
 }
@@ -1233,7 +1235,7 @@ void GCFrame::Push(Thread* pThread)
     // in which the compiler will lay them out in the stack frame.
     // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
-    _ASSERTE(((m_Next == GCFRAME_TOP) ||
+    _ASSERTE(((m_Next == NULL) ||
               (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
@@ -1265,6 +1267,9 @@ void GCFrame::Pop()
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 void GCFrame::Remove()
@@ -1280,7 +1285,7 @@ void GCFrame::Remove()
 
     GCFrame *pPrevFrame = NULL;
     GCFrame *pFrame = m_pCurThread->GetGCFrame();
-    while (pFrame != GCFRAME_TOP)
+    while (pFrame != NULL)
     {
         if (pFrame == this)
         {
@@ -1308,6 +1313,9 @@ void GCFrame::Remove()
     }
 
     _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1393,7 +1401,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
     GCFrame* pGCFrame = GetThread()->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
             d.count++;

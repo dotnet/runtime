@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
