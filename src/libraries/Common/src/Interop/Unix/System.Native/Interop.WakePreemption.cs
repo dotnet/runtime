@@ -8,9 +8,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SuppressWakePreemption")]
-        internal static unsafe partial int SuppressWakePreemption(int* previousPolicy, int* previousPriority);
+        internal static partial int SuppressWakePreemption();
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_RestoreWakePreemption")]
-        internal static partial int RestoreWakePreemption(int previousPolicy, int previousPriority);
+        internal static partial int RestoreWakePreemption();
     }
 }
