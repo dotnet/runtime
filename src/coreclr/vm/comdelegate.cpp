@@ -1200,9 +1200,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     CONTRACTL_END;
 
-    DELEGATEREF refRealDelegate = *pRefThis;
-    GCPROTECT_BEGIN(refRealDelegate);
-
     pTargetMethod->EnsureActive();
 
     if (fIsOpenDelegate)
@@ -1211,7 +1208,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
         // Open delegates use themselves as the target (which handily allows their shuffle thunks to locate additional data at
         // invocation time).
-        refRealDelegate->SetTarget(refRealDelegate);
+        (*pRefThis)->SetTarget(*pRefThis);
 
         // We need to shuffle arguments for open delegates since the first argument on the calling side is not meaningful to the
         // callee.
@@ -1219,7 +1216,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         PCODE pEntryPoint = SetupShuffleThunk(pDelegateMT, pTargetMethod);
 
         // Indicate that the delegate will jump to the shuffle thunk rather than directly to the target method.
-        refRealDelegate->SetMethodPtr(pEntryPoint);
+        (*pRefThis)->SetMethodPtr(pEntryPoint);
 
         // Use stub dispatch for all virtuals.
         // <TODO> Investigate not using this for non-interface virtuals. </TODO>
@@ -1233,8 +1230,8 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             // needs to jump to another stub (this time provided by the VirtualStubManager) that will virtualize the call at
             // runtime.
             PCODE pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
-            refRealDelegate->SetMethodPtrAux(pTargetCall);
-            refRealDelegate->SetInvocationCount((INT_PTR)(void *)pTargetMethod);
+            (*pRefThis)->SetMethodPtrAux(pTargetCall);
+            (*pRefThis)->SetInvocationCount((INT_PTR)(void *)pTargetMethod);
         }
         else
         {
@@ -1259,7 +1256,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             // Note that it is important to cache pTargetCode in local variable to avoid GC hole.
             // GetMultiCallableAddrOfCode() can trigger GC.
             PCODE pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
-            refRealDelegate->SetMethodPtrAux(pTargetCode);
+            (*pRefThis)->SetMethodPtrAux(pTargetCode);
         }
     }
     else
@@ -1290,16 +1287,14 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         }
         _ASSERTE(pTargetCode);
 
-        refRealDelegate->SetTarget(*pRefFirstArg);
-        refRealDelegate->SetMethodPtr(pTargetCode);
+        (*pRefThis)->SetTarget(*pRefFirstArg);
+        (*pRefThis)->SetMethodPtr(pTargetCode);
     }
 
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
     if (pLoaderAllocator->IsCollectible())
-        refRealDelegate->SetMethodBase(pLoaderAllocator->GetExposedObject());
-
-    GCPROTECT_END();
+        (*pRefThis)->SetMethodBase(pLoaderAllocator->GetExposedObject());
 }
 
 // Marshals a delegate to a unmanaged callback.
@@ -1636,11 +1631,6 @@ extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack targ
 
     return method;
 }
-
-#if defined(_MSC_VER) && !defined(TARGET_UNIX)
-// VC++ Compiler intrinsic.
-extern "C" void * _ReturnAddress(void);
-#endif // _MSC_VER && !TARGET_UNIX
 
 uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
 {
