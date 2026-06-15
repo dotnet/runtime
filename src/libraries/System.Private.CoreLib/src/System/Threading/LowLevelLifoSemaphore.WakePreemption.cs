@@ -10,13 +10,11 @@ namespace System.Threading
         private readonly struct WakePreemptionScope
         {
 #if TARGET_LINUX
-            internal readonly int PreviousPolicy;
-            internal readonly int PreviousPriority;
+            internal readonly bool Suppressed;
 
-            internal WakePreemptionScope(int previousPolicy, int previousPriority)
+            internal WakePreemptionScope(bool suppressed)
             {
-                PreviousPolicy = previousPolicy;
-                PreviousPriority = previousPriority;
+                Suppressed = suppressed;
             }
 #endif
         }
@@ -29,15 +27,9 @@ namespace System.Threading
             Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
             return default;
 #elif TARGET_LINUX
-            int previousPolicy = -1;
-            int previousPriority = 0;
-            unsafe
-            {
-                int result = Interop.Sys.SuppressWakePreemption(&previousPolicy, &previousPriority);
-                Debug.Assert(result == 0, $"SuppressWakePreemption failed with error {result}");
-            }
-
-            return new WakePreemptionScope(previousPolicy, previousPriority);
+            int result = Interop.Sys.SuppressWakePreemption();
+            Debug.Assert(result == 0, $"SuppressWakePreemption failed with error {result}");
+            return new WakePreemptionScope(suppressed: result == 0);
 #else
             return default;
 #endif
@@ -48,9 +40,9 @@ namespace System.Threading
 #if TARGET_WINDOWS
             Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
 #elif TARGET_LINUX
-            if (scope.PreviousPolicy != -1)
+            if (scope.Suppressed)
             {
-                int result = Interop.Sys.RestoreWakePreemption(scope.PreviousPolicy, scope.PreviousPriority);
+                int result = Interop.Sys.RestoreWakePreemption();
                 Debug.Assert(result == 0, $"RestoreWakePreemption failed with error {result}");
             }
 #else

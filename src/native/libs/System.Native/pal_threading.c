@@ -36,8 +36,6 @@
 #pragma clang diagnostic ignored "-Wjump-misses-init"
 #endif
 
-#define WAKE_PREEMPTION_PREVIOUS_POLICY_UNSUPPORTED (-1)
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
@@ -299,28 +297,9 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 
 #endif  // defined(TARGET_LINUX)
 
-int32_t SystemNative_SuppressWakePreemption(int32_t* previousPolicy, int32_t* previousPriority)
+int32_t SystemNative_SuppressWakePreemption(void)
 {
-    assert(previousPolicy != NULL);
-    assert(previousPriority != NULL);
-
-    *previousPolicy = WAKE_PREEMPTION_PREVIOUS_POLICY_UNSUPPORTED;
-    *previousPriority = 0;
-
 #if defined(TARGET_LINUX)
-    struct sched_param previousParameters;
-
-    int previousPolicyLocal = sched_getscheduler(0);
-    if (previousPolicyLocal == -1)
-    {
-        return errno;
-    }
-
-    if (sched_getparam(0, &previousParameters) != 0)
-    {
-        return errno;
-    }
-
     struct sched_param suppressedParameters;
     suppressedParameters.sched_priority = 0;
 
@@ -328,31 +307,21 @@ int32_t SystemNative_SuppressWakePreemption(int32_t* previousPolicy, int32_t* pr
     {
         return errno;
     }
-
-    *previousPolicy = previousPolicyLocal;
-    *previousPriority = previousParameters.sched_priority;
 #endif
 
     return 0;
 }
 
-int32_t SystemNative_RestoreWakePreemption(int32_t previousPolicy, int32_t previousPriority)
+int32_t SystemNative_RestoreWakePreemption(void)
 {
-    if (previousPolicy == WAKE_PREEMPTION_PREVIOUS_POLICY_UNSUPPORTED)
-    {
-        return 0;
-    }
-
 #if defined(TARGET_LINUX)
-    struct sched_param previousParameters;
-    previousParameters.sched_priority = previousPriority;
+    struct sched_param defaultParameters;
+    defaultParameters.sched_priority = 0;
 
-    if (sched_setscheduler(0, previousPolicy, &previousParameters) != 0)
+    if (sched_setscheduler(0, SCHED_OTHER, &defaultParameters) != 0)
     {
         return errno;
     }
-#else
-    (void)previousPriority; // unused
 #endif
 
     return 0;

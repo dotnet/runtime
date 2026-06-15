@@ -324,9 +324,11 @@ namespace System.Threading
                 // when this thread is unblocked. The semaphore is used to park workers.
                 // A transient wake-up advantage provides no benefit here and can result in
                 // the woken thread preempting already-working threads. On Windows this
-                // disables SetThreadPriorityBoost. On Linux this temporarily switches the
-                // thread to SCHED_BATCH, which sched(7) documents as applying "a small
-                // scheduling penalty with respect to wakeup behavior".
+                // disables SetThreadPriorityBoost. On Linux this switches the thread to
+                // SCHED_BATCH before the wait, which sched(7) documents as applying "a small
+                // scheduling penalty with respect to wakeup behavior", then restores to the
+                // default SCHED_OTHER after the wait. These are best-effort; failures are
+                // asserted in debug builds but otherwise ignored.
                 WakePreemptionScope wakePreemptionScope = SuppressWakePreemption();
 
                 try
