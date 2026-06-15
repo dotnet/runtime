@@ -372,15 +372,15 @@ namespace System.Diagnostics
     public partial class PseudoTerminal : System.IDisposable
     {
         internal PseudoTerminal() { }
-        public static System.Diagnostics.PseudoTerminal Create(System.Diagnostics.PseudoTerminalOptions? options = null) { throw null; }
+        public static System.Diagnostics.PseudoTerminal Create(System.Diagnostics.PseudoTerminalOptions options) { throw null; }
         public void Dispose() { }
         public void Resize(int columns, int rows) { }
     }
     public partial class PseudoTerminalOptions
     {
         public PseudoTerminalOptions() { }
-        public int? Columns { get { throw null; } set { } }
-        public int? Rows { get { throw null; } set { } }
+        public int Columns { get { throw null; } set { } }
+        public int Rows { get { throw null; } set { } }
     }
     public sealed partial class ProcessTextOutput
     {

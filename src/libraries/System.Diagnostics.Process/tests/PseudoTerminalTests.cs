@@ -11,12 +11,7 @@ namespace System.Diagnostics.Tests
 {
     public class PseudoTerminalTests : ProcessTestBase
     {
-        [Fact]
-        public void Create_DefaultOptions_Succeeds()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create();
-            Assert.NotNull(pty);
-        }
+        private static readonly PseudoTerminalOptions s_defaultOptions = new PseudoTerminalOptions { Columns = 80, Rows = 24 };
 
         [Fact]
         public void Create_WithOptions_Succeeds()
@@ -32,16 +27,33 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void Create_NullOptions_Throws()
+        {
+            Assert.Throws<ArgumentNullException>("options", () => PseudoTerminal.Create(null!));
+        }
+
+        [Theory]
+        [InlineData(0, 24)]
+        [InlineData(-1, 24)]
+        [InlineData(80, 0)]
+        [InlineData(80, -1)]
+        public void Create_InvalidDimensions_Throws(int columns, int rows)
+        {
+            PseudoTerminalOptions options = new PseudoTerminalOptions { Columns = columns, Rows = rows };
+            Assert.ThrowsAny<ArgumentOutOfRangeException>(() => PseudoTerminal.Create(options));
+        }
+
+        [Fact]
         public void Resize_ValidDimensions_Succeeds()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
             pty.Resize(132, 50);
         }
 
         [Fact]
         public void Resize_InvalidValues_Throws()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(0, 24));
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(-1, 24));
             Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, 0));
@@ -49,17 +61,9 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Resize_AfterDispose_Throws()
-        {
-            PseudoTerminal pty = PseudoTerminal.Create();
-            pty.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => pty.Resize(80, 24));
-        }
-
-        [Fact]
         public void Dispose_CalledMultipleTimes_DoesNotThrow()
         {
-            PseudoTerminal pty = PseudoTerminal.Create();
+            PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
             pty.Dispose();
             pty.Dispose();
         }
@@ -70,7 +74,7 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo startInfo = new ProcessStartInfo();
             Assert.Null(startInfo.PseudoTerminal);
 
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
             startInfo.PseudoTerminal = pty;
             Assert.Same(pty, startInfo.PseudoTerminal);
 
@@ -85,7 +89,7 @@ namespace System.Diagnostics.Tests
         [InlineData(nameof(ProcessStartInfo.RedirectStandardError))]
         public void ProcessStartInfo_PseudoTerminal_CannotCombine(string name)
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
             Process process = new Process();
             process.StartInfo.FileName = "test";
             process.StartInfo.PseudoTerminal = pty;
@@ -112,7 +116,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartProcess_WithPseudoTerminal_ConsoleIsNotRedirected()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
 
             Process process = CreateProcess(static () =>
             {
@@ -131,7 +135,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartProcess_WithPseudoTerminal_CanCommunicate()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
 
             Process process = CreateProcess(static () =>
             {
@@ -153,7 +157,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartProcess_WithPseudoTerminal_CanSendInput()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
 
             Process process = CreateProcess(static () =>
             {
@@ -203,7 +207,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void StartProcess_WithPseudoTerminal_IsATty()
         {
-            using PseudoTerminal pty = PseudoTerminal.Create();
+            using PseudoTerminal pty = PseudoTerminal.Create(s_defaultOptions);
 
             Process process = CreateProcess(static () =>
             {

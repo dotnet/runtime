@@ -25,10 +25,10 @@ namespace System.Diagnostics
             Secondary = secondary;
         }
 
-        private static PseudoTerminal CreateCore(PseudoTerminalOptions? options)
+        private static PseudoTerminal CreateCore(PseudoTerminalOptions options)
         {
-            int columns = options?.Columns ?? 0;
-            int rows = options?.Rows ?? 0;
+            int columns = options.Columns;
+            int rows = options.Rows;
 
             int result = Interop.Sys.OpenPseudoTerminal(out SafeFileHandle primary, out SafeFileHandle secondary, columns, rows);
             if (result != 0)

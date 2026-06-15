@@ -11,13 +11,11 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets the number of columns for the pseudo-terminal window size.
         /// </summary>
-        /// <value>The number of columns, or <see langword="null"/> to use the system default.</value>
-        public int? Columns { get; set; }
+        public int Columns { get; set; }
 
         /// <summary>
         /// Gets or sets the number of rows for the pseudo-terminal window size.
         /// </summary>
-        /// <value>The number of rows, or <see langword="null"/> to use the system default.</value>
-        public int? Rows { get; set; }
+        public int Rows { get; set; }
     }
 }

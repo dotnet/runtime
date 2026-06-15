@@ -14,8 +14,16 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="options">Optional configuration for the pseudo-terminal, such as window size.</param>
         /// <returns>A new <see cref="PseudoTerminal"/> instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">The pseudo-terminal could not be created.</exception>
-        public static PseudoTerminal Create(PseudoTerminalOptions? options = null) => CreateCore(options);
+        public static PseudoTerminal Create(PseudoTerminalOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Columns);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Rows);
+
+            return CreateCore(options);
+        }
 
         /// <summary>
         /// Resizes the pseudo-terminal window to the specified dimensions.
@@ -23,12 +31,10 @@ namespace System.Diagnostics
         /// <param name="columns">The new number of columns.</param>
         /// <param name="rows">The new number of rows.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="columns"/> or <paramref name="rows"/> is less than or equal to zero.</exception>
-        /// <exception cref="ObjectDisposedException">The pseudo-terminal has been disposed.</exception>
         public void Resize(int columns, int rows)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
-            ObjectDisposedException.ThrowIf(_disposed, this);
 
             ResizeCore(columns, rows);
         }
@@ -42,15 +48,6 @@ namespace System.Diagnostics
         /// On Unix, closing the primary file descriptor causes the secondary side to receive an EOF,
         /// which typically results in a SIGHUP being sent to the foreground process group.
         /// </remarks>
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                DisposeCore();
-            }
-        }
-
-        private bool _disposed;
+        public void Dispose() => DisposeCore();
     }
 }

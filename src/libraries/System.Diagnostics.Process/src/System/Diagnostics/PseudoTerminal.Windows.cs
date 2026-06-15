@@ -31,12 +31,10 @@ namespace System.Diagnostics
             PseudoConsole = pseudoConsole;
         }
 
-        private static PseudoTerminal CreateCore(PseudoTerminalOptions? options)
+        private static PseudoTerminal CreateCore(PseudoTerminalOptions options)
         {
-            // Windows CreatePseudoConsole requires a non-zero size.
-            // Default to 120x30 if no size is specified, matching the default conhost window.
-            short columns = (short)(options?.Columns ?? 120);
-            short rows = (short)(options?.Rows ?? 30);
+            short columns = (short)options.Columns;
+            short rows = (short)options.Rows;
 
             // Create pipes for communication with the pseudo console.
             // The "input" pipe: we write to inputWritePipe, the console reads from inputReadPipe.

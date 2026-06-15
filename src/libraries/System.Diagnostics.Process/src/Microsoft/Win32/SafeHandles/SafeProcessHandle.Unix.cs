@@ -358,7 +358,7 @@ namespace Microsoft.Win32.SafeHandles
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
 #pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
-                    startInfo.StartDetached, startInfo.KillOnParentExit, startInfo.PseudoTerminal?.Secondary, inheritedHandles);
+                    startInfo.StartDetached, startInfo.KillOnParentExit, startInfo.PseudoTerminal is not null, inheritedHandles);
 #pragma warning restore CA1416
 
                 if (errno == 0)
