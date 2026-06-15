@@ -519,8 +519,20 @@ ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 			// and cause operating threads to mistake the new session for this one.
 			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
-				// The session is disabled, so wait for any in-progress writes to complete.
-				EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == session->index);
+				// The session is disabled, so wait for any in-progress writes to complete. A producer
+				// keeps this session's index set while writing (WRITE_BUFFER_IN_USE bit set) and while
+				// parked for capacity in Block mode (bit clear); mask the bit to wait out both. When a
+				// Block-mode session is tearing down, also signal buffer_available_event each iteration
+				// so a parked producer wakes, observes the abort, drops, and clears its index.
+				EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
+				if (buffer_manager != NULL && ep_buffer_manager_is_aborting (buffer_manager)) {
+					while ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index) {
+						ep_buffer_manager_signal_capacity (buffer_manager);
+						ep_rt_thread_sleep (0);
+					}
+				} else {
+					EP_YIELD_WHILE ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index);
+				}
 
 				// Since we've already disabled the session, the thread won't call back in to this
 				// session once its done with the current write
@@ -898,7 +910,7 @@ session_tracepoint_write_event (
 }
 #endif // HAVE_SYS_UIO_H && HAVE_ERRNO_H
 
-bool
+EventPipeWriteEventResult
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,
@@ -912,10 +924,11 @@ ep_session_write_event (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
+	// Paused: skip the write. This result is not consumed today (callers only act on BLOCKED).
 	if (session->paused)
-		return true;
+		return EP_WRITE_EVENT_RESULT_WRITTEN;
 
-	bool result = false;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	// Filter events specific to "this" session based on precomputed flag on provider/events.
 	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
@@ -952,7 +965,7 @@ ep_session_write_event (
 				stack == NULL ? 0 : ep_stack_contents_get_size (stack),
 				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
 				session->callback_additional_data);
-			result = true;
+			result = EP_WRITE_EVENT_RESULT_WRITTEN;
 			break;
 		case EP_SESSION_TYPE_USEREVENTS:
 			EP_ASSERT (session->user_events_data_fd != -1);
@@ -964,7 +977,7 @@ ep_session_write_event (
 				activity_id,
 				related_activity_id,
 				event_thread,
-				stack);
+				stack) ? EP_WRITE_EVENT_RESULT_WRITTEN : EP_WRITE_EVENT_RESULT_DROPPED;
 			break;
 		default:
 			EP_UNREACHABLE ("Unknown session type.");

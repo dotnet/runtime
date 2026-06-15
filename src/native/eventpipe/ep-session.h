@@ -179,7 +179,7 @@ ep_session_write_all_buffers_to_file (
 // put the event in a buffer and return as quick as possible. If a session is
 // synchronous (callback to the profiler) then this method will block until the
 // profiler is done parsing and reacting to it.
-bool
+EventPipeWriteEventResult
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,

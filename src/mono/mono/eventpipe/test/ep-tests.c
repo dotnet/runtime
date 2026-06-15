@@ -770,7 +770,7 @@ test_session_write_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -799,7 +799,7 @@ test_session_write_event (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -823,7 +823,7 @@ test_session_write_event_seq_point (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -852,7 +852,7 @@ test_session_write_event_seq_point (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 
@@ -880,7 +880,7 @@ test_session_write_wait_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -909,7 +909,7 @@ test_session_write_wait_get_next_event (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 
@@ -945,7 +945,7 @@ test_session_write_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -981,7 +981,7 @@ test_session_write_get_next_event (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 6;
 
@@ -1022,7 +1022,7 @@ test_session_write_suspend_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -1051,7 +1051,7 @@ test_session_write_suspend_event (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 

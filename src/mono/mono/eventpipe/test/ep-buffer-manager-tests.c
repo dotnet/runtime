@@ -104,7 +104,8 @@ buffer_manager_init (
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			EP_BUFFERING_MODE_DROP);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);
@@ -164,7 +165,7 @@ write_events (
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
 		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, ARRAY_SIZE (TEST_EVENT_DATA));
-		result = ep_buffer_manager_write_event (buffer_manager, thread, session, ep_event, &payload, NULL, NULL, thread, NULL);
+		result = ep_buffer_manager_write_event (buffer_manager, thread, session, ep_event, &payload, NULL, NULL, thread, NULL) == EP_WRITE_EVENT_RESULT_WRITTEN;
 		ep_event_payload_fini (&payload);
 
 		if (!result)

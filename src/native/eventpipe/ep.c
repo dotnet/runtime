@@ -7,6 +7,7 @@
 #include "ep.h"
 #include "ep-config.h"
 #include "ep-config-internals.h"
+#include "ep-buffer-manager.h"
 #include "ep-event.h"
 #include "ep-event-payload.h"
 #include "ep-event-source.h"
@@ -641,6 +642,10 @@ disable_holding_lock (
 	if (is_session_id_in_collection (id)) {
 		EventPipeSession *const session = (EventPipeSession *)(uintptr_t)id;
 
+		EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
+		if (buffer_manager != NULL)
+			ep_buffer_manager_abort_blocked_writers (buffer_manager);
+
 		if (session_requested_sampling (session)) {
 			// Disable the profiler.
 			ep_sample_profiler_disable ();
@@ -820,9 +825,11 @@ write_event_2 (
 		EP_ASSERT (rundown_session != NULL);
 		EP_ASSERT (thread != NULL);
 
-		ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (rundown_session));
+		ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (rundown_session) | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 		uint8_t *data = ep_event_payload_get_flat_data (payload);
 		if (thread != NULL && rundown_session != NULL && data != NULL) {
+			// Rundown runs on the disabling thread during teardown; blocking it for buffer capacity would
+			// stall the very shutdown that drains and frees those buffers, so rundown never blocks.
 			ep_session_write_event (
 				rundown_session,
 				thread,
@@ -844,13 +851,14 @@ write_event_2 (
 			// session ID i. The if check above also ensures that once the session is unpublished this thread
 			// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
 			// guarantee termination of the YIELD_WHILE loop in ep_session_wait_for_inflight_thread_ops.
-			ep_thread_set_session_use_in_progress (current_thread, i);
+			// Set WRITE_BUFFER_IN_USE so the reader waits for us before stealing the buffer.
+			ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 			{
 				EventPipeSession *const session = ep_volatile_load_session (i);
 				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occurred in between
 				// the check and the load
 				if (session != NULL) {
-					ep_session_write_event (
+					EventPipeWriteEventResult write_result = ep_session_write_event (
 						session,
 						thread,
 						ep_event,
@@ -859,6 +867,39 @@ write_event_2 (
 						related_activity_id,
 						event_thread,
 						stack);
+
+					// Block (non-lossy) mode: buffers full but the session is live, so park and retry
+					// instead of dropping. While parked we clear WRITE_BUFFER_IN_USE (keeping the index)
+					// so the reader can drain our full buffer; the retained index pins the buffer manager
+					// so teardown waits us out. We re-publish the bit and re-load the session each retry
+					// (disable may have unpublished it). If teardown aborts while parked we drop the event.
+					if (write_result == EP_WRITE_EVENT_RESULT_BLOCKED) {
+						EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
+						while (write_result == EP_WRITE_EVENT_RESULT_BLOCKED) {
+							// Park: drop the write-buffer bit so the reader can drain our buffer, then wait.
+							ep_thread_set_session_use_in_progress (current_thread, i);
+							if (ep_buffer_manager_is_aborting (buffer_manager))
+								break; // teardown: give up and drop the event
+							ep_buffer_manager_writer_wait_for_capacity (buffer_manager);
+							if (ep_buffer_manager_is_aborting (buffer_manager))
+								break; // teardown: give up and drop the event
+
+							// Retry: re-publish the write-buffer bit and re-load the session, then attempt again.
+							ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
+							EventPipeSession *const retry_session = ep_volatile_load_session (i);
+							if (retry_session == NULL)
+								break; // disabled out from under us
+							write_result = ep_session_write_event (
+								retry_session,
+								thread,
+								ep_event,
+								payload,
+								activity_id,
+								related_activity_id,
+								event_thread,
+								stack);
+						}
+					}
 				}
 			}
 			// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to

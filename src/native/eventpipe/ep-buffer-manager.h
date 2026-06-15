@@ -123,6 +123,10 @@ struct _EventPipeBufferManager_Internal {
 	volatile int64_t num_oversized_events_dropped;
 
 	EventPipeBufferingMode buffering_mode;
+	// Block mode: auto-reset event the reader (and teardown) signals to wake a parked producer.
+	ep_rt_wait_event_handle_t buffer_available_event;
+	// Block mode: set once at teardown so parked producers give up and none newly park.
+	volatile uint32_t aborting;
 
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;
@@ -174,7 +178,7 @@ ep_buffer_manager_init_sequence_point_thread_list (
 // This is because the thread that writes the events is not the same as the "event thread".
 // An optional stack trace can be provided for sample profiler events.
 // Otherwise, if a stack trace is needed, one will be automatically collected.
-bool
+EventPipeWriteEventResult
 ep_buffer_manager_write_event (
 	EventPipeBufferManager *buffer_manager,
 	ep_rt_thread_handle_t thread,
@@ -185,6 +189,22 @@ ep_buffer_manager_write_event (
 	const uint8_t *related_activity_id,
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
+
+// Park the calling producer until the reader frees capacity or teardown wakes it.
+void
+ep_buffer_manager_writer_wait_for_capacity (EventPipeBufferManager *buffer_manager);
+
+// True once the session is tearing down: a parked producer must give up and drop.
+bool
+ep_buffer_manager_is_aborting (const EventPipeBufferManager *buffer_manager);
+
+// Wake one parked producer (called by the reader after freeing capacity, and by teardown).
+void
+ep_buffer_manager_signal_capacity (EventPipeBufferManager *buffer_manager);
+
+// Teardown: make parked producers give up and stop new parks; call before freeing the buffers.
+void
+ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager);
 
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we

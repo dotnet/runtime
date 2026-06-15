@@ -213,7 +213,7 @@ ep_thread_set_session_use_in_progress (
 	uint32_t session_index)
 {
 	EP_ASSERT (thread != NULL);
-	EP_ASSERT (session_index < EP_MAX_NUMBER_OF_SESSIONS || session_index == UINT32_MAX);
+	EP_ASSERT ((session_index & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) < EP_MAX_NUMBER_OF_SESSIONS || session_index == UINT32_MAX);
 
 	ep_rt_volatile_store_uint32_t (&thread->session_use_in_progress, session_index);
 }
@@ -265,7 +265,7 @@ ep_thread_get_volatile_session_state (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (ep_thread_get() == thread);
-	EP_ASSERT (thread->session_use_in_progress == ep_session_get_index (session));
+	EP_ASSERT ((thread->session_use_in_progress & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 
 	size_t index = ep_session_get_index (session);
 	return (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [index]));

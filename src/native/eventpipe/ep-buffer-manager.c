@@ -300,6 +300,9 @@ buffer_manager_release_buffer (
 			ep_rt_thread_sleep (0); // yield the thread to the scheduler in case we're in high contention
 		}
 	} while (new_size_of_all_buffers >= 0 && ep_rt_atomic_compare_exchange_size_t (&buffer_manager->size_of_all_buffers, old_size_of_all_buffers, new_size_of_all_buffers) != old_size_of_all_buffers);
+
+	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK)
+		ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -816,7 +819,9 @@ buffer_manager_convert_buffer_to_read_only (
 		// Both session_use_in_progress and write_buffer are accessed via atomic operations. By setting the write_buffer to NULL above while holding
 		// the buffer manager lock, the wait is correct only because the writer thread sets session_use_in_progress before caching the write_buffer
 		// and resets it after it's done using the cached write_buffer.
-		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == index &&
+		// Match on the WRITE_BUFFER_IN_USE bit, not just the index: a parked Block-mode producer holds
+		// the index with the bit cleared, which is exactly when we are free to drain its buffer.
+		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == (index | EP_SESSION_USE_WRITE_BUFFER_IN_USE) &&
 						ep_thread_session_state_get_volatile_write_buffer (thread_session_state) == NULL);
 	}
 
@@ -858,6 +863,12 @@ ep_buffer_manager_alloc (
 	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
 
 	instance->buffering_mode = buffering_mode;
+	instance->aborting = 0;
+
+	if (buffering_mode == EP_BUFFERING_MODE_BLOCK) {
+		ep_rt_wait_event_alloc (&instance->buffer_available_event, false, false);
+		ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->buffer_available_event));
+	}
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);
@@ -917,9 +928,47 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
+	ep_rt_wait_event_free (&buffer_manager->buffer_available_event);
+
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
 
 	ep_rt_object_free (buffer_manager);
+}
+
+void
+ep_buffer_manager_writer_wait_for_capacity (EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	ep_rt_wait_event_wait (&buffer_manager->buffer_available_event, EP_INFINITE_WAIT, false);
+}
+
+bool
+ep_buffer_manager_is_aborting (const EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	return ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) != 0;
+}
+
+void
+ep_buffer_manager_signal_capacity (EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
+}
+
+void
+ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+
+	if (buffer_manager->buffering_mode != EP_BUFFERING_MODE_BLOCK)
+		return;
+
+	// Raise the abort flag (parked producers give up when woken; none newly park). The wake is
+	// driven by ep_session_wait_for_inflight_thread_ops, which signals buffer_available_event while
+	// it waits out the threads still holding this session's index - so no parked-writer count is kept.
+	ep_rt_volatile_store_uint32_t (&buffer_manager->aborting, 1);
+	ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -958,7 +1007,7 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-bool
+EventPipeWriteEventResult
 ep_buffer_manager_write_event (
 	EventPipeBufferManager *buffer_manager,
 	ep_rt_thread_handle_t thread,
@@ -970,7 +1019,7 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack)
 {
-	bool result = false;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_DROPPED;
 	bool alloc_new_buffer = false;
 	EventPipeBuffer *buffer = NULL;
 	EventPipeThreadSessionState *session_state = NULL;
@@ -984,7 +1033,8 @@ ep_buffer_manager_write_event (
 	EP_ASSERT (thread == ep_rt_thread_get_handle ());
 
 	// Before we pick a buffer, make sure the event is enabled.
-	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
+	if (!ep_event_is_enabled (ep_event))
+		return EP_WRITE_EVENT_RESULT_DROPPED;
 
 	// Check to see if an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
@@ -995,7 +1045,7 @@ ep_buffer_manager_write_event (
 	ep_raise_error_if_nok (current_thread != NULL);
 
 	// session_state won't be freed if use_in_progress is set.
-	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index (session));
+	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	session_state = ep_thread_get_volatile_session_state (current_thread, session);
 	if (session_state == NULL) {
 		// slow path should only happen once per thread per session
@@ -1013,7 +1063,7 @@ ep_buffer_manager_write_event (
 	{
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
 		ep_thread_session_state_increment_sequence_number (session_state);
-		return false;
+		return EP_WRITE_EVENT_RESULT_DROPPED;
 	}
 
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
@@ -1023,7 +1073,7 @@ ep_buffer_manager_write_event (
 	}
 
 	// buffer won't be converted to read-only if use_in_progress is set
-	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index(session));
+	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	buffer = ep_thread_session_state_get_volatile_write_buffer (session_state);
 	if (!buffer) {
 		alloc_new_buffer = true;
@@ -1049,7 +1099,16 @@ ep_buffer_manager_write_event (
 			// We treat this as the write_event call occurring after this session stopped listening for events, effectively the
 			// same as if ep_event_is_enabled test above returned false.
 			ep_raise_error_if_nok (!write_suspended);
-			ep_thread_session_state_increment_sequence_number (session_state);
+
+			// In block mode, notify the caller that they should park and retry, unless the session is closing,
+			// or rundown is enabled, in which case we cannot block without deadlocking.
+			if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK &&
+				!ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) &&
+				!ep_thread_is_rundown_thread (current_thread)) {
+				result = EP_WRITE_EVENT_RESULT_BLOCKED;
+			} else {
+				ep_thread_session_state_increment_sequence_number (session_state);
+			}
 		} else {
 			current_thread = ep_thread_get ();
 			EP_ASSERT (current_thread != NULL);
@@ -1067,14 +1126,15 @@ ep_buffer_manager_write_event (
 		// Indicate that there is new data to be read
 		ep_rt_wait_event_set (&buffer_manager->rt_wait_event);
 
-#ifdef EP_CHECKED_BUILD
 	if (!alloc_new_buffer)
+		result = EP_WRITE_EVENT_RESULT_WRITTEN;
+
+#ifdef EP_CHECKED_BUILD
+	if (result == EP_WRITE_EVENT_RESULT_WRITTEN)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_stored);
-	else
+	else if (result == EP_WRITE_EVENT_RESULT_DROPPED)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_dropped);
 #endif
-
-	result = !alloc_new_buffer;
 
 ep_on_exit:
 	ep_stack_contents_fini (current_stack_contents);
