@@ -2888,9 +2888,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt64:
         {
             // Import as a constant vector 0
-            GenTreeVecCon* vecCon = gtNewVconNode(retType);
-            vecCon->gtSimdVal     = simd_t::Zero();
-            retNode               = vecCon;
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2916,7 +2914,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                 {
-                    retNode = gtNewVconNode(retType, &simdVal);
+                    var_types simdType = getSIMDTypeForSize(simdSize);
+                    retNode = gtNewSimdCvtVectorToMaskNode(TYP_MASK, gtNewVconNode(simdType, &simdVal), simdBaseType,
+                                                           simdSize);
                     break;
                 }
             }
