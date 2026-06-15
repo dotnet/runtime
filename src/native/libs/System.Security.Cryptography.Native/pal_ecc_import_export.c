@@ -560,7 +560,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
         char encoding[32] = {0};
         if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_ENCODING, encoding, sizeof(encoding), NULL))
             return 0;
-        
+
         return (strcmp(encoding, OSSL_PKEY_EC_ENCODING_EXPLICIT) == 0) ? 1 : 0;
     }
 #endif
@@ -1511,7 +1511,7 @@ int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
@@ -1718,7 +1718,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
@@ -2085,7 +2085,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {

@@ -9056,6 +9056,15 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     return result;
 }
 
+#if defined(TARGET_ARM64)
+GenTreeBfm* Compiler::gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width)
+{
+    GenTreeBfm* result = new (this, GT_BFX) GenTreeBfm(GT_BFX, type, base, nullptr, offset, width);
+    result->gtFlags |= (base->gtFlags & GTF_ALL_EFFECT);
+    return result;
+}
+#endif
+
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
@@ -11772,6 +11781,15 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
             return;
+
+#ifdef TARGET_ARM64
+        case GT_BFX:
+            assert(m_node->AsOp()->gtOp2 == nullptr);
+            m_edge = &m_node->AsOp()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            return;
+#endif
 
         // Unary operators with an optional operand
         case GT_FIELD_ADDR:
@@ -21677,11 +21695,17 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    if (OperIs(GT_LSH, GT_RSH, GT_RSZ))
     {
-        // Shift/Rotate instructions do not update the flags in case of count being zero.
+        // Shift instructions do not update the flags in case of count being zero.
         return gtGetOp2()->IsNeverZero();
     }
+    // Note: GT_ROL / GT_ROR are intentionally NOT in this list. On xarch,
+    // ROL/ROR leave SF/ZF/AF/PF unchanged regardless of the rotate count, so
+    // they cannot be used to skip a TEST/CMP before a branch on the rotate
+    // result. (Per the Intel SDM, CF -- and OF in the 1-bit form -- are only
+    // updated when the count is non-zero, but those aren't useful for a
+    // zero-flag check either.)
 
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
