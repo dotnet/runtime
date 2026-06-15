@@ -15,8 +15,9 @@ namespace System.Diagnostics
 
         private const int MaxBaggageEntriesToEmit = 64;     // Suggested by W3C specs
         private const int MaxBaggageEncodedLength = 8192;   // Suggested by W3C specs
-        private const int MaxTraceStateEncodedLength = 256; // Suggested by W3C specs
+        private const int MaxTraceStateEncodedLength = 512; // Suggested by W3C specs
         private const int MaxTraceStateValueLength = 256;
+        private const int MaxTraceStateEntries = 32;
         private const int TraceParentCoreLength = 55;
 
         private const char Equal = '=';
@@ -137,67 +138,73 @@ namespace System.Diagnostics
             return baggageList != null;
         }
 
-        // list  = list-member 0*31( OWS "," OWS list-member )
+        // https://www.w3.org/TR/trace-context-2/#tracestate-header
+        // list        = list-member 0*31( OWS "," OWS list-member )
         // list-member = (key "=" value) / OWS
-        //
-        // key = ( lcalpha / DIGIT ) 0*255 ( keychar )
-        // keychar    = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
-        // lcalpha    = %x61-7A ; a-z
-        // DIGIT     = %x30-39 ; 0-9
-        //
-        // value    = 0*255(chr) nblk-chr
-        // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
-        // chr      = %x20 / nblk-chr
-
+        // key         = ( lcalpha / DIGIT ) 0*255 ( keychar )
+        // keychar     = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
+        // lcalpha     = %x61-7A ; a-z
+        // DIGIT       = %x30-39 ; 0-9
+        // value       = 0*255(chr) nblk-chr
+        // nblk-chr    = %x21-2B / %x2D-3C / %x3E-7E
+        // chr         = %x20 / nblk-chr
         internal static string? ValidateTraceState(string? traceState)
         {
             if (string.IsNullOrEmpty(traceState))
             {
-                return null; // invalid format
+                return null;
             }
 
-            int processed = 0;
+            int entries = 0;
+            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[256]);
 
-            while (processed < traceState.Length)
+            ReadOnlySpan<char> traceStateSpan = traceState;
+            do
             {
-                ReadOnlySpan<char> traceStateSpan = traceState.AsSpan(processed);
                 int commaIndex = traceStateSpan.IndexOf(Comma);
                 ReadOnlySpan<char> entry = commaIndex >= 0 ? traceStateSpan.Slice(0, commaIndex) : traceStateSpan;
-                int delta = entry.Length + (commaIndex >= 0 ? 1 : 0); // +1 for the comma
+                traceStateSpan = commaIndex >= 0 ? traceStateSpan.Slice(commaIndex + 1) : ReadOnlySpan<char>.Empty;
 
-                if (processed + delta > MaxTraceStateEncodedLength)
+                entry = Trim(entry);
+                if (entry.IsEmpty)
                 {
-                    break; // entry exceeds max length
+                    continue;
+                }
+
+                if (++entries > MaxTraceStateEntries)
+                {
+                    return null;
                 }
 
                 int equalIndex = entry.IndexOf(Equal);
                 if (equalIndex <= 0 || equalIndex >= entry.Length - 1)
                 {
-                    break; // invalid format
+                    return null;
                 }
 
-                if (IsInvalidTraceStateKey(Trim(entry.Slice(0, equalIndex))) || IsInvalidTraceStateValue(TrimSpaceOnly(entry.Slice(equalIndex + 1))))
+                ReadOnlySpan<char> key = entry.Slice(0, equalIndex);
+                ReadOnlySpan<char> value = entry.Slice(equalIndex + 1);
+                if (IsInvalidTraceStateKey(key) || IsInvalidTraceStateValue(value))
                 {
-                    break; // entry exceeds max length or invalid key/value, skip the whole trace state entries.
+                    return null;
                 }
 
-                processed += delta;
-            }
-
-            if (processed > 0)
-            {
-                if (traceState[processed - 1] == Comma)
+                if (vsb.Length > 0)
                 {
-                    processed--; // remove the last comma
+                    vsb.Append(Comma);
                 }
 
-                if (processed > 0)
+                vsb.Append(key);
+                vsb.Append(Equal);
+                vsb.Append(value);
+
+                if (vsb.Length > MaxTraceStateEncodedLength)
                 {
-                    return processed >= traceState.Length ? traceState : traceState.AsSpan(0, processed).ToString();
+                    return null;
                 }
-            }
+            } while (traceStateSpan.Length > 0);
 
-            return null;
+            return vsb.Length > 0 ? vsb.ToString() : null;
         }
 
         internal static void InjectTraceState(string traceState, object? carrier, PropagatorSetterCallback setter)

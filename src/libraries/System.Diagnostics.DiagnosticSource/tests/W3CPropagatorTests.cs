@@ -42,17 +42,20 @@ namespace System.Diagnostics.Tests
             // valid trace state, the key can have digits https://www.w3.org/TR/trace-context-2/#key
             yield return new object[] { "123@456=1", "123@456=1", null, null, null }; // trace state key has to start with lowercase or digit
 
-            // Tabs is not allowed in trace state values. use only the valid entry
-            yield return new object[] { "start=1, end=\t1", "start=1", null, null, null }; // trace state key has to start with lowercase or digit
+            // Tabs are only allowed as optional whitespace around list members. The whole trace state is discarded when a member is invalid.
+            yield return new object[] { "start=1, end=\t1", null, null, null, null };
 
             // multiple trace states
-            yield return new object[] { "start=1, end=1", "start=1, end=1", null, null, null }; // trace state key has to start with lowercase or digit
+            yield return new object[] { "start=1, end=1", "start=1,end=1", null, null, null }; // trace state key has to start with lowercase or digit
 
-            // trace state longer than the max limit
-            yield return new object[] { $"{new string('a', 255)}=1", null, null, null, null }; // trace state length max is 256
+            // Optional whitespace around trace state list members
+            yield return new object[] { " start=1 \t, \tend=1 ", "start=1,end=1", null, null, null };
 
-            // trace state equal the max
-            yield return new object[] { $"{new string('a', 254)}=1", $"{new string('a', 254)}=1", null, null, null }; // trace state length max is 256
+            // trace state longer than the max combined length limit
+            yield return new object[] { $"a={new string('a', 255)},b={new string('b', 255)}", null, null, null, null }; // trace state length max is 512
+
+            // trace state equal the max combined length limit
+            yield return new object[] { $"a={new string('a', 254)},b={new string('b', 253)}", $"a={new string('a', 254)},b={new string('b', 253)}", null, null, null }; // trace state length max is 512
 
             // Invalid baggage key.
             yield return new object[] { null, null, new[]
