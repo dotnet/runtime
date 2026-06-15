@@ -2826,6 +2826,176 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task Http2_SettingInFlightLimitExceeded()
+        {
+            // test that client abort connection when server send too much PING/SETTINGs while not processing ACK replies
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.True(e.Message.StartsWith(SR.net_http_http2_frame_limit_exceeded), "Bad Exception Message");
+
+                    // test that we can open connection after failure
+                    await client.GetAsync(uri);
+                },
+                async server =>
+                {
+                    server.AllowMultipleConnections = true;
+
+                    await using Http2LoopbackConnection con = await server.AcceptConnectionAsync();
+                    while (true)
+                    {
+                        try
+                        {
+                            await con.WriteFrameAsync(new Frame(0, FrameType.Settings, FrameFlags.None, 0));
+                        }
+                        catch (IOException)
+                        {
+                            break;
+                        }
+                    }
+
+                    // second connection will be more lucky
+                    await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "ok");
+                });
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task Http2_PingInFlightLimitExceeded()
+        {
+            // almost exhaust client queue and test that following asynchronous PING issued by client trips
+
+            BlockedWriteNetworkStream? clientNetStream = null;
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                    SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+                    socketsHandler.ConnectCallback += async (ctx, ct) =>
+                    {
+                        DnsEndPoint dnsEndPoint = ctx.DnsEndPoint;
+                        IPAddress[] addresses = await Dns.GetHostAddressesAsync(dnsEndPoint.Host, dnsEndPoint.AddressFamily, ct);
+
+                        var s = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                        await s.ConnectAsync(addresses, dnsEndPoint.Port, ct);
+
+                        clientNetStream = new BlockedWriteNetworkStream(s, true);
+                        return clientNetStream;
+                    };
+                    socketsHandler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+                    socketsHandler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                    socketsHandler.KeepAlivePingTimeout = TimeSpan.MaxValue;
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    client.DefaultRequestVersion = HttpVersion.Version20;
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.True(e.Message.StartsWith(SR.net_http_http2_frame_limit_exceeded), "Bad Exception Message");
+
+                    // test that we can connect new connection after fail
+                    await client.GetAsync(uri);
+                },
+                async server =>
+                {
+                    server.AllowMultipleConnections = true;
+
+                    await using Http2LoopbackConnection con = await server.AcceptConnectionAsync();
+
+                    // wait for initial frames from client
+                    await con.ReadSettingsAsync();
+                    await con.ReadRequestHeaderAsync();
+                    PingFrame firstPing = await con.ReadPingAsync();
+
+                    long writeCntBeforeSettingsAck = clientNetStream.StartBlocking();
+
+                    // ACK for following SETTINGS will attemp flushing queue on client side and block its processing
+                    await con.WriteFrameAsync(new SettingsFrame());
+
+                    // wait before client attemp to send ACK and channel get blocked.
+                    // Without this wait it may combine SETTINGs ACK and following PING ACKs into
+                    // single buffer which will cause dequeueing them from queue and we fail to
+                    // preload queue to expect 1000 entries as required by test later.
+                    while (clientNetStream.WriteCallCount == writeCntBeforeSettingsAck)
+                    {
+                        await Task.Delay(50);
+                    }
+
+                    // fill the client queue with replies to PING, 1000 exactly fit the queue
+                    for (long i = 0; i < 1000; i++)
+                    {
+                        await con.WriteFrameAsync(new PingFrame(i, FrameFlags.None, 0));
+                    }
+
+                    // now confirm ping we received soon after initiating connection to eneble new heart beat ping
+                    // this should trip and close connection
+                    await con.WriteFrameAsync(new PingFrame(firstPing.Data, FrameFlags.Ack, 0));
+
+                    // test that server/client are operational after failure
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                }, new Http2Options()
+                {
+                    UseSsl = false, // SSL introduce buffering which supress effect of blocking
+                    EnableTransparentPingResponse = false // need to observe initial ping
+                });
+        }
+
+        private class BlockedWriteNetworkStream : NetworkStream
+        {
+            private object _lock = new object();
+            private bool _block;
+            private long _writes;
+
+            public long WriteCallCount
+            {
+                get
+                {
+                    lock (_lock)
+                    {
+                        return _writes;
+                    }
+                }
+            }
+
+            public BlockedWriteNetworkStream(Socket socket, bool ownsSocket) : base(socket, ownsSocket) { }
+
+            public long StartBlocking()
+            {
+                lock (_lock)
+                {
+                    _block = true;
+                    return _writes;
+                }
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                bool block;
+                lock (_lock)
+                {
+                    _writes++;
+                    block = _block;
+                }
+
+                if (block)
+                {
+                    await Task.Delay(TimeSpan.FromDays(1), cancellationToken);
+                    throw new Exception("Long delay was canceled early");
+                }
+
+                await base.WriteAsync(buffer, cancellationToken);
+            }
+        }
+
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
             await TestHelper.WhenAllCompletedOrAnyFailed(sendTasks.ToArray()).ConfigureAwait(false);
