@@ -202,7 +202,9 @@ namespace Microsoft.Win32.SafeHandles
                 // Extended Startup Info can be configured only for the non-logon path
                 if (!logon)
                 {
+                    SafePseudoConsoleHandle? pseudoConsoleHandle = startInfo.PseudoTerminal?.PseudoConsole;
                     if (ConfigureExtendedStartupInfo(inheritedHandles, killOnParentExit,
+                        pseudoConsoleHandle,
                         in startupInfoEx, ref attributeListBuffer,
                         ref handlesToInherit, ref handlesToRelease, ref bInheritHandles,
                         ref jobHandles))
@@ -526,6 +528,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static unsafe bool ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit,
+            SafePseudoConsoleHandle? pseudoConsoleHandle,
             in Interop.Kernel32.STARTUPINFOEX startupInfoEx, ref void* attributeListBuffer,
             ref nint* handlesToInherit, ref SafeHandle?[]? handlesToRelease, ref bool bInheritHandles,
             ref nint* jobHandles)
@@ -567,6 +570,11 @@ namespace Microsoft.Win32.SafeHandles
                 attributeCount++; // PROC_THREAD_ATTRIBUTE_JOB_LIST
             }
 
+            if (pseudoConsoleHandle is not null && !pseudoConsoleHandle.IsInvalid)
+            {
+                attributeCount++; // PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
+            }
+
             if (attributeCount == 0)
             {
                 return false;
@@ -603,6 +611,22 @@ namespace Microsoft.Win32.SafeHandles
                 null))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+
+            if (pseudoConsoleHandle is not null && !pseudoConsoleHandle.IsInvalid)
+            {
+                nint pcHandle = pseudoConsoleHandle.DangerousGetHandle();
+                if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                    attributeListBuffer,
+                    0,
+                    (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                    (nint*)&pcHandle,
+                    (nuint)sizeof(IntPtr),
+                    null,
+                    null))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
 
             return true;

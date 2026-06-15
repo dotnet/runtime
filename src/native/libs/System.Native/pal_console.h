@@ -136,6 +136,20 @@ typedef enum
 
 typedef void (*CtrlCallback)(CtrlCode signalCode);
 /**
+ * Creates a pseudo-terminal pair with the specified window size.
+ *
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd, int32_t columns, int32_t rows);
+
+/**
+ * Resizes the pseudo-terminal to the specified dimensions.
+ *
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_ResizePseudoTerminal(intptr_t primaryFd, int32_t columns, int32_t rows);
+
+/**
  * Called by pal_signal.cpp to reinitialize the console on SIGCONT/SIGCHLD.
  */
 void ReinitializeTerminal(void);

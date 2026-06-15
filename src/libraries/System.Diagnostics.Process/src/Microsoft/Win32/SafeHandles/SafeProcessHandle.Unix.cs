@@ -353,12 +353,16 @@ namespace Microsoft.Win32.SafeHandles
                 // descriptors, and execve to execute the requested process.  The shim implementation
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+                int ptySecondaryFd = startInfo.PseudoTerminal is not null
+                    ? startInfo.PseudoTerminal.Secondary.DangerousGetHandle().ToInt32()
+                    : -1;
+
                 errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
 #pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
-                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
+                    startInfo.StartDetached, startInfo.KillOnParentExit, ptySecondaryFd, inheritedHandles);
 #pragma warning restore CA1416
 
                 if (errno == 0)

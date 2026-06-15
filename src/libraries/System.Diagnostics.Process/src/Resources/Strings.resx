@@ -231,6 +231,9 @@
   <data name="StartDetachedNotCompatible" xml:space="preserve">
     <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
   </data>
+  <data name="PseudoTerminalCannotBeCombined" xml:space="preserve">
+    <value>The PseudoTerminal property cannot be used together with UseShellExecute, RedirectStandardInput, RedirectStandardOutput, RedirectStandardError, StandardInputHandle, StandardOutputHandle, or StandardErrorHandle.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>

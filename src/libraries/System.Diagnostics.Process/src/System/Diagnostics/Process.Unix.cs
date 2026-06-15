@@ -437,5 +437,28 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
+        private static void SetChildHandlesForPseudoTerminal(PseudoTerminal pty, ref SafeFileHandle? childInputHandle, ref SafeFileHandle? childOutputHandle, ref SafeFileHandle? childErrorHandle)
+        {
+            // On Unix, all three child handles point to the secondary (child) side of the PTY.
+            childInputHandle = pty.Secondary;
+            childOutputHandle = pty.Secondary;
+            childErrorHandle = pty.Secondary;
+        }
+
+        private void OpenPseudoTerminalStreams(ProcessStartInfo startInfo)
+        {
+            PseudoTerminal pty = startInfo.PseudoTerminal!;
+            // On Unix, the primary fd is bidirectional (read + write).
+            // Create separate streams for input and output, with only one owning the handle.
+            SafeFileHandle nonOwningPrimary = new SafeFileHandle(pty.Primary.DangerousGetHandle(), ownsHandle: false);
+            FileStream writeStream = new FileStream(nonOwningPrimary, FileAccess.Write, bufferSize: 1, isAsync: false);
+            FileStream readStream = new FileStream(nonOwningPrimary, FileAccess.Read, bufferSize: 1, isAsync: false);
+            _standardInput = new StreamWriter(writeStream, startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+            {
+                AutoFlush = true
+            };
+            _standardOutput = new StreamReader(readStream, startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+        }
+
     }
 }

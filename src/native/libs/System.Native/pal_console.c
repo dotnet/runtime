@@ -19,6 +19,13 @@
 #include <pthread.h>
 #include <signal.h>
 
+#if HAVE_OPENPTY
+#include <pty.h>
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#include <util.h>
+#endif
+#endif
+
 int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
     assert(windowSize != NULL);
@@ -477,4 +484,60 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 void SystemNative_UninitializeTerminal(void)
 {
     UninitializeTerminal();
+}
+
+int32_t SystemNative_OpenPseudoTerminal(int32_t* primaryFd, int32_t* secondaryFd, int32_t columns, int32_t rows)
+{
+    assert(primaryFd != NULL);
+    assert(secondaryFd != NULL);
+
+#if HAVE_OPENPTY
+    int primary = -1, secondary = -1;
+
+    struct winsize ws;
+    memset(&ws, 0, sizeof(ws));
+    ws.ws_col = (unsigned short)columns;
+    ws.ws_row = (unsigned short)rows;
+
+    if (openpty(&primary, &secondary, NULL, NULL, &ws) == -1)
+    {
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        return -1;
+    }
+
+    *primaryFd = primary;
+    *secondaryFd = secondary;
+    return 0;
+#else
+    (void)columns;
+    (void)rows;
+    *primaryFd = -1;
+    *secondaryFd = -1;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_ResizePseudoTerminal(intptr_t primaryFd, int32_t columns, int32_t rows)
+{
+#if HAVE_IOCTL && HAVE_TIOCGWINSZ
+    struct winsize ws;
+    memset(&ws, 0, sizeof(ws));
+    ws.ws_col = (unsigned short)columns;
+    ws.ws_row = (unsigned short)rows;
+
+    if (ioctl(ToFileDescriptor(primaryFd), TIOCSWINSZ, &ws) == -1)
+    {
+        return -1;
+    }
+
+    return 0;
+#else
+    (void)primaryFd;
+    (void)columns;
+    (void)rows;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }

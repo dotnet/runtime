@@ -22,6 +22,7 @@
 #include <crt_externs.h>
 #endif
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 #if defined(__linux__)
 #if !defined(HAVE_CLOSE_RANGE)
@@ -334,7 +335,8 @@ static int32_t ForkAndExecProcessInternal(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
     int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig);
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig,
+    int32_t pseudoTerminalSecondaryFd);
 
 #if HAVE_PR_SET_PDEATHSIG
 // Dedicated thread infrastructure for PR_SET_PDEATHSIG.
@@ -401,7 +403,7 @@ static void* PDeathSigThreadFunc(void* arg)
             req->filename, req->argv, req->envp, req->cwd,
             req->setCredentials, req->userId, req->groupId, req->groups, req->groupsLength,
             &childPid, req->stdinFd, req->stdoutFd, req->stderrFd,
-            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1);
+            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1, -1);
         req->childPid = childPid;
         req->errnoValue = errno;
 
@@ -535,7 +537,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* inheritedFds,
                                       int32_t inheritedFdCount,
                                       int32_t startDetached,
-                                      int32_t killOnParentExit)
+                                      int32_t killOnParentExit,
+                                      int32_t pseudoTerminalSecondaryFd)
 {
 #if HAVE_PR_SET_PDEATHSIG
     if (killOnParentExit)
@@ -554,14 +557,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         filename, argv, envp, cwd,
         setCredentials, userId, groupId, groups, groupsLength,
         childPid, stdinFd, stdoutFd, stderrFd,
-        inheritedFds, inheritedFdCount, startDetached, 0);
+        inheritedFds, inheritedFdCount, startDetached, 0, pseudoTerminalSecondaryFd);
 }
 
 static int32_t ForkAndExecProcessInternal(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
     int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig)
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig,
+    int32_t pseudoTerminalSecondaryFd)
 {
 #if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
@@ -872,6 +876,21 @@ static int32_t ForkAndExecProcessInternal(
         if (startDetached && setsid() == -1)
         {
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+        }
+
+        // When using a pseudo-terminal, mimic forkpty behavior:
+        // 1. Create a new session (if not already done by startDetached)
+        // 2. Make the secondary PTY fd the controlling terminal
+        if (pseudoTerminalSecondaryFd >= 0)
+        {
+            if (!startDetached && setsid() == -1)
+            {
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+            }
+            if (ioctl(pseudoTerminalSecondaryFd, TIOCSCTTY, 0) == -1)
+            {
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+            }
         }
 
         if (setCredentials)

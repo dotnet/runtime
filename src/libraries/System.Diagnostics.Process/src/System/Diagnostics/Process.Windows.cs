@@ -849,5 +849,28 @@ namespace System.Diagnostics
                 }
             }
         }
+
+        private static void SetChildHandlesForPseudoTerminal(PseudoTerminal pty, ref SafeFileHandle? childInputHandle, ref SafeFileHandle? childOutputHandle, ref SafeFileHandle? childErrorHandle)
+        {
+            // On Windows, the pseudo console handles the mapping internally via PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE.
+            // We leave the child handles untouched - they will be populated by the console handles path
+            // and won't actually be used by the child process since the pseudo console takes precedence.
+        }
+
+        private void OpenPseudoTerminalStreams(ProcessStartInfo startInfo)
+        {
+            PseudoTerminal pty = startInfo.PseudoTerminal!;
+            // On Windows, Input is a write pipe (to send data to the console) and Output is a read pipe (to receive from the console).
+            // Use non-owning handles since the PseudoTerminal owns the pipe lifetime.
+            SafeFileHandle nonOwningInput = new SafeFileHandle(pty.Input.DangerousGetHandle(), ownsHandle: false);
+            SafeFileHandle nonOwningOutput = new SafeFileHandle(pty.Output.DangerousGetHandle(), ownsHandle: false);
+            _standardInput = new StreamWriter(new FileStream(nonOwningInput, FileAccess.Write, bufferSize: 1, isAsync: false),
+                startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+            {
+                AutoFlush = true
+            };
+            _standardOutput = new StreamReader(new FileStream(nonOwningOutput, FileAccess.Read, bufferSize: 1, isAsync: false),
+                startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+        }
     }
 }

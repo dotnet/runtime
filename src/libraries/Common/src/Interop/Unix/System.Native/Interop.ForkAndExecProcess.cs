@@ -17,7 +17,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, SafeHandle[]? inheritedHandles = null)
+            bool startDetached, bool killOnParentExit, int pseudoTerminalSecondaryFd = -1, SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -76,7 +76,8 @@ internal static partial class Interop
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
-                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0);
+                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0,
+                        pseudoTerminalSecondaryFd);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -105,7 +106,8 @@ internal static partial class Interop
             string filename, byte** argv, byte** envp, string? cwd,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
             out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd,
-            int* inheritedFds, int inheritedFdCount, int startDetached, int killOnParentExit);
+            int* inheritedFds, int inheritedFdCount, int startDetached, int killOnParentExit,
+            int pseudoTerminalSecondaryFd);
 
         /// <summary>
         /// Allocates a single native memory block containing both a null-terminated pointer array
