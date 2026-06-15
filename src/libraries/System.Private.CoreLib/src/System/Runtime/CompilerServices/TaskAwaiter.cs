@@ -464,7 +464,7 @@ namespace System.Runtime.CompilerServices
             // Its layout must remain the same.
 
             /// <summary>The task being awaited.</summary>
-            private readonly Task<TResult> m_task;
+            internal readonly Task<TResult> m_task;
             /// <summary>Options for how this awaiter behaves. This is a bit field with values from <see cref="ConfigureAwaitOptions"/>.</summary>
             internal readonly ConfigureAwaitOptions m_options;
 

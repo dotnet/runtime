@@ -17,9 +17,11 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-if(CLR_CMAKE_TARGET_ANDROID)
+if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
+    # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
+    # __tls_get_addr, so the runtime must use emulated TLS (like Android).
     add_definitions(-DFEATURE_EMULATED_TLS)
-endif(CLR_CMAKE_TARGET_ANDROID)
+endif()
 
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
@@ -59,6 +61,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     clsload.cpp
     codeman.cpp
     codeversion.cpp
+    conditionalweaktable.cpp
     contractimpl.cpp
     corhost.cpp
     crst.cpp
@@ -267,9 +270,16 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
+list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.cpp
+)
+list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.h
+    stringthunkhash.h
+)
+
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
-    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
 )
 
 set(VM_HEADERS_DAC
@@ -644,8 +654,15 @@ if (FEATURE_PORTABLE_HELPERS)
     list(APPEND VM_SOURCES_WKS
         ${PORTABLE_SOURCES_DIR}/AllocFast.cpp
         ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
-        ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
+
+    if(CLR_CMAKE_TARGET_ARCH_WASM)
+    else()
+        list(APPEND VM_SOURCES_WKS
+            ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
+        )
+    endif()
+
 elseif(CLR_CMAKE_TARGET_WIN32)
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -932,16 +949,24 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/entrypoints.h
     )
     set(VM_SOURCES_WKS_ARCH
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
-    if (GEN_PINVOKE)
+    if (CLR_CMAKE_TARGET_BROWSER)
         list(APPEND VM_SOURCES_WKS_ARCH
+            ${ARCH_SOURCES_DIR}/browserprofiler.cpp
+        )
+    endif(CLR_CMAKE_TARGET_BROWSER)
+    set(VM_SOURCES_WKS_GEN
+        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
+    )
+    if (GEN_PINVOKE)
+        list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/callhelpers-pinvoke.cpp
         )
     endif(GEN_PINVOKE)
@@ -1024,6 +1049,7 @@ if(CLR_CMAKE_TARGET_ARCH_I386)
 endif()
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
+convert_to_absolute_path(VM_SOURCES_WKS_GEN ${VM_SOURCES_WKS_GEN})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})

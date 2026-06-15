@@ -67,7 +67,7 @@ namespace System.Security.Cryptography
             IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
-        public sealed override void GenerateKey()
+        public sealed override unsafe void GenerateKey()
         {
             Span<byte> key = stackalloc byte[KeySize / BitsPerByte];
             RandomNumberGenerator.Fill(key);

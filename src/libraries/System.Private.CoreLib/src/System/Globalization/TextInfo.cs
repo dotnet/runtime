@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -495,7 +495,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to lowercase.</param>
         /// <returns>The specified rune converted to lowercase.</returns>
-        public Rune ToLower(Rune value)
+        public unsafe Rune ToLower(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -503,7 +503,7 @@ namespace System.Globalization
             // Change span to lower and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> lowerChars = stackalloc char[2];
+                Span<char> lowerChars = ['\0', '\0'];
                 ToLower(valueChars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
@@ -517,7 +517,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to uppercase.</param>
         /// <returns>The specified rune converted to uppercase.</returns>
-        public Rune ToUpper(Rune value)
+        public unsafe Rune ToUpper(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -525,7 +525,7 @@ namespace System.Globalization
             // Change span to upper and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> upperChars = stackalloc char[2];
+                Span<char> upperChars = ['\0', '\0'];
                 ToUpper(valueChars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
@@ -729,7 +729,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    Span<char> dst = stackalloc char[2];
+                    Span<char> dst = ['\0', '\0'];
                     ChangeCaseToUpper(src, dst);
                     result.Append(dst);
                 }

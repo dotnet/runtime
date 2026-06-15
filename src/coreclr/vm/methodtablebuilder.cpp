@@ -4450,7 +4450,7 @@ IS_VALUETYPE:
                             SetHasFieldsWhichMustBeInited();
 
 #ifdef FEATURE_READYTORUN
-                        if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
+                        if (!pByValueClass->IsPrimitive())
                         {
                             CheckLayoutDependsOnOtherModules(pByValueClass);
                         }
@@ -10742,10 +10742,9 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         // Check if it is a primitive type
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
-        if (type != ELEMENT_TYPE_END)
+        if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
-            pMT->SetInternalCorElementType(type);
-            pMT->SetIsTruePrimitive();
+            pMT->SetInternalCorElementType(type, true);
 
 #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
@@ -10777,18 +10776,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_NullableName) == 0)
         {
             pMT->SetIsNullable();
-        }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
@@ -12031,7 +12018,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     STANDARD_VM_CONTRACT;
 
     // These cases are expected to be handled by the caller
-    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsTruePrimitive() || ((g_pEnumClass != NULL) && pDependencyMT->IsEnum())));
+    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsPrimitive()));
 
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!

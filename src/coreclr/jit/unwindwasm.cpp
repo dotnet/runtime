@@ -58,9 +58,11 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    bool  isFunclet   = func->IsFunclet();
-    bool  isColdCode  = false;
-    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize);
+    bool isFunclet  = func->IsFunclet();
+    bool isColdCode = false;
+    assert(func->endVirtualIP > func->startVirtualIP);
+    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize) +
+                        emitter::SizeOfULEB128(func->endVirtualIP - func->startVirtualIP);
 
     eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
 }
@@ -93,7 +95,8 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //    pColdCode - Pointer to the beginning of the memory with the function and funclet cold code.
 //
 // Notes:
-//   For Wasm the unwind extent describes the entire span of Wasm code for the method or funclet.
+//   For Wasm the unwind extent describes the entire span of Wasm code for the method or funclet,
+//   and the virtual IP "length" for the method or funclet.
 //
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
@@ -104,13 +107,19 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     //
     pColdCode = nullptr;
 
-    // Unwind info is just the frame size.
-    // Record frame size with ULEB128 compression.
+    // Unwind info is the frame size and the virtual IP length.
+    // All values encoded via ULEB128.
     //
-    uint8_t buffer[5];
-    ULONG   encodedSize = (ULONG)GetEmitter()->emitOutputULEB128(buffer, func->funWasmFrameSize);
-    assert(encodedSize <= sizeof(buffer));
+    uint8_t buffer[10];
+    size_t  index = 0;
+    assert(func->endVirtualIP > func->startVirtualIP);
+    index += GetEmitter()->emitOutputULEB128(buffer + index, func->funWasmFrameSize);
+    index += GetEmitter()->emitOutputULEB128(buffer + index, func->endVirtualIP - func->startVirtualIP);
+    assert(index <= sizeof(buffer));
 
-    eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, encodedSize, (BYTE*)&buffer,
+    JITDUMP("Unwind info for %s %u: VIP range [%u, %u); frame size %u\n", func->IsFunclet() ? "funclet" : "main",
+            func->GetFuncletIdx(this), func->startVirtualIP, func->endVirtualIP, func->funWasmFrameSize);
+
+    eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, (ULONG)index, (BYTE*)&buffer,
                       (CorJitFuncKind)func->funKind);
 }

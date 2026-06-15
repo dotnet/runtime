@@ -12,6 +12,14 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
+#ifdef TARGET_WASM
+extern "C" void SamplingProfiler_OnSamplepoint();
+#endif
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+#include "wasm/browserprofiler.h"
+#endif
+
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -1441,7 +1449,7 @@ SWITCH_OPCODE:
                         if (seqPointOffset >= 0)
                         {
                             callbackIp = pFrame->startIp->GetByteCodes() + seqPointOffset;
-                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT);
+                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT || *callbackIp == INTOP_BREAKPOINT);
                         }
                         g_pDebugInterface->OnMethodEnter((void*)callbackIp);
                     }
@@ -1613,11 +1621,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvFpHelper<uint8_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvFpHelper<uint8_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -1645,11 +1653,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
@@ -1942,6 +1950,25 @@ SWITCH_OPCODE:
                     }
                     ip++;
                     break;
+
+#ifdef PERFTRACING_DISABLE_THREADS
+                case INTOP_PROF_SAMPLEPOINT:
+                    SamplingProfiler_OnSamplepoint();
+                    ip++;
+                    break;
+#endif // PERFTRACING_DISABLE_THREADS
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                case INTOP_PROF_ENTER:
+                    BrowserProfiler_OnMethodEnter(pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    break;
+
+                case INTOP_PROF_LEAVE:
+                    BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+                    ip++;
+                    break;
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -3426,6 +3453,9 @@ CALL_INTERP_METHOD:
 
                     if (frameNeedsTailcallUpdate)
                     {
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                        BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+#endif
                         InterpMethod* pTargetMethod = targetIp->Method;
                         UpdateFrameForTailCall(pFrame, targetIp, callArgsAddress);
                         frameNeedsTailcallUpdate = false;
@@ -4501,9 +4531,11 @@ do                                                                      \
                     }
                     ip += 3;
 
-                    // copy locals that need to move to the continuation object
+                    // Copy locals that need to move to the continuation object
+                    // The copied continuation data begins immediately after the
+                    // continuation's result storage.
                     size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    uint8_t *pContinuationDataStart = continuation->GetResultStorage();
+                    uint8_t *pContinuationDataStart = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
                     uint8_t *pContinuationData = pContinuationDataStart;
                     size_t bytesTotal = 0;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
@@ -4541,7 +4573,7 @@ do                                                                      \
                         }
                     }
 
-                    continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
+                    continuation->SetState(pAsyncSuspendData->suspensionPointIndex);
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
@@ -4568,13 +4600,22 @@ do                                                                      \
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
 
                     // copy locals that need to move from the continuation object
-                    uint8_t *pContinuationData = continuation->GetResultStorage();
+                    uint8_t *pContinuationData = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
                     while (pCopyEntry->countBytes != 0)
                     {
                         memcpy(LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pContinuationData, pCopyEntry->countBytes);
                         pContinuationData += pCopyEntry->countBytes;
                         pCopyEntry++;
+                    }
+
+                    // Explicitly copy the return value from the continuation's result storage
+                    // to the interpreter stack.
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
+                    {
+                        memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
+                               continuation->GetResultStorage(),
+                               pAsyncSuspendData->returnValueContinuationDataSize);
                     }
 
                     PTR_OBJECTREF pException = continuation->GetExceptionObjectStorageOrNull();
@@ -4601,9 +4642,11 @@ do                                                                      \
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
                     if (continuation != NULL)
                     {
-                        // A continuation is present, begin the restoration process
+                        // State is the suspension-point index; map it to the resume IP.
                         int32_t state = continuation->GetState();
-                        ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
+                        _ASSERTE(state >= 0 && state < pMethod->numSuspensionPoints);
+                        _ASSERTE(pMethod->suspensionPointIPOffsets != NULL);
+                        ip = (int32_t*)((uint8_t*)pFrame->startIp + pMethod->suspensionPointIPOffsets[state]);
 
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
@@ -4641,6 +4684,9 @@ do                                                                      \
                 // Thus, we need to rethrow it to let it propagate further.
                 throw;
             }
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+            BrowserProfiler_OnMethodLeave(pFrame->startIp->Method->methodHnd);
+#endif
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
             pFrame = pFrame->pParent;

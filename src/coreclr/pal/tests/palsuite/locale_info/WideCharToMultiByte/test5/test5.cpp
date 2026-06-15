@@ -11,6 +11,7 @@
 **==========================================================================*/
 
 #include <palsuite.h>
+#include <minipal/utf8.h>
 
 PALTEST(locale_info_WideCharToMultiByte_test5_paltest_widechartomultibyte_test5, "locale_info/WideCharToMultiByte/test5/paltest_widechartomultibyte_test5")
 {    
@@ -146,6 +147,42 @@ PALTEST(locale_info_WideCharToMultiByte_test5_paltest_widechartomultibyte_test5,
         
         free(utf8Buffer);
     }
+
+#if BIGENDIAN
+    {
+        const char* expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
+        const size_t expectedLengthWithTerminator = strlen(expected) + 1;
+        const unsigned int flags = MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+
+        WCHAR littleEndianWide[64];
+        for (size_t i = 0; i < expectedLengthWithTerminator; i++)
+        {
+            littleEndianWide[i] = (WCHAR)(((unsigned char)expected[i]) << 8);
+        }
+
+        size_t requiredLength = minipal_get_length_utf16_to_utf8((const CHAR16_T*)littleEndianWide,
+            expectedLengthWithTerminator, flags);
+        if (requiredLength != expectedLengthWithTerminator)
+        {
+            Fail("minipal_get_length_utf16_to_utf8 with MINIPAL_TREAT_AS_LITTLE_ENDIAN returned %zu, expected %zu\n",
+                requiredLength, expectedLengthWithTerminator);
+        }
+
+        CHAR utf8Buffer[64];
+        size_t convertedLength = minipal_convert_utf16_to_utf8((const CHAR16_T*)littleEndianWide,
+            expectedLengthWithTerminator, utf8Buffer, sizeof(utf8Buffer), flags);
+        if (convertedLength != expectedLengthWithTerminator)
+        {
+            Fail("minipal_convert_utf16_to_utf8 with MINIPAL_TREAT_AS_LITTLE_ENDIAN returned %zu, expected %zu\n",
+                convertedLength, expectedLengthWithTerminator);
+        }
+
+        if (memcmp(utf8Buffer, expected, expectedLengthWithTerminator) != 0)
+        {
+            Fail("minipal_convert_utf16_to_utf8 with MINIPAL_TREAT_AS_LITTLE_ENDIAN produced unexpected bytes\n");
+        }
+    }
+#endif
    
     PAL_Terminate();
 

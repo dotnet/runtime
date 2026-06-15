@@ -491,7 +491,7 @@ typedef DPTR(struct DebuggerPendingFuncEval) PTR_DebuggerPendingFuncEval;
  * SHash to hold weak object handles of exceptions with ForceCatchHandlerFound equal to true
  * ------------------------------------------------------------------------ */
 #ifndef DACCESS_COMPILE
-class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
+class EMPTY_BASES ForceCatchHandlerFoundSHashTraits : public DefaultSHashTraits<OBJECTHANDLE>
 {
     public:
         typedef OBJECTHANDLE element_t;
@@ -582,7 +582,7 @@ public:
     }
 };
 
-class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
+class EMPTY_BASES CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
 {
     public:
         typedef TypeInModule element_t;
@@ -776,8 +776,6 @@ public:
 #endif
 
         _ASSERTE(m_pDCB != NULL);
-        // In case this turns into a continuation event
-        GetRCThreadSendBuffer()->next = NULL;
         LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
@@ -1504,8 +1502,6 @@ protected:
     ULONG                    m_lastIL;
     PTR_DebuggerILToNativeMap m_sequenceMap;
     unsigned int             m_sequenceMapCount;
-    PTR_DebuggerILToNativeMap m_callsiteMap;
-    unsigned int             m_callsiteMapCount;
     bool                     m_sequenceMapSorted;
 
     PTR_NativeVarInfo        m_varNativeInfo;
@@ -1534,10 +1530,9 @@ public:
             "                 m_addrOfCode: %p\n"
             "                 m_sizeOfCode: 0x%zx\n"
             "                     m_lastIL: 0x%x\n"
-            "           m_sequenceMapCount: %u\n"
-            "           m_callsiteMapCount: %u\n",
+            "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1556,22 +1551,6 @@ public:
 
         LazyInitBounds();
         return m_sequenceMap;
-    }
-
-    unsigned int GetCallsiteMapCount()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMapCount;
-    }
-
-    PTR_DebuggerILToNativeMap GetCallSiteMap()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMap;
     }
 
     PTR_NativeVarInfo GetVarNativeInfo()
@@ -2133,15 +2112,6 @@ public:
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
-    //HRESULT GetAndSendJITFunctionData(DebuggerRCThread* rcThread,
-    //                               mdMethodDef methodToken,
-    //                               void* functionModuleToken);
-    HRESULT GetFuncData(mdMethodDef funcMetadataToken,
-                        DebuggerModule* pDebuggerModule,
-                        SIZE_T nVersion,
-                        DebuggerIPCE_FuncData *data);
-
-
     // The following four functions convert between type handles and the data that is
     // shipped for types to and from the right-side.
     //
@@ -2199,12 +2169,6 @@ public:
         DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
 
     };
-
-
-
-    HRESULT GetMethodDescData(MethodDesc *pFD,
-                              DebuggerJitInfo *pJITInfo,
-                              DebuggerIPCE_JITFuncData *data);
 
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
@@ -2484,11 +2448,6 @@ public:
                          SString * pSwitchName,
                          SString * pMessage);
 
-    void SendLogSwitchSetting (int iLevel,
-                               int iReason,
-                               _In_z_ LPCWSTR pLogSwitchName,
-                               _In_z_ LPCWSTR pParentSwitchName);
-
     bool IsLoggingEnabled (void)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2557,11 +2516,6 @@ public:
                                  BYTE                      **rgpVCs);
 
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
-
-    // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
-    void DestroyConnection(CONNID dwConnectionId);
-    void ChangeConnection(CONNID dwConnectionId);
 
     //
     // This function is used to identify the helper thread.
@@ -3462,6 +3416,7 @@ public:
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
     Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?
@@ -3525,10 +3480,10 @@ public:
         DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
         for (unsigned int i = 0; i < m_argCount; i++)
         {
-            if (argData[i].fullArgType != NULL)
+            if (argData[i].fullArgType != (CORDB_ADDRESS)0)
             {
                 _ASSERTE(g_pDebugger != NULL);
-                g_pDebugger->ReleaseRemoteBuffer((BYTE*)argData[i].fullArgType, true);
+                g_pDebugger->ReleaseRemoteBuffer((BYTE*)CORDB_ADDRESS_TO_PTR(argData[i].fullArgType), true);
             }
         }
 
@@ -3794,7 +3749,7 @@ HANDLE OpenWin32EventOrThrow(
         ThreadStoreLockHolderWithSuspendReason tsld(ThreadSuspend::SUSPEND_FOR_DEBUGGER); \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
-        if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
+        if (thread != NULL && thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)) \
         {                                                                                 \
             /* Just leave the lock and retry (see comment above for explanation */        \
         }                                                                                 \

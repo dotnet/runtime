@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
+        private unsafe bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
 
@@ -393,7 +393,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
-        private string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
+        private unsafe string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
         {
             Debug.Assert(IsDefinedValueOrCombinationOfValues(key), "must only be invoked against valid enum values.");
             Debug.Assert(
@@ -509,6 +509,23 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return new() { Type = JsonSchemaType.Integer };
+        }
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _)
+        {
+            EnumConverterOptions converterOptions = _converterOptions;
+            bool allowsString = (converterOptions & EnumConverterOptions.AllowStrings) != 0;
+            bool allowsNumber = (converterOptions & EnumConverterOptions.AllowNumbers) != 0;
+
+            Debug.Assert(allowsString || allowsNumber, "EnumConverter must allow strings, numbers, or both.");
+
+            return (allowsString, allowsNumber) switch
+            {
+                (true, true) => JsonValueType.String | JsonValueType.Number,
+                (true, false) => JsonValueType.String,
+                (false, true) => JsonValueType.Number,
+                _ => JsonValueType.Number, // Defensive: at least one must be true; default to numeric.
+            };
         }
 
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)

@@ -207,6 +207,8 @@ private:
 
     CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
     TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
+
+public:
     SSIZE_T GetTableBaseOffset() const
     {
         if (m_pHeader == NULL)
