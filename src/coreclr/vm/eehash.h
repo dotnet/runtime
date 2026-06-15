@@ -13,9 +13,7 @@
 //
 // 1. Any number of threads can be reading the hash table while another thread is writing, without error.
 // 2. Only one thread can write at a time.
-// 3. When calling ReplaceValue(), a reader will get the old value, or the new value, but not something
-//    in between.
-// 4. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
+// 3. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
 //
 
 #ifndef _EE_HASH_H
@@ -82,8 +80,6 @@ public:
     void            InsertValue(KeyType pKey, HashDatum Data, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     void            InsertKeyAsValue(KeyType pKey, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     BOOL            DeleteValue(KeyType pKey);
-    BOOL            ReplaceValue(KeyType pKey, HashDatum Data);
-    BOOL            ReplaceKey(KeyType pOldKey, KeyType pNewKey);
     void            ClearHashTable();
     void            EmptyHashTable();
     BOOL            IsEmpty();
@@ -450,7 +446,6 @@ public:
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
     static DWORD           Hash(EEStringData *pKey);
     static EEStringData *  GetKey(EEHashEntry_t *pEntry);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeHashTableHelper, TRUE> EEUnicodeStringHashTable;
@@ -463,7 +458,6 @@ public:
     static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
     static DWORD           Hash(EEStringData *pKey);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeStringLiteralHashTableHelper, TRUE> EEUnicodeStringLiteralHashTable;

@@ -11,6 +11,9 @@
 #include "cgensys.h"
 #include "readytorun.h"
 
+#define WASM_STRINGIFY_HELPER(value) #value
+#define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
+
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
 // -------------------------------------------------
@@ -451,7 +454,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
     pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
@@ -480,6 +482,8 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
+    pRD->IsCallerContextValid = FALSE;
+
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
     pRD->pCurrentContext->InterpreterSP = GetSP();
 
@@ -490,9 +494,90 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
 size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
+// File-local WebAssembly exception tag used only by RtlRestoreContext.
+asm(".globl __coreclr_wasm_rtlrestorecontext_tag\n"
+    ".tagtype __coreclr_wasm_rtlrestorecontext_tag i32, i32\n"
+    "__coreclr_wasm_rtlrestorecontext_tag:\n");
+
+__attribute__((naked)) void ThrowRtlRestoreContextTag(uint32_t ip, uint32_t sp)
+{
+    asm("local.get 0\n"
+        "local.get 1\n"
+        "throw __coreclr_wasm_rtlrestorecontext_tag\n"
+        "unreachable\n" ::);
+}
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
-    PORTABILITY_ASSERT("RtlRestoreContext is not implemented on wasm");
+    UNREFERENCED_PARAMETER(ExceptionRecord);
+
+    uint32_t ip = (uint32_t)GetIP(ContextRecord);
+    uint32_t sp = (uint32_t)GetSP(ContextRecord);
+
+    // Tag payload order: first ip, then sp.
+    ThrowRtlRestoreContextTag(ip, sp);
+
+    __builtin_unreachable();
+}
+
+// These CallFunclet functions are used to call funclets from the VM.
+// They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
+// then invoke the new funclet with SP pointing to the top of the new frame.
+// There are two versions of the function, one for funclets that need to pass a Throwable (catch/finally), and 1 for those do not (finally/fault)
+__attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
+{
+    asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
+         "local.get       3\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
+         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
+         "i32.const       16\n"
+         "i32.sub \n"
+         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
+         "local.get       3\n"               // Get pFuncletCallerSP address to load the value we just stored
+         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         "local.tee       3\n"               // Tee the stack pointer into a local so that we can use it again.
+
+         "global.set      __stack_pointer\n" // Update the global stack pointer
+         "local.get       3\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
+         "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       3\n"               // Get the stack pointer
+         "local.get       1\n"               // Get the frame pointer argument for the original function
+         "local.get       2\n"               // Get the exception object for the funclet
+         "local.get       0\n"               // Get the funclet address to call
+         "call_indirect    __indirect_function_table, (i32, i32, i32) -> (i32)\n"
+         "local.set       0\n"               // Capture the return into a local so that we can return it after restoring the original stack pointer
+         "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
+         "local.get       0\n"               // Return the value from the funclet call
+         "return" ::);
+}
+
+// Finally/fault version of the CallFunclet function which does not need to pass a Throwable
+__attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP)
+{
+    asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
+         "local.get       2\n"               // Get pFuncletCallerSP address to store the new stack pointer for the caller of the funclet
+         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
+         "i32.const       16\n"
+         "i32.sub \n"
+         "i32.store       0\n"               // Store the updated stack pointer into pFuncletCallerSP
+         "local.get       2\n"               // Get pFuncletCallerSP address to load the value we just stored
+         "i32.load        0\n"               // Load the stack pointer for the caller of the funclet and store it in the new frame
+         "local.tee       2\n"               // Tee the stack pointer into a local so that we can use it again.
+
+         "global.set      __stack_pointer\n" // Update the global stack pointer
+         "local.get       2\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
+         "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       2\n"               // Get the stack pointer
+         "local.get       1\n"               // Get the frame pointer argument for the original function
+         "local.get       0\n"               // Get the funclet address to call
+         "call_indirect    __indirect_function_table, (i32, i32) -> ()\n"
+         "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
+         "i32.const       0\n"
+         "return\n"
+          ::);
 }
 
 extern "C" void TheUMEntryPrestub(void)
@@ -526,11 +611,6 @@ EXTERN_C void JIT_CheckedWriteBarrier_End()
     PORTABILITY_ASSERT("JIT_CheckedWriteBarrier_End is not implemented on wasm");
 }
 
-EXTERN_C void JIT_ByRefWriteBarrier_End()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier_End is not implemented on wasm");
-}
-
 EXTERN_C void JIT_StackProbe_End()
 {
     PORTABILITY_ASSERT("JIT_StackProbe_End is not implemented on wasm");
@@ -538,7 +618,6 @@ EXTERN_C void JIT_StackProbe_End()
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
 {
-    PORTABILITY_ASSERT("ResetCurrentContext is not implemented on wasm");
 }
 
 extern "C" void STDCALL GenericPInvokeCalliHelper(void)
@@ -622,8 +701,6 @@ extern "C" void RhpVTableOffsetDispatch()
 typedef uint8_t CODE_LOCATION;
 CODE_LOCATION RhpAssignRefAVLocation;
 CODE_LOCATION RhpCheckedAssignRefAVLocation;
-CODE_LOCATION RhpByRefAssignRefAVLocation1;
-CODE_LOCATION RhpByRefAssignRefAVLocation2;
 
 extern "C" void ThisPtrRetBufPrecodeWorker()
 {
@@ -716,6 +793,18 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 void FlushWriteBarrierInstructionCache()
 {
     // Nothing to do - wasm has static write barriers
+}
+
+ULONG
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
+    )
+{
+    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
+    uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
+    return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
 }
 
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
@@ -1312,4 +1401,91 @@ void InvokeManagedMethod(ManagedMethodParam *pParam)
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
+}
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
+{
+    if (sp <= 0x1000)
+    {
+        // Sp has become set to the lowest page on the system. Or we're unwinding a TransitionBlock
+        // which is encoded without a StackPointer. In either case, just return 0 to indicate that nothing
+        // meaningful is here.
+        return 0;
+    }
+    else
+    {
+        if (*(int*)sp == 0)
+        {
+            sp = *(TADDR*)(sp + sizeof(TADDR));
+        }
+        if (*(int*)sp == TERMINATE_R2R_STACK_WALK)
+        {
+            return 0;
+        }
+        else
+        {
+            return sp;
+        }
+    }
+}
+
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
+{
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+
+    if (fp == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
+        uint32_t functionLocalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
+        if (baseVirtualIP == 0)
+            return 0;
+        return baseVirtualIP + functionLocalVirtualIP;
+    }
+}
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind (
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    _ASSERTE(FunctionEntry != NULL);
+    _ASSERTE(HandlerType == 0);
+    _ASSERTE(ExecutionManager::IsVirtualIP(ControlPc));
+    _ASSERTE(ImageBase != 0);
+
+    // CoreCLR callers currently do not use HandlerData or EstablisherFrame on WASM,
+    // so we set them to 0. If future callers require them, proper unwinding support
+    // can be added at that point.
+    *HandlerData = 0;
+    *EstablisherFrame = 0;
+
+    TADDR sp = ContextRecord->InterpreterSP;
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+    if (fp != 0)
+    {
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+        ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
+        ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
+    }
+    else
+    {
+        // Unwind failed!
+        _ASSERTE(FALSE);
+        ContextRecord->InterpreterIP = 0;
+        ContextRecord->InterpreterSP = 0;
+    }
+
+    return nullptr;
 }

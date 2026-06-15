@@ -7658,14 +7658,16 @@ void CordbJITILFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -7676,7 +7678,7 @@ void CordbJITILFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(GetCurrentAppDomain(),
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the
@@ -8810,23 +8812,23 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     pCode->LoadNativeInfo();
 
     ULONG32 count = 0;
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, 0, &count, NULL));
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, 0, &count, NULL));
 
-    NewArrayHolder<ULONG32> offsets(new ULONG32[count]);
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, count, &count, offsets));
+    NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos(new const ICorDebugInfo::NativeVarInfo *[count]);
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, count, &count, varInfos));
 
-    bool found = false;
+    const ICorDebugInfo::NativeVarInfo *pReturnVarInfo = NULL;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();
     for (ULONG32 i = 0; i < count; ++i)
     {
-        if (currentOffset == offsets[i])
+        if (currentOffset == varInfos[i]->startOffset)
         {
-            found = true;
+            pReturnVarInfo = varInfos[i];
             break;
         }
     }
 
-    if (!found)
+    if (pReturnVarInfo == NULL)
         return E_UNEXPECTED;
 
     // Get the signatures and mdToken for the callee.
@@ -8835,69 +8837,13 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     IfFailRet(pCode->GetCallSignature(ILoffset, &targetClass, &mdFunction, methodSig, genericSig));
     IfFailRet(CordbNativeCode::SkipToReturn(methodSig));
 
-
-
-
     // Create the Instantiation, type and then return value
     NewArrayHolder<CordbType*> types;
     Instantiation inst;
     CordbType *pType = 0;
     IfFailRet(BuildInstantiationForCallsite(GetModule(), types, inst, &m_genericArgs, targetClass, genericSig));
     IfFailRet(CordbType::SigToType(GetModule(), &methodSig, &inst, &pType));
-    return GetReturnValueForType(pType, ppReturnValue);
-}
-
-
-HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue **ppReturnValue)
-{
-
-
-#if defined(TARGET_X86)
-    const CorDebugRegister floatRegister = REGISTER_X86_FPSTACK_0;
-#elif defined(TARGET_AMD64)
-    const CorDebugRegister floatRegister = REGISTER_AMD64_XMM0;
-#elif  defined(TARGET_ARM64)
-    const CorDebugRegister floatRegister = REGISTER_ARM64_V0;
-#elif  defined(TARGET_ARM)
-    const CorDebugRegister floatRegister = REGISTER_ARM_D0;
-#elif  defined(TARGET_LOONGARCH64)
-    const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
-#elif  defined(TARGET_RISCV64)
-    const CorDebugRegister floatRegister = REGISTER_RISCV64_F0;
-#endif
-
-#if defined(TARGET_X86)
-    const CorDebugRegister ptrRegister = REGISTER_X86_EAX;
-    const CorDebugRegister ptrHighWordRegister = REGISTER_X86_EDX;
-#elif defined(TARGET_AMD64)
-    const CorDebugRegister ptrRegister = REGISTER_AMD64_RAX;
-#elif  defined(TARGET_ARM64)
-    const CorDebugRegister ptrRegister = REGISTER_ARM64_X0;
-#elif  defined(TARGET_ARM)
-    const CorDebugRegister ptrRegister = REGISTER_ARM_R0;
-    const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
-#elif  defined(TARGET_LOONGARCH64)
-    const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
-#elif  defined(TARGET_RISCV64)
-    const CorDebugRegister ptrRegister = REGISTER_RISCV64_A0;
-#endif
-
-    CorElementType corReturnType = pType->GetElementType();
-    switch (corReturnType)
-    {
-    default:
-        return m_nativeFrame->GetLocalRegisterValue(ptrRegister, pType, ppReturnValue);
-
-    case ELEMENT_TYPE_R4:
-    case ELEMENT_TYPE_R8:
-        return m_nativeFrame->GetLocalFloatingPointValue(floatRegister, pType, ppReturnValue);
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_U8:
-        return m_nativeFrame->GetLocalDoubleRegisterValue(ptrHighWordRegister, ptrRegister, pType, ppReturnValue);
-#endif
-    }
+    return GetNativeVariable(pType, pReturnVarInfo, ppReturnValue);
 }
 
 HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum)
@@ -11520,7 +11466,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
     UINT32 genericArgIndex;
     HRESULT result = pDAC->GetGenericArgTokenIndex(
@@ -11552,12 +11498,14 @@ void CordbAsyncFrame::LoadGenericArgs()
         genericTypeParam = resolvedToken;
     }
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_vmMethodDesc,
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -11568,7 +11516,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(m_pAppDomain,
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the

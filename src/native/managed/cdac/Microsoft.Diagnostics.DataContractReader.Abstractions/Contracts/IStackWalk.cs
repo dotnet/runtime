@@ -6,7 +6,33 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public interface IStackDataFrameHandle { };
+public interface IStackDataFrameHandle
+{
+    StackWalkState State { get; }
+}
+
+public enum StackWalkState
+{
+    Complete,
+    Error,
+
+    // The current Context represents a managed method.
+    Frameless,
+
+    // The current Context is the seed native context from init (the
+    // thread's saved CONTEXT). FrameIter may or may not be on a Frame.
+    InitialNativeContext,
+
+    // The current Context is native, produced by unwinding a managed
+    // frame down to an M2U boundary. FrameIter is on the explicit Frame.
+    NativeMarker,
+
+    // FrameAddress is valid and identifies the explicit Frame at FrameIter.
+    // The current Context has not yet been bridged through that Frame; the
+    // next step uses it to update the Context, after which Frameless is yielded.
+    Frame,
+    SkippedFrame,
+}
 
 public class StackReferenceData
 {
@@ -57,6 +83,8 @@ public interface IStackWalk : IContract
     IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
     bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
+    TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
+    byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk
