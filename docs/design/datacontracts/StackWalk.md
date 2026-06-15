@@ -626,26 +626,7 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path and [Signature-Based Scanning](#signature-based-scanning) for the signature decoding path.
-
-### Signature-Based Scanning (currently deferred)
-
-When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the native runtime classifies caller-stack arguments by decoding the callee's method signature (`TransitionFrame::PromoteCallerStack` in `src/coreclr/vm/frames.cpp`).
-
-The cDAC does **not** currently port this scan. `GcScanner.PromoteCallerStack` is a stub that records the frame as deferred and returns without enumerating any refs:
-
-```csharp
-private static void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
-{
-    scanContext.RecordDeferredFrame(frameAddress);
-}
-```
-
-`RecordDeferredFrame` (on `GcScanContext`) appends a sentinel `StackRefData` entry with `Flags = GcScanFlags.CDAC_DEFERRED_FRAME (0x40000000)` and `Source = frameAddress`. The sentinel has no real GC ref payload; downstream consumers (e.g. the cDAC stress harness in `src/coreclr/vm/cdacstress.cpp`) can detect it and treat the missing refs at that frame as expected gaps rather than cDAC bugs. See [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) for the stress framework's handling and the tracking work to re-enable the scan.
-
-The `GcSignatureTypeProvider` class remains in the tree as the scaffolding the eventual port will use; it has no callers while `PromoteCallerStack` is stubbed.
-
-Tracking work to re-enable the scan: it requires porting `ArgIterator` behind an `ICallingConvention` contract. Once that lands, `PromoteCallerStack` will fan out into the signature-decoding algorithm (reserved-slot computation, signature walk, slot reporting) that mirrors the native version. See also [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765).
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) is currently a stub awaiting an `ICallingConvention` contract port; the stress harness handles the resulting gaps via a deferred-frame sentinel (see [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) and tracking issue [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765)).
 
 ### GCRefMap Format and Resolution
 
