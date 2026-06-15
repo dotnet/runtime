@@ -633,7 +633,15 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                 var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
 
-                if (genTypeSize(castFromType) < genTypeSize(castToType))
+                // Widening preserves the source value (so we can reuse the source range) UNLESS we widen a
+                // signed source into a smaller-than-int unsigned type (e.g. (ushort)(sbyte)). There, negative
+                // source values are zero-extended into large positive values (e.g. (ushort)(-1) == 65535), so
+                // the source range no longer bounds the result.
+                bool widensToSmallUnsigned = varTypeIsUnsigned(castToType) &&
+                                             (genTypeSize(castToType) < genTypeSize(TYP_INT)) &&
+                                             varTypeIsSigned(castFromType);
+
+                if ((genTypeSize(castFromType) < genTypeSize(castToType)) && !widensToSmallUnsigned)
                 {
                     // We're going from a small type to a large type
                     // and so regardless of whether we zero or sign-extend
