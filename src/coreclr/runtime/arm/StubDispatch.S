@@ -12,14 +12,16 @@
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
 NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
-        // r12 currently contains the indirection cell address. But we need more scratch registers and
-        // we may A/V on a null this. Save r1 and r2 on the stack.
+        // r12 currently contains the indirection cell address. But we need more scratch registers.
+        // Save r1 and r2 on the stack.
         PROLOG_PUSH "{r1,r2}"
 
         // r12 currently holds the indirection cell address. We need to get the cache structure instead.
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Validate r2 is a cache pointer matching the expected cache size.
+        // This compensates for a race where the stub was updated to expect a larger cache
+        // but we loaded a stale (smaller or non-cache) m_pCache value.
         tst         r2, #IDC_CACHE_POINTER_MASK
         bne         LOCAL_LABEL(RaceRetry_\entries)
         ldr         r1, [r2, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
@@ -31,6 +33,8 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         ldr         r1, [r0]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
+        // For each entry in the cache, see if its MethodTable type matches the MethodTable in r1.
+        // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
         //  R1 : Instance MethodTable*
         //  R2 : Cache data structure
         //  R12 : Trashed. On successful check, set to the target address to jump to.
@@ -50,6 +54,8 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         EPILOG_POP "{r1,r2}"
         b           C_FUNC(RhpInterfaceDispatchSlow)
 
+        // Race detected: r12 still holds the indirection cell address (not yet clobbered).
+        // Re-dispatch through the indirection cell to retry with the current stub and cache pair.
 LOCAL_LABEL(RaceRetry_\entries):
         EPILOG_POP "{r1,r2}"
         ldr         pc, [r12]

@@ -80,6 +80,7 @@
 NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
         // Caller pushed 8 bytes: [sp]=extra arg, [sp+4]=target fn
+        .pad #8
         PROLOG_PUSH  "{r0-r3}"              // Push the argument registers
         ldr          r12, [sp, #20]         // Capture target function (caller's [sp+4], now at sp+16+4)
         ldr          r1, [sp, #16]          // Capture extra arg (caller's [sp], now at sp+16)
