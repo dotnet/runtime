@@ -162,7 +162,7 @@ namespace System.Diagnostics
             }
 
             int entries = 0;
-            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[256]);
+            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[MaxTraceStateEncodedLength]);
 
             ReadOnlySpan<char> traceStateSpan = traceState;
             do
