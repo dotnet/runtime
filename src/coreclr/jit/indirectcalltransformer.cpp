@@ -1517,7 +1517,7 @@ private:
         GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
             GenTree* con = m_compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-            INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
+            INDEBUG(con->AsIntCon()->SetTargetHandle((size_t)methHnd));
             return con;
         }
     };
