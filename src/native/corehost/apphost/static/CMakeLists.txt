@@ -14,6 +14,8 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 add_subdirectory(../../hostmisc hostmisc)
 
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
+
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
