@@ -621,7 +621,7 @@ namespace System
             }
         }
 
-        public static (int Left, int Top) GetCursorPosition()
+        public static unsafe (int Left, int Top) GetCursorPosition()
         {
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             return (csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
@@ -683,7 +683,7 @@ namespace System
             }
         }
 
-        public static void Beep()
+        public static unsafe void Beep()
         {
             if (!Console.IsOutputRedirected)
             {

@@ -249,8 +249,6 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_lastIL(0),
     m_sequenceMap(NULL),
     m_sequenceMapCount(0),
-    m_callsiteMap(NULL),
-    m_callsiteMapCount(0),
     m_sequenceMapSorted(false),
     m_varNativeInfo(NULL), m_varNativeInfoCount(0),
     m_fAttemptInit(false)
@@ -1160,18 +1158,11 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     m_sequenceMapSorted = true;
 
-    m_callsiteMapCount = m_sequenceMapCount;
-    while (m_sequenceMapCount > 0 && (m_sequenceMap[m_sequenceMapCount-1].source & call_inst) == call_inst)
-      m_sequenceMapCount--;
-
-    m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
-    m_callsiteMapCount -= m_sequenceMapCount;
-
-    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u (%u callsites)\n",
-         this, m_sequenceMapCount, m_callsiteMapCount));
+    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u\n",
+         this, m_sequenceMapCount));
 
 #ifdef LOGGING
-    for (unsigned count = 0; count < m_sequenceMapCount + m_callsiteMapCount; count++)
+    for (unsigned count = 0; count < m_sequenceMapCount; count++)
     {
         const DebuggerILToNativeMap& entry = m_sequenceMap[count];
         switch (entry.ilOffset)
@@ -2060,7 +2051,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
         {
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
-            PCODE codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(itr->GetNativeCode());
+            PCODE codeAddr = GetInterpreterCodeFromEntryPointIfPresent(itr->GetNativeCode());
             LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
             if (codeAddr)
             {
@@ -2435,16 +2426,6 @@ DebuggerMethodInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     SUPPORTS_DAC;
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        // Modules are enumerated already for minidumps, save the empty calls.
-        if (m_module.IsValid())
-        {
-            m_module->EnumMemoryRegions(flags, true);
-        }
-
-    }
-
     PTR_DebuggerJitInfo jitInfo = m_latestJitInfo;
     while (jitInfo.IsValid())
     {
@@ -2464,19 +2445,6 @@ DebuggerJitInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_methodInfo->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        if (m_nativeCodeVersion.GetMethodDesc().IsValid())
-        {
-            m_nativeCodeVersion.GetMethodDesc()->EnumMemoryRegions(flags);
-        }
-
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetSequenceMap()),
-                            GetSequenceMapCount() * sizeof(DebuggerILToNativeMap));
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetVarNativeInfo()),
-                            GetVarNativeInfoCount() *
-                            sizeof(ICorDebugInfo::NativeVarInfo));
-    }
 }
 
 

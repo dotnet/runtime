@@ -173,7 +173,9 @@
 
     <PropertyGroup>
       <_RestoreProperties>MSBuildRestoreSessionId=$([System.Guid]::NewGuid());TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture);Configuration=$(Configuration);CrossBuild=$(CrossBuild);SetTFMForRestore=true;RuntimeIdentifier=$(RuntimeIdentifier)</_RestoreProperties>
-      <_RestoreProperties Condition="'$(UseLocalAppHostPack)' == 'true' or '$(TargetOS)' == 'browser'">$(_RestoreProperties);EnableAppHostPackDownload=false;EnableTargetingPackDownload=false;EnableRuntimePackDownload=false</_RestoreProperties>
+      <_RestoreProperties Condition="'$(TargetOS)' == 'browser'">$(_RestoreProperties);EnableAppHostPackDownload=false;EnableTargetingPackDownload=false;EnableRuntimePackDownload=false</_RestoreProperties>
+      <_RestoreProperties Condition="'$(TargetsAppleMobile)' == 'true'">$(_RestoreProperties);RestoreUseStaticGraphEvaluation=false</_RestoreProperties>
+      <_RestoreProperties Condition="'$(UseBootstrap)' == 'true'">$(_RestoreProperties);UseBootstrap=true</_RestoreProperties>
     </PropertyGroup>
 
     <!-- Use a dedicated traversal project to restore all test dependencies in one graph invocation. -->
@@ -230,6 +232,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(UseBootstrap)' == 'true'">$(GroupBuildCmd) "/p:UseBootstrap=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(ServerGarbageCollection)' != ''">$(GroupBuildCmd) "/p:ServerGarbageCollection=$(ServerGarbageCollection)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
@@ -271,7 +274,7 @@
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
-      Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)"
+      Properties="_IsPublishing=true;Configuration=Release;CoreCLRConfiguration=$(CoreCLRConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);TasksConfiguration=$(TasksConfiguration);ToolsConfiguration=$(ToolsConfiguration);PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier);UseBootstrap=$(UseBootstrap)"
       Condition="$(IsXUnitLogCheckerSupported)" />
   </Target>
 
@@ -327,7 +330,6 @@
       <CreateLibProperty Include="IlcSdkPath=$(IlcSdkPath)" />
       <CreateLibProperty Include="IlcFrameworkPath=$(IlcFrameworkPath)" />
       <CreateLibProperty Include="IlcFrameworkNativePath=$(IlcFrameworkNativePath)" />
-      <CreateLibProperty Include="IlcDynamicBuildPropertyDependencies=$(IlcDynamicBuildPropertyDependencies)" />
       <CreateLibProperty Include="FrameworkLibPath=$(IlcSdkPath)" />
       <CreateLibProperty Include="FrameworkObjPath=$(IntermediateOutputPath)/NativeAOTFX" />
       <CreateLibProperty Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'" Include="Optimize=true" />

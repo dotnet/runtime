@@ -20,6 +20,10 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -1849,7 +1853,7 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     CONTRACTL_END;
 
     // if don't have a throwable the aren't processing an exception
-    if (IsHandleNullUnchecked(pThread->GetThrowableAsHandle()))
+    if (pThread->IsThrowableNull())
         return FALSE;
 
     EH_CLAUSE_ENUMERATOR pEnumState;
@@ -2546,42 +2550,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace - handle version.
-//
-void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    Thread *pThread = GetThread();
-    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
-    _ASSERTE(IsException(pMT));
-
-    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
-    // Check if the flag indicating foreign exception raise has been setup or not,
-    // and then reset it so that subsequent processing of managed frames proceeds
-    // normally.
-    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
-    pCurTES->ResetRaisingForeignException();
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-
-    // Do not save stacktrace to preallocated exception.  These are shared.
-    if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
-    {
-        return;
-    }
-
-    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
-}
-
-//
-// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+// Append stack frame to an exception stack trace
 //
 void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2597,25 +2566,25 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     MethodTable* pMT = pThrowable->GetMethodTable();
     _ASSERTE(IsException(pMT));
 
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
+    // Check if the flag indicating foreign exception raise has been setup or not,
+    // and then reset it so that subsequent processing of managed frames proceeds
+    // normally.
+    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
+    pCurTES->ResetRaisingForeignException();
+
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
-}
 
-//
-// Append stack frame to an exception stack trace.
-//
-void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException)
-{
-    CONTRACTL
+    // Do not save stacktrace to preallocated exception.  These are shared.
+    if (CLRException::IsPreallocatedExceptionObject(pThrowable))
     {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
         return;
+    }
+
+    if (pFunc != NULL && (pFunc->IsDiagnosticsHidden() || pFunc == g_pEnvironmentCallEntryPointMethodDesc))
+    {
+        return;
+    }
 
     struct
     {
@@ -2651,8 +2620,13 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -3516,6 +3490,13 @@ bool GenerateDump(
 
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (exitCode == COR_E_STACKOVERFLOW)
+    {
+        InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
+    }
+#endif
+
 #ifdef HOST_WINDOWS
     CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
@@ -5299,7 +5280,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifndef TARGET_X86
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_End();
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
@@ -5365,11 +5345,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
@@ -5390,10 +5365,6 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-    (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-    (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
 
@@ -5423,7 +5394,6 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #ifndef TARGET_X86
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -5645,20 +5615,18 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
+    UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
     pThread->IncPreventAbort();
 
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
+    throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 
-    GCPROTECT_END();
     UNREACHABLE();
 }
 
@@ -10098,35 +10066,107 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-VOID GetAssemblyDetailInfo(SString    &sType,
-                           SString    &sAssemblyDisplayName,
-                           PEAssembly *pPEAssembly,
-                           SString    &sAssemblyDetailInfo)
+static VOID GetAssemblyDetailInfo(SString    &sType,
+                                  SString    &sAssemblyDisplayName,
+                                  PEAssembly *pPEAssembly,
+                                  SString    &sAssemblyDetailInfo)
 {
-    WRAPPER_NO_CONTRACT;
-
-    SString detailsUtf8;
+    STANDARD_VM_CONTRACT;
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
     SString assemblyPath{ pPEAssembly->GetPath() };
+
+    SString resStr;
+    SString formatted;
     if (assemblyPath.IsEmpty())
     {
-        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
-                                   sType.GetUTF8(),
-                                   sAssemblyDisplayName.GetUTF8(),
-                                   sAlcName.GetUTF8());
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_DETAIL_BYTE_ARRAY))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sAssemblyDisplayName, sAlcName);
+            sAssemblyDetailInfo.Append(formatted);
+        }
     }
     else
     {
-        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
-                                   sType.GetUTF8(),
-                                   sAssemblyDisplayName.GetUTF8(),
-                                   sAlcName.GetUTF8(),
-                                   assemblyPath.GetUTF8());
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_DETAIL_LOCATION))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sAssemblyDisplayName, sAlcName, assemblyPath);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+}
+
+static VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
+                                            SString    &sGenericArgName,
+                                            SString    &sAssemblyDisplayName,
+                                            PEAssembly *pPEAssembly,
+                                            SString    &sAssemblyDetailInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    SString sAlcName;
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
+    SString assemblyPath{ pPEAssembly->GetPath() };
+
+    SString resStr;
+    SString formatted;
+    if (assemblyPath.IsEmpty())
+    {
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_GENARG_BYTE_ARRAY))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sGenericArgName, sAssemblyDisplayName, sAlcName);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+    else
+    {
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_GENARG_LOCATION))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sGenericArgName, sAssemblyDisplayName, sAlcName, assemblyPath);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+}
+
+static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo,
+                                              TypeHandle *pthArgFrom, TypeHandle *pthArgTo,
+                                              DWORD depth = 0)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (depth > 8)
+        return FALSE;
+
+    Instantiation instFrom = thFrom.GetInstantiation();
+    Instantiation instTo = thTo.GetInstantiation();
+
+    if (instFrom.IsEmpty() || instTo.IsEmpty() || instFrom.GetNumArgs() != instTo.GetNumArgs())
+        return FALSE;
+
+    for (DWORD i = 0; i < instFrom.GetNumArgs(); i++)
+    {
+        if (instFrom[i] == instTo[i])
+            continue;
+
+        Module *pModFrom = instFrom[i].GetModule();
+        Module *pModTo = instTo[i].GetModule();
+        if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
+        {
+            if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo, depth + 1))
+                return TRUE;
+        }
+
+        *pthArgFrom = instFrom[i];
+        *pthArgTo = instTo[i];
+        return TRUE;
     }
 
-    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
+    return FALSE;
 }
 
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
@@ -10165,6 +10205,60 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
+
+         // If the outermost types come from the same module, the actual difference
+         // must be in their generic type arguments. Report the differing generic
+         // argument's assembly info instead, which is more helpful to the user.
+         TypeHandle thDifferingArgFrom, thDifferingArgTo;
+         if (pModuleTypeFrom == pModuleTypeTo &&
+             FindFirstDifferingGenericArgument(thCastFrom, thCastTo, &thDifferingArgFrom, &thDifferingArgTo))
+         {
+             Module *pModuleArgFrom = thDifferingArgFrom.GetModule();
+             Module *pModuleArgTo = thDifferingArgTo.GetModule();
+
+             if ((pModuleArgFrom != NULL) && (pModuleArgTo != NULL))
+             {
+                 StackSString sGenericArgName;
+                 thDifferingArgFrom.GetName(sGenericArgName);
+
+                 Assembly *pAssemblyArgFrom = pModuleArgFrom->GetAssembly();
+                 Assembly *pAssemblyArgTo = pModuleArgTo->GetAssembly();
+
+                 _ASSERTE(pAssemblyArgFrom != NULL);
+                 _ASSERTE(pAssemblyArgTo != NULL);
+
+                 PEAssembly *pPEAssemblyArgFrom = pAssemblyArgFrom->GetPEAssembly();
+                 PEAssembly *pPEAssemblyArgTo = pAssemblyArgTo->GetPEAssembly();
+
+                 _ASSERTE(pPEAssemblyArgFrom != NULL);
+                 _ASSERTE(pPEAssemblyArgTo != NULL);
+
+                 StackSString sArgAssemblyFromDisplayName;
+                 StackSString sArgAssemblyToDisplayName;
+                 pPEAssemblyArgFrom->GetDisplayName(sArgAssemblyFromDisplayName);
+                 pPEAssemblyArgTo->GetDisplayName(sArgAssemblyToDisplayName);
+
+                 SString typeA = SL(W("A"));
+                 GetGenericArgAssemblyDetailInfo(typeA,
+                                                 sGenericArgName,
+                                                 sArgAssemblyFromDisplayName,
+                                                 pPEAssemblyArgFrom,
+                                                 sAssemblyDetailInfoFrom);
+                 SString typeB = SL(W("B"));
+                 GetGenericArgAssemblyDetailInfo(typeB,
+                                                 sGenericArgName,
+                                                 sArgAssemblyToDisplayName,
+                                                 pPEAssemblyArgTo,
+                                                 sAssemblyDetailInfoTo);
+
+                 COMPlusThrow(kInvalidCastException,
+                              IDS_EE_CANNOTCASTSAME,
+                              strCastFromName.GetUnicode(),
+                              strCastToName.GetUnicode(),
+                              sAssemblyDetailInfoFrom.GetUnicode(),
+                              sAssemblyDetailInfoTo.GetUnicode());
+             }
+         }
 
          SString typeA = SL(W("A"));
          GetAssemblyDetailInfo(typeA,
@@ -10232,70 +10326,6 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
 
 #endif // DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-#include "comtoclrcall.h"
-#endif // FEATURE_COMINTEROP
-
-// Reverse COM interop IL stubs need to catch all exceptions and translate them into HRESULTs.
-// But we allow for CSEs to be rethrown.  Our corrupting state policy gets applied to the
-// original user-visible method that triggered the IL stub to be generated.  So we must be able
-// to map back from a given IL stub to the user-visible method.  Here, we do that only when we
-// see a 'matching' ComMethodFrame further up the stack.
-MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pILStubMD->IsILStub());
-    }
-    CONTRACTL_END;
-
-    MethodDesc * pUserMD = pILStubMD;
-#ifdef FEATURE_COMINTEROP
-    DynamicMethodDesc * pDMD = pILStubMD->AsDynamicMethodDesc();
-    if (pDMD->IsCOMToCLRStub())
-    {
-        // There are some differences across architectures for "which" SP is passed in.
-        // On ARM, the SP is the SP on entry to the IL stub, on the other arches, it's
-        // a post-prolog SP.  But this doesn't matter here because the COM->CLR path
-        // always pushes the Frame in a caller's stack frame.
-
-        Frame * pCurFrame = pThread->GetFrame();
-        while ((UINT_PTR)pCurFrame < uStubSP)
-        {
-            pCurFrame = pCurFrame->PtrNextFrame();
-        }
-
-        // The construction of the COM->CLR path ensures that our corresponding ComMethodFrame
-        // should be present further up the stack. Normally, the ComMethodFrame in question is
-        // simply the next stack frame; however, there are situations where there may be other
-        // stack frames present (such as an inlined stack frame from a QCall in the IL stub).
-        while (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame)
-        {
-            pCurFrame = pCurFrame->PtrNextFrame();
-        }
-
-        ComMethodFrame * pComFrame = (ComMethodFrame *)pCurFrame;
-        _ASSERTE((UINT_PTR)pComFrame > uStubSP);
-
-        CONSISTENCY_CHECK_MSG(pComFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame,
-                              "Expected to find a ComMethodFrame.");
-
-        ComCallMethodDesc * pCMD = pComFrame->GetComCallMethodDesc();
-
-        CONSISTENCY_CHECK_MSG(pILStubMD == ExecutionManager::GetCodeMethodDesc(pCMD->GetILStub()),
-                              "The ComMethodFrame that we found doesn't match the IL stub passed in.");
-
-        pUserMD = pCMD->GetMethodDesc();
-        *ppFrameOut = pComFrame;
-    }
-#endif // FEATURE_COMINTEROP
-    return pUserMD;
-}
-
-
 void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -10325,7 +10355,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = ::GetSP(&m_Context);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifndef DACCESS_COMPILE
@@ -10598,12 +10627,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Copy floating point argument registers (fa0-fa7)
     // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
-    // Each FP register takes 4 slots (for 256-bit LASX vectors).
     // For 64-bit doubles, we only use the first slot of each register.
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+        memcpy(&m_Context.F[i], &pFloatArgs->f[i], sizeof(double));
     }
 
     // Read FP callee-saved registers (f24-f31) from the stack
@@ -10613,17 +10641,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
     for (int i = 0; i < 8; i++)
     {
-        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
-        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+        // f24-f31 map to indices 24-31 in the F array
+        memcpy(&m_Context.F[24 + i], &pFpCalleeSaved[i], sizeof(double));
     }
 
     // Initialize remaining F registers (f8-f23) to zero
     for (int i = 8; i < 24; i++)
     {
-        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+        memset(&m_Context.F[i], 0, sizeof(double));
     }
-    // Initialize FP control/status register
+    // Initialize FP control/status and condition flag registers
     m_Context.Fcsr = 0;
+    m_Context.Fcc  = 0;
 
     // Set up context pointers for callee-saved registers
     m_ContextPointers.S0 = &m_Context.S0;
@@ -10736,6 +10765,14 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     memset(&m_Context, 0, sizeof(m_Context));
     memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
     m_ReturnAddress = 0;
+    if (pTransitionBlock != nullptr)
+    {
+        m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
+        m_Context.InterpreterFP = 0;
+        m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        m_ReturnAddress = m_Context.InterpreterIP;
+        m_Context.InterpreterWalkFramePointer = 0;
+    }
 }
 
 #endif // TARGET_X86

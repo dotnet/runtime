@@ -4,6 +4,154 @@
 #ifndef PAL_H
 #define PAL_H
 
+// ============================================================================
+// C-compatible section (usable from both C and C++ source files)
+// ============================================================================
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#if defined(_WIN32)
+typedef wchar_t pal_char_t;
+#ifdef __cplusplus
+// C++ mode: MSVC's default (non-conforming) preprocessor leaves L##__FUNCTION__
+// unexpanded so that it evaluates to MSVC's wide function-name literal. Using a
+// two-step helper here would force argument expansion and break that.
+#define _X(s) L ## s
+#else
+// C mode: MSVC's /std:c11 conforming preprocessor (and other conforming
+// compilers) suppress argument expansion before ##. A two-step helper forces
+// the argument to be expanded first so e.g. _X(HOST_VERSION) yields a wide
+// string literal rather than the identifier LHOST_VERSION.
+#define _X_HELPER(s) L ## s
+#define _X(s) _X_HELPER(s)
+#endif
+#else // !_WIN32
+typedef char pal_char_t;
+#define _X(s) s
+#endif // _WIN32
+
+// Max path buffer for apphost string operations
+#define APPHOST_PATH_MAX 4096
+
+// Thread-local storage qualifier for static/global variables
+#if defined(_WIN32)
+#define PAL_THREAD_LOCAL __declspec(thread)
+#else
+#define PAL_THREAD_LOCAL _Thread_local
+#endif
+
+#if defined(_WIN32)
+
+#define NOMINMAX
+#include <windows.h>
+#include <share.h>
+
+#define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
+#define PATH_SEPARATOR L';'
+#define PATH_MAX MAX_PATH
+
+// String operation macros (pal_char_t-based). Equivalent to the corresponding
+// pal:: namespace inline functions, but usable from C source files.
+#define pal_strlen(s) wcslen(s)
+#define pal_strchr(s, c) wcschr(s, c)
+#define pal_strrchr(s, c) wcsrchr(s, c)
+#define pal_strncmp(a, b, n) wcsncmp(a, b, n)
+#define pal_strtoul(s, e, b) wcstoul(s, e, b)
+#define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
+#define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, ##__VA_ARGS__)
+#define pal_xtoi(s) _wtoi(s)
+#define pal_get_pid() ((int)GetCurrentProcessId())
+#define pal_file_open(path, mode) _wfsopen(path, mode, _SH_DENYNO)
+
+#else // !_WIN32
+
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
+#define PATH_SEPARATOR ':'
+
+#if !defined(PATH_MAX)
+#define PATH_MAX 4096
+#endif
+
+#define S_OK        0x00000000
+#define E_NOTIMPL   0x80004001
+#define E_FAIL      0x80004005
+
+#define SUCCEEDED(Status) ((Status) >= 0)
+
+// String operation macros (pal_char_t-based).
+#define pal_strlen(s) strlen(s)
+#define pal_strchr(s, c) strchr(s, c)
+#define pal_strrchr(s, c) strrchr(s, c)
+#define pal_strncmp(a, b, n) strncmp(a, b, n)
+#define pal_strtoul(s, e, b) strtoul(s, e, b)
+#define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
+#define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, ##__VA_ARGS__)
+#define pal_xtoi(s) atoi(s)
+#define pal_get_pid() ((int)getpid())
+#define pal_file_open(path, mode) fopen(path, mode)
+
+#define __cdecl    /* nothing */
+#define __stdcall  /* nothing */
+#if !defined(TARGET_FREEBSD)
+#define __fastcall /* nothing */
+#endif
+
+#endif // _WIN32
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// pal_char_t-based C-callable APIs.
+
+// Returns a heap-allocated, NUL-terminated copy of the current process's
+// executable path, or NULL on failure. Caller must free() the returned pointer.
+pal_char_t* pal_get_own_executable_path(void);
+
+bool pal_directory_exists(const pal_char_t* path);
+
+// Returns a heap-allocated, NUL-terminated copy of the named environment
+// variable's value, or NULL if the variable is unset or set to the empty
+// string. Caller must free() the returned pointer.
+pal_char_t* pal_getenv(const pal_char_t* name);
+
+// Duplicate the first `len` pal_char_t characters of `src` into a
+// heap-allocated, NUL-terminated buffer. Returns NULL on allocation failure.
+static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
+{
+    pal_char_t* buf = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
+    if (buf != NULL)
+    {
+        memcpy(buf, src, len * sizeof(pal_char_t));
+        buf[len] = _X('\0');
+    }
+    return buf;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+// ============================================================================
+// C++ section (the original pal:: namespace surface)
+// ============================================================================
+
+#ifdef __cplusplus
+
 #include <string>
 #include <vector>
 #include <sstream>
@@ -21,40 +169,18 @@
 
 #if defined(_WIN32)
 
-#define NOMINMAX
-#include <windows.h>
-
 #define xerr std::wcerr
 #define xout std::wcout
-#define DIR_SEPARATOR L'\\'
-#define DIR_SEPARATOR_STR L"\\"
-#define PATH_SEPARATOR L';'
-#define PATH_MAX MAX_PATH
-#define _X(s) L ## s
 
 #else
 
 #include <cstdlib>
-#include <unistd.h>
 #include <libgen.h>
 #include <mutex>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/mman.h>
 
 #define xerr std::cerr
 #define xout std::cout
-#define DIR_SEPARATOR '/'
-#define DIR_SEPARATOR_STR "/"
-#define PATH_SEPARATOR ':'
-#undef _X
-#define _X(s) s
-
-#define S_OK        0x00000000
-#define E_NOTIMPL   0x80004001
-#define E_FAIL      0x80004005
-
-#define SUCCEEDED(Status) ((Status) >= 0)
 
 #endif
 
@@ -204,11 +330,6 @@ namespace pal
 #define SHARED_API extern "C"
 #endif
 
-#define __cdecl    /* nothing */
-#define __stdcall  /* nothing */
-#if !defined(TARGET_FREEBSD)
-#define __fastcall /* nothing */
-#endif
 #define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
@@ -375,5 +496,7 @@ namespace pal
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
 }
+
+#endif // __cplusplus
 
 #endif // PAL_H

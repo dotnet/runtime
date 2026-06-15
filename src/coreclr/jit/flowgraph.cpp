@@ -7,7 +7,8 @@
 #pragma hdrstop
 #endif
 
-#include "lower.h" // for LowerRange()
+#include "lower.h"            // for LowerRange()
+#include "jitstd/algorithm.h" // for sort()
 
 // Flowgraph Miscellany
 
@@ -615,7 +616,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -927,7 +928,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 GenTree* cns1Tree = addr->AsOp()->gtOp1;
                 if (!cns1Tree->IsIconHandle())
                 {
-                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->IconValue()))
                     {
                         // Op1 was an ordinary small constant
                         return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -942,7 +943,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                         // Is this an addition of a handle and constant
                         if (!cns2Tree->IsIconHandle())
                         {
-                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                             {
                                 // Op2 was an ordinary small constant
                                 return false; // we can't have a null address
@@ -960,7 +961,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                     // Is this an addition of a small constant
                     if (!cns2Tree->IsIconHandle())
                     {
-                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->IconValue()))
                         {
                             // Op2 was an ordinary small constant
                             return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
@@ -988,11 +989,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    GenTree* op = addr;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    GenTree* op = gtPeelFieldAddrs(addr);
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
@@ -1049,7 +1046,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
@@ -1057,7 +1054,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         if (handleNode->OperIs(GT_CNS_INT))
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
-            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
+            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->GetCompileTimeHandle());
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
@@ -1093,7 +1090,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
         noway_assert(tokenNode->OperIs(GT_CNS_INT));
-        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
+        targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->GetCompileTimeHandle());
     }
 
     // Verify using the ldftnToken gives us all of what we used to get
@@ -1339,12 +1336,8 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     }
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
-    {
-        return true;
-    }
-
-    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    if ((varTypeIsLong(fromType) && varTypeIsFloating(toType)) ||
+        (varTypeIsFloating(fromType) && varTypeIsLong(toType)))
     {
 #if defined(TARGET_X86)
         return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
@@ -3136,10 +3129,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(!fgFuncletsCreated);
 
-    fgCreateFuncletPrologBlocks();
-
-    unsigned           XTnum;
-    EHblkDsc*          HBtab;
     const unsigned int funcCnt = ehFuncletCount() + 1;
 
     if (!FitsIn<unsigned short>(funcCnt))
@@ -3149,49 +3138,103 @@ PhaseStatus Compiler::fgCreateFunclets()
 
     FuncInfoDsc* funcInfo = new (this, CMK_BasicBlock) FuncInfoDsc[funcCnt];
 
-    unsigned short funcIdx;
-
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
-    assert(funcInfo[0].funKind == FUNC_ROOT);
-    funcIdx = 1;
-
-    // Because we iterate from the top to the bottom of the compHndBBtab array, we are iterating
-    // from most nested (innermost) to least nested (outermost) EH region. It would be reasonable
-    // to iterate in the opposite order, but the order of funclets shouldn't matter.
-    //
-    // We move every handler region to the end of the function: each handler will become a funclet.
-    //
-    // Note that fgRelocateEHRange() can add new entries to the EH table. However, they will always
-    // be added *after* the current index, so our iteration here is not invalidated.
-    // It *can* invalidate the compHndBBtab pointer itself, though, if it gets reallocated!
-
-    for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+    for (unsigned i = 0; i < funcCnt; i++)
     {
-        HBtab = ehGetDsc(XTnum); // must re-compute this every loop, since fgRelocateEHRange changes the table
-        if (HBtab->HasFilter())
+#if !HAS_FIXED_REGISTER_SET
+        funcInfo[i].funStackPointerReg = REG_NA;
+        funcInfo[i].funFramePointerReg = REG_NA;
+#endif
+#ifdef TARGET_WASM
+        funcInfo[i].funWasmLocalDecls = nullptr;
+#endif
+    }
+#endif
+    assert(funcInfo[0].funKind == FUNC_ROOT);
+
+    unsigned short* vmClauseOrderToEHTabOrder = nullptr;
+    unsigned short* ehTabOrderToVMClauseOrder = nullptr;
+    unsigned short  funcIdx                   = 1;
+
+    if (compHndBBtabCount > 0)
+    {
+        fgCreateFuncletPrologBlocks();
+
+        // We want to have the funclet order match the order of emission of EH clauses to the runtime.
+        // We cannot change the order of entries in the JIT's EH table, as there are many places
+        // in the JIT that depend on the current ordering.
+        //
+        // So, build mappings from vm order to EH table order and vice versa.
+        //
+        vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+        ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+
+        unsigned XTnum;
+
+        for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            assert(funcIdx < funcCnt);
-            funcInfo[funcIdx].funKind    = FUNC_FILTER;
-            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-            funcIdx++;
+            vmClauseOrderToEHTabOrder[XTnum] = (unsigned short)XTnum;
         }
-        assert(funcIdx < funcCnt);
-        funcInfo[funcIdx].funKind    = FUNC_HANDLER;
-        funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-        HBtab->ebdFuncIndex          = funcIdx;
-        funcIdx++;
-        fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+
+        // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
+        // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
+        //
+        jitstd::sort(vmClauseOrderToEHTabOrder, vmClauseOrderToEHTabOrder + compHndBBtabCount,
+                     [this](const unsigned short& leftIndex, const unsigned short& rightIndex) {
+            const unsigned short leftTryIndex  = ehGetDsc(leftIndex)->ebdTryBeg->bbTryIndex;
+            const unsigned short rightTryIndex = ehGetDsc(rightIndex)->ebdTryBeg->bbTryIndex;
+
+            if (leftTryIndex == rightTryIndex)
+            {
+                // We have two clauses mapped to the same try region.
+                // Make sure we order the clause with the smaller index first.
+                return leftIndex < rightIndex;
+            }
+
+            return leftTryIndex < rightTryIndex;
+        });
+
+        // We move every handler region to the end of the function: each handler will become a funclet.
+        //
+        for (unsigned orderNum = 0; orderNum < compHndBBtabCount; orderNum++)
+        {
+            XTnum                 = vmClauseOrderToEHTabOrder[orderNum];
+            EHblkDsc* const HBtab = ehGetDsc(XTnum);
+            if (HBtab->HasFilter())
+            {
+                assert(funcIdx < funcCnt);
+                funcInfo[funcIdx].funKind    = FUNC_FILTER;
+                funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+                funcIdx++;
+            }
+            assert(funcIdx < funcCnt);
+            funcInfo[funcIdx].funKind    = FUNC_HANDLER;
+            funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
+            HBtab->ebdFuncIndex          = funcIdx;
+            funcIdx++;
+            fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+        }
+
+        // Fill in the inverse mapping.
+        //
+        for (unsigned i = 0; i < compHndBBtabCount; i++)
+        {
+            ehTabOrderToVMClauseOrder[vmClauseOrderToEHTabOrder[i]] = (unsigned short)i;
+        }
     }
 
     // We better have populated all of them by now
     assert(funcIdx == funcCnt);
 
     // Publish
-    compCurrFuncIdx   = 0;
-    compFuncInfos     = funcInfo;
-    compFuncInfoCount = (unsigned short)funcCnt;
+    compCurrFuncIdx               = 0;
+    compFuncInfos                 = funcInfo;
+    compFuncInfoCount             = (unsigned short)funcCnt;
+    compVMClauseOrderToEHTabOrder = vmClauseOrderToEHTabOrder;
+    compEHTabOrderToVMClauseOrder = ehTabOrderToVMClauseOrder;
 
     fgFuncletsCreated = true;
 
@@ -3601,14 +3644,6 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     unsigned tryIndex = add->acdTryIndex;
     unsigned hndIndex = add->acdHndIndex;
 
-#if defined(TARGET_WASM)
-    // For wasm we put throw helpers in the main method region, or in a non-try
-    // region of a handler.
-    //
-    assert(add->acdKeyDsg != AcdKeyDesignator::KD_TRY);
-    tryIndex = 0;
-#endif
-
     BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], tryIndex, hndIndex,
                                                /* nearBlk */ nullptr, putInFilter,
                                                /* runRarely */ true, /* insertAtEnd */ true);
@@ -3837,20 +3872,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 
     assert(inTry || inHnd);
 
-#if defined(TARGET_WASM)
-    // The current plan for Wasm: method regions or funclets with
-    // trys will have a single Wasm try handle all
-    // resumption from catches via virtual IPs.
-    //
-    // So we do not need to consider the nesting of the throw
-    // in try regions, just in handlers.
-    //
-    if (!inHnd)
-    {
-        *dsg = AcdKeyDesignator::KD_NONE;
-        return 0;
-    }
-#else
     if (inTry && (!inHnd || (tryIndex < hndIndex)))
     {
         // The most enclosing region is a try body, use it
@@ -3858,7 +3879,6 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
         *dsg = AcdKeyDesignator::KD_TRY;
         return tryIndex;
     }
-#endif // !defined(TARGET_WASM)
 
     // The most enclosing region is a handler which will be a funclet
     // Now we have to figure out if blk is in the filter or handler
@@ -4130,8 +4150,17 @@ PhaseStatus Compiler::fgSetBlockOrder()
 
     if (fgHasCycleWithoutGCSafePoint())
     {
+#if defined(TARGET_WASM)
+        // TODO-WASM: insert GC polls for loops, and arrange it so the
+        // polling overhead is tolerable.
+        //
+        JITDUMP("NOTE: Method requires GC polls -- Wasm does not insert these yet\n");
+#else
+
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
+
+#endif // defined(TARGET_WASM)
     }
 
     for (BasicBlock* const block : Blocks())
@@ -5542,19 +5571,31 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 // the loop.
 //
 // Parameters:
-//   info - [out] Loop information
+//   info                 - [out] Loop information
+//   allowMissingBaseCase - If true, succeed even when we cannot prove that the
+//                          loop condition [IterVar TestOper Limit] holds on
+//                          entry, provided the limit form is one we know how
+//                          to materialize at runtime. The caller is then
+//                          responsible for emitting a runtime entry guard
+//                          equivalent to that condition when
+//                          info->NeedsZeroTripGuard is set on return.
+//                          Defaults to false; existing callers retain the
+//                          stronger guarantees described below.
 //
 // Returns:
 //   True if the structure was analyzed and we can make guarantees about it;
 //   otherwise false.
 //
 // Remarks:
-//   On a true return, the function guarantees that the loop invariant is true
-//   and maintained at all points within the loop, except possibly right after
-//   the update of the iterator variable (NaturalLoopIterInfo::IterTree). The
-//   function guarantees that the test (NaturalLoopIterInfo::TestTree) occurs
-//   immediately after the update, so no IR in the loop is executed without the
-//   loop invariant being true, except for the test.
+//   On a true return with allowMissingBaseCase == false (or with the flag set
+//   but info->NeedsZeroTripGuard == false), the function guarantees that the
+//   loop invariant is true and maintained at all points within the loop,
+//   except possibly right after the update of the iterator variable
+//   (NaturalLoopIterInfo::IterTree). optExtractTestIncr permits the IV update
+//   to be separated from the loop test by other statements, but it rejects
+//   any candidate where an intervening statement references the iterator
+//   variable, so no IR in the loop is executed observing the post-update
+//   value of the iterator except the test itself.
 //
 //   The loop invariant is defined as the expression obtained by
 //   [info->IterVar] [info->TestOper()] [info->Limit()]. Note that
@@ -5575,7 +5616,19 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   In some cases we also know the initial value on entry to the loop; see
 //   ::HasConstInit and ::ConstInitValue.
 //
-bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
+//   When allowMissingBaseCase is true and the function would otherwise fail
+//   because the loop condition [IterVar TestOper Limit] cannot be proven to
+//   hold on entry (no suitable preheader BBJ_COND guard and no constant
+//   init/limit pair that proves the base case), the function may instead
+//   succeed with info->NeedsZeroTripGuard set. In that mode the above
+//   invariant only holds conditionally: it is the caller's obligation to
+//   insert a runtime test equivalent to [IterVar TestOper() Limit] on the
+//   path that reaches the analyzed loop body. Loop cloning uses this to emit
+//   the guard as an extra cloning condition on the fast-path version. Note
+//   that this includes do/while-style loops that are guaranteed to execute
+//   at least once but whose loop condition may be false on entry.
+//
+bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase)
 {
     JITDUMP("Analyzing iteration for " FMT_LP " with header " FMT_BB "\n", m_index, m_header->bbNum);
 
@@ -5589,7 +5642,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     GenTree* test = nullptr;
 
-    info->IterVar = BAD_VAR_NUM;
+    info->IterVar            = BAD_VAR_NUM;
+    info->NeedsZeroTripGuard = false;
 
     for (FlowEdge* exitEdge : ExitEdges())
     {
@@ -5676,8 +5730,21 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(preheader, info))
     {
-        JITDUMP("  Loop condition may not be true on the first iteration\n");
-        return false;
+        // If the caller can emit its own runtime guard for the case where the
+        // loop body might not execute on the first iteration, allow the loop
+        // through provided we have enough symbolic info about init and limit
+        // to express the guard.
+        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit))
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration; deferring to caller "
+                    "(NeedsZeroTripGuard)\n");
+            info->NeedsZeroTripGuard = true;
+        }
+        else
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration\n");
+            return false;
+        }
     }
 
 #ifdef DEBUG
@@ -5698,6 +5765,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
             printf("invariant local limit ");
         if (info->HasArrayLengthLimit)
             printf("array length limit ");
+        if (info->LimitOffset != 0)
+            printf("offset %d ", info->LimitOffset);
         printf(")\n");
     }
 #endif
@@ -5727,6 +5796,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasSimdLimit           = false;
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
+    info->LimitOffset            = 0;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5769,6 +5839,46 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     if (!iterOp->TypeIs(TYP_INT))
     {
         return false;
+    }
+
+    // Recognize `base ± const` limits (e.g. `arr.Length - 4`, `lcl + 8`) by
+    // peeling the constant into LimitOffset and form-checking the base.
+    // Morph canonicalizes commutative ops so that any constant operand sits on
+    // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    int      peeledOffset = 0;
+    GenTree* peeledBase   = nullptr;
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    {
+        GenTree* lop1 = limitOp->gtGetOp1();
+        GenTree* lop2 = limitOp->gtGetOp2();
+        if (lop2->IsCnsIntOrI() && lop2->TypeIs(TYP_INT) && !lop1->IsCnsIntOrI())
+        {
+            ssize_t cns = lop2->AsIntCon()->IconValue();
+            if ((cns >= INT32_MIN) && (cns <= INT32_MAX))
+            {
+                int signedCns = (int)cns;
+                if (limitOp->OperIs(GT_SUB))
+                {
+                    // Guard against the -INT32_MIN overflow.
+                    if (signedCns != INT32_MIN)
+                    {
+                        peeledOffset = -signedCns;
+                        peeledBase   = lop1;
+                    }
+                }
+                else
+                {
+                    peeledOffset = signedCns;
+                    peeledBase   = lop1;
+                }
+            }
+        }
+    }
+
+    if ((peeledBase != nullptr) && (peeledOffset != 0))
+    {
+        limitOp           = peeledBase;
+        info->LimitOffset = peeledOffset;
     }
 
     // Check what type of limit we have - constant, variable or arr-len.
@@ -6777,9 +6887,20 @@ genTreeOps NaturalLoopIterInfo::TestOper()
 bool NaturalLoopIterInfo::IsIncreasingLoop()
 {
     // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0))));
+    // We also recognize "!=" against a limit when the IV step is exactly +1 (or -1 with GT_SUB):
+    // such loops visit indices [init, limit) provided that "init <= limit" holds on entry.
+    // Stride must be ±1 to avoid parity/overflow issues where the IV could skip past the limit
+    // (e.g. "for (i = 0; i != 5; i += 2)" never terminates and wraps around).
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_LT, GT_LE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() > 0)) || ((IterOper() == GT_SUB) && (IterConst() < 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == 1)) || ((IterOper() == GT_SUB) && (IterConst() == -1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6793,9 +6914,18 @@ bool NaturalLoopIterInfo::IsDecreasingLoop()
 {
     // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
     // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(TestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0))));
+    // As with IsIncreasingLoop, we also recognize "!=" against a limit when the IV step is exactly -1
+    // (or +1 with GT_SUB); the stride must be exactly +/-1 to avoid parity/overflow issues.
+    const genTreeOps testOp = TestOper();
+    if (GenTree::StaticOperIs(testOp, GT_GT, GT_GE))
+    {
+        return (((IterOper() == GT_ADD) && (IterConst() < 0)) || ((IterOper() == GT_SUB) && (IterConst() > 0)));
+    }
+    if (testOp == GT_NE)
+    {
+        return ((IterOper() == GT_ADD) && (IterConst() == -1)) || ((IterOper() == GT_SUB) && (IterConst() == 1));
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6821,6 +6951,33 @@ GenTree* NaturalLoopIterInfo::Limit()
 }
 
 //------------------------------------------------------------------------
+// LimitBase: Get the base subtree of the loop limit, with the LimitOffset
+// peeled off.
+//
+// Returns:
+//   The form-checked base tree (CNS_INT / LCL_VAR / ARR_LENGTH); identical
+//   to Limit() when LimitOffset == 0.
+//
+GenTree* NaturalLoopIterInfo::LimitBase()
+{
+    GenTree* lim = Limit();
+    if (LimitOffset == 0)
+    {
+        return lim;
+    }
+
+    assert(lim->OperIs(GT_ADD, GT_SUB) && lim->TypeIs(TYP_INT));
+    GenTree* op1 = lim->gtGetOp1();
+    GenTree* op2 = lim->gtGetOp2();
+    if (op2->IsCnsIntOrI())
+    {
+        return op1;
+    }
+    assert(op1->IsCnsIntOrI() && lim->OperIs(GT_ADD));
+    return op2;
+}
+
+//------------------------------------------------------------------------
 // ConstLimit: Get the constant value of the iterator limit, i.e. when the loop
 // condition is "i RELOP const".
 //
@@ -6833,9 +6990,10 @@ GenTree* NaturalLoopIterInfo::Limit()
 int NaturalLoopIterInfo::ConstLimit()
 {
     assert(HasConstLimit);
-    GenTree* limit = Limit();
+    assert(LimitOffset == 0);
+    GenTree* limit = LimitBase();
     assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
+    return (int)limit->AsIntCon()->IconValue();
 }
 
 //------------------------------------------------------------------------
@@ -6852,7 +7010,7 @@ unsigned NaturalLoopIterInfo::VarLimit()
 {
     assert(HasInvariantLocalLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
 }
@@ -6875,14 +7033,15 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 {
     assert(HasArrayLengthLimit);
 
-    GenTree* limit = Limit();
+    GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_ARR_LENGTH));
 
     // Check if we have a.length or a[i][j].length
     if (limit->AsArrLen()->ArrRef()->OperIs(GT_LCL_VAR))
     {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
+        index->arrLcl  = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
+        index->arrType = limit->AsArrLen()->ArrRef()->TypeGet();
+        index->rank    = 0;
         return true;
     }
     // We have a[i].length, extract a[i] pattern.
@@ -7672,6 +7831,19 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
     for (BasicBlock* block : comp->Blocks())
     {
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+
         if (!block->hasTryIndex())
         {
             continue;
@@ -7744,6 +7916,16 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                 if (region != nullptr)
                 {
+                    // If this block lives in a different handler region than the
+                    // parent try's begin block, the block is inside a funclet
+                    // that is nested inside the parent try's IL range but is
+                    // not part of the parent try's code body. Don't add it to
+                    // the parent region.
+                    //
+                    if (!includeHandlerBlocks && !BasicBlock::sameHndRegion(block, region->m_ehDsc->ebdTryBeg))
+                    {
+                        break;
+                    }
                     tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
@@ -7753,22 +7935,62 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             // This is a handler block inside a try.
             // For flow purposes we may consider it to be outside the try.
         }
-
-        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
-        // as requiring runtime resumption.
-        //
-        if (block->KindIs(BBJ_EHCATCHRET))
-        {
-            assert(block->hasHndIndex());
-            unsigned const            ehRegionIndex        = block->getHndIndex();
-            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
-            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
-
-            dispatchingTryRegion->SetRequiresRuntimeResumption();
-        }
     }
 
     return regions;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
+//    edges for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of temporary edges to augment
+//
+void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowGraphTryRegion* region : m_tryRegions)
+    {
+        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
+        {
+            BasicBlock* const headerBlock = region->GetHeaderBlock();
+
+            for (FlowEdge* edge : region->EntryEdges())
+            {
+                BasicBlock* const destBlock = edge->getDestinationBlock();
+
+                // Skip the normal entry edges.
+                //
+                if (destBlock == headerBlock)
+                {
+                    continue;
+                }
+
+                // We need an edge from dest to try header.
+                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
+                edges.Push(destheaderEdge);
+
+                // And an edge from method entry to dest.
+                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
+                edges.Push(entryDestEdge);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
+//    edges added for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of edges to remove
+//
+void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowEdge* const edge : edges.BottomUpOrder())
+    {
+        m_compiler->fgRemoveRefPred(edge);
+    }
 }
 
 //------------------------------------------------------------------------

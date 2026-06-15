@@ -28,6 +28,7 @@ set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
+set __UseManagedIlasm=
 set __PrintLastResultsOnly=
 set LogsDirArg=
 set RunInUnloadableContext=
@@ -73,6 +74,7 @@ if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
+if /i "%1" == "usemanagedilasm"                          (set __IlasmRoundTrip=1&set __UseManagedIlasm=1&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
@@ -150,6 +152,10 @@ if defined __GCSimulatorTests (
 
 if defined __IlasmRoundTrip (
     set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
+)
+
+if defined __UseManagedIlasm (
+    set __RuntestPyArgs=%__RuntestPyArgs% --use_managed_ilasm
 )
 
 if defined __TestEnv (

@@ -62,26 +62,6 @@
         <target state="translated">Недоступные свойства, аннотированные с использованием класса JsonIncludeAttribute, не поддерживаются в режиме создания исходного кода.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
-        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
-        <target state="translated">Тип "{0}" определяет свойства, предназначенные только для инициализации. Их десериализация сейчас не поддерживается в режиме создания исходного кода.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
-        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
-        <target state="translated">Десериализация свойств, предназначенных только для инициализации, сейчас не поддерживается в режиме создания исходного кода.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
-        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="translated">Конструктор для типа "{0}" аннотирован с использованием JsonConstructorAttribute, но недоступен для генератора источника.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleTitle">
-        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="translated">Конструктор, аннотированный с использованием JsonConstructorAttribute, недоступен.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">Тип "JsonConverterAttribute" "{0}", указанный в элементе "{1}", не является типом преобразователя или не содержит доступного конструктора без параметров.</target>
@@ -94,12 +74,12 @@
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
         <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
-        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <target state="translated">Тип "{0}" помечен атрибутом "JsonIgnoreAttribute" с параметром "JsonIgnoreCondition.Always", что недопустимо для объявлений типов. Этот атрибут будет проигнорирован.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
         <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
-        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <target state="translated">Параметр "JsonIgnoreCondition.Always" недопустим для аннотаций "JsonIgnoreAttribute" на уровне типа.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
@@ -152,6 +132,41 @@
         <target state="translated">Тип содержит несколько элементов, помеченных с помощью JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">Не удалось разрешить открытый обобщенный производный тип "{0}" для полиморфного базового типа "{1}": {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">производный тип соответствует базовому типу через нескольких предков</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">ограничение для параметра типа "{0}" не удовлетворяется типом "{1}"</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">производный тип не может быть присвоен базовому типу</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">параметр типа "{0}" производного типа не связан с аргументами базового типа</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">аргументы базового типа не соответствуют спецификации базового типа в производном типе</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">Не удалось разрешить открытый обобщенный производный тип для полиморфного базового типа.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">Тип "{0}" содержит ссылку, например свойство, поле или параметр конструктора "{1}". Для свойства, поля или конструктора не будет создан исходный код.</target>
@@ -170,6 +185,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
         <target state="translated">Метаданные сериализации для типа не сформированы.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Тип объединения "{0}": {1}. Задайте JsonUnionAttribute.TypeClassifier, чтобы указать пользовательский классификатор для устранения неоднозначности.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Типы вариантов объединения невозможно однозначно классифицировать по типу значения JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">Тип объединения "{0}" не соответствует соглашению о структуре объединения C#: он должен объявлять как минимум один общедоступный конструктор варианта с одним параметром и общедоступное свойство экземпляра с именем "Value" и типом "object".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">Структура типа объединения не является допустимым объединением C#.</target>
         <note />
       </trans-unit>
     </body>

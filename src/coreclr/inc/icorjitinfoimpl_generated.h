@@ -742,6 +742,9 @@ void recordCallSite(
           CORINFO_SIG_INFO* callSig,
           CORINFO_METHOD_HANDLE methodHandle) override;
 
+void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig) override;
+
 void recordRelocation(
           void* location,
           void* locationRW,

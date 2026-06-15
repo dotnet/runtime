@@ -73,7 +73,7 @@ The effects of ordinary reads and writes can be reordered as long as that preser
   Operations with acquire semantics:
      - IL load instructions with `volatile.` prefix when instruction supports such prefix
      - `System.Threading.Volatile.Read`
-     - `System.Thread.VolatileRead`
+     - `System.Threading.Thread.VolatileRead`
      - `System.Threading.Volatile.ReadBarrier` (applies to all prior reads)
      - Acquiring a lock (`System.Threading.Monitor.Enter` or entering a synchronized method, applies to all prior reads)
 
@@ -81,7 +81,7 @@ The effects of ordinary reads and writes can be reordered as long as that preser
   Operations with release semantics:
      - IL store instructions with `volatile.` prefix when such prefix is supported
      - `System.Threading.Volatile.Write`
-     - `System.Thread.VolatileWrite`
+     - `System.Threading.Thread.VolatileWrite`
      - `System.Threading.Volatile.WriteBarrier` (applies to all following writes)
      - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method, applies to all following writes)
 
@@ -101,11 +101,11 @@ It may be possible for an optimizing compiler to prove that some data is accessi
 * **Full-fence operations**
   Full-fence operations have "full-fence semantics" - effects of reads and writes must be observable no later or no earlier than a full-fence operation according to their relative program order.
   Operations with full-fence semantics:
-     - `System.Thread.MemoryBarrier`
+     - `System.Threading.Thread.MemoryBarrier`
      - `System.Threading.Interlocked` methods
 
 ## C# `volatile` feature
-One common way to introduce volatile memory accesses is by using C# `volatile` language feature. Declaring a field as `volatile` does not have any effect on how .NET runtime treats the field. The decoration works as a hint to the C# compiler itself (and compilers for other .Net languages) to emit reads and writes of such field as  reads and writes with `volatile.` prefix.
+One common way to introduce volatile memory accesses is by using C# `volatile` language feature. Declaring a field as `volatile` does not have any effect on how .NET runtime treats the field. The decoration works as a hint to the C# compiler itself (and compilers for other .NET languages) to emit reads and writes of such field as  reads and writes with `volatile.` prefix.
 
 ## Process-wide barrier
 Process-wide barrier has full-fence semantics with an additional guarantee that each thread in the program effectively performs a full fence at arbitrary point synchronized with the process-wide barrier in such a way that effects of writes that precede both barriers are observable by memory operations that follow the barriers.

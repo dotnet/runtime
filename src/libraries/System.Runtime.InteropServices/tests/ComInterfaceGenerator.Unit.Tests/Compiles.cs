@@ -377,6 +377,29 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task PartialMethodModifierOnComInterfaceMethodCompiles()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                internal partial interface IComInterface
+                {
+                    void Method();
+                    public virtual partial void PartialMethod();
+                }
+                internal partial interface IComInterface
+                {
+                    public virtual partial void PartialMethod() { }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
         public async Task DocumentedComInterfaceDoesNotProduceCS1591Warnings()
         {
             string source = """
@@ -449,6 +472,145 @@ namespace ComInterfaceGenerator.Unit.Tests
             });
 
             await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexOnOutObjectCompiles()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface IActivationFactory
+                {
+                    void GetActivationFactory(
+                        in Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexMultipleOutObjectsSharingSameIidCompiles()
+        {
+            // Two 'out object' parameters both referencing the same 'in Guid' IID parameter.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        in Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object a,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object b);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexMultipleOutObjectsWithDifferentIidsCompiles()
+        {
+            // Two 'out object' parameters each referencing a different 'in Guid' IID parameter.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        in Guid iidA,
+                        in Guid iidB,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object a,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 1)] out object b);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexInterleavedWithOtherParametersCompiles()
+        {
+            // IID-driven 'out object' parameters interleaved with other input/output parameters and a non-IID
+            // 'out object' to verify that identifier generation in the stub doesn't conflict across parameters.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        int extra,
+                        in Guid iidA,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 1)] out object a,
+                        [MarshalAs(UnmanagedType.Interface)] out object b,
+                        in Guid iidC,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 4)] out object c);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexByValueGuidCompiles()
+        {
+            // By-value 'Guid' IID parameter (RefKind.None) should also be accepted.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexRefGuidCompiles()
+        {
+            // 'ref Guid' IID parameter is also accepted; the QueryInterface call reads the value as an 'in Guid'.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface I
+                {
+                    void M(
+                        ref Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
     }
 }

@@ -375,7 +375,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
 
@@ -394,7 +394,7 @@ bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     CONTRACTL_END;
 
     CrstHolder ch(&m_Crst);
-    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
         return true;
@@ -591,11 +591,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
     {
         DoLog("Ready to Run disabled - profiler disabled native images");
         return NULL;
     }
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
     {
@@ -618,6 +620,20 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     READYTORUN_HEADER * pHeader = pLayout->GetReadyToRunHeader();
+
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+    {
+        DoLog("Ready to Run load failed - stripped IL bodies are not supported with dynamic code compilation");
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    if ((pHeader->CoreHeader.Flags & (READYTORUN_FLAG_STRIPPED_INLINING_INFO | READYTORUN_FLAG_STRIPPED_DEBUG_INFO)) != 0)
+    {
+        DoLog("Ready to Run disabled - stripped R2R sections not supported with dynamic code compilation");
+        return NULL;
+    }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
@@ -866,6 +882,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_nRuntimeFunctions = 0;
     }
 
+#ifdef TARGET_WASM
+    // For WASM, the min function table index is stored as a u32 immediately after the
+    // sentinel entry (0xFFFFFFFF) at the end of the RUNTIME_FUNCTION table.
+    if (m_nRuntimeFunctions > 0)
+    {
+        DWORD* pSentinel = (DWORD*)&m_pRuntimeFunctions[m_nRuntimeFunctions];
+        _ASSERTE(*pSentinel == 0xFFFFFFFF);
+        m_minFunctionTableIndex = *(pSentinel + 1);
+    }
+    else
+    {
+        m_minFunctionTableIndex = 0;
+    }
+#endif // TARGET_WASM
+
+#ifdef FEATURE_COLD_R2R_CODE
     IMAGE_DATA_DIRECTORY * pHotColdMapDir = m_pComposite->FindSection(ReadyToRunSectionType::HotColdMap);
     if (pHotColdMapDir != NULL)
     {
@@ -876,6 +908,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         m_nHotColdMap = 0;
     }
+#endif // FEATURE_COLD_R2R_CODE
 
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
@@ -896,7 +929,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
+#ifndef TARGET_WASM
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+#endif
+
     m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
     m_pSectionExceptionInfo = m_pComposite->FindSection(ReadyToRunSectionType::ExceptionInfo);
 
@@ -1265,6 +1301,14 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
+    // Return-dropping async thunks are VM-synthesized. They share the same metadata
+    // token and signature shape as a regular async variant, so the R2R lookup below
+    // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
+    // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
+    // these thunks; fall back to transient IL generation in the prestub.
+    if (pMD->IsReturnDroppingThunk())
+        goto done;
+
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
@@ -1351,8 +1395,29 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
-    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+#ifdef TARGET_ARM
+    pEntryPoint |= THUMB_CODE;
+#endif // TARGET_ARM
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
+#else
+    // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
+#ifdef FEATURE_TIERED_COMPILATION
+#error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
+#endif
+#ifdef TARGET_WASM
+    PCODE actualEntryPoint;
+    actualEntryPoint = GetMinFunctionTableIndex() + id;
+    PCODE virtualEntrypointIP;
+    virtualEntrypointIP = GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+    pEntryPoint = pMD->GetTemporaryEntryPoint();
+    PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
+#else
+#error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
+#endif
+#endif
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1550,7 +1615,11 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     }
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
-    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+#ifdef TARGET_WASM
+    PCODE pEntryPoint = m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+#else
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+#endif
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }
@@ -2776,4 +2845,61 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     }
 }
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
+#ifdef TARGET_WASM
+// Decode a ULEB128-encoded value that must fit in a UINT32.
+// Advances *ppData past the encoded bytes. Asserts if the value overflows 32 bits.
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
+{
+    UINT32 result = 0;
+    int shift = 0;
+    BYTE b;
+    do
+    {
+        b = *(*ppData)++;
+        _ASSERTE(shift < 35); // A valid u32 ULEB128 is at most 5 bytes
+        result |= (UINT32)(b & 0x7F) << shift;
+        shift += 7;
+    } while (b & 0x80);
+    return result;
+}
+
+void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    if (m_nRuntimeFunctions == 0)
+        return;
+
+    TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
+
+    // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
+    // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
+    T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+    UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
+
+    // Decode the virtual IP count from the last entry's unwind data.
+    // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
+    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+    DecodeULEB128AsU32(&pUnwindData); // skip frame size
+    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+
+    UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
+
+    m_minVirtualIP = ExecutionManager::AddVirtualIPRange(
+        totalVirtualIPs,
+        ExecutionManager::GetReadyToRunJitManager(),
+        pModule);
+
+    ExecutionManager::AddFunctionTableIndexRange(
+        m_minFunctionTableIndex,
+        m_nRuntimeFunctions,
+        pModule);
+}
+#endif // TARGET_WASM
+
 #endif // DACCESS_COMPILE

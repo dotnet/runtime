@@ -3,17 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class PEImage : IData<PEImage>
+[CdacType(nameof(DataType.PEImage))]
+internal sealed partial class PEImage : IData<PEImage>
 {
-    static PEImage IData<PEImage>.Create(Target target, TargetPointer address) => new PEImage(target, address);
-    public PEImage(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.PEImage);
-
-        LoadedImageLayout = target.ReadPointer(address + (ulong)type.Fields[nameof(LoadedImageLayout)].Offset);
-        ProbeExtensionResult = target.ProcessedData.GetOrAdd<ProbeExtensionResult>(address + (ulong)type.Fields[nameof(ProbeExtensionResult)].Offset);
-    }
-
-    public TargetPointer LoadedImageLayout { get; init; }
-    public ProbeExtensionResult ProbeExtensionResult { get; init; }
+    [Field] public TargetPointer LoadedImageLayout { get; }
+    [Field] public ProbeExtensionResult ProbeExtensionResult { get; }
 }

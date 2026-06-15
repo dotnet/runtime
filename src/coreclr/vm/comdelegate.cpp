@@ -1358,7 +1358,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         if (!pUMEntryThunk)
         {
-
             UMThunkMarshInfo *pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
             MethodDesc *pInvokeMeth = FindDelegateInvokeMethod(pMT);
 
@@ -1366,14 +1365,14 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             {
                 GCX_PREEMP();
 
-                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo)));
-                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
+                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DelegateUMThunkMarshInfo)));
+                new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pInvokeMeth);
 
                 if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
-                    pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(DelegateUMThunkMarshInfo));
                     pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
                 }
             }
@@ -1677,8 +1676,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 {
     QCALL_CONTRACT;
 
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
     _ASSERTE(method != (PCODE)NULL);
     BEGIN_QCALL;
@@ -1833,8 +1831,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     }
     CONTRACTL_END;
 
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
     MethodDesc *pMethodHandle = NULL;
 
@@ -2512,7 +2509,7 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
     else
     {
         // they are not compatible yet enums can go into each other if their underlying element type is the same
-        if (toHandle.GetVerifierCorElementType() == fromHandle.GetVerifierCorElementType()
+        if (toHandle.GetInternalCorElementType() == fromHandle.GetInternalCorElementType()
             && (toHandle.IsEnum() || fromHandle.IsEnum()))
             return true;
 
@@ -2887,8 +2884,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Another is to pass a gchandle to the delegate ctor. This is fastest, but only works if we can predict the gc handle at this time.
     //  We will use this for the non secure variants
     //
-    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
 
     if (invokeArgCount == methodArgCount)

@@ -105,6 +105,14 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
     BEGIN_QCALL;
 
     TypeHandle th = t.AsTypeHandle();
+
+    if (th.IsEnum())
+    {
+        // Enums don't have native layout info, but they marshal identically
+        // to their underlying primitive type.
+        th = CoreLibBinder::GetElementType(th.GetInternalCorElementType());
+    }
+
     if (th.HasLayout())
     {
         *pIsBlittable = th.IsBlittable();
@@ -333,8 +341,10 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
+#if defined(PROFILING_SUPPORTED)
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
@@ -359,8 +369,10 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
     FC_RETURN_BOOL(true);

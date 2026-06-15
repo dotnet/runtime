@@ -26,6 +26,12 @@ namespace System.Runtime.Serialization
         {
         }
 
+        internal XmlObjectSerializerReadContextComplex(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject, ISerializationSurrogateProvider? serializationSurrogateProvider)
+            : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
+        {
+            _serializationSurrogateProvider = serializationSurrogateProvider;
+        }
+
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
