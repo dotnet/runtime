@@ -16,6 +16,7 @@ namespace System.Diagnostics
         private const int MaxBaggageEntriesToEmit = 64;     // Suggested by W3C specs
         private const int MaxBaggageEncodedLength = 8192;   // Suggested by W3C specs
         private const int MaxTraceStateEncodedLength = 512; // Suggested by W3C specs
+        private const int MaxTraceStateKeyLength = 256;
         private const int MaxTraceStateValueLength = 256;
         private const int MaxTraceStateEntries = 32;
         private const int TraceParentCoreLength = 55;
@@ -436,6 +437,7 @@ namespace System.Diagnostics
         // Key has to start with a lowercase letter or digit
         private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key) =>
             key.IsEmpty ||
+            key.Length > MaxTraceStateKeyLength ||
             ((uint)('z' - key[0]) > (uint)('z' - 'a') && (uint)('9' - key[0]) > (uint)('9' - '0')) ||
             key.ContainsAnyExcept(s_validTraceStateKeyChars);
 
