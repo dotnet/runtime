@@ -1675,20 +1675,24 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
 
-    size_t                   highWaterMark = 0;
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
     jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
 
     for (BasicBlock* const block : Blocks())
     {
+        // The defs list should already be empty because we walked all the nodes in the previous block,
+        //  which should have led to visiting all uses
+        assert(defs.empty());
+
         // LIR edges cannot span blocks, so we can safely clear the list of live values per-block
         defs.clear();
+
         if (m_wasmSpillSlots != nullptr)
         {
             // Flag all our spill slot vars as no longer in use so they can be reused in the new block
-            for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
+            for (WasmSpillSlot& slot : *m_wasmSpillSlots)
             {
-                m_wasmSpillSlots->at(s).inUse = false;
+                slot.inUse = false;
             }
         }
 
@@ -1696,11 +1700,9 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         {
             if (tree->IsCall())
             {
-                highWaterMark = std::max(highWaterMark, defs.size());
-
                 // For any ref/byref values live at the point of a call, spill them into pinned slots
                 //  on the stack where the GC can see them so it won't move them.
-                if (defs.size())
+                if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
                     {
@@ -1717,16 +1719,15 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                         int spillSlot = -1;
                         // Find an existing spill slot of the right type (byref or ref) that isn't in use
-                        for (unsigned s = 0; s < m_wasmSpillSlots->size(); s++)
+                        for (WasmSpillSlot& slot : *m_wasmSpillSlots)
                         {
-                            WasmSpillSlot* slot = &(m_wasmSpillSlots->at(s));
-                            if (slot->inUse)
+                            if (slot.inUse)
                                 continue;
-                            if (slot->byRef != def->TypeIs(TYP_BYREF))
+                            if (slot.byRef != def->TypeIs(TYP_BYREF))
                                 continue;
 
-                            spillSlot   = slot->lclNum;
-                            slot->inUse = true;
+                            spillSlot   = slot.lclNum;
+                            slot.inUse = true;
                             break;
                         }
 
@@ -1846,10 +1847,6 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         }
     }
 
-    if (highWaterMark > 0)
-    {
-        JITDUMP("High water mark for refs was %zu\n", highWaterMark);
-    }
     if (m_wasmSpillSlots != nullptr)
     {
         JITDUMP("Total allocated spill slot count was %zu\n", m_wasmSpillSlots->size());
