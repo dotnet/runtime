@@ -156,6 +156,10 @@ namespace System.Security.Cryptography.Xml
             return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
         }
 
+        // Clears internal state after output has been obtained, so intermediate data
+        // can be garbage collected during transform chain processing.
+        internal virtual void ClearState() { }
+
         public XmlElement? Context
         {
             get

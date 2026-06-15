@@ -65,6 +65,7 @@
     <Compile Include="XmlDecryptionTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample5.xml" />
     <EmbeddedResource Include="EncryptedXmlSample4.xml" />
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
