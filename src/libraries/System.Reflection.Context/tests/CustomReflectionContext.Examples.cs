@@ -33,10 +33,10 @@ namespace System.Reflection.Context.Examples
     }
     #endregion Snippet1
 
-    public class Program
+    public class CustomReflectionContextExamples
     {
         [Fact]
-        public static void Main()
+        public static void AddCustomAttribute()
         {
             #region Snippet2
             MyCustomReflectionContext mc = new();
