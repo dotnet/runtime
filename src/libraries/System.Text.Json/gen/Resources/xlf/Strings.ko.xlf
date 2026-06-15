@@ -22,14 +22,34 @@
         <target state="translated">데이터 확장 속성 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="translated">JsonConverterAttribute에서 파생된 사용자 지정 속성 '{0}'은(는) 원본 생성기에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="translated">JsonConverterAttribute에서 파생되는 특성은 소스 생성기에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="translated">이름이 '{0}'인 형식이 여러 개 있습니다. 처음 검색된 것에 대한 원본이 생성되었습니다. 이 충돌을 해결하려면 'JsonSerializableAttribute.TypeInfoPropertyName'을 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">중복된 형식 이름입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">'{0} 형식은 'JsonSourceGenerationMode.Serialization'에서 지원되지 않는 'JsonDerivedTypeAttribute'로 주석이 추가되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">'JsonSourceGenerationMode.Serialization'에서는 'JsonDerivedTypeAttribute'가 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
@@ -42,14 +62,54 @@
         <target state="translated">JsonIncludeAttribute로 주석 처리된 액세스할 수 없는 속성은 원본 생성 모드에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
-        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
-        <target state="new">The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</target>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">'{1}' 멤버에 지정된 'JsonConverterAttribute' 형식 '{0}'이(가) 변환기 형식이 아니거나 액세스 가능한 매개 변수가 없는 생성자를 포함하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
-        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
-        <target state="new">Deserialization of init-only properties is currently not supported in source generation mode.</target>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">'JsonConverterAttribute.Type'에 잘못되었거나 액세스할 수 없는 인수가 포함되어 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
+        <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
+        <target state="translated">'{0}' 형식은 형식 선언에서 유효하지 않은 'JsonIgnoreCondition.Always'를 사용하여 'JsonIgnoreAttribute'로 주석을 달았습니다. 특성이 무시됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
+        <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
+        <target state="translated">'JsonIgnoreCondition.Always'는 형식 수준의 'JsonIgnoreAttribute' 주석에서 유효하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
+        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
+        <target state="translated">'{0}' 형식에 JsonSerializableAttribute 주석이 추가되었지만 JsonSerializerContext에서 파생되지 않았습니다. 소스 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
+        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
+        <target state="translated">JsonSerializableAttribute 주석이 추가된 형식은 JsonSerializerContext에서 파생된 클래스여야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">'{0}' 멤버에 네이티브 AOT에서 지원되지 않는 'JsonStringEnumConverter'로 주석이 달렸습니다. 대신 제네릭 'JsonStringEnumConverter&lt;TEnum&gt;'을 사용해 보세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">제네릭이 아닌 'JsonStringEnumConverter'에는 동적 코드가 필요합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json 원본 생성기는 C# {0}에서 사용할 수 없습니다. {1} 이상의 언어 버전을 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">원본 생성기에서 지원되지 않는 C# 언어 버전입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
@@ -72,6 +132,51 @@
         <target state="translated">형식에 JsonExtensionDataAttribute로 주석이 추가 된 멤버가 여러 개 있습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">폴리모픽 기본 형식 '{0}'에 대해 열려 있는 제네릭 파생 형식 '{1}'을(를) 확인할 수 없습니다. {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">파생 형식이 여러 상위 형식을 통해 기본 형식과 일치합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">형식 매개 변수 '{0}'에 대한 제약 조건이 '{1}'을(를) 만족하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">파생 형식을 기본 형식에 할당할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">파생 형식의 형식 매개 변수 '{0}'은(는) 기본 형식의 인수에 의해 바인딩되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">기본 형식의 인수가 파생 형식의 기본 사양과 일치하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">폴리모픽 기본 형식에 대해 열려 있는 제네릭 파생 형식을 확인할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="translated">'{0}' 형식에는 속성, 필드 또는 생성자 매개 변수 '{1}'와 같은 ref가 포함됩니다. 속성, 필드 또는 생성자에 대한 소스 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="translated">형식에는 속성, 필드 또는 생성자 매개 변수와 같은 ref가 포함됩니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">'{0}' 형식에 대한 직렬화 메타데이터가 생성되지 않았습니다.</target>
@@ -80,6 +185,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
         <target state="translated">형식에 대한 직렬화 메타데이터가 생성되지 않았습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">유니온 형식 '{0}': {1}. 고유하게 구분할 수 있는 사용자 지정 분류자를 제공하려면 JsonUnionAttribute.TypeClassifier를 설정하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">유니온 케이스 형식은 JSON 값 형식만으로는 명확하게 분류할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">유니온 형식 '{0}'은(는) C# 유니온 셰이프 규칙과 일치하지 않습니다. 하나 이상의 공용 단일 매개 변수 케이스 생성자와 형식이 'object'인 공용 인스턴스 속성 'Value'를 선언해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">유니온 형식 셰이프는 올바른 C# 유니온이 아닙니다.</target>
         <note />
       </trans-unit>
     </body>

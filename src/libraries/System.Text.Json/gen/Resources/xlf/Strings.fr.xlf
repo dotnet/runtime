@@ -22,14 +22,34 @@
         <target state="translated">Type de propriété d’extension de données non valide</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="translated">L'attribut personnalisé '{0}' dérivant de JsonConverterAttribute n'est pas pris en charge par le générateur source.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="translated">Les attributs dérivant de JsonConverterAttribute ne sont pas pris en charge par le générateur de source.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="translated">Il existe plusieurs types nommés '{0}'. La source a été générée pour le premier détecté. Utilisez 'JsonSerializableAttribute.TypeInfoPropertyName' pour résoudre cette collision.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">Nom de type dupliqué.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">Le type « {0} » est annoté avec « JsonDerivedTypeAttribute », ce qui n’est pas pris en charge dans « JsonSourceGenerationMode.Serialization ».</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">« JsonDerivedTypeAttribute » n’est pas pris en charge dans « JsonSourceGenerationMode.Serialization ».</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
@@ -42,14 +62,54 @@
         <target state="translated">Les propriétés inaccessibles annotées avec JsonIncludeAttribute ne sont pas prises en charge en mode de génération de source.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
-        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
-        <target state="new">The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</target>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">Le type 'JsonConverterAttribute' '{0}' spécifié sur le membre '{1}' n’est pas un type convertisseur ou ne contient pas de constructeur sans paramètre accessible.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
-        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
-        <target state="new">Deserialization of init-only properties is currently not supported in source generation mode.</target>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">'JsonConverterAttribute.Type' contient un argument non valide ou inaccessible.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
+        <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
+        <target state="translated">Le type « {0} » a été annoté avec « JsonIgnoreAttribute » en utilisant « JsonIgnoreCondition.Always », ce qui n’est pas valide dans les déclarations de type. L’attribut sera ignoré.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
+        <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
+        <target state="translated">« JsonIgnoreCondition.Always » n’est pas valide sur les annotations « JsonIgnoreAttribute » au niveau du type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
+        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
+        <target state="translated">Le type '{0}' a été annoté avec l'attribut JsonSerializable mais ne dérive pas de JsonSerializerContext. Aucun code source ne sera généré.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
+        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
+        <target state="translated">Les types annotés avec l'attribut JsonSerializable doivent être des classes dérivant de JsonSerializerContext.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">Le membre '{0}' a été annoté avec 'JsonStringEnumConverter', ce qui n’est pas pris en charge dans AOT natif. Utilisez plutôt le générique 'JsonStringEnumConverter&lt;TEnum&gt;'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">Le 'JsonStringEnumConverter' non générique requiert du code dynamique.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Le générateur de source System.Text.Json n'est pas disponible en C# « {0} ». Veuillez utiliser la version linguistique {1} ou supérieure.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Version du langage C# non prise en charge par le générateur de source.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
@@ -72,6 +132,51 @@
         <target state="translated">Le type comporte plusieurs membres annotés avec JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">Nous n’avons pas pu résoudre le type dérivé générique ouvert « {0} » pour le type de base polymorphe « {1} » : {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">le type dérivé correspond au type de base via plusieurs ancêtres</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">la contrainte sur le paramètre de type « {0} » n’est pas satisfaite par « {1} »</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">le type dérivé n’est pas assignable au type de base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">le paramètre de type « {0} » du type dérivé n’est pas lié par les arguments du type de base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">les arguments du type de base ne correspondent pas à la spécification de base du type dérivé</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">Nous n’avons pas pu résoudre le type dérivé générique ouvert pour le type de base polymorphe.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="translated">Le type « {0} » inclut le ref comme propriété, champ ou paramètre de constructeur « {1} ». Aucun code source ne sera généré pour la propriété, le champ ou le constructeur.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="translated">Le type comprend des éléments tels que des propriétés, des champs ou des paramètres de construction.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">Les métadonnées de sérialisation pour le type « {0} » n’ont pas été générées.</target>
@@ -80,6 +185,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
         <target state="translated">Les métadonnées de sérialisation pour le type n’ont pas été générées.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Type d’union « {0} » : {1}. Définissez JsonUnionAttribute.TypeClassifier pour fournir un classifieur personnalisé pouvant lever l’ambiguïté.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Les types de cas d’union ne peuvent pas être classés de manière non ambiguë par le type de valeur JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">Le type d’union « {0} » ne correspond pas à la convention de forme d’union C# : il doit déclarer au moins un constructeur de cas public à un seul paramètre et une propriété d’instance publique nommée « Value » avec le type « object ».</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">La forme du type d’union n’est pas une union C# valide.</target>
         <note />
       </trans-unit>
     </body>
