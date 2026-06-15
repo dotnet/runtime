@@ -20844,9 +20844,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             else if (call->gtCallType == CT_USER_FUNC)
             {
                 // For user calls, we can fetch the approximate return
-                // type info from the method handle. Unfortunately
-                // we've lost the exact context, so this is the best
-                // we can do for now.
+                // type info from the method handle.
                 CORINFO_METHOD_HANDLE method     = call->gtCallMethHnd;
                 CORINFO_CLASS_HANDLE  exactClass = nullptr;
                 CORINFO_SIG_INFO      sig;
@@ -20864,6 +20862,51 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
+
+                    // For shared generic methods, the signature return type may be a
+                    // shared type (e.g. __Canon) even though the call site uses an
+                    // exact instantiation. Try to recover the exact return type from
+                    // the call's generic context argument (the instantiation parameter),
+                    // mirroring the sharpening we do for inline candidates above.
+                    //
+                    if (eeIsSharedInst(objClass))
+                    {
+                        CallArg* const instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+                        if (instParam != nullptr)
+                        {
+                            CORINFO_SIG_INFO exactSig    = {};
+                            bool             gotExactSig = false;
+
+                            if (sig.sigInst.methInstCount > 0)
+                            {
+                                // Instantiated generic method: the generic context is the
+                                // exact method handle.
+                                CORINFO_METHOD_HANDLE exactMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
+                                if (exactMethod != NO_METHOD_HANDLE)
+                                {
+                                    eeGetMethodSig(exactMethod, &exactSig);
+                                    gotExactSig = true;
+                                }
+                            }
+                            else
+                            {
+                                // Static method on a generic type (or array method): the
+                                // generic context is the exact owner class.
+                                CORINFO_CLASS_HANDLE exactOwner = gtGetHelperArgClassHandle(instParam->GetNode());
+                                if (exactOwner != NO_CLASS_HANDLE)
+                                {
+                                    eeGetMethodSig(method, &exactSig, exactOwner);
+                                    gotExactSig = true;
+                                }
+                            }
+
+                            if (gotExactSig && (exactSig.retType == CORINFO_TYPE_CLASS) &&
+                                !eeIsSharedInst(exactSig.retTypeClass))
+                            {
+                                objClass = exactSig.retTypeClass;
+                            }
+                        }
+                    }
                 }
             }
             else if (call->IsHelperCall())
