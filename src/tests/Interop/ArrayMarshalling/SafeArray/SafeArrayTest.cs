@@ -183,8 +183,7 @@ public class SafeArrayMarshallingTest
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
     [SkipOnMono("Requires COM support")]
-    public static void IntPtrArray_MismatchedNativeElementSize()
-    {
+    public static void MultidimensionalIntPtrArray_MismatchedNativeElementSize()
         // Native VT_I4 SAFEARRAY (4-byte elements) -> managed IntPtr[,] (8-byte elements).
         Assert.Throws<SafeArrayTypeMismatchException>(() => SafeArrayNative.Create2DIntSafeArrayAsIntPtr(2, 2, out _));
 
