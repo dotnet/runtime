@@ -1023,6 +1023,14 @@ namespace ILCompiler
                 continuation.GetKnownField("State"u8),
                 continuation.GetKnownField("Flags"u8),
             ];
+            // The signature types for the TransparentAwaitWithResult overloads used by
+            // CorInfoImpl.getAwaitReturnCall (kept in sync with that method).
+            TypeDesc voidType = TypeSystemContext.GetWellKnownType(WellKnownType.Void);
+            TypeDesc taskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+            TypeDesc valueTaskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8);
+            MetadataType taskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
+            MetadataType valueTaskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
+            TypeDesc methodVar = TypeSystemContext.GetSignatureVariable(0, method: true);
             MethodDesc[] requiredMethods =
             [
                 // For CorInfoImpl.getAsyncInfo
@@ -1038,19 +1046,16 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
-            ];
-            // The await helpers the JIT synthesizes calls to in CorInfoImpl.getAwaitReturnCall have no IL
-            // token in the caller, so their manifest tokens must be pre-seeded as well. There are several
-            // TransparentAwaitWithResult overloads (Task/ValueTask and their generic forms); collect them by name.
-            List<MethodDesc> awaitReturnHelpers = new();
-            foreach (MethodDesc asyncHelperMethod in asyncHelpers.GetMethods())
-            {
-                if (asyncHelperMethod.Name == "TransparentAwaitWithResult"u8)
-                    awaitReturnHelpers.Add(asyncHelperMethod);
-            }
 
+                // For CorInfoImpl.getAwaitReturnCall. The JIT synthesizes calls to these overloads, so they
+                // have no IL token in the caller and their manifest tokens must be pre-seeded here.
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+            ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
-            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..awaitReturnHelpers, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
+            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
         }
 
