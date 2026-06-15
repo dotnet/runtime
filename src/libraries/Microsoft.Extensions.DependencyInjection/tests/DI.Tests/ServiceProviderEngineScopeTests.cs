@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -131,8 +132,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
         }
 
-        [Fact]
-        public void Dispose_DoesNotDisposeSameSingletonInstanceResolvedAsMultipleServices()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SharedSingletonResolvedAsMultipleServices_IsDisposedOnce(bool useAsyncDispose)
         {
             var services = new ServiceCollection();
             services.AddSingleton<MultipleServiceImpl>();
@@ -145,32 +148,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService1>());
             Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService2>());
 
-            serviceProvider.Dispose();
+            await DisposeAsync(serviceProvider, useAsyncDispose);
 
             Assert.Equal(1, service.DisposeCount);
         }
 
-        [Fact]
-        public async Task DisposeAsync_DoesNotDisposeSameSingletonInstanceResolvedAsMultipleServices()
-        {
-            var services = new ServiceCollection();
-            services.AddSingleton<MultipleServiceImpl>();
-            services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
-            services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
-
-            var serviceProvider = services.BuildServiceProvider();
-            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
-
-            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService1>());
-            Assert.Same(service, serviceProvider.GetRequiredService<IMultipleService2>());
-
-            await serviceProvider.DisposeAsync();
-
-            Assert.Equal(1, service.DisposeCount);
-        }
-
-        [Fact]
-        public void Dispose_DisposesSharedSingletonAfterDependents()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SharedSingletonIsDisposedAfterDependents(bool useAsyncDispose)
         {
             var services = new ServiceCollection();
             services.AddSingleton<MultipleServiceImpl>();
@@ -184,29 +170,77 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _ = serviceProvider.GetRequiredService<IMultipleService2>();
             var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
 
+            await DisposeAsync(serviceProvider, useAsyncDispose);
+
+            Assert.Equal(1, service.DisposeCount);
+        }
+
+        [Fact]
+        public void SharedSingletonWithManyAliases_IsDisposedOnce()
+        {
+            // Captures well over MaxDisposablesForLinearDedup (16) entries so BeginDispose takes the HashSet path.
+            const int AliasCount = 20;
+
+            var services = new ServiceCollection();
+            services.AddSingleton<MultipleServiceImpl>();
+            for (int i = 0; i < AliasCount; i++)
+            {
+                services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
+            }
+
+            var serviceProvider = services.BuildServiceProvider();
+            var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+            var aliases = serviceProvider.GetServices<IMultipleService1>();
+
+            int aliasCount = 0;
+            foreach (var alias in aliases)
+            {
+                Assert.Same(service, alias);
+                aliasCount++;
+            }
+            Assert.Equal(AliasCount, aliasCount);
+
             serviceProvider.Dispose();
 
             Assert.Equal(1, service.DisposeCount);
         }
 
         [Fact]
-        public async Task DisposeAsync_DisposesSharedSingletonAfterDependents()
+        public async Task DisposeAsync_SkipsNulledDuplicatesInAsyncContinuation()
         {
+            // Last-captured disposable returns an incomplete ValueTask so DisposeAsync transitions
+            // into the static `Await` continuation. Earlier slots are duplicate captures of the
+            // shared singleton, which the dedup pass nulls out. The continuation must skip the
+            // nulled slots while still disposing the surviving singleton exactly once.
             var services = new ServiceCollection();
             services.AddSingleton<MultipleServiceImpl>();
             services.AddSingleton<IMultipleService1>(sp => sp.GetRequiredService<MultipleServiceImpl>());
             services.AddSingleton<IMultipleService2>(sp => sp.GetRequiredService<MultipleServiceImpl>());
-            services.AddSingleton<DependsOnMultipleService>();
+            services.AddSingleton<AsyncBlockingDisposable>();
 
             var serviceProvider = services.BuildServiceProvider();
 
-            _ = serviceProvider.GetRequiredService<DependsOnMultipleService>();
-            _ = serviceProvider.GetRequiredService<IMultipleService2>();
             var service = serviceProvider.GetRequiredService<MultipleServiceImpl>();
+            _ = serviceProvider.GetRequiredService<IMultipleService1>();
+            _ = serviceProvider.GetRequiredService<IMultipleService2>();
+            var blocker = serviceProvider.GetRequiredService<AsyncBlockingDisposable>();
 
-            await serviceProvider.DisposeAsync();
+            await ((IAsyncDisposable)serviceProvider).DisposeAsync();
 
             Assert.Equal(1, service.DisposeCount);
+            Assert.True(blocker.IsDisposed);
+        }
+
+        private static async ValueTask DisposeAsync(ServiceProvider serviceProvider, bool useAsyncDispose)
+        {
+            if (useAsyncDispose)
+            {
+                await ((IAsyncDisposable)serviceProvider).DisposeAsync();
+            }
+            else
+            {
+                serviceProvider.Dispose();
+            }
         }
 
         private class TestDisposable : IDisposable, IAsyncDisposable
@@ -254,6 +288,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private interface IMultipleService1
         {
+            int DisposeCount { get; }
         }
 
         private interface IMultipleService2
@@ -275,11 +310,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private sealed class DependsOnMultipleService : IDisposable, IAsyncDisposable
         {
-            private readonly MultipleServiceImpl _service;
+            private readonly IMultipleService1 _service;
 
             public DependsOnMultipleService(IMultipleService1 service)
             {
-                _service = (MultipleServiceImpl)service;
+                _service = service;
             }
 
             public void Dispose()
@@ -297,6 +332,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     throw new InvalidOperationException("Shared service should be disposed after dependents.");
                 }
                 return default;
+            }
+        }
+
+        private sealed class AsyncBlockingDisposable : IAsyncDisposable
+        {
+            public bool IsDisposed { get; private set; }
+
+            public ValueTask DisposeAsync() => new ValueTask(DisposeAsyncCore());
+
+            private async Task DisposeAsyncCore()
+            {
+                await Task.Yield();
+                IsDisposed = true;
             }
         }
     }
