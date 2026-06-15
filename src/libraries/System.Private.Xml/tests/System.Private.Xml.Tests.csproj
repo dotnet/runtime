@@ -27,6 +27,7 @@
     <Compile Include="AllowDefaultResolverContext.cs" />
     <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="$(CommonTestPath)\TestUtilities\System\DisableParallelizationPerAssembly.cs" Link="Common\TestUtilities\System\DisableParallelizationPerAssembly.cs" />
+    <Compile Include="Misc\AttributeReadingPerformanceTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
