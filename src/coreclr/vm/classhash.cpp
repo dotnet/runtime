@@ -676,7 +676,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_NOTRIGGER;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
@@ -714,7 +714,7 @@ BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_NOTRIGGER;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;

@@ -1705,7 +1705,8 @@ void Assembly::AddType(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1731,7 +1732,8 @@ void Assembly::AddExportedType(mdExportedType cl)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1995,6 +1997,7 @@ void Assembly::SetError(Exception *ex)
             SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
+            GCX_PREEMP();
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
             m_pModule->NotifyProfilerLoadFinished(ex->GetHR());

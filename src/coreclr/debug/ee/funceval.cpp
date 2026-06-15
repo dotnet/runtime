@@ -3202,7 +3202,10 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     // Now that all the args are protected, we can go back and deal with generic args and resolving
     // all their information.
     //
-    ResolveFuncEvalGenericArgInfo(pDE);
+    {
+        GCX_PREEMP();
+        ResolveFuncEvalGenericArgInfo(pDE);
+    }
 
     //
     // Grab the signature of the method we're working on and do some error checking.

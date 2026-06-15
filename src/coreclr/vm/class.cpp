@@ -322,7 +322,7 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -442,7 +442,7 @@ HRESULT EEClass::AddFieldDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -508,7 +508,7 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
     }
@@ -776,7 +776,7 @@ HRESULT EEClass::AddMethodDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
         PRECONDITION(ppNewMD != NULL);

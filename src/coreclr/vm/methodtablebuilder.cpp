@@ -6255,7 +6255,7 @@ MethodTableBuilder::InitMethodDesc(
     {
         THROWS;
         if (fEnC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 

@@ -12437,15 +12437,6 @@ HRESULT Debugger::ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
     }
     else
     {
-        // Violation with the following call stack:
-        //                CONTRACT in MethodTableBuilder::InitMethodDesc
-        //                CONTRACT in EEClass::AddMethod
-        //                CONTRACT in EditAndContinueModule::AddMethod
-        //                CONTRACT in EditAndContinueModule::ApplyEditAndContinue
-        //                CONTRACT in EEDbgInterfaceImpl::EnCApplyChanges
-        //   VIOLATED-->  CONTRACT in Debugger::ApplyChangesAndSendResult
-        CONTRACT_VIOLATION(GCViolation);
-
         // Tell the VM to apply the edit
         hr = g_pEEInterface->EnCApplyChanges(
             (EditAndContinueModule*)pModule, cbMetadata, pMetadata, cbIL, pIL);

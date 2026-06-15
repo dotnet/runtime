@@ -1408,7 +1408,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDeltaLength > 0);
 
 #ifdef FEATURE_METADATA_UPDATER
-    GCX_COOP();
     {
         if (CORDebuggerAttached())
         {
