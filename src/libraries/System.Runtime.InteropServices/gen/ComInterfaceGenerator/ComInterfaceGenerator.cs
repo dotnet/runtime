@@ -766,12 +766,16 @@ namespace Microsoft.Interop
             return (getter, setter) switch
             {
                 (PropertyDeclarationSyntax g, PropertyDeclarationSyntax s) => g.Identifier.Text == s.Identifier.Text,
-                (IndexerDeclarationSyntax g, IndexerDeclarationSyntax s) => HaveSameParameterTypes(g.ParameterList, s.ParameterList),
+                (IndexerDeclarationSyntax g, IndexerDeclarationSyntax s) => HaveSameParameterSignatures(g.ParameterList, s.ParameterList),
                 _ => false,
             };
         }
 
-        private static bool HaveSameParameterTypes(BaseParameterListSyntax a, BaseParameterListSyntax b)
+        // Indexer overloads are distinguished not just by parameter types but also by parameter
+        // modifiers (`ref`, `in`, `out`, `ref readonly`, ...). Two overloads that differ only by
+        // modifier occupy separate vtable slots, so a getter from one and a setter from the other
+        // must not be merged into a single indexer declaration in the generated source.
+        private static bool HaveSameParameterSignatures(BaseParameterListSyntax a, BaseParameterListSyntax b)
         {
             var aParams = a.Parameters;
             var bParams = b.Parameters;
@@ -782,6 +786,26 @@ namespace Microsoft.Interop
             for (int i = 0; i < aParams.Count; i++)
             {
                 if (aParams[i].Type!.NormalizeWhitespace().ToString() != bParams[i].Type!.NormalizeWhitespace().ToString())
+                {
+                    return false;
+                }
+                if (!ParameterModifiersEqual(aParams[i].Modifiers, bParams[i].Modifiers))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool ParameterModifiersEqual(SyntaxTokenList a, SyntaxTokenList b)
+        {
+            if (a.Count != b.Count)
+            {
+                return false;
+            }
+            for (int i = 0; i < a.Count; i++)
+            {
+                if (!a[i].IsKind(b[i].Kind()))
                 {
                     return false;
                 }

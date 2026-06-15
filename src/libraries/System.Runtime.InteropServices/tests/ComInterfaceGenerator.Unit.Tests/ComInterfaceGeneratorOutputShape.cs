@@ -276,6 +276,63 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task IndexerOverloadsDifferingByParameterModifierEmitDistinctDeclarations()
+        {
+            var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F41")]
+                    partial interface IFoo
+                    {
+                        int this[int x] { get; }
+                        int this[in int x] { set; }
+                    }
+                }
+            """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                IndexerDeclarationSyntax[] generatedIndexers = comp.SyntaxTrees
+                    .SelectMany(t => t.GetRoot().DescendantNodes().OfType<IndexerDeclarationSyntax>())
+                    .Where(i => i.ExplicitInterfaceSpecifier is not null)
+                    .ToArray();
+
+                Assert.Equal(2, generatedIndexers.Length);
+
+                bool unmodifiedFound = false;
+                bool inFound = false;
+                foreach (IndexerDeclarationSyntax indexer in generatedIndexers)
+                {
+                    SyntaxTokenList modifiers = indexer.ParameterList.Parameters[0].Modifiers;
+                    if (modifiers.Count == 0)
+                    {
+                        unmodifiedFound = true;
+                    }
+                    else if (modifiers.Any(m => m.IsKind(SyntaxKind.InKeyword)))
+                    {
+                        inFound = true;
+                    }
+                }
+
+                Assert.True(unmodifiedFound, "Expected a generated indexer with no parameter modifier.");
+                Assert.True(inFound, "Expected a generated indexer with an 'in' parameter modifier.");
+            }
+        }
+
+        [Fact]
         public async Task ValidatePropertyAndIndexerAccessorStubsHaveAdditionalAttributes()
         {
             var source = $$"""
