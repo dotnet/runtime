@@ -79,7 +79,7 @@ static char *
 key_from_id (const char *id, char *buffer, guint buffer_len)
 {
 	size_t id_length = 0;
-	size_t extension_offset = -1;
+	ssize_t extension_offset = -1;
 	const char *extension = NULL;
 
 	if (id){
