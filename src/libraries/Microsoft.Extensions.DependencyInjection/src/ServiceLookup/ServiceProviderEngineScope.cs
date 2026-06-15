@@ -19,12 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Entries may be null after BeginDispose nulls out duplicate captures of a shared instance.
         internal IList<object?> Disposables => _disposables ?? (IList<object?>)Array.Empty<object?>();
 
-        // When BeginDispose has fewer than this many captured disposables, it deduplicates them
-        // with an inline O(n^2) reference-equality scan rather than allocating a HashSet. Reference
-        // compares are roughly a single pointer compare each, so for small counts the inline scan
-        // is faster than allocating and populating a HashSet, and avoids per-dispose GC pressure.
-        // Typical per-request DI scopes hold well under this many disposables; the HashSet path
-        // exists only to keep large/pathological scopes O(n).
+        // When BeginDispose has at most this many captured disposables, it deduplicates them
+        // with an inline reference-equality scan rather than allocating a HashSet.
         private const int MaxDisposablesForLinearDedup = 16;
 
         private bool _disposed;
