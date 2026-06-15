@@ -1619,11 +1619,11 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    assert(varTypeIsIntegralOrI(TypeOfVN(vn)));
+    assert((TypeOfVN(vn) == TYP_I_IMPL) || (TypeOfVN(vn) == TYP_REF) || (TypeOfVN(vn) == TYP_BYREF));
 
     target_ssize_t offset;
     PeelOffsets(&vn, &offset);
-    if (m_compiler->fgIsBigOffset(offset))
+    if ((offset < 0) || m_compiler->fgIsBigOffset(static_cast<size_t>(offset)))
     {
         return false;
     }
