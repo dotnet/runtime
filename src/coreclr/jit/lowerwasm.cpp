@@ -105,7 +105,8 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
 
     BlockRange().Remove(controlExpr);
     BlockRange().InsertBefore(call, controlExpr);
-    GenTree* target = Ind(controlExpr);
+    // The PEP local holds a function pointer that is never null.
+    GenTree* target = m_compiler->gtNewIndir(TYP_I_IMPL, controlExpr, GTF_IND_NONFAULTING);
     BlockRange().InsertBefore(call, target);
 
     call->gtControlExpr = target;
