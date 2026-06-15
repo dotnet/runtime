@@ -3549,7 +3549,9 @@ namespace Internal.JitInterface
             if (result.RequiresInstArg())
             {
                 // Runtime lookup is needed
-                ComputeLookup(ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+                ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+                if (instArg.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED)
+                    return null;
             }
 
             return ObjectToHandle(result);
