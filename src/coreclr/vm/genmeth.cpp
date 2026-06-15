@@ -571,11 +571,12 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             // Verify that we are not creating redundant MethodDescs
             _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
 
-            amt.SuppressRelease();
-
             // The method desc is fully set up; now add to the table
             InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
             pTable->InsertMethodDesc(pNewMD);
+
+            // The method desc is now registered in the global table.
+            amt.SuppressRelease();
         }
         // CrstHolder goes out of scope here
     }
