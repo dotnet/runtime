@@ -17,7 +17,6 @@ jobs:
     parameters:
       mono_x64: true
       monoAot_x64: true
-      monoAndroid: true
 
   # Disabled due to not successfully building at the moment. https://github.com/dotnet/performance/issues/4729
   - ${{ if false }}:
