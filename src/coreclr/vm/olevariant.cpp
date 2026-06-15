@@ -1986,6 +1986,20 @@ namespace
         }
     }
 
+    // Returns the IntPtr/UIntPtr element TypeHandle for a pointer-sized SAFEARRAY element, rejecting
+    // the case where the managed pointer size does not match the native SAFEARRAY element size. The
+    // blittable array marshaler copies sizeof(void*) bytes per element, so an 8-byte IntPtr does
+    // not match a 4-byte VT_I4/VT_INT/VT_UI4/VT_UINT element on a 64-bit process.
+    TypeHandle GetPointerSizedElementTypeForSafeArrayVarType(VARTYPE vt, MethodTable* pPointerMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (sizeof(void*) != OleVariant::GetElementSizeForVarType(vt, NULL))
+            COMPlusThrow(kSafeArrayTypeMismatchException);
+
+        return TypeHandle(pPointerMT);
+    }
+
     // Returns the element TypeHandle for a given VARTYPE and element MethodTable.
     TypeHandle GetElementTypeForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT)
     {
@@ -2005,20 +2019,20 @@ namespace
         case VT_INT:
         case VT_ERROR:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__INTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
         case VT_UI4:
         case VT_UINT:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__UINTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
         case VT_I8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__INTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
         case VT_UI8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__UINTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
         case VT_R4:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SINGLE));
         case VT_R8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DOUBLE));
@@ -2061,17 +2075,6 @@ MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, 
 
     TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
     TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous, bNativeDataValid));
-
-    // When the managed element type is IntPtr/UIntPtr, the blittable array marshaler copies
-    // sizeof(IntPtr) bytes per element with a bulk memmove. The native SAFEARRAY element size
-    // (e.g. 4 bytes for VT_I4/VT_INT/VT_UI4/VT_UINT) can differ from the pointer size (e.g. 8 bytes
-    // on a 64-bit process), in which case the copy length would not match the native element size.
-    // Reject the mismatch as a type mismatch instead of performing a mismatched copy.
-    if ((thElementType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR)) || thElementType == TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR)))
-        && sizeof(void*) != OleVariant::GetElementSizeForVarType(vt, pElementMT))
-    {
-        COMPlusThrow(kSafeArrayTypeMismatchException);
-    }
 
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 
