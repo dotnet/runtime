@@ -15,7 +15,7 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.Blazor;
 
-[TestCategory("native")]
+[TestCategory("native-mono")]
 public class DllImportTests : BlazorWasmTestBase
 {
     public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

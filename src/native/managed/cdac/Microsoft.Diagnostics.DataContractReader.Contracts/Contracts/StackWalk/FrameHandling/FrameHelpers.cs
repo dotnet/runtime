@@ -137,7 +137,7 @@ internal sealed class FrameHelpers
     /// <summary>
     /// Updates <paramref name="context"/> based on <paramref name="frame"/>'s type, replicating
     /// the per-frame context update performed by the native stack walker before it yields a
-    /// SW_FRAME (or transitions to SW_FRAMELESS for InterpreterFrame).
+    /// Frame (or transitions to Frameless for InterpreterFrame).
     /// </summary>
     public void UpdateContextFromFrame(Data.Frame frame, IPlatformAgnosticContext context)
     {
@@ -170,7 +170,7 @@ internal sealed class FrameHelpers
                 {
                     // Mirrors native InterpreterFrame::SetContextToInterpMethodContextFrame
                     // (frames.cpp). Sets context to the top InterpMethodContextFrame so the
-                    // walker transitions to SW_FRAMELESS and yields each interpreted method
+                    // walker transitions to Frameless and yields each interpreted method
                     // individually via virtual unwind.
                     Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frame.Address);
                     SetContextToInterpMethodContextFrame(context, interpreterFrame);
@@ -284,6 +284,79 @@ internal sealed class FrameHelpers
             default:
                 return TargetPointer.Null;
         }
+    }
+
+    /// <summary>
+    /// Returns the InternalFrameType (CorDebugInternalFrameType) of the frame at <paramref name="framePtr"/>.
+    /// Mirrors the native DacDbiInterfaceImpl::GetInternalFrameType logic.
+    /// </summary>
+    public InternalFrameType GetInternalFrameType(TargetPointer framePtr)
+    {
+        Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(frame.Identifier);
+
+        // Mirrors Frame::GetStubFrameType_Impl per subclass in src/coreclr/vm/frames.h.
+        switch (frameType)
+        {
+            case FrameType.FaultingExceptionFrame:
+            case FrameType.SoftwareExceptionFrame:
+                return InternalFrameType.Exception;
+
+            case FrameType.DebuggerClassInitMarkFrame:
+                return InternalFrameType.ClassInit;
+
+            case FrameType.PrestubMethodFrame:
+                return InternalFrameType.JitCompilation;
+
+            case FrameType.FuncEvalFrame:
+                return InternalFrameType.FuncEval;
+
+            case FrameType.DebuggerU2MCatchHandlerFrame:
+                return InternalFrameType.U2M;
+
+            case FrameType.DynamicHelperFrame:
+                return InternalFrameType.InternalCall;
+
+            case FrameType.DebuggerExitFrame:
+            case FrameType.FramedMethodFrame:
+            case FrameType.PInvokeCalliFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.ExternalMethodFrame:
+            case FrameType.InterpreterFrame:
+                return InternalFrameType.M2U;
+
+            // InlinedCallFrame inherits M2U from its _Impl, but the
+            // debugger gates the value on FrameHasActiveCall.
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+                return InlinedCallFrameHasActiveCall(icf)
+                    ? InternalFrameType.M2U
+                    : InternalFrameType.None;
+
+            default:
+                return InternalFrameType.None;
+        }
+    }
+
+    /// <summary>
+    /// Returns true if the frame at <paramref name="framePtr"/> is an InlinedCallFrame that was
+    /// set up by the new exception handling helpers (i.e. its Datum field is tagged with the
+    /// ExceptionHandlingHelper marker).
+    /// </summary>
+    public bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer framePtr)
+    {
+        Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(frame.Identifier);
+        if (frameType != FrameType.InlinedCallFrame)
+            return false;
+
+        //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
+        Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+        if (!InlinedCallFrameHasActiveCall(icf))
+            return false;
+
+        ulong mask = (ulong)(_target.PointerSize == 8 ? 2 : 1);
+        return (icf.Datum.Value & mask) == mask;
     }
 
     private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)

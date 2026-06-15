@@ -213,6 +213,20 @@ Frame::Interception Frame::GetInterception()
     }
 }
 
+#ifdef DACCESS_COMPILE
+Frame::StubFrameType Frame::GetStubFrameType()
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetStubFrameType_Impl(); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return STUB_FRAME_NONE;
+    }
+}
+#endif // DACCESS_COMPILE
+
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
     switch (GetFrameIdentifier())

@@ -756,6 +756,7 @@ GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
     return nullptr;
 }
 
+#ifdef TARGET_RISCV64
 struct IntConstSelectOper
 {
     genTreeOps oper;
@@ -808,6 +809,7 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
 
     return {GT_NONE};
 }
+#endif // TARGET_RISCV64
 
 //-----------------------------------------------------------------------------
 // TrySelectToCnsOpCond: Try to optimize:
@@ -844,6 +846,10 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
             retCond = m_compiler->gtNewCastNode(select->TypeGet(), retCond, true, select->TypeGet());
         }
         return retCond;
+    }
+    else if (trueVal == falseVal)
+    {
+        return m_compiler->gtWrapWithSideEffects(trueInput, cond);
     }
 
 #ifdef TARGET_RISCV64

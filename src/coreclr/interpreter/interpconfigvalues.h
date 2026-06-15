@@ -36,6 +36,7 @@ RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of
 // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0
 
 RELEASE_CONFIG_INTEGER(DisplayMemStats, "JitMemStats", 0); // Display interpreter memory usage statistics (0=off, 1=summary, 2=detailed per-method)
+RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation") // Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
 
 #undef CONFIG_STRING
 #undef RELEASE_CONFIG_STRING

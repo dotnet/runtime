@@ -99,5 +99,17 @@ namespace System.IO.Tests
                 Assert.True(invoker.BeginInvoke_Called);
             }
         }
+
+        [Fact]
+        public void FileSystemWatcher_WatchedDirectory_Delete()
+        {
+            string dir = CreateTestDirectory(TestDirectory, "watched");
+            using var watcher = new FileSystemWatcher(dir);
+
+            Action action = () => Directory.Delete(dir, recursive: true);
+            Action cleanup = () => Directory.CreateDirectory(dir);
+
+            ExpectError(watcher, action, cleanup);
+        }
     }
 }

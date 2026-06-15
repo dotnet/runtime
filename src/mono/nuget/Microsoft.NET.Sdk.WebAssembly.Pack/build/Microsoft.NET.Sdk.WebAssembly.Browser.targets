@@ -144,10 +144,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       ComputeWasmVfs;
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GenerateBuildWasmBootJsonDependsOn>
     <GeneratePublishWasmBootJsonDependsOn>
       $(GeneratePublishWasmBootJsonDependsOn);
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
@@ -596,8 +598,25 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
     </PropertyGroup>
     <ItemGroup>
-      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
-      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstDescriptor)" Condition="'$(_WasmPerfInstDescriptor)' != ''" />
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != '' and '$(EnableDiagnostics)' == 'true'"/>
+    </ItemGroup>
+  </Target>
+
+  <!-- CoreCLR: transform WasmPerformanceInstrumentation into separate env vars for MethodSet filter + interval.
+       Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for Mono.
+       UseMonoRuntime=false indicates CoreCLR; when true or unset, Mono workload targets handle it. -->
+  <Target Name="_AddWasmPerformanceInstrumentationEnvironmentVariables"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''">
+    <PropertyGroup>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
       <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>
@@ -680,9 +699,14 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Write the boot JSON file for the build.
        This target is incremental: when all inputs (assemblies, static web assets, VFS files,
-       config files, extensions, property stamp) are older than the output, the target is skipped. -->
+       config files, extensions, property stamp) are older than the output, the target is skipped.
+       Skipped during nested publish: the nested publish runs the full Build chain which would
+       create the boot JSON without VFS entries (LinkContentToWwwroot is skipped). If we wrote
+       it here, the outer build's Inputs/Outputs check would find the stale output and skip
+       regeneration, leaving the final boot JSON without VFS content files. -->
   <Target Name="_WriteBuildWasmBootJsonFile"
     DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(_WasmBuildBootJsonPath)">
 
@@ -733,8 +757,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- Define the boot config file as a static web asset and create endpoints.
-       This target always runs to ensure items are populated even when _WriteBuildWasmBootJsonFile is skipped. -->
-  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile">
+       This target always runs to ensure items are populated even when _WriteBuildWasmBootJsonFile is skipped.
+       Skipped during nested publish (same reason as _WriteBuildWasmBootJsonFile). -->
+  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
 
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
@@ -1244,5 +1270,12 @@ Copyright (c) .NET Foundation. All rights reserved.
           DestinationFiles="$(_DotnetTypesDestPath)"
           Condition="Exists('$(_DotnetTypesSourcePath)')"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
+    </ItemGroup>
   </Target>
 </Project>

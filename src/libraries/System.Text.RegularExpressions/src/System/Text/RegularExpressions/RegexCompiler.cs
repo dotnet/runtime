@@ -5951,7 +5951,7 @@ namespace System.Text.RegularExpressions
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
             // Unlike the source generator, however, we only handle the case of a single UnicodeCategory: the source generator is able
             // to rely on C# compiler optimizations to handle dealing with multiple values efficiently.
-            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1]; // handle the case of one and only one category
+            Span<UnicodeCategory> categories = [default]; // handle the case of one and only one category
             if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
@@ -5969,7 +5969,7 @@ namespace System.Text.RegularExpressions
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
-            Span<char> setChars = stackalloc char[3];
+            Span<char> setChars = ['\0', '\0', '\0'];
             int numChars = RegexCharClass.GetSetChars(charClass, setChars);
             if (numChars is 2 or 3)
             {

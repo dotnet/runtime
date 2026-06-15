@@ -369,52 +369,6 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
-    // Variables that are address-exposed are never enregistered, or tracked.
-    // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
-    // Pinned variables may not be tracked (a condition of the GCInfo representation)
-    // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
-    // references when using the general GC encoding.
-    unsigned lclNum = compiler->lvaGetLclNum(varDsc);
-    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
-        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
-    {
-#ifdef DEBUG
-        DoNotEnregisterReason dner;
-        if (varDsc->IsAddressExposed())
-        {
-            dner = DoNotEnregisterReason::AddrExposed;
-        }
-        else if (!varDsc->IsEnregisterableType())
-        {
-            dner = DoNotEnregisterReason::NotRegSizeStruct;
-        }
-        else
-        {
-            dner = DoNotEnregisterReason::DontEnregStructs;
-        }
-#endif // DEBUG
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
-        return false;
-    }
-    else if (varDsc->lvPinned)
-    {
-        varDsc->lvTracked = 0;
-#ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
-#endif // JIT32_GCENCODER
-        return false;
-    }
-
-    //  Are we not optimizing and we have exception handlers?
-    //   if so mark all args and locals as volatile, so that they
-    //   won't ever get enregistered.
-    //
-    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
-    {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-        return false;
-    }
-
     if (varDsc->lvDoNotEnregister)
     {
         return false;
@@ -462,6 +416,92 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// checkForDNER: Set the lvDoNotEnregister flag for variables that are not
+// eligible for register allocation for a few reasons.
+//
+// Arguments:
+//   lclNum - The local number
+//   varDsc - Info about the local
+//
+void RegAllocImpl::checkForDNER(unsigned lclNum, LclVarDsc* varDsc)
+{
+    if (varDsc->lvDoNotEnregister)
+    {
+        return;
+    }
+
+    if (!m_compiler->compEnregLocals())
+    {
+        m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
+        return;
+    }
+
+    if (varTypeIsStruct(varDsc) && !varDsc->lvPromoted)
+    {
+        if (!varDsc->IsEnregisterableType())
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
+            return;
+        }
+
+        if (varDsc->lvType == TYP_STRUCT)
+        {
+            if (!varDsc->lvRegStruct && !m_compiler->compEnregStructLocals())
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DontEnregStructs));
+                return;
+            }
+
+            if (varDsc->lvIsMultiRegArgOrRet())
+            {
+                // Prolog and return generators do not support SIMD<->general register moves.
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                return;
+            }
+
+#if defined(TARGET_ARM)
+            if (varDsc->lvIsParam)
+            {
+                // On arm we prespill all struct args,
+                // TODO-Arm-CQ: keep them in registers, it will need a fix
+                // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                return;
+            }
+#endif // TARGET_ARM
+        }
+    }
+
+    if (varDsc->lvPinned)
+    {
+        m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
+        return;
+    }
+
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+    {
+        // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
+        if (!m_compiler->IsEHVarARegCandidate(varDsc))
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            return;
+        }
+
+#ifdef JIT32_GCENCODER
+        if (m_compiler->lvaKeepAliveAndReportThis() && (lclNum == m_compiler->info.compThisArg))
+        {
+            // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
+            // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
+            // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate
+            // it.
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            return;
+        }
+#endif // JIT32_GCENCODER
+    }
 }
 
 //------------------------------------------------------------------------

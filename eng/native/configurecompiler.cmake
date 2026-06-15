@@ -325,9 +325,16 @@ if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag(-Wl,--build-id=sha1)
   add_linker_flag(-Wl,-z,relro,-z,now)
-elseif(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--build-id=sha1")
+elseif(CLR_CMAKE_HOST_OPENBSD)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  add_linker_flag("-Wl,--build-id=sha1")
+  # OpenBSD's ld.so can't resolve native TLS relocs in a .so; rely on clang's default
+  # emulated TLS (don't pass -fno-emulated-tls).
+  # The PAL's hand-written asm lacks endbr64 landing pads, so disable branch-target CFI.
+  add_linker_flag("-Wl,-z,nobtcfi")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -623,19 +630,16 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   endif()
 
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
-    add_compile_options(-fstack-protector)
-    if(CLR_CMAKE_HOST_UNIX_ARM64)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       # For OSX-Arm64, LSE instructions are enabled by default
       add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
       add_compile_options(-mcpu=apple-m1)
-    endif(CLR_CMAKE_HOST_UNIX_ARM64)
-  elseif(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
-    check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-    if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-      add_compile_options(-fstack-protector-strong)
     endif()
-  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+  endif()
+
+  if(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
+    add_compile_options(-fstack-protector-strong)
+  endif()
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
@@ -740,8 +744,15 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
 
-  # Separate functions so linker can remove them.
+  # Separate functions and data into their own sections so the linker can remove
+  # unreferenced ones.
   add_compile_options(-ffunction-sections)
+  add_compile_options(-fdata-sections)
+  if(LD_OSX)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+  elseif(NOT LD_SOLARIS)
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
@@ -814,12 +825,13 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_TVOS>)
   elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_FREEBSD>)
-  elseif(CLR_CMAKE_TARGET_ANDROID)
-    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
     if(CLR_CMAKE_TARGET_LINUX_MUSL)
         add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
+    endif()
+    if(CLR_CMAKE_TARGET_ANDROID)
+      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
     endif()
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
@@ -841,6 +853,20 @@ elseif(CLR_CMAKE_TARGET_WASI)
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
 endif(CLR_CMAKE_TARGET_UNIX)
+
+# OpenBSD only exposes its libunwind symbols through the LLVM C++ runtime
+# (libc++/libc++abi), so default to those there. An explicit selection via
+# CLR_CMAKE_CXX_STANDARD_LIBRARY/CLR_CMAKE_CXX_ABI_LIBRARY (applied by the cross
+# toolchain file) still takes precedence.
+if(CLR_CMAKE_TARGET_OPENBSD)
+  if(NOT CLR_CMAKE_CXX_STANDARD_LIBRARY)
+    add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:--stdlib=libc++>)
+    add_link_options($<$<LINK_LANG_AND_ID:CXX,Clang>:--stdlib=libc++>)
+  endif()
+  if(NOT CLR_CMAKE_CXX_ABI_LIBRARY)
+    add_link_options("LINKER:-lc++abi")
+  endif()
+endif()
 
 if(CLR_CMAKE_HOST_UNIX_ARM)
    if (NOT DEFINED CLR_ARM_FPU_TYPE)
