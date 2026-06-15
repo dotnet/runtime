@@ -200,6 +200,53 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 }
 
 //------------------------------------------------------------------------
+// genZeroInitFrame: zero the lvMustInit untracked range of the frame using
+// a single memory.fill.
+//
+// Arguments:
+//    untrLclHi      - High offset (exclusive) of the untracked range relative to FP.
+//    untrLclLo      - Low offset of the untracked range relative to FP.
+//    initReg        - Unused on WASM (no scratch register concept).
+//    pInitRegZeroed - Unused on WASM.
+//
+void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(m_compiler->compGeneratingProlog);
+    if (!genUseBlockInit)
+    {
+        // Nothing to zero (genCheckUseBlockInit forces block-init for any non-empty range on wasm).
+        assert(genInitStkLclCnt == 0);
+        return;
+    }
+    assert(untrLclHi > untrLclLo);
+    assert(untrLclLo >= 0); // Wasm locals are at non-negative offsets from FP.
+
+    emitter* emit = GetEmitter();
+
+    // Push destination address: FP (+ untrLclLo if non-zero).
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    if (untrLclLo != 0)
+    {
+        emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
+        emit->emitIns(INS_I_add);
+    }
+    // Push fill value (zero, always i32 per memory.fill spec).
+    emit->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    // Push length (pointer-sized: i32 on wasm32, i64 on wasm64).
+    emit->emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
+    // memory.fill 0
+    emit->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+}
+
+//------------------------------------------------------------------------
+// genZeroInitFrameUsingBlockInit: Unused on WASM (genZeroInitFrame handles block init inline).
+//
+void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genOSRHandleTier0CalleeSavedRegistersAndFrame:
 //   Not called for WASM without OSR support.
 //
@@ -323,9 +370,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
+    // BBF_HAS_JMP on wasm comes only from fast tail calls. The return_call already
+    // left the function, but the body still needs an INS_end if this is the last block.
     if (jmpEpilog)
     {
-        NYI_WASM("genFnEpilog: jmpEpilog");
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            instGen(INS_end);
+        }
+        return;
     }
 
     // TODO-WASM: shadow stack maintenance
@@ -759,6 +812,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
+        case GT_FRAME_SIZE:
+            genCodeForFrameSize(treeNode);
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -866,6 +923,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CATCH_ARG:
             genCatchArg(treeNode);
+            break;
+
+        case GT_CKFINITE:
+            genCkfinite(treeNode);
             break;
 
         default:
@@ -1443,28 +1504,39 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             regNumber resultReg = regs->Extract();
             assert(WasmRegToType(resultReg) == TypeToWasmValueType(treeNode->TypeGet()));
 
-            // Add and save the sum
             GetEmitter()->emitIns(is64BitOp ? INS_i64_add : INS_i32_add);
-            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
-            // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
 
-            // TODO-WASM-CQ: consider branchless alternative here (and for sub)
-            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
-            genEmitIf();
+            if (treeNode->IsUnsigned())
             {
-                // Operands have the same sign. If the sum has a different sign, then the add overflowed.
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                // Unsigned add overflows iff the result is less than op1 (unsigned compare).
+                GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
-                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
-                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_u : INS_i32_lt_u);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            genEmitEndIf();
+            else
+            {
+                GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+
+                // TODO-WASM-CQ: consider branchless alternative here (and for sub)
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
+                genEmitIf();
+                {
+                    // Operands have the same sign. If the sum has a different sign, then the add overflowed.
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                    GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                    GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                    GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                    genJumpToThrowHlpBlk(SCK_OVERFLOW);
+                }
+                genEmitEndIf();
+            }
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1479,24 +1551,36 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // Subtract and save the difference
             GetEmitter()->emitIns(is64BitOp ? INS_i64_sub : INS_i32_sub);
             GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
-            // See if operands had a different sign. XOR leaves a negative result if they had different signs.
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
-            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
-            genEmitIf();
+
+            if (treeNode->IsUnsigned())
             {
-                // Operands have different signs. If the difference has a different sign than op1, then the subtraction
-                // overflowed.
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                // Unsigned sub overflows iff op1 is less than op2 (unsigned compare).
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_u : INS_i32_lt_u);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            else
+            {
+                // See if operands had a different sign. XOR leaves a negative result if they had different signs.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
                 GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
-                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+                genEmitIf();
+                {
+                    // Operands have different signs. If the difference has a different sign than op1, then the
+                    // subtraction overflowed.
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                    GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                    GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                    GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                    genJumpToThrowHlpBlk(SCK_OVERFLOW);
+                }
+                genEmitEndIf();
             }
-            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1737,13 +1821,12 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
-    // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
-    // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
-    // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
-
+    // The shift operand width in IR is always int or small int, so the operand's actual type should be TYP_INT.
+    // However, the WASM operations have the same widths for both the shift and shiftee so
+    // the shift width may need to be zero-extended if the shift result type is TYP_LONG.
     if (treeNode->TypeIs(TYP_LONG))
     {
-        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        assert(genActualType(treeNode->gtGetOp2()->TypeGet()) == TYP_INT);
         // Zero-extend the shift amount to 64 bits for long shifts/rotates.
         // Wasteful if the amount was a constant, perhaps we should contain it if so.
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
@@ -1836,13 +1919,90 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
         case PackTypes(TYP_DOUBLE, TYP_LONG):
             ins = INS_f64_reinterpret_i64;
             break;
+
+        // Same-size bitcasts are no-ops on the wasm value stack. PackTypes normalizes
+        // TYP_REF/TYP_BYREF to TYP_I_IMPL, so this covers all INT/REF/BYREF combos on wasm32
+        // and LONG/REF/BYREF on wasm64.
+        case PackTypes(TYP_INT, TYP_INT):
+        case PackTypes(TYP_LONG, TYP_LONG):
+            break;
+
         default:
             unreached();
-            break;
     }
 
-    GetEmitter()->emitIns(ins);
+    if (ins != INS_none)
+    {
+        GetEmitter()->emitIns(ins);
+    }
     WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCkfinite: Generate code for ckfinite opcode.
+//
+// Arguments:
+//    treeNode - The GT_CKFINITE node
+//
+// Notes:
+//    op1 is expected to be marked MultiplyUsed so that its producer tees
+//    its value into a temporary local. That lets us re-read the value
+//    after the finiteness check by emitting a "local.get".
+//
+void CodeGen::genCkfinite(GenTree* treeNode)
+{
+    assert(treeNode->OperIs(GT_CKFINITE));
+
+    GenTree*  op1        = treeNode->AsOp()->gtOp1;
+    var_types targetType = treeNode->TypeGet();
+    assert(varTypeIsFloating(targetType));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    // op1's producer emitted "local.tee" via "WasmProduceReg" (because
+    // op1 was flagged as MultiplyUsed during lowering), leaving its
+    // value both on the wasm operand stack and in a temporary local.
+    // We re-read the local below to feed the finiteness check; the
+    // value on the stack will flow through as the result of GT_CKFINITE.
+    //
+    regNumber op1Reg = GetMultiUseOperandReg(op1);
+    emitter*  emit   = GetEmitter();
+
+    // Compute "!(|x| < +Inf)". This is true for NaN and +/-Inf, false for
+    // every finite value. We rely on wasm's IEEE-754 comparison semantics
+    // where any comparison involving a NaN (other than "ne") returns 0.
+    //
+    // Note: IF_F32/IF_F64 both expect the +Inf constant as a double bit
+    // pattern (IF_F32 reinterprets and truncates to float during emission).
+    //
+    const int64_t infBits = 0x7FF0000000000000LL;
+    if (targetType == TYP_FLOAT)
+    {
+        emit->emitIns_I(INS_local_get, EA_4BYTE, WasmRegToIndex(op1Reg));
+        emit->emitIns(INS_f32_abs);
+        emit->emitIns_I(INS_f32_const, EA_4BYTE, infBits);
+        emit->emitIns(INS_f32_lt);
+    }
+    else
+    {
+        assert(targetType == TYP_DOUBLE);
+        emit->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(op1Reg));
+        emit->emitIns(INS_f64_abs);
+        emit->emitIns_I(INS_f64_const, EA_8BYTE, infBits);
+        emit->emitIns(INS_f64_lt);
+    }
+    emit->emitIns(INS_i32_eqz);
+
+    // If "!(|x| < +Inf)", the value is NaN or +/-Inf; throw. The wasm
+    // stack underneath the predicate (including op1's value) is preserved
+    // on the fall-through path.
+    //
+    genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
+
+    // op1's value is still on top of the wasm operand stack; produce it
+    // as the result of the GT_CKFINITE node.
+    //
+    WasmProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1900,8 +2060,14 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 //    codeKind -- kind of throw helper call needed
 //
 // Notes:
-//    On entry the predicate for the throw helper is the only item on the Wasm stack.
-//    An exception is thrown if the predicate is true.
+//    On entry the predicate (an i32) for the throw helper must be on top of the
+//    Wasm stack. An exception is thrown if the predicate is non-zero.
+//
+//    Additional values may be present on the stack underneath the predicate; only
+//    the predicate is consumed on the fall-through path, so those values remain
+//    available to the caller. On the throwing path the stack is unwound to the
+//    target helper block (or discarded by 'unreachable' inside the inline 'if'),
+//    so anything underneath is irrelevant in that case.
 //
 void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 {
@@ -2365,6 +2531,22 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForFrameSize: Produce code for a GT_FRAME_SIZE node.
+//
+// Emits an i32/i64 const for compLclFrameSize, which is only known after the
+// final frame layout (well after the IR is built).
+//
+// Arguments:
+//    tree - the GT_FRAME_SIZE node
+//
+void CodeGen::genCodeForFrameSize(GenTree* tree)
+{
+    assert(tree->OperIs(GT_FRAME_SIZE));
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2475,19 +2657,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     ensureCurrentFuncIsUnwindable();
 
     EmitCallParams params;
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -2524,17 +2696,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    if (call->TypeIs(TYP_STRUCT))
-    {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
-    }
-    else if (call->TypeIs(TYP_VOID))
+    // Compute the wasm-level result type for the call. Use call->gtReturnType
+    // (the call's "exact" return type) rather than call->gtType, since the latter is
+    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
+    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
+    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
+    const var_types callRetType = (var_types)call->gtReturnType;
+    if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
     }
+    else if (callRetType == TYP_STRUCT)
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
     else
     {
-        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+        // Normalize small ints (bool/byte/short/...).
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(ActualTypeToWasmValueType(callRetType)));
     }
 
     for (const CallArg& arg : call->gtArgs.Args())
@@ -2912,7 +3091,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     //
     if (size->isContainedIntOrIImmed())
     {
-        size_t amount = size->AsIntCon()->gtIconVal;
+        size_t amount = size->AsIntCon()->IconValue();
 
         // Handle zero
         //
@@ -3093,7 +3272,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
 
-    genConsumeOperands(blkOp);
+    // Unwrap a contained GT_INIT_VAL so the wrapped fill value (not the wrapper) is pushed onto the WASM value stack.
+    GenTree* srcForConsume = src->OperIs(GT_INIT_VAL) ? src->gtGetOp1() : src;
+    assert(!src->OperIs(GT_INIT_VAL) || src->isContained());
+
+    genConsumeRegs(dest);
+    genConsumeRegs(srcForConsume);
 
     // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
     //  actual address we're loading from. Note that this does not apply to the destination.

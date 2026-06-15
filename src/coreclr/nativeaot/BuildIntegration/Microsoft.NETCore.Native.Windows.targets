@@ -149,7 +149,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="CreateShimExes"
           Condition="'$(_AggregateExecutable)' == 'true'"
           DependsOnTargets="LinkNative;WriteAggregateExecutableShimRspFiles"
-          Inputs="$(NativeImportLibrary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimCompileRspFile)');@(_AggregateExecutableReferencePath->'%(ShimLinkRspFile)')"
+          Inputs="$(NativeImportLibrary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimCompileRspFile)');@(_AggregateExecutableReferencePath->'%(ShimLinkRspFile)');@(_AggregateExecutableReferencePath->'%(ShimResourceFile)')"
           Outputs="@(_AggregateExecutableShim);@(_AggregateExecutableShimSymbol)">
 
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
@@ -159,7 +159,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Target Name="WriteAggregateExecutableShimRspFiles"
           Condition="'$(_AggregateExecutable)' == 'true'"
-          DependsOnTargets="LinkNative">
+          DependsOnTargets="LinkNative;GenerateAggregateExecutableShimResFiles">
 
     <ItemGroup>
       <_AggregateExecutableReferencePath>
@@ -171,6 +171,7 @@ int wmain(int argc, unsigned short** argv)
 }
 ]]></ShimSourceCode>
         <ShimPdbLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'">/PDB:"%(_AggregateExecutableReferencePath.ShimSymbol)"</ShimPdbLinkerArg>
+        <ShimResourceLinkerArg>"%(_AggregateExecutableReferencePath.ShimResourceFile)"</ShimResourceLinkerArg>
       </_AggregateExecutableReferencePath>
     </ItemGroup>
 
@@ -195,6 +196,18 @@ int wmain(int argc, unsigned short** argv)
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
     <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_AggregateExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
     <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileRspFile)" Lines="@(_AggregateExecutableShimCompilerArg);&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;/Fo&quot;%(_AggregateExecutableReferencePath.ShimObject)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
-    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_AggregateExecutableReferencePath.ShimObject)&quot;;&quot;$(NativeImportLibrary)&quot;;/OUT:&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;;/SUBSYSTEM:%(_AggregateExecutableReferencePath.ShimLinkerSubsystem);%(_AggregateExecutableReferencePath.ShimPdbLinkerArg);@(_AggregateExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_AggregateExecutableReferencePath.ShimObject)&quot;;&quot;$(NativeImportLibrary)&quot;;%(_AggregateExecutableReferencePath.ShimResourceLinkerArg);/OUT:&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;;/SUBSYSTEM:%(_AggregateExecutableReferencePath.ShimLinkerSubsystem);%(_AggregateExecutableReferencePath.ShimPdbLinkerArg);@(_AggregateExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <UsingTask TaskName="DumpNativeResources" AssemblyFile="$(IlcBuildTasksPath)" />
+
+  <Target Name="GenerateAggregateExecutableShimResFiles"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          Inputs="@(_AggregateExecutableReferencePath)"
+          Outputs="@(_AggregateExecutableReferencePath->'%(ShimResourceFile)')">
+
+    <DumpNativeResources
+        MainAssembly="%(_AggregateExecutableReferencePath.Identity)"
+        ResourceFile="%(_AggregateExecutableReferencePath.ShimResourceFile)" />
   </Target>
 </Project>

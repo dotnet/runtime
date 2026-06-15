@@ -99,7 +99,7 @@ namespace ILCompiler.Metadata
                         return Ecma.SerializationTypeCode.String;
 
                     if (type is not Cts.MetadataType mdType
-                        || !mdType.Name.SequenceEqual("Type"u8) || !mdType.Namespace.SequenceEqual("System"u8))
+                        || mdType.Name != "Type"u8 || mdType.Namespace != "System"u8)
                         throw new UnreachableException();
 
                     return Ecma.SerializationTypeCode.Type;

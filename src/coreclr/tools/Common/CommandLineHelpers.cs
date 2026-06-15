@@ -25,7 +25,7 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
+        public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
         public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
 
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
@@ -70,7 +70,8 @@ namespace System.CommandLine
                     return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return TargetOS.FreeBSD;
-
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD")))
+                    return TargetOS.OpenBSD;
                 throw new NotImplementedException();
             }
 
@@ -80,6 +81,7 @@ namespace System.CommandLine
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
+                "openbsd" => TargetOS.OpenBSD,
                 "maccatalyst" => TargetOS.MacCatalyst,
                 "iossimulator" => TargetOS.iOSSimulator,
                 "ios" => TargetOS.iOS,

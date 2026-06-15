@@ -38,6 +38,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             factory.RuntimeFunctionsGCInfo.AddEmbeddedObject(this);
         }
 
+        private static bool TargetUsesPersonalityRoutines(TargetArchitecture targetArch)
+        {
+            return targetArch != TargetArchitecture.X86 && targetArch != TargetArchitecture.Wasm32;
+        }
+
+        private static bool TargetAlignsGCInfoComponents(TargetArchitecture targetArch)
+        {
+            return targetArch != TargetArchitecture.Wasm32;
+        }
+
         public int[] CalculateFuncletOffsets(NodeFactory factory)
         {
             int coldCodeUnwindInfoCount = 0;
@@ -53,19 +63,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             int offset = deduplicatedResult.OffsetFromBeginningOfArray;
+            bool targetAlignsGCInfoComponents = TargetAlignsGCInfoComponents(factory.Target.Architecture);
+            bool targetUsesPersonalityRoutines = TargetUsesPersonalityRoutines(factory.Target.Architecture);
             for (int frameInfoIndex = 0; frameInfoIndex < deduplicatedResult._methodNode.FrameInfos.Length; frameInfoIndex++)
             {
                 offsets[frameInfoIndex] = offset;
                 offset += deduplicatedResult._methodNode.FrameInfos[frameInfoIndex].BlobData.Length;
-                offset += (-offset & 3); // 4-alignment for the personality routine
-                if (factory.Target.Architecture != TargetArchitecture.X86)
+                if (targetAlignsGCInfoComponents)
+                {
+                    offset += (-offset & 3); // 4-alignment for the personality routine
+                }
+                if (targetUsesPersonalityRoutines)
                 {
                     offset += sizeof(uint); // personality routine
                 }
                 if (frameInfoIndex == 0 && deduplicatedResult._methodNode.GCInfo != null)
                 {
                     offset += deduplicatedResult._methodNode.GCInfo.Length;
-                    offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
+                    if (targetAlignsGCInfoComponents)
+                    {
+                        offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
+                    }
                 }
             }
 
@@ -79,8 +97,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (blobData != null)
                     {
                         offset += blobData.Length;
-                        offset += (-offset & 3); // 4-alignment for the personality routine
-                        if (factory.Target.Architecture != TargetArchitecture.X86)
+                        if (targetAlignsGCInfoComponents)
+                        {
+                            offset += (-offset & 3); // 4-alignment for the personality routine
+                        }
+                        if (targetUsesPersonalityRoutines)
                         {
                             offset += sizeof(uint); // personality routine
                         }
@@ -170,6 +191,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             const byte UNW_FLAG_UHANDLER = 2;
             const byte UNW_FLAG_CHAININFO = 4;
             const byte FlagsShift = 3;
+            bool targetUsesPersonalityRoutines = TargetUsesPersonalityRoutines(targetArch);
 
             for (int frameInfoIndex = 0; frameInfoIndex < numFrameInfos; frameInfoIndex++)
             {
@@ -208,7 +230,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     yield return new GCInfoComponent(unwindInfo);
 
-                    if ((targetArch != TargetArchitecture.X86) && (targetArch != TargetArchitecture.Wasm32))
+                    if (targetUsesPersonalityRoutines)
                     {
                         bool isFilterFunclet = (frameInfo.Flags & FrameInfoFlags.Filter) != 0;
                         ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
@@ -261,15 +283,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             factory.RuntimeFunctionsGCInfo.Deduplicator.Add(this);
+            bool targetAlignsGCInfoComponents = TargetAlignsGCInfoComponents(factory.Target.Architecture);
 
             foreach (var item in EncodeDataCore(factory))
             {
                 if (item.Bytes != null)
                 {
                     dataBuilder.EmitBytes(item.Bytes);
-                    // Maintain 4-alignment for the next unwind / GC info block
-                    int align4Pad = -item.Bytes.Length & 3;
-                    dataBuilder.EmitZeros(align4Pad);
+                    if (targetAlignsGCInfoComponents)
+                    {
+                        // Maintain 4-alignment for the personality routine
+                        int align4Pad = -item.Bytes.Length & 3;
+                        dataBuilder.EmitZeros(align4Pad);
+                    }
                 }
                 else
                 {

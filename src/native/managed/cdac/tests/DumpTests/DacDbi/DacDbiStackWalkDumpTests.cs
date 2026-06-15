@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -114,8 +115,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         IStackWalk sw = Target.Contracts.StackWalk;
 
         // Find a frame whose SP+IP differs from the leaf context
-        byte[]? nonLeafContext = sw.CreateStackWalk(crashingThread)
-            .Where(ClrDataStackWalk.IsLegacyVisible)
+        byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
             .Select(sw.GetRawContext)
             .FirstOrDefault(ctx =>
             {
