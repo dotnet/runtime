@@ -153,6 +153,19 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXVNNIINT_V512;
         }
 
+        case InstructionSet_AVXVNNI:
+        case InstructionSet_AVX512v3:
+        {
+            // AvxVnni.V512 lifts under AVX512v3, which carries the EVEX-encoded
+            // VPDPBUSD / VPDPWSSD on ZMM. The class-name dispatch in
+            // lookupInstructionSet has already chosen between AVXVNNI and AVX512v3
+            // based on the available CPUID bits, and the caller's downstream
+            // compSupportsHWIntrinsic(InstructionSet_AVX512v3) check gates the
+            // result correctly: on machines without AVX-512 (e.g. Tiger Lake)
+            // AVX512v3 isn't supported and IsSupported returns false.
+            return InstructionSet_AVX512v3;
+        }
+
         default:
         {
             return InstructionSet_NONE;
@@ -461,7 +474,14 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
         }
         else if (strcmp(className, "V512") == 0)
         {
-            return V512VersionOfIsa(enclosingIsa);
+            CORINFO_InstructionSet v512Isa = V512VersionOfIsa(enclosingIsa);
+            // V512VersionOfIsa returning NONE for a successfully-resolved enclosing ISA
+            // means the table is missing a case for it; IsSupported on the nested V512
+            // class would silently return false. The downstream compSupportsHWIntrinsic
+            // check then guards on the V512 ISA's actual support on the running CPU.
+            assert((v512Isa != InstructionSet_NONE) || (enclosingIsa == InstructionSet_NONE) ||
+                   (enclosingIsa == InstructionSet_ILLEGAL));
+            return v512Isa;
         }
         else if (strcmp(className, "VL") == 0)
         {
