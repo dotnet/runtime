@@ -663,6 +663,9 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         TADDR ssp = 0;
 #endif
 
+        ResumableFrame resFrame(pContextRecord);
+        resFrame.Push(pThread);
+
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContextRecord, ssp);
         DispatchManagedException(oref, pContextRecord, pExceptionRecord);
