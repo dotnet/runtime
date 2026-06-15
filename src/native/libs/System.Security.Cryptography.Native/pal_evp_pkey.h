@@ -128,7 +128,8 @@ PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName,
 Load a key by URI from a specified OSSL_PROVIDER.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
-extraHandle is an in/out parameter for an opaque context.
+extraHandle is an in/out parameter for an opaque context. When extraHandle points to NULL, a new context is created.
+If the return value is non-NULL, it *must* be cached and re-used for each provider.
 *haveProvider is 1 if OpenSSL providers are supported, otherwise 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);

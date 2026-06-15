@@ -299,12 +299,13 @@ internal static partial class Interop
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
                 }
 
-                if (evpPKeyHandle == IntPtr.Zero)
+                // extraHandle should have been set to non-NULL during the key load even if it was NULL when
+                // LoadKeyFromProvider was called.
+                if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
                 {
                     throw CreateOpenSslCryptographicException();
                 }
 
-                Debug.Assert(extraHandle != IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
                 return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
             }
             catch
