@@ -951,9 +951,8 @@ end:
     (void)providerName;
     (void)keyUri;
     *extraHandle = NULL;
-    (void)extraHandle;
-    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *haveProvider = 0;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     return NULL;
 #endif
 }
