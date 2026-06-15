@@ -119,6 +119,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
 // Arguments are bundled in a struct to force register passing on ARM32.
+// This ensures the current SP value saved by the SAVE_THE_LOWEST_SP into the InterpreterFrame precisely matches the SP that stack walking reports for the InterpExecMethod.
 // Passing arguments on stack on ARM32 would result in reporting SP after the arguments were pushed, which is different.
 struct ManagedMethodParam
 {

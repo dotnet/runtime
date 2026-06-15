@@ -350,6 +350,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     DwarfHelper.WritePaddedULEB128(buffer.Slice(0, relocSize), 0);
                     break;
 

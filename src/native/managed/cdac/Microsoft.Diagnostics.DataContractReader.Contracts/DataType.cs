@@ -98,6 +98,7 @@ public enum DataType
     InterpMethodContextFrame,
     Array,
     Delegate,
+    TypedByRef,
     StackTraceArrayHeader,
     StackTraceElement,
     SyncBlock,

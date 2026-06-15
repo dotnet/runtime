@@ -696,29 +696,12 @@ bool pal::is_path_fully_qualified(const string_t& path)
 bool pal::getenv(const char_t* name, string_t* recv)
 {
     recv->clear();
-
-    auto length = ::GetEnvironmentVariableW(name, nullptr, 0);
-    if (length == 0)
-    {
-        auto err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
-        {
-            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
-        }
+    pal_char_t* value = ::pal_getenv(name);
+    if (value == nullptr)
         return false;
-    }
-    std::vector<pal::char_t> buffer(length);
-    if (::GetEnvironmentVariableW(name, &buffer[0], length) == 0)
-    {
-        auto err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
-        {
-            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
-        }
-        return false;
-    }
 
-    recv->assign(buffer.data());
+    recv->assign(value);
+    free(value);
     return true;
 }
 
@@ -751,7 +734,13 @@ int pal::xtoi(const char_t* input)
 
 bool pal::get_own_executable_path(string_t* recv)
 {
-    return GetModuleFileNameWrapper(NULL, recv);
+    pal_char_t* path = ::pal_get_own_executable_path();
+    if (path == nullptr)
+        return false;
+
+    recv->assign(path);
+    free(path);
+    return true;
 }
 
 bool pal::get_current_module(dll_t *mod)
@@ -1050,8 +1039,7 @@ bool pal::file_exists(const string_t& path)
 
 bool pal::is_directory(const pal::string_t& path)
 {
-    DWORD attributes = ::GetFileAttributesW(path.c_str());
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

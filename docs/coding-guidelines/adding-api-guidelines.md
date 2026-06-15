@@ -47,10 +47,6 @@ New public APIs must be documented with triple-slash comments on top of them. Vi
 [API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) has information about language and proper style for writing API documentation.
 If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
 
-After your change is merged, we will eventually port them to the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo. The tools used for this port live in [api-docs-sync](https://github.com/dotnet/api-docs-sync) repo. Once the dotnet-api-docs change
-is merged, your comments will start showing up in the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense
-in Visual Studio and Visual Studio Code.
-
 The rest of the documentation workflow depends on whether the assembly has the `UseCompilerGeneratedDocXmlFile` property set in its project file:
 
 **For libraries without this property (or with it set to `true`, which is the default):**
@@ -58,12 +54,31 @@ The rest of the documentation workflow depends on whether the assembly has the `
 - Triple-slash comments in source code are synced to dotnet-api-docs periodically (every preview).
 - More recently introduced libraries typically follow this workflow.
 
+**For libraries with this property set to `false`:**
+- The docs in the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo are the source of truth for documentation.
+- After your change is merged into the runtime repo, we will eventually port the docs to the dotnet-api-docs repo. The tools used for this port live in
+the [api-docs-sync](https://github.com/dotnet/api-docs-sync) repo. Once the dotnet-api-docs change
+is merged, your doc comments will appear in
+the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense
+in Visual Studio and Visual Studio Code.
+- Older libraries typically follow this workflow.
+
+### API usage examples
+
+API usage examples are included in the test sources so they can be validated during regular test runs. These examples should either be placed in the `examples` subdirectory or use a filename with the `Examples` suffix. depending on what's the best fit for the test project structure. The specific code intended for the published documentation is marked with a #region directive, which allows test-related boilerplate (such as the [Fact] attribute) to be excluded from the final documentation.
+
+The API usage examples are referenced from the documentation using the code-csharp directive. For example:
+
+`[!code-csharp[](../../../../tests/System.Text.RegularExpressions/FunctionalTests/Regex.Examples.cs#Match)]`
+
+This directive pulls the code snippet identified by the specified `#region` from the source file and embeds it directly into the documentation.
+
 ### Documentation placement in platform-specific libraries
 
 When a library targets platform-specific frameworks (e.g. `net11.0-windows`, `net11.0-linux`),
 only **one** platform's compiler-generated doc XML is selected as the source of truth and shipped
 to all customers in the IntelliSense package. This means that if XML doc comments for a public API
-appear only in a platform-specific partial file, they may be missing from the shipped docs on other
+appear only in a platform-specific partial file, they might be missing from the shipped docs on other
 platforms.
 
 To ensure consistent documentation across all platforms, follow these rules:
@@ -106,7 +121,7 @@ established `TypeNameAsync.cs` pattern), suppress the specific diagnostic with
 updates must be made directly in the dotnet-api-docs repo.
 - It's fine to make updates to the triple-slash comments later to aid local development, they just won't automatically flow into the official docs. Copilot can help with porting small changes
 in triple-slash comments to dotnet-api-docs. [PortToDocs](https://github.com/dotnet/api-docs-sync/blob/main/docs/PortToDocs.md) tool works better for ports of large changes.
-- Older libraries typically follow this workflow. Libraries in this mode can work towards a better workflow in the future by using api-docs-sync tools to port back docs to source, then removing the `UseCompilerGeneratedDocXmlFile` property.
+- Older libraries typically follow this workflow. Libraries in this mode can work towards a better workflow in the future by using api-docs-sync tools or an AI agent to port back docs to source, then removing the `UseCompilerGeneratedDocXmlFile` property.
 
 ## FAQ
 

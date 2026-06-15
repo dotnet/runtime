@@ -3096,17 +3096,207 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, pObjectData) : HResults.E_NOTIMPL;
+    public int GetTypedByRefInfo(ulong pTypedByRef, ulong* pObjRef, DebuggerIPCE_BasicTypeData* pTypedByRefType)
+    {
+        *pObjRef = 0;
+        *pTypedByRefType = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypedByRefInfo info = rts.GetTypedByRefInfo(pTypedByRef);
+            TypeHandle th = rts.GetTypeHandle(info.TypeHandle);
+            FillBasicTypeInfo(rts, th, out DebuggerIPCE_BasicTypeData typeData);
+            *pTypedByRefType = typeData;
+            *pObjRef = info.Data.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong objRefLocal = 0;
+            DebuggerIPCE_BasicTypeData typeLocal;
+            int hrLocal = _legacy.GetTypedByRefInfo(pTypedByRef, &objRefLocal, &typeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            Debug.Assert(*pObjRef == objRefLocal, $"cDAC objRef: 0x{*pObjRef:x}, DAC: 0x{objRefLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTypedByRefType->elementType == typeLocal.elementType,
+                    $"cDAC elementType: {pTypedByRefType->elementType}, DAC: {typeLocal.elementType}");
+                Debug.Assert(pTypedByRefType->metadataToken == typeLocal.metadataToken,
+                    $"cDAC metadataToken: 0x{pTypedByRefType->metadataToken:x}, DAC: 0x{typeLocal.metadataToken:x}");
+                Debug.Assert(pTypedByRefType->vmAssembly == typeLocal.vmAssembly,
+                    $"cDAC vmAssembly: 0x{pTypedByRefType->vmAssembly:x}, DAC: 0x{typeLocal.vmAssembly:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetStringData(ulong objectAddress, nint pObjectData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStringData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
+    public int GetStringData(ulong objectAddress, uint* pLength, uint* pOffsetToStringBase)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
+            TypeHandle th = rts.GetTypeHandle(mtAddr);
+            if (!rts.IsString(th))
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
+            }
+            _target.Contracts.Object.GetStringData(objectAddress, out uint length, out uint offset);
+            *pLength = length;
+            *pOffsetToStringBase = offset;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint lengthLocal, offsetLocal;
+            int hrLocal = _legacy.GetStringData(objectAddress, &lengthLocal, &offsetLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pLength == lengthLocal, $"cDAC length: {*pLength}, DAC: {lengthLocal}");
+                Debug.Assert(*pOffsetToStringBase == offsetLocal, $"cDAC offsetToStringBase: {*pOffsetToStringBase}, DAC: {offsetLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetArrayData(ulong objectAddress, nint pObjectData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetArrayData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
+    public int GetArrayData(ulong objectAddress, Interop.BOOL* pIsValidArray, DacDbiArrayInfo* pArrayInfo)
+    {
+        *pIsValidArray = Interop.BOOL.FALSE;
+        *pArrayInfo = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            IObject objectContract = _target.Contracts.Object;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer mt = objectContract.GetMethodTableAddress(objectAddress);
+            TypeHandle th = rts.GetTypeHandle(mt);
+            if (rts.IsArray(th, out uint rank))
+            {
+                TargetPointer dataStart = objectContract.GetArrayData(objectAddress, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                *pIsValidArray = Interop.BOOL.TRUE;
 
-    public int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetBasicObjectInfo(objectAddress, type, pObjectData) : HResults.E_NOTIMPL;
+                uint offsetToArrayBase = (uint)(dataStart - objectAddress);
+                uint offsetToUpperBounds = 0;
+                uint offsetToLowerBounds = 0;
+                if (rts.GetSignatureCorElementType(th) == CorElementType.Array)
+                {
+                    offsetToUpperBounds = (uint)(boundsStart - objectAddress);
+                    offsetToLowerBounds = (uint)(lowerBounds - objectAddress);
+                }
+
+                pArrayInfo->rank = rank;
+                pArrayInfo->componentCount = numComponents;
+                pArrayInfo->offsetToArrayBase = offsetToArrayBase;
+                pArrayInfo->offsetToUpperBounds = offsetToUpperBounds;
+                pArrayInfo->offsetToLowerBounds = offsetToLowerBounds;
+                pArrayInfo->elementSize = rts.GetComponentSize(th);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL isValidLocal;
+            DacDbiArrayInfo arrayInfoLocal;
+            int hrLocal = _legacy.GetArrayData(objectAddress, &isValidLocal, &arrayInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pIsValidArray == isValidLocal, $"cDAC isValidArray: {*pIsValidArray}, DAC: {isValidLocal}");
+                if (*pIsValidArray == Interop.BOOL.TRUE)
+                {
+                    Debug.Assert(pArrayInfo->rank == arrayInfoLocal.rank, $"cDAC rank: {pArrayInfo->rank}, DAC: {arrayInfoLocal.rank}");
+                    Debug.Assert(pArrayInfo->componentCount == arrayInfoLocal.componentCount, $"cDAC componentCount: {pArrayInfo->componentCount}, DAC: {arrayInfoLocal.componentCount}");
+                    Debug.Assert(pArrayInfo->offsetToArrayBase == arrayInfoLocal.offsetToArrayBase, $"cDAC offsetToArrayBase: {pArrayInfo->offsetToArrayBase}, DAC: {arrayInfoLocal.offsetToArrayBase}");
+                    Debug.Assert(pArrayInfo->offsetToUpperBounds == arrayInfoLocal.offsetToUpperBounds, $"cDAC offsetToUpperBounds: {pArrayInfo->offsetToUpperBounds}, DAC: {arrayInfoLocal.offsetToUpperBounds}");
+                    Debug.Assert(pArrayInfo->offsetToLowerBounds == arrayInfoLocal.offsetToLowerBounds, $"cDAC offsetToLowerBounds: {pArrayInfo->offsetToLowerBounds}, DAC: {arrayInfoLocal.offsetToLowerBounds}");
+                    Debug.Assert(pArrayInfo->elementSize == arrayInfoLocal.elementSize, $"cDAC elementSize: {pArrayInfo->elementSize}, DAC: {arrayInfoLocal.elementSize}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int GetBasicObjectInfo(ulong objectAddress, Interop.BOOL* pIsValidRef, uint* pObjSize, uint* pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData* pObjTypeData)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pIsValidRef = Interop.BOOL.TRUE;
+            *pObjSize = 0;
+            *pObjOffsetToVars = 0;
+            *pObjTypeData = default;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            // verify the object reference is readable and has a valid MethodTable
+            TypeHandle th = default;
+            try
+            {
+                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
+                th = rts.GetTypeHandle(mt);
+            }
+            catch
+            {
+                *pIsValidRef = Interop.BOOL.FALSE;
+            }
+
+            if (*pIsValidRef == Interop.BOOL.TRUE)
+            {
+                // objOffsetToVars = offset from the object base to the first field = sizeof(Object) = pointer size
+                *pObjOffsetToVars = (uint)_target.GetTypeInfo(DataType.Object).Size!.Value;
+                *pObjSize = (uint)_target.Contracts.Object.GetSize(objectAddress);
+                TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.AllBoxed, th, pObjTypeData);
+
+                // If this is a string, force elementType to ELEMENT_TYPE_STRING
+                if (rts.IsString(th))
+                {
+                    WriteLittleEndian(ref pObjTypeData->elementType, (int)CorElementType.String);
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL isValidLocal;
+            uint objSizeLocal, objOffsetLocal;
+            DebuggerIPCE_ExpandedTypeData typeDataLocal;
+            int hrLocal = _legacy.GetBasicObjectInfo(objectAddress, &isValidLocal, &objSizeLocal, &objOffsetLocal, &typeDataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pIsValidRef == isValidLocal, $"cDAC isValidRef: {*pIsValidRef}, DAC: {isValidLocal}");
+                if (*pIsValidRef == Interop.BOOL.TRUE)
+                {
+                    Debug.Assert(*pObjSize == objSizeLocal, $"cDAC objSize: {*pObjSize}, DAC: {objSizeLocal}");
+                    Debug.Assert(*pObjOffsetToVars == objOffsetLocal, $"cDAC objOffsetToVars: {*pObjOffsetToVars}, DAC: {objOffsetLocal}");
+                    Debug.Assert(pObjTypeData->elementType == typeDataLocal.elementType,
+                        $"cDAC elementType: {pObjTypeData->elementType}, DAC: {typeDataLocal.elementType}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetDebuggerControlBlockAddress(ulong* pRetVal)
     {
@@ -3285,8 +3475,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => HResults.E_NOTIMPL;
 
     public int GetAttachStateFlags(int* pRetVal)
     {

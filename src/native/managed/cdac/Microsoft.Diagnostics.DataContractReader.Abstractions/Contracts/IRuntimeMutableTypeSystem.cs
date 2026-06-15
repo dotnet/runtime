@@ -9,7 +9,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IRuntimeMutableTypeSystem : IContract
 {
     static string IContract.Name { get; } = nameof(RuntimeMutableTypeSystem);
-
     IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields) => throw new NotImplementedException();
     bool IsFieldDescEnCNew(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool DoesEnCFieldDescNeedFixup(TargetPointer encFieldDescPointer) => throw new NotImplementedException();
