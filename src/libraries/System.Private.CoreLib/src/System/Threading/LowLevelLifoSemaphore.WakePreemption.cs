@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Threading
 {
     internal sealed partial class LowLevelLifoSemaphore
@@ -31,7 +33,8 @@ namespace System.Threading
             int previousPriority = 0;
             unsafe
             {
-                Interop.Sys.SuppressWakePreemption(&previousPolicy, &previousPriority);
+                int result = Interop.Sys.SuppressWakePreemption(&previousPolicy, &previousPriority);
+                Debug.Assert(result == 0, $"SuppressWakePreemption failed with error {result}");
             }
 
             return new WakePreemptionScope(previousPolicy, previousPriority);
@@ -47,7 +50,8 @@ namespace System.Threading
 #elif TARGET_LINUX
             if (scope.PreviousPolicy != -1)
             {
-                Interop.Sys.RestoreWakePreemption(scope.PreviousPolicy, scope.PreviousPriority);
+                int result = Interop.Sys.RestoreWakePreemption(scope.PreviousPolicy, scope.PreviousPriority);
+                Debug.Assert(result == 0, $"RestoreWakePreemption failed with error {result}");
             }
 #else
             _ = scope;
