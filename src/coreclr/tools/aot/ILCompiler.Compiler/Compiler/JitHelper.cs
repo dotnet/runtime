@@ -79,9 +79,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
                     break;
-                case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
-                    break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
                     break;

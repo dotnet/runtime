@@ -482,13 +482,15 @@ struct EmitCallParams
     BitVec    ptrVars       = BitVecOps::UninitVal();
     regMaskTP gcrefRegs     = RBM_NONE;
     regMaskTP byrefRegs     = RBM_NONE;
-    DebugInfo debugInfo;
-    regNumber ireg        = REG_NA;
-    regNumber xreg        = REG_NA;
-    unsigned  xmul        = 0;
-    ssize_t   disp        = 0;
-    bool      isJump      = false;
-    bool      noSafePoint = false;
+    regNumber ireg          = REG_NA;
+    regNumber xreg          = REG_NA;
+    unsigned  xmul          = 0;
+    ssize_t   disp          = 0;
+    bool      isJump        = false;
+    bool      noSafePoint   = false;
+    // If this call should have managed return value debug info associated with it, this is the call to associate it
+    // with.
+    GenTreeCall* returnValueCall = nullptr;
 #ifdef TARGET_WASM
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif

@@ -217,12 +217,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.callType < EC_COUNT);
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     assert(params.wasmSignature != nullptr);
 
     /*
@@ -858,7 +852,9 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    return emitOutputPaddedReloc(destination);
+    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
+    // so we don't need to write anything else here.
+    return PADDED_RELOC_SIZE;
 }
 
 size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)

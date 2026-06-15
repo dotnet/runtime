@@ -3415,6 +3415,10 @@ struct GenTreePhysReg : public GenTree
 /* gtIntCon -- integer constant (GT_CNS_INT) */
 struct GenTreeIntCon : public GenTreeIntConCommon
 {
+    // Allow the base type to access the encapsulated value fields directly (e.g. IconValue/SetIconValue).
+    friend struct GenTreeIntConCommon;
+
+private:
     /*
      * This is the GT_CNS_INT struct definition.
      * It's used to hold for both int constants and pointer handle constants.
@@ -3444,6 +3448,39 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 #ifdef DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
+#endif
+
+public:
+    // Accessors for the compile time handle. See "gtCompileTimeHandle" above.
+    ssize_t GetCompileTimeHandle() const
+    {
+        return gtCompileTimeHandle;
+    }
+    void SetCompileTimeHandle(ssize_t compileTimeHandle)
+    {
+        gtCompileTimeHandle = compileTimeHandle;
+    }
+
+    // Accessors for the field sequence. See "gtFieldSeq" above.
+    FieldSeq* GetFieldSeq() const
+    {
+        return gtFieldSeq;
+    }
+    void SetFieldSeq(FieldSeq* fieldSeq)
+    {
+        gtFieldSeq = fieldSeq;
+    }
+
+#ifdef DEBUG
+    // Accessors for the debug-only target handle. See "gtTargetHandle" above.
+    size_t GetTargetHandle() const
+    {
+        return gtTargetHandle;
+    }
+    void SetTargetHandle(size_t targetHandle)
+    {
+        gtTargetHandle = targetHandle;
+    }
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
@@ -3852,6 +3889,8 @@ public:
     {
     }
 #endif
+
+    static bool EqualsLocal(GenTreeLclVarCommon* lcl1, GenTreeLclVarCommon* lcl2);
 };
 
 //------------------------------------------------------------------------
@@ -6117,6 +6156,43 @@ struct GenTreeQmark : public GenTreeOp
 #endif
 };
 
+#ifdef TARGET_ARM64
+struct GenTreeBfm : public GenTreeOp
+{
+    unsigned gtOffset;
+    unsigned gtWidth;
+
+    GenTreeBfm(genTreeOps oper, var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+        : GenTreeOp(oper, type, base, src)
+        , gtOffset(offset)
+        , gtWidth(width)
+    {
+        assert(oper == GT_BFX);
+        assert(src == nullptr);
+    }
+
+    unsigned GetOffset() const
+    {
+        return gtOffset;
+    }
+    unsigned GetWidth() const
+    {
+        return gtWidth;
+    }
+    unsigned GetMask() const
+    {
+        return ((~0ULL >> (64 - gtWidth)) << gtOffset);
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeBfm()
+        : GenTreeOp()
+    {
+    }
+#endif
+};
+#endif
+
 /* gtIntrinsic   -- intrinsic   (possibly-binary op [NULL op2 is allowed] with an additional field) */
 
 struct GenTreeIntrinsic : public GenTreeOp
@@ -6966,7 +7042,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6982,7 +7058,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6998,7 +7074,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -7023,9 +7099,9 @@ struct GenTreeVecCon : public GenTree
                     // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->IconValue();
                     gtLconVal <<= 32;
-                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->gtIconVal);
+                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->IconValue());
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
@@ -8111,13 +8187,6 @@ public:
     enum
     {
         BlkOpKindInvalid,
-        BlkOpKindCpObjUnroll,
-#ifdef TARGET_XARCH
-        BlkOpKindCpObjRepInstr,
-#endif
-#ifdef TARGET_XARCH
-        BlkOpKindRepInstr,
-#endif
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
