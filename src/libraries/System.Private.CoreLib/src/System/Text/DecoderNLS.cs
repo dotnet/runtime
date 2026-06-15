@@ -219,7 +219,7 @@ namespace System.Text
             _leftoverByteCount = 0;
         }
 
-        internal unsafe int DrainLeftoverDataForGetCharCount(ReadOnlySpan<byte> bytes, out int bytesConsumed)
+        internal int DrainLeftoverDataForGetCharCount(ReadOnlySpan<byte> bytes, out int bytesConsumed)
         {
             // Quick check: we _should not_ have leftover fallback data from a previous invocation,
             // as we'd end up consuming any such data and would corrupt whatever Convert call happens
@@ -231,7 +231,7 @@ namespace System.Text
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then get its char count by decoding it.
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charCount = 0;
 
@@ -275,7 +275,7 @@ namespace System.Text
             return charCount;
         }
 
-        internal unsafe int DrainLeftoverDataForGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int bytesConsumed)
+        internal int DrainLeftoverDataForGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int bytesConsumed)
         {
             // Quick check: we _should not_ have leftover fallback data from a previous invocation,
             // as we'd end up consuming any such data and would corrupt whatever Convert call happens
@@ -287,7 +287,7 @@ namespace System.Text
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then transcode it from bytes to chars.
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charsWritten = 0;
 

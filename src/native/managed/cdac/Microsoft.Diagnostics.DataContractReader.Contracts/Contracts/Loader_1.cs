@@ -438,7 +438,7 @@ internal readonly struct Loader_1 : ILoader
             }
         }
 
-        module.WriteFlags(_target, updatedFlags);
+        module.WriteFlags(updatedFlags);
     }
 
     bool ILoader.IsReadyToRun(ModuleHandle handle)

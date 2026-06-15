@@ -45,6 +45,13 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
+#ifdef PERFTRACING_DISABLE_THREADS
+bool InterpCompiler::s_samplingProfilerEnabled = false;
+#ifdef TARGET_BROWSER
+bool InterpCompiler::s_browserProfilerEnabled = false;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
+
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -319,7 +326,7 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
-    if (m_isFirstInstForEmptyILStack)
+    if (m_isFirstInstForEmptyILStack && !InterpOpIsEmitNop(opcode))
     {
         // This is the first instruction we are emitting for this IL offset and the stack is empty, which
         // implies the IL stack is empty too.
@@ -883,7 +890,12 @@ int32_t InterpCompiler::GetLiveStartOffset(int32_t var)
     else
     {
         assert(m_pVars[var].liveStart != NULL);
-        return m_pVars[var].liveStart->nativeOffset;
+        // The value of the var is not valid at the start of the instruction that sets it.
+        // We don't set it as the start of the next instruction because a live range needs
+        // to have start != end, which wouldn't be the case if the var is always dead. Ignoring
+        // the live range for such a var could be problematic if this var is the return of a call,
+        // with its address being passed directly to the a jit-ed method.
+        return m_pVars[var].liveStart->nativeOffset + GetInsLength(m_pVars[var].liveStart) - 1;
     }
 }
 
@@ -1130,6 +1142,9 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
             if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
             {
+                // FIXME We should avoid removing these instructions in the first place. I believe
+                // this only needs to be handled by emitting INTOP_DEBUG_SEQ_POINT for CEE_POP.
+                //
                 // Emit a debug sequence point so that eliminated IL instructions
                 // still occupy a bytecode slot. This ensures return addresses after
                 // calls land within the call's native offset range rather than on
@@ -1270,6 +1285,12 @@ void InterpCompiler::EmitCode()
 
         m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
     }
+
+    if (m_ILToNativeMapSize == 0 && m_pILToNativeMap != NULL)
+    {
+        m_compHnd->freeArray(m_pILToNativeMap);
+        m_pILToNativeMap = NULL;
+    }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
     m_pILToNativeMap = NULL; // Ownership transferred to the VM
 
@@ -1390,16 +1411,16 @@ class InterpGcSlotAllocator
                     if (existingRange.OverlapsOrAdjacentTo(start, end))
                     {
                         ConservativeRange updatedRange = existingRange;
-                        INTERP_DUMP("Merging with existing range [%u - %u]\n", existingRange.startOffset, existingRange.endOffset);
+                        INTERP_DUMP("Merging with existing range [%04x - %04x]\n", existingRange.startOffset, existingRange.endOffset);
                         updatedRange.MergeWith(start, end);
                         while ((i + 1 < m_liveRanges.GetSize()) && m_liveRanges.Get(i + 1).OverlapsOrAdjacentTo(start, end))
                         {
                             ConservativeRange otherExistingRange = m_liveRanges.Get(i + 1);
-                            INTERP_DUMP("Merging with existing range [%u - %u]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
+                            INTERP_DUMP("Merging with existing range [%04x - %04x]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
                             updatedRange.MergeWith(otherExistingRange.startOffset, otherExistingRange.endOffset);
                             m_liveRanges.RemoveAt(i + 1);
                         }
-                        INTERP_DUMP("Final merged range [%u - %u]\n", updatedRange.startOffset, updatedRange.endOffset);
+                        INTERP_DUMP("Final merged range [%04x - %04x]\n", updatedRange.startOffset, updatedRange.endOffset);
                         m_liveRanges.Set(i, updatedRange);
                         return;
                     }
@@ -1488,7 +1509,7 @@ public:
         uint32_t startOffset = ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
             endOffset = ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
         INTERP_DUMP(
-            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
+            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%04x - %04x]\n",
             slot, pVar->global ? "global" : "local",
             varIndex, pVar->offset,
             m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
@@ -1523,7 +1544,7 @@ public:
                 ConservativeRange range = ranges->m_liveRanges.Get(iRange);
 
                 INTERP_DUMP(
-                    "Conservative range for slot %u at %u [%u - %u]\n",
+                    "Conservative range for slot %u at %u [%04x - %04x]\n",
                     *pSlot,
                     (unsigned)(iSlot * sizeof(void *)),
                     range.startOffset,
@@ -2194,6 +2215,16 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
     assert(jitFlagsSize == sizeof(m_corJitFlags));
 
+#ifdef PERFTRACING_DISABLE_THREADS
+    m_emitSamplingProfiler = s_samplingProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+
+#ifdef TARGET_BROWSER
+    m_emitBrowserProfiler = s_browserProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
+
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
                             /* includeAssembly */ false,
@@ -2348,7 +2379,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
             return InterpTypeR4;
         case CORINFO_TYPE_DOUBLE:
             return InterpTypeR8;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             return InterpTypeO;
         case CORINFO_TYPE_PTR:
@@ -2356,7 +2386,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_BYREF:
             return InterpTypeByRef;
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
             return InterpTypeVT;
         case CORINFO_TYPE_VOID:
             return InterpTypeVoid;
@@ -2410,7 +2439,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + getEHcount(m_methodInfo) + 64;
     m_pVars = getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
-    m_varsSize = m_numILVars + hasParamArg + hasContinuationArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + (m_isAsyncMethodWithContextSaveRestore ? 2 : 0) + getEHcount(m_methodInfo);
+    m_varsSize = m_numILVars + hasParamArg + hasContinuationArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + (m_isAsyncMethodWithContextSaveRestore ? 3 : 0) + getEHcount(m_methodInfo);
 
     offset = 0;
 
@@ -2511,10 +2540,16 @@ void InterpCompiler::CreateILVars()
 
     if (m_isAsyncMethodWithContextSaveRestore)
     {
+        m_threadObjVarIndex = index;
+        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        INTERP_DUMP("alloc Async Thread (var %d) to offset %d\n", m_threadObjVarIndex, m_pVars[m_threadObjVarIndex].offset);
+        index++;
+
         m_execContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
         INTERP_DUMP("alloc ExecutableContextVar (var %d) to offset %d\n", m_execContextVarIndex, m_pVars[m_execContextVarIndex].offset);
         index++;
+
         m_syncContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
         INTERP_DUMP("alloc SyncContextVar (var %d) to offset %d\n", m_syncContextVarIndex, m_pVars[m_syncContextVarIndex].offset);
@@ -2899,7 +2934,13 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 
     // Backwards branch, emit safepoint
     if (ilOffset < 0)
+    {
         AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+        if (m_emitSamplingProfiler)
+            AddIns(INTOP_PROF_SAMPLEPOINT);
+#endif // PERFTRACING_DISABLE_THREADS
+    }
 
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     if (pTargetBB == NULL)
@@ -3530,14 +3571,10 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             {
                 BADCODE("AsyncSuspend should only be used in async methods");
             }
-            if (m_methodInfo->args.retType != CORINFO_TYPE_VOID)
-            {
-                BADCODE("AsyncSuspend can only be used in async methods with void return type with today's implementation, it would need to emit the correct INTOP_RET* instruction..");
-            }
             AddIns(INTOP_SET_CONTINUATION);
             m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
             m_pStackPointer--;
-            AddIns(INTOP_RET_VOID);
+            AddIns(INTOP_RET_EXISTING_CONTINUATION);
             return true;
         case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
             if ((m_methodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
@@ -4819,21 +4856,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
         PushInterpType(InterpTypeI4, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t isStartedArg = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(m_execContextVarIndex);
-        PushInterpType(InterpTypeO, NULL);
-        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t execContextAddressVar = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(m_syncContextVarIndex);
-        PushInterpType(InterpTypeO, NULL);
-        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t syncContextAddressVar = m_pStackPointer[-1].var;
+        int32_t isResumedArg = m_pStackPointer[-1].var;
         m_pStackPointer--;
 
         // Create a new dummy var to serve as the dVar of the call
@@ -4853,12 +4876,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 3;
+        int32_t numArgs = 4;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = isStartedArg;
-        callArgs[1] = execContextAddressVar;
-        callArgs[2] = syncContextAddressVar;
-        callArgs[3] = CALL_ARGS_TERMINATOR;
+        callArgs[0] = isResumedArg;
+        callArgs[1] = m_threadObjVarIndex;
+        callArgs[2] = m_execContextVarIndex;
+        callArgs[3] = m_syncContextVarIndex;
+        callArgs[4] = CALL_ARGS_TERMINATOR;
         m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
         m_ip += 5;
@@ -5738,6 +5762,13 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
         return;
     }
 
+#ifdef PERFTRACING_DISABLE_THREADS
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+        AddIns(INTOP_PROF_LEAVE);
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
+
     if (m_methodInfo->args.isAsyncCall())
     {
         // We're doing a standard return. Set the continuation return to NULL.
@@ -6151,7 +6182,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             suspendData->asyncMethodReturnType = m_methodInfo->args.retTypeClass;
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
             break;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             suspendData->asyncMethodReturnType = m_compHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
@@ -6199,13 +6229,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         case CORINFO_TYPE_PTR:
             suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
             break;
-        case CORINFO_TYPE_REFANY:
-            BADCODE("TypedReference return types not supported for async methods");
-            break;
 
-        case CORINFO_TYPE_VAR:
-            BADCODE("VAR return types should have been translated before we get here on async methods");
-            break;
         default:
             // Other types are not supported
             BADCODE("Unsupported async method return type");
@@ -6460,7 +6484,18 @@ void InterpCompiler::UpdateLocalIntervalMaps()
         int32_t varIndex = suspendData->returnValueVarStackOffset;
         if (varIndex != -1)
         {
-            suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+            if (!m_pVars[varIndex].global && m_pVars[varIndex].liveStart == m_pVars[varIndex].liveEnd)
+            {
+                // The return result of the async call is not used by the method, so the allocated
+                // stack offset will be immediately reused by any vars that become live. Keep the
+                // continuation layout unchanged, but mark the return value stack offset as invalid
+                // so resume skips copying the stored result back to the interpreter stack.
+                suspendData->returnValueVarStackOffset = -1;
+            }
+            else
+            {
+                suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+            }
         }
     }
 }
@@ -8177,7 +8212,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         INTERP_DUMP("Synchronized method - adding extra IL opcodes for async save/restore\n");
 
         // Async methods are methods implemented by adding a try/finally in the method
-        // which takes the lock on entry and releases it on exit. To integrate this into the interpreter, we actually
+        // which captures contexts on entry and restores them on exit. To integrate this into the interpreter, we actually
         // add a set of extra "IL" opcodes at the end of the method which do the monitor finally and actual return
         // logic.
 
@@ -8257,6 +8292,17 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+    if (m_emitSamplingProfiler)
+        AddIns(INTOP_PROF_SAMPLEPOINT);
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+    {
+        AddIns(INTOP_PROF_ENTER);
+        m_pLastNewIns->data[0] = GetMethodDataItemIndex(m_methodHnd);
+    }
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
 
     if (m_continuationArgIndex != -1)
     {
@@ -8354,7 +8400,15 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     if (m_isAsyncMethodWithContextSaveRestore)
     {
-        // Load the address of the execution context/sync context locals, and call AsyncHelpers.CaptureContexts
+        // Load the address of the thread/execution context/sync context locals, and call AsyncHelpers.CaptureContexts
+        AddIns(INTOP_LDLOCA);
+        m_pLastNewIns->SetSVar(m_threadObjVarIndex);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pStackPointer[-1].SetAsLocalVariableAddress();
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        int32_t threadAddressVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+
         AddIns(INTOP_LDLOCA);
         m_pLastNewIns->SetSVar(m_execContextVarIndex);
         PushInterpType(InterpTypeByRef, NULL);
@@ -8389,11 +8443,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 2;
+        int32_t numArgs = 3;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = execContextAddressVar;
-        callArgs[1] = syncContextAddressVar;
-        callArgs[2] = CALL_ARGS_TERMINATOR;
+        callArgs[0] = threadAddressVar;
+        callArgs[1] = execContextAddressVar;
+        callArgs[2] = syncContextAddressVar;
+        callArgs[3] = CALL_ARGS_TERMINATOR;
         m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
     }
 

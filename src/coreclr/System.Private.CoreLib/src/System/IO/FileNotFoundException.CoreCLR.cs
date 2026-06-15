@@ -13,5 +13,11 @@ namespace System.IO
             _requestingAssemblyChain = requestingAssemblyChain;
             SetMessageField();
         }
+
+        internal FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult, string? diagnosticInfo)
+            : this(fileName, requestingAssemblyChain, hResult)
+        {
+            FusionLog = diagnosticInfo;
+        }
     }
 }

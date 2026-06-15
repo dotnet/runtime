@@ -1379,7 +1379,7 @@ namespace System.Text.RegularExpressions
             // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
             // if we end up backtracking into subsequent branches.
             // e.g. abc|ade => a(?bc|de)
-            static unsafe RegexNode ExtractCommonPrefixText(RegexNode alternation)
+            static RegexNode ExtractCommonPrefixText(RegexNode alternation)
             {
                 Debug.Assert(alternation.Kind == RegexNodeKind.Alternate);
                 Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
@@ -1398,7 +1398,7 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                Span<char> scratchChar = stackalloc char[1];
+                Span<char> scratchChar = ['\0'];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
@@ -3107,7 +3107,7 @@ namespace System.Text.RegularExpressions
             var vsb = new ValueStringBuilder(stackalloc char[32]);
 
             // We're looking in particular for sets of ASCII characters, so we focus only on sets with two characters in them, e.g. [Aa].
-            Span<char> twoChars = stackalloc char[2];
+            Span<char> twoChars = ['\0', '\0'];
 
             // Iterate from the child index to the exclusive upper bound.
             int i = childIndex;

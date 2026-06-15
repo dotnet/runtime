@@ -152,6 +152,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
+
         private static unsafe bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
         {
             scoped Span<byte> buffer;

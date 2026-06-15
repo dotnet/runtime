@@ -2131,6 +2131,21 @@ void gc_heap::compact_phase (int condemned_gen_number,
 
     recover_saved_pinned_info();
 
+#ifdef USE_REGIONS
+    for (int i = 0; i <= min (condemned_gen_number + 1, (int)max_generation); i++)
+    {
+        generation* gen = generation_of (i);
+        for (heap_segment* region = generation_start_segment_rw (gen);
+             region != nullptr;
+             region = heap_segment_next_rw (region))
+        {
+            uint8_t* plan_allocated = heap_segment_plan_allocated (region);
+            if (plan_allocated > heap_segment_used (region))
+                heap_segment_used (region) = plan_allocated;
+        }
+    }
+#endif //USE_REGIONS
+
     concurrent_print_time_delta ("compact end");
 
     dprintf (2, (ThreadStressLog::gcEndCompactMsg(), heap_number));

@@ -4,7 +4,6 @@
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
-    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />

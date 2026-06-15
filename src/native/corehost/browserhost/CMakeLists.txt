@@ -58,6 +58,7 @@ set(SHARED_CLR_DESTINATION
 # CoreCLR runtime .a libraries
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libcoreclr_gen_static.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -121,6 +122,9 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     --emit-symbol-map
+    -lexports.js
+    -Wl,--export=__stack_pointer
+    -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
     -Wl,--error-limit=0)
 
 target_link_libraries(browserhost PRIVATE

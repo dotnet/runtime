@@ -17,6 +17,12 @@ These tags are used in signatures generated internally by the runtime that are n
 
 ```csharp
 TypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx);
+
+// Returns the address of the first argument of a vararg call relative to the cookie pointer location.
+TargetPointer GetVarArgArgsBase(TargetPointer vaSigCookieAddr);
+
+// Returns the address and length of the raw vararg signature blob held by the cookie.
+void GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength);
 ```
 
 ## Version 1
@@ -24,7 +30,9 @@ TypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| _none_ |  | |
+| `VASigCookie` | `SizeOfArgs` | Total size in bytes of the pushed argument list. Used on x86 to locate the args base. |
+| `VASigCookie` | `SignaturePointer` | Target address of the raw vararg signature blob. |
+| `VASigCookie` | `SignatureLength` | Length in bytes of the raw vararg signature blob. |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -37,6 +45,7 @@ Contracts used:
 | RuntimeTypeSystem |
 | Loader |
 | EcmaMetadata |
+| RuntimeInfo |
 
 Constants:
 | Constant Name | Meaning | Value |
@@ -69,3 +78,33 @@ TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle m
 ### Other consumers
 
 `RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
+
+### Vararg call cookies
+
+`GetVarArgArgsBase` and `GetVarArgSignature` decode a `VASigCookie*` slot pushed by a vararg call site.
+
+```csharp
+TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
+{
+    // On x86 the args are pushed below the cookie pointer (stack grows down on the args walk),
+    // so the first argument lies at vaSigCookieAddr + cookie.SizeOfArgs.
+    // On every other platform the first argument follows the cookie pointer in memory
+    // (stack grows up on the args walk), so its address is vaSigCookieAddr + sizeof(VASigCookie*).
+    if (RuntimeInfo.GetTargetArchitecture() == X86)
+    {
+        TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
+        VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
+        return vaSigCookieAddr + cookie.SizeOfArgs;
+    }
+    return vaSigCookieAddr + sizeof(TargetPointer);
+}
+
+void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength)
+{
+    TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
+    VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
+
+    signatureAddress = cookie.SignaturePointer;
+    signatureLength = cookie.SignatureLength;
+}
+```

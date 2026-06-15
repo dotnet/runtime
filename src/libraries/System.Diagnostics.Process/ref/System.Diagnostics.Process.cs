@@ -23,6 +23,14 @@ namespace Microsoft.Win32.SafeHandles
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static bool TryOpen(int processId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out Microsoft.Win32.SafeHandles.SafeProcessHandle? processHandle) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
         public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
         public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
@@ -242,6 +250,10 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static int StartAndForget(string fileName, System.Collections.Generic.IList<string>? arguments = null) { throw null; }
         public override string ToString() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static bool TryGetProcessById(int processId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.Process? process) { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
         public bool WaitForExit(System.TimeSpan timeout) { throw null; }
@@ -285,6 +297,7 @@ namespace System.Diagnostics
         public ProcessOutputLine(string content, bool standardError) { throw null; }
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
+        public override string ToString() { throw null; }
     }
     public enum ProcessPriorityClass
     {

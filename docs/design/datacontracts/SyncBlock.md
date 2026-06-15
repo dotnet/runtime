@@ -18,7 +18,8 @@ bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out Targe
 
 ## Version 1
 
-Data descriptors used:
+### Data descriptors used
+
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `SyncTableEntry` | `SyncBlock` | Pointer to the sync block for a sync table entry |
@@ -33,7 +34,8 @@ Data descriptors used:
 | `InteropSyncBlockInfo` | `CCW` | CCW pointer; sentinel value `0x1` means previously had a CCW (treat as null) |
 | `InteropSyncBlockInfo` | `CCF` | COM class factory pointer; sentinel value `0x1` means previously had a CCF (treat as null) |
 
-Global variables used:
+### Global variables used
+
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `SyncTableEntries` | TargetPointer | Pointer to the sync table entries array |
@@ -42,21 +44,17 @@ Global variables used:
 | `SyncBlockMaskLockRecursionLevel` | uint32 | Mask for extracting recursion level from `SyncBlock.ThinLock` |
 | `SyncBlockRecursionLevelShift` | uint32 | Shift value for `SyncBlock.ThinLock` recursion level |
 
-### Contract Constants:
-| Name | Type | Purpose | Value |
-| --- | --- | --- | --- |
-| `LockStateName` | string | Field name in `System.Threading.Lock` storing monitor-held state bits. | `_state` |
-| `LockOwningThreadIdName` | string | Field name in `System.Threading.Lock` storing owning thread id. | `_owningThreadId` |
-| `LockRecursionCountName` | string | Field name in `System.Threading.Lock` storing monitor recursion count. | `_recursionCount` |
-| `LockName` | string | Type name used to resolve `System.Threading.Lock`. | `Lock` |
-| `LockNamespace` | string | Namespace used to resolve `System.Threading.Lock`. | `System.Threading` |
+### Managed types used
 
-Contracts used:
+| Fully-qualified name | Module | Members read | Purpose |
+| --- | --- | --- | --- |
+| `System.Threading.Lock` | `System.Private.CoreLib` | `_state`, `_owningThreadId`, `_recursionCount` | Monitor-held state, owning thread id, and recursion count for fat-lock sync blocks |
+
+### Contracts used
+
 | Contract Name |
 | --- |
-| `Loader` |
-| `RuntimeTypeSystem` |
-| `EcmaMetadata` |
+| `ManagedTypeSource` |
 
 ``` csharp
 TargetPointer GetSyncBlock(uint index)
@@ -97,13 +95,14 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
 
     if (lockObject != TargetPointer.Null)
     {
-        // Resolve System.Threading.Lock in System.Private.CoreLib by name using RuntimeTypeSystem contract, LockName and LockNamespace.
-        uint state = ReadUintField(/* Lock type */, "LockStateName", /* RuntimeTypeSystem contract */, /* MetadataReader for SPC */, lockObject);
+        // Resolve the layout of System.Threading.Lock via ManagedTypeSource.
+        Target.TypeInfo lockType = target.Contracts.ManagedTypeSource.GetTypeInfo("System.Threading.Lock");
+        uint state = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_state"].Offset);
         bool monitorHeld = (state & 1) != 0;
         if (monitorHeld)
         {
-            owningThreadId = ReadUintField(/* Lock type */, "LockOwningThreadIdName", /* contracts */, lockObject);
-            recursion = ReadUintField(/* Lock type */, "LockRecursionCountName", /* contracts */, lockObject);
+            owningThreadId = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_owningThreadId"].Offset);
+            recursion = target.Read<uint>(lockObject + /* Object data offset */ + (uint)lockType.Fields["_recursionCount"].Offset);
         }
 
         return monitorHeld;
@@ -124,16 +123,6 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
     }
 
     return false;
-}
-
-private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)
-{
-    TargetPointer field = rts.GetFieldDescByName(enclosingType, fieldName);
-    uint token = rts.GetFieldDescMemberDef(field);
-    FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-    FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-    uint offset = rts.GetFieldDescOffset(field, fieldDef);
-    return _target.Read<uint>(dataAddr + offset);
 }
 
 uint GetAdditionalThreadCount(TargetPointer syncBlock)

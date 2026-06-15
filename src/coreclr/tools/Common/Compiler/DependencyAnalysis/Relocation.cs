@@ -62,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
         WASM_MEMORY_ADDR_REL_LEB   = 0x209,  // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                        // e.g. in R2R scenarios as an offset from $imageBase
         WASM_TABLE_INDEX_REL_I32   = 0x20A,  // Wasm: a table index encoded as a 4-byte uint32 relative to the tableBase of the R2R image
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
 
         //
         // Relocation operators related to TLS access
@@ -579,12 +580,24 @@ namespace ILCompiler.DependencyAnalysis
             int hi20 = (int)(offset - lo12);
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
-            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-            pCode[0] |= (uint)hi20;
-            int bottomBitsPos = isStype ? 7 : 20;
-            pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
-            pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
-            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
+            // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+            pCode[0] &= 0x00000FFF;
+            pCode[0] |= (uint)hi20 & 0xFFFFF000;
+
+            uint lo12Bits = (uint)lo12 & 0xFFF;
+            if (isStype)
+            {
+                pCode[1] &= 0x01FFF07F;
+                pCode[1] |= (lo12Bits & 0xFE0) << 20;
+                pCode[1] |= (lo12Bits & 0x01F) << 7;
+            }
+            else
+            {
+                pCode[1] &= 0x000FFFFF;
+                pCode[1] |= lo12Bits << 20;
+            }
+
+            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
@@ -660,6 +673,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
@@ -703,6 +717,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => 4,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 8,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
@@ -717,6 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_REL_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_REL_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_TABLE_INDEX_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_REL_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_I64 => 8,
@@ -741,6 +758,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.WASM_TABLE_INDEX_I64:
                     return *(long*)location;
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
@@ -780,23 +798,22 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
-                case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB:
-                case RelocType.WASM_TABLE_INDEX_I32:
-                case RelocType.WASM_TABLE_INDEX_REL_I32:
-                case RelocType.WASM_TABLE_INDEX_I64:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return 0;
-
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
-
+                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
+                case RelocType.WASM_TABLE_INDEX_I32:
+                case RelocType.WASM_TABLE_INDEX_REL_I32:
+                    return *(uint*)location;
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);

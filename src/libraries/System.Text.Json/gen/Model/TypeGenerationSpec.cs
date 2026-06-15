@@ -51,6 +51,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        public required PolymorphismOptionsSpec? PolymorphismOptions { get; init; }
+
         public required bool IsValueTuple { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }
@@ -68,6 +70,16 @@ namespace System.Text.Json.SourceGeneration
         /// indicates that a naming conflict was found and that an exception throwing stub should be emitted in the fast-path method.
         /// </summary>
         public required ImmutableEquatableArray<int>? FastPathPropertyIndices { get; init; }
+
+        /// <summary>
+        /// List of case specs for compiler union metadata generation.
+        /// </summary>
+        public required ImmutableEquatableArray<UnionCaseSpec> UnionCaseSpecs { get; init; }
+
+        /// <summary>
+        /// Per-type classifier factory specified via <see cref="JsonUnionAttribute.TypeClassifier"/> annotations.
+        /// </summary>
+        public required TypeRef? UnionClassifierFactoryType { get; init; }
 
         public required ImmutableEquatableArray<ParameterGenerationSpec> CtorParamGenSpecs { get; init; }
 
@@ -112,6 +124,11 @@ namespace System.Text.Json.SourceGeneration
 
         public bool IsFastPathSupported()
         {
+            if (ClassType is ClassType.Union)
+            {
+                return false;
+            }
+
             if (IsPolymorphic)
             {
                 return false;

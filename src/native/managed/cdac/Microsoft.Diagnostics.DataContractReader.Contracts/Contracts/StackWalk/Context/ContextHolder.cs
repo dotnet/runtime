@@ -12,6 +12,7 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public T Context;
 
     public uint Size => Context.Size;
+    public uint ContextControlFlags => Context.ContextControlFlags;
     public uint FullContextFlags => Context.FullContextFlags;
     public uint AllContextFlags => Context.AllContextFlags;
 

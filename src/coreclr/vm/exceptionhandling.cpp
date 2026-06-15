@@ -2568,7 +2568,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid || pCF->GetRegisterSet()->IsCallerSPValid );
+        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
@@ -3832,7 +3832,13 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 
@@ -4035,6 +4041,15 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
 
+            // Advance past the native marker frame to the explicit frame (e.g. FuncEvalFrame),
+            // but only when there is one. For example, with foreign-thread and reverse
+            // PInvoke with no further managed frames, there is no explicit frame to advance to.
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+            {
+                pThis->Next();
+                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION || (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE));
+            }
+
             *pfIsExceptionIntercepted = FALSE;
 
             if (fUnwoundReversePInvoke)
@@ -4134,7 +4149,13 @@ Exit:;
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 

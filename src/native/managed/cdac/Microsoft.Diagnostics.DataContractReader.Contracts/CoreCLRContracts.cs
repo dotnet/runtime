@@ -29,6 +29,7 @@ public static class CoreCLRContracts
         registry.Register<IBuiltInCOM>("c1", static t => new BuiltInCOM_1(t));
         registry.Register<IObjectiveCMarshal>("c1", static t => new ObjectiveCMarshal_1(t));
         registry.Register<IConditionalWeakTable>("c1", static t => new ConditionalWeakTable_1(t));
+        registry.Register<IManagedTypeSource>("c1", static t => new ManagedTypeSource_1(t));
         registry.Register<IAuxiliarySymbols>("c1", static t => new AuxiliarySymbols_1(t));
         registry.Register<IDebugger>("c1", static t => new Debugger_1(t));
 
@@ -71,5 +72,7 @@ public static class CoreCLRContracts
 
         registry.Register<IExecutionManager>("c1", static t => new ExecutionManager_1(t));
         registry.Register<IExecutionManager>("c2", static t => new ExecutionManager_2(t));
+
+        registry.Register<IRuntimeMutableTypeSystem>("c1", static t => new RuntimeMutableTypeSystem_1(t));
     }
 }
