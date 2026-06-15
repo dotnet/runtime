@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { "start=1, end=\t1", null, null, null, null };
 
             // multiple trace states
-            yield return new object[] { "start=1, end=1", "start=1,end=1", null, null, null }; // trace state key has to start with lowercase or digit
+            yield return new object[] { "start=1, end=1", "start=1,end=1", null, null, null };
 
             // Optional whitespace around trace state list members
             yield return new object[] { " start=1 \t, \tend=1 ", "start=1,end=1", null, null, null };
