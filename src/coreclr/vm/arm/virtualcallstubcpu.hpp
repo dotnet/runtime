@@ -429,7 +429,7 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
-        // str r0, [sp, #-4]! (pre-indexed: decrements SP, stores at new SP)
+        // str r0, [sp, #-4]!
         *(UINT32*)p = 0x0d04f84d; p += 4;
     }
 
@@ -463,7 +463,7 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
-        // ldr r0, [sp], #4 (post-indexed: loads from SP, then increments SP)
+        // ldr r0, [sp], #4
         *(UINT32*)p = 0x0b04f85d; p += 4;
     }
 
