@@ -688,6 +688,8 @@
     <Compile Include="System\Security\Cryptography\UniversalCryptoDecryptor.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellman.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
@@ -886,6 +888,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
@@ -1130,6 +1133,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.OpenSsl.cs" />
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -1204,6 +1208,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Random.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X25519.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X25519.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
@@ -1298,7 +1304,8 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
     <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Android.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.AndroidKeyStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.ExportPal.cs" />
@@ -1437,6 +1444,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Apple.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.TempExportPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateData.ManagedDecode.cs" />
@@ -1943,6 +1951,8 @@
              Link="Common\System\Security\Cryptography\RSACng.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
@@ -2030,7 +2040,9 @@
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.Import.cs" />

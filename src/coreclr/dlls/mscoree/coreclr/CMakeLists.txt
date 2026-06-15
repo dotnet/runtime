@@ -63,6 +63,10 @@ if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
+if (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+    set(LIB_UNWINDER unwinder_wks)
+endif (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -183,6 +187,17 @@ endif()
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    target_sources(coreclr_static PRIVATE $<TARGET_OBJECTS:inproccrashreport>)
+endif()
+
+if (TARGET cee_wks_gen)
+    add_library_clr(coreclr_gen_static
+        STATIC
+        $<TARGET_OBJECTS:cee_wks_gen>
+    )
+endif()
+
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
 endif()
@@ -244,10 +259,16 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 else()
     install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    if (TARGET coreclr_gen_static)
+        install_clr(TARGETS coreclr_gen_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    endif()
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr_static DESTINATIONS . COMPONENT runtime)
+    if (TARGET coreclr_gen_static)
+        install_clr(TARGETS coreclr_gen_static DESTINATIONS . COMPONENT runtime)
+    endif()
 endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
 
 # Enable profile guided optimization

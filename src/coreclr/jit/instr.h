@@ -188,6 +188,10 @@ enum insFlags : uint64_t
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
     INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
+    // The instruction is commutative for op1/op2 and so can have
+    // these operands swapped if it will result in a smaller encoding.
+    INS_Flags_IsAvxCommutative = 1ULL << 28,
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
     INS_FLAGS_Has_Sbit = 1ULL << 30,
@@ -295,8 +299,8 @@ enum insOpts: unsigned
     // One-bit:  0b1000_0000
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
-    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
 
     INS_OPTS_EVEX_dfv_cf = 1 << 8,
     INS_OPTS_EVEX_dfv_zf = 1 << 9,

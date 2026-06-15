@@ -809,9 +809,15 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #ifdef FEATURE_INTERPRETER
         if (isInterpreterCode)
         {
-            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            // If this is interpreter code, get the native code start address from the
+            // interpreter entrypoint data: PortableEntryPoint interpreter data when
+            // FEATURE_PORTABLE_ENTRYPOINTS is enabled, otherwise the interpreter Precode.
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
             InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
         }
 #endif // FEATURE_INTERPRETER
@@ -1929,7 +1935,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
             _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -2078,6 +2084,13 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
+#ifdef TARGET_WASM
+    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here. 
+    // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
+    // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
+    // be incorrect.
+    block.m_StackPointer = 0;
+#endif
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
@@ -2131,10 +2144,13 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            if (finishedPrestubPortion)
+            // WASM-TODO, other implementation of calling InvokeManagedMethod in a try/catch
+            // have _ASSERTE(ohThrowable) here, but I found this to cause a problem
+            // when using C++ eh to unwind across a block of R2R Wasm code from one
+            // interpreter block to another.
+            if (ohThrowable != NULL && finishedPrestubPortion)
             {
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)block, pMethod, NULL);
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)block, pMethod, NULL);
             }
             EX_RETHROW;
         }
@@ -2402,18 +2418,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
-
-        // We need to resolve the P/Invoke target in the prestub in the following cases:
-        // - SuppressGCTransition
-        //  - The logic to resolve the P/Invoke target does not meet the requirements for SuppressGCTransition usage.
-        // - No P/Invoke import thunk
-        //  - If there's no P/Invoke import thunk, then there's no later time to resolve the P/Invoke target.
-        //
-        // For simplicity, we will resolve all P/Invoke targets here for non-inlined P/Invokes.
-        if (IsPInvoke())
-        {
-            PInvoke::ResolvePInvokeTarget(static_cast<PInvokeMethodDesc*>(this));
-        }
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
@@ -2540,7 +2544,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
             // into the MethodDesc
             TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
-            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromEntryPointIfPresent(functionAddress);
             if (byteCodeStartOrFunctionAddress != functionAddress)
             {
                 // Then we must have an InterpByteCodeStart
@@ -2987,6 +2991,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             }
         }
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+#endif
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();

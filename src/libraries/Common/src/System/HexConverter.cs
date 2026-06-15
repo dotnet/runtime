@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -216,7 +216,7 @@ namespace System
             }
         }
 
-        public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
+        public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NET
             SpanCasingPair args = new() { Bytes = bytes, Casing = casing };

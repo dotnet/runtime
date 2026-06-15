@@ -83,6 +83,10 @@ extends:
             nameSuffix: AllSubsets_CoreCLR_ReleaseRuntimeLibs
             buildArgs: -s clr+libs+host+packs -rc Release -lc Release -c $(_BuildConfig)
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -99,6 +103,10 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -254,7 +262,10 @@ extends:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -357,7 +368,10 @@ extends:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -399,7 +413,10 @@ extends:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+clr.wasmjit+libs -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -533,7 +550,10 @@ extends:
             nameSuffix: CoreCLR_ReleaseLibraries
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -643,6 +663,10 @@ extends:
             nameSuffix: CoreCLR_Bootstrapped
             buildArgs: -s clr+libs+host+packs+tools.cdac -c $(_BuildConfig) -rc Checked --bootstrap
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1099,7 +1123,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # Android arm64 devices and x64 emulators
+      # Android arm/arm64 devices and x64 emulators
       # Build the whole product using CoreCLR and run functional tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1109,6 +1133,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
+          - android_arm
           - android_x64
           - android_arm64
           variables:
@@ -1141,8 +1166,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices - Full AOT + AggressiveTrimming to reduce size
+      # iOS simulators - Full AOT + AggressiveTrimming to reduce size
       # Build the whole product using Mono and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1151,7 +1178,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1187,8 +1214,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS simulators
       # Build the whole product using Native AOT and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1197,7 +1226,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1230,8 +1259,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS simulators
       # Build the whole product using CoreCLR and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1240,7 +1271,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

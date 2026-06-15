@@ -1076,49 +1076,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.Wasm32:
                     {
                         bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
-                        WasmValueType actualWasmAbiType = default(WasmValueType);
-
-                        switch (argType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                                actualWasmAbiType = WasmLowering.LowerType(_argTypeHandle.GetRuntimeTypeHandle());
-                                break;
-
-                            case CorElementType.ELEMENT_TYPE_I8:
-                            case CorElementType.ELEMENT_TYPE_U8:
-                                actualWasmAbiType = WasmValueType.I64;
-                                break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                actualWasmAbiType = WasmValueType.F64;
-                                break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                actualWasmAbiType = WasmValueType.F32;
-                                break;
-                            default:
-                                actualWasmAbiType = WasmValueType.I32;
-                                break;
-                        }
-
-                        int cbArg;
+                        int cbArg = ALIGN_UP(argSize, 8);
                         int align;
-                        switch (actualWasmAbiType)
+                        if (isValueType)
                         {
-                        case WasmValueType.I64:
-                        case WasmValueType.F64:
-                            cbArg = 8;
+                            align = Math.Clamp(((DefType)_argTypeHandle.GetRuntimeTypeHandle()).InstanceFieldAlignment.AsInt, 8, 16);
+                        }
+                        else
+                        {
                             align = 8;
-                            break;
-                        case WasmValueType.I32:
-                        case WasmValueType.F32:
-                            cbArg = 8;
-                            align = 8;
-                            break;
-                        case WasmValueType.V128:
-                            cbArg = 16;
-                            align = 16;
-                            break;
-                        default:
-                            throw new Exception(); // These are the only WasmValueTypes defined in our transition block handling
                         }
 
                         _wasmOfsStack = ALIGN_UP(_wasmOfsStack, align);
@@ -1721,10 +1687,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                if (maxOffset == 0 && _transitionBlock.IsWasm32)
+                if (maxOffset == _transitionBlock.OffsetOfArgs && _transitionBlock.IsWasm32)
                 {
                     // Wasm puts all arguments on the stack, even the unnamed ones like the param registers, this pointer and async continuation. If we didn't see any named arguments, then we need to account for the unnamed ones here.
-                    maxOffset = _wasmOfsStack;
+                    maxOffset = _transitionBlock.OffsetOfArgs + _wasmOfsStack;
                 }
 
                 // Clear the iterator started flag

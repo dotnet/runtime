@@ -266,6 +266,8 @@ public:
 
     const SegmentList& GetNonPadding(Compiler* comp);
 
+    ClassLayout* SliceLayout(Compiler* compiler, unsigned offset, unsigned size);
+
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
     bool CanAssignFrom(const ClassLayout* sourceLayout);

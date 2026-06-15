@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -35,7 +35,7 @@ namespace System
 
         public ApplicationId Copy() => new ApplicationId(_publicKeyToken, Name, Version, ProcessorArchitecture, Culture);
 
-        public override string ToString()
+        public override unsafe string ToString()
         {
             var sb = new ValueStringBuilder(stackalloc char[128]);
             sb.Append(Name);
