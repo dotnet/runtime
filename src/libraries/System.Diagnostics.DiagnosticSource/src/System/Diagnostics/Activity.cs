@@ -243,7 +243,7 @@ namespace System.Diagnostics
                 if (_id == null && _spanId != null)
                 {
                     // Convert flags to binary.
-                    Span<char> flagsChars = stackalloc char[2];
+                    Span<char> flagsChars = ['\0', '\0'];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
 #if NET
@@ -275,7 +275,7 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        Span<char> flagsChars = stackalloc char[2];
+                        Span<char> flagsChars = ['\0', '\0'];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
 #if NET
@@ -1952,7 +1952,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Create a new TraceId with at random number in it (very likely to be unique)
         /// </summary>
-        public static ActivityTraceId CreateRandom()
+        public static unsafe ActivityTraceId CreateRandom()
         {
             Span<byte> span = stackalloc byte[sizeof(ulong) * 2];
             SetToRandomBytes(span);
@@ -2024,7 +2024,7 @@ namespace System.Diagnostics
             if (idData.Length != 32)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            Span<ulong> span = stackalloc ulong[2];
+            Span<ulong> span = [0, 0];
 
             if (!Utf8Parser.TryParse(idData.Slice(0, 16), out span[0], out _, 'x'))
             {

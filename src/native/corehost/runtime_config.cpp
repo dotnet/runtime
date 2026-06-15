@@ -73,7 +73,8 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
 bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
 {
     // Note: both runtime_config and dev_runtime_config call into the function.
-    // runtime_config will override whatever dev_runtime_config populated.
+    // dev_runtime_config is parsed first. The configProperties from the dev config take precedence
+    // over the configProperties from the runtime config.
     if (opts.IsNull())
     {
         return true;
@@ -93,6 +94,9 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_properties.reserve(properties_obj.MemberCount());
         for (const auto& property : properties_obj)
         {
+            if (m_properties.count(property.name.GetString()) != 0)
+                continue;
+
             if (property.value.IsString())
             {
                 m_properties[property.name.GetString()] = property.value.GetString();

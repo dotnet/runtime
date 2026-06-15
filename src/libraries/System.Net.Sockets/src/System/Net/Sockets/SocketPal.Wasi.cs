@@ -95,7 +95,7 @@ namespace System.Net.Sockets
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_state_connect_failed_t
     {
-        public byte error_code;
+        public int error_code;
     }
 
     internal enum tcp_socket_state_tag
@@ -126,16 +126,21 @@ namespace System.Net.Sockets
         public tcp_socket_state_union state;
     }
 
+    // Layout mirrors wasi-libc (WASIp2) tcp_socket_t from
+    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/tcp.h
+    // Only `socket`, `state` and `socket_pollable` are read; trailing fields are modelled for completeness.
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_t
     {
         public tcp_own_tcp_socket_t socket;
-        public poll_own_pollable_t socket_pollable;
-        public bool blocking;
-        public bool fake_nodelay;
-        public bool fake_reuseaddr;
-        public byte family;
         public tcp_socket_state_t state;
+        public poll_own_pollable_t socket_pollable;
+        public byte blocking;
+        public byte fake_nodelay;
+        public byte fake_reuseaddr;
+        public byte family;
+        public ulong send_timeout;
+        public ulong recv_timeout;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -195,33 +200,15 @@ namespace System.Net.Sockets
         public udp_socket_state_union state;
     }
 
+    // Layout mirrors wasi-libc (WASIp2) udp_socket_t from
+    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/sources/udp.c
     [StructLayout(LayoutKind.Sequential)]
     internal struct udp_socket_t
     {
         public udp_own_udp_socket_t socket;
         public poll_own_pollable_t socket_pollable;
-        public bool blocking;
+        public byte blocking;
         public byte family;
         public udp_socket_state_t state;
-    }
-
-    internal enum descriptor_table_entry_tag
-    {
-        DESCRIPTOR_TABLE_ENTRY_TCP_SOCKET,
-        DESCRIPTOR_TABLE_ENTRY_UDP_SOCKET,
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    internal struct descriptor_table_entry_union
-    {
-        [FieldOffset(0)] public tcp_socket_t tcp_socket;
-        [FieldOffset(0)] public udp_socket_t udp_socket;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct descriptor_table_entry_t
-    {
-        public descriptor_table_entry_tag tag;
-        public descriptor_table_entry_union entry;
     }
 }

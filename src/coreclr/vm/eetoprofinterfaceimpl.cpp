@@ -683,8 +683,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     // belongs to this class, so NULL out locals without allowing them to release
     m_pCallback2 = pCallback2.Extract();
     pCallback2 = NULL;
-    m_hmodProfilerDLL = hmodProfilerDLL.Extract();
-    hmodProfilerDLL = NULL;
+    m_hmodProfilerDLL = hmodProfilerDLL.Detach();
 
     // ATTENTION: Please update EEToProfInterfaceImpl::~EEToProfInterfaceImpl() after adding the next ICorProfilerCallback interface here !!!
 

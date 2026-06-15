@@ -213,6 +213,20 @@ Frame::Interception Frame::GetInterception()
     }
 }
 
+#ifdef DACCESS_COMPILE
+Frame::StubFrameType Frame::GetStubFrameType()
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetStubFrameType_Impl(); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return STUB_FRAME_NONE;
+    }
+}
+#endif // DACCESS_COMPILE
+
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
     switch (GetFrameIdentifier())
@@ -554,14 +568,14 @@ VOID Frame::Push(Thread *pThread)
 
     m_Next = pThread->GetFrame();
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             (PBYTE(m_Next) + (2 * minipal_getpagesize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -1214,13 +1228,13 @@ void GCFrame::Push(Thread* pThread)
     m_Next = pThread->GetGCFrame();
     m_pCurThread = pThread;
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
     _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next->GetOSStackLocation()) + (2 * GetOsPageSize())) > PBYTE(this->GetOSStackLocation())) &&
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);

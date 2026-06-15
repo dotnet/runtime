@@ -2084,6 +2084,13 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
+#ifdef TARGET_WASM
+    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here. 
+    // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
+    // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
+    // be incorrect.
+    block.m_StackPointer = 0;
+#endif
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
@@ -2137,8 +2144,11 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            if (finishedPrestubPortion)
+            // WASM-TODO, other implementation of calling InvokeManagedMethod in a try/catch
+            // have _ASSERTE(ohThrowable) here, but I found this to cause a problem
+            // when using C++ eh to unwind across a block of R2R Wasm code from one
+            // interpreter block to another.
+            if (ohThrowable != NULL && finishedPrestubPortion)
             {
                 StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)block, pMethod, NULL);
             }
@@ -2981,6 +2991,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             }
         }
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+#endif
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();

@@ -254,6 +254,7 @@ Contracts used:
 | Contract Name |
 | --- |
 | `ExecutionManager` |
+| `CodeVersions` |
 
 Constants:
 | Constant Name | Meaning | Value |
@@ -342,6 +343,7 @@ public readonly struct DebugVarInfo
     public int StackOffset { get; init; }
     public uint BaseRegister2 { get; init; }
     public int StackOffset2 { get; init; }
+    public uint CallReturnValueILOffset { get; init; }
 }
 
 // Given a code pointer, return the variable location info for the method.
@@ -351,7 +353,8 @@ IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint cod
 Additional constants (Version 2):
 | Constant Name | Meaning | Value |
 | --- | --- | --- |
-| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffc` (-4) |
+| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffa` (-6) |
+| `CALL_RETURN_ILNUM` | Special variable number identifying a call-return-value entry | `0xfffffffb` (-5) |
 | `VLT_REG` | Variable is in a register | `0` |
 | `VLT_REG_BYREF` | Address of the variable is in a register | `1` |
 | `VLT_REG_FP` | Variable is in an FP register | `2` |
@@ -370,9 +373,11 @@ Additional constants (Version 2):
 
 Each variable entry in the Vars section is nibble-encoded as follows:
 
-1. `startOffset` — encoded unsigned 32-bit integer
-2. `endOffset` — encoded as delta from `startOffset` (unsigned)
-3. `varNumber` — encoded as adjusted unsigned (`value - MAX_ILNUM`)
+1. `varNumber` — encoded as adjusted unsigned (`value - MAX_ILNUM`)
+2. `startOffset` — encoded unsigned 32-bit integer
+3. The next field depends on `varNumber`:
+   - If `varNumber == CALL_RETURN_ILNUM`: `callReturnValueILOffset` — encoded unsigned 32-bit integer (IL offset of the call site whose return value this entry describes). `endOffset` is implicit and equals `startOffset + 1`.
+   - Otherwise: `endOffset` — encoded as delta from `startOffset` (unsigned). `callReturnValueILOffset` is implicit and equals `0`.
 4. `VarLocType` — encoded unsigned 32-bit integer
 5. Location fields depend on the `VarLocType`:
 

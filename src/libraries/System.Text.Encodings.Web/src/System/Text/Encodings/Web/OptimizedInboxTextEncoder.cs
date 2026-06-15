@@ -27,7 +27,7 @@ namespace System.Text.Encodings.Web
         private readonly SearchValues<char> _allowedAsciiChars;
 #endif
 
-        internal OptimizedInboxTextEncoder(
+        internal unsafe OptimizedInboxTextEncoder(
             ScalarEscaperBase scalarEscaper,
             in AllowedBmpCodePointsBitmap allowedCodePointsBmp,
             bool forbidHtmlSensitiveCharacters = true,

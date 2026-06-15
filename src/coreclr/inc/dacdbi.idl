@@ -18,16 +18,16 @@ struct ModuleInfo;
 struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
-struct DebuggerIPCE_STRData;
+struct Debugger_STRData;
 struct DebuggerREGDISPLAY;
 struct NativeCodeFunctionData;
-struct ClassInfo;
 struct FieldData;
 struct DebuggerIPCE_ExpandedTypeData;
 struct DebuggerIPCE_BasicTypeData;
 struct EnCHangingFieldInfo;
 struct DacExceptionCallStackData;
-struct DebuggerIPCE_ObjectData;
+struct DacDbiObjectData;
+struct DacDbiArrayInfo;
 struct MonitorLockInfo;
 struct DacGcReference;
 struct DacSharedReJitInfo;
@@ -90,7 +90,6 @@ typedef int CorElementType;
 typedef int AddressType;
 typedef int SymbolFormat;
 typedef int AreValueTypesBoxed;
-typedef int DelegateType;
 typedef int DynamicMethodType;
 typedef int FrameType;
 typedef int EHijackReason;
@@ -118,7 +117,6 @@ typedef int COR_FIELD;
 typedef int COR_TYPE_LAYOUT;
 typedef int COR_ARRAY_LAYOUT;
 typedef int COR_HEAPINFO;
-typedef int COR_MEMORY_RANGE;
 
 // DacDbiArrayList type params
 typedef int TypeInfoList;
@@ -126,7 +124,6 @@ typedef int ArgInfoList;
 typedef int TypeParamsList;
 
 // DacDbiArrayList instantiations
-typedef struct { void *pList; int nEntries; } DacDbiArrayList_FieldData;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_DacExceptionCallStackData;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_ExpandedTypeData;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
@@ -141,9 +138,12 @@ cpp_quote("#endif")
 // Callback function pointer typedefs
 //
 typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
-typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
 typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
+typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
+typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
+typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
+typedef void (*FP_FIELDDATA_CALLBACK)(struct FieldData * pFieldData, CALLBACK_DATA pUserData);
 
 
 //
@@ -212,7 +212,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetMetadata([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer);
     HRESULT GetSymbolsBuffer([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer, [out] SymbolFormat * pSymbolFormat);
     HRESULT GetModuleData([in] VMPTR_Module vmModule, [out] struct ModuleInfo * pData);
-    HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule);
+    HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule, [out] BOOL * pIsModuleLoaded);
 
     // Address
     HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
@@ -223,7 +223,6 @@ interface IDacDbiInterface : IUnknown
 
     // Enumeration
     HRESULT EnumerateAssembliesInAppDomain([in] VMPTR_AppDomain vmAppDomain, [in] FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
-    HRESULT EnumerateModulesInAssembly([in] VMPTR_Assembly vmAssembly, [in] FP_MODULE_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Debug Events
     HRESULT RequestSyncAtEvent();
@@ -278,7 +277,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT SetStackWalkCurrentContext([in] VMPTR_Thread vmThread, [in] StackWalkHandle pSFIHandle, [in] CorDebugSetContextFlag flag, [in] DT_CONTEXT * pContext);
     HRESULT UnwindStackWalkFrame([in] StackWalkHandle pSFIHandle, [out] BOOL * pResult);
     HRESULT CheckContext([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext);
-    HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct DebuggerIPCE_STRData * pFrameData, [out] FrameType * pRetVal);
+    HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct Debugger_STRData * pFrameData, [out] FrameType * pRetVal);
     HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
     HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
@@ -303,16 +302,20 @@ interface IDacDbiInterface : IUnknown
     // Type
     HRESULT IsValueType([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
     HRESULT HasTypeParams([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
-    HRESULT GetClassInfo([in] VMPTR_TypeHandle thExact, [out] struct ClassInfo * pData);
-    HRESULT GetInstantiationFieldInfo(
+    HRESULT EnumerateClassFields(
+        [in] VMPTR_TypeHandle thExact,
+        [out] SIZE_T * pObjectSize,
+        [in] FP_FIELDDATA_CALLBACK fpCallback,
+        [in] CALLBACK_DATA pUserData);
+    HRESULT EnumerateInstantiationFields(
         [in] VMPTR_Assembly vmAssembly,
         [in] VMPTR_TypeHandle vmThExact,
         [in] VMPTR_TypeHandle vmThApprox,
-        [out] DacDbiArrayList_FieldData * pFieldList,
-        [out] SIZE_T * pObjectSize);
-    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+        [out] SIZE_T * pObjectSize,
+        [in] FP_FIELDDATA_CALLBACK fpCallback,
+        [in] CALLBACK_DATA pUserData);
+    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
     HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
-    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] COR_TYPEID id, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
     HRESULT GetTypeHandle([in] VMPTR_Module vmModule, [in] mdTypeDef metadataToken, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetApproxTypeHandle([in] TypeInfoList * pTypeData, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetExactTypeHandle([in] struct DebuggerIPCE_ExpandedTypeData * pTypeData, [in] ArgInfoList * pArgInfo, [out] VMPTR_TypeHandle * pVmTypeHandle);
@@ -334,15 +337,15 @@ interface IDacDbiInterface : IUnknown
 
     // Exception and COM Interop
     HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
+    HRESULT EnumerateStackFramesFromException([in] VMPTR_Object vmObject, [in] FP_EXCEPTION_STACK_FRAME_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_CORDB_ADDRESS * pDacItfPtrs);
+    HRESULT EnumerateRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] FP_RCW_INTERFACE_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Object Data
-    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] CORDB_ADDRESS * pObjRef, [out] struct DebuggerIPCE_BasicTypeData * pTypedByRefType);
+    HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] UINT * pLength, [out] UINT * pOffsetToStringBase);
+    HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidArray, [out] struct DacDbiArrayInfo * pArrayInfo);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);
@@ -354,11 +357,9 @@ interface IDacDbiInterface : IUnknown
     // VM Object Handle
     HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
-    HRESULT IsWinRTModule([in] VMPTR_Module vmModule, [out] BOOL * pIsWinRT);
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
-    // Object Contents and Monitor
-    HRESULT GetObjectContents([in] VMPTR_Object obj, [out] struct TargetBuffer * pRetVal);
+    // Object Monitor
     HRESULT GetThreadOwningMonitorLock([in] VMPTR_Object vmObject, [out] struct MonitorLockInfo * pRetVal);
     HRESULT EnumerateMonitorEventWaitList([in] VMPTR_Object vmObject, [in] FP_THREAD_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
@@ -377,11 +378,10 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsThreadSuspendedOrHijacked([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
 
     // GC
-    HRESULT AreGCStructuresValid([out] BOOL * pResult);
     HRESULT CreateHeapWalk([out] HeapWalkHandle * pHandle);
     HRESULT DeleteHeapWalk([in] HeapWalkHandle handle);
     HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);
-    HRESULT GetHeapSegments([out] DacDbiArrayList_COR_SEGMENT * pSegments);
+    HRESULT EnumerateHeapSegments([in] FP_HEAPSEGMENT_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
@@ -392,9 +392,9 @@ interface IDacDbiInterface : IUnknown
     // Type ID
     HRESULT GetTypeID([in] CORDB_ADDRESS obj, [out] COR_TYPEID * pType);
     HRESULT GetTypeIDForType([in] VMPTR_TypeHandle vmTypeHandle, [out] COR_TYPEID * pId);
-    HRESULT GetObjectFields([in] COR_TYPEID id, [in] ULONG32 celt, [out] COR_FIELD * layout, [out] ULONG32 * pceltFetched);
-    HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT * pLayout);
-    HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT * pLayout);
+    HRESULT GetObjectFields([in] UINT64 id, [in] ULONG32 celt, [out] COR_FIELD * layout, [out] ULONG32 * pceltFetched);
+    HRESULT GetTypeLayout([in] CORDB_ADDRESS id, [out] COR_TYPE_LAYOUT * pLayout);
+    HRESULT GetArrayLayout([in] CORDB_ADDRESS id, [out] COR_ARRAY_LAYOUT * pLayout);
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File
@@ -417,20 +417,13 @@ interface IDacDbiInterface : IUnknown
 
     // Delegate
     HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetDelegateType([in] VMPTR_Object delegateObject, [out] DelegateType * delegateType);
     HRESULT GetDelegateFunctionData(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
         [out] VMPTR_Assembly * ppFunctionAssembly,
         [out] mdMethodDef * pMethodDef);
     HRESULT GetDelegateTargetObject(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
-        [out] VMPTR_Object * ppTargetObj,
-        [out] VMPTR_AppDomain * ppTargetAppDomain);
-
-    // Loader Heap
-    HRESULT GetLoaderHeapMemoryRanges([out] DacDbiArrayList_COR_MEMORY_RANGE * pRanges);
+        [out] VMPTR_Object * ppTargetObj);
 
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -2127,6 +2129,123 @@ namespace System.Text.Tests
             sb.Clear();
             Assert.Equal(oldCapacity - 1, sb.Capacity);
             Assert.Equal(initialCapacity, sb.Capacity);
+        }
+
+        [Fact]
+        public static void MoveChunks_NullSource_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => StringBuilder.MoveChunks(null));
+        }
+
+        [Fact]
+        public static void MoveChunks_Empty_ProducesEmptyDestinationAndDrainsSource()
+        {
+            var source = new StringBuilder(32, 64);
+            char[] originalChars = GetChunkCharsField(source);
+
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.NotNull(destination);
+            Assert.NotSame(source, destination);
+            Assert.Equal(0, destination.Length);
+            Assert.Equal(32, destination.Capacity);
+            Assert.Equal(64, destination.MaxCapacity);
+            Assert.Same(originalChars, GetChunkCharsField(destination));
+
+            AssertSourceIsDrained(source);
+        }
+
+        [Fact]
+        public static void MoveChunks_SingleChunk_TransfersContentsAndDrainsSource()
+        {
+            var source = new StringBuilder(16, 100);
+            source.Append("Hello");
+            char[] originalChars = GetChunkCharsField(source);
+
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.Equal("Hello", destination.ToString());
+            Assert.Equal(100, destination.MaxCapacity);
+            Assert.Same(originalChars, GetChunkCharsField(destination));
+
+            AssertSourceIsDrained(source);
+        }
+
+        [Fact]
+        public static void MoveChunks_MultipleChunks_TransfersChainAndDrainsSource()
+        {
+            StringBuilder source = StringBuilderWithMultipleChunks();
+            string expected = source.ToString();
+
+            // Capture the backing char[] arrays by identity to verify no-copy move semantics.
+            List<(char[] Array, int Offset, int Count)> originalChunks = new List<(char[], int, int)>();
+            foreach (ReadOnlyMemory<char> chunk in source.GetChunks())
+            {
+                Assert.True(MemoryMarshal.TryGetArray(chunk, out ArraySegment<char> segment));
+                originalChunks.Add((segment.Array!, segment.Offset, segment.Count));
+            }
+
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.Equal(expected, destination.ToString());
+
+            int i = 0;
+            foreach (ReadOnlyMemory<char> chunk in destination.GetChunks())
+            {
+                Assert.True(MemoryMarshal.TryGetArray(chunk, out ArraySegment<char> segment));
+                Assert.Same(originalChunks[i].Array, segment.Array);
+                Assert.Equal(originalChunks[i].Offset, segment.Offset);
+                Assert.Equal(originalChunks[i].Count, segment.Count);
+                i++;
+            }
+            Assert.Equal(originalChunks.Count, i);
+
+            AssertSourceIsDrained(source);
+        }
+
+        [Fact]
+        public static void MoveChunks_DrainedSource_RemainsUsable()
+        {
+            var source = new StringBuilder("abc");
+            int originalMaxCapacity = source.MaxCapacity;
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.Equal("abc", destination.ToString());
+            Assert.Equal(originalMaxCapacity, source.MaxCapacity);
+
+            // source is empty but fully usable; subsequent appends allocate new buffers.
+            source.Append('x');
+            Assert.Equal("x", source.ToString());
+        }
+
+        [Fact]
+        public static void MoveChunks_AlreadyDrainedSource_ProducesEmptyDestination()
+        {
+            var source = new StringBuilder("abc");
+            int originalMaxCapacity = source.MaxCapacity;
+            _ = StringBuilder.MoveChunks(source);
+
+            // MoveChunks on an already-drained (empty) source produces an empty destination.
+            StringBuilder destination = StringBuilder.MoveChunks(source);
+
+            Assert.Equal(0, destination.Length);
+            Assert.Equal(0, destination.Capacity);
+            Assert.Equal(originalMaxCapacity, destination.MaxCapacity);
+            AssertSourceIsDrained(source);
+        }
+
+        private static readonly FieldInfo s_chunkCharsField = typeof(StringBuilder).GetField("m_ChunkChars", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        private static char[] GetChunkCharsField(StringBuilder builder)
+        {
+            return (char[])s_chunkCharsField.GetValue(builder)!;
+        }
+
+        private static void AssertSourceIsDrained(StringBuilder source)
+        {
+            Assert.Equal(0, source.Length);
+            Assert.Equal(0, source.Capacity);
+            Assert.Same(Array.Empty<char>(), GetChunkCharsField(source));
         }
 
         [Theory]

@@ -419,6 +419,10 @@ namespace System.Net
         private const string Localhost = "localhost";
         private const string InvalidDomain = "invalid";
 
+        // Some systems (e.g. Android, some Linux distros) map ::1 to "ip6-localhost" instead of
+        // "localhost" in /etc/hosts, which causes getaddrinfo("localhost", AF_INET6) to fail with EAI_NONAME.
+        private const string IPv6Localhost = "ip6-localhost";
+
         /// <summary>
         /// Checks if the given host name matches a reserved name or is a subdomain of it.
         /// For example, IsReservedName("foo.localhost", "localhost") returns true.
@@ -550,7 +554,16 @@ namespace System.Net
 
             if (fallbackToLocalhost)
             {
-                return GetHostEntryOrAddressesCore(Localhost, justAddresses, addressFamily);
+                try
+                {
+                    return GetHostEntryOrAddressesCore(Localhost, justAddresses, addressFamily);
+                }
+                catch (SocketException ex) when (addressFamily == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                {
+                    // Some systems map ::1 to "ip6-localhost" instead of "localhost" in /etc/hosts.
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                    return GetHostEntryOrAddressesCore(IPv6Localhost, justAddresses, addressFamily);
+                }
             }
 
             Debug.Assert(result is not null);
@@ -795,8 +808,7 @@ namespace System.Net
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
-                        // result is IPAddress[] so justAddresses is guaranteed true here.
-                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)).ConfigureAwait(false);
+                        return await GetLocalhostAddressesAsync(addressFamily, cancellationToken).ConfigureAwait(false);
                     }
 
                     if (isLocalhostSubdomain && result is IPHostEntry entry && entry.AddressList.Length == 0)
@@ -805,8 +817,7 @@ namespace System.Net
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
-                        // result is IPHostEntry so justAddresses is guaranteed false here.
-                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken)).ConfigureAwait(false);
+                        return await GetLocalhostEntryAsync(addressFamily, cancellationToken).ConfigureAwait(false);
                     }
 
                     return result;
@@ -818,9 +829,9 @@ namespace System.Net
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: ex);
                     fallbackOccurred = true;
 
-                    return await ((Task<T>)(justAddresses
-                        ? (Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)
-                        : Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken))).ConfigureAwait(false);
+                    return justAddresses
+                        ? await GetLocalhostAddressesAsync(addressFamily, cancellationToken).ConfigureAwait(false)
+                        : await GetLocalhostEntryAsync(addressFamily, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -832,6 +843,35 @@ namespace System.Net
                     if (!fallbackOccurred)
                     {
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: exception);
+                    }
+                }
+
+                // Resolves "localhost" with the given address family, returning addresses.
+                // If IPv6 resolution fails with HostNotFound, retries with "ip6-localhost"
+                // because some systems map ::1 to "ip6-localhost" instead of "localhost" in /etc/hosts.
+                static async Task<T> GetLocalhostAddressesAsync(AddressFamily family, CancellationToken cancellationToken)
+                {
+                    try
+                    {
+                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(Localhost, family, cancellationToken)).ConfigureAwait(false);
+                    }
+                    catch (SocketException ex) when (family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(IPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
+                    }
+                }
+
+                static async Task<T> GetLocalhostEntryAsync(AddressFamily family, CancellationToken cancellationToken)
+                {
+                    try
+                    {
+                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(Localhost, family, cancellationToken)).ConfigureAwait(false);
+                    }
+                    catch (SocketException ex) when (family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(IPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
                     }
                 }
             }
