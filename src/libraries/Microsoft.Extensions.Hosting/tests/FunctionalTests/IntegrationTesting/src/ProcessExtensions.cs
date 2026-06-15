@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Internal
         {
             try
             {
-                if (kill(processId, SigTermSignalNumber) != 0)
+                if (Kill(processId, SigTermSignalNumber) != 0)
                 {
                     var error = Marshal.GetLastWin32Error();
                     if (error != ESRCH)
@@ -194,14 +194,14 @@ namespace Microsoft.Extensions.Internal
 
         internal static void SendSignal(int pid, int signal)
         {
-            if (kill(pid, signal) != 0)
+            if (Kill(pid, signal) != 0)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
+        [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
+        private static extern int Kill(int pid, int sig);
 
 #if NET
         [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetPlatformSignalNumber")]
