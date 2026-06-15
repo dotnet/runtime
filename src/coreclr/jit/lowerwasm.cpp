@@ -820,7 +820,7 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
-    return nullptr;
+    return node;
 }
 
 //----------------------------------------------------------------------------------------------

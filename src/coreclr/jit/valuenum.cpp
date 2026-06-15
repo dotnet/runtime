@@ -8322,6 +8322,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
+#elif defined(TARGET_WASM)
+                NYI_WASM_SIMD("Vector128_ExtractMostSignificantBits");
+                break;
 #endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
