@@ -165,9 +165,23 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             assert(constant <= INT32_MAX);
             return comp->gtNewIconNode(constant);
         case Var:
-            return comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
+        {
+            GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
+            if (offset != 0)
+            {
+                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+            }
+            return node;
+        }
         case ArrAccess:
-            return arrAccess.ToGenTree(comp, bb);
+        {
+            GenTree* node = arrAccess.ToGenTree(comp, bb);
+            if (offset != 0)
+            {
+                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+            }
+            return node;
+        }
         case SpanAccess:
             return spanAccess.ToGenTree(comp);
         case Null:
@@ -190,13 +204,13 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case MethodAddr:
         {
             GenTreeIntCon* methodAddrHandle = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
-            INDEBUG(methodAddrHandle->gtTargetHandle = (size_t)targetMethHnd);
+            INDEBUG(methodAddrHandle->SetTargetHandle((size_t)targetMethHnd));
             return methodAddrHandle;
         }
         case IndirOfMethodAddrSlot:
         {
             GenTreeIntCon* slot = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
-            INDEBUG(slot->gtTargetHandle = (size_t)targetMethHnd);
+            INDEBUG(slot->SetTargetHandle((size_t)targetMethHnd));
             GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             return indir;
         }
@@ -1223,12 +1237,61 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
-    // We don't know exactly whether we might be dealing with a Span<T> or not,
-    // but if we suspect we are, we need to be careful about the stride:
-    // As Span<>.Length can be INT32_MAX unlike arrays.
-    if (hasSpans && (stride > 1))
+    // Span<>.Length can be INT32_MAX, unlike Array.MaxLength. For an
+    // increasing loop with stride > 1, the IV after the final in-loop
+    // increment is at most `limit + s` (LE) or `limit + s - 1` (LT), so
+    // a limit near INT32_MAX would wrap the IV and let the bounds-check-
+    // stripped fast clone access memory past the span. Bound the limit
+    // base accordingly. Decreasing loops are safe via the existing
+    // `limit >= 0` condition plus the stride cap above. HasArrayLengthLimit
+    // is bounded implicitly by Array.MaxLength.
+    if (hasSpans && (stride > 1) && isIncreasingLoop)
     {
-        return false;
+        const int     adjustForLE    = (iterInfo->TestOper() == GT_LE) ? 1 : 0;
+        const int     offset         = iterInfo->LimitOffset;
+        const int64_t maxLimitBase64 = (int64_t)INT32_MAX - stride + 1 - adjustForLE - offset;
+
+        if (iterInfo->HasConstLimit)
+        {
+            assert(offset == 0);
+            const int limitVal = iterInfo->ConstLimit();
+            if ((int64_t)limitVal > maxLimitBase64)
+            {
+                JITDUMP("> Span stride %d: const limit %d exceeds overflow bound %lld\n", stride, limitVal,
+                        (long long)maxLimitBase64);
+                return false;
+            }
+        }
+        else if (iterInfo->HasInvariantLocalLimit)
+        {
+            if (maxLimitBase64 >= INT32_MAX)
+            {
+                // Offset already absorbs the stride; guard is vacuous.
+                JITDUMP("Span stride>1 overflow guard trivially holds (offset %d)\n", offset);
+            }
+            else if (maxLimitBase64 < 0)
+            {
+                JITDUMP("> Span stride %d, offset %d: overflow guard unsatisfiable\n", stride, offset);
+                return false;
+            }
+            else
+            {
+                const unsigned limitLcl = iterInfo->VarLimit();
+                if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+                {
+                    JITDUMP("> Span stride %d: limit var V%02u not TYP_INT-compatible\n", stride, limitLcl);
+                    return false;
+                }
+
+                const int    maxLimit      = (int)maxLimitBase64;
+                LC_Ident     limitVarIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet());
+                LC_Ident     maxConstIdent = LC_Ident::CreateConst(static_cast<unsigned>(maxLimit));
+                LC_Condition overflowGuard(GT_LE, LC_Expr(limitVarIdent), LC_Expr(maxConstIdent));
+                context->EnsureConditions(loop->GetIndex())->Push(overflowGuard);
+                JITDUMP("Added Span stride>1 overflow guard: V%02u <= %d\n", limitLcl, maxLimit);
+            }
+        }
+        // HasArrayLengthLimit: bounded by Array.MaxLength, no extra guard.
     }
 
     // If the loop limit is an array length, compute the underlying ArrIndex
@@ -1299,12 +1362,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
                 return false;
             }
-            limitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
+            limitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
         }
         else if (iterInfo->HasArrayLengthLimit)
         {
             assert(limitArrIndex != nullptr);
-            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
+                                                   iterInfo->LimitOffset);
         }
         else
         {
@@ -1400,13 +1464,15 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Condition geZero;
         if (isIncreasingLoop)
         {
-            // For increasing loop, thelimit value needs to be checked against the array length
-            ident  = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
+            // For increasing loop, the limit value needs to be checked against the array length
+            ident  = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
             geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident::CreateConst(0u)));
         }
         else
         {
-            geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet())),
+            geZero = LC_Condition(GT_GE,
+                                  LC_Expr(LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(),
+                                                              iterInfo->LimitOffset)),
                                   LC_Expr(LC_Ident::CreateConst(0u)));
         }
 
@@ -1423,7 +1489,20 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             // init-conditions section above) -- overwriting it with the loop test's limit
             // array length would let the fast clone access an unrelated array out of bounds
             // when init > accessArr.Length (see https://github.com/dotnet/runtime/issues/129176).
-            ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+            ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
+                                              iterInfo->LimitOffset);
+        }
+
+        // arr.Length is non-negative, but arr.Length + offset can be < 0 when
+        // offset < 0 and the array is short. Guard the fast clone against
+        // out-of-bounds access on the low side.
+        if (iterInfo->LimitOffset < 0)
+        {
+            LC_Ident arrLenIdent =
+                LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
+                                          iterInfo->LimitOffset);
+            LC_Condition geZero(GT_GE, LC_Expr(arrLenIdent), LC_Expr(LC_Ident::CreateConst(0u)));
+            context->EnsureConditions(loop->GetIndex())->Push(geZero);
         }
     }
     else
@@ -1548,13 +1627,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         {
             const unsigned limitLcl = iterInfo->VarLimit();
             assert(genActualTypeIsInt(lvaGetDesc(limitLcl)));
-            neLimitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
+            neLimitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->LimitBase()->TypeGet(), iterInfo->LimitOffset);
         }
         else
         {
             assert(iterInfo->HasArrayLengthLimit);
             assert(limitArrIndex != nullptr);
-            neLimitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+            neLimitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
+                                                     iterInfo->LimitOffset);
         }
 
         const genTreeOps cmpOp = isIncreasingLoop ? GT_LE : GT_GE;
@@ -2949,7 +3029,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
                     LcMethodAddrTestOptInfo(compCurBB, info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
-                                                            (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
+                                                            (CORINFO_METHOD_HANDLE)iconHandle->GetTargetHandle()));
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())->Push(optInfo);
             }
         }
