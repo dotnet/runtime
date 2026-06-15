@@ -10,6 +10,7 @@ using Xunit;
 
 namespace ComInterfaceGenerator.Tests
 {
+    [Collection(nameof(TrackedIntMarshaller))]
     public unsafe partial class IIndexersTests
     {
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_indexers")]
