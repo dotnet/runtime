@@ -60,6 +60,12 @@ namespace System.Diagnostics
             {
                 traceId = null;
             }
+            else if (traceId!.Length > TraceParentCoreLength)
+            {
+                // For future versions, ignore unknown extension fields and keep the W3C core parent id that Activity can consume.
+                // https://www.w3.org/TR/trace-context-2/#versioning-of-traceparent
+                traceId = traceId.Substring(0, TraceParentCoreLength);
+            }
 
             getter(carrier, TraceState, out string? traceStateValue, out _);
             traceState = ValidateTraceState(traceStateValue);
