@@ -305,7 +305,11 @@ static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-	LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
