@@ -738,7 +738,7 @@ extends:
           platforms:
           - android_x64
           - browser_wasm
-          - wasi_wasm
+          # - wasi_wasm
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
@@ -1190,17 +1190,15 @@ extends:
           - linux_musl_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
             - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
-            - wasi
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -1217,17 +1215,15 @@ extends:
           - windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
             - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
-            - wasi
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -1248,20 +1244,18 @@ extends:
           - osx_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - build_android_x64_release_MonoAOTOffsets
             - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
             - build_tvos_arm64_release_MonoAOTOffsets
             - build_ios_arm64_release_MonoAOTOffsets
             - build_maccatalyst_x64_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
-            - wasi
             - tvos
             - ios
             - maccatalyst
