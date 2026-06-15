@@ -401,6 +401,33 @@ namespace System.Diagnostics.Tests
             Assert.Equal(isValid, traceId is not null);
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("00-00000000000000000000000000000000-b9c7c989f97918e1-01")]
+        public void ValidateTraceIdAndStateExtractionDiscardsTraceStateWithInvalidTraceParent(string? traceParent)
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = traceParent;
+                    return;
+                }
+
+                if (fieldName == PropagatorTests.TraceState)
+                {
+                    fieldValue = "foo=1";
+                    return;
+                }
+            }, out string? traceId, out string? traceState);
+
+            Assert.Null(traceId);
+            Assert.Null(traceState);
+        }
+
         [Fact]
         public void ValidateTraceIdAndStateExtractionTrimsFutureVersionTraceParentExtensions()
         {

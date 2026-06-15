@@ -59,8 +59,11 @@ namespace System.Diagnostics
             if (IsInvalidTraceParent(traceId))
             {
                 traceId = null;
+                traceState = null;
+                return;
             }
-            else if (traceId!.Length > TraceParentCoreLength)
+
+            if (traceId!.Length > TraceParentCoreLength)
             {
                 // For future versions, ignore unknown extension fields and keep the W3C core parent id that Activity can consume.
                 // https://www.w3.org/TR/trace-context-2/#versioning-of-traceparent
