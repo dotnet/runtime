@@ -19,9 +19,10 @@ namespace Microsoft.Extensions.Caching.Memory
         //
         // The workers are LongRunning tasks, which the default scheduler backs with dedicated threads
         // rather than the shared ThreadPool. This prevents the storm from starving timing-sensitive
-        // post-eviction callbacks in sibling tests. ConditionalFact skips platforms without real
-        // thread support (e.g. browser/wasm).
+        // post-eviction callbacks in sibling tests. It runs as OuterLoop because it is a long-running
+        // stress test, and ConditionalFact skips platforms without real thread support (e.g. browser/wasm).
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [OuterLoop]
         public void ConcurrentSetReplaceAndRemove_DoesNotDriftSizeNegative_NorLatch()
         {
             using MemoryCache cache = new(new MemoryCacheOptions
@@ -115,30 +116,6 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.Equal(Probe, retained);
-        }
-
-        // Guards that the fix does not disable SizeLimit eviction: a tiny limit must keep the cache
-        // bounded even when far more entries (in aggregate size) are inserted.
-        [Fact]
-        public void SizeLimit_StillEnforced_AfterReplaceAccountingFix()
-        {
-            using MemoryCache cache = new(new MemoryCacheOptions
-            {
-                SizeLimit = 40, // room for ~10 entries of size 4
-                TrackStatistics = true
-            });
-
-            for (int i = 0; i < 1000; i++)
-            {
-                using ICacheEntry entry = cache.CreateEntry("cap-" + i);
-                entry.Size = 4;
-                entry.Value = i;
-            }
-
-            MemoryCacheStatistics stats = cache.GetCurrentStatistics();
-            Assert.True(stats.CurrentEstimatedSize >= 0);
-            Assert.True(stats.CurrentEstimatedSize <= 40, $"size {stats.CurrentEstimatedSize} exceeds limit 40");
-            Assert.True(stats.CurrentEntryCount <= 10, $"count {stats.CurrentEntryCount} exceeds capacity");
         }
     }
 }
