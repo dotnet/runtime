@@ -13,10 +13,10 @@ namespace Mono.Linker.Dataflow
         internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameter genericParameter)
         {
             if (genericParameter.DeclaringMethod is MethodReference declaringMethod)
-                return declaringMethod.Name;
+                return declaringMethod.GetDisplayName();
 
             if (genericParameter.DeclaringType is TypeReference declaringType)
-                return declaringType.Name;
+                return declaringType.GetDisplayName();
 
             return genericParameter.Name;
         }
