@@ -474,14 +474,7 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
         }
         else if (strcmp(className, "V512") == 0)
         {
-            CORINFO_InstructionSet v512Isa = V512VersionOfIsa(enclosingIsa);
-            // V512VersionOfIsa returning NONE for a successfully-resolved enclosing ISA
-            // means the table is missing a case for it; IsSupported on the nested V512
-            // class would silently return false. The downstream compSupportsHWIntrinsic
-            // check then guards on the V512 ISA's actual support on the running CPU.
-            assert((v512Isa != InstructionSet_NONE) || (enclosingIsa == InstructionSet_NONE) ||
-                   (enclosingIsa == InstructionSet_ILLEGAL));
-            return v512Isa;
+            return V512VersionOfIsa(enclosingIsa);
         }
         else if (strcmp(className, "VL") == 0)
         {
