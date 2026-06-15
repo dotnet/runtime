@@ -282,7 +282,7 @@ instructionset     ,RiscV64 , ,RiscV64Base       ,56 ,RiscV64Base         ,base
 instructionset     ,RiscV64 , ,Zba               ,57 ,Zba                 ,zba
 instructionset     ,RiscV64 , ,Zbb               ,58 ,Zbb                 ,zbb
 instructionset     ,RiscV64 , ,Zbs               ,84 ,Zbs                 ,zbs
-instructionset     ,RiscV64 , ,Zicond            ,91 ,Zicond              ,zicond
+instructionset     ,RiscV64 , ,Zicond            ,93 ,Zicond              ,zicond
 
 implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
