@@ -996,7 +996,6 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
     mdTypeDef           metadataToken;
     FieldData           fieldData,
                       * pInfo = NULL;
-    BOOL                fDacStatic;
     CordbProcess *      pProcess = GetModule()->GetProcess();
 
     _ASSERTE(pProcess != NULL);
