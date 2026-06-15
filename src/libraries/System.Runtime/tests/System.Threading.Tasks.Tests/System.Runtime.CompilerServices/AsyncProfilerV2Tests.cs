@@ -814,7 +814,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             AssertCallstackSimulationReachesZero(stream, nameof(RuntimeAsync_CallstackSimulation_HandledException_Marker));
@@ -1861,7 +1861,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
 
-            // DumpAllEvents(events);
+            DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
