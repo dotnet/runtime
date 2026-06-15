@@ -194,6 +194,10 @@ namespace Microsoft.Extensions.Internal
 
         internal static void SendSignal(int pid, int signal)
         {
+            if (_isWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
             if (Kill(pid, signal) != 0)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
