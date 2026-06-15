@@ -165,7 +165,7 @@ namespace System.Diagnostics
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[MaxTraceStateEncodedLength]);
 
             ReadOnlySpan<char> traceStateSpan = traceState;
-            do
+            while (true)
             {
                 int commaIndex = traceStateSpan.IndexOf(Comma);
                 ReadOnlySpan<char> entry = commaIndex >= 0 ? traceStateSpan.Slice(0, commaIndex) : traceStateSpan;
@@ -179,6 +179,11 @@ namespace System.Diagnostics
                 entry = Trim(entry);
                 if (entry.IsEmpty)
                 {
+                    if (commaIndex < 0)
+                    {
+                        break;
+                    }
+
                     continue;
                 }
 
@@ -208,7 +213,12 @@ namespace System.Diagnostics
                 {
                     return null;
                 }
-            } while (traceStateSpan.Length > 0);
+
+                if (commaIndex < 0)
+                {
+                    break;
+                }
+            }
 
             return vsb.Length > 0 ? vsb.ToString() : null;
         }
