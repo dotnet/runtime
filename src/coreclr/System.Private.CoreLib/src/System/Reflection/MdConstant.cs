@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Reflection
 {
     internal static class MdConstant
@@ -70,6 +72,31 @@ namespace System.Reflection
                     default:
                         throw new FormatException(SR.Arg_BadLiteralFormat);
                         #endregion
+                }
+
+                if (fieldType.ContainsGenericParameters)
+                {
+                    byte* pDefaultValueData = (byte*)&defaultValue;
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        int size = corElementType switch
+                        {
+                            CorElementType.ELEMENT_TYPE_CHAR => sizeof(char),
+                            CorElementType.ELEMENT_TYPE_I1 => sizeof(sbyte),
+                            CorElementType.ELEMENT_TYPE_U1 => sizeof(byte),
+                            CorElementType.ELEMENT_TYPE_I2 => sizeof(short),
+                            CorElementType.ELEMENT_TYPE_U2 => sizeof(ushort),
+                            CorElementType.ELEMENT_TYPE_I4 => sizeof(int),
+                            CorElementType.ELEMENT_TYPE_U4 => sizeof(uint),
+                            CorElementType.ELEMENT_TYPE_I8 => sizeof(long),
+                            CorElementType.ELEMENT_TYPE_U8 => sizeof(ulong),
+                            _ => throw new FormatException(SR.Arg_BadLiteralFormat),
+                        };
+
+                        pDefaultValueData += sizeof(long) - size;
+                    }
+
+                    return RuntimeHelpers.Box(fieldType.GetNativeTypeHandle().AsMethodTable(), ref *pDefaultValueData);
                 }
 
                 return Enum.ToObject(fieldType, defaultValue);
