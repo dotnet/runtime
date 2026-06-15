@@ -32,7 +32,7 @@ DIM is the user-facing escape hatch for scenarios the canonical "method &rarr; o
 
 * **All accessors must agree.** A property must have either all-abstract accessors (`int X { get; set; }`) or all-bodied accessors (`int X { get => …; set => …; }`). Mixing the two emits the error `SYSLIB1091` `PropertyAccessorsMustBeAllOrNothing`. (The C# compiler also rejects bare `get;` paired with a bodied `set { … }` with `CS0525`, because it interprets `get;` as an auto-property accessor and disallows auto-properties on interfaces.)
 
-* **`[MarshalUsing]` and `[MarshalAs]` on a DIM are a warning.** A DIM never participates in marshalling, so any marshal attribute on the DIM (the property itself, an accessor return, a method parameter, etc.) emits a `SYSLIB1091` warning `MarshalAttributeOnDefaultImplementedComInterfaceMember`. The DIM is still generated; the marshal attribute is silently ignored at the ABI layer.
+* **`[MarshalUsing]` and `[MarshalAs]` on a DIM are a warning.** A DIM never participates in marshalling, so any marshal attribute on the DIM (the property itself, an accessor return, a method parameter, etc.) emits a `SYSLIB1091` warning `MarshalAttributeOnDefaultImplementedComInterfaceMember`. The code generator does not generate code for the DIM, so the presence of a marshal attribute is misleading.
 
 * **Inherited DIMs are skipped from base-class CCW dispatch.** When the generator emits CCW dispatch for an inherited interface, accessor methods that are not `IsAbstract` (i.e. inherited DIMs) are excluded — the runtime resolves them through ordinary virtual dispatch on the managed object.
 
