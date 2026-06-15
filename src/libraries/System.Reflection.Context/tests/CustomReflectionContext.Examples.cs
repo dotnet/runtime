@@ -28,8 +28,10 @@ namespace System.Reflection.Context.Examples
                 yield return new MyAttribute();
             }
             // Keep existing attributes as well.
-            foreach (var attr in declaredAttributes) yield return attr;
-        }
+            foreach (object attr in declaredAttributes)
+            {
+                yield return attr;
+            }
     }
     #endregion Snippet1
 
@@ -48,10 +50,10 @@ namespace System.Reflection.Context.Examples
             // A representation of the type in the customized reflection context.
             TypeInfo myTI = mc.MapType(ti);
 
-            // Display all the members of the type and their attributes.
-            foreach (MemberInfo m in myTI.DeclaredMembers)
+            // Display affected members of the type ("To*") and their attributes.
+            foreach (MemberInfo m in myTI.DeclaredMembers.Where(static m => m.Name.StartsWith("To", StringComparison.Ordinal)))
             {
-                Console.WriteLine(m.Name + ":");
+                Console.WriteLine($"{m.Name}:");
                 foreach (Attribute cd in m.GetCustomAttributes())
                 {
                     Console.WriteLine(cd.GetType());
