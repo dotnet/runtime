@@ -50,6 +50,107 @@ namespace System.Runtime.CompilerServices
             AsyncProfilerSyncClock = 23,
         }
 
+        // Per-event manifest entry: schema version + payload length-prefix size.
+        // The runtime emits this table in the AsyncProfilerMetadata event so parsers can
+        // discover the current version of each event id and skip payloads of events they do
+        // not understand by reading a fixed-width little-endian length prefix that precedes
+        // the payload. A FieldSize of NoPayload indicates the event carries no payload at all
+        // (no prefix written). Bumping an entry's Version signals any schema change.
+        internal readonly struct EventManifestEntry
+        {
+            public enum PayloadLengthFieldSize : byte
+            {
+                NoPayload = 0,
+                Byte = 1,
+                UShort = 2
+            }
+
+            public readonly AsyncEventID EventId;
+            public readonly byte Version;
+            public readonly PayloadLengthFieldSize FieldSize;
+
+            public EventManifestEntry(AsyncEventID eventId, byte version, PayloadLengthFieldSize fieldSize)
+            {
+                EventId = eventId;
+                Version = version;
+                FieldSize = fieldSize;
+            }
+        }
+
+        internal static class EventManifest
+        {
+            // Per-event payload size.
+            public const EventManifestEntry.PayloadLengthFieldSize CreateAsyncContextPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
+            public const EventManifestEntry.PayloadLengthFieldSize ResumeAsyncContextPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
+            public const EventManifestEntry.PayloadLengthFieldSize SuspendAsyncContextPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize CompleteAsyncContextPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize UnwindAsyncExceptionPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
+            public const EventManifestEntry.PayloadLengthFieldSize CallstackPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.UShort;
+            public const EventManifestEntry.PayloadLengthFieldSize CreateAsyncCallstackPayloadLengthFieldSize = CallstackPayloadLengthFieldSize;
+            public const EventManifestEntry.PayloadLengthFieldSize ResumeAsyncCallstackPayloadLengthFieldSize = CallstackPayloadLengthFieldSize;
+            public const EventManifestEntry.PayloadLengthFieldSize SuspendAsyncCallstackPayloadLengthFieldSize = CallstackPayloadLengthFieldSize;
+            public const EventManifestEntry.PayloadLengthFieldSize ResumeAsyncMethodPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize CompleteAsyncMethodPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize AppendAsyncCallstackPayloadLengthFieldSize = CallstackPayloadLengthFieldSize;
+
+            public const EventManifestEntry.PayloadLengthFieldSize ResetAsyncThreadContextPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize ResetAsyncContinuationWrapperIndexPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.NoPayload;
+            public const EventManifestEntry.PayloadLengthFieldSize AsyncProfilerMetadataPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.UShort;
+            public const EventManifestEntry.PayloadLengthFieldSize AsyncProfilerSyncClockPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
+
+            public static readonly EventManifestEntry[] Entries = BuildEntries();
+
+            public static EventManifestEntry.PayloadLengthFieldSize GetPayloadLengthFieldSize(AsyncEventID eventID)
+            {
+                Debug.Assert(eventID == Entries[(byte)eventID - 1].EventId);
+                return Entries[(byte)eventID - 1].FieldSize;
+            }
+
+            private static EventManifestEntry[] BuildEntries()
+            {
+                // Entries must be appended in order of ascending (byte)AsyncEventID so that
+                // Entries[(byte)id - 1] yields the entry for id. BuildEntries asserts this
+                // invariant after construction.
+                EventManifestEntry[] entries =
+                [
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncContext, 1, CreateAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncContext, 1, ResumeAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncContext, 1, SuspendAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncContext, 1, CompleteAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_UnwindAsyncException, 1, UnwindAsyncExceptionPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, 1, CreateAsyncCallstackPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, 1, ResumeAsyncCallstackPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, 1, SuspendAsyncCallstackPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncMethod, 1, ResumeAsyncMethodPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncMethod, 1, CompleteAsyncMethodPayloadLengthFieldSize),
+
+                    new EventManifestEntry(AsyncEventID.TaskAsync_CreateAsyncContext, 1, CreateAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncContext, 1, ResumeAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_SuspendAsyncContext, 1, SuspendAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncContext, 1, CompleteAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_UnwindAsyncException, 1, UnwindAsyncExceptionPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncCallstack, 1, ResumeAsyncCallstackPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncMethod, 1, ResumeAsyncMethodPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncMethod, 1, CompleteAsyncMethodPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.TaskAsync_AppendAsyncCallstack, 1, AppendAsyncCallstackPayloadLengthFieldSize),
+
+                    new EventManifestEntry(AsyncEventID.ResetAsyncThreadContext, 1, ResetAsyncThreadContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.ResetAsyncContinuationWrapperIndex, 1, ResetAsyncContinuationWrapperIndexPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.AsyncProfilerMetadata, 1, AsyncProfilerMetadataPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.AsyncProfilerSyncClock, 1, AsyncProfilerSyncClockPayloadLengthFieldSize),
+                ];
+
+#if DEBUG
+                for (int i = 0; i < entries.Length; i++)
+                {
+                    Debug.Assert((byte)entries[i].EventId == i + 1, "EventManifest.Entries must be dense and ordered by ascending AsyncEventID starting at 1.");
+                }
+#endif
+
+                return entries;
+            }
+        }
+
         internal ref struct Info
         {
             public object? Context;
@@ -122,14 +223,20 @@ namespace System.Runtime.CompilerServices
                             // [utcSync (compressed uint64)]
                             // [eventBufferSize (compressed uint32)]
                             // [wrapperCount byte]
-                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1;
+                            // [eventManifestEntryCount byte] -- number of entries that follow
+                            // [for each manifest entry: eventId (byte), version (byte), payloadLengthFieldSize (byte)]
+                            EventManifestEntry[] entries = EventManifest.Entries;
+                            Debug.Assert(entries.Length <= byte.MaxValue);
+                            int maxPayloadLength =
+                                Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1
+                                + 1 + entries.Length * 3;
 
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
-                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, MaxStaticEventPayloadSize))
+                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, EventManifest.AsyncProfilerMetadataPayloadLengthFieldSize, maxPayloadLength, out int payloadLengthFieldOffset))
                             {
                                 SyncClock(out long utcTimeSync, out long qpcSync);
 
-                                Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxStaticEventPayloadSize);
+                                Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, maxPayloadLength);
                                 int payloadSpanIndex = 0;
 
                                 payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)Stopwatch.Frequency);
@@ -139,7 +246,19 @@ namespace System.Runtime.CompilerServices
 
                                 payloadSpan[payloadSpanIndex++] = ContinuationWrapper.COUNT;
 
+                                // Event manifest: one entry per defined AsyncEventID, three bytes each.
+                                payloadSpan[payloadSpanIndex++] = (byte)entries.Length;
+                                for (int i = 0; i < entries.Length; i++)
+                                {
+                                    EventManifestEntry entry = entries[i];
+                                    payloadSpan[payloadSpanIndex++] = (byte)entry.EventId;
+                                    payloadSpan[payloadSpanIndex++] = entry.Version;
+                                    payloadSpan[payloadSpanIndex++] = (byte)entry.FieldSize;
+                                }
+
                                 eventBuffer.Index += payloadSpanIndex;
+
+                                Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, EventManifest.AsyncProfilerMetadataPayloadLengthFieldSize, payloadLengthFieldOffset);
 
                                 // Force flush to deliver event promptly.
                                 context.Flush();
@@ -175,20 +294,22 @@ namespace System.Runtime.CompilerServices
                     // SyncClock payload:
                     // [qpcSync (compressed uint64)]
                     // [utcSync (compressed uint64)]
-                    const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size;
+                    const int MaxPayloadLength = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size;
 
                     ref EventBuffer eventBuffer = ref transientContext.EventBuffer;
-                    if (Serializer.AsyncEventHeader(transientContext, ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, MaxEventPayloadSize))
+                    if (Serializer.AsyncEventHeader(transientContext, ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, EventManifest.AsyncProfilerSyncClockPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset))
                     {
                         SyncClock(out long utcTimeSync, out long qpcSync);
 
-                        Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize);
+                        Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxPayloadLength);
                         int payloadSpanIndex = 0;
 
                         payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)qpcSync);
                         payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)utcTimeSync);
 
                         eventBuffer.Index += payloadSpanIndex;
+
+                        Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, EventManifest.AsyncProfilerSyncClockPayloadLengthFieldSize, payloadLengthFieldOffset);
 
                         // Force flush to deliver event promptly.
                         transientContext.Flush();
@@ -387,35 +508,52 @@ namespace System.Runtime.CompilerServices
                     eventBuffer.Index = headerSpanIndex;
                 }
 
-                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, AsyncEventID eventID, int maxEventPayloadSize)
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, AsyncEventID eventID, EventManifestEntry.PayloadLengthFieldSize payloadLengthFieldSize, int maxPayloadLength, out int payloadLengthFieldOffset)
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     long delta = currentTimestamp - context.LastEventTimestamp;
-                    return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEventPayloadSize);
+                    return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, payloadLengthFieldSize, maxPayloadLength, out payloadLengthFieldOffset);
                 }
 
-                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, AsyncEventID eventID, int maxEventPayloadSize)
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, AsyncEventID eventID)
+                {
+                    Debug.Assert(EventManifest.GetPayloadLengthFieldSize(eventID) == EventManifestEntry.PayloadLengthFieldSize.NoPayload);
+                    return AsyncEventHeader(context, ref eventBuffer, eventID, EventManifestEntry.PayloadLengthFieldSize.NoPayload, 0, out _);
+                }
+
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, AsyncEventID eventID, EventManifestEntry.PayloadLengthFieldSize payloadLengthFieldSize, int maxPayloadLength, out int payloadLengthFieldOffset)
                 {
                     long delta = currentTimestamp - context.LastEventTimestamp;
-                    return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEventPayloadSize);
+                    return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, payloadLengthFieldSize, maxPayloadLength, out payloadLengthFieldOffset);
                 }
 
-                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, long delta, AsyncEventID eventID, int maxEventPayloadSize, out AsyncEventHeaderRollbackData rollbackData)
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, AsyncEventID eventID)
                 {
+                    Debug.Assert(EventManifest.GetPayloadLengthFieldSize(eventID) == EventManifestEntry.PayloadLengthFieldSize.NoPayload);
+                    return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, EventManifestEntry.PayloadLengthFieldSize.NoPayload, 0, out _);
+                }
+
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, long delta, AsyncEventID eventID, EventManifestEntry.PayloadLengthFieldSize payloadLengthFieldSize, int maxPayloadLength, out int payloadLengthFieldOffset, out AsyncEventHeaderRollbackData rollbackData)
+                {
+                    Debug.Assert(payloadLengthFieldSize == EventManifest.GetPayloadLengthFieldSize(eventID));
+
                     byte[] buffer = eventBuffer.Data;
                     int index = eventBuffer.Index;
                     long previousTimestamp = context.LastEventTimestamp;
 
-                    if ((index + MaxAsyncEventHeaderSize + maxEventPayloadSize) <= buffer.Length && delta >= 0)
+                    int reservedSize = MaxAsyncEventHeaderSize + (byte)payloadLengthFieldSize + maxPayloadLength;
+
+                    if ((index + reservedSize) <= buffer.Length && delta >= 0)
                     {
                         context.LastEventTimestamp = currentTimestamp;
                     }
                     else
                     {
                         // Event is too big for buffer, drop it.
-                        if (MaxAsyncEventHeaderSize + maxEventPayloadSize > buffer.Length)
+                        if (reservedSize > buffer.Length)
                         {
                             rollbackData = default;
+                            payloadLengthFieldOffset = 0;
                             return false;
                         }
 
@@ -441,25 +579,34 @@ namespace System.Runtime.CompilerServices
                     headerSpanIndex += WriteCompressedUInt64(headerSpan.Slice(headerSpanIndex), (ulong)delta); // Timestamp delta from last event
 
                     eventBuffer.Index += headerSpanIndex;
+
+                    payloadLengthFieldOffset = eventBuffer.Index;
+                    eventBuffer.Index += (byte)payloadLengthFieldSize;
+
                     eventBuffer.EventCount++;
 
                     return true;
                 }
 
-                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, long delta, AsyncEventID eventID, int maxEventPayloadSize)
+                public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, long delta, AsyncEventID eventID, EventManifestEntry.PayloadLengthFieldSize payloadLengthFieldSize, int maxPayloadLength, out int payloadLengthFieldOffset)
                 {
+                    Debug.Assert(payloadLengthFieldSize == EventManifest.GetPayloadLengthFieldSize(eventID));
+
                     byte[] buffer = eventBuffer.Data;
                     int index = eventBuffer.Index;
 
-                    if ((index + MaxAsyncEventHeaderSize + maxEventPayloadSize) <= buffer.Length && delta >= 0)
+                    int reservedSize = MaxAsyncEventHeaderSize + (byte)payloadLengthFieldSize + maxPayloadLength;
+
+                    if ((index + reservedSize) <= buffer.Length && delta >= 0)
                     {
                         context.LastEventTimestamp = currentTimestamp;
                     }
                     else
                     {
                         // Event is too big for buffer, drop it.
-                        if (MaxAsyncEventHeaderSize + maxEventPayloadSize > buffer.Length)
+                        if (reservedSize > buffer.Length)
                         {
+                            payloadLengthFieldOffset = 0;
                             return false;
                         }
 
@@ -476,9 +623,32 @@ namespace System.Runtime.CompilerServices
                     headerSpanIndex += WriteCompressedUInt64(headerSpan.Slice(headerSpanIndex), (ulong)delta); // Timestamp delta from last event
 
                     eventBuffer.Index += headerSpanIndex;
+
+                    payloadLengthFieldOffset = eventBuffer.Index;
+                    eventBuffer.Index += (byte)payloadLengthFieldSize;
+
                     eventBuffer.EventCount++;
 
                     return true;
+                }
+
+                public static void WriteAsyncEventPayloadLength(ref EventBuffer eventBuffer, AsyncEventID eventID, EventManifestEntry.PayloadLengthFieldSize payloadLengthFieldSize, int payloadLengthFieldOffset)
+                {
+                    Debug.Assert(payloadLengthFieldSize == EventManifest.GetPayloadLengthFieldSize(eventID));
+
+                    int payloadLength = eventBuffer.Index - payloadLengthFieldOffset - (byte)payloadLengthFieldSize;
+
+                    if (payloadLengthFieldSize == EventManifestEntry.PayloadLengthFieldSize.Byte)
+                    {
+                        Debug.Assert(payloadLength <= byte.MaxValue);
+                        eventBuffer.Data[payloadLengthFieldOffset] = (byte)payloadLength;
+                    }
+                    else
+                    {
+                        Debug.Assert(payloadLengthFieldSize == EventManifestEntry.PayloadLengthFieldSize.UShort);
+                        Debug.Assert(payloadLength <= ushort.MaxValue);
+                        BinaryPrimitives.WriteUInt16LittleEndian(eventBuffer.Data.AsSpan(payloadLengthFieldOffset), (ushort)payloadLength);
+                    }
                 }
 
                 public static void RollbackAsyncEventHeader(AsyncThreadContext context, in AsyncEventHeaderRollbackData rollbackData)
@@ -783,16 +953,17 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_CreateAsyncContext || eventID == AsyncEventID.TaskAsync_CreateAsyncContext);
 
-                const int MaxEventPayloadSize = 2 * Serializer.MaxCompressedUInt64Size;
+                const int MaxPayloadLength = 2 * Serializer.MaxCompressedUInt64Size;
 
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
-                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, MaxEventPayloadSize))
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, EventManifest.CreateAsyncContextPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset))
                 {
-                    Span<byte> payload = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize);
+                    Span<byte> payload = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxPayloadLength);
                     int offset = 0;
                     offset += Serializer.WriteCompressedUInt64(payload.Slice(offset), parentDispatcherId);
                     offset += Serializer.WriteCompressedUInt64(payload.Slice(offset), dispatcherId);
                     eventBuffer.Index += offset;
+                    Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, eventID, EventManifest.CreateAsyncContextPayloadLengthFieldSize, payloadLengthFieldOffset);
                 }
             }
         }
@@ -853,15 +1024,16 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_ResumeAsyncContext || eventID == AsyncEventID.TaskAsync_ResumeAsyncContext);
 
-                const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
+                const int MaxPayloadLength = Serializer.MaxCompressedUInt64Size;
 
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
-                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, MaxEventPayloadSize))
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, EventManifest.ResumeAsyncContextPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset))
                 {
-                    Span<byte> payload = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize);
+                    Span<byte> payload = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxPayloadLength);
                     int offset = 0;
                     offset += Serializer.WriteCompressedUInt64(payload.Slice(offset), dispatcherId);
                     eventBuffer.Index += offset;
+                    Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, eventID, EventManifest.ResumeAsyncContextPayloadLengthFieldSize, payloadLengthFieldOffset);
                 }
             }
         }
@@ -895,7 +1067,7 @@ namespace System.Runtime.CompilerServices
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_CompleteAsyncContext || eventID == AsyncEventID.TaskAsync_CompleteAsyncContext);
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID);
             }
         }
 
@@ -918,12 +1090,13 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_UnwindAsyncException ||  eventID == AsyncEventID.TaskAsync_UnwindAsyncException);
 
                 // unwinded frames
-                const int MaxEventPayloadSize = Serializer.MaxCompressedUInt32Size;
+                const int MaxPayloadLength = Serializer.MaxCompressedUInt32Size;
 
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
-                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, MaxEventPayloadSize))
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, eventID, EventManifest.UnwindAsyncExceptionPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset))
                 {
-                    eventBuffer.Index += Serializer.WriteCompressedUInt32(eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize), unwindedFrames);
+                    eventBuffer.Index += Serializer.WriteCompressedUInt32(eventBuffer.Data.AsSpan(eventBuffer.Index, MaxPayloadLength), unwindedFrames);
+                    Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, eventID, EventManifest.UnwindAsyncExceptionPayloadLengthFieldSize, payloadLengthFieldOffset);
                 }
             }
         }
@@ -955,13 +1128,13 @@ namespace System.Runtime.CompilerServices
             public static void EmitEvent(AsyncThreadContext context, AsyncEventID eventID)
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_ResumeAsyncMethod || eventID == AsyncEventID.TaskAsync_ResumeAsyncMethod);
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, eventID, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, eventID);
             }
 
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_ResumeAsyncMethod || eventID == AsyncEventID.TaskAsync_ResumeAsyncMethod);
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID);
             }
         }
 
@@ -982,7 +1155,7 @@ namespace System.Runtime.CompilerServices
             public static void EmitEvent(AsyncThreadContext context, AsyncEventID eventID)
             {
                 Debug.Assert(eventID == AsyncEventID.RuntimeAsync_CompleteAsyncMethod || eventID == AsyncEventID.TaskAsync_CompleteAsyncMethod);
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, eventID, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, eventID);
             }
         }
 
@@ -1037,7 +1210,7 @@ namespace System.Runtime.CompilerServices
 
             private static void EmitEvent(AsyncThreadContext context)
             {
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncContinuationWrapperIndex, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncContinuationWrapperIndex);
             }
         }
 
@@ -1126,7 +1299,7 @@ namespace System.Runtime.CompilerServices
 
             private static void EmitEvent(AsyncThreadContext context)
             {
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncThreadContext, 0);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncThreadContext);
             }
         }
 
@@ -1561,9 +1734,9 @@ namespace System.Runtime.CompilerServices
                 int maxCallstackBytes = Math.Min(byte.MaxValue * T.MaxAsyncMethodFrameSize, eventBuffer.Data.Length);
 
                 // Static callstack payload: callstackId (1) + continuationIndex (1) + frameCount (1) + parentDispatcherId + dispatcherId (max 10 bytes compressed each).
-                const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + 2 * Serializer.MaxCompressedUInt64Size;
+                const int MaxPayloadLength = sizeof(byte) + sizeof(byte) + sizeof(byte) + 2 * Serializer.MaxCompressedUInt64Size;
 
-                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out Serializer.AsyncEventHeaderRollbackData rollbackData))
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, EventManifest.CallstackPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset, out Serializer.AsyncEventHeaderRollbackData rollbackData))
                 {
                     int frameCountOffset = CallstackHeader(ref eventBuffer, eventID, parentDispatcherId, dispatcherId, continuationIndex, 0);
 
@@ -1587,10 +1760,11 @@ namespace System.Runtime.CompilerServices
                             context.Flush();
 
                             // Write the callstack again.
-                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index))
+                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, EventManifest.CallstackPayloadLengthFieldSize, MaxPayloadLength + index, out payloadLengthFieldOffset))
                             {
                                 CallstackHeader(ref eventBuffer, eventID, parentDispatcherId, dispatcherId, continuationIndex, count);
                                 CallstackData(ref eventBuffer, rentedArray, index);
+                                Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, eventID, EventManifest.CallstackPayloadLengthFieldSize, payloadLengthFieldOffset);
                             }
 
                             ArrayPool<byte>.Shared.Return(rentedArray);
@@ -1606,6 +1780,7 @@ namespace System.Runtime.CompilerServices
                         // Patch frame count in the event buffer using the offset from CallstackHeader.
                         eventBuffer.Data[frameCountOffset] = count;
                         eventBuffer.Index += currentIndex - startIndex;
+                        Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, eventID, EventManifest.CallstackPayloadLengthFieldSize, payloadLengthFieldOffset);
                     }
                 }
             }

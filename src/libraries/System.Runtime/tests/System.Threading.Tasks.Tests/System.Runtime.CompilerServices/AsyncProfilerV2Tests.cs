@@ -1543,6 +1543,8 @@ namespace System.Threading.Tasks.Tests
                     AsyncEventID firstId = (AsyncEventID)buffer[index++];
                     // Skip timestamp delta
                     ReadCompressedUInt64(buffer, ref index);
+                    // Skip the payload-length prefix (UShort for callstack events).
+                    _ = ReadPayloadLengthPrefix(buffer, firstId, ref index);
 
                     byte frameCount = 0;
                     if (firstId == AsyncEventID.RuntimeAsync_ResumeAsyncCallstack ||

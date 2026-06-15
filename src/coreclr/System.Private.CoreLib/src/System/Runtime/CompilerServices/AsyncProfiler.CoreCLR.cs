@@ -136,7 +136,8 @@ namespace System.Runtime.CompilerServices
 
             private static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
             {
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID, 0);
+                Debug.Assert(eventID == AsyncEventID.RuntimeAsync_SuspendAsyncContext || eventID == AsyncEventID.TaskAsync_SuspendAsyncContext);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID);
             }
         }
 

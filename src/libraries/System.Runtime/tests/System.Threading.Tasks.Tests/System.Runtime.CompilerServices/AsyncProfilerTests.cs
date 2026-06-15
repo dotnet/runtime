@@ -52,6 +52,52 @@ namespace System.Threading.Tasks.Tests
         Runtime = 0x2,
     }
 
+    internal readonly record struct EventManifestEntry(AsyncEventID EventId, byte Version, byte FieldSize);
+
+    internal static class EventManifest
+    {
+        // Default manifest matching the current runtime emit; replaced when the parser
+        // observes an AsyncProfilerMetadata event carrying a per-event manifest.
+        // Dense, ordered by ascending (byte)AsyncEventID; lookups use (byte)id - 1.
+        public static readonly EventManifestEntry[] DefaultEntries = BuildDefaultEntries();
+
+        private static EventManifestEntry[] BuildDefaultEntries()
+        {
+            const byte NoPayload = 0;
+            const byte BytePayloadLength = 1;
+            const byte UShortPayloadLength = 2;
+
+            return
+            [
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_UnwindAsyncException, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncMethod, 1, NoPayload),
+
+                new EventManifestEntry(AsyncEventID.TaskAsync_CreateAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.TaskAsync_SuspendAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.TaskAsync_UnwindAsyncException, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.TaskAsync_AppendAsyncCallstack, 1, UShortPayloadLength),
+
+                new EventManifestEntry(AsyncEventID.ResetAsyncThreadContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.ResetAsyncContinuationWrapperIndex, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.AsyncProfilerMetadata, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.AsyncProfilerSyncClock, 1, BytePayloadLength),
+            ];
+        }
+    }
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127951", TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public partial class AsyncProfilerTests
     {
@@ -255,6 +301,30 @@ namespace System.Threading.Tasks.Tests
 
         private delegate bool EventVisitorWithTimestamp(AsyncEventID eventId, long timestamp, ReadOnlySpan<byte> buffer, ref int index);
 
+        // Reads the per-event payload length prefix (0, 1, or 2 bytes depending on the event manifest)
+        // and advances the index past it. Returns the declared payload length so callers can validate
+        // that downstream parsers consume exactly the indicated bytes.
+        private static int ReadPayloadLengthPrefix(ReadOnlySpan<byte> buffer, AsyncEventID eventId, ref int index)
+        {
+            int eventIdIndex = (byte)eventId - 1;
+            int payloadLengthFieldSize = (uint)eventIdIndex < (uint)EventManifest.DefaultEntries.Length
+                ? EventManifest.DefaultEntries[eventIdIndex].FieldSize
+                : 0;
+
+            if (payloadLengthFieldSize == 0)
+            {
+                return 0;
+            }
+            if (payloadLengthFieldSize == 1)
+            {
+                return buffer[index++];
+            }
+
+            int payloadLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(index));
+            index += 2;
+            return payloadLength;
+        }
+
         private static void ParseEventBuffer(ReadOnlySpan<byte> buffer, EventVisitorWithTimestamp visitor)
         {
             EventBufferHeader? header = ParseEventBufferHeader(buffer);
@@ -278,10 +348,14 @@ namespace System.Threading.Tasks.Tests
                 long delta = (long)ReadCompressedUInt64(buffer, ref index);
                 baseTimestamp += delta;
 
+                int payloadLength = ReadPayloadLengthPrefix(buffer, eventId, ref index);
+                int payloadStartIndex = index;
                 if (!visitor(eventId, baseTimestamp, buffer, ref index))
                 {
                     break;
                 }
+
+                Assert.Equal(payloadLength, index - payloadStartIndex);
             }
         }
 
@@ -439,6 +513,10 @@ namespace System.Threading.Tasks.Tests
             utcSync = ReadCompressedUInt64(buffer, ref index);
             eventBufferSize = ReadCompressedUInt32(buffer, ref index);
             wrapperCount = buffer[index++];
+
+            // Per-event manifest: [count: byte] followed by [id, version, payloadLengthFieldSize] triples.
+            byte manifestCount = buffer[index++];
+            index += manifestCount * 3;
         }
 
         private record struct MetadataFromBuffer(ulong QpcFrequency, ulong QpcSync, ulong UtcSync, uint EventBufferSize, byte WrapperCount);
@@ -810,6 +888,9 @@ namespace System.Threading.Tasks.Tests
                     long delta = (long)ReadCompressedUInt64(buffer, ref index);
                     baseTimestamp += delta;
 
+                    int payloadLength = ReadPayloadLengthPrefix(buffer, eventId, ref index);
+                    int payloadStartIndex = index;
+
                     ParsedEvent evt = eventId switch
                     {
                         AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext =>
@@ -855,6 +936,8 @@ namespace System.Threading.Tasks.Tests
 
                         _ => ParseUnknownEvent(eventId, baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index)
                     };
+
+                    Assert.Equal(payloadLength, index - payloadStartIndex);
 
                     allEvents.Add(evt);
                 }
@@ -1435,6 +1518,7 @@ namespace System.Threading.Tasks.Tests
 
                     OutputHeader(eventCount, eventId, currentTimestamp);
 
+                    _ = ReadPayloadLengthPrefix(buffer, eventId, ref index);
                     int payloadStart = index;
                     try
                     {
@@ -1589,6 +1673,16 @@ namespace System.Threading.Tasks.Tests
 
                 byte wrapperCount = buffer[index++];
                 Console.WriteLine($"  WrapperCount: {wrapperCount}");
+
+                byte manifestCount = buffer[index++];
+                Console.WriteLine($"  EventManifestCount: {manifestCount}");
+                for (int i = 0; i < manifestCount; i++)
+                {
+                    byte id = buffer[index++];
+                    byte version = buffer[index++];
+                    byte payloadLengthFieldSize = buffer[index++];
+                    Console.WriteLine($"    [{(AsyncEventID)id}] version={version} payloadLengthFieldSize={payloadLengthFieldSize}");
+                }
 
                 return index;
             }
