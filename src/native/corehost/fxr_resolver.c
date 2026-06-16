@@ -199,7 +199,7 @@ static void print_missing_runtime_error(
         bool self_registered_empty = self_registered_dir == NULL || self_registered_dir[0] == _X('\0');
 
         message_parts[index++] = _X("\n  Registered location:\n    ");
-        message_parts[index++] = registered_config_location;
+        message_parts[index++] = registered_config_location != NULL ? registered_config_location : _X("");
         message_parts[index++] = _X(" = ");
         message_parts[index++] = self_registered_empty ? _X("<not set>") : self_registered_dir;
 
@@ -224,14 +224,17 @@ static void print_missing_runtime_error(
     }
 
     pal_char_t* location = (pal_char_t*)malloc((total + 1) * sizeof(pal_char_t));
-    pal_char_t* dst = location;
-    for (size_t i = 0; i < index; ++i)
+    if (location != NULL)
     {
-        size_t len = pal_strlen(message_parts[i]);
-        memcpy(dst, message_parts[i], len * sizeof(pal_char_t));
-        dst += len;
+        pal_char_t* dst = location;
+        for (size_t i = 0; i < index; ++i)
+        {
+            size_t len = pal_strlen(message_parts[i]);
+            memcpy(dst, message_parts[i], len * sizeof(pal_char_t));
+            dst += len;
+        }
+        *dst = _X('\0');
     }
-    *dst = _X('\0');
 
     pal_char_t download_url[MAX_DOWNLOAD_URL_LEN];
     utils_get_download_url(download_url, ARRAY_SIZE(download_url), NULL, NULL);
@@ -242,7 +245,7 @@ static void print_missing_runtime_error(
         host_path != NULL ? host_path : _X(""),
         _STRINGIFY(CURRENT_ARCH_NAME),
         _STRINGIFY(HOST_VERSION),
-        location,
+        location != NULL ? location : _X(""),
         download_url,
         _STRINGIFY(HOST_VERSION));
 

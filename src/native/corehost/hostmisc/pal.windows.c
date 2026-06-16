@@ -19,7 +19,6 @@
 #define DEVICE_PATH_PREFIX       _X("\\\\.\\")       // "\\.\"
 
 // Windows path separators.
-#define DIR_SEPARATOR     L'\\'
 #define ALT_DIR_SEPARATOR L'/'
 #define VOLUME_SEPARATOR  L':'
 
