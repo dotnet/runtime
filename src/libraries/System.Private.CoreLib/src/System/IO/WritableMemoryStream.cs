@@ -268,7 +268,7 @@ public sealed class WritableMemoryStream : MemoryStream
         {
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => _position + offset,
-            SeekOrigin.End => _buffer.Length + offset,
+            SeekOrigin.End => _length + offset,
             _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin)
         };
 

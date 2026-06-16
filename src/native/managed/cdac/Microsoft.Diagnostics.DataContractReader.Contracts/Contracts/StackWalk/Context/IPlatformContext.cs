@@ -6,6 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformContext
 {
     uint Size { get; }
+    uint ContextControlFlags { get; }
     uint FullContextFlags { get; }
     uint AllContextFlags { get; }
 
@@ -14,6 +15,8 @@ public interface IPlatformContext
     TargetPointer StackPointer { get; set; }
     TargetPointer InstructionPointer { get; set; }
     TargetPointer FramePointer { get; set; }
+
+    uint RawContextFlags { get; set; }
 
     void Unwind(Target target);
 

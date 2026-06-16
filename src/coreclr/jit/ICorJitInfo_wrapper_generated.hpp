@@ -1728,6 +1728,14 @@ void WrapICorJitInfo::recordCallSite(
     API_LEAVE(recordCallSite);
 }
 
+void WrapICorJitInfo::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    API_ENTER(recordWasmManagedCallSig);
+    wrapHnd->recordWasmManagedCallSig(callSig);
+    API_LEAVE(recordWasmManagedCallSig);
+}
+
 void WrapICorJitInfo::recordRelocation(
           void* location,
           void* locationRW,

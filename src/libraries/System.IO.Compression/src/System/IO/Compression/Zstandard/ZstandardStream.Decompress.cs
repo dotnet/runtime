@@ -263,7 +263,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
         public override int ReadByte()
         {
-            Span<byte> singleByte = stackalloc byte[1];
+            Span<byte> singleByte = [0];
             int bytesRead = Read(singleByte);
             return bytesRead > 0 ? singleByte[0] : -1;
         }

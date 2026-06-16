@@ -693,12 +693,32 @@
     <Compile Include="X509Certificates\RevocationTests\TimeoutTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="CngHelpers.cs" />
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Keys.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.Keys.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptBuffer.cs"
+             Link="Common\Internal\Windows\NCrypt\Interop.NCryptBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
+             Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="X25519DiffieHellmanCngTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />

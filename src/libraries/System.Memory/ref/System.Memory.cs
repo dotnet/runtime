@@ -164,7 +164,7 @@ namespace System.Buffers
 {
     public sealed partial class ReadOnlySequenceStream : System.IO.Stream
     {
-        public ReadOnlySequenceStream(System.Buffers.ReadOnlySequence<byte> sequence) { }
+        public ReadOnlySequenceStream(System.Buffers.ReadOnlySequence<byte> source) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }

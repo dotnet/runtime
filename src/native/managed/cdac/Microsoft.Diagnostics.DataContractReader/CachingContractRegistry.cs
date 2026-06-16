@@ -70,11 +70,11 @@ internal sealed class CachingContractRegistry : ContractRegistry
         return true;
     }
 
-    public override void Flush()
+    public override void Flush(FlushScope scope)
     {
         foreach (IContract contract in _contracts.Values)
         {
-            contract.Flush();
+            contract.Flush(scope);
         }
     }
 }

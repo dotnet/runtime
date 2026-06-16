@@ -37,11 +37,11 @@
 
 #include <minipal/guid.h>
 
-constexpr GUID JITEEVersionIdentifier = { /* e92fbf65-4856-4729-ab9e-f66f7adcecf9 */
-    0xe92fbf65,
-    0x4856,
-    0x4729,
-    {0xab, 0x9e, 0xf6, 0x6f, 0x7a, 0xdc, 0xec, 0xf9}
+constexpr GUID JITEEVersionIdentifier = { /* 2fa4c0dd-1b2b-4c3f-8a88-cc7b79c4667f */
+    0x2fa4c0dd,
+    0x1b2b,
+    0x4c3f,
+    {0x8a, 0x88, 0xcc, 0x7b, 0x79, 0xc4, 0x66, 0x7f}
   };
 
 #endif // JIT_EE_VERSIONING_GUID_H

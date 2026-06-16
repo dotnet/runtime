@@ -138,7 +138,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
         else
         {
-            TargetCodePointer startAddress = executionManager.GetStartAddress(info.Value);
+            TargetCodePointer startAddress = CodePointerUtils.CodePointerFromAddress(
+                executionManager.GetStartAddress(info.Value),
+                _target);
             return GetSpecificNativeCodeVersion(rts, md, startAddress);
         }
     }

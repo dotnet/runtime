@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Threading;
 using System.IO;
@@ -14,7 +14,6 @@ namespace System.Buffers
     /// The underlying sequence should not be modified while the stream is in use.
     /// Seeking beyond the end of the stream is supported; subsequent reads will return zero bytes.
     /// </remarks>
-    // Seekable Stream from ReadOnlySequence<byte>
     public sealed class ReadOnlySequenceStream : Stream
     {
         private ReadOnlySequence<byte> _sequence;
@@ -25,11 +24,11 @@ namespace System.Buffers
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
         /// </summary>
-        /// <param name="sequence">The <see cref="ReadOnlySequence{Byte}"/> to wrap.</param>
-        public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence)
+        /// <param name="source">The <see cref="ReadOnlySequence{Byte}"/> to wrap.</param>
+        public ReadOnlySequenceStream(ReadOnlySequence<byte> source)
         {
-            _sequence = sequence;
-            _position = sequence.Start;
+            _sequence = source;
+            _position = source.Start;
             _absolutePosition = 0;
             _isDisposed = false;
         }
@@ -120,16 +119,8 @@ namespace System.Buffers
         {
             EnsureNotDisposed();
 
-            if (_absolutePosition >= _sequence.Length)
-            {
-                return -1;
-            }
-
-            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
-            byte value = remaining.FirstSpan[0];
-            _position = _sequence.GetPosition(1, _position);
-            _absolutePosition++;
-            return value;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) > 0 ? b : -1;
         }
 
         /// <inheritdoc/>

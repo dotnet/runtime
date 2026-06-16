@@ -64,7 +64,7 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     m_pEndReservedRegion         = NULL;
     m_pAllocPtr                  = NULL;
 
-    m_dwCommitBlockSize          = GetOsPageSize();
+    m_dwCommitBlockSize          = minipal_getpagesize();
 
 #ifdef _DEBUG
     m_dwDebugWastedBytes         = 0;
@@ -165,7 +165,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     size_t dwSizeToReserve;
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
     ReservedMemoryHolder pData = NULL;
     BOOL fReleaseMemory = TRUE;
@@ -266,7 +266,7 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
 
         // Round to page size
-        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
         size_t dwSizeToCommitPart = dwSizeToCommit;
 

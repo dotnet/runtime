@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
@@ -101,15 +102,7 @@ namespace System.Linq
                 }
 
                 // Reduce to single value
-                // NOTE: this can be optimized further with shuffles.
-                value = best128[0];
-                for (int i = 1; i < Vector128<T>.Count; i++)
-                {
-                    if (TMinMax.Compare(best128[i], value))
-                    {
-                        value = best128[i];
-                    }
-                }
+                value = HorizontalMinMax<T, TMinMax>(best128);
             }
             else
             {
@@ -131,6 +124,47 @@ namespace System.Linq
             }
 
             return value;
+        }
+
+        /// <summary>Reduces a <see cref="Vector128{T}"/> to a single element using <typeparamref name="TMinMax"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T HorizontalMinMax<T, TMinMax>(Vector128<T> x)
+            where T : struct, IBinaryInteger<T>
+            where TMinMax : IMinMaxCalc<T>
+        {
+            // Perform log2(Vector128<T>.Count) reductions, each combining the vector with a shuffled
+            // copy of itself so that lane 0 ends up holding the min/max of all original lanes.
+            if (Vector128<T>.Count == 16)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+            }
+            else if (Vector128<T>.Count == 8)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>());
+            }
+            else if (Vector128<T>.Count == 4)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>());
+            }
+            else
+            {
+                Debug.Assert(Vector128<T>.Count == 2);
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
+            }
+            return x.ToScalar();
         }
     }
 }

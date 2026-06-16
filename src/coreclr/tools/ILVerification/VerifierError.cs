@@ -32,9 +32,7 @@ namespace ILVerify
 
         MethodFallthrough,              // Fall through end of the method without returning.
         //E_TRY_GTEQ_END                "try start >= try end."
-        //E_TRYEND_GT_CS                "try end > code size."
         //E_HND_GTEQ_END                "handler start >= handler end."
-        //E_HNDEND_GT_CS                "handler end > code size."
         //E_TRY_START                   "Try starts in the middle of an instruction."
         //E_HND_START                   "Handler starts in the middle of an instruction."
         //E_TRY_OVERLAP                 "Try block overlap with another block."
@@ -44,7 +42,7 @@ namespace ILVerify
         //E_FIL_CONT_TRY                "Filter contains try."
         //E_FIL_CONT_HND                "Filter contains handler."
         //E_FIL_CONT_FIL                "Nested filters."
-        //E_FIL_GTEQ_CS                 "filter >= code size."
+        EHClauseOutOfRange,             // Exception handling clause bounds outside code size.
         FallthroughException,           // Fallthrough the end of an exception block.
         FallthroughIntoHandler,         // Fallthrough into an exception handler.
         FallthroughIntoFilter,          // Fallthrough into an exception filter.

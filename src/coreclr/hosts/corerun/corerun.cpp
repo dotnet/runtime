@@ -279,6 +279,24 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
         return len;
     }
 
+    // Look up user-defined properties passed to corerun via -p/--property.
+    assert(config->user_defined_keys.size() == config->user_defined_values.size());
+    pal::string_t key_native = pal::convert_from_utf8(key);
+    for (size_t i = 0; i < config->user_defined_keys.size(); ++i)
+    {
+        if (config->user_defined_keys[i] == key_native)
+        {
+            pal::string_utf8_t value_utf8 = pal::convert_to_utf8(config->user_defined_values[i].c_str());
+            size_t len = value_utf8.size() + 1;
+            if (value_buffer_size < len)
+                return len;
+
+            ::strncpy(value_buffer, value_utf8.c_str(), len - 1);
+            value_buffer[len - 1] = '\0';
+            return len;
+        }
+    }
+
     return -1;
 }
 
@@ -445,6 +463,14 @@ static int run(const configuration& config)
     {
         // Use the external assembly probe to load assemblies from the app assembly paths.
         use_external_assembly_probe = true;
+    }
+    else
+    {
+        tpa_list = std::move(app_assemblies_env);
+    }
+
+    if (use_external_assembly_probe)
+    {
         if (!core_libs.empty())
         {
             pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());
@@ -458,10 +484,6 @@ static int run(const configuration& config)
             s_core_root_path = (char*)::malloc(core_root_utf8.length() + 1);
             ::strcpy(s_core_root_path, core_root_utf8.c_str());
         }
-    }
-    else
-    {
-        tpa_list = std::move(app_assemblies_env);
     }
 
     {

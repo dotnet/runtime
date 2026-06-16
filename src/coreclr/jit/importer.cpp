@@ -391,17 +391,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
             if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->AsCall()->ShouldHaveRetBufArg())
-                {
-                    assert(call->AsCall()->gtArgs.HasRetBuffer());
-                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->AsCall()->gtArgs.HasThisPointer());
-                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->AsCall()->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
@@ -483,10 +474,6 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     impAppendStmtCheck(stmt, chkLevel);
 
     impAppendStmt(stmt);
-
-#ifdef FEATURE_SIMD
-    impMarkContiguousSIMDFieldStores(stmt);
-#endif
 
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
@@ -798,12 +785,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (srcCall->ShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
-            // Some calls have an "out buffer" that is not actually a ret buff
-            // in the ABI sense. We take the path here for those but it should
-            // not be marked as the ret buff arg since it always follow the
-            // normal ABI for parameters.
-            WellKnownArg wellKnownArgType =
-                srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
@@ -823,7 +804,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 return impStoreStruct(store, curLevel, pAfterStmt, di, block);
             }
 
-            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
             {
@@ -1384,11 +1365,11 @@ GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleF
 
         if (handle != nullptr)
         {
-            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->AsIntCon()->SetTargetHandle(handleToTrack);
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->gtGetOp1()->AsIntCon()->SetTargetHandle(handleToTrack);
         }
 #endif
         return addr;
@@ -2646,7 +2627,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF) || (ciType == CORINFO_TYPE_REFANY))
+        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF))
         {
             return false;
         }
@@ -2748,7 +2729,10 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                                         runtimeMethodHandle);
     }
 
-#ifdef FEATURE_READYTORUN
+    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
+    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
+#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
     else if (IsAot())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
@@ -2765,7 +2749,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif
+#endif // FEATURE_READYTORUN && !TARGET_WASM
 
     if (call == nullptr)
     {
@@ -4419,7 +4403,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             isHoistable = true;
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
-            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            INDEBUG(op1->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(pResolvedToken->hField)));
 
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -7006,7 +6990,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_ARGLIST:
-
+            {
                 if (!info.compIsVarArgs)
                 {
                     BADCODE("arglist in non-vararg method");
@@ -7017,9 +7001,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The ARGLIST cookie is a hidden 'last' parameter, we have already
                 // adjusted the arg count cos this is like fetching the last param.
                 assertImp(numArgs > 0);
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                clsHnd = impGetRuntimeArgumentHandle();
+
+                unsigned argListTmp = lvaGrabTemp(false DEBUGARG("arglist tmp"));
+                lvaSetStruct(argListTmp, clsHnd, false);
+
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_I_IMPL);
+                impAppendTree(gtNewStoreLclFldNode(argListTmp, TYP_I_IMPL, 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+
+                op1      = gtNewLclVarNode(argListTmp, TYP_STRUCT);
+                tiRetVal = makeTypeInfo(clsHnd);
                 impPushOnStack(op1, tiRetVal);
                 break;
+            }
 
             case CEE_ENDFINALLY:
 
@@ -7759,7 +7753,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->gtIconVal != 0;
+                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->IconValue() != 0;
                         FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
                         FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
 
@@ -8018,7 +8012,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && op1->OperIs(GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->IconValue();
                     unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
@@ -8242,7 +8236,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op2->OperIs(GT_CNS_INT))
                     {
-                        ssize_t ival = op2->AsIntCon()->gtIconVal;
+                        ssize_t ival = op2->AsIntCon()->IconValue();
                         ssize_t mask, umask;
 
                         switch (lclTyp)
@@ -9166,43 +9160,57 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
                     if (newBBcreatedForTailcallStress && !hasTailPrefix)
                     {
-                        // Do a more detailed evaluation of legality
-                        const bool passedConstraintCheck =
-                            checkTailCallConstraint(opcode, &resolvedToken,
-                                                    constraintCall ? &constrainedResolvedToken : nullptr);
-
-                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
-                        // patchpoints.
-                        //
-                        const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                                        (JitConfig.TC_OnStackReplacement() > 0) &&
-                                                        compCanHavePatchpoints();
-                        if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                        // Don't stress-tailcall named intrinsics: many of them are imported as
+                        // non-CALL IR nodes (e.g. GC.KeepAlive -> GT_KEEPALIVE), which would
+                        // leave a BBJ_RETURN block that doesn't end in a CALL/RETURN and
+                        // confuse later phases (see
+                        // https://github.com/dotnet/runtime/issues/122479). Suppress both the
+                        // explicit and the implicit tailcall promotion in that case.
+                        if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                         {
-                            // Now check with the runtime
-                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                              hasTailPrefix)) // Is it legal to do tailcall?
-                            {
-                                // Stress the tailcall.
-                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
-                            }
-                            else
-                            {
-                                // Runtime disallows this tail call
-                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                passedStressModeValidation = false;
-                            }
+                            JITDUMP(" (Tailcall stress: skipping intrinsic)");
+                            passedStressModeValidation = false;
                         }
                         else
                         {
-                            // Constraints disallow this tail call
-                            JITDUMP(" (Tailcall stress: constraint check failed)");
-                            passedStressModeValidation = false;
+                            // Do a more detailed evaluation of legality
+                            const bool passedConstraintCheck =
+                                checkTailCallConstraint(opcode, &resolvedToken,
+                                                        constraintCall ? &constrainedResolvedToken : nullptr);
+
+                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                            // patchpoints.
+                            //
+                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                            compCanHavePatchpoints();
+                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                            {
+                                // Now check with the runtime
+                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                                  hasTailPrefix)) // Is it legal to do tailcall?
+                                {
+                                    // Stress the tailcall.
+                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
+                                }
+                                else
+                                {
+                                    // Runtime disallows this tail call
+                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
+                                    passedStressModeValidation = false;
+                                }
+                            }
+                            else
+                            {
+                                // Constraints disallow this tail call
+                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                passedStressModeValidation = false;
+                            }
                         }
                     }
                 }
@@ -12937,11 +12945,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    const GenTree* op = gtPeelFieldAddrs(tree);
 
     if (op->OperIs(GT_LCL_ADDR))
     {
@@ -13356,7 +13360,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->IconValue() == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);

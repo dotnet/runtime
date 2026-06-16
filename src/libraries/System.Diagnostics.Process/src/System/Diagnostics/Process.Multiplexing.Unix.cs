@@ -261,7 +261,7 @@ namespace System.Diagnostics
         /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing
         /// with non-blocking reads.
         /// </summary>
-        private static void ReadPipes(
+        private static unsafe void ReadPipes(
             SafePipeHandle outputHandle,
             SafePipeHandle errorHandle,
             int timeoutMs,

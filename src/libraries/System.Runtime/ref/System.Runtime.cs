@@ -12393,6 +12393,7 @@ namespace System.Reflection
         protected ConstructorInfo() { }
         public override System.Reflection.MemberTypes MemberType { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
+        public override System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }
         public object Invoke(object?[]? parameters) { throw null; }
         public abstract object Invoke(System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture);
@@ -14102,6 +14103,12 @@ namespace System.Runtime.CompilerServices
     public sealed partial class IsByRefLikeAttribute : System.Attribute
     {
         public IsByRefLikeAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class IsClosedTypeAttribute : System.Attribute
+    {
+        public IsClosedTypeAttribute() { }
     }
     public static partial class IsConst
     {

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -168,7 +168,7 @@ namespace System.Globalization
         // And will ensure the original pattern still exist in the list.
         // doing that will have the short date pattern format the year as 4-digit number and not just 2-digit number.
         // Example: June 5, 2018 will be formatted to something like 6/5/2018 instead of 6/5/18 fro en-US culture.
-        private static void FixDefaultShortDatePattern(List<string> shortDatePatterns)
+        private static unsafe void FixDefaultShortDatePattern(List<string> shortDatePatterns)
         {
             if (shortDatePatterns.Count == 0)
                 return;
@@ -259,7 +259,7 @@ namespace System.Globalization
         /// see Date Field Symbol Table in http://userguide.icu-project.org/formatparse/datetime
         /// and https://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.110).aspx
         /// </remarks>
-        private static string NormalizeDatePattern(string input)
+        private static unsafe string NormalizeDatePattern(string input)
         {
             var destination = input.Length < 128 ?
                 new ValueStringBuilder(stackalloc char[128]) :
