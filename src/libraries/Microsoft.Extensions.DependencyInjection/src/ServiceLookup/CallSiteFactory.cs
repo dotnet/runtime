@@ -629,8 +629,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 for (int i = 0; i < constructorCount; i++)
                 {
-                    ConstructorInfo constructor = sortedConstructors[i]!;
-                    ParameterInfo[] parameters = sortedParameters[i]!;
+                    ConstructorInfo constructor = sortedConstructors[i];
+                    ParameterInfo[] parameters = sortedParameters[i];
 
                     if (bestConstructor is null)
                     {
