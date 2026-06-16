@@ -629,7 +629,6 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 

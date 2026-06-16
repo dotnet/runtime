@@ -607,7 +607,7 @@ class Array : public ArrayBase
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return PTR_KIND(m_Array);
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
@@ -1783,19 +1783,20 @@ public:
     // BCL for this object.
 private:
     // System.Delegate
+    OBJECTREF   _methodBase;
     OBJECTREF   _target;
-    MethodDesc* _methodDesc;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
+    MethodDesc* _methodDesc;
     // System.MulticastDelegate
     OBJECTREF   _invocationList;
     INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodDesc      (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodDesc + TARGET_POINTER_SIZE /* _methodDesc */)
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+#define OFFSETOF__DelegateObject__methodDesc      (OFFSETOF__DelegateObject__methodPtrAux + TARGET_POINTER_SIZE /* _methodPtrAux */)
 
 template<>
 struct cdac_data<DelegateObject>

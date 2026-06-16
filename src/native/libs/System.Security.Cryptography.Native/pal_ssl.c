@@ -441,7 +441,12 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
         CryptoNative_SslSetVerifyPeer(ssl, 0);
-        return SSL_verify_client_post_handshake(ssl);
+        int ret = SSL_verify_client_post_handshake(ssl);
+        if (ret != 1)
+        {
+            *error = CryptoNative_SslGetError(ssl, ret);
+        }
+        return ret;
     }
 #endif
 
@@ -1417,7 +1422,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (evp != NULL)
     {
-        CryptoNative_EvpPkeyDestroy(evp, NULL);
+        CryptoNative_EvpPkeyDestroy(evp);
     }
 
     if (bio1)
