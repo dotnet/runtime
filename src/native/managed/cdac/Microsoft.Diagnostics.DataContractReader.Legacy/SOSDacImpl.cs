@@ -108,28 +108,30 @@ public sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
+
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data)
     {
         int hr = HResults.S_OK;
         try
         {
-            if (addr == 0)
-                throw new ArgumentException();
-
             *data = default;
-            data->AppDomainPtr = addr;
             Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            if (appDomain == TargetPointer.Null)
+                throw new InvalidOperationException();
+
+            data->AppDomainPtr = appDomain.ToClrDataAddress(_target);
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
 
-            TargetPointer pAppDomain = addr.ToTargetPointer(_target);
             data->dwId = DefaultAppDomainId;
 
             IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                pAppDomain,
+                appDomain,
                 AssemblyIterationFlags.IncludeLoading |
                 AssemblyIterationFlags.IncludeLoaded |
                 AssemblyIterationFlags.IncludeExecution);
@@ -143,7 +145,7 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                pAppDomain,
+                appDomain,
                 AssemblyIterationFlags.IncludeFailedToLoad);
             data->FailedAssemblyCount = failedModules.Count();
         }
@@ -214,6 +216,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+    // addr is ignored -- only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -386,16 +389,17 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
         int hr = HResults.S_OK;
 
         try
         {
-            if (addr == 0)
-                throw new ArgumentException();
-            TargetPointer appDomain = addr.ToTargetPointer(_target);
             ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            if (appDomain == TargetPointer.Null)
+                throw new InvalidOperationException();
 
             List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 appDomain,
