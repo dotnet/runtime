@@ -34,11 +34,9 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
             goto error;
 
         protocolStr = (*env)->GetStringUTFChars(env, protocol, NULL);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
         if (protocolStr == NULL)
-        {
-            ON_EXCEPTION_PRINT_AND_GOTO(error);
             goto error;
-        }
 
         if (strncmp(protocolStr, tlsv1, tlsv1Len) == 0)
         {

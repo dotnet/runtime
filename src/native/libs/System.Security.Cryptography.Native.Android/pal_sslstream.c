@@ -47,7 +47,7 @@ ARGS_NON_NULL_ALL static int GetHandshakeStatus(JNIEnv* env, SSLStream* sslStrea
     if (loc[status] == NULL)
         goto cleanup;
 
-    int handshakeStatus = GetEnumAsInt(env, loc[status]);
+    int handshakeStatus = (*env)->CallIntMethod(env, loc[status], g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = handshakeStatus;
 
@@ -204,7 +204,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
     if (resultHandshakeStatus == NULL)
         goto cleanup;
 
-    *handshakeStatus = GetEnumAsInt(env, resultHandshakeStatus);
+    *handshakeStatus = (*env)->CallIntMethod(env, resultHandshakeStatus, g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     *bytesConsumed = (*env)->CallIntMethod(env, result, g_SSLEngineResultBytesConsumed);
@@ -215,7 +215,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
     if (resultStatus == NULL)
         goto cleanup;
 
-    int status = GetEnumAsInt(env, resultStatus);
+    int status = (*env)->CallIntMethod(env, resultStatus, g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)
@@ -358,7 +358,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
     if (resultHandshakeStatus == NULL)
         goto cleanup;
 
-    *handshakeStatus = GetEnumAsInt(env, resultHandshakeStatus);
+    *handshakeStatus = (*env)->CallIntMethod(env, resultHandshakeStatus, g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     resultStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus);
@@ -366,7 +366,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
     if (resultStatus == NULL)
         goto cleanup;
 
-    int status = GetEnumAsInt(env, resultStatus);
+    int status = (*env)->CallIntMethod(env, resultStatus, g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)

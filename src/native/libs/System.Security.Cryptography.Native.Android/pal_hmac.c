@@ -16,9 +16,8 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
 
     JNIEnv* env = GetJNIEnv();
     jobject macObj = NULL;
-    bool success = false;
 
-    INIT_LOCALS(loc, macName, keyBytes, sksObj);
+    INIT_LOCALS(loc, macName, keyBytes, sksObj, mac);
 
     if (type == CryptoNative_EvpSha1())
         loc[macName] = make_java_string(env, "HmacSHA1");
@@ -55,21 +54,18 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
         goto cleanup;
     }
 
-    macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, loc[macName]));
+    loc[mac] = (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, loc[macName]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    (*env)->CallVoidMethod(env, macObj, g_MacInit, loc[sksObj]);
+    (*env)->CallVoidMethod(env, loc[mac], g_MacInit, loc[sksObj]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    success = true;
+    // Promote to a global ref only after init succeeds; ToGRef deletes the local ref.
+    macObj = ToGRef(env, loc[mac]);
+    loc[mac] = NULL;
 
 cleanup:
     RELEASE_LOCALS(loc, env);
-    if (!success)
-    {
-        ReleaseGRef(env, macObj);
-        return FAIL;
-    }
     return macObj;
 }
 
