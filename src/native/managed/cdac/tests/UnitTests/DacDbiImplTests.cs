@@ -716,6 +716,46 @@ public unsafe class DacDbiImplTests
         Assert.Equal(deoptimized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
     }
 
+    private delegate void TryGetInstrumentedILMapCallback(ILCodeVersionHandle handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+    public static IEnumerable<object[]> GetILCodeVersionNodeDataValues()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            // arch, pbIL, hasMap, mapCount, mapEntries
+            yield return [stdArch[0], 0x9000ul, true, 4u, 0xA000ul];
+            yield return [stdArch[0], 0x9000ul, false, 0u, 0ul];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetILCodeVersionNodeDataValues))]
+    public void GetILCodeVersionNodeData_FillsData(MockTarget.Architecture arch, ulong pbIL, bool hasMap, uint mapCount, ulong mapEntries)
+    {
+        TargetPointer ilCodeVersionNode = new(0x3000);
+        var ilCodeVersion = ILCodeVersionHandle.CreateExplicit(ilCodeVersionNode);
+
+        var mockCodeVersions = new Mock<ICodeVersions>();
+        mockCodeVersions.Setup(cv => cv.GetIL(ilCodeVersion)).Returns(new TargetPointer(pbIL));
+        mockCodeVersions
+            .Setup(cv => cv.TryGetInstrumentedILMap(ilCodeVersion, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny))
+            .Callback(new TryGetInstrumentedILMapCallback((ILCodeVersionHandle _, out uint count, out TargetPointer entries) =>
+            {
+                count = mapCount;
+                entries = new TargetPointer(mapEntries);
+            }))
+            .Returns(hasMap);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, new Mock<ILoader>(), mockCodeVersions, new Mock<IReJIT>());
+
+        DacDbiSharedReJitInfo data;
+        int hr = dacDbi.GetILCodeVersionNodeData(ilCodeVersionNode.Value, &data);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(pbIL, data.pbIL);
+        Assert.Equal(mapCount, data.cInstrumentedMapEntries);
+        Assert.Equal(mapEntries, data.rgInstrumentedMapEntries);
+    }
+
     private delegate void TryGetLockInfoCallback(TargetPointer syncBlock, out uint owningThreadId, out uint recursion);
 
     public static IEnumerable<object[]> GetThreadOwningMonitorLockData()
