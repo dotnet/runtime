@@ -76,5 +76,9 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             result.TestOutput,
             m => Assert.Equal("customHookCalled=true", m)
         );
+        Assert.Collection(
+            result.TestOutput,
+            m => Assert.Equal("resources.libraryInitializers.length=1", m)
+        );
     }
 }
