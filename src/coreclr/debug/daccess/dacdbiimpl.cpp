@@ -606,8 +606,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeftSideInitialized(OUT BOOL * 
 }
 
 
-// Gets the type of 'address'.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal)
+// Gets whether the specified address is managed code.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged)
 {
     DD_ENTER_MAY_THROW;
 
@@ -615,25 +615,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS addr
     EX_TRY
     {
         TADDR taAddr = CORDB_ADDRESS_TO_TADDR(address);
+        *pIsManaged = FALSE;
 
-        if (IsPossibleCodeAddress(taAddr) == S_OK)
+        if (IsPossibleCodeAddress(taAddr) == S_OK && ExecutionManager::IsManagedCode(taAddr))
         {
-            if (ExecutionManager::IsManagedCode(taAddr))
-            {
-                *pRetVal = kAddressManagedMethod;
-            }
-            else if (StubManager::IsStub(taAddr))
-            {
-                *pRetVal = kAddressRuntimeUnmanagedStub;
-            }
-            else
-            {
-                *pRetVal = kAddressUnrecognized;
-            }
-        }
-        else
-        {
-            *pRetVal = kAddressUnrecognized;
+            *pIsManaged = TRUE;
         }
     }
     EX_CATCH_HRESULT(hr);
