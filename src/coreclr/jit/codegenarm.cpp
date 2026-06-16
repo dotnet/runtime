@@ -1138,7 +1138,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             assert(tree->OperIs(GT_DIV));
             assert(!src2->IsIntegralConst(0));
 
-            BasicBlock* sdivLabel  = genCreateTempLabel();
+            BasicBlock* sdivLabel = genCreateTempLabel();
 
             // Check if the divisor is not -1 branch to 'sdivLabel'
             emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
