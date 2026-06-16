@@ -427,10 +427,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return false;
         }
 
-        // The InstrumentedILOffsetMapping is embedded within the ILCodeVersionNode.
-        TargetPointer mappingAddress = AsNode(ilCodeVersionHandle).InstrumentedILMap;
-        Data.InstrumentedILOffsetMapping mapping = _target.ProcessedData.GetOrAdd<Data.InstrumentedILOffsetMapping>(mappingAddress);
-
+        Data.InstrumentedILOffsetMapping mapping = AsNode(ilCodeVersionHandle).InstrumentedILMap;
         mapEntryCount = mapping.Count;
         mapEntries = mapping.Map;
         return true;
