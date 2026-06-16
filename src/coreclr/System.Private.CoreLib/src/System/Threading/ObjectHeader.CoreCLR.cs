@@ -73,33 +73,50 @@ namespace System.Threading
                 int* pHeader = GetHeaderPtr(pObjectData);
                 int oldBits = *pHeader;
 
-                // if the lock is still thin
-                if ((oldBits & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
+                int newBits;
+
+                // Common case: the lock is thin, owned by us and held only once.
+                // A single masked comparison verifies in one shot that the spinlock bit is clear,
+                // there is no hashcode/syncblock index, the recursion level is 0 and we own the lock.
+                // The comparison is only meaningful when the current thread id fits in the thread-id
+                // field; ids that don't fit (including the uninitialized -1 sentinel) can never own a
+                // thin lock and are routed to the checks below. This guard is independent of the header
+                // load, so it can be evaluated while the header is fetched from memory.
+                if ((currentThreadID & ~SBLK_MASK_LOCK_THREADID) == 0 &&
+                    (oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SBLK_MASK_LOCK_RECLEVEL | SBLK_MASK_LOCK_THREADID)) == currentThreadID)
                 {
-                    // if we own the lock
+                    // Release entirely. Since the recursion level is 0, clearing the owning
+                    // thread id is the same as subtracting it from the header.
+                    newBits = oldBits - currentThreadID;
+                }
+                // Otherwise, if the lock is still thin
+                else if ((oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
+                {
+                    // If we own the lock it must be held recursively (the single-hold case is handled above),
+                    // so just decrement the recursion level.
                     if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
                     {
-                        // decrement count or release entirely.
-                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
-                            oldBits - SBLK_LOCK_RECLEVEL_INC :
-                            oldBits & ~SBLK_MASK_LOCK_THREADID;
-
-                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-                        {
-                            return HeaderLockResult.Success;
-                        }
-
-                        // Someone else touched the bits. Most likely syncblock was installed.
-                        // GC should not set their bits while we are here, but finalization might.
-                        // It would be extremely rare case though, so it would be ok to inflate the lock.
-                        // Just let the slow/fat path handle this case.
+                        newBits = oldBits - SBLK_LOCK_RECLEVEL_INC;
                     }
                     else
                     {
                         return HeaderLockResult.Failure;
                     }
                 }
+                else
+                {
+                    return HeaderLockResult.UseSlowPath;
+                }
 
+                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                {
+                    return HeaderLockResult.Success;
+                }
+
+                // Someone else touched the bits. Most likely syncblock was installed.
+                // GC should not set their bits while we are here, but finalization might.
+                // It would be extremely rare case though, so it would be ok to inflate the lock.
+                // Just let the slow/fat path handle this case.
                 return HeaderLockResult.UseSlowPath;
             }
         }
