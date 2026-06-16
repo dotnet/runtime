@@ -273,8 +273,7 @@ namespace System.Security.Cryptography
             return OpenKeyFromProviderCore(
                 providerNames,
                 keyUri,
-                propertyQuery: null,
-                cacheKey: CreateProviderCacheKey(providerNames));
+                propertyQuery: null);
         }
 
         /// <summary>
@@ -367,22 +366,17 @@ namespace System.Security.Cryptography
 
             string[] providerNameArray = new string[providersHashSet.Count];
             providersHashSet.CopyTo(providerNameArray);
-
             Array.Sort(providerNameArray, StringComparer.Ordinal);
 
-            return OpenKeyFromProviderCore(
-                providerNameArray,
-                keyUri,
-                propertyQuery,
-                cacheKey: CreateProviderCacheKey(providerNameArray));
+            return OpenKeyFromProviderCore(providerNameArray, keyUri, propertyQuery);
         }
 
         private static SafeEvpPKeyHandle OpenKeyFromProviderCore(
             string[] providerNames,
             string keyUri,
-            string? propertyQuery,
-            string cacheKey)
+            string? propertyQuery)
         {
+            string cacheKey = CreateProviderCacheKey(providerNames);
             IntPtr extraHandle;
 
             lock (s_contextCacheLock)
