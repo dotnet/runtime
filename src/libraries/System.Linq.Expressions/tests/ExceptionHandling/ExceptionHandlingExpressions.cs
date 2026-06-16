@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -1589,6 +1590,13 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void TryCatchInOrElse(bool useInterpreter)
         {
+            MethodInfo orMethod = typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
+                "op_BitwiseOr",
+                new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) })
+                ?? typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
+                    "Or",
+                    new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) });
+
             var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
                 Expression.OrElse(
                     Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
@@ -1596,7 +1604,8 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
                         Expression.Catch(
                             typeof(System.Data.SqlTypes.SqlTypeException),
-                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False)))));
+                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False))),
+                    orMethod));   // <-- pass the method explicitly
             var func = expr.Compile(preferInterpretation: useInterpreter);
             Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
         }
@@ -1604,6 +1613,13 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void TryCatchInAndAlso(bool useInterpreter)
         {
+            MethodInfo andMethod = typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
+                "op_BitwiseAnd",
+                new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) })
+                ?? typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
+                    "And",
+                    new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) });
+
             var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
                 Expression.AndAlso(
                     Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
@@ -1611,7 +1627,8 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
                         Expression.Catch(
                             typeof(System.Data.SqlTypes.SqlTypeException),
-                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False)))));
+                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False))),
+                    andMethod));
             var func = expr.Compile(preferInterpretation: useInterpreter);
             Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
         }
