@@ -703,7 +703,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
         if (compDonotInline())
         {
@@ -7052,11 +7052,13 @@ void Compiler::impCheckForPInvokeCall(
 //
 // Arguments:
 //    call        - The call
+//    methHnd     - Method handle being called
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(
+    GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
@@ -7088,10 +7090,14 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     }
     else
     {
-        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0))
+        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+            (call->gtReturnType == info.compRetType))
         {
-            // We can only do an actual tail await if the caller and callee agree on return type.
-            asyncInfo.IsTailAwait = call->gtReturnType == info.compRetType;
+            CORINFO_METHOD_HANDLE exactCalleeHnd =
+                ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
+
+            asyncInfo.IsTailAwait =
+                info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, /* fIsTailPrefix */ false);
         }
     }
 
