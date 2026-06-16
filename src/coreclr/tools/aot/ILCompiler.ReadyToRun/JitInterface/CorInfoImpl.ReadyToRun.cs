@@ -477,8 +477,6 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate._methodPtr
-
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
@@ -2680,7 +2678,10 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        Debug.Assert(!pResult->sig.hasTypeArg());
+                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
+                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
+                        // is set up by the post-switch block below.
+                        Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;
 

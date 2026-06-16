@@ -783,6 +783,8 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 #if defined(FEATURE_SIMD)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
+#if defined(FEATURE_SIMD) && defined(FEATURE_MASKED_HW_INTRINSICS)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
     void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
@@ -1177,6 +1179,9 @@ protected:
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef TARGET_WASM
+    void genCodeForFrameSize(GenTree* tree);
+#endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT
@@ -1286,6 +1291,7 @@ protected:
     void genCompareImmAndJump(
         GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForBfx(GenTreeBfm* tree);
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);

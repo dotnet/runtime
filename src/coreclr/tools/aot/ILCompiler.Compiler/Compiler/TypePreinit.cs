@@ -3298,22 +3298,25 @@ namespace ILCompiler
                     Debug.Assert(_firstParameter == null);
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
-                    // _firstParameter
-                    builder.EmitPointerReloc(thisNode);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+                    // _firstParameter
+                    builder.EmitPointerReloc(thisNode);
 
                     // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
                 else
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
+
+                    // _helperObject
+                    builder.EmitZeroPointer();
 
                     // _firstParameter
                     if (_firstParameter is null)
@@ -3326,14 +3329,11 @@ namespace ILCompiler
                         _firstParameter.WriteFieldData(ref builder, factory);
                     }
 
-                    // _helperObject
-                    builder.EmitZeroPointer();
+                    // _functionPointer
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
 
                     // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
-
-                    // _functionPointer
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

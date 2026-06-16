@@ -184,7 +184,11 @@ enum NamedIntrinsic : unsigned short
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#elif defined(TARGET_WASM)
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
+    NI_##isa##_##name,
+#include "hwintrinsiclistwasm.h"
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_WASM)
     NI_HW_INTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 

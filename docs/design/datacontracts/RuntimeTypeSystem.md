@@ -18,6 +18,8 @@ struct TypeHandle
     public bool IsNull => Address != 0;
 }
 
+readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 internal enum CorElementType
 {
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
@@ -131,6 +133,7 @@ partial interface IRuntimeTypeSystem : IContract
     bool IsPointer(TypeHandle typeHandle);
     bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef);
 
     #endregion TypeHandle inspection APIs
 }
@@ -513,6 +516,8 @@ The contract additionally depends on these data descriptors
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 | `LoaderAllocator` | `IsCollectible` | Non-zero if the `LoaderAllocator` is collectible. |
 | `LoaderAllocator` | `CreationNumber` | Monotonically-increasing creation number assigned to each collectible `LoaderAllocator`. |
+| `TypedByRef` | `Data` | Managed pointer (the byref) stored in a `System.TypedReference` value |
+| `TypedByRef` | `Type` | Raw `TypeHandle` pointer of the referent type |
 
 The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
 ```csharp
@@ -1192,6 +1197,14 @@ Contracts used:
             }
         }
         return target.ReadPointer(mt.AuxiliaryData + /* MethodTableAuxiliaryData::LoaderModule offset */);
+    }
+
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        // Read both fields of a TypedByRef using the TypedByRef data descriptor.
+        TargetPointer data = target.ReadPointer(typedByRef + /* TypedByRef::Data offset */);
+        TargetPointer typeHandle = target.ReadPointer(typedByRef + /* TypedByRef::Type offset */);
+        return new TypedByRefInfo(data, typeHandle);
     }
 ```
 

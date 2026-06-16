@@ -35,16 +35,16 @@ jobs:
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'iossimulator_arm64', 'tvossimulator_arm64', 'maccatalyst_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.15.Arm64.Open
+        - $(helix_macos_ios_simulator_arm64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.15.Arm64
+        - $(helix_macos_ios_simulator_arm64_internal)
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.15.Amd64.Open
+        - $(helix_macos_ios_simulator_x64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.15.Amd64
+        - $(helix_macos_ios_simulator_x64_internal)
 
     # Android arm
     - ${{ if in(parameters.platform, 'android_arm') }}:
@@ -77,16 +77,16 @@ jobs:
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - osx.15.amd64.iphone.open
+        - $(helix_macos_ios_device)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - osx.15.amd64.iphone
+        - $(helix_macos_ios_device_internal)
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - osx.15.amd64.appletv.open
+        - $(helix_macos_tvos_device)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - osx.15.amd64.appletv
+        - $(helix_macos_tvos_device_internal)
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
@@ -132,19 +132,17 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - $(helix_macos_arm64)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        - OSX.15.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.14.Arm64
+        - $(helix_macos_arm64_latest_internal)
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - $(helix_macos_x64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.13.Amd64
+        - $(helix_macos_x64_latest_internal)
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
