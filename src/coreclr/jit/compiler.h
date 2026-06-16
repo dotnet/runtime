@@ -4006,8 +4006,11 @@ public:
 
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree);
-    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_HW_INTRINSICS
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -10231,6 +10234,9 @@ public:
 
                 return FP_REGSIZE_BYTES;
             }
+#elif defined(TARGET_WASM)
+        // TODO-WASM: Verify if we need a more complicated condition here
+        return FP_REGSIZE_BYTES;
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -10261,7 +10267,7 @@ public:
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -10359,7 +10365,7 @@ public:
 
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
