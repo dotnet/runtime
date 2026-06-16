@@ -26,6 +26,9 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DispatchCell.cs">
+      <Link>DispatchCell.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
       <Link>MethodTable.Constants.cs</Link>
     </Compile>

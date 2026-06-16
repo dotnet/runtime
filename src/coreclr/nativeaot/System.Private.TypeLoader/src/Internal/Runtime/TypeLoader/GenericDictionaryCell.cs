@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime;
 
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
@@ -99,11 +100,10 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                var dispatchCellAndComposition = (nint*)MemoryHelpers.AllocateMemory((2 + 2) * sizeof(nint));
-                dispatchCellAndComposition[0] = 0;
-                dispatchCellAndComposition[1] = 0;
-                dispatchCellAndComposition[2] = builder.GetRuntimeTypeHandle(InterfaceType).Value;
-                dispatchCellAndComposition[3] = Slot;
+                var dispatchCellAndComposition = (DynamicDispatchCell*)MemoryHelpers.AllocateMemory(sizeof(DynamicDispatchCell));
+                dispatchCellAndComposition->Cell = default;
+                dispatchCellAndComposition->InterfaceType = (MethodTable*)builder.GetRuntimeTypeHandle(InterfaceType).Value;
+                dispatchCellAndComposition->Slot = Slot;
 
                 return (IntPtr)dispatchCellAndComposition;
             }
