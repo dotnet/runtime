@@ -2019,20 +2019,20 @@ namespace
         case VT_INT:
         case VT_ERROR:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
         case VT_UI4:
         case VT_UINT:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
         case VT_I8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
         case VT_UI8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return GetPointerSizedElementTypeForSafeArrayVarType(vt, CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
         case VT_R4:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SINGLE));
         case VT_R8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DOUBLE));
