@@ -2705,10 +2705,12 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
     //
-    // 1, 4     - MulticastDelegate.ctor1 (simply assign _target and _methodPtr)
-    // 5        - MulticastDelegate.ctor2 (see table, takes 3 args)
-    // 2, 6     - MulticastDelegate.ctor3 (take shuffle thunk)
-    // 3        - MulticastDelegate.ctor4 (take shuffle thunk, retrieve MethodDesc) ???
+    // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
+    // 4        - CtorClosedStatic
+    // 5        - Special-signature static closed form (not differentiated on this fast path; see TODO below)
+    // 2, 6     - CtorOpened
+    // 3        - CtorVirtualDispatch
+    // Collectible delegates use the corresponding CtorCollectible* variants.
     //
     // With collectible types, we need to fill the _methodBase field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
