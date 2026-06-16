@@ -4518,10 +4518,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(true);
         });
 
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
-
         // Run an early flow graph simplification pass
         //
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
