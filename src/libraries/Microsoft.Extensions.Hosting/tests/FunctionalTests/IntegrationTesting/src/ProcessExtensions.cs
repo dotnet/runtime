@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Internal
         {
             if (_isWindows)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Sending POSIX signals is only supported on Unix-like platforms.");
             }
             if (Kill(pid, signal) != 0)
             {
