@@ -27270,13 +27270,8 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
             return result;
         }
 
-        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
-        {
-            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
-        }
-
-        GenTree* resultDup = fgMakeMultiUse(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
+        GenTree* resultLcl = fgInsertCommaFormTemp(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
     }
 
     if (op1->OperIsConst() && op2->OperIsConst())
@@ -27475,13 +27470,8 @@ GenTree* Compiler::gtNewSimdZipNode(
             return result;
         }
 
-        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
-        {
-            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
-        }
-
-        GenTree* resultDup = fgMakeMultiUse(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
+        GenTree* resultLcl = fgInsertCommaFormTemp(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_XARCH)
@@ -27612,13 +27602,8 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             return result;
         }
 
-        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
-        {
-            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
-        }
-
-        GenTree* resultDup = fgMakeMultiUse(&result);
-        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
+        GenTree* resultLcl = fgInsertCommaFormTemp(&result);
+        return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_ARM64)
