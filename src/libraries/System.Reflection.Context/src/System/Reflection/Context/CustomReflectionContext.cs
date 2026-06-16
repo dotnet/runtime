@@ -55,7 +55,7 @@ namespace System.Reflection.Context
     /// >   method, and these two lists won't match when you use a custom reflection context.
     /// ]]></format></remarks>
     /// <example>
-    /// The following example demonstrates how to subclass <xref:System.Reflection.Context.CustomReflectionContext>
+    /// The following example demonstrates how to subclass <see cref="CustomReflectionContext" />
     /// to add a custom attribute to all the members of a given type whose names begin with "To".
     /// <code lang="cs" source="../../../../tests/CustomReflectionContext.Examples.cs" region="Snippet1" />
     /// <code lang="cs" source="../../../../tests/CustomReflectionContext.Examples.cs" region="Snippet2" />
