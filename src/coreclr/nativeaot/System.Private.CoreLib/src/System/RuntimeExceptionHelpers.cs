@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 using Internal.Reflection.Augments;
@@ -26,6 +28,81 @@ namespace System
 
     internal static class RuntimeExceptionHelpers
     {
+        // Matches the FatalErrorInfo struct defined in src/native/public/FatalErrorHandling.h.
+        // The layout must be kept in sync with the native header.
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct FatalErrorInfo
+        {
+            internal nuint Size;
+            internal void* Address;
+            internal void* Info;
+            internal void* Context;
+            internal delegate* unmanaged<FatalErrorInfo*, delegate* unmanaged<byte*, void*, void>, void*, void> PfnGetFatalErrorLog;
+        }
+
+        // Pre-allocated buffer for crash log text (UTF-8). Only one thread should
+        // be in the crash path at a time (guarded by s_crashingThreadId).
+        private const int CrashLogBufferSize = 8192;
+        private static readonly byte[] s_crashLogBuffer = new byte[CrashLogBufferSize];
+        private static int s_crashLogLength;
+
+        /// <summary>
+        /// Appends a string to the crash log buffer as UTF-8. If the buffer is full,
+        /// the remaining text is silently truncated.
+        /// </summary>
+        private static void AppendToCrashLog(string? text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            try
+            {
+                int remaining = CrashLogBufferSize - s_crashLogLength;
+                if (remaining <= 0)
+                    return;
+
+                ReadOnlySpan<char> source = text.AsSpan();
+                Span<byte> destination = s_crashLogBuffer.AsSpan(s_crashLogLength, remaining);
+
+                Encoding.UTF8.GetEncoder().Convert(source, destination, flush: true,
+                    out _, out int bytesUsed, out _);
+                s_crashLogLength += bytesUsed;
+            }
+            catch
+            {
+                // Never fail on the crash path.
+            }
+        }
+
+        private static void AppendNewlineToCrashLog()
+        {
+            if (s_crashLogLength < CrashLogBufferSize)
+            {
+                s_crashLogBuffer[s_crashLogLength++] = (byte)'\n';
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void GetFatalErrorLog(
+            FatalErrorInfo* errorData,
+            delegate* unmanaged<byte*, void*, void> pfnLogAction,
+            void* userContext)
+        {
+            if (s_crashLogLength == 0 || pfnLogAction == null)
+                return;
+
+            // Null-terminate the buffer for the callback.
+            if (s_crashLogLength < CrashLogBufferSize)
+                s_crashLogBuffer[s_crashLogLength] = 0;
+            else
+                s_crashLogBuffer[CrashLogBufferSize - 1] = 0;
+
+            fixed (byte* pBuffer = s_crashLogBuffer)
+            {
+                pfnLogAction(pBuffer, userContext);
+            }
+        }
+
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
         // out of Rtm, then we would note have to have the code below to get a classlib exception object given
@@ -249,46 +326,60 @@ namespace System
                     // report that OOM is the reason for the crash.
                     try
                     {
-                        // Try to print the same short message CoreCLR prints.
                         Internal.Console.Error.Write("Out of memory.");
                         Internal.Console.Error.WriteLine();
+                        AppendToCrashLog("Out of memory.\n");
                     }
                     catch { }
                 }
                 else
                 {
-                    Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
-                        "Process terminated. " : "Unhandled exception. ");
+                    string header = ((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
+                        "Process terminated. " : "Unhandled exception. ";
+                    Internal.Console.Error.Write(header);
+                    AppendToCrashLog(header);
 
                     if (errorSource != null)
                     {
                         Internal.Console.Error.Write(errorSource);
                         Internal.Console.Error.WriteLine();
+                        AppendToCrashLog(errorSource);
+                        AppendNewlineToCrashLog();
                     }
 
                     if (message != null)
                     {
                         Internal.Console.Error.Write(message);
                         Internal.Console.Error.WriteLine();
+                        AppendToCrashLog(message);
+                        AppendNewlineToCrashLog();
                     }
 
                     if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
                     {
-                        Internal.Console.Error.Write(GetStringForFailFastReason(reason));
+                        string reasonText = GetStringForFailFastReason(reason);
+                        Internal.Console.Error.Write(reasonText);
                         Internal.Console.Error.WriteLine();
+                        AppendToCrashLog(reasonText);
+                        AppendNewlineToCrashLog();
                     }
 
                     if (reason is RhFailFastReason.EnvironmentFailFast)
                     {
-                        Internal.Console.Error.Write(new StackTrace().ToString());
+                        string stackTrace = new StackTrace().ToString();
+                        Internal.Console.Error.Write(stackTrace);
+                        AppendToCrashLog(stackTrace);
                     }
 
                     if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
                     {
                         try
                         {
-                            Internal.Console.Error.Write(exception.ToString());
+                            string exText = exception.ToString();
+                            Internal.Console.Error.Write(exText);
                             Internal.Console.Error.WriteLine();
+                            AppendToCrashLog(exText);
+                            AppendNewlineToCrashLog();
                         }
                         catch
                         {
@@ -296,8 +387,11 @@ namespace System
                             try
                             {
                                 // Use an allocation-free MethodTable comparison.
-                                Internal.Console.Error.Write(exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName);
+                                string? typeName = exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName;
+                                Internal.Console.Error.Write(typeName);
                                 Internal.Console.Error.WriteLine();
+                                AppendToCrashLog(typeName);
+                                AppendNewlineToCrashLog();
                             }
                             catch { }
                         }
@@ -349,6 +443,29 @@ namespace System
                 {
                     // The first thread generates the crash info and any other threads are blocked
                     Thread.Sleep(int.MaxValue);
+                }
+            }
+
+            // Invoke the user's fatal error handler, if one was registered.
+            IntPtr fatalHandler = ExceptionHandling.s_fatalErrorHandler;
+            if (fatalHandler != IntPtr.Zero)
+            {
+                FatalErrorInfo errorInfo;
+                errorInfo.Size = (nuint)sizeof(FatalErrorInfo);
+                errorInfo.Address = (void*)pExAddress;
+                errorInfo.Info = null;
+                errorInfo.Context = (void*)pExContext;
+                errorInfo.PfnGetFatalErrorLog = &GetFatalErrorLog;
+
+                int handlerResult = ((delegate* unmanaged<int, void*, int>)fatalHandler)(errorCode, &errorInfo);
+                if (handlerResult == 1)
+                {
+                    // SkipDefaultHandler — terminate without crash dump.
+#if TARGET_WINDOWS
+                    Interop.Kernel32.ExitProcess(errorCode);
+#else
+                    Interop.Sys.Exit(errorCode);
+#endif
                 }
             }
 
