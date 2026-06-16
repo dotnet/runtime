@@ -747,6 +747,13 @@ namespace System.Xml.Serialization
             bool checkType = checkTypeSource != null;
             bool isSequence = sequenceState != null && IsSequence(expectedMembers);
 
+            // This mirrors XmlSerializationReaderILGen.WriteMemberElementsIf, which uses a single
+            // loop over the members with isSequence-conditional logic inline (it does not split into
+            // two separate loops). For a sequence, the IL generator emits an else-if chain keyed on a
+            // "state" local so that each pass of the surrounding read loop evaluates exactly the one
+            // member at the current sequence position. Because the reflection reader cannot emit such
+            // a chain, it instead scans to the member at the current position (sequenceState[0]) via
+            // currentCase below; the observable behavior is identical.
             ElementAccessor? e = null;
             Member? member = null;
             bool foundElement = false;
