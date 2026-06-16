@@ -1643,7 +1643,7 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
 #elif defined(TARGET_ARM64)
         // For Arm64 we have count total bits to read, but
         // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
+        // the result element to One or Zero depending
         // on the corresponding mask bit
 
         isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
@@ -1655,7 +1655,13 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
 
         if (isSet)
         {
+#ifdef TARGET_ARM64
+            // TODO-SVE: We want to unify this output to 'AllBitsSet' as in other
+            // architectures, so we can benefit fully from optimizations on this value.
+            memset(&output, 0x1, 1);
+#else
             memset(&output, 0xFF, sizeof(TBase));
+#endif
         }
         else
         {
