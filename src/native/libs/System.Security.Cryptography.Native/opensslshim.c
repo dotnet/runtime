@@ -8,6 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__OpenBSD__)
+#include <dirent.h>
+#include <limits.h>
+#include <stdlib.h>
+#endif
+
 #include "opensslshim.h"
 #include "pal_atomic.h"
 
@@ -53,6 +59,94 @@ static void DlOpen(const char* libraryName)
         dlclose(libsslNew);
     }
 }
+
+#if defined(__OpenBSD__)
+// OpenBSD's base system ships LibreSSL, which does not implement the full
+// OpenSSL 3.x surface the shim requires. The OpenSSL ports install in parallel
+// under /usr/local/lib/eopenssl<NN>/ using their own SONAME numbering (for
+// example libssl.so.37.0 for the 3.5 flavor). Locate the newest eopenssl
+// directory and load its libssl by absolute path so the matching libcrypto
+// resolves via the library's RUNPATH.
+static void DlOpenNewestEopenssl(void)
+{
+    static const char libDir[] = "/usr/local/lib";
+    static const char dirPrefix[] = "eopenssl";
+    static const char sslPrefix[] = "libssl.so.";
+
+    DIR* dir = opendir(libDir);
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    // Find the eopenssl* subdirectory with the highest numeric suffix.
+    char bestDir[NAME_MAX + 1] = { 0 };
+    long bestDirVersion = -1;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strncmp(entry->d_name, dirPrefix, sizeof(dirPrefix) - 1) != 0)
+        {
+            continue;
+        }
+
+        const char* suffix = entry->d_name + sizeof(dirPrefix) - 1;
+        char* end;
+        long version = strtol(suffix, &end, 10);
+        if (suffix != end && *end == '\0' && version > bestDirVersion)
+        {
+            bestDirVersion = version;
+            strncpy(bestDir, entry->d_name, sizeof(bestDir) - 1);
+        }
+    }
+    closedir(dir);
+
+    if (bestDirVersion < 0)
+    {
+        return;
+    }
+
+    char dirPath[PATH_MAX];
+    int written = snprintf(dirPath, sizeof(dirPath), "%s/%s", libDir, bestDir);
+    if (written < 0 || (size_t)written >= sizeof(dirPath))
+    {
+        return;
+    }
+
+    dir = opendir(dirPath);
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    // Each eopenssl<NN> directory ships a single versioned libssl, so use the
+    // first libssl.so.<version> entry found.
+    char libName[NAME_MAX + 1] = { 0 };
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strncmp(entry->d_name, sslPrefix, sizeof(sslPrefix) - 1) == 0)
+        {
+            strncpy(libName, entry->d_name, sizeof(libName) - 1);
+            break;
+        }
+    }
+    closedir(dir);
+
+    if (libName[0] == '\0')
+    {
+        return;
+    }
+
+    char libPath[PATH_MAX];
+    written = snprintf(libPath, sizeof(libPath), "%s/%s", dirPath, libName);
+    if (written < 0 || (size_t)written >= sizeof(libPath))
+    {
+        return;
+    }
+
+    DlOpen(libPath);
+}
+#endif
 
 static void OpenLibraryOnce(void)
 {
@@ -110,6 +204,12 @@ static void OpenLibraryOnce(void)
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("111"));
+    }
+#elif defined(__OpenBSD__)
+    // OpenBSD base is LibreSSL; load the OpenSSL ports build from /usr/local/lib/eopenssl<NN>.
+    if (libssl == NULL)
+    {
+        DlOpenNewestEopenssl();
     }
 #endif
 
