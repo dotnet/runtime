@@ -327,6 +327,10 @@ namespace System.Security.Cryptography
         ///     The <paramref name="propertyQuery"/> value is used only for the
         ///     <c>OSSL_STORE_open_ex</c> operation.
         ///   </para>
+        ///   <para>
+        ///     The order in which the providers are loaded is the same order in which the <paramref name="providerNames" />
+        ///     enumerable returns them.
+        ///   </para>
         /// </remarks>
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -347,27 +351,30 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
             }
 
-            HashSet<string> providersHashSet = new(StringComparer.Ordinal);
+            // Preserve provider order while checking for duplicates.
+            List<string> providersList = new();
 
             foreach (string provider in providerNames)
             {
                 ValidateProviderName(provider, nameof(providerNames));
 
-                if (!providersHashSet.Add(provider))
+                // The number of providers is expected to be in the single digits. While this Contains then Add is worst
+                // case O(n^2), we expect the inputs to be small. The API also explicitly documents that all inputs
+                // "must be trusted inputs".
+                if (providersList.Contains(provider))
                 {
                     throw new ArgumentException(SR.InvalidOperation_DuplicateItemNotAllowed, nameof(providerNames));
                 }
+
+                providersList.Add(provider);
             }
 
-            if (providersHashSet.Count == 0)
+            if (providersList.Count == 0)
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(providerNames));
             }
 
-            string[] providerNameArray = new string[providersHashSet.Count];
-            providersHashSet.CopyTo(providerNameArray);
-            Array.Sort(providerNameArray, StringComparer.Ordinal);
-
+            string[] providerNameArray = providersList.ToArray();
             return OpenKeyFromProviderCore(providerNameArray, keyUri, propertyQuery);
         }
 
