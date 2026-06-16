@@ -8055,7 +8055,8 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
 #if USE_HELPERS_FOR_INT_DIV
-    assert(varTypeIsFloating(divMod->TypeGet()) && "unreachable: intergal GT_UDIV/GT_UMOD should get morphed into helper calls");
+    assert(varTypeIsFloating(divMod->TypeGet()) &&
+           "unreachable: intergal GT_UDIV/GT_UMOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
 
 #if defined(TARGET_ARMARCH)
