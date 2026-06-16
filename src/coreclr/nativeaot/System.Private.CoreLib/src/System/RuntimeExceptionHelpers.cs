@@ -295,7 +295,8 @@ namespace System
                             // If ToString() fails (for example, due to OOM), fall back to a simpler message.
                             try
                             {
-                                Internal.Console.Error.Write(exception is OutOfMemoryException ? "Out of memory." : exception.GetType().FullName);
+                                // Use an allocation-free MethodTable comparison.
+                                Internal.Console.Error.Write(exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName);
                                 Internal.Console.Error.WriteLine();
                             }
                             catch { }
