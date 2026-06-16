@@ -21,6 +21,7 @@ namespace Microsoft.Interop
         public string MethodName { get; init; }
         public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
         public bool IsUserDefinedShadowingMethod { get; init; }
+        public string ExternalSymbolId { get; init; } = string.Empty;
 
         private ComMethodInfo(
             MethodDeclarationSyntax syntax,
@@ -94,7 +95,10 @@ namespace Microsoft.Interop
             if (ifaceContext.IsExternallyDefined)
             {
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
-                    new ComMethodInfo(null, method.Name, method.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), false),
+                    new ComMethodInfo(null, method.Name, method.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), false)
+                    {
+                        ExternalSymbolId = BuildExternalSymbolId(method),
+                    },
                     method));
             }
 
@@ -152,5 +156,9 @@ namespace Microsoft.Interop
             var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
+
+        private static string BuildExternalSymbolId(IMethodSymbol method)
+            => method.GetDocumentationCommentId()
+                ?? method.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
     }
 }
